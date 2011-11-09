@@ -9,7 +9,7 @@ import datetime
 class CalibFile(object):
     """CalibFile class
     
-    This class manages inout/output for the calibration files
+    This class manages input/output for the calibration files
 
     Attributes
     ----------
@@ -19,20 +19,20 @@ class CalibFile(object):
     primary_header: pyfits.CardList
     The primary header
     
-    data: array
-    Array containing the image data
+    data: float array
+    Array containing the pixel values
 
-    dq: array
-    Array containing the data quality
+    dq: integer array
+    Array containing the bad pixel status as defined by Euro3D
 
-    stat: array
-    Array containing the statistics
+    stat: float array
+    Array containing the variance
     
     nx: integer
-    Dimension of the data/dq/stat arry along the x-axis
+    Dimension of the data/dq/stat arrays along the x-axis
     
     ny: integer
-    Dimension of the data/dq/stat arry along the y-axis
+    Dimension of the data/dq/stat arrays along the y-axis
 
     Methods
     -------

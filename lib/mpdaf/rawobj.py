@@ -23,10 +23,10 @@ class Channel(object):
     The extension header
 
     data: array
-    The extension data
+    Array containing the pixel values of the image extension
     
     has_scan: boolean
-    Does the channel data contain overscan pixels ?
+    Does the channel data contain over scanned pixels ?
 
     Methods
     -------
@@ -51,7 +51,7 @@ class Channel(object):
         The raw FITS file name. None by default.
     
         has_scan: boolean
-        Does the channel data contain overscan pixels ? True by default.
+        Does the channel data contain over scanned pixels ? True by default.
         """
         self.extname = extname
         self.has_scan = has_scan
@@ -75,7 +75,7 @@ class Channel(object):
         return result
 
     def trimm_overscan(self):
-        """removes overscan from data"""
+        """removes over scanned pixels from data"""
         if self.has_scan == True:
             try:
                 nx_data = self.header["NAXIS1"].value # length of data in X
@@ -243,7 +243,7 @@ class RawFile(object):
         The raw FITS file name. None by default.
     
         has_scan: boolean
-        Does the channel data contain overscan pixels ? True by default.
+        Does the channel data contain over scanned pixels ? True by default.
 
         Notes
         -----
@@ -315,7 +315,7 @@ class RawFile(object):
         The extension name
     
         has_scan: boolean
-        Does the channel data contain overscan pixels ?
+        Does the channel data contain over scanned pixels ?
         """
         if self.channels[extname] != None:
             return self.channels[extname]
