@@ -8,6 +8,8 @@ rawobj:
     I/O for raw FITS files
 calibobj:
     I/O for calibration files
+pixtable:
+    I/O for MUSE pixel table
 
 
 """
@@ -52,6 +54,6 @@ Import the different submodules
 from rawobj import RawFile
 from rawobj import Channel
 from calibobj import CalibFile
-
+from pixtable import PixTable
 #__all__ = ['rawobj','calibobj']
 
