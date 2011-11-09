@@ -139,6 +139,7 @@ class CalibFile(object):
         else:
             hdulist = pyfits.open(self.filename,memmap=1)
             data = hdulist["DATA"].data
+            hdulist.close()
             return data
     
     def get_dq(self):
@@ -148,6 +149,7 @@ class CalibFile(object):
         else:
             hdulist = pyfits.open(self.filename,memmap=1)
             data = hdulist["DQ"].data
+            hdulist.close()
             return data
         
     def get_stat(self):
@@ -157,6 +159,7 @@ class CalibFile(object):
         else:
             hdulist = pyfits.open(self.filename,memmap=1)
             data = hdulist["STAT"].data
+            hdulist.close()
             return data
 
     def write(self,filename):
@@ -190,4 +193,7 @@ class CalibFile(object):
         hdu.writeto(filename, clobber=True)
         # update attributes
         self.filename = filename
+        self.data = None
+        self.dq = None
+        self.stat = None
     
