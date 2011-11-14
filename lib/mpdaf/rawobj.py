@@ -4,6 +4,7 @@ import pyfits
 import pylab
 import multiprocessing
 import datetime
+import sys
 #import matplotlib as mpl
 #import matplotlib.pyplot as plt
 
@@ -25,21 +26,24 @@ class Channel(object):
     data: array
     Array containing the pixel values of the image extension
     
-    has_scan: boolean
-    Does the channel data contain over scanned pixels ?
+    nx,ny : integers
+    Lengths of data in X and Y
 
-    Methods
-    -------
-    Creation: init,copy
+    mask : boolean mask
+    Arrays that contents TRUE for overscanned pixels, FALSE for the others
+
+    Public methods
+    --------------
+    Creation: init, copy
     
-    Arithmetic: + - * /
+    Arithmetic: + - * / pow sqrt
     
     Info: get_nx, get_ny
     
-    DRS: trimm_overscan
+    DRS: trimmed, overscan, trimmed_image
     """
 
-    def __init__(self, extname,filename=None, has_scan=True ):
+    def __init__(self, extname,filename=None ):
         """creates a Channel object
         
         Parameters
@@ -49,106 +53,85 @@ class Channel(object):
     
         filename : string
         The raw FITS file name. None by default.
-    
-        has_scan: boolean
-        Does the channel data contain over scanned pixels ? True by default.
+
+        nx,ny : integers
+        Lengths of data in X and Y
+
+        mask : boolean mask
+        Arrays that contents TRUE for overscanned pixels, FALSE for the others
         """
         self.extname = extname
-        self.has_scan = has_scan
         if filename!=None:
             hdulist = pyfits.open(filename,memmap=1)
             self.header = hdulist[extname].header.ascardlist()
-            self.data = hdulist[extname].data
+            self.nx = hdulist[extname].header["NAXIS1"]
+            self.ny = hdulist[extname].header["NAXIS2"]
+            data = hdulist[extname].data
+            self.data = np.ndarray(np.shape(data))
+            self.data [:] = data[:]
             hdulist.close()
-            if has_scan == False:
-                self.remove_preoverscan()
         else:
             self.header = pyfits.CardList()
+            self.nx = 0
+            self.ny = 0
             self.data = None
+        self.mask = self._init_mask()
+
+
+    def _init_mask(self):
+        """creates mask that invalidates over scanned pixels"""
+        m = np.ones((self.ny,self.nx), dtype = int)
+        try:
+            nx_data = self.header["NAXIS1"].value # length of data in X
+            ny_data = self.header["NAXIS2"].value # length of data in Y
+            nx_data2 = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
+            ny_data2 = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
+            m = np.ones((self.ny,self.nx), dtype = int)
+
+            for i in range(4):
+                try:
+                    n = i+1
+                    key = "ESO DET OUT%i" % n
+                    nx = self.header["%s NX" % key].value # Output data pixels in X
+                    ny = self.header["%s NY" % key].value # Output data pixels in Y
+                    prscx = self.header["%s PRSCX" % key].value # Output prescan pixels in X
+                    prscy = self.header["%s PRSCY" % key].value # Output prescan pixels in Y
+                    x = self.header["%s X" % key].value # X location of output
+                    y = self.header["%s Y"% key].value # Y location of output
+                    if x < nx_data2/2:
+                        i1 = x - 1 + prscx
+                        i2 = i1 + nx
+                    else:
+                        i2 = nx_data - prscx
+                        i1 = i2 - nx
+                    if y < ny_data2/2:
+                        j1 = y -1 + prscy
+                        j2 = j1 + ny
+                    else:
+                        j2 = ny_data  - prscy
+                        j1 = j2 - ny
+                    m[j1:j2,i1:i2] *= 0
+                except:
+                    break
+        except:
+            pass
+        mask = np.ma.make_mask(m)
+        return mask
+
 
     def copy(self):
         """copies Channel object in a new one and returns it"""
-        result = Channel(self.extname,None,self.has_scan)
+        result = Channel(self.extname,None)
         result.header = pyfits.CardList(self.header)
         if self.data != None:
             result.data = self.data.__copy__()
+        result.nx = self.nx
+        result.ny = self.ny
+        result.mask = self.mask.__copy__()
         return result
 
-    def trimm_overscan(self):
-        """removes over scanned pixels from data"""
-        if self.has_scan == True:
-            try:
-                nx_data = self.header["NAXIS1"].value # length of data in X
-                ny_data = self.header["NAXIS2"].value # length of data in Y
-                nx_data2 = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
-                ny_data2 = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
-                data2 = np.zeros((ny_data2,nx_data2), dtype=float)
-            
-                for i in range(4):
-                    try:
-                        n = i+1
-                        key = "ESO DET OUT%i" % n
-                        nx = self.header["%s NX" % key].value # Output data pixels in X
-                        ny = self.header["%s NY" % key].value # Output data pixels in Y
-                        prscx = self.header["%s PRSCX" % key].value # Output prescan pixels in X
-                        prscy = self.header["%s PRSCY" % key].value # Output prescan pixels in Y
-                        x = self.header["%s X" % key].value # X location of output
-                        y = self.header["%s Y"% key].value # Y location of output                    
-                        if x < nx_data2/2:
-                            #corresponding slice in X for data2 (active pixels)
-                            i1_data2 = x - 1
-                            i2_data2 = i1_data2 + nx
-                            #corresponding slice in X for data (real pixels)
-                            i1_data = x - 1 + prscx  
-                            i2_data = i1_data + nx
-                        else:
-                            #corresponding slice in X for data2 (active pixels)
-                            i2_data2 = x
-                            i1_data2 = i2_data2 - nx
-                            #corresponding slice in X for data (real pixels)
-                            i2_data = nx_data - prscx
-                            i1_data = i2_data - nx
-                        if y < ny_data2/2:
-                            #corresponding slice in Y for data2 (active pixels)
-                            j1_data2 = y -1
-                            j2_data2 = j1_data2 + ny
-                            #corresponding slice in Y for data (real pixels)
-                            j1_data = y -1 + prscy
-                            j2_data = j1_data + ny
-                        else:
-                            #corresponding slice in Y for data2 (active pixels)
-                            j2_data2 = y
-                            j1_data2 = j2_data2 - ny
-                            #corresponding slice in Y for data (real pixels)
-                            j2_data = ny_data  - prscy
-                            j1_data = j2_data - ny
-                        #copy
-                        data2[j1_data2:j2_data2,i1_data2:i2_data2] = self.data[j1_data:j2_data,i1_data:i2_data]
-                    except:
-                        break
-            except:
-                data2 = None
-            self.data = data2
-            self.has_scan = False
-            #return data2
 
-    def get_nx(self):
-        """returns NAXIS1 value"""
-        try:
-            nx_data = self.header["NAXIS1"].value # length of data in X
-        except:
-            nx_data = 0
-        return nx_data
-
-    def get_ny(self):
-        """returns NAXIS2 value"""
-        try:
-            ny_data = self.header["NAXIS2"].value # length of data in Y
-        except:
-            ny_data = 0
-        return ny_data
-
-    def decorator(function):
+    def _decorator(function):
         # decorator used to define arithmetic functions
         def _wrapper(self,other):
             if isinstance(other,Channel):
@@ -156,49 +139,206 @@ class Channel(object):
                     print 'Error: operations on channel extensions with different names'
                     print
                     return None
-                if self.has_scan!=other.has_scan:
-                    print 'Error: operations on channel with and without pre and over scans'
-                    print
-                    return None
-                print self.extname
                 result = Channel(self.extname)             
                 result.header = self.header
+                result.nx = self.nx
+                result.ny = self.ny
+                result.mask = self.mask
                 result.data = function(self.data,other.data)
+                if isinstance(result.data,np.ma.core.MaskedArray):
+                    result.data = result.data.data
                 return result
             else:
                 result = Channel(self.extname)             
                 result.header = self.header
+                result.nx = self.nx
+                result.ny = self.ny
+                result.mask = self.mask
+                result.data = function(self.data,other)
+                if isinstance(result.data,np.ma.core.MaskedArray):
+                    result.data = result.data.data
+                return result
+        return _wrapper
+
+    def _idecorator(function):
+        # decorator used to define in-place arithmetic functions
+        def _wrapper(self,other):
+            if isinstance(other,Channel):
+                if self.extname!=other.extname:
+                    print 'Error: operations on channel extensions with different names'
+                    print
+                    return None
+                result = Channel(self.extname)
+                result.header = self.header
+                result.nx = self.nx
+                result.ny = self.ny
+                result.mask = self.mask
+                result.data = function(self.data,other.data)
+                return result
+            else:
+                result = Channel(self.extname)
+                result.header = self.header
+                result.nx = self.nx
+                result.ny = self.ny
+                result.mask = self.mask
                 result.data = function(self.data,other)
                 return result
         return _wrapper
 
-
-    @decorator
+    @_decorator
     def __mul__(self,other):
         """multiplies either a number or a Channel object"""
-        return np.ndarray.__mul__(self,other)
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__mul__(self,other)
+        else:
+            return np.ndarray.__mul__(self,other)
 
-    @decorator
+    @_idecorator
+    def __imul__(self,other):
+        """multiplies either a number or a Channel object"""
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__mul__(self,other)
+        else:
+            return np.ndarray.__mul__(self,other)
+
+
+    @_decorator
     def __div__(self,other):
         """divides either a number or a Channel object"""
-        return np.ndarray.__div__(self,other)
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__div__(self,other)
+        else:
+            return np.ndarray.__div__(self,other)
 
-    @decorator
+    @_idecorator
+    def __idiv__(self,other):
+        """divides either a number or a Channel object"""
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__div__(self,other)
+        else:
+            return np.ndarray.__div__(self,other)
+
+
+    @_decorator
     def __sub__(self,other):
         """subtracts either a number or a Channel object"""
-        return np.ndarray.__sub__(self,other)
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__sub__(self,other)
+        else:
+            return np.ndarray.__sub__(self,other)
 
-    @decorator
+
+    @_idecorator
+    def __isub__(self,other):
+        """subtracts either a number or a Channel object"""
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__sub__(self,other)
+        else:
+            return np.ndarray.__sub__(self,other)
+
+
+    @_decorator
     def __add__(self,other):
         """adds either a number or a Channel object"""
-        return np.ndarray.__add__(self,other)
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__add__(self,other)
+        else:
+            return np.ndarray.__add__(self,other)
 
+
+    @_idecorator
+    def __iadd__(self,other):
+        """adds either a number or a Channel object"""
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__add__(self,other)
+        else:
+            return np.ndarray.__add__(self,other)
+
+
+    @_decorator
+    def __pow__(self,other):
+        """computes the power exponent"""
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__pow__(self,other)
+        else:
+            return np.ndarray.__pow__(self,other)
+
+    @_idecorator
+    def __ipow__(self,other):
+        """computes the power exponent"""
+        if isinstance(self,np.ma.core.MaskedArray):
+            return np.ma.MaskedArray.__pow__(self,other)
+        else:
+            return np.ndarray.__pow__(self,other)
+
+
+    def sqrt(self):
+        """computes the power exponent"""
+        result = Channel(self.extname)
+        result.header = self.header
+        result.nx = self.nx
+        result.ny = self.ny
+        result.mask = self.mask
+        result.data = np.sqrt(self.data)
+        if isinstance(result.data,np.ma.core.MaskedArray):
+            result.data = result.data.data
+        return result
+
+
+    def trimmed(self):
+        """returns a Channel object containing only reference to the valid pixels"""
+        #x = np.ma.MaskedArray(self.data, mask=self.mask)
+        #return x
+
+        result = Channel(self.extname)
+        result.header = self.header
+        result.nx = self.nx
+        result.ny = self.ny
+        result.mask = self.mask
+        result.data = np.ma.MaskedArray(self.data, mask=self.mask, copy=True)
+        return result
+
+
+    def overscan(self):
+        """returns a Channel object containing only reference to the overscanned pixels"""
+        #x = np.ma.MaskedArray(self.data, mask=np.logical_not(self.mask))
+        #return x
+        result = Channel(self.extname)
+        result.header = self.header
+        result.nx = self.nx
+        result.ny = self.ny
+        result.mask = self.mask
+        result.data = np.ma.MaskedArray(self.data, mask=np.logical_not(self.mask), copy=True)
+        #result.data = np.ma.MaskedArray(self.data, mask=np.logical_not(self.mask))
+        return result
+
+
+    def trimmed_image(self):
+        """removes over scanned pixels from data"""
+        nx_data = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
+        ny_data = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
+        if isinstance(self.data,np.ma.core.MaskedArray):
+            x = np.ma.MaskedArray(self.data.data, mask=self.mask)
+        else:
+            x = np.ma.MaskedArray(self.data, mask=self.mask)
+        data = np.ma.compressed(x)
+        data = np.reshape(data,(ny_data,nx_data))
+        return data
 
 
 STR_FUNCTIONS = { 'Channel.__mul__' : Channel.__mul__,
+                  'Channel.__imul__' : Channel.__imul__,
                   'Channel.__div__' : Channel.__div__,
+                  'Channel.__idiv__' : Channel.__idiv__,
                   'Channel.__sub__' : Channel.__sub__,
+                  'Channel.__isub__' : Channel.__isub__,
                   'Channel.__add__' : Channel.__add__,
+                  'Channel.__iadd__' : Channel.__iadd__,
+                  'Channel.__pow__' : Channel.__pow__,
+                  'Channel.__ipow__' : Channel.__ipow__,
+                  'Channel.sqrt' : Channel.sqrt,
+                  'Channel.trimmed' : Channel.trimmed,
+                  'Channel.overscan' : Channel.overscan,
                   }    
 
 
@@ -211,9 +351,6 @@ class RawFile(object):
     ----------
     filename : string
     The raw FITS file name. None if any.
-    
-    has_scan: boolean
-    Does the channels data contain overscan pixels ?
 
     channels: dict
     List of extension (extname,Channel)
@@ -221,20 +358,26 @@ class RawFile(object):
     primary_header: pyfits.CardList
     The primary header
 
+    nx,ny : integers
+    Lengths of data in X and Y
+
+    next: interger
+    Number of extensions
+
     Methods
     -------
     Creation: init,copy
     
     Arithmetic: + - * /
     
-    Info: info
+    Info: info, len
     
     save: write
     
-    get: get_channel
+    get: [], get_channel
     """
     
-    def __init__(self, filename=None, has_scan=True):
+    def __init__(self, filename=None):
         """creates a RawFile object
         
         Parameters
@@ -242,8 +385,17 @@ class RawFile(object):
         filename : string
         The raw FITS file name. None by default.
     
-        has_scan: boolean
-        Does the channel data contain over scanned pixels ? True by default.
+        channels: dict
+        List of extension (extname,Channel)
+
+        primary_header: pyfits.CardList
+        The primary header
+
+        nx,ny : integers
+        Lengths of data in X and Y
+
+        next: interger
+        Number of extensions
 
         Notes
         -----
@@ -251,11 +403,14 @@ class RawFile(object):
 
         The FITS file is opened with memory mapping.
         Just the primary header and the list of extension name are loaded.
-        Method get_channel(extname) must be used to create the corresponding Channel object.
+        Method get_channel(extname) returns the corresponding channel
+        Operator [extnumber] loads and returns the corresponding channel.
         """
         self.filename = filename
-        self.has_scan = has_scan
         self.channels = dict()
+        self.nx = 0
+        self.ny = 0
+        self.next = 0
         if filename!=None:
             try:
                 hdulist = pyfits.open(self.filename,memmap=1)
@@ -266,10 +421,20 @@ class RawFile(object):
                         extname = hdulist[n].header["EXTNAME"]
                         exttype = hdulist[n].header["XTENSION"]
                         if exttype=='IMAGE':
+                            nx = hdulist[n].header["NAXIS1"]
+                            ny = hdulist[n].header["NAXIS2"]
+                            if self.nx == 0:
+                                self.nx = nx
+                                self.ny = ny
+                            if nx!=self.nx and ny!=self.ny:
+                                print 'format error: image extensions with different sizes'
+                                print
+                                return None
                             self.channels[extname] = None
                         n = n+1
                     except:
-                        break                    
+                        break
+                    self.next = n-1
                     hdulist.close()
             except IOError:
                 print 'IOError: file %s not found' % `filename`
@@ -282,9 +447,12 @@ class RawFile(object):
 
     def copy(self):
         """copies RawFile object in a new one and returns it"""
-        result = RawFile(self.filename,self.has_scan)
-        if result.filename==None:
+        result = RawFile(self.filename)
+        if result.filename == None:
             result.primary_header = pyfits.CardList(self.primary_header)
+            result.nx = self.nx
+            result.ny = self.ny
+            result.next = self.next
             for name,chan in self.channels.items():
                 if chan != None:
                     result.channels[name] = chan.copy()
@@ -295,66 +463,194 @@ class RawFile(object):
     def info(self):
         """prints information"""
         if self.filename != None:
-            hdulist = pyfits.open(self.filename,memmap=1)
-            print hdulist.info()
-            hdulist.close()
+            print self.filename
         else:
-            print 'No\tName\tType\tDim'
-            print '0\tPRIMARY\tcard\t()'
-            n = 1
-            for k,v in self.channels.items():
-                print "%i\t%s\tchannel\t(%i,%i)" % (n,k,v.get_nx(),v.get_ny())
-                n = n + 1
+            print 'NoName'
+        print 'Nb extensions:\t%i (loaded:%i)'% (self.next,len(self.channels))
+        print 'format:\t(%i,%i)'% (self.nx,self.ny)
 
-    def get_channel(self,extname, has_scan=True):
+    def get_channel(self,extname):
         """returns a Channel object
         
         Parameters
         ----------
         extname : string
         The extension name
-    
-        has_scan: boolean
-        Does the channel data contain over scanned pixels ?
         """
         if self.channels[extname] != None:
             return self.channels[extname]
         else:
-            chan = Channel(extname,self.filename,has_scan)
+            chan = Channel(extname,self.filename)
             return chan
+
+    def __len__(self):
+        """returns the number of extensions"""
+        return self.next
+
+    def __getitem__(self, key):
+        """loads the Channel object if relevant
+        and returns it
+
+        Parameters
+        ----------
+        key : integer
+        The extension number
+        """
+        extname = "CHAN%02d" %key
+        if self.channels[extname] == None:
+            self.channels[extname] = Channel(extname,self.filename)
+        return self.channels[extname]
+
+    def __setitem__(self,key,value):
+        """sets the corresponding channel with value
+
+        Parameters
+        ----------
+        key : integer
+        The extension number
+
+        value: Channel or array
+        Channel object or image
+        """
+        extname = "CHAN%02d" %key
+        if isinstance(value,Channel):
+            if value.nx == self.nx and value.ny == self.ny:
+                self.channels[extname] = value
+            else:
+                print 'format error: set an image extension with different sizes'
+                print
+                return None
+        elif isinstance(value,np.ndarray):
+            if np.shape(value) == (self.ny,self.nx):
+                chan = Channel(extname)
+                chan.data = value
+                chan.nx = self.nx
+                chan.ny = self.ny
+                self.channels[extname] = chan
+            else:
+                print 'format error: set an image extension with bad dimensions'
+                print
+                return None
+        else:
+            print 'format error: %s incompatible with an image extension' %type(value)
+            print
+            return None
+
 
     def __mul__(self,other):
         """multiplies either a number or a RawFits object"""
-        return self.mp_operator(other,'Channel.__mul__')
+        return self._mp_operator(other,'Channel.__mul__')
+
+    def __imul__(self,other):
+        """multiplies either a number or a RawFits object"""
+        return self._mp_operator(other,'Channel.__imul__')
 
     def __div__(self,other):
         """divides either a number or a RawFits object"""
-        return self.mp_operator(other,'Channel.__div__')
+        return self._mp_operator(other,'Channel.__div__')
+
+    def __idiv__(self,other):
+        """divides either a number or a RawFits object"""
+        return self._mp_operator(other,'Channel.__idiv__')
 
     def __sub__(self,other):
         """subtracts either a number or a RawFits object"""
-        return self.mp_operator(other,'Channel.__sub__')
+        return self._mp_operator(other,'Channel.__sub__')
+
+    def __isub__(self,other):
+        """subtracts either a number or a RawFits object"""
+        return self._mp_operator(other,'Channel.__isub__')
 
     def __add__(self,other):
         """adds either a number or a RawFits object"""
-        return self.mp_operator(other,'Channel.__add__')
+        return self._mp_operator(other,'Channel.__add__')
 
-    def mp_operator(self,other,funcname):
+    def __iadd__(self,other):
+        """adds either a number or a RawFits object"""
+        return self._mp_operator(other,'Channel.__iadd__')
+
+    def __pow__(self,other):
+        """computes the power exponent"""
+        return self._mp_operator(other,'Channel.__pow__')
+
+    def __ipow__(self,other):
+        """computes the power exponent"""
+        return self._mp_operator(other,'Channel.__ipow__')
+
+    def _mp_operator(self,other,funcname):
         #multiprocessing function
         cpu_count = multiprocessing.cpu_count()
         result = RawFile()
         result.primary_header = self.primary_header
+        result.nx = self.nx
+        result.ny = self.ny
+        result.next = self.next
         pool = multiprocessing.Pool(processes = cpu_count)
         processlist = list()
         if self.channels is not None:
             for k in self.channels.keys():
                 processlist.append([funcname,k,self,other])
             if isinstance(other,RawFile):
-                processresult = pool.map(process_operator,processlist)
+                processresult = pool.map(_process_operator,processlist)
             else:
-                processresult = pool.map(process_operator2,processlist)
+                processresult = pool.map(_process_operator2,processlist)
             for k,out in processresult:
                 result.channels[k] = out
+            sys.stdout.write('\r                        \n')
+        return result
+
+    def sqrt(self):
+        cpu_count = multiprocessing.cpu_count()
+        result = RawFile()
+        result.primary_header = self.primary_header
+        result.nx = self.nx
+        result.ny = self.ny
+        result.next = self.next
+        pool = multiprocessing.Pool(processes = cpu_count)
+        processlist = list()
+        if self.channels is not None:
+            for k in self.channels.keys():
+                processlist.append(['Channel.sqrt',k,self])
+            processresult = pool.map(_process_operator3,processlist)
+            for k,out in processresult:
+                result.channels[k] = out
+            sys.stdout.write('\r                        \n')
+        return result
+
+    def trimmed(self):
+        cpu_count = multiprocessing.cpu_count()
+        result = RawFile()
+        result.primary_header = self.primary_header
+        result.nx = self.nx
+        result.ny = self.ny
+        result.next = self.next
+        pool = multiprocessing.Pool(processes = cpu_count)
+        processlist = list()
+        if self.channels is not None:
+            for k in self.channels.keys():
+                processlist.append(['Channel.trimmed',k,self])
+            processresult = pool.map(_process_operator3,processlist)
+            for k,out in processresult:
+                result.channels[k] = out
+            sys.stdout.write('\r                        \n')
+        return result
+
+    def overscan(self):
+        cpu_count = multiprocessing.cpu_count()
+        result = RawFile()
+        result.primary_header = self.primary_header
+        result.nx = self.nx
+        result.ny = self.ny
+        result.next = self.next
+        pool = multiprocessing.Pool(processes = cpu_count)
+        processlist = list()
+        if self.channels is not None:
+            for k in self.channels.keys():
+                processlist.append(['Channel.overscan',k,self])
+            processresult = pool.map(_process_operator3,processlist)
+            for k,out in processresult:
+                result.channels[k] = out
+            sys.stdout.write('\r                        \n')
         return result
 
     def write(self,filename):
@@ -364,10 +660,6 @@ class RawFile(object):
         filename : string
         The FITS filename
         """
-        if self.has_scan == False:
-            print 'Error: can not write raw file without pre and over scans'
-            print
-            return None
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         if self.primary_header is not None:
@@ -385,7 +677,10 @@ class RawFile(object):
             for name in self.channels.keys():
                 chan = self.get_channel(name)
                 try:
-                    dhdu = pyfits.ImageHDU(name=name, data=chan.data)
+                    if isinstance(chan.data,np.ma.core.MaskedArray):
+                        dhdu = pyfits.ImageHDU(name=name, data=chan.data.data)
+                    else:
+                        dhdu = pyfits.ImageHDU(name=name, data=chan.data)
                     if chan.header is not None:
                         for card in chan.header:
                             try:
@@ -407,7 +702,7 @@ class RawFile(object):
             self.channels[name] = None
 
 
-def process_operator(arglist):
+def _process_operator(arglist):
     #decorator used to define arithmetic functions with a RawFits object
     function = STR_FUNCTIONS[arglist[0]]
     k = arglist[1]
@@ -421,9 +716,11 @@ def process_operator(arglist):
         print
         return
     out = function(v,v2)
+    sys.stdout.write(".")
+    sys.stdout.flush()
     return (k,out)
 
-def process_operator2(arglist):
+def _process_operator2(arglist):
     #decorator used to define arithmetic functions with a number
     function = STR_FUNCTIONS[arglist[0]]
     k = arglist[1]
@@ -431,4 +728,18 @@ def process_operator2(arglist):
     other = arglist[3]
     v = obj.get_channel(k)
     out = function(v,other)
+    sys.stdout.write(".")
+    sys.stdout.flush()
     return (k,out)
+
+def _process_operator3(arglist):
+    #decorator used to define sqrt/trimmed
+    function = STR_FUNCTIONS[arglist[0]]
+    k = arglist[1]
+    obj = arglist[2]
+    v = obj.get_channel(k)
+    out = function(v)
+    sys.stdout.write(".")
+    sys.stdout.flush()
+    return (k,out)
+
