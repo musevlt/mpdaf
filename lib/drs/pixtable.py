@@ -3,26 +3,96 @@
 import numpy as np
 import pyfits
 import datetime
+import tempfile
+import os
 
 class PixTable(object):
+    """PixTable class
+
+    This class manages input/output for MUSE pixel table files
+
+    Attributes
+    ----------
+    filename : string
+    The FITS file name. None if any.
+
+    primary_header: pyfits.CardList
+    The primary header
+
+    nrows: integer
+    Number of rows
+
+    ncols: interger
+    Number of columns
+
+    xpos: float array
+    name of memory-mapped files used for accessing pixel position on the x-axis (in deg)
+
+    ypos: float array
+    name of memory-mapped files used for accessing pixel position on the y-axis (in deg)
+
+    lbda: float array
+    name of memory-mapped files used for accessing wavelength value (in Angstrom)
+
+    data: float array
+    name of memory-mapped files used for accessing pixel values (in e-)
+
+    dq: integer array
+    name of memory-mapped files used for accessing bad pixel status as defined by Euro3D
+
+    stat: float array
+    name of memory-mapped files used for accessing variance
+
+    origin: integer array
+    name of memory-mapped files used for accessing an encoded value of IFU and slice number
+
+    Public methods
+    --------------
+    Creation: init, copy
+
+    Info: info
+
+    Save: write
+
+    Get: get_xpos, get_ypos, get_lambda, get_data, get_dq, get_stat, get_origin
+
+    Other: extract, origin2coords, get_slices
+    """
 
     def __init__(self, filename=None):
+        """creates a PixTable object
+
+        Parameters
+        ----------
+        filename : string
+        The FITS file name. None by default.
+
+        Notes
+        -----
+        filename=None creates an empty object
+
+        The FITS file is opened with memory mapping.
+        Just the primary header and table dimensions are loaded.
+        Methods get_xpos, get_ypos, get_lambda, get_data, get_dq
+        ,get_stat and get_origin must be used to get columns data.
+        """
         self.filename = filename
-        self.formats = dict()
-        self.units = dict()
-        self.data = dict()
         self.nrows = 0
         self.ncols = 0
+        self.xpos = None
+        self.ypos = None
+        self.lbda = None
+        self.data = None
+        self.dq = None
+        self.stat = None
+        self.origin = None
+
         if filename!=None:
             try:
                 hdulist = pyfits.open(self.filename,memmap=1)
                 self.primary_header = hdulist[0].header.ascardlist()
                 self.nrows = hdulist[1].header["NAXIS2"]
                 self.ncols = hdulist[1].header["TFIELDS"]
-                for col in hdulist[1].columns:
-                    #ptab.data[col.name] = f[1].data.field(col.name)
-                    self.units[col.name] = col.unit
-                    self.formats[col.name] = col.format
                 hdulist.close()
             except IOError:
                 print 'IOError: file %s not found' % `filename`
@@ -32,6 +102,23 @@ class PixTable(object):
         else:
             self.primary_header = pyfits.CardList()
 
+    def __del__(self):
+        """removes temporary files used for memory mapping"""
+        if self.xpos != None:
+            os.remove(self.xpos)
+        if self.ypos != None:
+            os.remove(self.ypos)
+        if self.lbda != None:
+            os.remove(self.lbda)
+        if self.data != None:
+            os.remove(self.data)
+        if self.dq != None:
+            os.remove(self.dq)
+        if self.stat != None:
+            os.remove(self.stat)
+        if self.origin != None:
+            os.remove(self.origin)
+
     def copy(self):
         """copies PixTable object in a new one and returns it"""
         result = PixTable()
@@ -40,13 +127,48 @@ class PixTable(object):
         result.nrows = self.nrows
         result.ncols = self.ncols
         result.primary_header = pyfits.CardList(self.primary_header)
-
-        for key,value in self.formats.items():
-            result.formats[key] = value
-        for key,value in self.units.items():
-            result.units[key] = value
-        for key,value in self.data.items():
-            result.data[key] = value.__copy__()
+        #xpos
+        (fd,result.xpos) = tempfile.mkstemp(prefix='mpdaf')
+        selfxpos=self.get_xpos()
+        xpos = np.memmap(result.xpos,dtype="float32",shape=(self.nrows))
+        xpos[:] = selfxpos[:]
+        del xpos, selfxpos
+        #ypos
+        (fd,result.ypos) = tempfile.mkstemp(prefix='mpdaf')
+        selfypos=self.get_ypos()
+        ypos = np.memmap(result.ypos,dtype="float32",shape=(self.nrows))
+        ypos[:] = selfypos[:]
+        del ypos, selfypos
+        #lambda
+        (fd,result.lbda) = tempfile.mkstemp(prefix='mpdaf')
+        selflbda=self.get_lambda()
+        lbda = np.memmap(result.lbda,dtype="float32",shape=(self.nrows))
+        lbda[:] = selflbda[:]
+        del lbda, selflbda
+        #data
+        (fd,result.data) = tempfile.mkstemp(prefix='mpdaf')
+        selfdata=self.get_data()
+        data = np.memmap(result.data,dtype="float32",shape=(self.nrows))
+        data[:] = selfdata[:]
+        del data, selfdata
+        #variance
+        (fd,result.stat) = tempfile.mkstemp(prefix='mpdaf')
+        selfstat=self.get_stat()
+        stat = np.memmap(result.stat,dtype="float32",shape=(self.nrows))
+        stat[:] = selfstat[:]
+        del stat, selfstat
+        # pixel quality
+        (fd,result.dq) = tempfile.mkstemp(prefix='mpdaf')
+        selfdq = self.get_dq()
+        dq = np.memmap(result.dq,dtype="int32",shape=(self.nrows))
+        dq[:] = selfdq[:]
+        del dq, selfdq
+        # origin
+        (fd,result.origin) = tempfile.mkstemp(prefix='mpdaf')
+        selforigin = self.get_origin()
+        origin = np.memmap(result.origin,dtype="int32",shape=(self.nrows))
+        origin[:] = selforigin[:]
+        del origin, selforigin
         return result
 
     def info(self):
@@ -60,19 +182,146 @@ class PixTable(object):
             print '0\tPRIMARY\tcard\t()'
             print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
 
-    def get_data(self):
-        """opens the FITS file with memory mapping, loads the data table and returns it"""
-        if len(self.data) != 0:
-            return self.data
+    def get_xpos(self):
+        """loads the xpos column and returns it"""
+        if self.xpos != None:
+            xpos = np.memmap(self.xpos,dtype="float32",shape=(self.nrows))
+            return xpos
         else:
-            hdulist = pyfits.open(self.filename,memmap=1)
-            data = dict()
-            for col in hdulist[1].columns:
-                data[col.name] = hdulist[1].data.field(col.name)
-            hdulist.close()
+            if self.filename == None:
+                print 'format error: empty XPOS column'
+                print
+                return None
+            else:
+                hdulist = pyfits.open(self.filename,memmap=1)
+                (fd,self.xpos) = tempfile.mkstemp(prefix='mpdaf')
+                data_xpos = hdulist[1].data.field('xpos')
+                xpos = np.memmap(self.xpos,dtype="float32",shape=(self.nrows))
+                xpos[:] = data_xpos[:]
+                hdulist.close()
+                return xpos
+
+    def get_ypos(self):
+        """loads the ypos column and returns it"""
+        if self.ypos != None:
+            ypos = np.memmap(self.ypos,dtype="float32",shape=(self.nrows))
+            return ypos
+        else:
+            if self.filename == None:
+                print 'format error: empty YPOS column'
+                print
+                return None
+            else:
+                hdulist = pyfits.open(self.filename,memmap=1)
+                (fd,self.ypos) = tempfile.mkstemp(prefix='mpdaf')
+                data_ypos = hdulist[1].data.field('ypos')
+                ypos = np.memmap(self.ypos,dtype="float32",shape=(self.nrows))
+                ypos[:] = data_ypos[:]
+                hdulist.close()
+                return ypos
+
+    def get_lambda(self):
+        """loads the lambda column and returns it"""
+        if self.lbda != None:
+            lbda = np.memmap(self.lbda,dtype="float32",shape=(self.nrows))
+            return lbda
+        else:
+            if self.filename == None:
+                print 'format error: empty YLAMBDA column'
+                print
+                return None
+            else:
+                hdulist = pyfits.open(self.filename,memmap=1)
+                (fd,self.lbda) = tempfile.mkstemp(prefix='mpdaf')
+                data_lbda = hdulist[1].data.field('lambda')
+                lbda = np.memmap(self.lbda,dtype="float32",shape=(self.nrows))
+                lbda[:] = data_lbda[:]
+                hdulist.close()
+                return lbda
+
+    def get_data(self):
+        """loads the data column and returns it"""
+        if self.data != None:
+            data = np.memmap(self.data,dtype="float32",shape=(self.nrows))
             return data
+        else:
+            if self.filename == None:
+                print 'format error: empty DATA column'
+                print
+                return None
+            else:
+                hdulist = pyfits.open(self.filename,memmap=1)
+                (fd,self.data) = tempfile.mkstemp(prefix='mpdaf')
+                data_data = hdulist[1].data.field('data')
+                data = np.memmap(self.data,dtype="float32",shape=(self.nrows))
+                data[:] = data_data[:]
+                hdulist.close()
+                return data
+
+    def get_stat(self):
+        """loads the stat column and returns it"""
+        if self.stat != None:
+            stat = np.memmap(self.stat,dtype="float32",shape=(self.nrows))
+            return stat
+        else:
+            if self.filename == None:
+                print 'format error: empty STAT column'
+                print
+                return None
+            else:
+                hdulist = pyfits.open(self.filename,memmap=1)
+                (fd,self.stat) = tempfile.mkstemp(prefix='mpdaf')
+                data_stat = hdulist[1].data.field('stat')
+                stat = np.memmap(self.stat,dtype="float32",shape=(self.nrows))
+                stat[:] = data_stat[:]
+                hdulist.close()
+                return stat
+
+    def get_dq(self):
+        """loads the dq column and returns it"""
+        if self.dq != None:
+            dq = np.memmap(self.dq,dtype="int32",shape=(self.nrows))
+            return dq
+        else:
+            if self.filename == None:
+                print 'format error: empty DQ column'
+                print
+                return None
+            else:
+                hdulist = pyfits.open(self.filename,memmap=1)
+                (fd,self.dq) = tempfile.mkstemp(prefix='mpdaf')
+                data_dq = hdulist[1].data.field('dq')
+                dq = np.memmap(self.dq,dtype="int32",shape=(self.nrows))
+                dq[:] = data_dq[:]
+                hdulist.close()
+                return dq
+
+    def get_origin(self):
+        """loads the origin column and returns it"""
+        if self.origin != None:
+            origin = np.memmap(self.origin,dtype="int32",shape=(self.nrows))
+            return origin
+        else:
+            if self.filename == None:
+                print 'format error: empty ORIGIN column'
+                print
+                return None
+            else:
+                hdulist = pyfits.open(self.filename,memmap=1)
+                (fd,self.origin) = tempfile.mkstemp(prefix='mpdaf')
+                data_origin = hdulist[1].data.field('origin')
+                origin = np.memmap(self.origin,dtype="int32",shape=(self.nrows))
+                origin[:] = data_origin[:]
+                hdulist.close()
+                return origin
 
     def write(self,filename):
+        """ saves the object in a FITS file
+        Parameters
+        ----------
+        filename : string
+        The FITS filename
+        """
         prihdu = pyfits.PrimaryHDU()
         if self.primary_header is not None:
             for card in self.primary_header:
@@ -85,65 +334,105 @@ class PixTable(object):
         prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
         prihdu.header.update('author', 'MPDAF', 'origin of the file')
         cols = []
-        data = self.get_data()
-        for key in data.keys():
-            cols.append(pyfits.Column(name=key, format=self.formats[key],
-                                      unit=self.units[key], array=data[key]))
+        cols.append(pyfits.Column(name='xpos', format='1E',unit='deg', array=self.get_xpos()))
+        cols.append(pyfits.Column(name='ypos', format='1E',unit='deg', array=self.get_ypos()))
+        cols.append(pyfits.Column(name='lambda', format='1E',unit='Angstrom', array=self.get_lambda()))
+        cols.append(pyfits.Column(name='data', format='1E',unit='count', array=self.get_data()))
+        cols.append(pyfits.Column(name='dq', format='1J',unit='None', array=self.get_dq()))
+        cols.append(pyfits.Column(name='stat', format='1E',unit='None', array=self.get_stat()))
+        cols.append(pyfits.Column(name='origin', format='1J',unit='count**2', array=self.get_origin()))
         coltab = pyfits.ColDefs(cols)
         tbhdu = pyfits.new_table(coltab)
         thdulist = pyfits.HDUList([prihdu, tbhdu])
         thdulist.writeto(filename, clobber=True)
         # update attributes
         self.filename = filename
-        self.data = dict()
 
     def extract(self, center, radius, lbda=None):
+        """ extracts a PixTable corresponding to pixels in the circle (center, radius)
+        and in the wavelength range lbda
+
+        Parameters
+        ----------
+        center: (float,float)
+        (x,y) center coordinate in deg
+
+        radius: float
+        radius in deg
+
+        lbda: (float,float)
+        (min, max) wavelength range in Angstrom
+        """
         x0,y0 = center
         ptab = PixTable()
         ptab.primary_header = pyfits.CardList(self.primary_header)
-        ptab.formats = self.formats
-        ptab.units = self.units
         ptab.ncols = self.ncols
 
-        if len(self.data) != 0:
-            #data in memory
-            if lbda is None:
-                ksel = np.where(((self.data['xpos']-x0)**2 + (self.data['ypos']-y0)**2)<radius**2)
-            else:
-                l1,l2 = lbda
-                ksel = np.where((((self.data['xpos']-x0)**2 + (self.data['ypos']-y0)**2)<radius**2) &
-                         (self.data['lambda']>l1) & (self.data['lambda']<l2))
-            npts = len(ksel[0])
-            if npts == 0:
-                raise ValueError, 'Empty selection'
-            ptab.nrows = npts
-            for key in self.data.keys():
-                ptab.data[key] = self.data[key][ksel]
-        else:
-            #open file with memory mapping
-            hdulist = pyfits.open(self.filename,memmap=1)
-            col_xpos = hdulist[1].data.field('xpos')
-            col_ypos = hdulist[1].data.field('ypos')
+        if self.nrows != 0:
+            col_xpos = self.get_xpos()
+            col_ypos = self.get_ypos()
             if lbda is None:
                 ksel = np.where(((col_xpos-x0)**2 + (col_ypos-y0)**2)<radius**2)
             else:
                 l1,l2 = lbda
-                col_lambda = hdulist[1].data.field('lambda')
+                col_lambda = self.get_lambda()
                 ksel = np.where((((col_xpos-x0)**2 + (col_ypos-y0)**2)<radius**2) &
                          (col_lambda>l1) & (col_lambda<l2))
                 del col_lambda
-            del col_xpos,col_ypos
             npts = len(ksel[0])
             if npts == 0:
                 raise ValueError, 'Empty selection'
             ptab.nrows = npts
-            for key in self.formats.keys():
-                ptab.data[key] = hdulist[1].data.field(key)[ksel]
-            hdulist.close()
+            #xpos
+            (fd,ptab.xpos) = tempfile.mkstemp(prefix='mpdaf')
+            xpos = np.memmap(ptab.xpos,dtype="float32",shape=(npts))
+            xpos[:] = col_xpos[ksel]
+            del xpos,col_xpos
+            #ypos
+            (fd,ptab.ypos) = tempfile.mkstemp(prefix='mpdaf')
+            ypos = np.memmap(ptab.ypos,dtype="float32",shape=(npts))
+            ypos[:] = col_ypos[ksel]
+            del ypos,col_ypos
+            #lambda
+            (fd,ptab.lbda) = tempfile.mkstemp(prefix='mpdaf')
+            lbda = np.memmap(ptab.lbda,dtype="float32",shape=(npts))
+            selflbda=self.get_lambda()
+            lbda[:] = selflbda[ksel]
+            del lbda,selflbda
+            #data
+            (fd,ptab.data) = tempfile.mkstemp(prefix='mpdaf')
+            selfdata=self.get_data()
+            data = np.memmap(ptab.data,dtype="float32",shape=(npts))
+            data[:] = selfdata[ksel]
+            del data,selfdata
+            #variance
+            (fd,ptab.stat) = tempfile.mkstemp(prefix='mpdaf')
+            selfstat=self.get_stat()
+            stat = np.memmap(ptab.stat,dtype="float32",shape=(npts))
+            stat[:] = selfstat[ksel]
+            del stat,selfstat
+            # pixel quality
+            (fd,ptab.dq) = tempfile.mkstemp(prefix='mpdaf')
+            selfdq = self.get_dq()
+            dq = np.memmap(ptab.dq,dtype="int32",shape=(npts))
+            dq[:] = selfdq[ksel]
+            # origin
+            (fd,ptab.origin) = tempfile.mkstemp(prefix='mpdaf')
+            selforigin = self.get_origin()
+            origin = np.memmap(ptab.origin,dtype="int32",shape=(npts))
+            origin[:] = selforigin[ksel]
+            del origin,selforigin
         return ptab
 
-    # Convert the origin value to (ifu, slice, y, x)
+
     def origin2coords(self, origin):
+        """ converts the origin value and returns (ifu, slice, y, x)
+
+        Parameters
+        ----------
+        origin: integer
+        origin value
+        """
         slice = origin & 0x3f
         ifu = (origin >> 6) & 0x1f
         y = ((origin >> 11) & 0x1fff) - 1
@@ -153,29 +442,15 @@ class PixTable(object):
         return (ifu, slice, y, x)
 
     def get_slices(self):
-        #returns slices dictionary
+        '''returns slices dictionary'''
         xpix = np.zeros(self.nrows, dtype='int')
         ypix = np.zeros(self.nrows, dtype='int')
         ifupix = np.zeros(self.nrows, dtype='int')
         slicepix = np.zeros(self.nrows, dtype='int')
 
-        col_origin = None
-        col_xpos = None
-        col_ypos = None
-
-        # get ifu,slice number and pixel coord
-        if len(self.data) != 0:
-            #data in memory
-            col_origin = self.data['origin']
-            col_xpos = self.data['xpos']
-            col_ypos =   self.data['ypos']
-        else:
-            #open file with memory mapping
-            hdulist = pyfits.open(self.filename,memmap=1)
-            col_origin = hdulist[1].data.field('origin')
-            col_xpos = hdulist[1].data.field('xpos')
-            col_ypos = hdulist[1].data.field('ypos')
-            hdulist.close()
+        col_origin = self.get_origin()
+        col_xpos = self.get_xpos()
+        col_ypos = self.get_ypos()
 
         for i,orig in enumerate(col_origin):
             ifupix[i],slicepix[i],ypix[i],xpix[i] = self.origin2coords(orig)
@@ -195,13 +470,9 @@ class PixTable(object):
             skypos.append((col_xpos[k].mean(), col_ypos[k].mean()))
         skypos = np.array(skypos)
 
-        #del working array
-        del col_origin, col_xpos, col_ypos
-
         slices = {'list':slicelist, 'skypos':skypos, 'ifupix':ifupix, 'slicepix':slicepix,
                        'xpix':xpix, 'ypix':ypix}
 
         print('%d slices found, stucture returned in slices dictionary '%(nslice))
 
         return slices
-
