@@ -285,7 +285,7 @@ class CalibFile(object):
         
     def __iadd__(self,other):
         """adds either a number or a CalibFile object"""
-        if self.filename != None:
+        if self.data == None:
             return self.__add__(other)
         else:
             if isinstance(other,CalibFile):
@@ -347,7 +347,7 @@ class CalibFile(object):
     
     def __isub__(self,other):
         """subtracts either a number or a CalibFile object"""
-        if self.filename != None:
+        if self.data == None:
             return self.__sub__(other)
         else:
             if isinstance(other,CalibFile):
@@ -402,7 +402,7 @@ class CalibFile(object):
     
     def __imul__(self,other):
         """multiplies by a number"""
-        if self.filename != None:
+        if self.data == None:
             return self.__mul__(other)
         else:
             if isinstance(other,CalibFile):
@@ -521,89 +521,96 @@ class CalibDir(object):
             return False   
         else:
             return True
-            
-    def __mul__(self,other):
-        """multiplies by a number"""
-        if isinstance(other,DirFile):
-            print 'unsupported operand type * and / for CalibFile'
-            print
-            return None
-        else:
-            return self._mp_operator(other,'CalibFile.__mul__')
-        
-    def __imul__(self,other):
-        """multiplies by a number"""
-        if isinstance(other,DirFile):
-            print 'unsupported operand type * and / for CalibFile'
-            print
-            return None
-        else:
-            return self._mp_operator(other,'CalibFile.__imul__')
-
-
-    def __div__(self,other):
-        """divides by a number"""
-        if isinstance(other,DirFile):
-            print 'unsupported operand type * and / for CalibFile'
-            print
-            return None
-        else:
-            return self._mp_operator(other,'CalibFile.__div__')
-        
-    def __idiv__(self,other):
-        """divides by a number"""
-        if isinstance(other,DirFile):
-            print 'unsupported operand type * and / for CalibFile'
-            print
-            return None
-        else:
-            return self._mp_operator(other,'CalibFile.__idiv__')
-
-
-    def __sub__(self,other):
-        """subtracts either a number or a CalibFile object"""
-        if self._check(other):
-            return self._mp_operator(other,'CalibFile.__sub__')
-        else:
-            return None
-        
-    def __isub__(self,other):
-        """subtracts either a number or a CalibFile object"""
-        if self._check(other):
-            return self._mp_operator(other,'CalibFile.__isub__')
-        else:
-            return None
-
 
     def __add__(self,other):
         """adds either a number or a CalibFile object"""
-        if self._check(other):
-            return self._mp_operator(other,'CalibFile.__add__')
-        else:
-            return None
-        
-    def __iadd__(self,other):
+        return self._mp_operator(other,_add_calib_files,_add_calib)
+    
+    def __sub__(self,other):
         """adds either a number or a CalibFile object"""
-        if self._check(other):
-            return self._mp_operator(other,'CalibFile.__iadd__')
-        else:
+        return self._mp_operator(other,_sub_calib_files,_sub_calib)
+    
+    def __mul__(self,other):
+        """multiplies by a number"""
+        if isinstance(other,CalibFile):
+            print 'unsupported operand type * and / for CalibFile'
+            print
             return None
-        
-    def _mp_operator(self,other,funcname):
-        #multiprocessing function
-        cpu_count = multiprocessing.cpu_count()
-        result = CalibDir(self.type)
-        pool = multiprocessing.Pool(processes = cpu_count)
-        processlist = list()
-        if isinstance(other,CalibDir):
-            for k in self.files.keys():
-                processlist.append([funcname,k,self.files[k],other.files[k]])
         else:
+             return self._mp_operator(other,None,_mul_calib)
+         
+    def __div__(self,other): 
+        """divides by a number"""
+        return self.__mul__(1./other)
+        
+    def _mp_operator(self,other,funcfile,funcnumber):
+        if isinstance(other,CalibDir):
+            if self._check(other):
+                cpu_count = multiprocessing.cpu_count()
+                result = CalibDir(self.type)
+                pool = multiprocessing.Pool(processes = cpu_count)
+                processlist = list()
+                for k in self.files.keys():
+                    processlist.append([k,self.files[k].nx,self.files[k].ny,self.files[k].filename,self.files[k].data,self.files[k].dq,self.files[k].stat,other.files[k].filename,other.files[k].data,other.files[k].dq,other.files[k].stat])
+                processresult = pool.map(funcfile,processlist)
+                for k,data,dq,stat in processresult:
+                    out = CalibFile()
+                    out.primary_header = pyfits.CardList(self.files[k].primary_header)
+                    out.nx = self.files[k].nx
+                    out.ny = self.files[k].ny
+                    #data
+                    (fd,out.data) = tempfile.mkstemp(prefix='mpdaf')
+                    rdata = np.memmap(out.data,dtype="float32",shape=(out.ny,out.nx))
+                    rdata[:] = data[:]
+                    #variance
+                    (fd,out.stat) = tempfile.mkstemp(prefix='mpdaf')
+                    rstat = np.memmap(out.stat,dtype="float32",shape=(out.ny,out.nx))
+                    if stat!= None:
+                        rstat[:] = stat[:]
+                    else:
+                        rstat[:] = self.files[k].get_stat()[:]
+                    # pixel quality
+                    (fd,out.dq) = tempfile.mkstemp(prefix='mpdaf')
+                    rdq = np.memmap(out.dq,dtype="int32",shape=(out.ny,out.nx))
+                    if dq!= None:
+                        rdq[:] = dq[:]  
+                    else:
+                        rdq[:] = self.files[k].get_dq()[:]
+                    result.files[k] = out
+            else:
+                return None
+        else:
+            cpu_count = multiprocessing.cpu_count()
+            result = CalibDir(self.type)
+            pool = multiprocessing.Pool(processes = cpu_count)
+            processlist = list()
             for k in self.files.keys():
-                processlist.append([funcname,k,self.files[k],other])
-        processresult = pool.map(_process_operator,processlist)
-        for k,out in processresult:
-            result.files[k] = out
+                processlist.append([k,self.files[k].nx,self.files[k].ny,self.files[k].filename,self.files[k].data,self.files[k].dq,self.files[k].stat,other])
+            processresult = pool.map(funcnumber,processlist)
+            for k,data,dq,stat in processresult:
+                out = CalibFile()
+                out.primary_header = pyfits.CardList(self.files[k].primary_header)
+                out.nx = self.files[k].nx
+                out.ny = self.files[k].ny
+                #data
+                (fd,out.data) = tempfile.mkstemp(prefix='mpdaf')
+                rdata = np.memmap(out.data,dtype="float32",shape=(out.ny,out.nx))
+                rdata[:] = data[:]
+                #variance
+                (fd,out.stat) = tempfile.mkstemp(prefix='mpdaf')
+                rstat = np.memmap(out.stat,dtype="float32",shape=(out.ny,out.nx))
+                if stat!= None:
+                    rstat[:] = stat[:]
+                else:
+                    rstat[:] = self.files[k].get_stat()[:]
+                # pixel quality
+                (fd,out.dq) = tempfile.mkstemp(prefix='mpdaf')
+                rdq = np.memmap(out.dq,dtype="int32",shape=(out.ny,out.nx))
+                if dq!= None:
+                    rdq[:] = dq[:]  
+                else:
+                    rdq[:] = self.files[k].get_dq()[:]
+                result.files[k] = out
         sys.stdout.write('\r                        \n')
         return result
     
@@ -652,14 +659,189 @@ class CalibDir(object):
             print 'format error: %s incompatible with CalibFile' %type(value)
             print
             return None
-    
-def _process_operator(arglist):
-    #decorator used to define arithmetic functions with a RawFits object
-    function = STR_FUNCTIONS[arglist[0]]
-    k = arglist[1]
-    f1 = arglist[2]
-    f2 = arglist[3]
-    out = function(f1,f2)
+        
+
+def _add_calib_files(arglist):
+    """adds CalibFile extensions"""
+    k = arglist[0]
+    nx = arglist[1]
+    ny = arglist[2]
+    filename1 = arglist[3]
+    filedata1 = arglist[4]
+    filedq1 = arglist[5]
+    filestat1 = arglist[6]
+    filename2 = arglist[7]
+    filedata2 = arglist[8]
+    filedq2 = arglist[9]
+    filestat2 = arglist[10]
+    if filename1 == None:
+        if filedata1 == None or filestat1 == None or filedq1 == None:
+            print 'format error: empty extension'
+            print
+            return None
+        else:
+            data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
+            stat1 = np.memmap(filestat1,dtype="float32",shape=(ny,nx))
+            dq1 = np.memmap(filedq1,dtype="int32",shape=(ny,nx))
+    else:
+        hdulist = pyfits.open(filename1,memmap=1)
+        data1 = hdulist["DATA"].data
+        stat1 = hdulist["STAT"].data
+        dq1 = hdulist["DQ"].data
+        hdulist.close()
+    if filename2 == None:
+        if filedata2 == None or filestat2 == None or filedq2 == None:
+            print 'format error: empty extension'
+            print
+            return None
+        else:
+            data2 = np.memmap(filedata2,dtype="float32",shape=(ny,nx))
+            stat2 = np.memmap(filestat2,dtype="float32",shape=(ny,nx))
+            dq2 = np.memmap(filedq2,dtype="int32",shape=(ny,nx))
+    else:
+        hdulist = pyfits.open(filename1,memmap=1)
+        data2 = hdulist["DATA"].data
+        stat2 = hdulist["STAT"].data
+        dq2 = hdulist["DQ"].data
+        hdulist.close()
+    #sum data values
+    newdata = np.ndarray.__add__(data1,data2) 
+    # sum variance
+    newstat = np.ndarray.__add__(stat1,stat2)
+    # pixel quality
+    newdq = np.logical_or(dq1,dq2)
     sys.stdout.write(".")
     sys.stdout.flush()
-    return (k,out)
+    return(k,newdata,newdq,newstat)
+
+def _add_calib(arglist):
+    """adds CalibFile extensions"""
+    k = arglist[0]
+    nx = arglist[1]
+    ny = arglist[2]
+    filename1 = arglist[3]
+    filedata1 = arglist[4]
+    other = arglist[7]
+    if filename1 == None:
+        if filedata1 == None:
+            print 'format error: empty extension'
+            print
+            return None
+        else:
+            data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
+    else:
+        hdulist = pyfits.open(filename1,memmap=1)
+        data1 = hdulist["DATA"].data
+        hdulist.close()
+    #sum data values
+    newdata = np.ndarray.__add__(data1,other) 
+    sys.stdout.write(".")
+    sys.stdout.flush()
+    return(k,newdata,None,None)
+
+def _sub_calib_files(arglist):
+    """subtracts CalibFile extensions"""
+    k = arglist[0]
+    nx = arglist[1]
+    ny = arglist[2]
+    filename1 = arglist[3]
+    filedata1 = arglist[4]
+    filedq1 = arglist[5]
+    filestat1 = arglist[6]
+    filename2 = arglist[7]
+    filedata2 = arglist[8]
+    filedq2 = arglist[9]
+    filestat2 = arglist[10]
+    if filename1 == None:
+        if filedata1 == None or filestat1 == None or filedq1 == None:
+            print 'format error: empty extension'
+            print
+            return None
+        else:
+            data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
+            stat1 = np.memmap(filestat1,dtype="float32",shape=(ny,nx))
+            dq1 = np.memmap(filedq1,dtype="int32",shape=(ny,nx))
+    else:
+        hdulist = pyfits.open(filename1,memmap=1)
+        data1 = hdulist["DATA"].data
+        stat1 = hdulist["STAT"].data
+        dq1 = hdulist["DQ"].data
+        hdulist.close()
+    if filename2 == None:
+        if filedata2 == None or filestat2 == None or filedq2 == None:
+            print 'format error: empty extension'
+            print
+            return None
+        else:
+            data2 = np.memmap(filedata2,dtype="float32",shape=(ny,nx))
+            stat2 = np.memmap(filestat2,dtype="float32",shape=(ny,nx))
+            dq2 = np.memmap(filedq2,dtype="int32",shape=(ny,nx))
+    else:
+        hdulist = pyfits.open(filename1,memmap=1)
+        data2 = hdulist["DATA"].data
+        stat2 = hdulist["STAT"].data
+        dq2 = hdulist["DQ"].data
+        hdulist.close()
+    #sum data values
+    newdata = np.ndarray.__sub__(data1,data2) 
+    # sum variance
+    newstat = np.ndarray.__add__(stat1,stat2)
+    # pixel quality
+    newdq = np.logical_or(dq1,dq2)
+    sys.stdout.write(".")
+    sys.stdout.flush()
+    return(k,newdata,newdq,newstat)
+
+def _sub_calib(arglist):
+    """subtracts CalibFile extensions"""
+    k = arglist[0]
+    nx = arglist[1]
+    ny = arglist[2]
+    filename1 = arglist[3]
+    filedata1 = arglist[4]
+    other = arglist[7]
+    if filename1 == None:
+        if filedata1 == None:
+            print 'format error: empty extension'
+            print
+            return None
+        else:
+            data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
+    else:
+        hdulist = pyfits.open(filename1,memmap=1)
+        data1 = hdulist["DATA"].data
+        hdulist.close()
+    #sum data values
+    newdata = np.ndarray.__sub__(data1,other) 
+    sys.stdout.write(".")
+    sys.stdout.flush()
+    return(k,newdata,None,None)
+
+def _mul_calib(arglist):
+    """subtracts CalibFile extensions"""
+    k = arglist[0]
+    nx = arglist[1]
+    ny = arglist[2]
+    filename1 = arglist[3]
+    filedata1 = arglist[4]
+    filestat1 = arglist[6]
+    other = arglist[7]
+    if filename1 == None:
+        if filedata1 == None or filestat1 == None:
+            print 'format error: empty extension'
+            print
+            return None
+        else:
+            data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
+            stat1 = np.memmap(filestat1,dtype="float32",shape=(ny,nx))
+    else:
+        hdulist = pyfits.open(filename1,memmap=1)
+        data1 = hdulist["DATA"].data
+        stat1 = hdulist["STAT"].data
+        hdulist.close()
+    #sum data values
+    newdata = np.ndarray.__mul__(data1,other) 
+    newstat = np.ndarray.__mul__(stat1,other*other)
+    sys.stdout.write(".")
+    sys.stdout.flush()
+    return(k,newdata,None,newstat)

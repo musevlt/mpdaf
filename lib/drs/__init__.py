@@ -54,6 +54,16 @@ Import the different submodules
 from rawobj import RawFile
 from rawobj import Channel
 from calibobj import CalibFile
+from calibobj import CalibDir
 from pixtable import PixTable
+
+#import os
+#import atexit
+
+#@atexit.register
+#def rm_mpdaffiles():
+#    cmd_rm= "rm /tmp/mpdaf*"
+#    os.system(cmd_rm)
+
 #__all__ = ['rawobj','calibobj']
 
