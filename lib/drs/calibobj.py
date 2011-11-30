@@ -456,6 +456,9 @@ class CalibDir(object):
     
     files : dict
     List of files (ifu id,CalibFile)
+    
+    progress: boolean
+    If True, progress of multiprocessing tasks are displayed. True by default.
 
     Public methods
     --------------
@@ -483,6 +486,7 @@ class CalibDir(object):
         This repository must contain files labeled <type>_<ifu id>.fits
         """
         self.dirname = dirname
+        self.progress = True
         self.type = type
         self.files = dict()
         if dirname != None:
@@ -496,7 +500,7 @@ class CalibDir(object):
                 
     def copy(self):
         """copies Calibdir object in a new one and returns it"""
-        result = CalibDir(self.dirname,self.type)
+        result = CalibDir(self.type,self.dirname)
         if self.dirname == None:
             for ifu,fileobj in self.files.items():
                 files[ifu] = fileobj.copy()
@@ -551,7 +555,7 @@ class CalibDir(object):
                 pool = multiprocessing.Pool(processes = cpu_count)
                 processlist = list()
                 for k in self.files.keys():
-                    processlist.append([k,self.files[k].nx,self.files[k].ny,self.files[k].filename,self.files[k].data,self.files[k].dq,self.files[k].stat,other.files[k].filename,other.files[k].data,other.files[k].dq,other.files[k].stat])
+                    processlist.append([k,self.files[k].nx,self.files[k].ny,self.files[k].filename,self.files[k].data,self.files[k].dq,self.files[k].stat,other.files[k].filename,other.files[k].data,other.files[k].dq,other.files[k].stat, self.progress])
                 processresult = pool.map(funcfile,processlist)
                 for k,data,dq,stat in processresult:
                     out = CalibFile()
@@ -585,7 +589,7 @@ class CalibDir(object):
             pool = multiprocessing.Pool(processes = cpu_count)
             processlist = list()
             for k in self.files.keys():
-                processlist.append([k,self.files[k].nx,self.files[k].ny,self.files[k].filename,self.files[k].data,self.files[k].dq,self.files[k].stat,other])
+                processlist.append([k,self.files[k].nx,self.files[k].ny,self.files[k].filename,self.files[k].data,self.files[k].dq,self.files[k].stat,other,self.progress])
             processresult = pool.map(funcnumber,processlist)
             for k,data,dq,stat in processresult:
                 out = CalibFile()
@@ -611,7 +615,8 @@ class CalibDir(object):
                 else:
                     rdq[:] = self.files[k].get_dq()[:]
                 result.files[k] = out
-        sys.stdout.write('\r                        \n')
+        if self.progress:
+            sys.stdout.write('\r                        \n')
         return result
     
     def write(self,dirname):
@@ -674,6 +679,7 @@ def _add_calib_files(arglist):
     filedata2 = arglist[8]
     filedq2 = arglist[9]
     filestat2 = arglist[10]
+    progress = arglist[11]
     if filename1 == None:
         if filedata1 == None or filestat1 == None or filedq1 == None:
             print 'format error: empty extension'
@@ -710,8 +716,9 @@ def _add_calib_files(arglist):
     newstat = np.ndarray.__add__(stat1,stat2)
     # pixel quality
     newdq = np.logical_or(dq1,dq2)
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    if progress:
+        sys.stdout.write(".")
+        sys.stdout.flush()
     return(k,newdata,newdq,newstat)
 
 def _add_calib(arglist):
@@ -722,6 +729,7 @@ def _add_calib(arglist):
     filename1 = arglist[3]
     filedata1 = arglist[4]
     other = arglist[7]
+    progress = arglist[8]
     if filename1 == None:
         if filedata1 == None:
             print 'format error: empty extension'
@@ -735,8 +743,9 @@ def _add_calib(arglist):
         hdulist.close()
     #sum data values
     newdata = np.ndarray.__add__(data1,other) 
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    if progress:
+        sys.stdout.write(".")
+        sys.stdout.flush()
     return(k,newdata,None,None)
 
 def _sub_calib_files(arglist):
@@ -752,6 +761,7 @@ def _sub_calib_files(arglist):
     filedata2 = arglist[8]
     filedq2 = arglist[9]
     filestat2 = arglist[10]
+    progress = arglist[11]
     if filename1 == None:
         if filedata1 == None or filestat1 == None or filedq1 == None:
             print 'format error: empty extension'
@@ -788,8 +798,9 @@ def _sub_calib_files(arglist):
     newstat = np.ndarray.__add__(stat1,stat2)
     # pixel quality
     newdq = np.logical_or(dq1,dq2)
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    if progress:
+        sys.stdout.write(".")
+        sys.stdout.flush()
     return(k,newdata,newdq,newstat)
 
 def _sub_calib(arglist):
@@ -800,6 +811,7 @@ def _sub_calib(arglist):
     filename1 = arglist[3]
     filedata1 = arglist[4]
     other = arglist[7]
+    progress = arglist[8]
     if filename1 == None:
         if filedata1 == None:
             print 'format error: empty extension'
@@ -813,8 +825,9 @@ def _sub_calib(arglist):
         hdulist.close()
     #sum data values
     newdata = np.ndarray.__sub__(data1,other) 
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    if progress:
+        sys.stdout.write(".")
+        sys.stdout.flush()
     return(k,newdata,None,None)
 
 def _mul_calib(arglist):
@@ -826,6 +839,7 @@ def _mul_calib(arglist):
     filedata1 = arglist[4]
     filestat1 = arglist[6]
     other = arglist[7]
+    progress = arglist[8]
     if filename1 == None:
         if filedata1 == None or filestat1 == None:
             print 'format error: empty extension'
@@ -842,6 +856,7 @@ def _mul_calib(arglist):
     #sum data values
     newdata = np.ndarray.__mul__(data1,other) 
     newstat = np.ndarray.__mul__(stat1,other*other)
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    if progress:
+        sys.stdout.write(".")
+        sys.stdout.flush()
     return(k,newdata,None,newstat)

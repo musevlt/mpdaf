@@ -363,6 +363,9 @@ class RawFile(object):
 
     next: interger
     Number of extensions
+    
+    progress: boolean
+    If True, progress of multiprocessing tasks are displayed. True by default.
 
     Methods
     -------
@@ -384,18 +387,6 @@ class RawFile(object):
         ----------   
         filename : string
         The raw FITS file name. None by default.
-    
-        channels: dict
-        List of extension (extname,Channel)
-
-        primary_header: pyfits.CardList
-        The primary header
-
-        nx,ny : integers
-        Lengths of data in X and Y
-
-        next: interger
-        Number of extensions
 
         Notes
         -----
@@ -407,6 +398,7 @@ class RawFile(object):
         Operator [extnumber] loads and returns the corresponding channel.
         """
         self.filename = filename
+        self.progress = True
         self.channels = dict()
         self.nx = 0
         self.ny = 0
@@ -589,14 +581,15 @@ class RawFile(object):
         processlist = list()
         if self.channels is not None:
             for k in self.channels.keys():
-                processlist.append([funcname,k,self,other])
+                processlist.append([funcname,k,self,other,self.progress])
             if isinstance(other,RawFile):
                 processresult = pool.map(_process_operator,processlist)
             else:
                 processresult = pool.map(_process_operator2,processlist)
             for k,out in processresult:
                 result.channels[k] = out
-            sys.stdout.write('\r                        \n')
+            if self.progress:
+                sys.stdout.write('\r                        \n')
         return result
 
     def sqrt(self):
@@ -610,11 +603,12 @@ class RawFile(object):
         processlist = list()
         if self.channels is not None:
             for k in self.channels.keys():
-                processlist.append(['Channel.sqrt',k,self])
+                processlist.append(['Channel.sqrt',k,self,self.progress])
             processresult = pool.map(_process_operator3,processlist)
             for k,out in processresult:
                 result.channels[k] = out
-            sys.stdout.write('\r                        \n')
+            if self.progress:
+                sys.stdout.write('\r                        \n')
         return result
 
     def trimmed(self):
@@ -628,11 +622,12 @@ class RawFile(object):
         processlist = list()
         if self.channels is not None:
             for k in self.channels.keys():
-                processlist.append(['Channel.trimmed',k,self])
+                processlist.append(['Channel.trimmed',k,self,self.progress])
             processresult = pool.map(_process_operator3,processlist)
             for k,out in processresult:
                 result.channels[k] = out
-            sys.stdout.write('\r                        \n')
+            if self.progress:
+                sys.stdout.write('\r                        \n')
         return result
 
     def overscan(self):
@@ -646,11 +641,12 @@ class RawFile(object):
         processlist = list()
         if self.channels is not None:
             for k in self.channels.keys():
-                processlist.append(['Channel.overscan',k,self])
+                processlist.append(['Channel.overscan',k,self,self.progress])
             processresult = pool.map(_process_operator3,processlist)
             for k,out in processresult:
                 result.channels[k] = out
-            sys.stdout.write('\r                        \n')
+            if self.progress:
+                sys.stdout.write('\r                        \n')
         return result
 
     def write(self,filename):
@@ -708,6 +704,7 @@ def _process_operator(arglist):
     k = arglist[1]
     obj = arglist[2]
     other = arglist[3]
+    progress = arglist[4]
     v = obj.get_channel(k)
     try:
         v2 = other.get_channel(k)
@@ -716,8 +713,9 @@ def _process_operator(arglist):
         print
         return
     out = function(v,v2)
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    if progress:
+        sys.stdout.write(".")
+        sys.stdout.flush()
     return (k,out)
 
 def _process_operator2(arglist):
@@ -726,10 +724,12 @@ def _process_operator2(arglist):
     k = arglist[1]
     obj = arglist[2]
     other = arglist[3]
+    progress = arglist[4]
     v = obj.get_channel(k)
     out = function(v,other)
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    if progress:
+        sys.stdout.write(".")
+        sys.stdout.flush()
     return (k,out)
 
 def _process_operator3(arglist):
@@ -737,9 +737,11 @@ def _process_operator3(arglist):
     function = STR_FUNCTIONS[arglist[0]]
     k = arglist[1]
     obj = arglist[2]
+    progress = arglist[3]
     v = obj.get_channel(k)
     out = function(v)
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    if progress:
+        sys.stdout.write(".")
+        sys.stdout.flush()
     return (k,out)
 

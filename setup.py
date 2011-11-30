@@ -33,7 +33,7 @@
 from distutils.core import setup, Command
 import setuptools
 
-class PyTest(Command):
+class UnitTest(Command):
     user_options = []
     def initialize_options(self):
         pass
@@ -41,7 +41,8 @@ class PyTest(Command):
         pass
     def run(self):
         import sys,subprocess
-        errno = subprocess.call([sys.executable, '/usr/bin/py.test'])
+        #errno = subprocess.call([sys.executable, 'python', 'tests/run_tests.py'])
+        errno = subprocess.call(['python', 'tests/run_tests.py'])
         raise SystemExit(errno)
 
 setup(name = 'mpdaf',
@@ -56,5 +57,5 @@ setup(name = 'mpdaf',
       maintainer = 'Laure Piqueras',
       maintainer_email = 'laure.piqueras@univ-lyon1.fr',
       platforms = 'any', 
-      cmdclass = {'test': PyTest},
+      cmdclass = {'test': UnitTest},
      )
