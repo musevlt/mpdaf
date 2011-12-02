@@ -123,8 +123,10 @@ class Channel(object):
         """copies Channel object in a new one and returns it"""
         result = Channel(self.extname,None)
         result.header = pyfits.CardList(self.header)
-        if self.data != None:
+        try:
             result.data = self.data.__copy__()
+        except:
+            result.data = None
         result.nx = self.nx
         result.ny = self.ny
         result.mask = self.mask.__copy__()
