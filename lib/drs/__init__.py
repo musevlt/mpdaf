@@ -46,7 +46,7 @@ DAMAGE.
 """
 __version__  = '1.0.0'
 __revision__ = '$Revision: 1.00 $'
-__date__     = '$Date: 2011/11/07 12:00 $'
+__date__     = '$Date: 2011/12/02 17:00 $'
 
 """
 Import the different submodules
