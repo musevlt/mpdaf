@@ -5,14 +5,14 @@ import pywcs
 import astropysics.coords
 
 def deg2sexa(x):
-    '''Transforms the values of n coordinates from degrees to sexagesimal.
+    """Transforms the values of n coordinates from degrees to sexagesimal.
     Returns an (n,2) array of x- and y- coordinates in sexagesimal (string)
 
     Parameters
     ----------
     x : float array
     An (n,2) array of x- and y- coordinates in degrees
-    '''
+    """
     x = np.array(x)
     if len(np.shape(x))==1 and np.shape(x)[0]==2:
         ra = deg2hms(x[0])
@@ -30,14 +30,14 @@ def deg2sexa(x):
 
 
 def sexa2deg(x):
-    '''Transforms the values of n coordinates from sexagesimal to degrees.
+    """Transforms the values of n coordinates from sexagesimal to degrees.
     Returns an (n,2) array of x- and y- coordinates in degrees.
 
     Parameters
     ----------
     x : string array
     An (n,2) array of x- and y- coordinates in sexagesimal
-    '''
+    """
     x = np.array(x)
     if len(np.shape(x))==1 and np.shape(x)[0]==2:
         ra = hms2deg(x[0])
@@ -54,29 +54,29 @@ def sexa2deg(x):
         raise ValueError, 'Operation forbidden'
 
 def deg2hms(x):
-    '''Transforms a degree value to a string representation of the coordinate as hours:minutes:seconds
-    '''
+    """Transforms a degree value to a string representation of the coordinate as hours:minutes:seconds
+    """
     ac = astropysics.coords.AngularCoordinate(x)
     hms = ac.getHmsStr(canonical=True)
     return hms
 
 def hms2deg(x):
-    '''Transforms a string representation of the coordinate as hours:minutes:seconds to a float degree value
-    '''
+    """Transforms a string representation of the coordinate as hours:minutes:seconds to a float degree value
+    """
     ac = astropysics.coords.AngularCoordinate(x,sghms=True)
     deg = ac.d
     return deg
 
 def deg2dms(x):
-    '''Transforms a degree value to a string representation of the coordinate as degrees:arcminutes:arcseconds
-    '''
+    """Transforms a degree value to a string representation of the coordinate as degrees:arcminutes:arcseconds
+    """
     ac = astropysics.coords.AngularCoordinate(x)
     dms = ac.getDmsStr(canonical=True)
     return dms
 
 def dms2deg(x):
-    '''Transforms a string representation of the coordinate as degrees:arcminutes:arcseconds to a float degree value
-    '''
+    """Transforms a string representation of the coordinate as degrees:arcminutes:arcseconds to a float degree value
+    """
     ac = astropysics.coords.AngularCoordinate(x)
     deg = ac.d
     return deg
@@ -96,20 +96,20 @@ class WCS(object):
 
     Coordinate transformation: sky2pix, pix2sky
 
-    Info: info
+    Info: info, isEqual
     """
-    def __init__(self,crpix=None,dim=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0,hdr=None):
+    def __init__(self,hdr=None,crpix=None,dim=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0):
         """creates a WCS object
 
         Parameters
         ----------
         crpix : float or (float,float)
         Reference pixel coordinates.
-        If  crpix=None, crpix = (dim+1)/2.0 and the reference point is the center of the image.
+        If crpix=None, crpix = (dim+1)/2.0 and the reference point is the center of the image.
         If crpix=None and dim=None, crpix = 1.5 and the reference point is the first pixel in the image.
         Note that for crpix definition, the first pixel in the image has pixel coordinates (1.0,1.0).
 
-        dim : float or (float,float)
+        dim : integer or (integer,integer)
         Lengths of the image in X and Y.
         Note that dim=(nx,ny) is not equal to the numpy data shape: np.shape(data)=(ny,nx)
 
@@ -125,7 +125,7 @@ class WCS(object):
         If True, world coordinates are in decimal degrees
 
         rot: float
-        Roatation angle in degree
+        Rotation angle in degree
 
         hdr : pyfits.CardList
         A FITS header.
@@ -197,19 +197,21 @@ class WCS(object):
                 self.wcs.naxis1 = dim[0]
                 self.wcs.naxis2 = dim[1]
 
-#            nx = 300
-#            ny = 300
-#            crpix1 = (nx + 1) / 2.0
-#            crpix2 = (ny + 1) / 2.0
-#            self.wcs.wcs.crpix = np.array([crpix1,crpix2])
-#            self.wcs.wcs.crval = np.array([0,0])
-#            self.wcs.wcs.cd = np.array([[0.2, 0], [0, 0.2]])
+    def copy(self):
+        """copies WCS object in a new one and returns it
+        """
+        out = WCS()
+        out.wcs = self.wcs.__copy__()
+        return out
 
     def info(self):
+        """prints information
+        """
         self.wcs.printwcs()
+        print 'CUNIT \t : %s %s'%(self.wcs.wcs.cunit[0],self.wcs.wcs.cunit[1])
 
     def sky2pix(self,x):
-        """Converts world coordinates to pixel coordinates
+        """converts world coordinates to pixel coordinates
         Returns an (n,2) array of x- and y- pixel coordinates
 
         Parameters
@@ -226,14 +228,14 @@ class WCS(object):
         return pixcrd
 
     def pix2sky(self,x):
-        '''Converts pixel coordinates to world coordinates
+        """converts pixel coordinates to world coordinates
         Returns an (n,2) array of x- and y- world coordinates
 
         Parameters
         ----------
         x : array
         An (n,2) array of x- and y- pixel coordinates
-        '''
+        """
         x = np.array(x,np.float_)
         if len(np.shape(x))==1 and np.shape(x)[0]==2:
             pixcrd = np.array([[x[0],x[1]]])
@@ -242,9 +244,128 @@ class WCS(object):
         pixsky = self.wcs.wcs_pix2sky(pixcrd,0)
         return pixsky
 
+    def isEqual(self,other):
+        """returns True if other and self have the same attributes
+        """
+        if isinstance(other,WCS):
+            if self.wcs.naxis1 == other.wcs.naxis1 and self.wcs.naxis2 == other.wcs.naxis2 and \
+               (self.wcs.wcs.crpix == other.wcs.wcs.crpix).all() and (self.wcs.wcs.crval == other.wcs.wcs.crval).all() and \
+               (self.wcs.wcs.cd == other.wcs.wcs.cd).all() :
+                return True
+            else:
+                return False
+        else:
+            return False
 
+class WaveCoord(object):
+    """WaveCoord class manages coordinates of spectrum
 
+    Attributes
+    ----------
+    dim : integer
+    Size of spectrum
 
+    crpix : float
+    Reference pixel coordinates.
+    Note that for crpix definition, the first pixel in the spectrum has pixel coordinates 1.0.
+    1.0 by default.
+
+    crval : float
+    Coordinates of the reference pixel (0.0 by default).
+
+    cdelt : float
+    Step in wavelength (1.0 by default).
+
+    cunit : string
+    Wavelength unit (Angstrom by default).
+
+    Public methods
+    --------------
+    Creation: init, copy
+
+    Coordinate transformation: [], pixel
+
+    Info: info, isEqual
+    """
+
+    def __init__(self, dim=101, crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom'):
+        """creates a WaveCoord object
+
+        Parameters
+        ----------
+        dim : integer
+        Size of spectrum
+
+        crpix : float
+        Reference pixel coordinates.
+        Note that for crpix definition, the first pixel in the spectrum has pixel coordinates 1.0.
+        1.0 by default.
+
+        crval : float
+        Coordinates of the reference pixel (0.0 by default).
+
+        cdelt : float
+        Step in wavelength (1.0 by default).
+
+        cunit : string
+        Wavelength unit (Angstrom by default).
+        """
+        self.dim = dim
+        self.crpix = crpix
+        self.cdelt = cdelt
+        self.crval = crval
+        self.cunit = cunit
+
+    def copy(self):
+        """copies WaveCoord object in a new one and returns it
+        """
+        out = WaveCoord()
+        out.dim = self.dim
+        out.crpix = self.crpix
+        out.cdelt = self.cdelt
+        out.crval = self.crval
+        out.cunit = self.cunit
+        return out
+
+    def info(self):
+        """prints information
+        """
+        print 'Wavelength coordinates'
+        print 'N:\t %i'%self.dim
+        print 'CRPIX:\t %d'%self.crpix
+        print 'CDELT:\t %d'%self.cdelt #CDELT3 our CD3_3
+        print 'CRVAL:\t %d'%self.crval
+        print 'CUNIT:\t %s'%self.cunit
+
+    def isEqual(self,other):
+        '''returns True if other and self have the same attributes
+        '''
+        if isinstance(other,WaveCoord):
+            if self.crpix == other.crpix and self.cdelt == other.cdelt and \
+               self.crval == other.crval and self.cunit == other.cunit and \
+               self.dim == other.dim :
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def __getitem__(self, pixel):
+        """ returns the coordinate(s) corresponding to pixel(s)
+        If [:] the full coordinate array is returned
+        """
+        pix = np.arange(self.dim,dtype=np.float)
+        lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
+        return lbda[pixel]
+
+    def pixel(self, lbda, nearest=False):
+        """ Returns the decimal pixel corresponding to the wavelength lbda
+        If nearest=True; returns the nearest integer pixel
+        """
+        pix = (lbda - self.crval)/self.cdelt + self.crpix - 1
+        if nearest:
+            return(int(pix+0.5))
+        return pix
 
 
 

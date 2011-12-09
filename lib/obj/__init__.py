@@ -46,4 +46,8 @@ __date__     = '$Date: 2011/12/02 17:00 $'
 """
 Import the different submodules
 """
-from image import Image
+from coords import WCS
+from coords import WaveCoord
+from objs import Spectrum
+from objs import Image
+from objs import Cube
