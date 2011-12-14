@@ -1,0 +1,6 @@
+[submodule "lib/fusion"]
+	path = lib/fusion
+	url = urania1.univ-lyon1.fr:/git/fusion.git
+[submodule "lib/quickViz"]
+	path = lib/quickViz
+	url = urania1.univ-lyon1.fr:/git/quickViz.git
