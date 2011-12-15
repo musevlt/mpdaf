@@ -40,7 +40,7 @@ class Spectrum(object):
     --------------
     Creation: init, copy
 
-    Selection: <, >, <=, >=
+    Selection: <, >, <=, >=, removeMask
 
     Arithmetic: + - * / pow
 
@@ -284,6 +284,14 @@ class Spectrum(object):
         result.maskinfo += " >%d"%item
         return result
 
+    def removeMask(self):
+        """removes the mask on the array
+        """
+        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
+            self.data = self.data.data
+            self.maskinfo = ""
+
+
     def __add__(self, other):
         """ adds other
 
@@ -302,10 +310,7 @@ class Spectrum(object):
         if type(other) is float or type(other) is int:
             #spectrum1 + number = spectrum2 (spectrum2[k]=spectrum1[k]+number)
             res = self.copy()
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__add__(self.data,other/np.double(self.fscale))
-            else:
-                res.data = np.ndarray.__add__(self.data,other/np.double(self.fscale))
+            res.data = self.data + (other/np.double(self.fscale))
             return res
         try:
             #spectrum1 + spectrum2 = spectrum3 (spectrum3[k]=spectrum1[k]+spectrum2[k])
@@ -324,12 +329,7 @@ class Spectrum(object):
                     else:
                         print 'Operation forbidden for spectra with different world coordinates'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__add__(self.data,other.data*np.double(other.fscale/self.fscale))
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__add__(other.data*np.double(other.fscale/self.fscale),self.data)
-                    else:
-                        res.data = np.ndarray.__add__(self.data,other.data*np.double(other.fscale/self.fscale))
+                    res.data = self.data + other.data*np.double(other.fscale/self.fscale)
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -365,10 +365,7 @@ class Spectrum(object):
         if type(other) is float or type(other) is int:
             #spectrum1 - number = spectrum2 (spectrum2[k]=spectrum1[k]-number)
             res = self.copy()
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__sub__(self.data,other/np.double(self.fscale))
-            else:
-                res.data = np.ndarray.__sub__(self.data,other/np.double(self.fscale))
+            res.data = self.data - (other/np.double(self.fscale))
             return res
         try:
             #spectrum1 + spectrum2 = spectrum3 (spectrum3[k]=spectrum1[k]-spectrum2[k])
@@ -387,12 +384,7 @@ class Spectrum(object):
                     else:
                         print 'Operation forbidden for spectra with different world coordinates'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__sub__(self.data,other.data*np.double(other.fscale/self.fscale))
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = -np.ma.MaskedArray.__sub__(other.data*np.double(other.fscale/self.fscale),self.data)
-                    else:
-                        res.data = np.ndarray.__sub__(self.data,other.data*np.double(other.fscale/self.fscale))
+                    res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -415,12 +407,7 @@ class Spectrum(object):
                         else:
                             print 'Operation forbidden for spectra with different world coordinates'
                             return None
-                        if isinstance(self.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__sub__(self.data[:,np.newaxis,np.newaxis],other.data*np.double(other.fscale/self.fscale))
-                        elif isinstance(other.data,np.ma.core.MaskedArray):
-                            res.data = -np.ma.MaskedArray.__sub__(other.data*np.double(other.fscale/self.fscale),self.data[:,np.newaxis,np.newaxis])
-                        else:
-                            res.data = np.ndarray.__sub__(self.data[:,np.newaxis,np.newaxis],other.data*np.double(other.fscale/self.fscale))
+                        res.data = self.data[:,np.newaxis,np.newaxis] - (other.data*np.double(other.fscale/self.fscale))
                         if self.unit == other.unit:
                             res.unit = self.unit
                         res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -471,12 +458,7 @@ class Spectrum(object):
                     else:
                         print 'Operation forbidden for spectra with different world coordinates'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__mul__(self.data,other.data)
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__mul__(other.data,self.data)
-                    else:
-                        res.data = np.ndarray.__mul__(self.data,other.data)
+                    res.data = self.data * other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -502,6 +484,8 @@ class Spectrum(object):
         spectrum / cube1 = cube2 (cube2[k,j,i]=spectrum[k]/cube1[k,j,i])
         The last dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
+
+        Note : divide functions that have a validity domain returns the masked constant whenever the input is masked or falls outside the validity domain.
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -529,12 +513,7 @@ class Spectrum(object):
                     else:
                         print 'Operation forbidden for spectra with different world coordinates'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__div__(self.data,other.data)
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = 1.0 / np.ma.MaskedArray.__div__(other.data,self.data)
-                    else:
-                        res.data = np.ndarray.__div__(self.data,other.data)
+                    res.data = self.data / other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -557,12 +536,7 @@ class Spectrum(object):
                         else:
                             print 'Operation forbidden for spectra with different world coordinates'
                             return None
-                        if isinstance(self.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__div__(self.data[:,np.newaxis,np.newaxis],other.data)
-                        elif isinstance(other.data,np.ma.core.MaskedArray):
-                            res.data = 1.0 / np.ma.MaskedArray.__div__(other.data,self.data[:,np.newaxis,np.newaxis])
-                        else:
-                            res.data = np.ndarray.__div__(self.data[:,np.newaxis,np.newaxis],other.data)
+                        res.data = self.data[:,np.newaxis,np.newaxis] / other.data
                         if self.unit == other.unit:
                             res.unit = self.unit
                         res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -577,10 +551,7 @@ class Spectrum(object):
             raise ValueError, 'empty data array'
         res = self.copy()
         if type(other) is float or type(other) is int:
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__pow__(self.data,other)
-            else:
-                res.data = np.ndarray.__pow__(self.data,other)
+            res.data = self.data**other
             res.fscale = res.fscale**other
             res.var = None
         else:
@@ -855,6 +826,13 @@ class Image(object):
         result.maskinfo += " >%d"%item
         return result
 
+    def removeMask(self):
+        """removes the mask on the array
+        """
+        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
+            self.data = self.data.data
+            self.maskinfo = ""
+
     def __add__(self, other):
         """ adds other
 
@@ -873,10 +851,7 @@ class Image(object):
         if type(other) is float or type(other) is int:
             #image1 + number = image2 (image2[j,i]=image1[j,i]+number)
             res = self.copy()
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__add__(self.data,other/np.double(self.fscale))
-            else:
-                res.data = np.ndarray.__add__(self.data,other/np.double(self.fscale))
+            res.data = self.data + (other/np.double(self.fscale))
             return res
         try:
             #image1 + image2 = image3 (image3[j,i]=image1[j,i]+image2[j,i])
@@ -895,12 +870,7 @@ class Image(object):
                     else:
                         print 'Operation forbidden for images with different world coordinates'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__add__(self.data,other.data*np.double(other.fscale/self.fscale))
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__add__(other.data*np.double(other.fscale/self.fscale),self.data)
-                    else:
-                        res.data = np.ndarray.__add__(self.data,other.data*np.double(other.fscale/self.fscale))
+                    res.data = self.data + (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -936,10 +906,7 @@ class Image(object):
         if type(other) is float or type(other) is int:
             #image1 - number = image2 (image2[j,i]=image1[j,i]-number)
             res = self.copy()
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__sub__(self.data,other/np.double(self.fscale))
-            else:
-                res.data = np.ndarray.__sub__(self.data,other/np.double(self.fscale))
+            res.data = self.data - (other/np.double(self.fscale))
             return res
         try:
             #image1 - image2 = image3 (image3[j,i]=image1[j,i]-image2[j,i])
@@ -958,12 +925,7 @@ class Image(object):
                     else:
                         print 'Operation forbidden for images with different world coordinates'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__sub__(self.data,other.data*np.double(other.fscale/self.fscale))
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = -np.ma.MaskedArray.__sub__(other.data*np.double(other.fscale/self.fscale),self.data)
-                    else:
-                        res.data = np.ndarray.__sub__(self.data,other.data*np.double(other.fscale/self.fscale))
+                    res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -986,12 +948,7 @@ class Image(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
-                        if isinstance(self.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__sub__(self.data[np.newaxis,:,:],other.data*np.double(other.fscale/self.fscale))
-                        elif isinstance(other.data,np.ma.core.MaskedArray):
-                            res.data = -np.ma.MaskedArray.__sub__(other.data*np.double(other.fscale/self.fscale),self.data[np.newaxis,:,:])
-                        else:
-                            res.data = np.ndarray.__sub__(self.data[np.newaxis,:,:],other.data*np.double(other.fscale/self.fscale))
+                        res.data = self.data[np.newaxis,:,:] - (other.data*np.double(other.fscale/self.fscale))
                         if self.unit == other.unit:
                             res.unit = self.unit
                         res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1042,12 +999,7 @@ class Image(object):
                     else:
                         print 'Operation forbidden for images with different world coordinates'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__mul__(self.data,other.data)
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__mul__(other.data,self.data)
-                    else:
-                        res.data = np.ndarray.__mul__(self.data,other.data)
+                    res.data = self.data * other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1070,12 +1022,7 @@ class Image(object):
                         else:
                             dim = (self.dim[0],self.dim[1],other.dim)
                             res = Cube(empty=True ,dim=dim , wave= other.wave, wcs = self.wcs, fscale=self.fscale * other.fscale)
-                            if isinstance(self.data,np.ma.core.MaskedArray):
-                                res.data = np.ma.MaskedArray.__mul__(self.data[np.newaxis,:,:],other.data[:,np.newaxis,np.newaxis])
-                            elif isinstance(other.data,np.ma.core.MaskedArray):
-                                res.data = np.ma.MaskedArray.__mul__(other.data[:,np.newaxis,np.newaxis],self.data[np.newaxis,:,:])
-                            else:
-                                res.data = np.ndarray.__mul__(self.data[np.newaxis,:,:],other.data[:,np.newaxis,np.newaxis])
+                            res.data = self.data[np.newaxis,:,:] * other.data[:,np.newaxis,np.newaxis]
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1124,12 +1071,7 @@ class Image(object):
                     else:
                         print 'Operation forbidden for images with different world coordinates'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__div__(self.data,other.data)
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = 1.0/ np.ma.MaskedArray.__div__(other.data,self.data)
-                    else:
-                        res.data = np.ndarray.__div__(self.data,other.data)
+                    res.data = self.data / other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1150,12 +1092,7 @@ class Image(object):
                             res.wcs = self.wcs
                         else:
                             raise ValueError, 'Operation forbidden for objects with different world coordinates'
-                        if isinstance(self.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__div__(self.data[np.newaxis,:,:],other.data)
-                        elif isinstance(other.data,np.ma.core.MaskedArray):
-                            res.data = 1.0/ np.ma.MaskedArray.__div__(other.data,self.data[np.newaxis,:,:])
-                        else:
-                            res.data = np.ndarray.__div__(self.data[np.newaxis,:,:],other.data)
+                        res.data = self.data[np.newaxis,:,:] / other.data
                         if self.unit == other.unit:
                             res.unit = self.unit
                         res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1171,10 +1108,7 @@ class Image(object):
             raise ValueError, 'empty data array'
         res = self.copy()
         if type(other) is float or type(other) is int:
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__pow__(self.data,other)
-            else:
-                res.data = np.ndarray.__pow__(self.data,other)
+            res.data = self.data**other
             res.fscale = res.fscale**other
             res.var = None
         else:
@@ -1492,6 +1426,13 @@ class Cube(object):
         result.maskinfo += " >%d"%item
         return result
 
+    def removeMask(self):
+        """removes the mask on the array
+        """
+        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
+            self.data = self.data.data
+            self.maskinfo = ""
+
     def __add__(self, other):
         """ adds other
 
@@ -1514,10 +1455,7 @@ class Cube(object):
         if type(other) is float or type(other) is int:
             # cube + number = cube (add pixel per pixel)
             res = self.copy()
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__add__(self.data,other/np.double(self.fscale))
-            else:
-                res.data = np.ndarray.__add__(self.data,other/np.double(self.fscale))
+            res.data = self.data + (other/np.double(self.fscale))
             return res
         try:
             # cube1 + cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]+cube2[k,j,i])
@@ -1544,12 +1482,7 @@ class Cube(object):
                     else:
                         print 'Operation forbidden for cubes with different world coordinates in spatial directions'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__add__(self.data,other.data*np.double(other.fscale/self.fscale))
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__add__(other.data*np.double(other.fscale/self.fscale),self.data)
-                    else:
-                        res.data = np.ndarray.__add__(self.data,other.data*np.double(other.fscale/self.fscale))
+                    res.data = self.data + (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1572,12 +1505,7 @@ class Cube(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
-                        if isinstance(self.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__add__(self.data,other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
-                        elif isinstance(other.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__add__(other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale),self.data)
-                        else:
-                            res.data = np.ndarray.__add__(self.data,other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
+                        res.data = self.data + (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
                         if self.unit == other.unit:
                             res.unit = self.unit
                         res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1600,12 +1528,7 @@ class Cube(object):
                             else:
                                 print 'Operation forbidden for spectra with different world coordinates'
                                 return None
-                            if isinstance(self.data,np.ma.core.MaskedArray):
-                                res.data = np.ma.MaskedArray.__add__(self.data,other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
-                            elif isinstance(other.data,np.ma.core.MaskedArray):
-                                res.data = np.ma.MaskedArray.__add__(other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale),self.data)
-                            else:
-                                res.data = np.ndarray.__add__(self.data,other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
+                            res.data = self.data + (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1637,10 +1560,7 @@ class Cube(object):
         if type(other) is float or type(other) is int:
             #cube1 - number = cube2 (cube2[k,j,i]=cube1[k,j,i]-number)
             res = self.copy()
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__sub__(self.data,other/np.double(self.fscale))
-            else:
-                res.data = np.ndarray.__sub__(self.data,other/np.double(self.fscale))
+            res.data = self.data - (other/np.double(self.fscale))
             return res
         try:
             #cube1 - cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]-cube2[k,j,i])
@@ -1667,12 +1587,7 @@ class Cube(object):
                     else:
                         print 'Operation forbidden for cubes with different world coordinates in spatial directions'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__sub__(self.data,other.data*np.double(other.fscale/self.fscale))
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = -np.ma.MaskedArray.__sub__(other.data*np.double(other.fscale/self.fscale),self.data)
-                    else:
-                        res.data = np.ndarray.__sub__(self.data,other.data*np.double(other.fscale/self.fscale))
+                    res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1695,12 +1610,7 @@ class Cube(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
-                        if isinstance(self.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__sub__(self.data,other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
-                        elif isinstance(other.data,np.ma.core.MaskedArray):
-                            res.data = -np.ma.MaskedArray.__sub__(other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale),self.data)
-                        else:
-                            res.data = np.ndarray.__sub__(self.data,other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
+                        res.data = self.data - (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
                         if self.unit == other.unit:
                             res.unit = self.unit
                         res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1723,12 +1633,7 @@ class Cube(object):
                             else:
                                 print 'Operation forbidden for spectra with different world coordinates'
                                 return None
-                            if isinstance(self.data,np.ma.core.MaskedArray):
-                                res.data = np.ma.MaskedArray.__sub__(self.data,other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
-                            elif isinstance(other.data,np.ma.core.MaskedArray):
-                                res.data = -np.ma.MaskedArray.__sub__(other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale),self.data)
-                            else:
-                                res.data = np.ndarray.__sub__(self.data,other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
+                            res.data = self.data - (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1789,12 +1694,7 @@ class Cube(object):
                     else:
                         print 'Operation forbidden for cubes with different world coordinates in spatial directions'
                         return None
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__mul__(self.data,other.data)
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__mul__(other.data,self.data)
-                    else:
-                        res.data = np.ndarray.__mul__(self.data,other.data)
+                    res.data = self.data * other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1817,12 +1717,7 @@ class Cube(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
-                        if isinstance(self.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__mul__(self.data,other.data[np.newaxis,:,:])
-                        elif isinstance(other.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__mul__(other.data[np.newaxis,:,:],self.data)
-                        else:
-                            res.data = np.ndarray.__mul__(self.data,other.data[np.newaxis,:,:])
+                        res.data = self.data * other.data[np.newaxis,:,:]
                         if self.unit == other.unit:
                             res.unit = self.unit
                         res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1845,12 +1740,7 @@ class Cube(object):
                             else:
                                 print 'Operation forbidden for spectra with different world coordinates'
                                 return None
-                            if isinstance(self.data,np.ma.core.MaskedArray):
-                                res.data = np.ma.MaskedArray.__mul__(self.data,other.data[:,np.newaxis,np.newaxis])
-                            elif isinstance(other.data,np.ma.core.MaskedArray):
-                                res.data = np.ma.MaskedArray.__mul__(other.data[:,np.newaxis,np.newaxis],self.data)
-                            else:
-                                res.data = np.ndarray.__mul__(self.data,other.data[:,np.newaxis,np.newaxis])
+                            res.data = self.data * other.data[:,np.newaxis,np.newaxis]
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1910,12 +1800,7 @@ class Cube(object):
                         res.wcs = self.wcs
                     else:
                         raise ValueError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
-                    if isinstance(self.data,np.ma.core.MaskedArray):
-                        res.data = np.ma.MaskedArray.__div__(self.data,other.data)
-                    elif isinstance(other.data,np.ma.core.MaskedArray):
-                        res.data = 1.0/ np.ma.MaskedArray.__div__(other.data,self.data)
-                    else:
-                        res.data = np.ndarray.__div__(self.data,other.data)
+                    res.data = self.data / other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
                     res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1938,12 +1823,7 @@ class Cube(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
-                        if isinstance(self.data,np.ma.core.MaskedArray):
-                            res.data = np.ma.MaskedArray.__div__(self.data,other.data[np.newaxis,:,:])
-                        elif isinstance(other.data,np.ma.core.MaskedArray):
-                            res.data = 1.0/ np.ma.MaskedArray.__div__(other.data[np.newaxis,:,:],self.data)
-                        else:
-                            res.data = np.ndarray.__div__(self.data,other.data[np.newaxis,:,:])
+                        res.data = self.data / other.data[np.newaxis,:,:]
                         if self.unit == other.unit:
                             res.unit = self.unit
                         res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1966,12 +1846,7 @@ class Cube(object):
                             else:
                                 print 'Operation forbidden for spectra with different world coordinates'
                                 return None
-                            if isinstance(self.data,np.ma.core.MaskedArray):
-                                res.data = np.ma.MaskedArray.__div__(self.data,other.data[:,np.newaxis,np.newaxis])
-                            elif isinstance(other.data,np.ma.core.MaskedArray):
-                                res.data = 1.0 / np.ma.MaskedArray.__div__(other.data[:,np.newaxis,np.newaxis],self.data)
-                            else:
-                                res.data = np.ndarray.__div__(self.data,other.data[:,np.newaxis,np.newaxis])
+                            res.data = self.data / other.data[:,np.newaxis,np.newaxis]
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
@@ -1986,10 +1861,7 @@ class Cube(object):
             raise ValueError, 'empty data array'
         res = self.copy()
         if type(other) is float or type(other) is int:
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                res.data = np.ma.MaskedArray.__pow__(self.data,other)
-            else:
-                res.data = np.ndarray.__pow__(self.data,other)
+            res.data = self.data**other
             res.fscale = res.fscale**other
             res.var = None
         else:
