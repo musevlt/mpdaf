@@ -5,12 +5,12 @@ import sys
 import numpy
 import unittest
 
-import drs.rawobj as rawobj
+from drs import RawFile
 
 class TestRawObj(unittest.TestCase):
     
     def setUp(self):
-        self.raw = rawobj.RawFile("data/drs/raw.fits")
+        self.raw = RawFile("data/drs/raw.fits")
         self.raw.progress = False
         
     def tearDown(self):

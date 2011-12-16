@@ -5,12 +5,13 @@ import sys
 import numpy
 import unittest
 
-import drs.calibobj as calibobj
+from drs import CalibDir
+from drs import CalibFile
 
 class TestCalibObj(unittest.TestCase):
     
     def setUp(self):
-        self.flat = calibobj.CalibDir("MASTER_FLAT","data/drs/masterflat")
+        self.flat = CalibDir("MASTER_FLAT","data/drs/masterflat")
         self.flat.progress = False
         
     def tearDown(self):
@@ -42,7 +43,7 @@ class TestCalibObj(unittest.TestCase):
     #    value_data1 = self.flat[1].get_data()[32,28]
     #    value_dq1 = self.flat[1].get_dq()[32,28]
     #    value_stat1 = self.flat[1].get_stat()[32,28]
-    #    flat2 = calibobj.CalibFile("tmp.fits")
+    #    flat2 = CalibFile("tmp.fits")
     #    value_data2 = flat2.get_data()[32,28]
     #    value_dq2 = flat2.get_dq()[32,28]
     #    value_stat2 = flat2.get_stat()[32,28]
