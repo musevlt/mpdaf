@@ -11,16 +11,15 @@ from obj import Cube
 from obj import WCS
 from obj import WaveCoord
 
-
 class TestObj(unittest.TestCase):
 
     def setUp(self):
         wcs = WCS(dim=(5,6))
         wave = WaveCoord(dim = 10)
-        self.cube1 = Cube(dim=(5,6,10),data=np.ones(shape=(10,6,5)),wave=wave,wcs=wcs,fscale= 2.3)
+        self.cube1 = Cube(shape=(10,6,5),data=np.ones(shape=(10,6,5)),wave=wave,wcs=wcs,fscale= 2.3)
         data = np.ones(shape=(6,5))*2
-        self.image1 = Image(dim=(5,6),data=data,wcs=wcs)
-        self.spectrum1 = Spectrum(dim=10, data=np.array([0.5,1,2,3,4,5,6,7,8,9]),wave=wave)
+        self.image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        self.spectrum1 = Spectrum(shape=10, data=np.array([0.5,1,2,3,4,5,6,7,8,9]),wave=wave)
 
     def tearDown(self):
         del self.cube1
@@ -218,6 +217,35 @@ class TestObj(unittest.TestCase):
             for j in range(6):
                 for i in range(5):
                     self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,(self.cube1.data[k,j,i]*self.cube1.fscale) / (self.image1.data[j,i]*self.image1.fscale))
+
+    def test_get_Cube(self):
+        """tests Cube[]"""
+        a = self.cube1[2,:,:]
+        self.assertEqual(a.shape[0],6)
+        self.assertEqual(a.shape[1],5)
+        a = self.cube1[:,2,3]
+        self.assertEqual(a.shape,10)
+        a = self.cube1[1:7,0:2,0:3]
+        self.assertEqual(a.shape[0],6)
+        self.assertEqual(a.shape[1],2)
+        self.assertEqual(a.shape[2],3)
+        a = self.cube1.get_lambda(1.2,5.6)
+        self.assertEqual(a.shape[0],5)
+        self.assertEqual(a.shape[1],6)
+        self.assertEqual(a.shape[2],5)
+
+    def test_get_Image(self):
+        """tests Image[]"""
+        a = self.image1[0:2,0:3]
+        self.assertEqual(a.shape[0],2)
+        self.assertEqual(a.shape[1],3)
+
+    def test_get_Spectrum(self):
+        """tests Spectrum[]"""
+        a = self.spectrum1[1:7]
+        self.assertEqual(a.shape,6)
+        a = self.spectrum1.get_lambda(1.2,5.6)
+        self.assertEqual(a.shape,5)
 
 if __name__=='__main__':
     unittest.main()

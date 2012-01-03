@@ -143,27 +143,27 @@ class WCS(object):
             self.wcs = pywcs.WCS(hdr)  # WCS object from data header
         else:
             #check attribute dimensions
-            if len(crval) == 1:
+            if isinstance(crval,int) or isinstance(crval,float):
                 crval = (crval,crval)
             elif len(crval) == 2:
                 pass
             else:
                 raise ValueError, 'crval with dimension > 2'
-            if len(cdelt) == 1:
+            if isinstance(cdelt,int) or isinstance(cdelt,float):
                 cdelt = (cdelt,cdelt)
             elif len(cdelt) == 2:
                 pass
             else:
                 raise ValueError, 'cdelt with dimension > 2'
             if crpix!=None:
-                if len(crpix) == 1:
+                if isinstance(crpix,int) or isinstance(crpix,float):
                     crpix = (crpix,crpix)
                 elif len(crpix) == 2:
                     pass
                 else:
                     raise ValueError, 'crpix with dimension > 2'
             if dim!=None:
-                if len(dim) == 1:
+                if isinstance(dim,int):
                     dim = (dim,dim)
                 elif len(dim) == 2:
                     pass
@@ -257,6 +257,60 @@ class WCS(object):
         else:
             return False
 
+    def __getitem__(self, item):
+        """ returns the corresponding WCS
+        """
+        if isinstance(item,tuple) and len(item)==2:
+            try:
+                if item[0].start is None:
+                    imin = 0
+                else:
+                    imin = item[0].start
+                    if imin < 0:
+                        imin = 0
+                    if imin > self.wcs.naxis1 :
+                        imin = self.wcs.naxis1
+                if item[0].stop is None:
+                    imax = self.wcs.naxis1
+                else:
+                    imax = item[0].stop
+                    if imax < 0:
+                        imax = 0
+                    if imax > self.wcs.naxis1 :
+                        imax = self.wcs.naxis1
+            except:
+                imin = item[0]
+                imax = item[0] +1
+            try:
+                if item[1].start is None:
+                    jmin = 0
+                else:
+                    jmin = item[1].start
+                    if jmin < 0:
+                        jmin = 0
+                    if jmin > self.wcs.naxis2 :
+                        jmin = self.wcs.naxis2
+                if item[1].stop is None:
+                    jmax = self.wcs.naxis2
+                else:
+                    jmax = item[1].stop
+                    if jmax < 0:
+                        jmax = 0
+                        if jmax > self.wcs.naxis2 :
+                            jmax = self.wcs.naxis2
+            except:
+                jmin = item[1]
+                jmax = item[1]+1
+            crpix = (self.wcs.wcs.crpix[0]-imin,self.wcs.wcs.crpix[1]-jmin)
+            res = self.copy()
+            res.wcs.wcs.crpix = np.array(crpix)
+            # problem with item.step
+            res.wcs.naxis1 = int(imax-imin)
+            res.wcs.naxis2 = int(jmax-jmin)
+            return res
+        else:
+            raise ValueError, 'Operation forbidden'
+
 class WaveCoord(object):
     """WaveCoord class manages coordinates of spectrum
 
@@ -316,6 +370,7 @@ class WaveCoord(object):
         self.crval = crval
         self.cunit = cunit
 
+
     def copy(self):
         """copies WaveCoord object in a new one and returns it
         """
@@ -327,6 +382,7 @@ class WaveCoord(object):
         out.cunit = self.cunit
         return out
 
+
     def info(self):
         """prints information
         """
@@ -336,6 +392,7 @@ class WaveCoord(object):
         print 'CDELT:\t %d'%self.cdelt #CDELT3 our CD3_3
         print 'CRVAL:\t %d'%self.crval
         print 'CUNIT:\t %s'%self.cunit
+
 
     def isEqual(self,other):
         '''returns True if other and self have the same attributes
@@ -350,13 +407,17 @@ class WaveCoord(object):
         else:
             return False
 
-    def __getitem__(self, pixel):
-        """ returns the coordinate(s) corresponding to pixel(s)
-        If [:] the full coordinate array is returned
+
+    def coord(self, pixel=None):
+        """ returns the coordinate corresponding to pixel
+        if pixel is None, the full coordinate array is returned
         """
         pix = np.arange(self.dim,dtype=np.float)
         lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
-        return lbda[pixel]
+        if pixel is None:
+            return lbda
+        else:
+            return lbda[pixel]
 
     def pixel(self, lbda, nearest=False):
         """ Returns the decimal pixel corresponding to the wavelength lbda
@@ -364,8 +425,28 @@ class WaveCoord(object):
         """
         pix = (lbda - self.crval)/self.cdelt + self.crpix - 1
         if nearest:
-            return(int(pix+0.5))
+            pix = int(pix+0.5)
+            if pix>0 :
+                return pix
+            else:
+                return 0
         return pix
 
-
-
+    def __getitem__(self, item):
+        """ returns the coordinate corresponding to pixel if item is an integer
+        returns the corresponding WaveCoord object if item is a slice
+        """
+        pix = np.arange(self.dim,dtype=np.float)
+        lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
+        if isinstance(item, int):
+            return lbda[pixel]
+        elif isinstance(item, slice):
+            newlbda = lbda[item]
+            dim = newlbda.shape[0]
+            if dim < 2:
+                raise ValueError, 'Spectrum with dim < 2'
+            cdelt = newlbda[1] - newlbda[0]
+            res = WaveCoord(dim=dim, crpix=1.0, cdelt=cdelt, crval=newlbda[0], cunit = self.cunit)
+            return res
+        else:
+            raise ValueError, 'Operation forbidden'

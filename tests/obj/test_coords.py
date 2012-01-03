@@ -8,7 +8,6 @@ import unittest
 from obj import WCS
 from obj import WaveCoord
 
-
 class TestWCS(unittest.TestCase):
 
     def setUp(self):
@@ -50,8 +49,8 @@ class TestWaveCoord(unittest.TestCase):
         del wave2
 
     def test_coordTransform(self):
-        """tests WaveCoord[] and WaveCoord.pixel methods"""
-        value = self.wave[5]
+        """tests WaveCoord.coord and WaveCoord.pixel methods"""
+        value = self.wave.coord(5)
         pixel = self.wave.pixel(value, nearest=True)
         self.assertEqual(pixel,5)
 

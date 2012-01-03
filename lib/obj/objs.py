@@ -21,7 +21,7 @@ class Spectrum(object):
     data : array or masked array
     Array containing the pixel values of the spectrum
 
-    dim : integer
+    shape : integer
     Size of spectrum
 
     var : array
@@ -47,7 +47,7 @@ class Spectrum(object):
     Info: info, []
     """
 
-    def __init__(self, filename=None, ext = None, getnoise=False, dim=101, wave = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
+    def __init__(self, filename=None, ext = None, getnoise=False, shape=101, wave = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
         """creates a Spectrum object
 
         Parameters
@@ -62,7 +62,7 @@ class Spectrum(object):
         True if the noise Variance spectrum is read (if it exists)
         Use getnoise=False to create spectrum without variance extension
 
-        dim : integer
+        shape : integer
         size of the spectrum. 101 by default.
 
         wave : WaveCoord
@@ -87,8 +87,8 @@ class Spectrum(object):
         --------
         Spectrum(filename="toto.fits",ext=1,getnoise=False): spectrum from file (extension number is 1).
 
-        wave = WaveCoord(dim=4000, cdelt=1.25, crval=4000.0, cunit = 'Angstrom')
-        Spectrum(dim=4000, wave=wave) : spectrum filled with zeros
+        wave = WaveCoord(shape=4000, cdelt=1.25, crval=4000.0, cunit = 'Angstrom')
+        Spectrum(shape=4000, wave=wave) : spectrum filled with zeros
         Spectrum(wave=wave, data = MyData) : spectrum filled with MyData
         """
 
@@ -107,7 +107,7 @@ class Spectrum(object):
                     raise IOError, 'Wrong dimension number: not a spectrum'
                 self.unit = hdr.get('UNIT', None)
                 self.cards = hdr.ascardlist()
-                self.dim =hdr['NAXIS1']
+                self.shape =hdr['NAXIS1']
                 self.data = f[0].data
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
@@ -120,7 +120,7 @@ class Spectrum(object):
                 crpix = hdr.get('CRPIX1')
                 crval = hdr.get('CRVAL1')
                 cunit = hdr.get('CUNIT1')
-                self.wave = WaveCoord(self.dim, crpix, cdelt, crval, cunit)
+                self.wave = WaveCoord(self.shape, crpix, cdelt, crval, cunit)
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -132,7 +132,7 @@ class Spectrum(object):
                     raise IOError, 'Wrong dimension number: not a spectrum'
                 self.unit = h.get('UNIT', None)
                 self.cards = h.ascardlist()
-                self.dim = h['NAXIS1']
+                self.shape = h['NAXIS1']
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
                 if h.has_key('CDELT1'):
@@ -144,11 +144,11 @@ class Spectrum(object):
                 crpix = h.get('CRPIX1')
                 crval = h.get('CRVAL1')
                 cunit = h.get('CUNIT1')
-                self.wave = WaveCoord(self.dim, crpix, cdelt, crval, cunit)
+                self.wave = WaveCoord(self.shape, crpix, cdelt, crval, cunit)
                 if getnoise:
                     if f['VARIANCE'].header['NAXIS'] != 1:
                         raise IOError, 'Wrong dimension number in VARIANCE extension'
-                    if f['VARIANCE'].header['NAXIS1'] != dim:
+                    if f['VARIANCE'].header['NAXIS1'] != shape:
                         raise IOError, 'Number of points in VARIANCE not equal to DATA'
                     self.var = f['VARIANCE'].data
                 else:
@@ -164,21 +164,21 @@ class Spectrum(object):
                 if empty:
                     self.data = None
                 else:
-                    self.data = np.zeros(dim, dtype = float)
-                self.dim = dim
+                    self.data = np.zeros(shape, dtype = float)
+                self.shape = shape
             else:
                 self.data = np.array(data, dtype = float)
-                self.dim = data.shape[0]
+                self.shape = data.shape[0]
 
             if not getnoise or empty:
                 self.var = None
             elif var is None:
-                self.var = numpy.zeros(dim, dtype = float)
+                self.var = numpy.zeros(shape, dtype = float)
             else:
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                if wave.dim == self.dim:
+                if wave.dim == self.shape:
                     self.wave = wave
                 else:
                     print 'Dimensions of WaveCoord object and DATA are not equal'
@@ -192,7 +192,7 @@ class Spectrum(object):
         spe.filename = self.filename
         spe.unit = self.unit
         spe.cards = pyfits.CardList(self.cards)
-        spe.dim = self.dim
+        spe.shape = self.shape
         try:
             spe.data = self.data.__copy__()
         except:
@@ -217,11 +217,11 @@ class Spectrum(object):
         else:
             print 'no name'
         if isinstance(self.data,np.ma.core.MaskedArray):
-            print 'masked array:\t(%i,) %s'% (self.dim,self.maskinfo)
+            print 'masked array:\t(%i,) %s'% (self.shape,self.maskinfo)
         elif self.data is None:
             print 'no data'
         else:
-            print 'spectrum data:\t(%i,)'% self.dim
+            print 'spectrum data:\t(%i,)'% self.shape
         print 'fscale:\t %d'%self.fscale
         if self.unit is None:
             print 'no data unit'
@@ -230,7 +230,7 @@ class Spectrum(object):
         if self.var is None:
             print 'no noise'
         else:
-            print 'noise variance:\t(%i,)'% self.dim
+            print 'noise variance:\t(%i,)'% self.shape
         if self.wave is None:
             print 'no coordinates'
         else:
@@ -317,11 +317,11 @@ class Spectrum(object):
             #Dimension must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.spectrum:
-                if other.data is None or self.dim != other.dim:
+                if other.data is None or self.shape != other.shape:
                     print 'Operation forbidden for spectra with different sizes'
                     return None
                 else:
-                    res = Spectrum(empty=True,dim=self.dim,fscale=self.fscale)
+                    res = Spectrum(empty=True,shape=self.shape,fscale=self.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -372,11 +372,11 @@ class Spectrum(object):
             #Dimension must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.spectrum:
-                if other.data is None or self.dim != other.dim:
+                if other.data is None or self.shape != other.shape:
                     print 'Operation forbidden for spectra with different sizes'
                     return None
                 else:
-                    res = Spectrum(empty=True,dim=self.dim,fscale=self.fscale)
+                    res = Spectrum(empty=True,shape=self.shape,fscale=self.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -395,11 +395,11 @@ class Spectrum(object):
                 #The last dimension of cube1 must be equal to the spectrum dimension.
                 #If not equal to None, world coordinates in spectral direction must be the same.
                 if other.cube:
-                    if other.data is None or self.dim != other.dim[2]:
+                    if other.data is None or self.shape != other.shape[0]:
                         print 'Operation forbidden for objects with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,dim=other.dim , wcs= other.wcs, fscale=self.fscale)
+                        res = Cube(empty=True ,shape=other.shape , wcs= other.wcs, fscale=self.fscale)
                         if self.wave is None or other.wave is None:
                             res.wave = None
                         elif self.wave.isEqual(other.wave):
@@ -446,11 +446,11 @@ class Spectrum(object):
             #Dimension must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.spectrum:
-                if other.data is None or self.dim != other.dim:
-                    print 'Operation forbidden for images with different sizes'
+                if other.data is None or self.shape != other.shape:
+                    print 'Operation forbidden for spectra with different sizes'
                     return None
                 else:
-                    res = Spectrum(empty=True,dim=self.dim,fscale=self.fscale*other.fscale)
+                    res = Spectrum(empty=True,shape=self.shape,fscale=self.fscale*other.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -501,11 +501,11 @@ class Spectrum(object):
             #Dimension must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.spectrum:
-                if other.data is None or self.dim != other.dim:
-                    print 'Operation forbidden for images with different sizes'
+                if other.data is None or self.shape != other.shape:
+                    print 'Operation forbidden for spectra with different sizes'
                     return None
                 else:
-                    res = Spectrum(empty=True,dim=self.dim,fscale=self.fscale/other.fscale)
+                    res = Spectrum(empty=True,shape=self.shape,fscale=self.fscale/other.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -524,11 +524,11 @@ class Spectrum(object):
                 #The last dimension of cube1 must be equal to the spectrum dimension.
                 #If not equal to None, world coordinates in spectral direction must be the same.
                 if other.cube:
-                    if other.data is None or self.dim != other.dim[2]:
+                    if other.data is None or self.shape != other.shape[0]:
                         print 'Operation forbidden for objects with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,dim=other.dim , wcs= other.wcs, fscale=self.fscale/other.fscale)
+                        res = Cube(empty=True ,shape=other.shape , wcs= other.wcs, fscale=self.fscale/other.fscale)
                         if self.wave is None or other.wave is None:
                             res.wave = None
                         elif self.wave.isEqual(other.wave):
@@ -558,6 +558,54 @@ class Spectrum(object):
             raise ValueError, 'Operation forbidden'
         return res
 
+    def __getitem__(self,item):
+        """ returns the corresponding value or sub-spectrum
+        """
+        if isinstance(item, int):
+            return self.data[item]
+        elif isinstance(item, slice):
+            data = self.data[item]
+            shape = data.shape[0]
+            getnoise = False
+            var = None
+            if self.var is not None:
+                getnoise = True
+                var = self.var[item]
+            try:
+                wave = self.wave[item]
+            except:
+                wave = None
+            res = Spectrum(getnoise=getnoise, shape=shape, wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
+            return res
+        else:
+            raise ValueError, 'Operation forbidden'
+
+    def __setitem__(self,key,value):
+        """ sets the corresponding part of data
+        """
+        self.data[key] = value
+
+    def get_lambda(self,lbda_min,lbda_max):
+        """ returns the corresponding value or sub-spectrum
+
+        Parameters
+        ----------
+        lbda_min : float
+        minimum wavelength
+
+        lbda_max : float
+        maximum wavelength
+        """
+        if self.wave is None:
+            raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
+        else:
+            pix_min = int(self.wave.pixel(lbda_min))
+            pix_max = int(self.wave.pixel(lbda_max)) + 1
+            if pix_min==pix_max:
+                return self.data[pix_min]
+            else:
+                return self[pix_min:pix_max]
+
 class Image(object):
     """Image class
 
@@ -575,8 +623,8 @@ class Image(object):
     data : array or masked array
     Array containing the pixel values of the image
 
-    dim : array of 2 integers
-    Lengths of data in X and Y
+    shape : array of 2 integers
+    Lengths of data in X and Y (python notation: (ny,nx))
 
     var : array
     Array containing the variance
@@ -601,7 +649,7 @@ class Image(object):
     Info: info, []
     """
 
-    def __init__(self, filename=None, ext = None, getnoise=False, dim=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
+    def __init__(self, filename=None, ext = None, getnoise=False, shape=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
         """creates a Image object
 
         Parameters
@@ -616,8 +664,9 @@ class Image(object):
         True if the noise Variance image is read (if it exists)
         Use getnoise=False to create image without variance extension
 
-        dim : integer or (integer,integer)
+        shape : integer or (integer,integer)
         Lengths of data in X and Y. (101,101) by default.
+        python notation: (ny,nx)
 
         wcs : WCS
         World coordinates
@@ -641,8 +690,8 @@ class Image(object):
         --------
         Image(filename="toto.fits",ext=1,getnoise=False): image from file (extension number is 1).
 
-        wcs = WCS(crval=0,cdelt=0.2,dim=300)
-        Image(dim=300, wcs=wcs) : image 300x300 filled with zeros
+        wcs = WCS(crval=0,cdelt=0.2,shape=300)
+        Image(shape=300, wcs=wcs) : image 300x300 filled with zeros
         Image(wcs=wcs, data = MyData) : image 300x300 filled with MyData
         """
 
@@ -661,7 +710,7 @@ class Image(object):
                     raise IOError, '  not an image'
                 self.unit = hdr.get('UNIT', None)
                 self.cards = hdr.ascardlist()
-                self.dim = np.array([hdr['NAXIS1'],hdr['NAXIS2']])
+                self.shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
                 self.data = f[0].data
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
@@ -677,14 +726,14 @@ class Image(object):
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('UNIT', None)
                 self.cards = h.ascardlist()
-                self.dim = np.array([h['NAXIS1'],h['NAXIS2']])
+                self.shape = np.array([h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
                 self.wcs = WCS(h)  # WCS object from data header
                 if getnoise:
                     if f['VARIANCE'].header['NAXIS'] != 2:
                         raise IOError, 'Wrong dimension number in VARIANCE extension'
-                    if f['VARIANCE'].header['NAXIS1'] != ima.dim[0] and f['VARIANCE'].header['NAXIS2'] != ima.dim[1]:
+                    if f['VARIANCE'].header['NAXIS1'] != ima.shape[1] and f['VARIANCE'].header['NAXIS2'] != ima.shape[0]:
                         raise IOError, 'Number of points in VARIANCE not equal to DATA'
                     self.var = f['VARIANCE'].data
                 else:
@@ -696,9 +745,9 @@ class Image(object):
             # possible FITS header instance
             self.cards = pyfits.CardList()
             #data
-            if len(dim) == 1:
-                dim = (dim,dim)
-            elif len(dim) == 2:
+            if len(shape) == 1:
+                shape = (shape,shape)
+            elif len(shape) == 2:
                 pass
             else:
                 raise ValueError, 'dim with dimension > 2'
@@ -706,21 +755,24 @@ class Image(object):
                 if empty:
                     self.data = None
                 else:
-                    self.data = np.zeros(shape=(dim[1],dim[0]), dtype = float)
-                self.dim = np.array(dim)
+                    self.data = np.zeros(shape=shape, dtype = float)
+                self.shape = np.array(shape)
             else:
                 self.data = np.array(data, dtype = float)
-                self.dim = np.array((data.shape[1],data.shape[0]))
+                try:
+                    self.shape = np.array(data.shape)
+                except:
+                    self.shape = np.array(shape)
 
             if not getnoise or empty:
                 self.var = None
             elif var is None:
-                self.var = numpy.zeros(shape=(dim[1],dim[0]), dtype = float)
+                self.var = numpy.zeros(shape=shape, dtype = float)
             else:
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                if wcs.wcs.naxis1 == self.dim[0] and wcs.wcs.naxis2 == self.dim[1]:
+                if wcs.wcs.naxis1 == self.shape[1] and wcs.wcs.naxis2 == self.shape[0]:
                     self.wcs = wcs
                 else:
                     print 'Dimensions of WCS object and DATA are not equal'
@@ -734,7 +786,7 @@ class Image(object):
         ima.filename = self.filename
         ima.unit = self.unit
         ima.cards = pyfits.CardList(self.cards)
-        ima.dim = self.dim.__copy__()
+        ima.shape = self.shape.__copy__()
         try:
             ima.data = self.data.__copy__()
         except:
@@ -761,9 +813,9 @@ class Image(object):
         if self.data is None:
             print 'no data'
         elif isinstance(self.data,np.ma.core.MaskedArray):
-            print 'masked array:\t(%i,%i) %s'% (self.dim[0],self.dim[1],self.maskinfo)
+            print 'masked array:\t(%i,%i) %s'% (self.shape[1],self.shape[0],self.maskinfo)
         else:
-            print 'image data:\t(%i,%i)'% (self.dim[0],self.dim[1])
+            print 'image data:\t(%i,%i)'% (self.shape[1],self.shape[0])
         print 'fscale:\t %d'%self.fscale
         if self.unit is None:
             print 'no data unit'
@@ -772,7 +824,7 @@ class Image(object):
         if self.var is None:
             print 'no noise'
         else:
-            print 'noise variance:\t(%i,%i)'% (self.dim[0],self.dim[1])
+            print 'noise variance:\t(%i,%i)'% (self.shape[1],self.shape[0])
         if self.wcs is None:
             print 'no world coordinates'
         else:
@@ -858,11 +910,11 @@ class Image(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.image:
-                if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Image(empty=True,dim=self.dim,fscale=self.fscale)
+                    res = Image(empty=True,shape=self.shape,fscale=self.fscale)
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -913,11 +965,11 @@ class Image(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.image:
-                if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Image(empty=True,dim=self.dim,fscale=self.fscale)
+                    res = Image(empty=True,shape=self.shape,fscale=self.fscale)
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -936,11 +988,11 @@ class Image(object):
                 #The first two dimensions of cube1 must be equal to the image dimensions.
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.cube:
-                    if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                    if other.data is None or self.shape[0] != other.shape[1] or self.shape[1] != other.shape[2]:
                         print 'Operation forbidden for images with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,dim=other.dim , wave= other.wave, fscale=self.fscale)
+                        res = Cube(empty=True ,shape=other.shape , wave= other.wave, fscale=self.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -987,11 +1039,11 @@ class Image(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.image:
-                if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Image(empty=True,dim=self.dim,fscale=self.fscale * other.fscale)
+                    res = Image(empty=True,shape=self.shape,fscale=self.fscale * other.fscale)
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -1020,8 +1072,8 @@ class Image(object):
                             print 'Operation forbidden for empty data'
                             return None
                         else:
-                            dim = (self.dim[0],self.dim[1],other.dim)
-                            res = Cube(empty=True ,dim=dim , wave= other.wave, wcs = self.wcs, fscale=self.fscale * other.fscale)
+                            shape = (other.shape,self.shape[0],self.shape[1])
+                            res = Cube(empty=True ,shape=shape , wave= other.wave, wcs = self.wcs, fscale=self.fscale * other.fscale)
                             res.data = self.data[np.newaxis,:,:] * other.data[:,np.newaxis,np.newaxis]
                             if self.unit == other.unit:
                                 res.unit = self.unit
@@ -1059,11 +1111,11 @@ class Image(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.image:
-                if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Image(empty=True,dim=self.dim,fscale=self.fscale / other.fscale)
+                    res = Image(empty=True,shape=self.shape,fscale=self.fscale / other.fscale)
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -1082,10 +1134,10 @@ class Image(object):
                 #The first two dimensions of cube1 must be equal to the image dimensions.
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.cube:
-                    if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                    if other.data is None or self.shape[0] != other.shape[1] or self.shape[1] != other.shape[2]:
                         raise ValueError, 'Operation forbidden for images with different sizes'
                     else:
-                        res = Cube(empty=True ,dim=other.dim , wave= other.wave, fscale=self.fscale / other.fscale)
+                        res = Cube(empty=True ,shape=other.shape , wave= other.wave, fscale=self.fscale / other.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -1115,6 +1167,90 @@ class Image(object):
             raise ValueError, 'Operation forbidden'
         return res
 
+    def __getitem__(self,item):
+        """ returns the corresponding value or sub-image
+        """
+        if isinstance(item, tuple) and len(item)==2:
+                data = self.data[item]
+                if isinstance(item[0],int):
+                    shape = (1,data.shape[0])
+                elif isinstance(item[1],int):
+                    shape = (data.shape[0],1)
+                else:
+                    shape = (data.shape[0],data.shape[1])
+                getnoise = False
+                var = None
+                if self.var is not None:
+                    getnoise = True
+                    var = self.var[item]
+                try:
+                    wcs = self.wcs[item[1],item[0]] #data[y,x], image[y,x] but wcs[x,y]
+                except:
+                    wcs = None
+                res = Image(getnoise=getnoise, shape=shape, wcs = wcs, unit=self.unit, data=data, var=var,fscale=self.fscale)
+                return res
+        else:
+            raise ValueError, 'Operation forbidden'
+
+    def __setitem__(self,key,value):
+        """ sets the corresponding part of data
+        """
+        self.data[key] = value
+
+    def get_deg(self,ra_min,ra_max,dec_min,dec_max):
+        """ returns the corresponding sub-image
+
+        Parameters
+        ----------
+        ra_min : float
+        minimum right ascension in degrees
+
+        ra_max : float
+        maximum right ascension in degrees
+
+        dec_min : float
+        minimum declination in degrees
+
+        dec_max : float
+        maximum declination in degrees
+        """
+        skycrd = [[ra_min,dec_min],[ra_min,dec_max],[ra_max,dec_min],[ra_max,dec_max]]
+        pixcrd = self.wcs.sky2pix(skycrd)
+        print pixcrd
+        imin = int(np.min(pixcrd[:,0]))
+        if imin<0:
+            imin = 0
+        imax = int(np.max(pixcrd[:,0]))+1
+        jmin = int(np.min(pixcrd[:,1]))
+        if jmin<0:
+            jmin = 0
+        jmax = int(np.max(pixcrd[:,1]))+1
+        print 'imin',imin
+        print 'imax',imax
+        print 'jmin',jmin
+        print 'jmax',jmax
+        res = self[jmin:jmax,imin:imax]
+        #mask outside pixels
+        mask = np.ma.make_mask_none(res.data.shape)
+        for j in range(res.shape[0]):
+            print j
+            pixcrd = np.array([np.arange(res.shape[1]),np.ones(res.shape[1])*j]).T
+            print pixcrd
+            skycrd = self.wcs.pix2sky(pixcrd)
+            print skycrd
+            test_ra_min = np.array(skycrd[:,0]) < ra_min
+            test_ra_max = np.array(skycrd[:,0]) > ra_max
+            test_dec_min = np.array(skycrd[:,1]) < dec_min
+            test_dec_max = np.array(skycrd[:,1]) > dec_max
+            mask[j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
+            print mask[j,:]
+        try:
+            mask = np.ma.mask_or(mask,np.ma.getmask(res.data))
+        except:
+            pass
+        res.data = np.ma.MaskedArray(res.data, mask=mask)
+        return res
+
 class Cube(object):
     """cube class
 
@@ -1132,7 +1268,7 @@ class Cube(object):
     data : array or masked array
     Array containing the pixel values of the cube
 
-    dim : array of 3 integers
+    shape : array of 3 integers
     Lengths of data in X and Y and Z
 
     var : array
@@ -1161,7 +1297,7 @@ class Cube(object):
     Info: info, []
     """
 
-    def __init__(self, filename=None, ext = None, getnoise=False, dim=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
+    def __init__(self, filename=None, ext = None, getnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
         """creates a Cube object
 
         Parameters
@@ -1176,7 +1312,7 @@ class Cube(object):
         True if the noise Variance image is read (if it exists)
         Use getnoise=False to create image without variance extension
 
-        dim : integer or (integer,integer)
+        shape : integer or (integer,integer)
         Lengths of data in X and Y. (101,101) by default.
 
         wcs : WCS
@@ -1220,7 +1356,7 @@ class Cube(object):
                     raise IOError, 'Wrong dimension number: not a cube'
                 self.unit = hdr.get('UNIT', None)
                 self.cards = hdr.ascardlist()
-                self.dim = np.array([hdr['NAXIS1'],hdr['NAXIS2'],hdr['NAXIS3']])
+                self.shape = np.array([hdr['NAXIS3'],hdr['NAXIS2'],hdr['NAXIS1']])
                 self.data = f[0].data
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
@@ -1236,7 +1372,7 @@ class Cube(object):
                 crpix = hdr.get('CRPIX3')
                 crval = hdr.get('CRVAL3')
                 cunit = hdr.get('CUNIT3')
-                self.wave = WaveCoord(self.dim[2], crpix, cdelt, crval, cunit)
+                self.wave = WaveCoord(self.shape[0], crpix, cdelt, crval, cunit)
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -1248,7 +1384,7 @@ class Cube(object):
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('UNIT', None)
                 self.cards = h.ascardlist()
-                self.dim = np.array([h['NAXIS1'],h['NAXIS2'],h['NAXIS3']])
+                self.shape= np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
                 # WCS object from data header
@@ -1263,11 +1399,11 @@ class Cube(object):
                 crpix = hdr.get('CRPIX3')
                 crval = hdr.get('CRVAL3')
                 cunit = hdr.get('CUNIT3')
-                self.wave = WaveCoord(self.dim[2], crpix, cdelt, crval, cunit)
+                self.wave = WaveCoord(self.shape[0], crpix, cdelt, crval, cunit)
                 if getnoise:
                     if f['VARIANCE'].header['NAXIS'] != 3:
                         raise IOError, 'Wrong dimension number in VARIANCE extension'
-                    if f['VARIANCE'].header['NAXIS1'] != ima.dim[0] and f['VARIANCE'].header['NAXIS2'] != ima.dim[1] and f['VARIANCE'].header['NAXIS3'] != ima.dim[2]:
+                    if f['VARIANCE'].header['NAXIS1'] != ima.shape[2] and f['VARIANCE'].header['NAXIS2'] != ima.shape[1] and f['VARIANCE'].header['NAXIS3'] != ima.shape[0]:
                         raise IOError, 'Number of points in VARIANCE not equal to DATA'
                     self.var = f['VARIANCE'].data
                 else:
@@ -1279,11 +1415,11 @@ class Cube(object):
             # possible FITS header instance
             self.cards = pyfits.CardList()
             #data
-            if len(dim) == 1:
-                dim = (dim,dim,dim)
-            elif len(dim) == 2:
-                dim = (dim[0],dim[0],dim[1])
-            elif len(dim) == 3:
+            if len(shape) == 1:
+                shape = (shape,shape,shape)
+            elif len(shape) == 2:
+                shape = (shape[0],shape[1],shape[1])
+            elif len(shape) == 3:
                 pass
             else:
                 raise ValueError, 'dim with dimension > 3'
@@ -1291,28 +1427,31 @@ class Cube(object):
                 if empty:
                     self.data = None
                 else:
-                    self.data = np.zeros(shape=(dim[2],dim[1],dim[0]), dtype = float)
-                self.dim = np.array(dim)
+                    self.data = np.zeros(shape=shape, dtype = float)
+                self.shape = np.array(shape)
             else:
                 self.data = np.array(data, dtype = float)
-                self.dim = np.array((data.shape[2],data.shape[1],data.shape[0]))
+                try:
+                    self.shape = np.array(data.shape)
+                except:
+                    self.shape = np.array(shape)
 
             if not getnoise or empty:
                 self.var = None
             elif var is None:
-                self.var = numpy.zeros(shape=(dim[2],dim[1],dim[0]), dtype = float)
+                self.var = numpy.zeros(shape=shape, dtype = float)
             else:
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                if wcs.wcs.naxis1 == self.dim[0] and wcs.wcs.naxis2 == self.dim[1]:
+                if wcs.wcs.naxis1 == self.shape[2] and wcs.wcs.naxis2 == self.shape[1]:
                     self.wcs = wcs
                 else:
                     print 'Dimensions of WCS object and DATA are not equal'
             except :
                 self.wcs = None
             try:
-                if wave.dim == self.dim[2]:
+                if wave.dim == self.shape[0]:
                     self.wave = wave
                 else:
                     print 'Dimensions of WaveCoord object and DATA are not equal'
@@ -1326,7 +1465,7 @@ class Cube(object):
         cub.filename = self.filename
         cub.unit = self.unit
         cub.cards = pyfits.CardList(self.cards)
-        cub.dim = self.dim.__copy__()
+        cub.shape = self.shape.__copy__()
         try:
             cub.data = self.data.__copy__()
         except:
@@ -1357,9 +1496,9 @@ class Cube(object):
         if self.data is None:
             print 'no data'
         elif isinstance(self.data,np.ma.core.MaskedArray):
-            print 'masked array:\t(%i,%i) %s'% (self.dim[0],self.dim[1],self.maskinfo)
+            print 'masked array:\t(%i,%i,%i) %s'% (self.shape[2],self.shape[1],self.shape[1],self.maskinfo)
         else:
-            print 'image data:\t(%i,%i)'% (self.dim[0],self.dim[1])
+            print 'cube data:\t(%i,%i,%i)'% (self.shape[2],self.shape[1],self.shape[0])
         print 'fscale:\t %d'%self.fscale
         if self.unit is None:
             print 'no data unit'
@@ -1368,7 +1507,7 @@ class Cube(object):
         if self.var is None:
             print 'no noise'
         else:
-            print 'noise variance:\t(%i,%i)'% (self.dim[0],self.dim[1])
+            print 'noise variance:\t(%i,%i,%i)'% (self.shape[2],self.shape[1],self.shape[0])
         if self.wcs is None:
             print 'no world coordinates for spatial directions'
         else:
@@ -1462,12 +1601,12 @@ class Cube(object):
             # dimensions must be the same
             # if not equal to None, world coordinates must be the same
             if other.cube:
-                if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1] \
-                   or self.dim[2] != other.dim[2]:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                   or self.shape[2] != other.shape[2]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Cube(empty=True ,dim=self.dim , fscale=self.fscale)
+                    res = Cube(empty=True ,shape=self.shape , fscale=self.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -1493,11 +1632,11 @@ class Cube(object):
                 # the 2 first dimensions of cube1 must be equal to the image dimensions
                 # if not equal to None, world coordinates in spatial directions must be the same
                 if other.image:
-                    if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                    if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
                         print 'Operation forbidden for objects with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,dim=self.dim , wave= self.wave, fscale=self.fscale)
+                        res = Cube(empty=True ,shape=self.shape , wave= self.wave, fscale=self.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -1516,11 +1655,11 @@ class Cube(object):
                     # the last dimension of cube1 must be equal to the spectrum dimension
                     # if not equal to None, world coordinates in spectral direction must be the same
                     if other.spectrum:
-                        if other.data is None or other.dim != self.dim[2]:
+                        if other.data is None or other.shape != self.shape[0]:
                             print 'Operation forbidden for objects with different sizes'
                             return None
                         else:
-                            res = Cube(empty=True ,dim=self.dim , wcs= self.wcs, fscale=self.fscale)
+                            res = Cube(empty=True ,shape=self.shape , wcs= self.wcs, fscale=self.fscale)
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -1567,12 +1706,12 @@ class Cube(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.cube:
-                if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1] \
-                   or self.dim[2] != other.dim[2]:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                   or self.shape[2] != other.shape[2]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Cube(empty=True ,dim=self.dim , fscale=self.fscale)
+                    res = Cube(empty=True ,shape=self.shape , fscale=self.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -1598,11 +1737,11 @@ class Cube(object):
                 #The first two dimensions of cube1 must be equal to the image dimensions.
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.image:
-                    if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                    if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
                         print 'Operation forbidden for images with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,dim=self.dim , wave= self.wave, fscale=self.fscale)
+                        res = Cube(empty=True ,shape=self.shape , wave= self.wave, fscale=self.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -1621,11 +1760,11 @@ class Cube(object):
                     #The last dimension of cube1 must be equal to the spectrum dimension.
                     #If not equal to None, world coordinates in spectral direction must be the same.
                     if other.spectrum:
-                        if other.data is None or other.dim != self.dim[2]:
+                        if other.data is None or other.shape != self.shape[0]:
                             print 'Operation forbidden for objects with different sizes'
                             return None
                         else:
-                            res = Cube(empty=True ,dim=self.dim , wcs= self.wcs, fscale=self.fscale)
+                            res = Cube(empty=True ,shape=self.shape , wcs= self.wcs, fscale=self.fscale)
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -1674,12 +1813,12 @@ class Cube(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.cube:
-                if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1] \
-                   or self.dim[2] != other.dim[2]:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                   or self.shape[2] != other.shape[2]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Cube(empty=True ,dim=self.dim , fscale=self.fscale*other.fscale)
+                    res = Cube(empty=True ,shape=self.shape , fscale=self.fscale*other.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -1705,11 +1844,11 @@ class Cube(object):
                 #The first two dimensions of cube1 must be equal to the image dimensions.
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.image:
-                    if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                    if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
                         print 'Operation forbidden for images with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,dim=self.dim , wave= self.wave, fscale=self.fscale * other.fscale)
+                        res = Cube(empty=True ,shape=self.shape , wave= self.wave, fscale=self.fscale * other.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -1728,11 +1867,11 @@ class Cube(object):
                     #The last dimension of cube1 must be equal to the spectrum dimension.
                     #If not equal to None, world coordinates in spectral direction must be the same.
                     if other.spectrum:
-                        if other.data is None or other.dim != self.dim[2]:
+                        if other.data is None or other.shape != self.shape[0]:
                             print 'Operation forbidden for objects with different sizes'
                             return None
                         else:
-                            res = Cube(empty=True ,dim=self.dim , wcs= self.wcs, fscale=self.fscale*other.fscale)
+                            res = Cube(empty=True ,shape=self.shape , wcs= self.wcs, fscale=self.fscale*other.fscale)
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -1781,12 +1920,12 @@ class Cube(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.cube:
-                if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1] \
-                   or self.dim[2] != other.dim[2]:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                   or self.shape[2] != other.shape[2]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Cube(empty=True ,dim=self.dim , fscale=self.fscale/other.fscale)
+                    res = Cube(empty=True ,shape=self.shape , fscale=self.fscale/other.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -1811,11 +1950,11 @@ class Cube(object):
                 #The first two dimensions of cube1 must be equal to the image dimensions.
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.image:
-                    if other.data is None or self.dim[0] != other.dim[0] or self.dim[1] != other.dim[1]:
+                    if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
                         print 'Operation forbidden for images with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,dim=self.dim , wave= self.wave, fscale=self.fscale / other.fscale)
+                        res = Cube(empty=True ,shape=self.shape , wave= self.wave, fscale=self.fscale / other.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -1834,11 +1973,11 @@ class Cube(object):
                     #The last dimension of cube1 must be equal to the spectrum dimension.
                     #If not equal to None, world coordinates in spectral direction must be the same.
                     if other.spectrum:
-                        if other.data is None or other.dim != self.dim[2]:
+                        if other.data is None or other.shape != self.shape[0]:
                             print 'Operation forbidden for objects with different sizes'
                             return None
                         else:
-                            res = Cube(empty=True ,dim=self.dim , wcs= self.wcs, fscale=self.fscale/other.fscale)
+                            res = Cube(empty=True ,shape=self.shape , wcs= self.wcs, fscale=self.fscale/other.fscale)
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -1868,5 +2007,100 @@ class Cube(object):
             raise ValueError, 'Operation forbidden'
         return res
 
+    def __getitem__(self,item):
+        """returns the corresponding object:
+        cube[k,j,i] = value
+        cube[k,:,:] = spectrum
+        cube[:,j,i] = image
+        cube[:,:,:] = sub-cube
+        """
+        if isinstance(item, tuple) and len(item)==3:
+            data = self.data[item]
+            if isinstance(item[0],int):
+                if isinstance(item[1],int) and isinstance(item[2],int):
+                    #return a float
+                    return data
+                else:
+                    #return an image
+                    if isinstance(item[1],int):
+                        shape = (1,data.shape[0])
+                    elif isinstance(item[2],int):
+                        shape = (data.shape[0],1)
+                    else:
+                        shape = data.shape
+                    getnoise = False
+                    var = None
+                    if self.var is not None:
+                        getnoise = True
+                        var = self.var[item]
+                    try:
+                        wcs = self.wcs[item[2],item[1]] #data[y,x], image[y,x] byt wcs[x,y]
+                    except:
+                        wcs = None
+                    res = Image(getnoise=getnoise, shape=shape, wcs = wcs, unit=self.unit, data=data, var=var,fscale=self.fscale)
+                    return res
+            elif isinstance(item[1],int) and isinstance(item[2],int):
+                #return a spectrum
+                shape = data.shape[0]
+                getnoise = False
+                var = None
+                if self.var is not None:
+                    getnoise = True
+                    var = self.var[item]
+                try:
+                    wave = self.wave[item[0]]
+                except:
+                    wave = None
+                res = Spectrum(getnoise=getnoise, shape=shape, wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
+                return res
+            else:
+                #return a cube
+                if isinstance(item[1],int):
+                    shape = (data.shape[0],1,data.shape[1])
+                elif isinstance(item[2],int):
+                    shape = (data.shape[0],data.shape[1],1)
+                else:
+                    shape = data.shape
+                getnoise = False
+                var = None
+                if self.var is not None:
+                    getnoise = True
+                    var = self.var[item]
+                try:
+                    wcs = self.wcs[item[2],item[1]] #data[y,x], image[y,x] but wcs[x,y]
+                except:
+                    wcs = None
+                try:
+                    wave = self.wave[item[0]]
+                except:
+                    wave = None
+                res = Cube(getnoise=getnoise, shape=shape, wcs = wcs, wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
+                return res
+        else:
+            raise ValueError, 'Operation forbidden'
 
+    def __setitem__(self,key,value):
+        """ sets the corresponding part of data
+        """
+        self.data[key] = value
 
+    def get_lambda(self,lbda_min,lbda_max):
+        """ returns the corresponding sub-cube
+
+        Parameters
+        ----------
+        lbda_min : float
+        minimum wavelength
+
+        lbda_max : float
+        maximum wavelength
+        """
+        if self.wave is None:
+            raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
+        else:
+            pix_min = int(self.wave.pixel(lbda_min))
+            pix_max = int(self.wave.pixel(lbda_max)) + 1
+            if pix_min==pix_max:
+                return self.data[pix_min,:,:]
+            else:
+                return self[pix_min:pix_max,:,:]
