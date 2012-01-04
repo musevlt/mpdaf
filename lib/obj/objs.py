@@ -41,7 +41,7 @@ class Spectrum(object):
     --------------
     Creation: init, copy
 
-    Selection: <, >, <=, >=, removeMask
+    Selection: <, >, <=, >=, remove_mask
 
     Arithmetic: + - * / pow
 
@@ -344,7 +344,7 @@ class Spectrum(object):
         result.maskinfo += " >%f"%item
         return result
 
-    def removeMask(self):
+    def remove_mask(self):
         """removes the mask on the array
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
@@ -665,6 +665,19 @@ class Spectrum(object):
                 return self.data[pix_min]
             else:
                 return self[pix_min:pix_max]
+
+    def set_wcs(self, wave):
+        """sets the world coordinates
+
+        Parameters
+        ----------
+        wave : WaveCoord
+        Wavelength coordinates
+        """
+        if wave.dim == self.shape:
+            self.wave = wave
+        else:
+            print 'Dimensions of WaveCoord object and DATA are not equal'
 
 class Image(object):
     """Image class
@@ -991,7 +1004,7 @@ class Image(object):
         result.maskinfo += " >%f"%item
         return result
 
-    def removeMask(self):
+    def remove_mask(self):
         """removes the mask on the array
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
@@ -1363,6 +1376,19 @@ class Image(object):
             pass
         res.data = np.ma.MaskedArray(res.data, mask=mask)
         return res
+
+    def set_wcs(self, wcs):
+        """sets the world coordinates
+
+        Parameters
+        ----------
+        wcs : WCS
+        World coordinates
+        """
+        if wcs.wcs.naxis1 == self.shape[1] and wcs.wcs.naxis2 == self.shape[0]:
+            self.wcs = wcs
+        else:
+            print 'Dimensions of WCS object and DATA are not equal'
 
 class Cube(object):
     """cube class
@@ -1746,7 +1772,7 @@ class Cube(object):
         result.maskinfo += " >%f"%item
         return result
 
-    def removeMask(self):
+    def remove_mask(self):
         """removes the mask on the array
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
@@ -2285,3 +2311,23 @@ class Cube(object):
                 return self.data[pix_min,:,:]
             else:
                 return self[pix_min:pix_max,:,:]
+
+    def set_wcs(self, wcs, wave):
+        """sets the world coordinates
+
+        Parameters
+        ----------
+        wcs : WCS
+        World coordinates
+
+        wave : WaveCoord
+        Wavelength coordinates
+        """
+        if wcs.wcs.naxis1 == self.shape[2] and wcs.wcs.naxis2 == self.shape[1]:
+            self.wcs = wcs
+        else:
+            print 'Dimensions of WCS object and DATA are not equal'
+        if wave.dim == self.shape[0]:
+            self.wave = wave
+        else:
+            print 'Dimensions of WaveCoord object and DATA are not equal'
