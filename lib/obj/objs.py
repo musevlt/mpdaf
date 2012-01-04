@@ -1,6 +1,7 @@
 """ obj.py Manages cube, image and spectrum objects"""
 import numpy as np
 import pyfits
+import datetime
 from coords import WCS
 from coords import WaveCoord
 
@@ -209,6 +210,65 @@ class Spectrum(object):
             spe.wave = None
         return spe
 
+    def write(self,filename):
+        """ saves the object in a FITS file
+        Parameters
+        ----------
+        filename : string
+        The FITS filename
+        """
+        # create primary header
+        prihdu = pyfits.PrimaryHDU()
+        if self.cards is not None:
+            for card in self.cards:
+                try:
+                    prihdu.header.update(card.key, card.value, card.comment)
+                except:
+                    pass
+        prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+        prihdu.header.update('author', 'MPDAF', 'origin of the file')
+
+        if self.var is None: # write simple fits file without extension
+            prihdu.data = self.data
+            # add world coordinate
+            prihdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
+            prihdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
+            prihdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+            prihdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
+            if self.unit is not None:
+                prihdu.header.update('UNIT', self.unit, 'data unit type')
+            prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist = [prihdu]
+        else: # write fits file with primary header and two extensions
+            hdulist = [prihdu]
+            # create spectrum DATA in first extension
+            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+            # add world coordinate
+            tbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
+            tbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
+            tbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+            tbhdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
+            if self.unit is not None:
+                tbhdu.header.update('UNIT', self.unit, 'data unit type')
+            tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist.append(tbhdu)
+            # create spectrum VARIANCE in second extension
+            nbhdu = pyfits.ImageHDU(name='VARIANCE', data=self.var)
+            # add world coordinate
+            nbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
+            nbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
+            nbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+            nbhdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
+#            if self.unit is not None:
+#                nbhdu.header.update('UNIT', self.unit, 'data unit type')
+#            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist.append(nbhdu)
+        # save to disk
+        hdu = pyfits.HDUList(hdulist)
+        hdu.writeto(filename, clobber=True)
+
+        self.filename = filename
+
     def info(self):
         """prints information
         """
@@ -222,7 +282,7 @@ class Spectrum(object):
             print 'no data'
         else:
             print 'spectrum data:\t(%i,)'% self.shape
-        print 'fscale:\t %d'%self.fscale
+        print 'fscale:\t %f'%self.fscale
         if self.unit is None:
             print 'no data unit'
         else:
@@ -245,7 +305,7 @@ class Spectrum(object):
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " <= %d"%item
+        result.maskinfo += " <= %f"%item
         return result
 
     def __lt__ (self, item):
@@ -257,7 +317,7 @@ class Spectrum(object):
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " < %d"%item
+        result.maskinfo += " < %f"%item
         return result
 
     def __ge__ (self, item):
@@ -269,7 +329,7 @@ class Spectrum(object):
             result.data = np.ma.masked_less(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >= %d"%item
+        result.maskinfo += " >= %f"%item
         return result
 
     def __gt__ (self, item):
@@ -281,7 +341,7 @@ class Spectrum(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >%d"%item
+        result.maskinfo += " >%f"%item
         return result
 
     def removeMask(self):
@@ -803,6 +863,59 @@ class Image(object):
             ima.wcs = None
         return ima
 
+    def write(self,filename):
+        """ saves the object in a FITS file
+        Parameters
+        ----------
+        filename : string
+        The FITS filename
+        """
+        # create primary header
+        prihdu = pyfits.PrimaryHDU()
+        if self.cards is not None:
+            for card in self.cards:
+                try:
+                    prihdu.header.update(card.key, card.value, card.comment)
+                except:
+                    pass
+        prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+        prihdu.header.update('author', 'MPDAF', 'origin of the file')
+
+        #world coordinates
+        wcs_cards = self.wcs.to_header().ascardlist()
+
+        if self.var is None: # write simple fits file without extension
+            prihdu.data = self.data
+            for card in wcs_cards:
+                prihdu.header.update(card.key, card.value, card.comment)
+            if self.unit is not None:
+                prihdu.header.update('UNIT', self.unit, 'data unit type')
+            prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist = [prihdu]
+        else: # write fits file with primary header and two extensions
+            hdulist = [prihdu]
+            # create spectrum DATA in first extension
+            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+            for card in wcs_cards:
+                tbhdu.header.update(card.key, card.value, card.comment)
+            if self.unit is not None:
+                tbhdu.header.update('UNIT', self.unit, 'data unit type')
+            tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist.append(tbhdu)
+            # create spectrum VARIANCE in second extension
+            nbhdu = pyfits.ImageHDU(name='VARIANCE', data=self.var)
+            for card in wcs_cards:
+                nbhdu.header.update(card.key, card.value, card.comment)
+#            if self.unit is not None:
+#                nbhdu.header.update('UNIT', self.unit, 'data unit type')
+#            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist.append(nbhdu)
+        # save to disk
+        hdu = pyfits.HDUList(hdulist)
+        hdu.writeto(filename, clobber=True)
+
+        self.filename = filename
+
     def info(self):
         """prints information
         """
@@ -816,7 +929,7 @@ class Image(object):
             print 'masked array:\t(%i,%i) %s'% (self.shape[1],self.shape[0],self.maskinfo)
         else:
             print 'image data:\t(%i,%i)'% (self.shape[1],self.shape[0])
-        print 'fscale:\t %d'%self.fscale
+        print 'fscale:\t %f'%self.fscale
         if self.unit is None:
             print 'no data unit'
         else:
@@ -839,7 +952,7 @@ class Image(object):
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " <= %d"%item
+        result.maskinfo += " <= %f"%item
         return result
 
     def __lt__ (self, item):
@@ -851,7 +964,7 @@ class Image(object):
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " < %d"%item
+        result.maskinfo += " < %f"%item
         return result
 
     def __ge__ (self, item):
@@ -863,7 +976,7 @@ class Image(object):
             result.data = np.ma.masked_less(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >= %d"%item
+        result.maskinfo += " >= %f"%item
         return result
 
     def __gt__ (self, item):
@@ -875,7 +988,7 @@ class Image(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >%d"%item
+        result.maskinfo += " >%f"%item
         return result
 
     def removeMask(self):
@@ -1486,6 +1599,74 @@ class Cube(object):
             cub.wave = None
         return cub
 
+    def write(self,filename):
+        """ saves the object in a FITS file
+        Parameters
+        ----------
+        filename : string
+        The FITS filename
+        """
+        # create primary header
+        prihdu = pyfits.PrimaryHDU()
+        if self.cards is not None:
+            for card in self.cards:
+                try:
+                    prihdu.header.update(card.key, card.value, card.comment)
+                except:
+                    pass
+        prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+        prihdu.header.update('author', 'MPDAF', 'origin of the file')
+
+        #world coordinates
+        wcs_cards = self.wcs.to_header().ascardlist()
+
+        if self.var is None: # write simple fits file without extension
+            prihdu.data = self.data
+            # add world coordinate
+            for card in wcs_cards:
+                prihdu.header.update(card.key, card.value, card.comment)
+            prihdu.header.update('CRVAL3', self.wave.crval, 'Start in world coordinate')
+            prihdu.header.update('CRPIX3', self.wave.crpix, 'Start in pixel')
+            prihdu.header.update('CDELT3', self.wave.cdelt, 'Step in world coordinate')
+            prihdu.header.update('CUNIT3', self.wave.cunit, 'world coordinate units')
+            if self.unit is not None:
+                prihdu.header.update('UNIT', self.unit, 'data unit type')
+            prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist = [prihdu]
+        else: # write fits file with primary header and two extensions
+            hdulist = [prihdu]
+            # create spectrum DATA in first extension
+            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+            # add world coordinate
+            for card in wcs_cards:
+                tbhdu.header.update(card.key, card.value, card.comment)
+            tbhdu.header.update('CRVAL3', self.wave.crval, 'Start in world coordinate')
+            tbhdu.header.update('CRPIX3', self.wave.crpix, 'Start in pixel')
+            tbhdu.header.update('CDELT3', self.wave.cdelt, 'Step in world coordinate')
+            tbhdu.header.update('CUNIT3', self.wave.cunit, 'world coordinate units')
+            if self.unit is not None:
+                tbhdu.header.update('UNIT', self.unit, 'data unit type')
+            tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist.append(tbhdu)
+            # create spectrum VARIANCE in second extension
+            nbhdu = pyfits.ImageHDU(name='VARIANCE', data=self.var)
+            # add world coordinate
+            for card in wcs_cards:
+                nbhdu.header.update(card.key, card.value, card.comment)
+            nbhdu.header.update('CRVAL3', self.wave.crval, 'Start in world coordinate')
+            nbhdu.header.update('CRPIX3', self.wave.crpix, 'Start in pixel')
+            nbhdu.header.update('CDELT3', self.wave.cdelt, 'Step in world coordinate')
+            nbhdu.header.update('CUNIT3', self.wave.cunit, 'world coordinate units')
+#            if self.unit is not None:
+#                nbhdu.header.update('UNIT', self.unit, 'data unit type')
+#            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            hdulist.append(nbhdu)
+        # save to disk
+        hdu = pyfits.HDUList(hdulist)
+        hdu.writeto(filename, clobber=True)
+
+        self.filename = filename
+
     def info(self):
         """prints information
         """
@@ -1499,7 +1680,7 @@ class Cube(object):
             print 'masked array:\t(%i,%i,%i) %s'% (self.shape[2],self.shape[1],self.shape[1],self.maskinfo)
         else:
             print 'cube data:\t(%i,%i,%i)'% (self.shape[2],self.shape[1],self.shape[0])
-        print 'fscale:\t %d'%self.fscale
+        print 'fscale:\t %f'%self.fscale
         if self.unit is None:
             print 'no data unit'
         else:
@@ -1526,7 +1707,7 @@ class Cube(object):
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " <= %d"%item
+        result.maskinfo += " <= %f"%item
         return result
 
     def __lt__ (self, item):
@@ -1538,7 +1719,7 @@ class Cube(object):
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " < %d"%item
+        result.maskinfo += " < %f"%item
         return result
 
     def __ge__ (self, item):
@@ -1550,7 +1731,7 @@ class Cube(object):
             result.data = np.ma.masked_less(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >= %d"%item
+        result.maskinfo += " >= %f"%item
         return result
 
     def __gt__ (self, item):
@@ -1562,7 +1743,7 @@ class Cube(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >%d"%item
+        result.maskinfo += " >%f"%item
         return result
 
     def removeMask(self):

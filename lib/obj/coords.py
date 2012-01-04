@@ -210,6 +210,9 @@ class WCS(object):
         self.wcs.printwcs()
         print 'CUNIT \t : %s %s'%(self.wcs.wcs.cunit[0],self.wcs.wcs.cunit[1])
 
+    def to_header(self):
+        return self.wcs.to_header()
+
     def sky2pix(self,x):
         """converts world coordinates to pixel coordinates
         Returns an (n,2) array of x- and y- pixel coordinates
@@ -388,9 +391,9 @@ class WaveCoord(object):
         """
         print 'Wavelength coordinates'
         print 'N:\t %i'%self.dim
-        print 'CRPIX:\t %d'%self.crpix
-        print 'CDELT:\t %d'%self.cdelt #CDELT3 our CD3_3
-        print 'CRVAL:\t %d'%self.crval
+        print 'CRPIX:\t %f'%self.crpix
+        print 'CDELT:\t %f'%self.cdelt #CDELT3 our CD3_3
+        print 'CRVAL:\t %f'%self.crval
         print 'CUNIT:\t %s'%self.cunit
 
 
