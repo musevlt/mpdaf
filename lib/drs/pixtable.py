@@ -476,3 +476,6 @@ class PixTable(object):
         print('%d slices found, stucture returned in slices dictionary '%(nslice))
 
         return slices
+
+    def get_keywords(self,key):
+        return self.primary_header[key].value
