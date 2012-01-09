@@ -147,11 +147,11 @@ class Spectrum(object):
                 cunit = h.get('CUNIT1')
                 self.wave = WaveCoord(self.shape, crpix, cdelt, crval, cunit)
                 if getnoise:
-                    if f['VARIANCE'].header['NAXIS'] != 1:
-                        raise IOError, 'Wrong dimension number in VARIANCE extension'
-                    if f['VARIANCE'].header['NAXIS1'] != shape:
-                        raise IOError, 'Number of points in VARIANCE not equal to DATA'
-                    self.var = f['VARIANCE'].data
+                    if f['STAT'].header['NAXIS'] != 1:
+                        raise IOError, 'Wrong dimension number in STAT extension'
+                    if f['STAT'].header['NAXIS1'] != shape:
+                        raise IOError, 'Number of points in STAT not equal to DATA'
+                    self.var = f['STAT'].data
                 else:
                     self.var = None
             f.close()
@@ -252,8 +252,8 @@ class Spectrum(object):
                 tbhdu.header.update('UNIT', self.unit, 'data unit type')
             tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
             hdulist.append(tbhdu)
-            # create spectrum VARIANCE in second extension
-            nbhdu = pyfits.ImageHDU(name='VARIANCE', data=self.var)
+            # create spectrum STAT in second extension
+            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
             # add world coordinate
             nbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
             nbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
@@ -804,11 +804,11 @@ class Image(object):
                 self.fscale = h.get('FSCALE', 1.0)
                 self.wcs = WCS(h)  # WCS object from data header
                 if getnoise:
-                    if f['VARIANCE'].header['NAXIS'] != 2:
-                        raise IOError, 'Wrong dimension number in VARIANCE extension'
-                    if f['VARIANCE'].header['NAXIS1'] != ima.shape[1] and f['VARIANCE'].header['NAXIS2'] != ima.shape[0]:
-                        raise IOError, 'Number of points in VARIANCE not equal to DATA'
-                    self.var = f['VARIANCE'].data
+                    if f['STAT'].header['NAXIS'] != 2:
+                        raise IOError, 'Wrong dimension number in STAT extension'
+                    if f['STAT'].header['NAXIS1'] != ima.shape[1] and f['STAT'].header['NAXIS2'] != ima.shape[0]:
+                        raise IOError, 'Number of points in STAT not equal to DATA'
+                    self.var = f['STAT'].data
                 else:
                     self.var = None
             f.close()
@@ -915,8 +915,8 @@ class Image(object):
                 tbhdu.header.update('UNIT', self.unit, 'data unit type')
             tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
             hdulist.append(tbhdu)
-            # create spectrum VARIANCE in second extension
-            nbhdu = pyfits.ImageHDU(name='VARIANCE', data=self.var)
+            # create spectrum STAT in second extension
+            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
             for card in wcs_cards:
                 nbhdu.header.update(card.key, card.value, card.comment)
 #            if self.unit is not None:
@@ -1540,11 +1540,11 @@ class Cube(object):
                 cunit = hdr.get('CUNIT3')
                 self.wave = WaveCoord(self.shape[0], crpix, cdelt, crval, cunit)
                 if getnoise:
-                    if f['VARIANCE'].header['NAXIS'] != 3:
-                        raise IOError, 'Wrong dimension number in VARIANCE extension'
-                    if f['VARIANCE'].header['NAXIS1'] != ima.shape[2] and f['VARIANCE'].header['NAXIS2'] != ima.shape[1] and f['VARIANCE'].header['NAXIS3'] != ima.shape[0]:
-                        raise IOError, 'Number of points in VARIANCE not equal to DATA'
-                    self.var = f['VARIANCE'].data
+                    if f['STAT'].header['NAXIS'] != 3:
+                        raise IOError, 'Wrong dimension number in STAT extension'
+                    if f['STAT'].header['NAXIS1'] != ima.shape[2] and f['STAT'].header['NAXIS2'] != ima.shape[1] and f['STAT'].header['NAXIS3'] != ima.shape[0]:
+                        raise IOError, 'Number of points in STAT not equal to DATA'
+                    self.var = f['STAT'].data
                 else:
                     self.var = None
             f.close()
@@ -1674,8 +1674,8 @@ class Cube(object):
                 tbhdu.header.update('UNIT', self.unit, 'data unit type')
             tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
             hdulist.append(tbhdu)
-            # create spectrum VARIANCE in second extension
-            nbhdu = pyfits.ImageHDU(name='VARIANCE', data=self.var)
+            # create spectrum STAT in second extension
+            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
             # add world coordinate
             for card in wcs_cards:
                 nbhdu.header.update(card.key, card.value, card.comment)
