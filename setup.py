@@ -45,6 +45,27 @@ class UnitTest(Command):
         errno = subprocess.call(['python', 'tests/run_tests.py'])
         raise SystemExit(errno)
 
+class MakeFusion(Command):
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        import os,subprocess,shutil
+        errno = subprocess.call(['make', '-C', 'lib/fusion/'])
+        shutil.copy('lib/fusion/fusion_fit','/usr/local/bin/fusion_fit')
+        os.remove('lib/fusion/fusion_fit')
+        shutil.copy('lib/fusion/fusion_FSF','/usr/local/bin/fusion_FSF')
+        os.remove('lib/fusion/fusion_FSF')
+        shutil.copy('lib/fusion/fusion_LSF','/usr/local/bin/fusion_LSF')
+        os.remove('lib/fusion/fusion_LSF')
+        shutil.copy('lib/fusion/fusion_residual','/usr/local/bin/fusion_residual')
+        os.remove('lib/fusion/fusion_residual')
+        shutil.copy('lib/fusion/fusion_resampling','/usr/local/bin/fusion_resampling')
+        os.remove('lib/fusion/fusion_resampling')
+        errno = subprocess.call(['make', 'clean', '-C', 'lib/fusion/'])
+
 setup(name = 'mpdaf',
       version = '0.1.0',
       description = 'MUSE Python Data Analysis Framework is a python framework in view of '
@@ -54,9 +75,9 @@ setup(name = 'mpdaf',
       install_requires = ['pywcs','astropysics'],
       provides = ['mpdaf'],
       package_dir = {'': 'lib/'},
-      packages = ['drs','obj'],
+      packages = ['drs','obj','fusion'],
       maintainer = 'Laure Piqueras',
       maintainer_email = 'laure.piqueras@univ-lyon1.fr',
       platforms = 'any', 
-      cmdclass = {'test': UnitTest},
+      cmdclass = {'test': UnitTest, 'fusion': MakeFusion},
      )
