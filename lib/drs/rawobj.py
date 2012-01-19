@@ -665,7 +665,12 @@ class RawFile(object):
                 try:
                     prihdu.header.update(card.key, card.value, card.comment)
                 except ValueError:
-                    prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
+                    if isinstance(card.value,str):
+                        n = 80 - len(card.key) - 14
+                        s = card.value[0:n]
+                        prihdu.header.update('hierarch %s' %card.key, s, card.comment)
+                    else:
+                        prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
                 except:
                     pass
         prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
