@@ -7,6 +7,63 @@ import pyfits
 import datetime
 import tempfile
 import os
+import shutil
+
+def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, primary_header=None, save_as_ima=True):
+    """Saves the object in a FITS file.
+    
+    :param filename: The FITS filename.
+    :type filename: string
+    
+    :param save_as_ima: If True, pixtable is saved as multi-extension FITS image instead of FITS binary table.
+    :type save_as_ima: bool
+    """
+    pyfits.setExtensionNameCaseSensitive()
+    prihdu = pyfits.PrimaryHDU()
+    if primary_header is not None:
+        for card in primary_header:
+            try:
+                prihdu.header.update(card.key, card.value, card.comment)
+            except ValueError:
+                if isinstance(card.value,str):
+                    n = 80 - len(card.key) - 14
+                    s = card.value[0:n]
+                    prihdu.header.update('hierarch %s' %card.key, s, card.comment)
+                else:
+                    prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
+            except:
+                print card.key
+                pass
+    prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+    prihdu.header.update('author', 'MPDAF', 'origin of the file')
+    if save_as_ima:
+        hdulist = [prihdu]
+        hdulist.append(pyfits.ImageHDU(name='xpos', data=xpos))
+        hdulist.append(pyfits.ImageHDU(name='ypos', data=ypos))
+        hdulist.append(pyfits.ImageHDU(name='lambda', data=lbda))
+        hdulist.append(pyfits.ImageHDU(name='data', data=data))
+        hdulist.append(pyfits.ImageHDU(name='dq', data=np.uint8(dq)))
+        hdulist.append(pyfits.ImageHDU(name='stat', data=stat))
+        hdulist.append(pyfits.ImageHDU(name='origin', data=np.uint8(origin)))
+        if weight is not None:
+            hdulist.append(pyfits.ImageHDU(name='weight', data=weight))
+        hdu = pyfits.HDUList(hdulist)
+        hdu.writeto(filename, clobber=True)
+    else:
+        cols = []
+        cols.append(pyfits.Column(name='xpos', format='1E',unit='deg', array=xpos))
+        cols.append(pyfits.Column(name='ypos', format='1E',unit='deg', array=ypos))
+        cols.append(pyfits.Column(name='lambda', format='1E',unit='Angstrom', array=lbda))
+        cols.append(pyfits.Column(name='data', format='1E',unit='count', array=data))
+        cols.append(pyfits.Column(name='dq', format='1J',unit='None', array=dq))
+        cols.append(pyfits.Column(name='stat', format='1E',unit='None', array=stat))
+        cols.append(pyfits.Column(name='origin', format='1J',unit='count**2', array=origin))
+        if weight is not None:
+            cols.append(pyfits.Column(name='weight', format='1E',unit='count', array=weight))
+        coltab = pyfits.ColDefs(cols)
+        tbhdu = pyfits.new_table(coltab)
+        thdulist = pyfits.HDUList([prihdu, tbhdu])
+        thdulist.writeto(filename, clobber=True)
 
 class PixTable(object):
     """PixTable class
@@ -21,28 +78,35 @@ class PixTable(object):
     filename : string
     The FITS file name. None if any.
 
-    primary_header: pyfits.CardList
-    The primary header
+    primary_header : pyfits.CardList
+    The primary header.
 
-    nrows: integer
-    Number of rows
+    nrows : integer
+    Number of rows.
+    
+    nifu : integer
+    Number of merged IFUs that went into this pixel table.
 
-    ncols: integer
-    Number of columns
-
+    skysub : boolean
+    If True, this pixel table was sky-subtracted.
+    
+    fluxcal : boolean
+    If True, this pixel table was flux-calibrated.
+    
+    wcs : boolean
+    If True, the coordinates of this pixel table was world coordinates on the sky.
+    
+    ima : boolean
+    If True, pixtable is saved as multi-extension FITS image instead of FITS binary table.
     """
 
-    def __init__(self, filename=None):
+    def __init__(self, filename):
         """creates a PixTable object
 
         Parameters
         ----------
         filename : string
         The FITS file name. None by default.
-
-        Notes
-        -----
-        filename=None creates an empty object
 
         The FITS file is opened with memory mapping.
         Just the primary header and table dimensions are loaded.
@@ -51,24 +115,44 @@ class PixTable(object):
         """
         self.filename = filename
         self.nrows = 0
-        self.ncols = 0
-
-        # name of memory-mapped files
-        self.__xpos = None
-        self.__ypos = None
-        self.__lbda = None
-        self.__data = None
-        self.__dq = None
-        self.__stat = None
-        self.__origin = None
+        self.nifu = 0
+        self.skysub = False
+        self.fluxcal = False
+        self.wcs = False
+        self.ima = True
 
         if filename!=None:
             try:
                 hdulist = pyfits.open(self.filename,memmap=1)
                 self.primary_header = hdulist[0].header.ascard
                 self.nrows = hdulist[1].header["NAXIS2"]
-                self.ncols = hdulist[1].header["TFIELDS"]
+                self.ima= (hdulist[1].header['XTENSION'] == 'IMAGE')
                 hdulist.close()
+                
+                # Merged IFUs that went into this pixel tables
+                try:
+                    self.nifu = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE MERGED")
+                except:
+                    self.nifu = 1
+                # sky subtraction
+                try:
+                    self.skysub = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE SKYSUB")
+                except:
+                    self.skysub = False
+                # flux calibration
+                try:
+                    self.fluxcal = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE FLUXCAL")
+                except:
+                    self.fluxcal = False
+                # type of coordinates
+                try:
+                    if self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:10] == "positioned":
+                        self.wcs = True
+                    else:
+                        self.wcs = False
+                except:
+                    self.wcs = False
+                
             except IOError:
                 print 'IOError: file %s not found' % `filename`
                 print
@@ -81,23 +165,11 @@ class PixTable(object):
         """Removes temporary files used for memory mapping.
         """
         try:
-            if self.__xpos != None:
-                os.remove(self.__xpos)
-            if self.__ypos != None:
-                os.remove(self.__ypos)
-            if self.__lbda != None:
-                os.remove(self.__lbda)
-            if self.__data != None:
-                os.remove(self.__data)
-            if self.__dq != None:
-                os.remove(self.__dq)
-            if self.__stat != None:
-                os.remove(self.__stat)
-            if self.__origin != None:
-                os.remove(self.__origin)
+            if os.path.basename(self.filename) in os.listdir(tempfile.gettempdir()):
+                os.remove(self.filename)
         except:
             pass
-
+        
     def copy(self):
         """Copies PixTable object in a new one and returns it.
         """
@@ -105,62 +177,29 @@ class PixTable(object):
         result.filename = self.filename
 
         result.nrows = self.nrows
-        result.ncols = self.ncols
+        result.nifu = self.nifu
+        result.skysub = self.skysub
+        result.fluxcal = self.fuxcal
+        result.wcs = self.wcs
+        result.ima = self.ima
         result.primary_header = pyfits.CardList(self.primary_header)
-        #xpos
-        (fd,result.__xpos) = tempfile.mkstemp(prefix='mpdaf')
-        selfxpos=self.get_xpos()
-        xpos = np.memmap(result.__xpos,dtype="float32",shape=(self.nrows))
-        xpos[:] = selfxpos[:]
-        del xpos, selfxpos
-        os.close(fd)
-        #ypos
-        (fd,result.__ypos) = tempfile.mkstemp(prefix='mpdaf')
-        selfypos=self.get_ypos()
-        ypos = np.memmap(result.__ypos,dtype="float32",shape=(self.nrows))
-        ypos[:] = selfypos[:]
-        del ypos, selfypos
-        os.close(fd)
-        #lambda
-        (fd,result.__lbda) = tempfile.mkstemp(prefix='mpdaf')
-        selflbda=self.get_lambda()
-        lbda = np.memmap(result.__lbda,dtype="float32",shape=(self.nrows))
-        lbda[:] = selflbda[:]
-        del lbda, selflbda
-        os.close(fd)
-        #data
-        (fd,result.__data) = tempfile.mkstemp(prefix='mpdaf')
-        selfdata=self.get_data()
-        data = np.memmap(result.__data,dtype="float32",shape=(self.nrows))
-        data[:] = selfdata[:]
-        del data, selfdata
-        os.close(fd)
-        #variance
-        (fd,result.__stat) = tempfile.mkstemp(prefix='mpdaf')
-        selfstat=self.get_stat()
-        stat = np.memmap(result.__stat,dtype="float32",shape=(self.nrows))
-        stat[:] = selfstat[:]
-        del stat, selfstat
-        os.close(fd)
-        # pixel quality
-        (fd,result.__dq) = tempfile.mkstemp(prefix='mpdaf')
-        selfdq = self.get_dq()
-        dq = np.memmap(result.__dq,dtype="uint32",shape=(self.nrows))
-        dq[:] = selfdq[:]
-        del dq, selfdq
-        os.close(fd)
-        # origin
-        (fd,result.__origin) = tempfile.mkstemp(prefix='mpdaf')
-        selforigin = self.get_origin()
-        origin = np.memmap(result.__origin,dtype="uint32",shape=(self.nrows))
-        origin[:] = selforigin[:]
-        del origin, selforigin
-        os.close(fd)
         return result
 
     def info(self):
         """Prints information.
         """
+        print "%i merged IFUs went into this pixel table" %self.nifu
+        if self.skysub:
+            "This pixel table was sky-subtracted"
+        if self.fluxcal:
+            "This pixel table was flux-calibrated"
+        try:
+            print '%s (%s)' %(self.primary_header["HIERARCH ESO DRS MUSE PIXTABLE WCS"].value, self.primary_header["HIERARCH ESO DRS MUSE PIXTABLE WCS"].comment)
+        except:
+            try:
+                print '%s (%s)' %(self.primary_header["HIERARCH ESO PRO MUSE PIXTABLE WCS"].value, self.primary_header["HIERARCH ESO PRO MUSE PIXTABLE WCS"].comment)
+            except:
+                pass
         if self.filename != None:
             hdulist = pyfits.open(self.filename,memmap=1)
             print hdulist.info()
@@ -168,207 +207,228 @@ class PixTable(object):
         else:
             print 'No\tName\tType\tDim'
             print '0\tPRIMARY\tcard\t()'
-            print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
+            #print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
+            
 
-    def get_xpos(self):
-        """Loads the xpos column and returns it.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__xpos != None:
-            xpos = np.memmap(self.__xpos,dtype="float32",shape=(self.nrows))
-            return xpos
-        else:
-            if self.filename == None:
-                print 'format error: empty XPOS column'
-                print
-                return None
-            else:
-                hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.__xpos) = tempfile.mkstemp(prefix='mpdaf')
-                data_xpos = hdulist[1].data.field('xpos')
-                xpos = np.memmap(self.__xpos,dtype="float32",shape=(self.nrows))
-                xpos[:] = data_xpos[:]
-                hdulist.close()
-                os.close(fd)
-                return xpos
-
-    def get_ypos(self):
-        """Loads the ypos column and returns it.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__ypos != None:
-            ypos = np.memmap(self.__ypos,dtype="float32",shape=(self.nrows))
-            return ypos
-        else:
-            if self.filename == None:
-                print 'format error: empty YPOS column'
-                print
-                return None
-            else:
-                hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.__ypos) = tempfile.mkstemp(prefix='mpdaf')
-                data_ypos = hdulist[1].data.field('ypos')
-                ypos = np.memmap(self.__ypos,dtype="float32",shape=(self.nrows))
-                ypos[:] = data_ypos[:]
-                hdulist.close()
-                os.close(fd)
-                return ypos
-
-    def get_lambda(self):
-        """Loads the lambda column and returns it.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__lbda != None:
-            lbda = np.memmap(self.__lbda,dtype="float32",shape=(self.nrows))
-            return lbda
-        else:
-            if self.filename == None:
-                print 'format error: empty YLAMBDA column'
-                print
-                return None
-            else:
-                hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.__lbda) = tempfile.mkstemp(prefix='mpdaf')
-                data_lbda = hdulist[1].data.field('lambda')
-                lbda = np.memmap(self.__lbda,dtype="float32",shape=(self.nrows))
-                lbda[:] = data_lbda[:]
-                hdulist.close()
-                os.close(fd)
-                return lbda
-
-    def get_data(self):
-        """Loads the data column and returns it.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__data != None:
-            data = np.memmap(self.__data,dtype="float32",shape=(self.nrows))
-            return data
-        else:
-            if self.filename == None:
-                print 'format error: empty DATA column'
-                print
-                return None
-            else:
-                hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.__data) = tempfile.mkstemp(prefix='mpdaf')
-                data_data = hdulist[1].data.field('data')
-                data = np.memmap(self.__data,dtype="float32",shape=(self.nrows))
-                data[:] = data_data[:]
-                hdulist.close()
-                os.close(fd)
-                return data
-
-    def get_stat(self):
-        """Loads the stat column and returns it.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__stat != None:
-            stat = np.memmap(self.__stat,dtype="float32",shape=(self.nrows))
-            return stat
-        else:
-            if self.filename == None:
-                print 'format error: empty STAT column'
-                print
-                return None
-            else:
-                hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.__stat) = tempfile.mkstemp(prefix='mpdaf')
-                data_stat = hdulist[1].data.field('stat')
-                stat = np.memmap(self.__stat,dtype="float32",shape=(self.nrows))
-                stat[:] = data_stat[:]
-                hdulist.close()
-                os.close(fd)
-                return stat
-
-    def get_dq(self):
-        """Loads the dq column and returns it.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__dq != None:
-            dq = np.memmap(self.__dq,dtype="uint32",shape=(self.nrows))
-            return dq
-        else:
-            if self.filename == None:
-                print 'format error: empty DQ column'
-                print
-                return None
-            else:
-                hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.__dq) = tempfile.mkstemp(prefix='mpdaf')
-                data_dq = hdulist[1].data.field('dq')
-                dq = np.memmap(self.__dq,dtype="uint32",shape=(self.nrows))
-                dq[:] = data_dq[:]
-                hdulist.close()
-                os.close(fd)
-                return dq
-
-    def get_origin(self):
-        """Loads the origin column and returns it.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__origin != None:
-            origin = np.memmap(self.__origin,dtype="uint32",shape=(self.nrows))
-            return origin
-        else:
-            if self.filename == None:
-                print 'format error: empty ORIGIN column'
-                print
-                return None
-            else:
-                hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.__origin) = tempfile.mkstemp(prefix='mpdaf')
-                data_origin = hdulist[1].data.field('origin')
-                origin = np.memmap(self.__origin,dtype="uint32",shape=(self.nrows))
-                origin[:] = data_origin[:]
-                hdulist.close()
-                os.close(fd)
-                return origin
-
-    def write(self,filename):
+    def write(self,filename, save_as_ima=True):
         """Saves the object in a FITS file.
-        
+    
         :param filename: The FITS filename.
         :type filename: string
+        
+        :param save_as_ima: If True, pixtable is saved as multi-extension FITS image instead of FITS binary table.
+        :type save_as_ima: bool
         """
-        prihdu = pyfits.PrimaryHDU()
-        if self.primary_header is not None:
-            for card in self.primary_header:
-                try:
-                    prihdu.header.update(card.key, card.value, card.comment)
-                except ValueError:
-                    if isinstance(card.value,str):
-                        n = 80 - len(card.key) - 14
-                        s = card.value[0:n]
-                        prihdu.header.update('hierarch %s' %card.key, s, card.comment)
-                    else:
-                        prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
-                except:
-                    pass
-        prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
-        prihdu.header.update('author', 'MPDAF', 'origin of the file')
-        cols = []
-        cols.append(pyfits.Column(name='xpos', format='1E',unit='deg', array=self.get_xpos()))
-        cols.append(pyfits.Column(name='ypos', format='1E',unit='deg', array=self.get_ypos()))
-        cols.append(pyfits.Column(name='lambda', format='1E',unit='Angstrom', array=self.get_lambda()))
-        cols.append(pyfits.Column(name='data', format='1E',unit='count', array=self.get_data()))
-        cols.append(pyfits.Column(name='dq', format='1J',unit='None', array=self.get_dq()))
-        cols.append(pyfits.Column(name='stat', format='1E',unit='None', array=self.get_stat()))
-        cols.append(pyfits.Column(name='origin', format='1J',unit='count**2', array=self.get_origin()))
-        coltab = pyfits.ColDefs(cols)
-        tbhdu = pyfits.new_table(coltab)
-        thdulist = pyfits.HDUList([prihdu, tbhdu])
-        thdulist.writeto(filename, clobber=True)
-        # update attributes
+        if self.ima == save_as_ima:
+            shutil.copy(self.filename, filename)
+        else:
+            write(filename, self.get_xpos(), self.get_ypos(), self.get_lambda(), self.get_data(), self.get_dq(), self.get_stat(), self.get_origin(), self.get_weight(), self.primary_header, save_as_ima)
+        if os.path.basename(self.filename) in os.listdir(tempfile.gettempdir()):
+            os.remove(self.filename)
         self.filename = filename
+        
 
-    def extract(self, sky=None, lbda=None, ifu=None, slice=None, xpix=None, ypix=None):
+    def get_xpos(self, ksel=None):
+        """Loads the xpos column and returns it.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        
+        :rtype: numpy.array
+        """
+        hdulist = pyfits.open(self.filename,memmap=1)
+        if ksel is None:
+            if self.ima:
+                xpos = hdulist['xpos'].data[:,0]
+            else:
+                xpos = hdulist[1].data.field('xpos')
+        else:
+            if self.ima:
+                xpos = hdulist['xpos'].data[ksel,0]
+            else:
+                xpos = hdulist[1].data.field('xpos')[ksel]
+        hdulist.close()
+        return xpos
+
+    def get_ypos(self, ksel=None):
+        """Loads the ypos column and returns it.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        
+        :rtype: numpy.array
+        """
+        hdulist = pyfits.open(self.filename,memmap=1)
+        if ksel is None:
+            if self.ima:
+                ypos = hdulist['ypos'].data[:,0]
+            else:
+                ypos = hdulist[1].data.field('ypos')
+        else:
+            if self.ima:
+                ypos = hdulist['ypos'].data[ksel,0]
+            else:
+                ypos = hdulist[1].data.field('ypos')[ksel]
+        hdulist.close()
+        return ypos
+
+    def get_lambda(self, ksel=None):
+        """Loads the lambda column and returns it.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        
+        :rtype: numpy.array
+        """
+        hdulist = pyfits.open(self.filename,memmap=1)
+        if ksel is None:
+            if self.ima:
+                lbda = hdulist['lambda'].data[:,0]
+            else:
+                lbda = hdulist[1].data.field('lambda')
+        else:
+            if self.ima:
+                lbda = hdulist['lambda'].data[ksel,0]
+            else:
+                lbda = hdulist[1].data.field('lambda')[ksel]
+        hdulist.close()
+        return lbda
+
+    def get_data(self, ksel=None):
+        """Loads the data column and returns it.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        
+        :rtype: numpy.array
+        """
+        hdulist = pyfits.open(self.filename,memmap=1)
+        if ksel is None:
+            if self.ima:
+                data = hdulist['data'].data[:,0]
+            else:
+                data = hdulist[1].data.field('data')
+        else:
+            if self.ima:
+                data = hdulist['data'].data[ksel,0]
+            else:
+                data = hdulist[1].data.field('data')[ksel]
+        hdulist.close()
+        return data
+
+    def get_stat(self, ksel=None):
+        """Loads the stat column and returns it.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        
+        :rtype: numpy.array
+        """
+        hdulist = pyfits.open(self.filename,memmap=1)
+        if ksel is None:
+            if self.ima:
+                stat = hdulist['stat'].data[:,0]
+            else:
+                stat = hdulist[1].data.field('stat')
+        else:
+            if self.ima:
+                stat = hdulist['stat'].data[ksel,0]
+            else:
+                stat = hdulist[1].data.field('stat')[ksel]
+        hdulist.close()
+        return stat
+
+    def get_dq(self, ksel=None):
+        """Loads the dq column and returns it.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        
+        :rtype: numpy.array
+        """
+        hdulist = pyfits.open(self.filename,memmap=1)
+        if ksel is None:
+            if self.ima:
+                dq = hdulist['dq'].data[:,0]
+            else:
+                dq = hdulist[1].data.field('dq')
+        else:
+            if self.ima:
+                dq = hdulist['dq'].data[ksel,0]
+            else:
+                dq = hdulist[1].data.field('dq')[ksel]
+        hdulist.close()
+        return dq
+
+    def get_origin(self, ksel=None):
+        """Loads the origin column and returns it.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        
+        :rtype: numpy.array
+        """
+        hdulist = pyfits.open(self.filename,memmap=1)
+        if ksel is None:
+            if self.ima:
+                origin = hdulist['origin'].data[:,0]
+            else:
+                origin = hdulist[1].data.field('origin')
+        else:
+            if self.ima:
+                origin = hdulist['origin'].data[ksel,0]
+            else:
+                origin = hdulist[1].data.field('origin')[ksel]
+        hdulist.close()
+        return origin
+            
+    def get_weight(self, ksel=None):
+        """Loads the weight column and returns it.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        
+        :rtype: numpy.array
+        """
+        try:
+            if self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WEIGHTED"):
+                hdulist = pyfits.open(self.filename,memmap=1)
+                if ksel is None:
+                    if self.ima:
+                        weight = hdulist['weight'].data[:,0]
+                    else:
+                        weight = hdulist[1].data.field('weight')
+                else:
+                    if self.ima:
+                        weight = hdulist['weight'].data[ksel,0] 
+                    else:
+                        weight = hdulist[1].data.field('weight')[ksel]
+                hdulist.close()
+        except:
+            weight=None
+        return weight
+            
+    def get_exp(self):
+        """Loads the exposure numbers and returns it as a column.
+        
+        :rtype: numpy.memmap
+        """
+        try:
+            nexp = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
+            exp = np.empty(shape=(self.nrows))
+            for i in range(1,nexp+1):
+                first = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST"%i)
+                last = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST"%i)
+                exp[first:last+1] = i
+        except:
+            exp = None
+        return exp
+
+
+        # update attributes
+        #self.filename = filename
+
+    def extract(self, filename=None, sky=None, lbda=None, ifu=None, slice=None, xpix=None, ypix=None, exp=None):
         """Extracts a subset of a pixtable using the following criteria:
         
         - aperture on the sky (center, size and shape)
@@ -381,9 +441,14 @@ class PixTable(object):
         
         - detector pixels
         
+        - exposure numbers
+        
+        
         The arguments can be either single value or a list of values to select
         multiple regions.
 
+        :param filename: The FITS filename used to saves the resulted object.
+        :type filename: string
         
         :param sky: (y, x, size, shape) extract an aperture on the sky, defined by a center (y, x), a shape ('C' for circular, 'S' for square) and size (radius or half side length).
         :type sky: (float, float, float, char)
@@ -403,15 +468,15 @@ class PixTable(object):
         :param ypix: (min, max) pixel range along the Y axis
         :type ypix: (int, int)
         
-        :rtype: PixTable
+        :param exp: list of exposure numbers
+        :type exp: list of integers
+        
+        :rtype: PixTable       
         """
-
-        # First create an empty pixtable
-        ptab = PixTable()
-        ptab.primary_header = self.primary_header.copy()
-        ptab.ncols = self.ncols
+        
+        primary_header = self.primary_header.copy()
         if self.nrows == 0:
-            return ptab
+            return None
 
         # To start select the whole pixtable
         kmask = np.ones(self.nrows).astype('bool')
@@ -425,9 +490,15 @@ class PixTable(object):
             mask = np.zeros(self.nrows).astype('bool')
             for y0,x0,size,shape in sky:
                 if shape == 'C':
-                    mask |= (((col_xpos-x0)*np.cos(y0*np.pi/180.))**2 + (col_ypos-y0)**2) < size**2
+                    if self.wcs:
+                        mask |= (((col_xpos-x0)*np.cos(y0*np.pi/180.))**2 + (col_ypos-y0)**2) < size**2
+                    else:
+                        mask |= ((col_xpos-x0)**2 + (col_ypos-y0)**2) < size**2
                 elif shape == 'S':
-                    mask |= (np.abs((col_xpos-x0)*np.cos(y0*np.pi/180.)) < size) & (np.abs(col_ypos-y0) < size)
+                    if self.wcs:
+                        mask |= (np.abs((col_xpos-x0)*np.cos(y0*np.pi/180.)) < size) & (np.abs(col_ypos-y0) < size)
+                    else:
+                        mask |= (np.abs(col_xpos-x0) < size) & (np.abs(col_ypos-y0) < size)
                 else:
                     raise ValueError, 'Unknown shape parameter'
             kmask &= mask
@@ -493,102 +564,118 @@ class PixTable(object):
                     kmask &= (col_ypix>=y1) & (col_ypix<y2)
                 del col_ypix
             del col_origin
+            
+        # Do the selection on the exposure numbers
+        if exp is not None:
+            col_exp = self.get_exp()
+            if col_exp is not None:
+                mask = np.zeros(self.nrows).astype('bool')
+                for iexp in exp:
+                    mask |= (col_exp==iexp)
+                kmask &= mask
+                del mask
+                del col_exp
 
         # Compute the new pixtable
         ksel = np.where(kmask)
         del kmask
-        ptab.nrows = len(ksel[0])
-        if ptab.nrows == 0:
-            return ptab
+        nrows = len(ksel[0])
+        if nrows == 0:
+            return None
         #xpos
-        (fd,ptab.__xpos) = tempfile.mkstemp(prefix='mpdaf')
-        xpos = np.memmap(ptab.__xpos,dtype="float32",shape=(ptab.nrows))
-        selfxpos=self.get_xpos()
-        xpos[:] = selfxpos[ksel]
+        xpos=self.get_xpos(ksel)
         try:
-            x_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW']
-            x_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH']
+            x_low = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW']
+            x_high = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH']
         except:
-            x_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X LOW']
-            x_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X HIGH']
+            x_low = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X LOW']
+            x_high = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X HIGH']
         x_low.value = float(xpos.min())
         x_high.value = float(xpos.max())
-        del xpos,selfxpos
-        os.close(fd)
         #ypos
-        (fd,ptab.__ypos) = tempfile.mkstemp(prefix='mpdaf')
-        ypos = np.memmap(ptab.__ypos,dtype="float32",shape=(ptab.nrows))
-        selfypos=self.get_ypos()
-        ypos[:] = selfypos[ksel]
+        ypos=self.get_ypos(ksel)
         try:
-            y_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW']
-            y_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH']
+            y_low = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW']
+            y_high = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH']
         except:
-            y_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y LOW']
-            y_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y HIGH']
+            y_low = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y LOW']
+            y_high = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y HIGH']
         y_low.value = float(ypos.min())
         y_high.value = float(ypos.max())
-        del ypos,selfypos
-        os.close(fd)
         #lambda
-        (fd,ptab.__lbda) = tempfile.mkstemp(prefix='mpdaf')
-        lbda = np.memmap(ptab.__lbda,dtype="float32",shape=(ptab.nrows))
-        selflbda=self.get_lambda()
-        lbda[:] = selflbda[ksel]
+        lbda=self.get_lambda(ksel)
         try:
-            lbda_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA LOW']
-            lbda_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA HIGH']
+            lbda_low = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA LOW']
+            lbda_high = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA HIGH']
         except:
-            lbda_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS LAMBDA LOW']
-            lbda_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS LAMBDA HIGH']
+            lbda_low = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS LAMBDA LOW']
+            lbda_high = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS LAMBDA HIGH']
         lbda_low.value = float(lbda.min())
         lbda_high.value = float(lbda.max())
-        del lbda,selflbda
-        os.close(fd)
         #data
-        (fd,ptab.__data) = tempfile.mkstemp(prefix='mpdaf')
-        selfdata = self.get_data()
-        data = np.memmap(ptab.__data,dtype="float32",shape=(ptab.nrows))
-        data[:] = selfdata[ksel]
-        del data,selfdata
-        os.close(fd)
+        data = self.get_data(ksel)
         #variance
-        (fd,ptab.__stat) = tempfile.mkstemp(prefix='mpdaf')
-        selfstat=self.get_stat()
-        stat = np.memmap(ptab.__stat,dtype="float32",shape=(ptab.nrows))
-        stat[:] = selfstat[ksel]
-        del stat,selfstat
-        os.close(fd)
+        stat=self.get_stat(ksel)
         # pixel quality
-        (fd,ptab.__dq) = tempfile.mkstemp(prefix='mpdaf')
-        selfdq = self.get_dq()
-        dq = np.memmap(ptab.__dq,dtype="uint32",shape=(ptab.nrows))
-        dq[:] = selfdq[ksel]
-        del dq,selfdq
-        os.close(fd)
+        dq = self.get_dq(ksel)
         # origin
-        (fd,ptab.__origin) = tempfile.mkstemp(prefix='mpdaf')
-        selforigin = self.get_origin()
-        origin = np.memmap(ptab.__origin,dtype="uint32",shape=(ptab.nrows))
-        origin[:] = selforigin[ksel]
+        origin = self.get_origin(ksel)
         try:
-            ifu_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW']
-            ifu_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH']
-            slice_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW']
-            slice_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH']
+            ifu_low = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW']
+            ifu_high = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH']
+            slice_low = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW']
+            slice_high = primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH']
         except:
-            ifu_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS IFU LOW']
-            ifu_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS IFU HIGH']
-            slice_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE LOW']
-            slice_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE HIGH']
+            ifu_low = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS IFU LOW']
+            ifu_high = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS IFU HIGH']
+            slice_low = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE LOW']
+            slice_high = primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE HIGH']
         ifu_low.value = int(self.origin2ifu(origin).min())
         ifu_high.value = int(self.origin2ifu(origin).max())
         slice_low.value = int(self.origin2slice(origin).min())
         slice_high.value = int(self.origin2slice(origin).max())
-        del origin,selforigin
-        os.close(fd)
+        
+        #weight
+        weight=self.get_weight(ksel)
+            
+        #combined exposures
+        selfexp = self.get_exp()
+        if selfexp is not None:
+            newexp = selfexp[ksel]
+            numbers_exp = np.unique(newexp)
+            try:
+                nexp = primary_header["HIERARCH ESO DRS MUSE PIXTABLE COMBINED"]
+                nexp.value = len(numbers_exp)
+                for iexp,i in zip(numbers_exp,range(1,len(numbers_exp)+1)):
+                    ksel = np.where(newexp==iexp)
+                    first = primary_header["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST"%i]
+                    last = primary_header["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST"%i]
+                    first.value = ksel[0][0]
+                    last.value = ksel[0][-1]
+                for i in range(len(numbers_exp)+1,self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")+1):
+                    del primary_header["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST"%i]
+                    del primary_header["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST"%i]
+            except:
+                nexp = primary_header["HIERARCH ESO PRO MUSE PIXTABLE COMBINED"]
+                nexp.value = len(numbers_exp)
+                for iexp,i in zip(numbers_exp,range(1,len(numbers_exp)+1)):
+                    ksel = np.where(newexp==iexp)
+                    first = primary_header["HIERARCH ESO PRO MUSE PIXTABLE EXP%i FIRST"%i]
+                    last = primary_header["HIERARCH ESO PRO MUSE PIXTABLE EXP%i LAST"%i]
+                    first.value = ksel[0][0]
+                    last.value = ksel[0][-1]
+                for i in range(len(numbers_exp)+1,self.get_keywords("HIERARCH ESO PRO MUSE PIXTABLE COMBINED")+1):
+                    del primary_header["HIERARCH ESO PRO MUSE PIXTABLE EXP%i FIRST"%i]
+                    del primary_header["HIERARCH ESO PRO MUSE PIXTABLE EXP%i LAST"%i]
 
-        return ptab
+        #write the result in a new file
+        if filename is None:
+            (fd,filename) = tempfile.mkstemp(prefix='mpdaf')
+            os.close(fd)
+            
+        write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight, primary_header, self.ima)
+        return PixTable(filename)
+    
 
     def origin2ifu(self, origin):
         """Converts the origin value and returns the ifu number.
@@ -703,7 +790,7 @@ class PixTable(object):
         :rtype: float
         """
         # HIERARCH ESO PRO MUSE has been renamed into HIERARCH ESO DRS MUSE
-        # in recent versions of the DRS. Try with the
+        # in recent versions of the DRS.
         if key.startswith('HIERARCH ESO PRO MUSE'):
             alternate_key = key.replace('HIERARCH ESO PRO MUSE', 'HIERARCH ESO DRS MUSE')
         elif key.startswith('HIERARCH ESO DRS MUSE'):
@@ -720,7 +807,7 @@ class PixTable(object):
         
         :param lbda: (min, max) wavelength range in Angstrom. If None, the image is reconstructed for all wavelengths.
         :type lbda: (float,float)
-        :param step: pixel step of the final image in arcsec. If None, the value corresponding to the keyword "HIERARCH ESO INS PIXSCALE" is used.
+        :param step: pixel step of the final image (in arcsec if the coordinates of this pixel table are world coordinates on the sky ). If None, the value corresponding to the keyword "HIERARCH ESO INS PIXSCALE" is used.
         :type step: (float,float)
         
         :rtype: :class:`mpdaf.obj.Image`
@@ -748,17 +835,18 @@ class PixTable(object):
             del col_lambda
         del col_dq
         
-        x = self.get_xpos()[ksel]
-        y = self.get_ypos()[ksel]
-        data = self.get_data()[ksel]
+        x = self.get_xpos(ksel)
+        y = self.get_ypos(ksel)
+        data = self.get_data(ksel)
         
         xmin = np.min(x)
         xmax = np.max(x)
         ymin = np.min(y)
         ymax = np.max(y)
         
-        xstep /= (-3600.*np.cos((ymin+ymax)*np.pi/180./2.))
-        ystep /= 3600.
+        if self.wcs:
+            xstep /= (-3600.*np.cos((ymin+ymax)*np.pi/180./2.))
+            ystep /= 3600.
         
         nx = 1 + int( (xmin - xmax) / xstep )
         grid_x = np.arange(nx) * xstep + xmax
@@ -767,9 +855,8 @@ class PixTable(object):
         shape = (ny,nx)
           
         points = np.empty((len(ksel[0]),2),dtype=float)
-        points[:,0] = self.get_ypos()[ksel]
-        points[:,1] = self.get_xpos()[ksel]
-        data = self.get_data()[ksel]
+        points[:,0] = y
+        points[:,1] = x
 
         new_data= interpolate.griddata(points, data, np.meshgrid(grid_y,grid_x), method='linear').T
 
@@ -786,6 +873,9 @@ class PixTable(object):
         """
         if self.nrows == 0:
             return None
+        
+        if self.nifu != 1:
+             raise ValueError, 'Pixtable contains multiple IFU'
 
         col_data = self.get_data()
         col_origin = self.get_origin()
@@ -817,6 +907,9 @@ class PixTable(object):
         """
         if self.nrows == 0:
             return None
+        
+        if self.nifu != 1:
+             raise ValueError, 'Pixtable contains multiple IFU'
 
         col_origin = self.get_origin()
         col_lambdas = self.get_lambda()
