@@ -52,7 +52,7 @@ class MakeFusion(Command):
     def finalize_options(self):
         pass
     def run(self):
-        import os,subprocess,shutil
+        import os,subprocess,shutil,fusion
         errno = subprocess.call(['make', '-C', 'lib/fusion/'])
         shutil.copy('lib/fusion/fusion_fit','/usr/local/bin/fusion_fit')
         os.remove('lib/fusion/fusion_fit')
@@ -65,6 +65,8 @@ class MakeFusion(Command):
         shutil.copy('lib/fusion/fusion_resampling','/usr/local/bin/fusion_resampling')
         os.remove('lib/fusion/fusion_resampling')
         errno = subprocess.call(['make', 'clean', '-C', 'lib/fusion/'])
+        path = os.path.abspath(os.path.dirname(fusion.__file__))
+        shutil.copy('lib/fusion/LSF_V1.fits',path + '/LSF_V1.fits')
 
 setup(name = 'mpdaf',
       version = '0.1.0',
