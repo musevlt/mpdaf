@@ -5,11 +5,11 @@ import sys
 import numpy as np
 import unittest
 
-from obj import Spectrum
-from obj import Image
-from obj import Cube
-from obj import WCS
-from obj import WaveCoord
+from mpdaf.obj import Spectrum
+from mpdaf.obj import Image
+from mpdaf.obj import Cube
+from mpdaf.obj import WCS
+from mpdaf.obj import WaveCoord
 
 class TestObj(unittest.TestCase):
 
