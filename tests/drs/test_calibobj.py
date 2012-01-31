@@ -5,8 +5,8 @@ import sys
 import numpy
 import unittest
 
-from drs import CalibDir
-from drs import CalibFile
+from mpdaf.drs import CalibDir
+from mpdaf.drs import CalibFile
 
 class TestCalibObj(unittest.TestCase):
     

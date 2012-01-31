@@ -5,7 +5,7 @@ import sys
 import numpy
 import unittest
 
-from drs import RawFile
+from mpdaf.drs import RawFile
 
 class TestRawObj(unittest.TestCase):
     

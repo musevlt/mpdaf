@@ -5,8 +5,8 @@ import sys
 import numpy
 import unittest
 
-from obj import WCS
-from obj import WaveCoord
+from mpdaf.obj import WCS
+from mpdaf.obj import WaveCoord
 
 class TestWCS(unittest.TestCase):
 
