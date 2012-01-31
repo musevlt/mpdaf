@@ -52,21 +52,21 @@ class MakeFusion(Command):
     def finalize_options(self):
         pass
     def run(self):
-        import os,subprocess,shutil,fusion
-        errno = subprocess.call(['make', '-C', 'lib/fusion/'])
-        shutil.copy('lib/fusion/fusion_fit','/usr/local/bin/fusion_fit')
-        os.remove('lib/fusion/fusion_fit')
-        shutil.copy('lib/fusion/fusion_FSF','/usr/local/bin/fusion_FSF')
-        os.remove('lib/fusion/fusion_FSF')
-        shutil.copy('lib/fusion/fusion_LSF','/usr/local/bin/fusion_LSF')
-        os.remove('lib/fusion/fusion_LSF')
-        shutil.copy('lib/fusion/fusion_residual','/usr/local/bin/fusion_residual')
-        os.remove('lib/fusion/fusion_residual')
-        shutil.copy('lib/fusion/fusion_resampling','/usr/local/bin/fusion_resampling')
-        os.remove('lib/fusion/fusion_resampling')
-        errno = subprocess.call(['make', 'clean', '-C', 'lib/fusion/'])
-        path = os.path.abspath(os.path.dirname(fusion.__file__))
-        shutil.copy('lib/fusion/LSF_V1.fits',path + '/LSF_V1.fits')
+        import os,subprocess,shutil,mpdaf.fusion
+        errno = subprocess.call(['make', '-C', 'lib/mpdaf/fusion/'])
+        shutil.copy('lib/mpdaf/fusion/fusion_fit','/usr/local/bin/fusion_fit')
+        os.remove('lib/mpdaf/fusion/fusion_fit')
+        shutil.copy('lib/mpdaf/fusion/fusion_FSF','/usr/local/bin/fusion_FSF')
+        os.remove('lib/mpdaf/fusion/fusion_FSF')
+        shutil.copy('lib/mpdaf/fusion/fusion_LSF','/usr/local/bin/fusion_LSF')
+        os.remove('lib/mpdaf/fusion/fusion_LSF')
+        shutil.copy('lib/mpdaf/fusion/fusion_residual','/usr/local/bin/fusion_residual')
+        os.remove('lib/mpdaf/fusion/fusion_residual')
+        shutil.copy('lib/mpdaf/fusion/fusion_resampling','/usr/local/bin/fusion_resampling')
+        os.remove('lib/mpdaf/fusion/fusion_resampling')
+        errno = subprocess.call(['make', 'clean', '-C', 'lib/mpdaf/fusion/'])
+        path = os.path.abspath(os.path.dirname(mpdaf.fusion.__file__))
+        shutil.copy('lib/mpdaf/fusion/LSF_V1.fits',path + '/LSF_V1.fits')
 
 setup(name = 'mpdaf',
       version = '0.1.0',
@@ -77,7 +77,7 @@ setup(name = 'mpdaf',
       install_requires = ['pywcs','astropysics','prettytable'],
       provides = ['mpdaf'],
       package_dir = {'': 'lib/'},
-      packages = ['mpdaf'],
+      packages = ['mpdaf','mpdaf.drs','mpdaf.obj','mpdaf.fusion'],
       maintainer = 'Laure Piqueras',
       maintainer_email = 'laure.piqueras@univ-lyon1.fr',
       platforms = 'any', 
