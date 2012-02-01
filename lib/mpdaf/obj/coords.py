@@ -98,20 +98,15 @@ class WCS(object):
 
     Info: info, isEqual
     """
-    def __init__(self,hdr=None,crpix=None,dim=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0):
+    def __init__(self,hdr=None,crpix=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0):
         """creates a WCS object
 
         Parameters
         ----------
         crpix : float or (float,float)
         Reference pixel coordinates.
-        If crpix=None, crpix = (dim+1)/2.0 and the reference point is the center of the image.
-        If crpix=None and dim=None, crpix = 1.5 and the reference point is the first pixel in the image.
+        If crpix=None crpix = 1.0 and the reference point is the first pixel in the image.
         Note that for crpix definition, the first pixel in the image has pixel coordinates (1.0,1.0).
-
-        dim : integer or (integer,integer)
-        Lengths of the image in X and Y.
-        Note that dim=(nx,ny) is not equal to the numpy data shape: np.shape(data)=(ny,nx)
 
         crval : float or (float,float)
         Coordinates of the reference pixel.
@@ -122,7 +117,8 @@ class WCS(object):
         (1.0,1.0) by default.
 
         deg : boolean
-        If True, world coordinates are in decimal degrees
+        If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg)
+        If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR')
 
         rot: float
         Rotation angle in degree
@@ -135,12 +131,12 @@ class WCS(object):
         --------
         WCS(hdr) creates a WCS object from data header
         WCS(): the reference point is the first pixel in the image
-        WCS(crval=0,cdelt=0.2,dim=300): the reference point is the center of the image.
         WCS(crval=0,cdelt=0.2,crpix=150.5): the reference point is the center of the image.
-        WCS(crval=(1.46E+02,-3.11E+01),cdelt=(4E-04,5E-04),dim=500, deg=True, rot = 20): the reference point is in decimal degree
+        WCS(crval=(1.46E+02,-3.11E+01),cdelt=(4E-04,5E-04), deg=True, rot = 20): the reference point is in decimal degree
         """
         if hdr!=None:
-            self.wcs = pywcs.WCS(hdr)  # WCS object from data header
+            self.wcs = pywcs.WCS(hdr,naxis=2)  # WCS object from data header
+            # bug http://mail.scipy.org/pipermail/astropy/2011-April/001242.html if naxis=3
         else:
             #check attribute dimensions
             if isinstance(crval,int) or isinstance(crval,float):
@@ -162,22 +158,11 @@ class WCS(object):
                     pass
                 else:
                     raise ValueError, 'crpix with dimension > 2'
-            if dim!=None:
-                if isinstance(dim,int):
-                    dim = (dim,dim)
-                elif len(dim) == 2:
-                    pass
-                else:
-                    raise ValueError, 'dim with dimension > 2'
             #create pywcs object
             self.wcs = pywcs.WCS(naxis=2)
             #reference pixel
             if crpix!=None:
                 self.wcs.wcs.crpix = np.array(crpix)
-            elif dim!=None:
-                crpix1 = (dim[0] + 1) / 2.0
-                crpix2 = (dim[1] + 1) / 2.0
-                self.wcs.wcs.crpix = np.array([crpix1,crpix2])
             else:
                 self.wcs.wcs.crpix = np.array([1.0,1.0])
             #value of reference pixel
@@ -187,15 +172,12 @@ class WCS(object):
                 self.wcs.wcs.cunit = ['deg','deg']
                 self.wcs.wcs.cd = np.array([[-cdelt[0], 0], [0, cdelt[1]]])
             else:   #in pixel or arcsec
-                self.wcs.wcs.ctype = ['PIXEL','PIXEL']
+                self.wcs.wcs.ctype = ['LINEAR','LINEAR']
                 self.wcs.wcs.cunit = ['UNITLESS','UNITLESS']
                 self.wcs.wcs.cd = np.array([[cdelt[0], 0], [0, cdelt[1]]])
             # rotation
             self.wcs.rotateCD(rot)
-            # dimension
-            if dim!=None :
-                self.wcs.naxis1 = dim[0]
-                self.wcs.naxis2 = dim[1]
+
 
     def copy(self):
         """copies WCS object in a new one and returns it
@@ -207,8 +189,29 @@ class WCS(object):
     def info(self):
         """prints information
         """
-        self.wcs.printwcs()
-        print 'CUNIT \t : %s %s'%(self.wcs.wcs.cunit[0],self.wcs.wcs.cunit[1])
+        #self.wcs.printwcs()
+        if self.wcs.wcs.ctype[0] == 'LINEAR':
+            pixcrd = [[0,0],[self.wcs.naxis1 -1,self.wcs.naxis2 -1]]
+            pixsky = self.pix2sky(pixcrd)
+            dx = np.sqrt(self.wcs.wcs.cd[0,0]*self.wcs.wcs.cd[0,0] + self.wcs.wcs.cd[0,1]*self.wcs.wcs.cd[0][1])
+            dy = np.sqrt(self.wcs.wcs.cd[1,0]*self.wcs.wcs.cd[1,0] + self.wcs.wcs.cd[1,1]*self.wcs.wcs.cd[1][1])
+            print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) step:(%0.1f,%0.1f)' %(pixsky[0,0],pixsky[0,1],pixsky[1,0],pixsky[1,1],dx,dy)
+        else:
+            # center in sexadecimal
+            xc = (self.wcs.naxis1 -1) / 2.
+            yc = (self.wcs.naxis2 -1) / 2.
+            pixcrd = [xc,yc]
+            pixsky = self.pix2sky(pixcrd)
+            sexa = deg2sexa(pixsky)
+            ra = sexa[0][0]
+            dec = sexa[0][1]
+            # step in arcsec
+            dx = np.sqrt(self.wcs.wcs.cd[0,0]*self.wcs.wcs.cd[0,0] + self.wcs.wcs.cd[0,1]*self.wcs.wcs.cd[0][1]) * 3600
+            dy = np.sqrt(self.wcs.wcs.cd[1,0]*self.wcs.wcs.cd[1,0] + self.wcs.wcs.cd[1,1]*self.wcs.wcs.cd[1][1]) * 3600
+            # size in arcsec
+            sizex = self.wcs.naxis1 * dx
+            sizey = self.wcs.naxis2 * dx
+            print 'center:(%s,%s) size in arcsec:(%0.2f,%0.2f) step in arcsec:(%0.2f,%0.2f)' %(ra,dec,sizex,sizey,dx,dy)
 
     def to_header(self):
         return self.wcs.to_header()
@@ -389,12 +392,7 @@ class WaveCoord(object):
     def info(self):
         """prints information
         """
-        print 'Wavelength coordinates'
-        print 'N:\t %i'%self.dim
-        print 'CRPIX:\t %f'%self.crpix
-        print 'CDELT:\t %f'%self.cdelt #CDELT3 our CD3_3
-        print 'CRVAL:\t %f'%self.crval
-        print 'CUNIT:\t %s'%self.cunit
+        print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.__getitem__(self.dim-1),self.cdelt,self.cunit)
 
 
     def isEqual(self,other):
@@ -442,7 +440,7 @@ class WaveCoord(object):
         pix = np.arange(self.dim,dtype=np.float)
         lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
         if isinstance(item, int):
-            return lbda[pixel]
+            return lbda[item]
         elif isinstance(item, slice):
             newlbda = lbda[item]
             dim = newlbda.shape[0]

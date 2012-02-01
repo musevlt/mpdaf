@@ -11,7 +11,9 @@ from mpdaf.obj import WaveCoord
 class TestWCS(unittest.TestCase):
 
     def setUp(self):
-        self.wcs = WCS(dim=(5,6))
+        self.wcs = WCS()
+        self.wcs.wcs.naxis1 = 6
+        self.wcs.wcs.naxis2 = 5
 
     def tearDown(self):
         del self.wcs

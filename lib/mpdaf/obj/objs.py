@@ -88,7 +88,7 @@ class Spectrum(object):
         --------
         Spectrum(filename="toto.fits",ext=1,getnoise=False): spectrum from file (extension number is 1).
 
-        wave = WaveCoord(shape=4000, cdelt=1.25, crval=4000.0, cunit = 'Angstrom')
+        wave = WaveCoord(cdelt=1.25, crval=4000.0, cunit = 'Angstrom')
         Spectrum(shape=4000, wave=wave) : spectrum filled with zeros
         Spectrum(wave=wave, data = MyData) : spectrum filled with MyData
         """
@@ -121,7 +121,8 @@ class Spectrum(object):
                 crpix = hdr.get('CRPIX1')
                 crval = hdr.get('CRVAL1')
                 cunit = hdr.get('CUNIT1')
-                self.wave = WaveCoord(self.shape, crpix, cdelt, crval, cunit)
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit)
+                self.wave.dim = self.shape
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -145,7 +146,8 @@ class Spectrum(object):
                 crpix = h.get('CRPIX1')
                 crval = h.get('CRVAL1')
                 cunit = h.get('CUNIT1')
-                self.wave = WaveCoord(self.shape, crpix, cdelt, crval, cunit)
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit)
+                self.wave.dim = self.shape
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 1:
                         raise IOError, 'Wrong dimension number in STAT extension'
@@ -179,10 +181,8 @@ class Spectrum(object):
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                if wave.dim == self.shape:
-                    self.wave = wave
-                else:
-                    print 'Dimensions of WaveCoord object and DATA are not equal'
+                self.wave = wave
+                self.wave.dim = self.shape
             except :
                 self.wave = None
 
@@ -234,6 +234,7 @@ class Spectrum(object):
             prihdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
             prihdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
             prihdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+            prihdu.header.update('CTYPE1', 'LINEAR', 'world coordinate type')
             prihdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
             if self.unit is not None:
                 prihdu.header.update('UNIT', self.unit, 'data unit type')
@@ -247,6 +248,7 @@ class Spectrum(object):
             tbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
             tbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
             tbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+            tbhdu.header.update('CTYPE1', 'LINEAR', 'world coordinate type')
             tbhdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
             if self.unit is not None:
                 tbhdu.header.update('UNIT', self.unit, 'data unit type')
@@ -273,24 +275,20 @@ class Spectrum(object):
         """prints information
         """
         if self.filename != None:
-            print self.filename
+            print 'spectrum of %i elements (%s)' %(self.shape,self.filename)
         else:
-            print 'no name'
-        if isinstance(self.data,np.ma.core.MaskedArray):
-            print 'masked array:\t(%i,) %s'% (self.shape,self.maskinfo)
-        elif self.data is None:
-            print 'no data'
-        else:
-            print 'spectrum data:\t(%i,)'% self.shape
-        print 'fscale:\t %f'%self.fscale
-        if self.unit is None:
-            print 'no data unit'
-        else:
-            print 'data unit:\t %s'%self.unit
+            print 'spectrum of %i elements (no name)' %self.shape
+        data = '.data'
+        if self.data is None:
+            data = 'no data'
+        noise = '.var'
         if self.var is None:
-            print 'no noise'
+            noise = 'no noise'
+        if self.unit is None:
+            unit = 'no unit'
         else:
-            print 'noise variance:\t(%i,)'% self.shape
+            unit = self.unit
+        print '%s (%s) fscale=%0.2f, %s' %(data,unit,self.fscale,noise)
         if self.wave is None:
             print 'no coordinates'
         else:
@@ -674,10 +672,9 @@ class Spectrum(object):
         wave : WaveCoord
         Wavelength coordinates
         """
-        if wave.dim == self.shape:
-            self.wave = wave
-        else:
-            print 'Dimensions of WaveCoord object and DATA are not equal'
+        self.wave = wave
+        self.wave.dim = self.shape
+
 
 class Image(object):
     """Image class
@@ -763,7 +760,7 @@ class Image(object):
         --------
         Image(filename="toto.fits",ext=1,getnoise=False): image from file (extension number is 1).
 
-        wcs = WCS(crval=0,cdelt=0.2,shape=300)
+        wcs = WCS(crval=0,cdelt=0.2)
         Image(shape=300, wcs=wcs) : image 300x300 filled with zeros
         Image(wcs=wcs, data = MyData) : image 300x300 filled with MyData
         """
@@ -845,10 +842,9 @@ class Image(object):
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                if wcs.wcs.naxis1 == self.shape[1] and wcs.wcs.naxis2 == self.shape[0]:
-                    self.wcs = wcs
-                else:
-                    print 'Dimensions of WCS object and DATA are not equal'
+                self.wcs = wcs
+                self.wcs.wcs.naxis1 = self.shape[1]
+                self.wcs.wcs.naxis2 = self.shape[0]
             except :
                 self.wcs = None
 
@@ -933,24 +929,20 @@ class Image(object):
         """prints information
         """
         if self.filename is None:
-            print 'no name'
+            print '%i X %i image (no name)' %(self.shape[1],self.shape[0])
         else:
-            print self.filename
+            print '%i X %i image (%s)' %(self.shape[1],self.shape[0],self.filename)
+        data = '.data(%i,%i)' %(self.shape[0],self.shape[1])
         if self.data is None:
-            print 'no data'
-        elif isinstance(self.data,np.ma.core.MaskedArray):
-            print 'masked array:\t(%i,%i) %s'% (self.shape[1],self.shape[0],self.maskinfo)
-        else:
-            print 'image data:\t(%i,%i)'% (self.shape[1],self.shape[0])
-        print 'fscale:\t %f'%self.fscale
-        if self.unit is None:
-            print 'no data unit'
-        else:
-            print 'data unit:\t %s'%self.unit
+            data = 'no data'
+        noise = '.var(%i,%i)' %(self.shape[0],self.shape[1])
         if self.var is None:
-            print 'no noise'
+            noise = 'no noise'
+        if self.unit is None:
+            unit = 'no unit'
         else:
-            print 'noise variance:\t(%i,%i)'% (self.shape[1],self.shape[0])
+            unit = self.unit
+        print '%s (%s) fscale=%0.2f, %s' %(data,unit,self.fscale,noise)
         if self.wcs is None:
             print 'no world coordinates'
         else:
@@ -1385,10 +1377,9 @@ class Image(object):
         wcs : WCS
         World coordinates
         """
-        if wcs.wcs.naxis1 == self.shape[1] and wcs.wcs.naxis2 == self.shape[0]:
-            self.wcs = wcs
-        else:
-            print 'Dimensions of WCS object and DATA are not equal'
+        self.wcs = wcs
+        self.wcs.wcs.naxis1 = self.shape[1]
+        self.wcs.wcs.naxis2 = self.shape[0]
 
 class Cube(object):
     """cube class
@@ -1511,7 +1502,8 @@ class Cube(object):
                 crpix = hdr.get('CRPIX3')
                 crval = hdr.get('CRVAL3')
                 cunit = hdr.get('CUNIT3')
-                self.wave = WaveCoord(self.shape[0], crpix, cdelt, crval, cunit)
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit)
+                self.wave.dim = self.shape[0]
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -1529,16 +1521,17 @@ class Cube(object):
                 # WCS object from data header
                 self.wcs = WCS(h)
                 #Wavelength coordinates
-                if hdr.has_key('CDELT3'):
-                    cdelt = hdr.get('CDELT3')
-                elif hdr.has_key('CD3_3'):
-                    cdelt = hdr.get('CD3_3')
+                if h.has_key('CDELT3'):
+                    cdelt = h.get('CDELT3')
+                elif h.has_key('CD3_3'):
+                    cdelt = h.get('CD3_3')
                 else:
                     cdelt = 1.0
-                crpix = hdr.get('CRPIX3')
-                crval = hdr.get('CRVAL3')
-                cunit = hdr.get('CUNIT3')
-                self.wave = WaveCoord(self.shape[0], crpix, cdelt, crval, cunit)
+                crpix = h.get('CRPIX3')
+                crval = h.get('CRVAL3')
+                cunit = h.get('CUNIT3')
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit)
+                self.wave.dim = self.shape[0]
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 3:
                         raise IOError, 'Wrong dimension number in STAT extension'
@@ -1583,17 +1576,14 @@ class Cube(object):
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                if wcs.wcs.naxis1 == self.shape[2] and wcs.wcs.naxis2 == self.shape[1]:
-                    self.wcs = wcs
-                else:
-                    print 'Dimensions of WCS object and DATA are not equal'
+                self.wcs = wcs
+                self.wcs.wcs.naxis1 = self.shape[2]
+                self.wcs.wcs.naxis2 = self.shape[1]
             except :
                 self.wcs = None
             try:
-                if wave.dim == self.shape[0]:
-                    self.wave = wave
-                else:
-                    print 'Dimensions of WaveCoord object and DATA are not equal'
+                self.wave = wave
+                self.wave.dim = self.shape[0]
             except :
                 self.wave = None
 
@@ -1654,6 +1644,7 @@ class Cube(object):
             prihdu.header.update('CRVAL3', self.wave.crval, 'Start in world coordinate')
             prihdu.header.update('CRPIX3', self.wave.crpix, 'Start in pixel')
             prihdu.header.update('CDELT3', self.wave.cdelt, 'Step in world coordinate')
+            prihdu.header.update('CTYPE3', 'LINEAR', 'world coordinate type')
             prihdu.header.update('CUNIT3', self.wave.cunit, 'world coordinate units')
             if self.unit is not None:
                 prihdu.header.update('UNIT', self.unit, 'data unit type')
@@ -1669,6 +1660,7 @@ class Cube(object):
             tbhdu.header.update('CRVAL3', self.wave.crval, 'Start in world coordinate')
             tbhdu.header.update('CRPIX3', self.wave.crpix, 'Start in pixel')
             tbhdu.header.update('CDELT3', self.wave.cdelt, 'Step in world coordinate')
+            tbhdu.header.update('CTYPE3', 'LINEAR', 'world coordinate type')
             tbhdu.header.update('CUNIT3', self.wave.cunit, 'world coordinate units')
             if self.unit is not None:
                 tbhdu.header.update('UNIT', self.unit, 'data unit type')
@@ -1697,32 +1689,29 @@ class Cube(object):
         """prints information
         """
         if self.filename is None:
-            print 'no name'
+            print '%i X %i X %i cube (no name)' %(self.shape[2],self.shape[1],self.shape[0])
         else:
-            print self.filename
+            print '%i X %i X %i cube (%s)' %(self.shape[2],self.shape[1],self.shape[0],self.filename)
+        data = '.data(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
         if self.data is None:
-            print 'no data'
-        elif isinstance(self.data,np.ma.core.MaskedArray):
-            print 'masked array:\t(%i,%i,%i) %s'% (self.shape[2],self.shape[1],self.shape[1],self.maskinfo)
-        else:
-            print 'cube data:\t(%i,%i,%i)'% (self.shape[2],self.shape[1],self.shape[0])
-        print 'fscale:\t %f'%self.fscale
-        if self.unit is None:
-            print 'no data unit'
-        else:
-            print 'data unit:\t %s'%self.unit
+            data = 'no data'
+        noise = '.var(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
         if self.var is None:
-            print 'no noise'
+            noise = 'no noise'
+        if self.unit is None:
+            unit = 'no unit'
         else:
-            print 'noise variance:\t(%i,%i,%i)'% (self.shape[2],self.shape[1],self.shape[0])
+            unit = self.unit
+        print '%s (%s) fscale=%0.2f, %s' %(data,unit,self.fscale,noise)
         if self.wcs is None:
-            print 'no world coordinates for spatial directions'
+            print 'no world coordinates for spectral direction'
         else:
             self.wcs.info()
         if self.wave is None:
             print 'no world coordinates for spectral direction'
         else:
             self.wave.info()
+
 
     def __le__ (self, item):
         """masks data array where greater than a given value.
@@ -2323,11 +2312,8 @@ class Cube(object):
         wave : WaveCoord
         Wavelength coordinates
         """
-        if wcs.wcs.naxis1 == self.shape[2] and wcs.wcs.naxis2 == self.shape[1]:
-            self.wcs = wcs
-        else:
-            print 'Dimensions of WCS object and DATA are not equal'
-        if wave.dim == self.shape[0]:
-            self.wave = wave
-        else:
-            print 'Dimensions of WaveCoord object and DATA are not equal'
+        self.wcs = wcs
+        self.wcs.wcs.naxis1 = self.shape[2]
+        self.wcs.wcs.naxis2 = self.shape[1]
+        self.wave = wave
+        self.wave.dim = self.shape[0]
