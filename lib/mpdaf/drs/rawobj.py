@@ -1,7 +1,6 @@
 """ rawobj.py Manages raw FITS file"""
 import numpy as np
 import pyfits
-import pylab
 import multiprocessing
 import datetime
 import sys
