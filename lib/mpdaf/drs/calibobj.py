@@ -112,12 +112,15 @@ class CalibFile(object):
             
     def __del__(self):
         """removes temporary files used for memory mapping"""
-        if self.data != None:
-            os.remove(self.data)
-        if self.dq != None:
-            os.remove(self.dq)
-        if self.stat != None:
-            os.remove(self.stat)
+        try:
+            if self.data != None:
+                os.remove(self.data)
+            if self.dq != None:
+                os.remove(self.dq)
+            if self.stat != None:
+                os.remove(self.stat)
+        except:
+            pass
             
     def copy(self):
         """copies CalibFile object in a new one and returns it"""
@@ -131,16 +134,19 @@ class CalibFile(object):
         selfdata=self.get_data()
         data = np.memmap(result.data,dtype="float32",shape=(self.ny,self.nx))
         data[:] = selfdata[:]
+        os.close(fd)
         #variance
         (fd,result.stat) = tempfile.mkstemp(prefix='mpdaf')
         selfstat=self.get_stat()
         stat = np.memmap(result.stat,dtype="float32",shape=(self.ny,self.nx))
         stat[:] = selfstat[:]
+        os.close(fd)
         # pixel quality
         (fd,result.dq) = tempfile.mkstemp(prefix='mpdaf')
         selfdq = self.get_dq()
         dq = np.memmap(result.dq,dtype="int32",shape=(self.ny,self.nx))
-        dq[:] = selfdq[:]  
+        dq[:] = selfdq[:]
+        os.close(fd)
         return result
     
     def info(self):
@@ -253,8 +259,11 @@ class CalibFile(object):
         result.nx = self.nx
         result.ny = self.ny
         (fd,result.data) = tempfile.mkstemp(prefix='mpdaf')
+        os.close(fd)
         (fd,result.dq) = tempfile.mkstemp(prefix='mpdaf')
+        os.close(fd)
         (fd,result.stat) = tempfile.mkstemp(prefix='mpdaf')
+        os.close(fd)
         if isinstance(other,CalibFile):
             #sum data values
             newdata = np.ndarray.__add__(self.get_data(),other.get_data())
@@ -315,8 +324,11 @@ class CalibFile(object):
         result.nx = self.nx
         result.ny = self.ny
         (fd,result.data) = tempfile.mkstemp(prefix='mpdaf')
+        os.close(fd)
         (fd,result.dq) = tempfile.mkstemp(prefix='mpdaf')
+        os.close(fd)
         (fd,result.stat) = tempfile.mkstemp(prefix='mpdaf')
+        os.close(fd)
         if isinstance(other,CalibFile):
             #sum data values
             newdata = np.ndarray.__sub__(self.get_data(),other.get_data())
@@ -383,8 +395,11 @@ class CalibFile(object):
             result.nx = self.nx
             result.ny = self.ny
             (fd,result.data) = tempfile.mkstemp(prefix='mpdaf')
+            os.close(fd)
             (fd,result.dq) = tempfile.mkstemp(prefix='mpdaf')
+            os.close(fd)
             (fd,result.stat) = tempfile.mkstemp(prefix='mpdaf')
+            os.close(fd)
             # sum data values
             newdata = np.ndarray.__mul__(self.get_data(),other)
             data = np.memmap(result.data,dtype="float32",shape=(self.ny,self.nx))
@@ -566,6 +581,7 @@ class CalibDir(object):
                     (fd,out.data) = tempfile.mkstemp(prefix='mpdaf')
                     rdata = np.memmap(out.data,dtype="float32",shape=(out.ny,out.nx))
                     rdata[:] = data[:]
+                    os.close(fd)
                     #variance
                     (fd,out.stat) = tempfile.mkstemp(prefix='mpdaf')
                     rstat = np.memmap(out.stat,dtype="float32",shape=(out.ny,out.nx))
@@ -573,6 +589,7 @@ class CalibDir(object):
                         rstat[:] = stat[:]
                     else:
                         rstat[:] = self.files[k].get_stat()[:]
+                    os.close(fd)
                     # pixel quality
                     (fd,out.dq) = tempfile.mkstemp(prefix='mpdaf')
                     rdq = np.memmap(out.dq,dtype="int32",shape=(out.ny,out.nx))
@@ -581,6 +598,7 @@ class CalibDir(object):
                     else:
                         rdq[:] = self.files[k].get_dq()[:]
                     result.files[k] = out
+                    os.close(fd)
             else:
                 return None
         else:
@@ -600,9 +618,11 @@ class CalibDir(object):
                 (fd,out.data) = tempfile.mkstemp(prefix='mpdaf')
                 rdata = np.memmap(out.data,dtype="float32",shape=(out.ny,out.nx))
                 rdata[:] = data[:]
+                os.close(fd)
                 #variance
                 (fd,out.stat) = tempfile.mkstemp(prefix='mpdaf')
                 rstat = np.memmap(out.stat,dtype="float32",shape=(out.ny,out.nx))
+                os.close(fd)
                 if stat!= None:
                     rstat[:] = stat[:]
                 else:
@@ -615,6 +635,7 @@ class CalibDir(object):
                 else:
                     rdq[:] = self.files[k].get_dq()[:]
                 result.files[k] = out
+                os.close(fd)
         if self.progress:
             sys.stdout.write('\r                        \n')
         return result

@@ -104,20 +104,23 @@ class PixTable(object):
 
     def __del__(self):
         """removes temporary files used for memory mapping"""
-        if self.xpos != None:
-            os.remove(self.xpos)
-        if self.ypos != None:
-            os.remove(self.ypos)
-        if self.lbda != None:
-            os.remove(self.lbda)
-        if self.data != None:
-            os.remove(self.data)
-        if self.dq != None:
-            os.remove(self.dq)
-        if self.stat != None:
-            os.remove(self.stat)
-        if self.origin != None:
-            os.remove(self.origin)
+        try:
+            if self.xpos != None:
+                os.remove(self.xpos)
+            if self.ypos != None:
+                os.remove(self.ypos)
+            if self.lbda != None:
+                os.remove(self.lbda)
+            if self.data != None:
+                os.remove(self.data)
+            if self.dq != None:
+                os.remove(self.dq)
+            if self.stat != None:
+                os.remove(self.stat)
+            if self.origin != None:
+                os.remove(self.origin)
+        except:
+            pass
 
     def copy(self):
         """copies PixTable object in a new one and returns it"""
@@ -133,42 +136,49 @@ class PixTable(object):
         xpos = np.memmap(result.xpos,dtype="float32",shape=(self.nrows))
         xpos[:] = selfxpos[:]
         del xpos, selfxpos
+        os.close(fd)
         #ypos
         (fd,result.ypos) = tempfile.mkstemp(prefix='mpdaf')
         selfypos=self.get_ypos()
         ypos = np.memmap(result.ypos,dtype="float32",shape=(self.nrows))
         ypos[:] = selfypos[:]
         del ypos, selfypos
+        os.close(fd)
         #lambda
         (fd,result.lbda) = tempfile.mkstemp(prefix='mpdaf')
         selflbda=self.get_lambda()
         lbda = np.memmap(result.lbda,dtype="float32",shape=(self.nrows))
         lbda[:] = selflbda[:]
         del lbda, selflbda
+        os.close(fd)
         #data
         (fd,result.data) = tempfile.mkstemp(prefix='mpdaf')
         selfdata=self.get_data()
         data = np.memmap(result.data,dtype="float32",shape=(self.nrows))
         data[:] = selfdata[:]
         del data, selfdata
+        os.close(fd)
         #variance
         (fd,result.stat) = tempfile.mkstemp(prefix='mpdaf')
         selfstat=self.get_stat()
         stat = np.memmap(result.stat,dtype="float32",shape=(self.nrows))
         stat[:] = selfstat[:]
         del stat, selfstat
+        os.close(fd)
         # pixel quality
         (fd,result.dq) = tempfile.mkstemp(prefix='mpdaf')
         selfdq = self.get_dq()
         dq = np.memmap(result.dq,dtype="int32",shape=(self.nrows))
         dq[:] = selfdq[:]
         del dq, selfdq
+        os.close(fd)
         # origin
         (fd,result.origin) = tempfile.mkstemp(prefix='mpdaf')
         selforigin = self.get_origin()
         origin = np.memmap(result.origin,dtype="int32",shape=(self.nrows))
         origin[:] = selforigin[:]
         del origin, selforigin
+        os.close(fd)
         return result
 
     def info(self):
@@ -199,6 +209,7 @@ class PixTable(object):
                 xpos = np.memmap(self.xpos,dtype="float32",shape=(self.nrows))
                 xpos[:] = data_xpos[:]
                 hdulist.close()
+                os.close(fd)
                 return xpos
 
     def get_ypos(self):
@@ -218,6 +229,7 @@ class PixTable(object):
                 ypos = np.memmap(self.ypos,dtype="float32",shape=(self.nrows))
                 ypos[:] = data_ypos[:]
                 hdulist.close()
+                os.close(fd)
                 return ypos
 
     def get_lambda(self):
@@ -237,6 +249,7 @@ class PixTable(object):
                 lbda = np.memmap(self.lbda,dtype="float32",shape=(self.nrows))
                 lbda[:] = data_lbda[:]
                 hdulist.close()
+                os.close(fd)
                 return lbda
 
     def get_data(self):
@@ -256,6 +269,7 @@ class PixTable(object):
                 data = np.memmap(self.data,dtype="float32",shape=(self.nrows))
                 data[:] = data_data[:]
                 hdulist.close()
+                os.close(fd)
                 return data
 
     def get_stat(self):
@@ -275,6 +289,7 @@ class PixTable(object):
                 stat = np.memmap(self.stat,dtype="float32",shape=(self.nrows))
                 stat[:] = data_stat[:]
                 hdulist.close()
+                os.close(fd)
                 return stat
 
     def get_dq(self):
@@ -294,6 +309,7 @@ class PixTable(object):
                 dq = np.memmap(self.dq,dtype="int32",shape=(self.nrows))
                 dq[:] = data_dq[:]
                 hdulist.close()
+                os.close(fd)
                 return dq
 
     def get_origin(self):
@@ -313,6 +329,7 @@ class PixTable(object):
                 origin = np.memmap(self.origin,dtype="int32",shape=(self.nrows))
                 origin[:] = data_origin[:]
                 hdulist.close()
+                os.close(fd)
                 return origin
 
     def write(self,filename):
@@ -393,40 +410,48 @@ class PixTable(object):
             xpos = np.memmap(ptab.xpos,dtype="float32",shape=(npts))
             xpos[:] = col_xpos[ksel]
             del xpos,col_xpos
+            os.close(fd)
             #ypos
             (fd,ptab.ypos) = tempfile.mkstemp(prefix='mpdaf')
             ypos = np.memmap(ptab.ypos,dtype="float32",shape=(npts))
             ypos[:] = col_ypos[ksel]
             del ypos,col_ypos
+            os.close(fd)
             #lambda
             (fd,ptab.lbda) = tempfile.mkstemp(prefix='mpdaf')
             lbda = np.memmap(ptab.lbda,dtype="float32",shape=(npts))
             selflbda=self.get_lambda()
             lbda[:] = selflbda[ksel]
             del lbda,selflbda
+            os.close(fd)
             #data
             (fd,ptab.data) = tempfile.mkstemp(prefix='mpdaf')
             selfdata=self.get_data()
             data = np.memmap(ptab.data,dtype="float32",shape=(npts))
             data[:] = selfdata[ksel]
             del data,selfdata
+            os.close(fd)
             #variance
             (fd,ptab.stat) = tempfile.mkstemp(prefix='mpdaf')
             selfstat=self.get_stat()
             stat = np.memmap(ptab.stat,dtype="float32",shape=(npts))
             stat[:] = selfstat[ksel]
             del stat,selfstat
+            os.close(fd)
             # pixel quality
             (fd,ptab.dq) = tempfile.mkstemp(prefix='mpdaf')
             selfdq = self.get_dq()
             dq = np.memmap(ptab.dq,dtype="int32",shape=(npts))
             dq[:] = selfdq[ksel]
+            del dq,selfdq
+            os.close(fd)
             # origin
             (fd,ptab.origin) = tempfile.mkstemp(prefix='mpdaf')
             selforigin = self.get_origin()
             origin = np.memmap(ptab.origin,dtype="int32",shape=(npts))
             origin[:] = selforigin[ksel]
             del origin,selforigin
+            os.close(fd)
         return ptab
 
 
