@@ -643,7 +643,7 @@ class Spectrum(object):
         """
         self.data[key] = value
 
-    def get_lambda(self,lbda_min,lbda_max):
+    def get_lambda(self,lbda_min,lbda_max=None):
         """ returns the corresponding value or sub-spectrum
 
         Parameters
@@ -654,6 +654,8 @@ class Spectrum(object):
         lbda_max : float
         maximum wavelength
         """
+        if lbda_max is None:
+            lbda_max = lbda_min
         if self.wave is None:
             raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
         else:
@@ -2280,7 +2282,7 @@ class Cube(object):
         """
         self.data[key] = value
 
-    def get_lambda(self,lbda_min,lbda_max):
+    def get_lambda(self,lbda_min,lbda_max=None):
         """ returns the corresponding sub-cube
 
         Parameters
@@ -2291,6 +2293,8 @@ class Cube(object):
         lbda_max : float
         maximum wavelength
         """
+        if lbda_max is None:
+            lbda_max = lbda_min
         if self.wave is None:
             raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
         else:
