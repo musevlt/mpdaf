@@ -46,7 +46,7 @@ class TestObj(unittest.TestCase):
         spectrum3.remove_mask()
         self.assertEqual(spectrum3.data[3]*spectrum3.fscale,3*self.spectrum1.fscale)
         self.assertEqual(spectrum3.data[8]*spectrum3.fscale,16*self.spectrum1.fscale)
-        spectrum3 = self.spectrum1 + 4.2
+        spectrum3 = 4.2 + self.spectrum1
         self.assertEqual(spectrum3.data[3]*spectrum3.fscale,(3+4.2)*self.spectrum1.fscale)
         # -
         spectrum3 = self.spectrum1 - spectrum2
@@ -60,7 +60,7 @@ class TestObj(unittest.TestCase):
         spectrum3.remove_mask()
         self.assertEqual(spectrum3.data[3]*spectrum3.fscale,3*self.spectrum1.fscale)
         self.assertEqual(spectrum3.data[8]*spectrum3.fscale,64*self.spectrum1.fscale)
-        spectrum3 = self.spectrum1 * 4.2
+        spectrum3 = 4.2 * self.spectrum1
         self.assertEqual(spectrum3.data[9]*spectrum3.fscale,9*4.2*self.spectrum1.fscale)
         # /
         spectrum3 = self.spectrum1 / spectrum2
@@ -68,7 +68,7 @@ class TestObj(unittest.TestCase):
         #divide functions that have a validity domain returns the masked constant whenever the input is masked or falls outside the validity domain.
         #self.assertEqual(spectrum3.data[3],3)
         self.assertEqual(spectrum3.data[8]*spectrum3.fscale,1*self.spectrum1.fscale)
-        spectrum3 = self.spectrum1 / 4.2
+        spectrum3 = 1.0 / (4.2 /self.spectrum1 )
         self.assertEqual(spectrum3.data[5]*spectrum3.fscale,5/4.2*self.spectrum1.fscale)
         # with cube
         cube2 = self.spectrum1 + self.cube1

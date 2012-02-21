@@ -404,13 +404,15 @@ class Spectrum(object):
                 print 'Operation forbidden'
                 return None
 
+    def __radd__(self, other):
+        return self.__add__(other)
 
     def __sub__(self, other):
         """ subtracts other
 
         spectrum1 - number = spectrum2 (spectrum2[k]=spectrum1[k]-number)
 
-        spectrum1 + spectrum2 = spectrum3 (spectrum3[k]=spectrum1[k]-spectrum2[k])
+        spectrum1 - spectrum2 = spectrum3 (spectrum3[k]=spectrum1[k]-spectrum2[k])
         Dimension must be the same.
         If not equal to None, world coordinates must be the same.
 
@@ -474,6 +476,23 @@ class Spectrum(object):
                 print 'Operation forbidden'
                 return None
 
+    def __rsub__(self, other):
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is float or type(other) is int:
+            res = self.copy()
+            res.data = (other/np.double(self.fscale)) - self.data
+            return res
+        try:
+            if other.spectrum:
+                return other.__sub__(self)
+        except:
+            try:
+                if other.cube:
+                    return other.__sub__(self)
+            except:
+                print 'Operation forbidden'
+                return None
 
     def __mul__(self, other):
         """ multiplies by other
@@ -529,6 +548,8 @@ class Spectrum(object):
                 print 'Operation forbidden'
                 return None
 
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
     def __div__(self, other):
         """ divides by other
@@ -603,6 +624,26 @@ class Spectrum(object):
                 print 'Operation forbidden'
                 return None
 
+    def __rdiv__(self, other):
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is float or type(other) is int:
+            res = self.copy()
+            res.fscale = other / res.fscale
+            if res.var is not None:
+                res.var = other*other /(res.var*res.var)
+            return res
+        try:
+            if other.spectrum:
+                return other.__div__(self)
+        except:
+            try:
+                if other.cube:
+                    return other.__div__(self)
+            except:
+                print 'Operation forbidden'
+                return None
+
     def __pow__(self, other):
         """computes the power exponent"""
         if self.data is None:
@@ -614,6 +655,26 @@ class Spectrum(object):
             res.var = None
         else:
             raise ValueError, 'Operation forbidden'
+        return res
+
+    def sqrt(self):
+        """computes the power exponent"""
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        res = self.copy()
+        res.data = np.sqrt(self.data)
+        res.fscale = np.sqrt(self.fscale)
+        res.var = None
+        return res
+
+    def abs(self):
+        """computes the absolute value"""
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        res = self.copy()
+        res.data = np.abs(self.data)
+        res.fscale = np.abs(self.fscale)
+        res.var = None
         return res
 
     def __getitem__(self,item):
@@ -1059,6 +1120,8 @@ class Image(object):
                 print 'Operation forbidden'
                 return None
 
+    def __radd__(self, other):
+        return self.__add__(other)
 
     def __sub__(self, other):
         """ subtracts other
@@ -1129,6 +1192,23 @@ class Image(object):
                 print 'Operation forbidden'
                 return None
 
+    def __rsub__(self, other):
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is float or type(other) is int:
+            res = self.copy()
+            res.data = (other/np.double(self.fscale)) - self.data
+            return res
+        try:
+            if other.image:
+                return other.__sub__(self)
+        except:
+            try:
+                if other.cube:
+                   return other.__sub__(self)
+            except:
+                print 'Operation forbidden'
+                return None
 
     def __mul__(self, other):
         """ multiplies by other
@@ -1203,6 +1283,8 @@ class Image(object):
                     print 'Operation forbidden'
                     return None
 
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
     def __div__(self, other):
         """ divides by other
@@ -1273,6 +1355,26 @@ class Image(object):
                 print 'Operation forbidden'
                 return None
 
+    def __rdiv__(self, other):
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is float or type(other) is int:
+            #image1 / number = image2 (image2[j,i]=image1[j,i]/number
+            res = self.copy()
+            res.fscale = other / res.fscale
+            if res.var is not None:
+                res.var = other*other / (res.var*res.var)
+            return res
+        try:
+            if other.image:
+                return other.__sub__(self)
+        except:
+            try:
+                if other.cube:
+                    return other.__sub__(self)
+            except:
+                print 'Operation forbidden'
+                return None
 
     def __pow__(self, other):
         """computes the power exponent"""
@@ -1285,6 +1387,26 @@ class Image(object):
             res.var = None
         else:
             raise ValueError, 'Operation forbidden'
+        return res
+
+    def sqrt(self):
+        """computes the power exponent"""
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        res = self.copy()
+        res.data = np.sqrt(self.data)
+        res.fscale = np.sqrt(self.fscale)
+        res.var = None
+        return res
+
+    def abs(self):
+        """computes the absolute value"""
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        res = self.copy()
+        res.data = np.abs(self.data)
+        res.fscale = np.abs(self.fscale)
+        res.var = None
         return res
 
     def __getitem__(self,item):
@@ -1874,6 +1996,8 @@ class Cube(object):
                     print 'Operation forbidden'
                     return None
 
+    def __radd__(self, other):
+        return self.__add__(other)
 
     def __sub__(self, other):
         """  subtracts other
@@ -1979,6 +2103,27 @@ class Cube(object):
                     print 'Operation forbidden'
                     return None
 
+    def __rsub__(self, other):
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is float or type(other) is int:
+            res = self.copy()
+            res.data = (other/np.double(self.fscale)) - self.data
+            return res
+        try:
+            if other.cube:
+                return other.__sub__(self)
+        except:
+            try:
+                if other.image:
+                    return other.__sub__(self)
+            except:
+                try:
+                    if other.spectrum:
+                        return other.__sub__(self)
+                except:
+                    print 'Operation forbidden'
+                    return None
 
     def __mul__(self, other):
         """  multiplies by other
@@ -2086,6 +2231,8 @@ class Cube(object):
                     print 'Operation forbidden'
                     return None
 
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
     def __div__(self, other):
         """  divides by other
@@ -2192,6 +2339,36 @@ class Cube(object):
                     print 'Operation forbidden'
                     return None
 
+    def __rdiv__(self, other):
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is float or type(other) is int:
+            #cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
+            res = self.copy()
+            res.fscale = other / res.fscale
+            if res.var is not None:
+                res.var = other*other / (res.var*res.var)
+            return res
+        try:
+            if other.cube:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                   or self.shape[2] != other.shape[2]:
+                    print 'Operation forbidden for images with different sizes'
+                    return None
+                else:
+                    return other.__div__(self)
+        except:
+            try:
+                if other.image:
+                    return other.__div__(self)
+            except:
+                try:
+                    if other.spectrum:
+                       return other.__div__(self)
+                except:
+                    print 'Operation forbidden'
+                    return None
+
     def __pow__(self, other):
         """computes the power exponent"""
         if self.data is None:
@@ -2203,6 +2380,26 @@ class Cube(object):
             res.var = None
         else:
             raise ValueError, 'Operation forbidden'
+        return res
+
+    def sqrt(self):
+        """computes the power exponent"""
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        res = self.copy()
+        res.data = np.sqrt(self.data)
+        res.fscale = np.sqrt(self.fscale)
+        res.var = None
+        return res
+
+    def abs(self):
+        """computes the absolute value"""
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        res = self.copy()
+        res.data = np.abs(self.data)
+        res.fscale = np.abs(self.fscale)
+        res.var = None
         return res
 
     def __getitem__(self,item):
