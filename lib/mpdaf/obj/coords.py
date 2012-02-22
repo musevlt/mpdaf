@@ -2,7 +2,7 @@
 import numpy as np
 import pyfits
 import pywcs
-import astropysics.coords
+from astropysics_coords import AstropysicsAngularCoordinate
 
 def deg2sexa(x):
     """Transforms the values of n coordinates from degrees to sexagesimal.
@@ -56,28 +56,28 @@ def sexa2deg(x):
 def deg2hms(x):
     """Transforms a degree value to a string representation of the coordinate as hours:minutes:seconds
     """
-    ac = astropysics.coords.AngularCoordinate(x)
+    ac = AstropysicsAngularCoordinate(x)
     hms = ac.getHmsStr(canonical=True)
     return hms
 
 def hms2deg(x):
     """Transforms a string representation of the coordinate as hours:minutes:seconds to a float degree value
     """
-    ac = astropysics.coords.AngularCoordinate(x,sghms=True)
+    ac = AstropysicsAngularCoordinate(x,sghms=True)
     deg = ac.d
     return deg
 
 def deg2dms(x):
     """Transforms a degree value to a string representation of the coordinate as degrees:arcminutes:arcseconds
     """
-    ac = astropysics.coords.AngularCoordinate(x)
+    ac = AstropysicsAngularCoordinate(x)
     dms = ac.getDmsStr(canonical=True)
     return dms
 
 def dms2deg(x):
     """Transforms a string representation of the coordinate as degrees:arcminutes:arcseconds to a float degree value
     """
-    ac = astropysics.coords.AngularCoordinate(x)
+    ac = AstropysicsAngularCoordinate(x)
     deg = ac.d
     return deg
 

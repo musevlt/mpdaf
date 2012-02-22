@@ -51,3 +51,4 @@ from coords import WaveCoord
 from objs import Spectrum
 from objs import Image
 from objs import Cube
+from astropysics_coords import AstropysicsAngularCoordinate
