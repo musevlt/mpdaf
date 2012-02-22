@@ -349,6 +349,20 @@ class Spectrum(object):
             self.data = self.data.data
             self.maskinfo = ""
 
+    def resize(self):
+        """resize the spectrum to have a minimum number of masked values
+        """
+        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
+            ksel = np.where(self.data.mask==False)
+            item = slice (ksel[0][0],ksel[0][-1]+1,None)
+            self.data = self.data[item]
+            self.shape = self.data.shape[0]
+            if self.var is not None:
+                self.var = self.var[item]
+            try:
+                self.wave = self.wave[item]
+            except:
+                self.wave = None
 
     def __add__(self, other):
         """ adds other
@@ -1066,6 +1080,26 @@ class Image(object):
             self.data = self.data.data
             self.maskinfo = ""
 
+    def resize(self):
+        """resize the image to have a minimum number of masked values
+        """
+        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
+            ksel = np.where(self.data.mask==False)
+            item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None))
+            self.data = self.data[item]
+            if isinstance(item[0],int):
+                self.shape = (1,self.data.shape[0])
+            elif isinstance(item[1],int):
+                self.shape = (self.data.shape[0],1)
+            else:
+                self.shape = (self.data.shape[0],self.data.shape[1])
+            if self.var is not None:
+                self.var = self.var[item]
+            try:
+                self.wcs = self.wcs[item[1],item[0]] #data[y,x], image[y,x] but wcs[x,y]
+            except:
+                self.wcs = None
+
     def __add__(self, other):
         """ adds other
 
@@ -1412,6 +1446,7 @@ class Image(object):
     def __getitem__(self,item):
         """ returns the corresponding value or sub-image
         """
+        print item
         if isinstance(item, tuple) and len(item)==2:
                 data = self.data[item]
                 if isinstance(item[0],int):
@@ -1891,6 +1926,40 @@ class Cube(object):
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
             self.data = self.data.data
             self.maskinfo = ""
+
+    def resize(self):
+        """resize the cube to have a minimum number of masked values
+        """
+        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
+            ksel = np.where(self.data.mask==False)
+            item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None),slice(ksel[2][0], ksel[2][-1]+1, None))
+            self.data = self.data[item]
+            if isinstance(item[0],int):
+                if isinstance(item[1],int):
+                    self.shape = (1,1,self.data.shape[0])
+                elif isinstance(item[2],int):
+                    self.shape = (1,self.data.shape[0],1)
+                else:
+                    self.shape = (1,self.data.shape[0],self.data.shape[1])
+            elif isinstance(item[1],int):
+                if isinstance(item[2],int):
+                    self.shape = (self.data.shape[0],1,1)
+                else:
+                    self.shape = (self.data.shape[0],1,self.data.shape[1])
+            elif isinstance(item[2],int):
+                    self.shape = (self.data.shape[0],self.data.shape[1],1)
+            else:
+                self.shape = self.data.shape
+            if self.var is not None:
+                self.var = self.var[item]
+            try:
+                self.wcs = self.wcs[item[2],item[1]] #data[y,x], image[y,x] but wcs[x,y]
+            except:
+                self.wcs = None
+            try:
+                self.wave = self.wave[item[0]]
+            except:
+                self.wave = None
 
     def __add__(self, other):
         """ adds other
