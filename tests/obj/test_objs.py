@@ -246,6 +246,13 @@ class TestObj(unittest.TestCase):
         self.assertEqual(a.shape,6)
         a = self.spectrum1.get_lambda(1.2,5.6)
         self.assertEqual(a.shape,5)
+        
+    def test_rebin(self):
+        """tests rebin functions"""
+        spectrum2 = self.spectrum1.rebin(0.3) 
+        flux1 = self.spectrum1.data.sum()*self.spectrum1.wave.cdelt
+        flux2 = spectrum2.data.sum()*spectrum2.wave.cdelt
+        self.assertAlmostEqual(flux1,flux2)
 
 if __name__=='__main__':
     unittest.main()

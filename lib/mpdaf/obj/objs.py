@@ -5,6 +5,8 @@ import datetime
 from coords import WCS
 from coords import WaveCoord
 
+from scipy import integrate
+
 class Spectrum(object):
     """Spectrum class
 
@@ -751,7 +753,70 @@ class Spectrum(object):
         """
         self.wave = wave
         self.wave.dim = self.shape
-
+        
+    def rebin_factor(self, factor):
+        '''rebins an array to a new shape.
+        The new shape must be a factor of self.shape.
+        
+        Parameters
+        ----------
+        factor : int
+        Factor
+        '''
+        assert not np.sometrue(np.mod( self.shape, factor ))
+        newshape = self.shape/factor
+        data = self.data.reshape(newshape,factor).sum(1)
+        getnoise = False
+        var = None
+        if self.var is not None:
+            getnoise = True
+            var = self.var.reshape(newshape,factor).sum(1)
+        try:
+            print 'factor ', factor
+            print self.wave.coord()
+            crval = self.wave.coord()[slice(0,factor,1)].sum()/factor
+            print 'crval', crval
+            wave = WaveCoord(1, self.wave.cdelt*factor, crval, self.wave.cunit)
+        except:
+            wave = None
+        res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
+        return res
+    
+    def rebin(self,step,start=None):
+        """returns a spectrum with data rebinned to different wavelength step size.
+        
+        Parameters
+        ----------
+        step: float
+        New pixel size in spectral direction
+        
+        start: float
+        Spectral position of the first new pixel.
+        It can be set or kept at the edge of the old first one.       
+        """
+#        flux = self.data.sum()*self.wave.cdelt
+#        print "init flux", flux
+        f = lambda x: self.data[int(self.wave.pixel(x)+0.5)]
+        
+        newwave = self.wave.rebin(step,start)
+        newshape = newwave.dim   
+            
+        newdata = np.zeros(newshape)        
+        pix = np.arange(newshape,dtype=np.float)
+        x1 = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval - 0.5 * newwave.cdelt
+        x2 = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval + 0.5 * newwave.cdelt
+        lbdamax = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
+        if x2[-1]> lbdamax:
+            x2[-1] = lbdamax
+        
+        for i in range(newshape):
+            newdata[i] = integrate.quad(f,x1[i],x2[i])[0]/newwave.cdelt
+            
+#        newflux = newdata.sum()*newwave.cdelt
+#        print "new flux", newflux
+        
+        res = Spectrum(getnoise=False, shape=newshape, wave = newwave, unit=self.unit, data=newdata,fscale=self.fscale)
+        return res
 
 class Image(object):
     """Image class
@@ -1446,7 +1511,6 @@ class Image(object):
     def __getitem__(self,item):
         """ returns the corresponding value or sub-image
         """
-        print item
         if isinstance(item, tuple) and len(item)==2:
                 data = self.data[item]
                 if isinstance(item[0],int):

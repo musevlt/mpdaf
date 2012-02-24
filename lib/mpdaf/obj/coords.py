@@ -348,14 +348,12 @@ class WaveCoord(object):
     Info: info, isEqual
     """
 
-    def __init__(self, dim=101, crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom'):
+    def __init__(self, crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom'):
         """creates a WaveCoord object
 
         Parameters
         ----------
-        dim : integer
-        Size of spectrum
-
+    
         crpix : float
         Reference pixel coordinates.
         Note that for crpix definition, the first pixel in the spectrum has pixel coordinates 1.0.
@@ -370,7 +368,7 @@ class WaveCoord(object):
         cunit : string
         Wavelength unit (Angstrom by default).
         """
-        self.dim = dim
+        self.dim = 0
         self.crpix = crpix
         self.cdelt = cdelt
         self.crval = crval
@@ -447,7 +445,21 @@ class WaveCoord(object):
             if dim < 2:
                 raise ValueError, 'Spectrum with dim < 2'
             cdelt = newlbda[1] - newlbda[0]
-            res = WaveCoord(dim=dim, crpix=1.0, cdelt=cdelt, crval=newlbda[0], cunit = self.cunit)
+            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0], cunit = self.cunit)
+            res.dim = dim
             return res
         else:
             raise ValueError, 'Operation forbidden'
+
+    def rebin(self,step,start):
+        # vector of pixel edges
+        pix = np.arange(self.dim,dtype=np.float)
+        lbda = (pix - self.crpix + 1) * self.cdelt + self.crval - 0.5 * self.cdelt
+        # vector of new pixel positions
+        if start == None:
+            start = lbda[0] + step*0.5
+        # pixel number necessary to cover old range
+        dim = np.ceil((lbda[-1] + self.cdelt - (start-step*0.5)) / step)
+        res = WaveCoord(crpix=1.0, cdelt=step, crval=start, cunit = self.cunit)
+        res.dim = int(dim)
+        return res
