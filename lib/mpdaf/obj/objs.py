@@ -80,6 +80,9 @@ class Spectrum(object):
         var : array
         Array containing the variance. None by default.
 
+        dq : array
+        Array containing bad pixel
+
         empty : bool
         If empty is True, the data and variance array are set to None
 
@@ -150,14 +153,20 @@ class Spectrum(object):
                 cunit = h.get('CUNIT1')
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit)
                 self.wave.dim = self.shape
+                # STAT extension
+                self.var = None
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 1:
                         raise IOError, 'Wrong dimension number in STAT extension'
                     if f['STAT'].header['NAXIS1'] != shape:
                         raise IOError, 'Number of points in STAT not equal to DATA'
                     self.var = f['STAT'].data
-                else:
-                    self.var = None
+                # DQ extension
+                try:
+                    mask = np.ma.make_mask(f['DQ'].data)
+                    self.data = np.ma.MaskedArray(self.data, mask=mask)
+                except:
+                    pass
             f.close()
         else:
             #possible data unit type
@@ -220,6 +229,7 @@ class Spectrum(object):
         The FITS filename
         """
         # create primary header
+        assert self.data is not None
         prihdu = pyfits.PrimaryHDU()
         if self.cards is not None:
             for card in self.cards:
@@ -230,23 +240,10 @@ class Spectrum(object):
         prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
         prihdu.header.update('author', 'MPDAF', 'origin of the file')
 
-        if self.var is None: # write simple fits file without extension
-            prihdu.data = self.data
-            # add world coordinate
-            prihdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
-            prihdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
-            prihdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
-            prihdu.header.update('CTYPE1', 'LINEAR', 'world coordinate type')
-            prihdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
-            if self.unit is not None:
-                prihdu.header.update('UNIT', self.unit, 'data unit type')
-            prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
-            hdulist = [prihdu]
-        else: # write fits file with primary header and two extensions
+        if isinstance(self.data,np.ma.core.MaskedArray):
             hdulist = [prihdu]
             # create spectrum DATA in first extension
-            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
-            # add world coordinate
+            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
             tbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
             tbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
             tbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
@@ -256,17 +253,59 @@ class Spectrum(object):
                 tbhdu.header.update('UNIT', self.unit, 'data unit type')
             tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
             hdulist.append(tbhdu)
-            # create spectrum STAT in second extension
-            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
-            # add world coordinate
-            nbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
-            nbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
-            nbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
-            nbhdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
-#            if self.unit is not None:
-#                nbhdu.header.update('UNIT', self.unit, 'data unit type')
-#            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
-            hdulist.append(nbhdu)
+            if self.var is not None:
+                # create spectrum STAT in second extension
+                nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
+                nbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
+                nbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
+                nbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+                nbhdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
+    #            if self.unit is not None:
+    #                nbhdu.header.update('UNIT', self.unit, 'data unit type')
+    #            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+                hdulist.append(nbhdu)
+            # DQ extension
+            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
+            dqhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
+            dqhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
+            dqhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+            dqhdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
+            hdulist.append(dqhdu)
+        else:
+            if self.var is None: # write simple fits file without extension
+                prihdu.data = self.data
+                prihdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
+                prihdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
+                prihdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+                prihdu.header.update('CTYPE1', 'LINEAR', 'world coordinate type')
+                prihdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
+                if self.unit is not None:
+                    prihdu.header.update('UNIT', self.unit, 'data unit type')
+                prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+                hdulist = [prihdu]
+            else: # write fits file with primary header and two extensions
+                hdulist = [prihdu]
+                # create spectrum DATA in first extension
+                tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+                tbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
+                tbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
+                tbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+                tbhdu.header.update('CTYPE1', 'LINEAR', 'world coordinate type')
+                tbhdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
+                if self.unit is not None:
+                    tbhdu.header.update('UNIT', self.unit, 'data unit type')
+                tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+                hdulist.append(tbhdu)
+                # create spectrum STAT in second extension
+                nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
+                nbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
+                nbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
+                nbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
+                nbhdu.header.update('CUNIT1', self.wave.cunit, 'world coordinate units')
+    #            if self.unit is not None:
+    #                nbhdu.header.update('UNIT', self.unit, 'data unit type')
+    #            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+                hdulist.append(nbhdu)
         # save to disk
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True)
@@ -794,9 +833,15 @@ class Spectrum(object):
         Spectral position of the first new pixel.
         It can be set or kept at the edge of the old first one.       
         """
-#        flux = self.data.sum()*self.wave.cdelt
-#        print "init flux", flux
-        f = lambda x: self.data[int(self.wave.pixel(x)+0.5)]
+        #flux = self.data.sum()*self.wave.cdelt
+        if isinstance(self.data,np.ma.core.MaskedArray):
+            data = self.data.filled(0.)
+        else:
+            data = self.data
+
+        #print "init flux", flux
+
+        f = lambda x: data[int(self.wave.pixel(x)+0.5)]
         
         newwave = self.wave.rebin(step,start)
         newshape = newwave.dim   
@@ -812,8 +857,8 @@ class Spectrum(object):
         for i in range(newshape):
             newdata[i] = integrate.quad(f,x1[i],x2[i])[0]/newwave.cdelt
             
-#        newflux = newdata.sum()*newwave.cdelt
-#        print "new flux", newflux
+        #newflux = newdata.sum()*newwave.cdelt
+        #print "new flux", newflux
         
         res = Spectrum(getnoise=False, shape=newshape, wave = newwave, unit=self.unit, data=newdata,fscale=self.fscale)
         return res
@@ -926,7 +971,11 @@ class Image(object):
                 self.data = f[0].data
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
-                self.wcs = WCS(hdr)  # WCS object from data header
+                try:
+                    self.wcs = WCS(hdr) # WCS object from data header
+                except:
+                    print "Invalid wcs self.wcs=None"
+                    self.wcs = None
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -941,15 +990,24 @@ class Image(object):
                 self.shape = np.array([h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
-                self.wcs = WCS(h)  # WCS object from data header
+                try:
+                    self.wcs = WCS(h) # WCS object from data header
+                except:
+                    print "Invalid wcs self.wcs=None"
+                    self.wcs = None
+                self.var = None
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 2:
                         raise IOError, 'Wrong dimension number in STAT extension'
                     if f['STAT'].header['NAXIS1'] != ima.shape[1] and f['STAT'].header['NAXIS2'] != ima.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
                     self.var = f['STAT'].data
-                else:
-                    self.var = None
+                # DQ extension
+                try:
+                    mask = np.ma.make_mask(f['DQ'].data)
+                    self.data = np.ma.MaskedArray(self.data, mask=mask)
+                except:
+                    pass
             f.close()
         else:
             #possible data unit type
@@ -1035,15 +1093,7 @@ class Image(object):
         #world coordinates
         wcs_cards = self.wcs.to_header().ascardlist()
 
-        if self.var is None: # write simple fits file without extension
-            prihdu.data = self.data
-            for card in wcs_cards:
-                prihdu.header.update(card.key, card.value, card.comment)
-            if self.unit is not None:
-                prihdu.header.update('UNIT', self.unit, 'data unit type')
-            prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
-            hdulist = [prihdu]
-        else: # write fits file with primary header and two extensions
+        if isinstance(self.data,np.ma.core.MaskedArray):
             hdulist = [prihdu]
             # create spectrum DATA in first extension
             tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
@@ -1053,14 +1103,45 @@ class Image(object):
                 tbhdu.header.update('UNIT', self.unit, 'data unit type')
             tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
             hdulist.append(tbhdu)
-            # create spectrum STAT in second extension
-            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
-            for card in wcs_cards:
-                nbhdu.header.update(card.key, card.value, card.comment)
-#            if self.unit is not None:
-#                nbhdu.header.update('UNIT', self.unit, 'data unit type')
-#            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
-            hdulist.append(nbhdu)
+            if self.var is not None:
+                # create spectrum STAT in second extension
+                nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
+                for card in wcs_cards:
+                    nbhdu.header.update(card.key, card.value, card.comment)
+    #            if self.unit is not None:
+    #                nbhdu.header.update('UNIT', self.unit, 'data unit type')
+    #            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+                hdulist.append(nbhdu)
+            # DQ extension
+            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
+            hdulist.append(dqhdu)
+        else:
+            if self.var is None: # write simple fits file without extension
+                prihdu.data = self.data
+                for card in wcs_cards:
+                    prihdu.header.update(card.key, card.value, card.comment)
+                if self.unit is not None:
+                    prihdu.header.update('UNIT', self.unit, 'data unit type')
+                prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+                hdulist = [prihdu]
+            else: # write fits file with primary header and two extensions
+                hdulist = [prihdu]
+                # create spectrum DATA in first extension
+                tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+                for card in wcs_cards:
+                    tbhdu.header.update(card.key, card.value, card.comment)
+                if self.unit is not None:
+                    tbhdu.header.update('UNIT', self.unit, 'data unit type')
+                tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+                hdulist.append(tbhdu)
+                # create spectrum STAT in second extension
+                nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
+                for card in wcs_cards:
+                    nbhdu.header.update(card.key, card.value, card.comment)
+    #            if self.unit is not None:
+    #                nbhdu.header.update('UNIT', self.unit, 'data unit type')
+    #            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+                hdulist.append(nbhdu)
         # save to disk
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True)
@@ -1693,7 +1774,6 @@ class Cube(object):
         --------
 
         """
-
         #possible FITS filename
         self.cube = True
         self.filename = filename
@@ -1714,7 +1794,11 @@ class Cube(object):
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
                 # WCS object from data header
-                self.wcs = WCS(hdr)
+                try:
+                    self.wcs = WCS(hdr)
+                except:
+                    print "Invalid wcs self.wcs=None"
+                    self.wcs = None
                 #Wavelength coordinates
                 if hdr.has_key('CDELT3'):
                     cdelt = hdr.get('CDELT3')
@@ -1741,8 +1825,11 @@ class Cube(object):
                 self.shape= np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
-                # WCS object from data header
-                self.wcs = WCS(h)
+                try:
+                    self.wcs = WCS(h) # WCS object from data header
+                except:
+                    print "Invalid wcs self.wcs=None"
+                    self.wcs = None
                 #Wavelength coordinates
                 if h.has_key('CDELT3'):
                     cdelt = h.get('CDELT3')
@@ -1755,14 +1842,19 @@ class Cube(object):
                 cunit = h.get('CUNIT3')
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit)
                 self.wave.dim = self.shape[0]
+                self.var = None
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 3:
                         raise IOError, 'Wrong dimension number in STAT extension'
                     if f['STAT'].header['NAXIS1'] != ima.shape[2] and f['STAT'].header['NAXIS2'] != ima.shape[1] and f['STAT'].header['NAXIS3'] != ima.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
                     self.var = f['STAT'].data
-                else:
-                    self.var = None
+                # DQ extension
+                try:
+                    mask = np.ma.make_mask(f['DQ'].data)
+                    self.data = np.ma.MaskedArray(self.data, mask=mask)
+                except:
+                    pass
             f.close()
         else:
             #possible data unit type
@@ -1845,6 +1937,9 @@ class Cube(object):
         filename : string
         The FITS filename
         """
+
+        #ToDo: pb with mask !!!!!!!!!!!!!!!!!
+
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         if self.cards is not None:
