@@ -136,6 +136,10 @@ class WCS(object):
         """
         if hdr!=None:
             self.wcs = pywcs.WCS(hdr,naxis=2)  # WCS object from data header
+            try:
+                self.cdelt = [hdr['CDELT1'],hdr['CDELT2']]
+            except:
+                self.cdelt = None
             # bug http://mail.scipy.org/pipermail/astropy/2011-April/001242.html if naxis=3
         else:
             #check attribute dimensions
@@ -160,6 +164,7 @@ class WCS(object):
                     raise ValueError, 'crpix with dimension > 2'
             #create pywcs object
             self.wcs = pywcs.WCS(naxis=2)
+            self.cdelt = np.array(cdelt)
             #reference pixel
             if crpix!=None:
                 self.wcs.wcs.crpix = np.array(crpix)
