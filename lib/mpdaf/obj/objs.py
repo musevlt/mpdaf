@@ -6,6 +6,7 @@ from coords import WCS
 from coords import WaveCoord
 
 from scipy import integrate
+from scipy import interpolate
 
 class Spectrum(object):
     """Spectrum class
@@ -793,11 +794,76 @@ class Spectrum(object):
         self.wave = wave
         self.wave.dim = self.shape
         
+    def interp(self, wavelengths, spline=False):
+        """ returns the interpolated values corresponding to the wavelength array
+        
+        Parameters
+        ----------
+        wavelengths : array of float
+        wavelength values
+        
+        spline : boolean
+        False: linear interpolation, True: spline interpolation 
+        """
+        lbda = self.wave.coord()
+        if isinstance(self.data,np.ma.core.MaskedArray):
+            ksel = np.where(self.data.mask==False)            
+            d = np.zeros(np.shape(ksel)[1]+2)
+            d[1:-1] = self.data.data[ksel]
+            w = np.zeros(np.shape(ksel)[1]+2)      
+            w[1:-1] = lbda[ksel]
+            if self.var is not None:    
+                var = np.zeros(np.shape(ksel)[1]+2)
+                var[1:-1] = self.var[ksel]
+        else:
+            d = np.zeros(self.shape+2)
+            d[1:-1] = self.data[:]
+            w = np.zeros(self.shape+2)
+            w[1:-1] = lbda[:]
+            if self.var is not None:    
+                var = np.zeros(self.shape+2)
+                var[1:-1] = self.var[:]
+        d[0] = d[1]
+        d[-1] = d[-2]
+        w[0] = (-self.wave.crpix + 1) * self.wave.cdelt + self.wave.crval - 0.5 * self.wave.cdelt
+        w[-1] = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
+        if self.var is not None:
+            var[0] = var[1]
+            var[-1] = var[-2]
+        else:
+            var = None
+        if spline:
+            tck = interpolate.splrep(w,d,w=var)
+            return interpolate.splev(wavelengths,tck,der=0)
+        else:
+            f = interpolate.interp1d(w, d)
+            return f(wavelengths)
+
+        
+    def interp_data(self, spline=False):
+        """ returns data array with interpolated values for masked pixels
+        
+        Parameter
+        ----------
+        spline : boolean
+        False: linear interpolation, True: spline interpolation 
+        """
+        if isinstance(self.data,np.ma.core.MaskedArray):
+            lbda = self.wave.coord()
+            ksel = np.where(self.data.mask==True)
+            wnew = lbda[ksel]
+            data = self.data.data
+            data[ksel] = self.interp(wnew,spline)
+            return data
+        else:
+            return self.data
+            
+    
     def rebin_factor(self, factor):
         '''rebins an array to a new shape.
         The new shape must be a factor of self.shape.
         
-        Parameters
+        Parameter
         ----------
         factor : int
         Factor
@@ -811,17 +877,17 @@ class Spectrum(object):
             getnoise = True
             var = self.var.reshape(newshape,factor).sum(1)
         try:
-            print 'factor ', factor
-            print self.wave.coord()
             crval = self.wave.coord()[slice(0,factor,1)].sum()/factor
-            print 'crval', crval
             wave = WaveCoord(1, self.wave.cdelt*factor, crval, self.wave.cunit)
         except:
             wave = None
-        res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
+        res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale)
+        res.data = data
+        if getnoise:
+            res.var = var
         return res
     
-    def rebin(self,step,start=None):
+    def rebin(self, step, start=None, spline = False):
         """returns a spectrum with data rebinned to different wavelength step size.
         
         Parameters
@@ -831,13 +897,13 @@ class Spectrum(object):
         
         start: float
         Spectral position of the first new pixel.
-        It can be set or kept at the edge of the old first one.       
+        It can be set or kept at the edge of the old first one.     
+        
+        spline : boolean
+        False: linear interpolation, True: spline interpolation 
         """
         #flux = self.data.sum()*self.wave.cdelt
-        if isinstance(self.data,np.ma.core.MaskedArray):
-            data = self.data.filled(0.)
-        else:
-            data = self.data
+        data = self.interp_data(spline)
 
         #print "init flux", flux
 
