@@ -370,36 +370,52 @@ class PixTable(object):
         # update attributes
         self.filename = filename
 
-    def extract(self, center, radius, lbda=None):
-        """ extracts a PixTable corresponding to pixels in the circle (center, radius)
-        and in the wavelength range lbda
+    def extract(self, center, size, lbda=None, shape='C'):
+        """ extracts a spatial aperture and a wavelength range from a PixTable,
+        aperture is define as center,size [if size=None the full field is used NOT IMPLEMENTED]
+        size = radius (for circular aperture) or half side length (for square aperture)
+        wavelength range = (l1,l2) if None the full wavelength range is used
 
         Parameters
         ----------
         center: (float,float)
         (x,y) center coordinate in deg
 
-        radius: float
-        radius in deg
+        size: float
+        size in deg
 
         lbda: (float,float)
         (min, max) wavelength range in Angstrom
+
+        shape: char
+        'C' for circular aperture, 'S' for square aperture
         """
         x0,y0 = center
         ptab = PixTable()
         ptab.primary_header = pyfits.CardList(self.primary_header)
         ptab.ncols = self.ncols
-
         if self.nrows != 0:
             col_xpos = self.get_xpos()
             col_ypos = self.get_ypos()
+
             if lbda is None:
-                ksel = np.where(((col_xpos-x0)**2 + (col_ypos-y0)**2)<radius**2)
+                if shape == 'C':
+                    ksel = np.where(((col_xpos-x0)**2 + (col_ypos-y0)**2)<size**2)
+                elif shape == 'S':
+                    ksel = np.where((np.abs(col_xpos-x0)<size) & (np.abs(col_ypos-y0)<size))
+                else:
+                    raise ValueError, 'Unknown shape parameter'
             else:
                 l1,l2 = lbda
                 col_lambda = self.get_lambda()
-                ksel = np.where((((col_xpos-x0)**2 + (col_ypos-y0)**2)<radius**2) &
-                         (col_lambda>l1) & (col_lambda<l2))
+                if shape == 'C':
+                    ksel = np.where((((col_xpos-x0)**2 + (col_ypos-y0)**2)<size**2) &
+                                    (col_lambda>l1) & (col_lambda<l2))
+                elif shape == 'S':
+                    ksel = np.where((np.abs(col_xpos-x0)<size) & (np.abs(col_ypos-y0)<size) &
+                                    (col_lambda>l1) & (col_lambda<l2))
+                else:
+                    raise ValueError, 'Unknown shape parameter'
                 del col_lambda
             npts = len(ksel[0])
             if npts == 0:
@@ -453,7 +469,6 @@ class PixTable(object):
             del origin,selforigin
             os.close(fd)
         return ptab
-
 
     def origin2coords(self, origin):
         """ converts the origin value and returns (ifu, slice, y, x)
