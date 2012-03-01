@@ -429,11 +429,7 @@ class WaveCoord(object):
         """
         pix = (lbda - self.crval)/self.cdelt + self.crpix - 1
         if nearest:
-            pix = int(pix+0.5)
-            if pix>0 :
-                return pix
-            else:
-                return 0
+            pix = min( max( int(pix+0.5), 0), self.dim)
         return pix
 
     def __getitem__(self, item):
