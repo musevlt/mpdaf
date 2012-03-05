@@ -22,28 +22,28 @@ class PixTable(object):
     nrows: integer
     Number of rows
 
-    ncols: interger
+    ncols: integer
     Number of columns
 
-    xpos: float array
+    xpos: string
     name of memory-mapped files used for accessing pixel position on the x-axis (in deg)
 
-    ypos: float array
+    ypos: string
     name of memory-mapped files used for accessing pixel position on the y-axis (in deg)
 
-    lbda: float array
+    lbda: string
     name of memory-mapped files used for accessing wavelength value (in Angstrom)
 
-    data: float array
+    data: string
     name of memory-mapped files used for accessing pixel values (in e-)
 
-    dq: integer array
+    dq: string
     name of memory-mapped files used for accessing bad pixel status as defined by Euro3D
 
-    stat: float array
+    stat: string
     name of memory-mapped files used for accessing variance
 
-    origin: integer array
+    origin: string
     name of memory-mapped files used for accessing an encoded value of IFU and slice number
 
     Public methods

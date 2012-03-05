@@ -23,13 +23,13 @@ class CalibFile(object):
     primary_header: pyfits.CardList
     The primary header
     
-    data: float array
+    data: string
     name of memory-mapped files used for accessing pixel values
 
-    dq: integer array
+    dq: string
     name of memory-mapped files used for accessing bad pixel status as defined by Euro3D
 
-    stat: float array
+    stat: string
     name of memory-mapped files used for accessing variance
     
     nx: integer

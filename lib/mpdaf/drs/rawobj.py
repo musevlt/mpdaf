@@ -52,12 +52,6 @@ class Channel(object):
     
         filename : string
         The raw FITS file name. None by default.
-
-        nx,ny : integers
-        Lengths of data in X and Y
-
-        mask : boolean mask
-        Arrays that contents TRUE for overscanned pixels, FALSE for the others
         """
         self.extname = extname
         if filename!=None:
@@ -274,7 +268,7 @@ class Channel(object):
 
 
     def sqrt(self):
-        """computes the power exponent"""
+        """computes the positive square-root"""
         result = Channel(self.extname)
         result.header = self.header
         result.nx = self.nx
@@ -362,7 +356,7 @@ class RawFile(object):
     nx,ny : integers
     Lengths of data in X and Y
 
-    next: interger
+    next: integer
     Number of extensions
     
     progress: boolean
