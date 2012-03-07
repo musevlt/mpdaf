@@ -9,6 +9,7 @@ from scipy import integrate
 from scipy import interpolate
 from scipy.optimize import leastsq
 
+import matplotlib.pyplot as plt
 
 import ABmag_filters
 
@@ -27,6 +28,18 @@ def mag2flux(mag, wave):
     c = 2.998e18 # speed of light in A/s
     flux = 10**(-0.4*(mag + 48.60))*c/wave**2
     return flux
+
+class SpectrumClicks:
+    "Spec Cursor"
+    def __init__(self, binding_id, filename=None):
+        self.filename = filename
+        self.binding_id = binding_id
+        self.xc = [] # cursor position in spectrum (world coord)
+        self.yc = [] # cursor position in spectrum (world coord)
+        self.i = [] # nearest pixel in spectrum
+        self.x = [] # corresponding nearest position in spectrum (world coord)
+        self.data = [] # corresponding spectrum data values
+        self.id_lines = []
 
 class Spectrum(object):
     """Spectrum class
@@ -118,7 +131,7 @@ class Spectrum(object):
         Spectrum(shape=4000, wave=wave) : spectrum filled with zeros
         Spectrum(wave=wave, data = MyData) : spectrum filled with MyData
         """
-
+        self._clicks = None
         self.spectrum = True
         #possible FITS filename
         self.filename = filename
@@ -1306,10 +1319,10 @@ class Spectrum(object):
         ccc = gauss_fit(v,xxx) # this will only work if the units are pixel and not wavelength
         iii = gauss_fit(v0,xxx)
 
-        import matplotlib.pyplot as plt
-        plt.figure()
-        plt.plot(l,d,'r',xxx,ccc,'b--',xxx,iii,'g--')
-        plt.show()
+#        import matplotlib.pyplot as plt
+#        plt.figure()
+#        plt.plot(l,d,'r',xxx,ccc,'b--',xxx,iii,'g--')
+#        plt.show()
 
         return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
 
@@ -1347,6 +1360,184 @@ class Spectrum(object):
         res.data[imin:imax] = self.data[imin:imax] + gauss(v,wave)
 
         return res
+    
+    def plot(self, max=None, title=None, logy=False, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
+        """ plots the spectrum.
+        
+        Parameters
+        ----------
+        
+        max : boolean
+        If max is True, the plot is normalized to peak at max value.
+        
+        title : string
+        Figure tiltle (None by default).
+        
+        logy : boolean
+        If logy is True, the plot is in y logarithmic scale.
+        
+        noise : boolean
+        If noise is True, the +/- standard deviation is overplotted.
+        
+        lmin : float
+        Minimum wavelength.
+
+        lmax : float
+        Maximum wavelength.
+        
+        drawstyle : [ 'default' | 'steps' | 'steps-pre' | 'steps-mid' | 'steps-post' ]
+        Drawstyle of the plot. 'default' connects the points with lines. 
+        The steps variants produce step-plots. 'steps' is equivalent to 'steps-pre'.
+        'steps-pre' by default.        
+        """
+        plt.ion()
+        
+        res = self.truncate(lmin,lmax)
+        x = res.wave.coord()
+        f = res.data*res.fscale
+        if noise:
+            res = self.var
+        if max != None:
+            f = f*max/f.max()            
+        plt.clf() #Clear the current figure
+        if (logy):
+            plt.semilogy(x, f, drawstyle=drawstyle)
+            if noise:              
+                plt.semilogy(x, f + numpy.sqrt(n)*res.fscale, 'r--')
+                plt.semilogy(x, f - numpy.sqrt(n)*res.fscale, 'r--')
+        else:
+            plt.plot(x, f, drawstyle=drawstyle)
+            if noise:              
+                plt.plot(x, numpy.sqrt(n)*res.fscale, 'r--')
+                plt.plot(x, -numpy.sqrt(n)*res.fscale, 'r--')
+        if title is not None:
+                plt.title(title)   
+        if res.wave.cunit is not None:
+            plt.xlabel(res.wave.cunit)
+        if res.unit is not None:
+            plt.ylabel(res.unit)
+        plt.connect('motion_notify_event', self._on_move)
+
+        
+    def _on_move(self,event):
+        """ prints x,y,i,lbda and data in the figure toolbar.
+        """
+        if event.inaxes is not None:
+            xc, yc = event.xdata, event.ydata
+            try:
+                i = self.wave.pixel(xc, True)
+                x = self.wave.coord(i)
+                val = self.data[i]*self.fscale
+                s = 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
+                plt.get_current_fig_manager().toolbar.set_message(s)
+            except:
+                pass
+            
+    def print_cursor_pos(self, filename='None'):
+        """Prints cursor position.   
+        To read cursor position, click on the left mouse button
+        To quit the interactive mode, click on the right mouse button
+        
+        Parameters
+        ----------
+        
+        filename : string
+        If filename is not None, the cursor values are saved as a fits table.
+        """
+        if self._clicks is None:
+            binding_id = plt.connect('button_press_event', self._on_click)
+            plt.connect('motion_notify_event', self._on_move)
+            self._clicks = SpectrumClicks(binding_id,filename)
+        else:
+            self._clicks.filename = filename
+        
+    def _on_click(self,event):
+        """ prints x,y,i,lbda and data corresponding to the cursor position.
+        """
+        if event.button == 1:
+            if event.inaxes is not None:
+                try:
+                    xc, yc = event.xdata, event.ydata
+                    i = self.wave.pixel(xc, True)
+                    x = self.wave.coord(i)
+                    val = self.data[i]*self.fscale
+                    if len(self._clicks.x)==0:
+                        print ''
+                    plt.plot(xc,yc,'r+')
+                    self._clicks.xc.append(xc)
+                    self._clicks.yc.append(yc)
+                    self._clicks.i.append(i)
+                    self._clicks.x.append(x)
+                    self._clicks.data.append(val)
+                    self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)
+                    if self.fscale == 1:
+                        print 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
+                    else:
+                        print 'x= %g y=%g i=%d lbda=%g data=%g [scaled=%g]'%(xc,yc,i,x,val,val/self.fscale)
+                except:
+                    pass 
+        else: 
+            if self._clicks.filename is not None:
+                c1 = pyfits.Column(name='XC', format='E', array=self._clicks.xc)
+                c2 = pyfits.Column(name='YC', format='E', array=self._clicks.yc)
+                c3 = pyfits.Column(name='I', format='I', array=self._clicks.i)
+                c4 = pyfits.Column(name='X', format='E', array=self._clicks.x)
+                c5 = pyfits.Column(name='DATA', format='E', array=self._clicks.data)
+                tbhdu=pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+                tbhdu.writeto(self._clicks.filename, clobber=True)
+                print 'printing coordinates in fits table %s'%self._clicks.filename
+            print "disconnecting console coordinate printout..."
+            plt.disconnect(self._clicks.binding_id)
+            for i in self._clicks.id_lines:
+                del plt.gca().lines[i]
+            plt.draw()
+            self._clicks = None
+            
+    def get_distance(self):
+        """Gets distance and center from 2 cursor positions.
+        """
+        print 'Use 2 mouse clicks to get center and distance'
+        if self._clicks is None:
+            binding_id = plt.connect('button_press_event', self._on_click_dist)
+            plt.connect('motion_notify_event', self._on_move)
+            self._clicks = SpectrumClicks(binding_id)
+    
+    def _on_click_dist(self,event):
+        """Prints distance and center between 2 cursor positions.
+        """
+        if event.button == 1:
+            if event.inaxes is not None:
+                try:
+                    xc, yc = event.xdata, event.ydata
+                    i = self.wave.pixel(xc, True)
+                    x = self.wave.coord(i)
+                    val = self.data[i]*self.fscale
+                    if len(self._clicks.x)==0:
+                        print ''
+                    plt.plot(xc,yc,'r+')
+                    self._clicks.xc.append(xc)
+                    self._clicks.yc.append(yc)
+                    self._clicks.i.append(i)
+                    self._clicks.x.append(x)
+                    self._clicks.data.append(val)
+                    self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)
+                    if self.fscale == 1:
+                        print 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
+                    else:
+                        print 'x= %g y=%g i=%d lbda=%g data=%g [scaled=%g]'%(xc,yc,i,x,val,val/self.fscale)
+                    if np.sometrue(np.mod( len(self._clicks.x), 2 )) == False:
+                        dx = abs(self._clicks.xc[-1] - self._clicks.xc[-2])
+                        xc = (self._clicks.xc[-1] + self._clicks.xc[-2])/2
+                        print 'Center: %f Distance: %f' % (xc,dx)
+                except:
+                    pass 
+        else: 
+            print "disconnecting console distance printout..."
+            plt.disconnect(self._clicks.binding_id)
+            for i in self._clicks.id_lines:
+                del plt.gca().lines[i]
+            plt.draw()
+            self._clicks = None
 
 class Image(object):
     """Image class
