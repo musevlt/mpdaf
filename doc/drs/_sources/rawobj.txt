@@ -1,0 +1,251 @@
+
+Interface for Raw MUSE CCD image, with 24 extensions
+****************************************************
+
+
+RawFile class
+===================
+
+.. class:: drs.RawFile([filename=None])
+
+  This class manages raw FITS files. The FITS file is opened with memory mapping. Just the primary header and the list of extension name are loaded.
+  Method get_channel(extname) returns the corresponding channel
+  
+  :param filename: the FITS filename. None creates an empty object.
+  :type filename: string or None
+
+
+Attributes
+----------------
+
++----------------+-----------------+----------------------------------------------------------------------------+
+| filename       | string          | The raw FITS file name. None if any.                                       |
++----------------+-----------------+----------------------------------------------------------------------------+
+| channels       | dict            | List of extension (extname,Channel).                                       |
++----------------+-----------------+----------------------------------------------------------------------------+
+| primary_header | pyfits.CardList | The primary header.                                                        |
++----------------+-----------------+----------------------------------------------------------------------------+
+| nx             | integer         | Lengths of data in X.                                                      |
++----------------+-----------------+----------------------------------------------------------------------------+
+| ny             | integer         | Lengths of data in Y.                                                      |
++----------------+-----------------+----------------------------------------------------------------------------+
+| next           | integer         | Number of extensions.                                                      |
++----------------+-----------------+----------------------------------------------------------------------------+    
+| progress       | boolean         | If True, progress of multiprocessing tasks are displayed. True by default. |
++----------------+-----------------+----------------------------------------------------------------------------+
+
+
+Indexing
+----------------
+
+MyRawFile[id] returns the Channel object corresponding to the extension number.
+
+MyRawFile[id] = MyChannel sets the corresponding Channel.
+
+
+Methods
+----------------
+
+.. currentmodule:: drs.RawFile
+
+.. function:: copy()
+
+  Copies RawFile object in a new one and returns it.
+  
+  :rtype: RawFile object.
+ 
+
+.. function:: info()
+
+  Prints information.
+  
+  
+.. function:: get_channel(extname)
+
+  Returns the Channel object corresponding to the extension name
+        
+  :param extname: The extension name.
+  :type extname: string
+  :rtype: Channel object.
+        
+.. function:: _add(x)
+
+  Operator +.
+  
+  :param x:
+  :type x: number or RawFile object
+  :rtype: RawFile object.
+  
+.. function:: _sub(x)
+
+  Operator -.
+  
+  :param x:
+  :type x: number or RawFile object
+  :rtype: RawFile object.
+  
+.. function:: _mul(x)
+
+  Operator \*.
+  
+  :param x:
+  :type x: number or RawFile object
+  :rtype: RawFile object
+  
+.. function:: _div(x)
+
+  Operator /.
+  
+  :param x:
+  :type x: number or RawFile object
+  :rtype: RawFile object.
+  
+.. function:: __pow__(x)
+
+  Computes the power exponent of data extensions.
+  
+  :param x:
+  :type x: number
+  :rtype: RawFile object.
+  
+.. function:: sqrt()
+
+  Computes the positive square-root of data extension.
+  
+  :rtype: RawFile object.
+  
+.. function:: trimmed()
+
+  Returns a RawFile object containing only reference to the valid pixels.
+  
+  :rtype: RawFile object.
+  
+.. function:: overscan()
+
+  Returns a RawFile object containing only reference to the overscanned pixels.
+  
+  :rtype: RawFile object.
+  
+.. function:: write(filename)
+
+  Saves the object in a FITS file.
+  
+  :param filename: the FITS filename
+  :type filename: string
+
+Channel class
+===================
+
+.. class:: drs.Channel(extname[, filename=None])
+
+  Channel object corresponds to an extension of a raw FITS file.
+  
+  :param extname: The extension name.
+  :type extname: string
+  :param filename: The raw FITS file name. None by default.
+  :type filename: string
+
+Attributes
+----------------
+
++---------+-----------------+-----------------------------------------------------------------------------+
+| extname | string          | The extension name.                                                         |
++---------+-----------------+-----------------------------------------------------------------------------+
+| header  | pyfits.CardList | The extension header.                                                       |
++---------+-----------------+-----------------------------------------------------------------------------+
+| data    | array           | Array containing the pixel values of the image extension.                   |
++---------+-----------------+-----------------------------------------------------------------------------+   
+| nx      | integer         | Lengths of data in X.                                                       |
++---------+-----------------+-----------------------------------------------------------------------------+
+| ny      | integer         | Lengths of data in Y.                                                       |
++---------+-----------------+-----------------------------------------------------------------------------+
+| mask    | boolean         | Mask array that contents TRUE for overscanned pixels, FALSE for the others. |
++---------+-----------------+-----------------------------------------------------------------------------+
+
+
+Methods
+----------------
+
+.. currentmodule:: drs.Channel
+
+.. function:: copy()
+
+  Copies Channel object in a new one and returns it.
+  
+  :rtype: Channel object.
+
+.. function:: _add(x)
+
+  Operator +.
+  
+  :param x:
+  :type x: number or Channel object
+  :rtype: Channel object.
+  
+.. function:: _sub(x)
+
+  Operator -.
+  
+  :param x:
+  :type x: number or Channel object
+  :rtype: Channel object.
+  
+.. function:: _mul(x)
+
+  Operator \*.
+  
+  :param x:
+  :type x: number or Channel object
+  :rtype: Channel object
+  
+.. function:: _div(x)
+
+  Operator /.
+  
+  :param x:
+  :type x: number or Channel object
+  :rtype: Channel object.
+  
+.. function:: __pow__(x)
+
+  Computes the power exponent of data extension.
+  
+  :param x:
+  :type x: number
+  :rtype: Channel object.
+  
+.. function:: sqrt()
+
+  Computes the positive square-root of data extension.
+  
+  :rtype: Channel object.
+  
+.. function:: trimmed()
+
+  Returns a Channel object containing only reference to the valid pixels.
+  
+  :rtype: Channel object.
+  
+.. function:: overscan()
+
+  Returns a Channel object containing only reference to the overscanned pixels.
+  
+  :rtype: Channel object.
+  
+.. function:: trimmed_image()
+
+  Removes over scanned pixels from data.
+  
+  :rtype:: data float array.
+  
+  
+Examples
+===================
+
+Example of a bias substraction::
+
+  from mpdaf.drs import RawFile
+  raw = RawFile("dry-run.fits")
+  bias = RawFile("bias.fist")
+  result = raw - bias
+  result.write("result.fits")

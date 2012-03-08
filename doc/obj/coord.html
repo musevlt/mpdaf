@@ -1,0 +1,510 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Interface for world coordinates &mdash; mpdaf.drs v0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="mpdaf.drs v0.0.1 documentation" href="index.html" />
+    <link rel="next" title="Spectrum" href="spectrum.html" />
+    <link rel="prev" title="Welcome to mpdaf.obj documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="spectrum.html" title="Spectrum"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to mpdaf.obj documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">mpdaf.drs v0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="interface-for-world-coordinates">
+<h1>Interface for world coordinates<a class="headerlink" href="#interface-for-world-coordinates" title="Permalink to this headline">¶</a></h1>
+<blockquote>
+<div><p>WCS class manages world coordinates in spatial direction (pywcs package is used) .</p>
+<p>WaveCoord class manages world coordinates in spectral direction.</p>
+<p>deg2sexa and sexa2deg methods transforms coordinates from degree/sexagesimal to sexagesimal/degree.</p>
+</div></blockquote>
+<div class="section" id="degree-sexagesimal-conversion">
+<h2>Degree / sexagesimal conversion<a class="headerlink" href="#degree-sexagesimal-conversion" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="coord.deg2hms">
+<tt class="descclassname">coord.</tt><tt class="descname">deg2hms</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#coord.deg2hms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a degree value to a string representation of the coordinate as hours:minutes:seconds</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; degree value.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.hms2deg">
+<tt class="descclassname">coord.</tt><tt class="descname">hms2deg</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#coord.hms2deg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a string representation of the coordinate as hours:minutes:seconds to a float degree value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; hours:minutes:seconds.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.deg2dms">
+<tt class="descclassname">coord.</tt><tt class="descname">deg2dms</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#coord.deg2dms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a degree value to a string representation of the coordinate as degrees:arcminutes:arcseconds</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; degree value.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.dms2deg">
+<tt class="descclassname">coord.</tt><tt class="descname">dms2deg</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#coord.dms2deg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a string representation of the coordinate as degrees:arcminutes:arcseconds to a float degree value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; degrees:arcminutes:arcseconds.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.deg2sexa">
+<tt class="descclassname">coord.</tt><tt class="descname">deg2sexa</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#coord.deg2sexa" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms the values of n coordinates from degrees to sexagesimal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>float array</em>) &#8211; An (n,2) array of x- and y- coordinates in degrees.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">(n,2) array of x- and y- coordinates in sexagesimal (string).</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.sexa2deg">
+<tt class="descclassname">coord.</tt><tt class="descname">sexa2deg</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#coord.sexa2deg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms the values of n coordinates from sexagesimal to degrees.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>string array</em>) &#8211; An (n,2) array of x- and y- coordinates in sexagesimal.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">(n,2) array of x- and y- coordinates in degrees</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Example of conversion:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">coord</span>
+<span class="n">ac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2.5</span><span class="p">,</span><span class="mf">2.5</span><span class="p">])</span>
+<span class="n">ac2</span> <span class="o">=</span> <span class="p">[</span><span class="n">ac</span><span class="p">,</span><span class="n">ac</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span><span class="n">ac</span><span class="o">*</span><span class="mi">4</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">ac2</span>
+<span class="n">ac3</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">deg2sexa</span><span class="p">(</span><span class="n">ac2</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">ac3</span>
+<span class="n">ac</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">sexa2deg</span><span class="p">(</span><span class="n">ac3</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">ac</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="world-coordinates-in-spatial-direction">
+<h2>World coordinates in spatial direction<a class="headerlink" href="#world-coordinates-in-spatial-direction" title="Permalink to this headline">¶</a></h2>
+<p>WCS class manages spatial world coordinates.</p>
+<dl class="class">
+<dt id="coord.obj.WCS">
+<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">WCS</tt><big>(</big><span class="optional">[</span><em>hdr=None</em>, <em>crpix=None</em>, <em>crval=(0.0</em>, <em>0.0)</em>, <em>cdelt=(1.0</em>, <em>1.0)</em>, <em>deg=False</em>, <em>rot=0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#coord.obj.WCS" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>hdr</strong> (<em>pyfits.CardList</em>) &#8211; A FITS header. If hdr is not equal to None, WCS object is created from data header and other parameters are not used.</li>
+<li><strong>crpix</strong> (<em>float or (float,float)</em>) &#8211; Reference pixel coordinates. If crpix=None crpix = 1.0 and the reference point is the first pixel in the image.</li>
+<li><strong>crval</strong> (<em>float or (float,float)</em>) &#8211; Coordinates of the reference pixel. (0.0,0.0) by default.</li>
+<li><strong>cdelt</strong> (<em>float or (float,float)</em>) &#8211; Sizes of one pixel along the axis. (1.0,1.0) by default.</li>
+<li><strong>deg</strong> (<em>boolean</em>) &#8211; If True, world coordinates are in decimal degrees (CTYPE1=&#8217;RA&#8212;TAN&#8217;,CTYPE2=&#8217;DEC&#8211;TAN&#8217;,CUNIT1=CUNIT2=&#8217;deg). If False (by default), world coordinates are linear (CTYPE1=CTYPE2=&#8217;LINEAR&#8217;).</li>
+<li><strong>rot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Rotation angle in degree.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">WCS</span>
+<span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">hdr</span><span class="p">)</span> <span class="c"># creates a WCS object from data header</span>
+<span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">()</span> <span class="c"># the reference point is the first pixel in the image</span>
+<span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">crval</span><span class="o">=</span><span class="p">(</span><span class="mf">1.46E+02</span><span class="p">,</span><span class="o">-</span><span class="mf">3.11E+01</span><span class="p">),</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">4E-04</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">rot</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span> <span class="c"># the reference point is in decimal degree</span>
+</pre></div>
+</div>
+<div class="section" id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="23%" />
+<col width="64%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>wcs</td>
+<td>pywcs.WCS</td>
+<td>World coordinates object.</td>
+</tr>
+<tr><td>cdelt</td>
+<td>float array</td>
+<td>Sizes of one pixel along the axis.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="methods">
+<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.WCS.copy">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.WCS.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies WCS object in a new one and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">WCS object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WCS.info">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">info</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.WCS.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints information</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WCS.to_header">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">to_header</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.WCS.to_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a pyfits header object with the WCS information stored in this object.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WCS.sky2pix">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">sky2pix</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.WCS.sky2pix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts world coordinates to pixel coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>float array</em>) &#8211; An (n,2) array of x- and y- world coordinates.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">(n,2) array of x- and y- pixel coordinates.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WCS.pix2sky">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">pix2sky</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.WCS.pix2sky" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts pixel coordinates to world coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>float array</em>) &#8211; An (n,2) array of x- and y- pixel coordinates.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">(n,2) array of x- and y- world coordinates.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WCS.isEqual">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">isEqual</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#obj.WCS.isEqual" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if other has exactly the same attributes of this object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>obs.WCS</em>) &#8211; a WCS object.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="world-coordinates-in-spectral-direction">
+<h2>World coordinates in spectral direction<a class="headerlink" href="#world-coordinates-in-spectral-direction" title="Permalink to this headline">¶</a></h2>
+<p>WaveCoord class manages world coordinates in spectral direction.</p>
+<dl class="class">
+<dt id="obj.WCS.obj.WaveCoord">
+<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">WaveCoord</tt><big>(</big><span class="optional">[</span><em>crpix=1.0</em>, <em>cdelt=1.0</em>, <em>crval=0.0</em>, <em>cunit = 'Angstrom'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.WCS.obj.WaveCoord" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>crpix</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Reference pixel coordinates. 1.0 by default. Note that for crpix definition, the first pixel in the spectrum has pixel coordinates.</li>
+<li><strong>cdelt</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Step in wavelength (1.0 by default).</li>
+<li><strong>crval</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Coordinates of the reference pixel (0.0 by default).</li>
+<li><strong>cunit</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Wavelength unit (Angstrom by default).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="section" id="id1">
+<h3>Attributes<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="17%" />
+<col width="70%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>dim</td>
+<td>integer</td>
+<td>Size of spectrum.</td>
+</tr>
+<tr><td>crpix</td>
+<td>float</td>
+<td>Reference pixel coordinates.</td>
+</tr>
+<tr><td>crval</td>
+<td>float</td>
+<td>Coordinates of the reference pixel.</td>
+</tr>
+<tr><td>cdelt</td>
+<td>float</td>
+<td>Step in wavelength.</td>
+</tr>
+<tr><td>cunit</td>
+<td>string</td>
+<td>Wavelength unit.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id2">
+<h3>Methods<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.WaveCoord.copy">
+<tt class="descclassname">obj.WaveCoord.</tt><tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.WaveCoord.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies WaveCoord object in a new one and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">WaveCoord object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WaveCoord.info">
+<tt class="descclassname">obj.WaveCoord.</tt><tt class="descname">info</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.WaveCoord.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints information.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WaveCoord.isEqual">
+<tt class="descclassname">obj.WaveCoord.</tt><tt class="descname">isEqual</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#obj.WaveCoord.isEqual" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if other has exactly the same attributes of this object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>obs.WaveCoord</em>) &#8211; a WaveCoord object.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WaveCoord.coord">
+<tt class="descclassname">obj.WaveCoord.</tt><tt class="descname">coord</tt><big>(</big><span class="optional">[</span><em>pixel=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.WaveCoord.coord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the coordinate corresponding to pixel. If pixel is None, the full coordinate array is returned.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pixel</strong> &#8211; pixel id.</li>
+<li><strong>type</strong> &#8211; integer or None</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WaveCoord.pixel">
+<tt class="descclassname">obj.WaveCoord.</tt><tt class="descname">pixel</tt><big>(</big><em>lbda</em><span class="optional">[</span>, <em>nearest=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.WaveCoord.pixel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the decimal pixel corresponding to the wavelength lbda. If nearest=True returns the nearest integer pixel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lbda</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; wavelength value.</li>
+<li><strong>nearest</strong> (<em>boolean</em>) &#8211; If nearest=True returns the nearest integer pixel.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float or integer according to nearest.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo_mpdaf_small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Interface for world coordinates</a><ul>
+<li><a class="reference internal" href="#degree-sexagesimal-conversion">Degree / sexagesimal conversion</a></li>
+<li><a class="reference internal" href="#world-coordinates-in-spatial-direction">World coordinates in spatial direction</a><ul>
+<li><a class="reference internal" href="#attributes">Attributes</a></li>
+<li><a class="reference internal" href="#methods">Methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#world-coordinates-in-spectral-direction">World coordinates in spectral direction</a><ul>
+<li><a class="reference internal" href="#id1">Attributes</a></li>
+<li><a class="reference internal" href="#id2">Methods</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to mpdaf.obj documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="spectrum.html"
+                        title="next chapter">Spectrum</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/coord.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="spectrum.html" title="Spectrum"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to mpdaf.obj documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">mpdaf.drs v0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, L. Piqueras.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

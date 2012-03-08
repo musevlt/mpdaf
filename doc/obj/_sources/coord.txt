@@ -1,0 +1,238 @@
+ 
+Interface for world coordinates
+*******************************
+
+
+    WCS class manages world coordinates in spatial direction (pywcs package is used) .
+
+    WaveCoord class manages world coordinates in spectral direction.
+
+    deg2sexa and sexa2deg methods transforms coordinates from degree/sexagesimal to sexagesimal/degree.
+    
+
+Degree / sexagesimal conversion
+===============================
+
+.. currentmodule:: coord
+
+.. function:: deg2hms(x)
+
+  Transforms a degree value to a string representation of the coordinate as hours:minutes:seconds
+  
+  :param x: degree value.
+  :type x: float
+  :rtype: string
+  
+
+.. function:: hms2deg(x)
+
+  Transforms a string representation of the coordinate as hours:minutes:seconds to a float degree value
+  
+  :param x: hours:minutes:seconds.
+  :type x: string
+  :rtype: float
+
+.. function:: deg2dms(x)
+
+  Transforms a degree value to a string representation of the coordinate as degrees:arcminutes:arcseconds
+
+  :param x: degree value.
+  :type x: float
+  :rtype: string  
+
+.. function:: dms2deg(x)
+
+  Transforms a string representation of the coordinate as degrees:arcminutes:arcseconds to a float degree value
+  
+  :param x: degrees:arcminutes:arcseconds.
+  :type x: string
+  :rtype: float
+
+.. function:: deg2sexa(x)
+
+  Transforms the values of n coordinates from degrees to sexagesimal.
+  
+  :param x: An (n,2) array of x- and y- coordinates in degrees.
+  :type x: float array
+  :rtype: (n,2) array of x- and y- coordinates in sexagesimal (string).
+  
+.. function:: sexa2deg(x)
+
+  Transforms the values of n coordinates from sexagesimal to degrees.
+  
+  :param x: An (n,2) array of x- and y- coordinates in sexagesimal.
+  :type x:  string array
+  :rtype: (n,2) array of x- and y- coordinates in degrees
+  
+Example of conversion::
+
+  from mpdaf.obj import coord 
+  ac = np.array([2.5,2.5])
+  ac2 = [ac,ac*2,ac*4]
+  print ac2
+  ac3 = coord.deg2sexa(ac2)
+  print ac3
+  ac = coord.sexa2deg(ac3)
+  print ac
+
+
+
+World coordinates in spatial direction
+======================================
+
+WCS class manages spatial world coordinates.
+
+.. class:: obj.WCS([hdr=None,crpix=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0])
+  
+  :param hdr: A FITS header. If hdr is not equal to None, WCS object is created from data header and other parameters are not used.
+  :type hdr: pyfits.CardList
+  :param crpix: Reference pixel coordinates. If crpix=None crpix = 1.0 and the reference point is the first pixel in the image.
+  :type crpix: float or (float,float)
+  :param crval: Coordinates of the reference pixel. (0.0,0.0) by default.
+  :type crval: float or (float,float)
+  :param cdelt: Sizes of one pixel along the axis. (1.0,1.0) by default.
+  :type cdelt: float or (float,float)
+  :param deg: If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg). If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR').
+  :type deg: boolean
+  :param rot: Rotation angle in degree.
+  :type rot: float
+  
+Examples::
+
+  from mpdaf.obj import WCS
+  wcs = WCS(hdr) # creates a WCS object from data header
+  wcs = WCS() # the reference point is the first pixel in the image
+  wcs = WCS(crval=(1.46E+02,-3.11E+01),cdelt=4E-04, deg=True, rot = 20) # the reference point is in decimal degree
+
+
+Attributes
+----------
+
++-------+-------------+------------------------------------+
+| wcs   | pywcs.WCS   | World coordinates object.          |
++-------+-------------+------------------------------------+
+| cdelt | float array | Sizes of one pixel along the axis. |
++-------+-------------+------------------------------------+
+
+
+Methods
+-------
+
+.. currentmodule:: obj.WCS
+
+.. function:: copy()
+
+  Copies WCS object in a new one and returns it.
+  
+  :rtype: WCS object
+ 
+
+.. function:: info()
+
+  Prints information
+  
+  
+.. function:: to_header()
+
+  Generates a pyfits header object with the WCS information stored in this object.
+  
+.. function:: sky2pix(x)
+
+  Converts world coordinates to pixel coordinates.
+  
+  :param x: An (n,2) array of x- and y- world coordinates.
+  :type x: float array
+  :rtype: (n,2) array of x- and y- pixel coordinates.
+  
+.. function:: pix2sky(x)
+
+  Converts pixel coordinates to world coordinates.
+  
+  :param x: An (n,2) array of x- and y- pixel coordinates.
+  :type x: float array
+  :rtype: (n,2) array of x- and y- world coordinates.
+  
+.. function:: isEqual(other)
+
+  Returns True if other has exactly the same attributes of this object.
+  
+  :param other: a WCS object.
+  :type other: obs.WCS
+  :rtype: boolean
+    
+    
+World coordinates in spectral direction
+=======================================
+
+WaveCoord class manages world coordinates in spectral direction.
+
+
+.. class:: obj.WaveCoord([crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom'])
+
+  :param crpix: Reference pixel coordinates. 1.0 by default. Note that for crpix definition, the first pixel in the spectrum has pixel coordinates.
+  :type crpix: float
+  :param cdelt: Step in wavelength (1.0 by default).
+  :type cdelt: float
+  :param crval: Coordinates of the reference pixel (0.0 by default).
+  :type crval: float
+  :param cunit: Wavelength unit (Angstrom by default).
+  :type cunit: string
+
+
+Attributes
+----------
+
++-------+---------+-------------------------------------+
+| dim   | integer | Size of spectrum.                   |
++-------+---------+-------------------------------------+
+| crpix | float   | Reference pixel coordinates.        |
++-------+---------+-------------------------------------+
+| crval | float   | Coordinates of the reference pixel. |
++-------+---------+-------------------------------------+
+| cdelt | float   | Step in wavelength.                 |
++-------+---------+-------------------------------------+
+| cunit | string  | Wavelength unit.                    |
++-------+---------+-------------------------------------+
+
+
+Methods
+-------
+
+.. currentmodule:: obj.WaveCoord
+
+.. function:: copy()
+
+  Copies WaveCoord object in a new one and returns it.
+  
+  :rtype: WaveCoord object
+ 
+
+.. function:: info()
+
+  Prints information.
+  
+.. function:: isEqual(other)
+
+  Returns True if other has exactly the same attributes of this object.
+  
+  :param other: a WaveCoord object.
+  :type other: obs.WaveCoord
+  :rtype: boolean
+  
+.. function:: coord([pixel=None])
+
+  Returns the coordinate corresponding to pixel. If pixel is None, the full coordinate array is returned.
+  
+  :param pixel: pixel id. 
+  :param type: integer or None
+  :rtype: float
+
+.. function:: pixel(lbda[, nearest=False])
+
+  Returns the decimal pixel corresponding to the wavelength lbda. If nearest=True returns the nearest integer pixel.
+  
+  :param lbda: wavelength value.
+  :type lbda: float
+  :param nearest: If nearest=True returns the nearest integer pixel.
+  :type nearest: boolean
+  :rtype: float or integer according to nearest.

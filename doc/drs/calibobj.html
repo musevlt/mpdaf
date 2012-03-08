@@ -1,0 +1,496 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Interface for intermediate MUSE DRS objects &mdash; mpdaf.drs v0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="mpdaf.drs v0.0.1 documentation" href="index.html" />
+    <link rel="next" title="Interface for MUSE pixel tables" href="pixtable.html" />
+    <link rel="prev" title="Interface for Raw MUSE CCD image, with 24 extensions" href="rawobj.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="pixtable.html" title="Interface for MUSE pixel tables"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="rawobj.html" title="Interface for Raw MUSE CCD image, with 24 extensions"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">mpdaf.drs v0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="interface-for-intermediate-muse-drs-objects">
+<h1>Interface for intermediate MUSE DRS objects<a class="headerlink" href="#interface-for-intermediate-muse-drs-objects" title="Permalink to this headline">¶</a></h1>
+<p>Intermediate MUSE DRS objects refer to all FITS calibration files (MASTER_BIAS MASTER_DARK MASTER_FLAT OBJECT_RESAMPLED ...).
+There are 2D images with three extensions: the data value, the data variance and the data quality. These files describes properties in each ifu.
+That&#8217;s why two classes manage them:</p>
+<blockquote>
+<div><ul class="simple">
+<li>The first class CalibFile manages a given file,</li>
+<li>the second class CalibDir manages a set a files corresponding of several MUSE ifus.</li>
+</ul>
+</div></blockquote>
+<div class="section" id="calibfile-class">
+<h2>CalibFile class<a class="headerlink" href="#calibfile-class" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="drs.CalibFile">
+<em class="property">class </em><tt class="descclassname">drs.</tt><tt class="descname">CalibFile</tt><big>(</big><span class="optional">[</span><em>filename=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#drs.CalibFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class manages calibration files. The FITS file is opened with memory mapping. Just the primary header and array dimensions are loaded.
+Methods get_data, get_dq and get_stat must be used to get array extensions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>string or None</em>) &#8211; the FITS filename. None creates an empty object.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="section" id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="14%" />
+<col width="72%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>filename</td>
+<td>string</td>
+<td>The FITS file name. None if any.</td>
+</tr>
+<tr><td>primary_header</td>
+<td>pyfits.CardList</td>
+<td>The primary header</td>
+</tr>
+<tr><td>data</td>
+<td>string</td>
+<td>name of memory-mapped files used for accessing pixel values</td>
+</tr>
+<tr><td>dq</td>
+<td>string</td>
+<td>name of memory-mapped files used for accessing bad pixel status as defined by Euro3D</td>
+</tr>
+<tr><td>stat</td>
+<td>string</td>
+<td>name of memory-mapped files used for accessing variance</td>
+</tr>
+<tr><td>nx</td>
+<td>integer</td>
+<td>Dimension of the data/dq/stat arrays along the x-axis</td>
+</tr>
+<tr><td>ny</td>
+<td>integer</td>
+<td>Dimension of the data/dq/stat arrays along the y-axis</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="methods">
+<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="drs.CalibFile.copy">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.CalibFile.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies CalibFile object in a new one and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibFile object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile.info">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">info</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.CalibFile.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints information</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile.get_data">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">get_data</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.CalibFile.get_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens the FITS file with memory mapping, loads the data array and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">memory-map to an array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile.get_dq">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">get_dq</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.CalibFile.get_dq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens the FITS file with memory mapping, loads the dq array and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">memory-map to an array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile.get_stat">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">get_stat</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.CalibFile.get_stat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens the FITS file with memory mapping, loads the stat array and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">memory-map to an array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile.write">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">write</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#drs.CalibFile.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the object in a FITS file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; the FITS filename</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile._add">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">_add</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#drs.CalibFile._add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator +.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or CalibFile object</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibFile object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile._sub">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">_sub</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#drs.CalibFile._sub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator -.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or CalibFile object</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibFile object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile._mul">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">_mul</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#drs.CalibFile._mul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator *.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or CalibFile object</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibFile object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibFile._div">
+<tt class="descclassname">drs.CalibFile.</tt><tt class="descname">_div</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#drs.CalibFile._div" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator /.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or CalibFile object</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibFile object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="calibdir-class">
+<h2>CalibDir class<a class="headerlink" href="#calibdir-class" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="drs.CalibFile.drs.CalibDir">
+<em class="property">class </em><tt class="descclassname">drs.</tt><tt class="descname">CalibDir</tt><big>(</big><em>type</em><span class="optional">[</span>, <em>dirname=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#drs.CalibFile.drs.CalibDir" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class manages repository containing 24 calibration files (one per ifu).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Type of calibration files that appears in filenames &lt;type&gt;_&lt;ifu id&gt;.fits.</li>
+<li><strong>dirname</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; The repository name. None if any.This repository must contain files labeled &lt;type&gt;_&lt;ifu id&gt;.fits.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="section" id="id1">
+<h3>Attributes<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="11%" />
+<col width="10%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>dirname</td>
+<td>string</td>
+<td>The repository name. None if any.
+This repository must contain files labeled &lt;type&gt;_&lt;ifu id&gt;.fits.</td>
+</tr>
+<tr><td>type</td>
+<td>string</td>
+<td>Type of calibration files that appears in filenames &lt;type&gt;_&lt;ifu id&gt;.fits.</td>
+</tr>
+<tr><td>files</td>
+<td>dict</td>
+<td>List of files (ifu id,CalibFile).</td>
+</tr>
+<tr><td>progress</td>
+<td>boolean</td>
+<td>If True, progress of multiprocessing tasks are displayed. True by default.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="indexing">
+<h3>Indexing<a class="headerlink" href="#indexing" title="Permalink to this headline">¶</a></h3>
+<p>MyCalibDir[id] returns the CalibFile object corresponding to the ifu id.</p>
+<p>MyCalibDir[id] = MyCalibFile sets the corresponding CalibFile.</p>
+</div>
+<div class="section" id="id2">
+<h3>Methods<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="drs.CalibDir.copy">
+<tt class="descclassname">drs.CalibDir.</tt><tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.CalibDir.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies CalibDir object in a new one and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibDir object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibDir.info">
+<tt class="descclassname">drs.CalibDir.</tt><tt class="descname">info</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.CalibDir.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints information.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibDir._add">
+<tt class="descclassname">drs.CalibDir.</tt><tt class="descname">_add</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#drs.CalibDir._add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator + on each CalibFile (multiprocessing is used).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or CalibDir object</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibDir object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibDir._sub">
+<tt class="descclassname">drs.CalibDir.</tt><tt class="descname">_sub</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#drs.CalibDir._sub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator - on each CalibFile (multiprocessing is used).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or CalibDir object</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibDir object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibDir._mul">
+<tt class="descclassname">drs.CalibDir.</tt><tt class="descname">_mul</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#drs.CalibDir._mul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator * on each CalibFile (multiprocessing is used).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or CalibDir object</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibDir object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.CalibDir._div">
+<tt class="descclassname">drs.CalibDir.</tt><tt class="descname">_div</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#drs.CalibDir._div" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator / on each CalibFile (multiprocessing is used).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or CalibDir object</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">CalibDir object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<tt class="descname">write(dirname):</tt></dt>
+<dd><p>Writes files in dirname.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dirname</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; The repository name.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo_mpdaf_small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Interface for intermediate MUSE DRS objects</a><ul>
+<li><a class="reference internal" href="#calibfile-class">CalibFile class</a><ul>
+<li><a class="reference internal" href="#attributes">Attributes</a></li>
+<li><a class="reference internal" href="#methods">Methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#calibdir-class">CalibDir class</a><ul>
+<li><a class="reference internal" href="#id1">Attributes</a></li>
+<li><a class="reference internal" href="#indexing">Indexing</a></li>
+<li><a class="reference internal" href="#id2">Methods</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="rawobj.html"
+                        title="previous chapter">Interface for Raw MUSE CCD image, with 24 extensions</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pixtable.html"
+                        title="next chapter">Interface for MUSE pixel tables</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/calibobj.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="pixtable.html" title="Interface for MUSE pixel tables"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="rawobj.html" title="Interface for Raw MUSE CCD image, with 24 extensions"
+             >previous</a> |</li>
+        <li><a href="index.html">mpdaf.drs v0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, L. Piqueras.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,835 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Spectrum &mdash; mpdaf.drs v0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="mpdaf.drs v0.0.1 documentation" href="index.html" />
+    <link rel="next" title="Image" href="image.html" />
+    <link rel="prev" title="Interface for world coordinates" href="coord.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="image.html" title="Image"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="coord.html" title="Interface for world coordinates"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">mpdaf.drs v0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="spectrum">
+<h1>Spectrum<a class="headerlink" href="#spectrum" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="spectrum-class">
+<h2>Spectrum class<a class="headerlink" href="#spectrum-class" title="Permalink to this headline">¶</a></h2>
+<p>This class manages spectrum, optionally including a variance and a bad pixel mask.</p>
+<dl class="class">
+<dt id="obj.Spectrum">
+<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">Spectrum</tt><big>(</big><span class="optional">[</span><em>filename=None</em>, <em>ext = None</em>, <em>getnoise=False</em>, <em>shape=101</em>, <em>wave = None</em>, <em>unit=None</em>, <em>data=None</em>, <em>var=None</em>, <em>fscale=1.0</em>, <em>empty=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Possible FITS filename.</li>
+<li><strong>ext</strong> (<em>integer</em>) &#8211; Number of the corresponding extension in the file.</li>
+<li><strong>getnoise</strong> (<em>boolean</em>) &#8211; True if the noise Variance spectrum is read (if it exists). Use getnoise=False to create spectrum without variance extension</li>
+<li><strong>shape</strong> (<em>integer</em>) &#8211; size of the spectrum. 101 by default.</li>
+<li><strong>wave</strong> (<em>WaveCoord</em>) &#8211; Wavelength coordinates.</li>
+<li><strong>unit</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Possible data unit type. None by default.</li>
+<li><strong>data</strong> (<em>float array</em>) &#8211; Array containing the pixel values of the spectrum. None by default.</li>
+<li><strong>var</strong> (<em>float array</em>) &#8211; Array containing the variance. None by default.</li>
+<li><strong>fscale</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Flux scaling factor (1 by default).</li>
+<li><strong>empty</strong> (<em>boolean</em>) &#8211; If empty is True, the data and variance array are set to None.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">Spectrum</span>
+<span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">WaveCoord</span>
+<span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;spectrum.fits&quot;</span><span class="p">,</span><span class="n">ext</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">getnoise</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c"># spectrum from file (extension number is 1)</span>
+<span class="n">wave</span> <span class="o">=</span> <span class="n">WaveCoord</span><span class="p">(</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span> <span class="n">crval</span><span class="o">=</span><span class="mf">4000.0</span><span class="p">,</span> <span class="n">cunit</span> <span class="o">=</span> <span class="s">&#39;Angstrom&#39;</span><span class="p">)</span>
+<span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">wave</span><span class="o">=</span><span class="n">wave</span><span class="p">)</span> <span class="c"># spectrum filled with zeros</span>
+<span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">wave</span><span class="o">=</span><span class="n">wave</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">MyData</span><span class="p">)</span> <span class="c"># spectrum filled with MyData</span>
+</pre></div>
+</div>
+<div class="section" id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="11%" />
+<col width="27%" />
+<col width="62%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>filename</td>
+<td>string</td>
+<td>Possible FITS filename.</td>
+</tr>
+<tr><td>unit</td>
+<td>string</td>
+<td>Possible data unit type.</td>
+</tr>
+<tr><td>cards</td>
+<td>pyfits.CardList</td>
+<td>Possible FITS header instance.</td>
+</tr>
+<tr><td>data</td>
+<td>array or masked array</td>
+<td>Array containing the pixel values of the spectrum.</td>
+</tr>
+<tr><td>shape</td>
+<td>integer</td>
+<td>Size of spectrum.</td>
+</tr>
+<tr><td>var</td>
+<td>array</td>
+<td>Array containing the variance.</td>
+</tr>
+<tr><td>fscale</td>
+<td>float</td>
+<td>Flux scaling factor (1 by default).</td>
+</tr>
+<tr><td>wave</td>
+<td>WaveCoord</td>
+<td>Wavelength coordinates.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="indexing">
+<h3>Indexing<a class="headerlink" href="#indexing" title="Permalink to this headline">¶</a></h3>
+<p><tt class="docutils literal"><span class="pre">Spectrum[i]</span></tt> returns the corresponding value.</p>
+<p><tt class="docutils literal"><span class="pre">Spectrum[i1:i2]</span></tt> returns the sub-spectrum.</p>
+<p><tt class="docutils literal"><span class="pre">Spectrum[i]</span> <span class="pre">=</span> <span class="pre">value</span></tt> sets value in Spectrum.data[i]</p>
+<p><tt class="docutils literal"><span class="pre">Spectrum[i1:i2]</span> <span class="pre">=</span> <span class="pre">array</span></tt> sets the corresponding part of Spectrum.data.</p>
+</div>
+<div class="section" id="methods">
+<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.Spectrum.copy">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies Spectrum object in a new one and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.info">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">info</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints information</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.write">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">write</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#obj.Spectrum.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the object in a FITS file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; the FITS filename</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__le__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__le__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__le__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Masks data array where greater than a given value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; minimum value.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum object containing a masked array.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__lt__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__lt__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__lt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Masks data array where greater or equal than a given value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; minimum value.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum object containing a masked array.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__ge__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__ge__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__ge__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Masks data array where less than a given value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; maximum value.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum object containing a masked array.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__gt__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__gt__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Masks data array where less or equal than a given value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; maximum value.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum object containing a masked array.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.resize">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">resize</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.resize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resizes the spectrum to have a minimum number of masked values.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__add__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__add__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__add__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator +.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or Spectrum or Cube object.</em>) &#8211; <dl class="docutils">
+<dt>x is Spectrum :</dt>
+<dd>Dimensions and wavelength coordinates must be the same.</dd>
+<dt>x is Cube :</dt>
+<dd>The first dimension of cube1 must be equal to the spectrum dimension.
+Wavelength coordinates must be the same.</dd>
+</dl>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum or Cube object.<p>spectrum1 + number = spectrum2 (spectrum2[k] = spectrum1[k] + number)</p>
+<p>spectrum1 + spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] + spectrum2[k])</p>
+<p>spectrum + cube1 = cube2 (cube2[k,j,i] = cube1[k,j,i] + spectrum[k])</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__sub__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__sub__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__sub__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator -.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or Spectrum or Cube object.</em>) &#8211; <dl class="docutils">
+<dt>x is Spectrum :</dt>
+<dd>Dimensions and wavelength coordinates must be the same.</dd>
+<dt>x is Cube :</dt>
+<dd>The first dimension of cube1 must be equal to the spectrum dimension.
+Wavelength coordinates must be the same.</dd>
+</dl>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum or Cube object.<p>spectrum1 - number = spectrum2 (spectrum2[k] = spectrum1[k] - number)</p>
+<p>spectrum1 - spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] - spectrum2[k])</p>
+<p>spectrum - cube1 = cube2 (cube2[k,j,i] = spectrum[k] - cube1[k,j,i])</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__mul__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__mul__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__mul__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator *.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or Spectrum or Image or Cube object.</em>) &#8211; <dl class="docutils">
+<dt>x is Spectrum :</dt>
+<dd>Dimensions and wavelength coordinates must be the same.</dd>
+<dt>x is Cube :</dt>
+<dd>The first dimension of cube1 must be equal to the spectrum dimension.
+Wavelength coordinates must be the same.</dd>
+</dl>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum or Cube object.<p>spectrum1 * number = spectrum2 (spectrum2[k] = spectrum1[k] * number)</p>
+<p>spectrum1 * spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] * spectrum2[k])</p>
+<p>spectrum * cube1 = cube2 (cube2[k,j,i] = spectrum[k] * cube1[k,j,i])</p>
+<p>spectrum * image = cube (cube[k,j,i]=image[j,i] * spectrum[k]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__div__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__div__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__div__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operator /.</p>
+<p>Note : divide functions that have a validity domain returns the masked constant whenever the input is masked or falls outside the validity domain.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number or Spectrum or Cube object.</em>) &#8211; <dl class="docutils">
+<dt>x is Spectrum :</dt>
+<dd>Dimensions and wavelength coordinates must be the same.</dd>
+<dt>x is Cube :</dt>
+<dd>The first dimension of cube1 must be equal to the spectrum dimension.
+Wavelength coordinates must be the same.</dd>
+</dl>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum or Cube object.<p>spectrum1 / number = spectrum2 (spectrum2[k] = spectrum1[k] / number)</p>
+<p>spectrum1 / spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] / spectrum2[k])</p>
+<p>spectrum / cube1 = cube2 (cube2[k,j,i] = spectrum[k] / cube1[k,j,i])</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.__pow__">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">__pow__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Spectrum.__pow__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the power exponent of data extensions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>number</em>) &#8211; </td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum object.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.sqrt">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">sqrt</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.sqrt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the positive square-root of data extension.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum object.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.abs">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">abs</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.abs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the absolute value of data extension.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum object.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.get_lambda">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_lambda</tt><big>(</big><em>lbda_min</em><span class="optional">[</span>, <em>lbda_max=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.get_lambda" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the corresponding value or sub-spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lbda_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; minimum wavelength.</li>
+<li><strong>lbda_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; maximum wavelength.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float or Spectrum</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.set_wcs">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">set_wcs</tt><big>(</big><em>wave</em><big>)</big><a class="headerlink" href="#obj.Spectrum.set_wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the world coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wave</strong> (<em>WaveCoord</em>) &#8211; Wavelength coordinates.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.interp">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">interp</tt><big>(</big><em>wavelengths</em><span class="optional">[</span>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.interp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the interpolated values corresponding to the wavelength array.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wavelengths</strong> (<em>array of float</em>) &#8211; wavelength values.</li>
+<li><strong>spline</strong> (<em>boolean</em>) &#8211; False: linear interpolation, True: spline interpolation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">array of float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.interp_data">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">interp_data</tt><big>(</big><span class="optional">[</span><em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.interp_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns data array with interpolated values for masked pixels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>spline</strong> (<em>boolean</em>) &#8211; False: linear interpolation, True: spline interpolation.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">array of float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.rebin_factor">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">rebin_factor</tt><big>(</big><em>factor</em><big>)</big><a class="headerlink" href="#obj.Spectrum.rebin_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rebins the Spectrum to a new shape.
+The new shape must be a factor of self.shape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>factor</strong> (<em>integer</em>) &#8211; factor (new_shape = old_shape/factor).</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.rebin">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">rebin</tt><big>(</big><em>step</em><span class="optional">[</span>, <em>start=None</em>, <em>spline = False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.rebin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a spectrum with data rebinned to different wavelength step size.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>step</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New pixel size in spectral direction.</li>
+<li><strong>start</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Spectral position of the first new pixel. It can be set or kept at the edge of the old first one.</li>
+<li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Spectrum</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.mean">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">mean</tt><big>(</big><span class="optional">[</span><em>lmin=None</em>, <em>lmax=None</em>, <em>weight=True</em>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the mean value on [lmin,lmax].</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum wavelength.</li>
+<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum wavelength.</li>
+<li><strong>weight</strong> (<em>boolean</em>) &#8211; If weight is True, compute the weighted average with the inverse of variance as weight.</li>
+<li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Returns mean or mean,std.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.sum">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">sum</tt><big>(</big><span class="optional">[</span><em>lmin=None</em>, <em>lmax=None</em>, <em>weight=True</em>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the flux value on [lmin,lmax].</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum wavelength.</li>
+<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum wavelength.</li>
+<li><strong>weight</strong> (<em>boolean</em>) &#8211; If weight is True, compute the weighted sum with the inverse of variance as weight.</li>
+<li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Returns flux or flux,std.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.polfit">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">polfit</tt><big>(</big><em>order</em><span class="optional">[</span>, <em>maxiter=0</em>, <em>nsig=(-3.0</em>, <em>3.0)</em>, <em>wind=None</em>, <em>weight=True</em>, <em>quiet=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.polfit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs polynomial fit on spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>order</strong> (<em>integer</em>) &#8211; Polynomial order.</li>
+<li><strong>maxiter</strong> (<em>integer</em>) &#8211; Maximum allowed iterations (0 by default).</li>
+<li><strong>nsig</strong> (<em>(float,float)</em>) &#8211; Low and high rejection factor in std units. (-3.0,3.0) by default.</li>
+<li><strong>wind</strong> (<em>list of float</em>) &#8211; wind is the list of wavelength interval to skip in the fit (None by default).</li>
+<li><strong>weight</strong> (<em>boolean</em>) &#8211; If weight is True, the weight is computed as the inverse of variance.</li>
+<li><strong>quiet</strong> (<em>boolean</em>) &#8211; If True, some outputs are printed.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray, shape. Polynomial coefficients, highest power first.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.abmag_band">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">abmag_band</tt><big>(</big><em>lbda</em>, <em>dlbda</em><span class="optional">[</span>, <em>out=1</em>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.abmag_band" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes AB magnitude corresponding to the wavelength band.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lbda</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Mean wavelength.</li>
+<li><strong>dlbda</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Width of the wavelength band.</li>
+<li><strong>out</strong> (<em>1 or 2</em>) &#8211; 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.</li>
+<li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.abmag_filter">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">abmag_filter</tt><big>(</big><em>name</em><span class="optional">[</span>, <em>out=1</em>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.abmag_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes AB magnitude using the filter name.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; &#8216;U&#8217;, &#8216;B&#8217;, &#8216;V&#8217;, &#8216;Rc&#8217;, &#8216;Ic&#8217;, &#8216;z&#8217;, &#8216;R-Johnson&#8217;,&#8217;F606W&#8217; or txt filename with lbda (A) eff</li>
+<li><strong>out</strong> (<em>1 or 2</em>) &#8211; 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.</li>
+<li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.truncate">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">truncate</tt><big>(</big><span class="optional">[</span><em>lmin=None</em>, <em>lmax=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.truncate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Truncates a spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum wavelength.</li>
+<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum wavelength.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Spectrum</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.fwhm">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">fwhm</tt><big>(</big><em>l0</em><span class="optional">[</span>, <em>cont=0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.fwhm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the fwhm of a peak.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>l0</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Wavelength value corresponding to the peak position.</li>
+<li><strong>cont</strong> (<em>integer</em>) &#8211; The continuum [default 0].</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.gauss_fit">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>lmin</em>, <em>lmax</em><span class="optional">[</span>, <em>fwhm=None</em>, <em>lpeak=None</em>, <em>fpeak=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.gauss_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs polynomial fit on spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum wavelength.</li>
+<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum wavelength.</li>
+<li><strong>fwhm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian fwhm, if None it is estimated.</li>
+<li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian center, if None it is estimated.</li>
+<li><strong>fpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian peak value, if None it is estimated.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.add_gaussian">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">add_gaussian</tt><big>(</big><em>fwhm</em>, <em>lpeak</em>, <em>fpeak</em><big>)</big><a class="headerlink" href="#obj.Spectrum.add_gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a gausian on spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fwhm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian fwhm.</li>
+<li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian center.</li>
+<li><strong>fpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian peak value.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Spectrum</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="plotting">
+<h3>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.Spectrum.plot">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">plot</tt><big>(</big><span class="optional">[</span><em>max=None</em>, <em>title=None</em>, <em>logy=False</em>, <em>noise=False</em>, <em>lmin=None</em>, <em>lmax=None</em>, <em>drawstyle='steps-mid'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max</strong> (<em>boolean</em>) &#8211; If max is True, the plot is normalized to peak at max value.</li>
+<li><strong>title</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Figure tiltle (None by default).</li>
+<li><strong>logy</strong> (<em>boolean</em>) &#8211; If logy is True, the plot is in y logarithmic scale.</li>
+<li><strong>noise</strong> (<em>boolean</em>) &#8211; If noise is True, the +/- standard deviation is overplotted.</li>
+<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum wavelength.</li>
+<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum wavelength.</li>
+<li><strong>drawstyle</strong> (<em>[ &#8216;default&#8217; | &#8216;steps&#8217; | &#8216;steps-pre&#8217; | &#8216;steps-mid&#8217; | &#8216;steps-post&#8217; ]</em>) &#8211; Drawstyle of the plot. &#8216;steps-pre&#8217; by default.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.print_cursor_pos">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">print_cursor_pos</tt><big>(</big><span class="optional">[</span><em>filename='None'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.print_cursor_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints cursor position.
+To read cursor position, click on the left mouse button.
+To quit the interactive mode, click on the right mouse button</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; If filename is not None, the cursor values are saved as a fits table.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.get_distance">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_distance</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.get_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets distance and center from 2 cursor positions.</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo_mpdaf_small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Spectrum</a><ul>
+<li><a class="reference internal" href="#spectrum-class">Spectrum class</a><ul>
+<li><a class="reference internal" href="#attributes">Attributes</a></li>
+<li><a class="reference internal" href="#indexing">Indexing</a></li>
+<li><a class="reference internal" href="#methods">Methods</a></li>
+<li><a class="reference internal" href="#plotting">Plotting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="coord.html"
+                        title="previous chapter">Interface for world coordinates</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="image.html"
+                        title="next chapter">Image</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/spectrum.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="image.html" title="Image"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="coord.html" title="Interface for world coordinates"
+             >previous</a> |</li>
+        <li><a href="index.html">mpdaf.drs v0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, L. Piqueras.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,275 @@
+
+Image
+*****
+
+Image class
+===========
+
+This class manages images, optionally including a variance and a bad pixel mask.
+
+.. class:: obj.Image([filename=None, ext = None, getnoise=False, shape=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0,empty=False])
+
+  :param filename: Possible FITS filename.
+  :type filename: string
+  :param ext: Number of the corresponding extension in the file.
+  :type ext: integer
+  :param getnoise: True if the noise Variance image is read (if it exists). Use getnoise=False to create image without variance extension.
+  :type getnoise: boolean
+  :param shape: Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.
+  :type shape: integer or (integer,integer)
+  :param wcs: World coordinates.
+  :type wcs: WCS
+  :param unit: Possible data unit type. None by default.
+  :type unit: string
+  :param data: Array containing the pixel values of the image. None by default.
+  :type data: float array
+  :param var: Array containing the variance. None by default.
+  :type var: float array
+  :param fscale: Flux scaling factor (1 by default).
+  :type fscale: float
+  :param empty: If empty is True, the data and variance array are set to None.
+  :type empty: boolean
+  
+Examples::
+ 
+  from mpdaf.obj import Image
+  from mpdaf.obj import WCS
+  ima = Image(filename="image.fits",ext=1,getnoise=False) # image from file (extension number is 1)
+  wcs = WCS(crval=0,cdelt=0.2)
+  ima = Image(shape=300, wcs=wcs) # image 300x300 filled with zeros
+  ima = Image(wcs=wcs, data = MyData) # image 300x300 filled with MyData
+
+
+Attributes
+----------
+
++---------+-----------------------+-------------------------------------------------------+
+|filename | string                | Possible FITS filename.                               |
++---------+-----------------------+-------------------------------------------------------+
+| unit    | string                | Possible data unit type.                              |
++---------+-----------------------+-------------------------------------------------------+
+| cards   | pyfits.CardList       | Possible FITS header instance.                        |
++---------+-----------------------+-------------------------------------------------------+
+| data    | array or masked array | Array containing the pixel values of the image.       |
++---------+-----------------------+-------------------------------------------------------+
+| shape   | array of 2 integers   | Lengths of data in Y and X (python notation: (ny,nx)) |
++---------+-----------------------+-------------------------------------------------------+
+| var     | array                 | Array containing the variance.                        |
++---------+-----------------------+-------------------------------------------------------+
+| fscale  | float                 | Flux scaling factor (1 by default).                   |
++---------+-----------------------+-------------------------------------------------------+
+| wcs     | WCS                   | World coordinates.                                    |
++---------+-----------------------+-------------------------------------------------------+
+
+
+Indexing
+--------
+
+``Image[i,j]`` returns the corresponding value.
+
+``Image[i1:i2,j1:j2]`` returns the sub-image.
+
+``Image[i,j] = value`` sets value in Image.data[i,j]
+
+``Image[i1:i2,j1:j2] = array`` sets the corresponding part of Image.data.
+
+
+Methods
+-------
+
+.. currentmodule:: obj.Image
+
+.. function:: copy()
+
+  Copies Image object in a new one and returns it.
+  
+  :rtype: Image object
+ 
+
+.. function:: info()
+
+  Prints information
+  
+ 
+.. function:: write(filename)
+
+  Saves the object in a FITS file.
+  
+  :param filename: the FITS filename
+  :type filename: string
+ 
+ 
+.. function:: __le__ (x)
+
+  Masks data array where greater than a given value.
+  
+  :param x: minimum value.
+  :type x: float
+  :rtype: Image object containing a masked array.
+
+
+.. function:: __lt__ (x)
+
+  Masks data array where greater or equal than a given value.
+  
+  :param x: minimum value.
+  :type x: float
+  :rtype: Image object containing a masked array.
+
+
+.. function:: __ge__ (x)
+
+  Masks data array where less than a given value.
+  
+  :param x: maximum value.
+  :type x: float
+  :rtype: Image object containing a masked array.
+
+
+.. function:: __gt__ (x)
+
+  Masks data array where less or equal than a given value.
+  
+  :param x: maximum value.
+  :type x: float
+  :rtype: Image object containing a masked array.
+
+
+.. function:: resize()
+
+  Resizes the image to have a minimum number of masked values.
+
+
+.. function:: __add__(x)
+
+  Operator +.
+  
+  :param x: x is Image : 
+			Dimensions and world coordinates must be the same.
+  
+	    x is Cube : 
+			The last two dimensions of the cube must be equal to the image dimensions.
+			World coordinates in spatial directions must be the same.
+  :type x: number or Image or Cube object.
+  :rtype: Image or Cube object.
+  
+	  image1 + number = image2 (image2[j,i] = image1[j,i] + number)
+	  
+	  image1 + image2 = image3 (image3[j,i] = image1[j,i] + image2[j,i])
+	  
+	  image + cube1 = cube2 (cube2[k,j,i] = cube1[k,j,i] + image[j,i])
+
+
+.. function:: __sub__(x)
+
+  Operator -.
+  
+  :param x: x is Image : 
+			Dimensions and world coordinates must be the same.
+  
+	    x is Cube : 
+			The last two dimensions of the cube must be equal to the image dimensions.
+			World coordinates in spatial directions must be the same.
+  :type x: number or Image or Cube object.
+  :rtype: Image or Cube object.
+	  
+	  image1 - number = image2 (image2[j,i] = image1[j,i] - number)
+	  
+	  image1 - image2 = image3 (image3[j,i] = image1[j,i] - image2[j,i])
+
+	  image - cube1 = cube2 (cube2[k,j,i] = image[j,i] - cube1[k,j,i])
+
+
+.. function:: __mul__(x)
+
+  Operator \*.
+  
+  :param x: x is Image : 
+			Dimensions and world coordinates must be the same.
+  
+	    x is Cube : 
+			The last two dimensions of the cube must be equal to the image dimensions.
+			World coordinates in spatial directions must be the same.
+  :type x: number or Spectrum or Image or Cube object.
+  :rtype: Spectrum or Image or Cube object.
+  
+	  image1 \* number = image2 (image2[j,i] = image1[j,i] \* number)
+
+	  image1 \* image2 = image3 (image3[j,i] = image1[j,i] \* image2[j,i])
+
+	  image \* cube1 = cube2 (cube2[k,j,i] = image[j,i] \* cube1[k,j,i])
+
+	  image \* spectrum = cube (cube[k,j,i] = image[j,i] \* spectrum[k]
+
+
+.. function:: __div__(x)
+
+  Operator /.
+  
+  :param x: x is Image : 
+			Dimensions and world coordinates must be the same.
+  
+	    x is Cube : 
+			The last two dimensions of the cube must be equal to the image dimensions.
+			World coordinates in spatial directions must be the same.
+  :type x: number or Image or Cube object.
+  :rtype: Image or Cube object.
+  
+	  image1 / number = image2 (image2[j,i] = image1[j,i] / number)
+
+	  image1 / image2 = image3 (image3[j,i] = image1[j,i] / image2[j,i])
+
+	  image / cube1 = cube2 (cube2[k,j,i] = image[j,i] / cube1[k,j,i])
+
+
+.. function:: __pow__(x)
+
+  Computes the power exponent of data extensions.
+  
+  :param x:
+  :type x: number
+  :rtype: Image object.
+
+
+.. function:: sqrt()
+
+  Computes the positive square-root of data extension.
+  
+  :rtype: Image object.
+
+
+.. function:: abs()
+
+  Computes the absolute value of data extension.
+  
+  :rtype: Image object.
+
+
+.. function:: get_deg(ra_min, ra_max, dec_min, dec_max)
+
+  Returns the corresponding sub-image.
+  
+  :param ra_min: Minimum right ascension in degrees.
+  :type ra_min: float
+  :param ra_max: Maximum right ascension in degrees.
+  :type ra_max: float
+  :param dec_min: Minimum declination in degrees.
+  :type dec_min: float
+  :param dec_max: Maximum declination in degrees.
+  :type dec_max: float
+  :rtype: Image
+  
+
+.. function:: set_wcs(wcs)
+
+  Sets the world coordinates.
+  
+  :param wcs: World coordinates.
+  :type wcs: WCS
+
+
+
+Plotting
+--------
+ 
+ 
