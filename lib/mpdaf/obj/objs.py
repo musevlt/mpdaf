@@ -32,14 +32,14 @@ def mag2flux(mag, wave):
 class SpectrumClicks:
     "Spec Cursor"
     def __init__(self, binding_id, filename=None):
-        self.filename = filename
-        self.binding_id = binding_id
+        self.filename = filename # name of the table fits file where are saved the clicks vlaues.
+        self.binding_id = binding_id # connection id
         self.xc = [] # cursor position in spectrum (world coord)
         self.yc = [] # cursor position in spectrum (world coord)
         self.i = [] # nearest pixel in spectrum
         self.x = [] # corresponding nearest position in spectrum (world coord)
         self.data = [] # corresponding spectrum data values
-        self.id_lines = []
+        self.id_lines = []  # list of plots (points for cursor positions)
 
 class Spectrum(object):
     """Spectrum class
@@ -66,9 +66,6 @@ class Spectrum(object):
 
     fscale : float
     Flux scaling factor (1 by default)
-
-    maskinfo : string
-    Information about the masked array (if relevant)
 
     wave : WaveCoord
     Wavelength coordinates
@@ -117,7 +114,7 @@ class Spectrum(object):
         dq : array
         Array containing bad pixel
 
-        empty : bool
+        empty : boolean
         If empty is True, the data and variance array are set to None
 
         fscale : float
@@ -135,7 +132,6 @@ class Spectrum(object):
         self.spectrum = True
         #possible FITS filename
         self.filename = filename
-        self.maskinfo = ""
         if filename is not None:
             f = pyfits.open(filename)
             # primary header
@@ -248,7 +244,6 @@ class Spectrum(object):
         except:
             spe.var = None
         spe.fscale = self.fscale
-        spe.maskinfo = self.maskinfo
         try:
             spe.wave = self.wave.copy()
         except:
@@ -378,7 +373,6 @@ class Spectrum(object):
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " <= %f"%item
         return result
 
     def __lt__ (self, item):
@@ -390,7 +384,6 @@ class Spectrum(object):
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " < %f"%item
         return result
 
     def __ge__ (self, item):
@@ -402,7 +395,6 @@ class Spectrum(object):
             result.data = np.ma.masked_less(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >= %f"%item
         return result
 
     def __gt__ (self, item):
@@ -414,7 +406,6 @@ class Spectrum(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >%f"%item
         return result
 
     def remove_mask(self):
@@ -422,10 +413,9 @@ class Spectrum(object):
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
             self.data = self.data.data
-            self.maskinfo = ""
 
     def resize(self):
-        """resize the spectrum to have a minimum number of masked values
+        """resizes the spectrum to have a minimum number of masked values
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
             ksel = np.where(self.data.mask==False)
@@ -449,7 +439,7 @@ class Spectrum(object):
         If not equal to None, world coordinates must be the same.
 
         spectrum + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+spectrum[k])
-        The last dimension of cube1 must be equal to the spectrum dimension.
+        The first dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
         """
         if self.data is None:
@@ -479,7 +469,6 @@ class Spectrum(object):
                     res.data = self.data + other.data*np.double(other.fscale/self.fscale)
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -506,7 +495,7 @@ class Spectrum(object):
         If not equal to None, world coordinates must be the same.
 
         spectrum - cube1 = cube2 (cube2[k,j,i]=spectrum[k]-cube1[k,j,i])
-        The last dimension of cube1 must be equal to the spectrum dimension.
+        The first dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
         """
         if self.data is None:
@@ -536,7 +525,6 @@ class Spectrum(object):
                     res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -559,7 +547,6 @@ class Spectrum(object):
                         res.data = self.data[:,np.newaxis,np.newaxis] - (other.data*np.double(other.fscale/self.fscale))
                         if self.unit == other.unit:
                             res.unit = self.unit
-                        res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                         return res
             except:
                 print 'Operation forbidden'
@@ -593,7 +580,7 @@ class Spectrum(object):
         If not equal to None, world coordinates must be the same.
 
         spectrum * cube1 = cube2 (cube2[k,j,i]=spectrum[k]*cube1[k,j,i])
-        The last dimension of cube1 must be equal to the spectrum dimension.
+        The first dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
 
         spectrum * image = cube (cube[k,j,i]=image[j,i]*spectrum[k]
@@ -627,7 +614,6 @@ class Spectrum(object):
                     res.data = self.data * other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -650,7 +636,7 @@ class Spectrum(object):
         If not equal to None, world coordinates must be the same.
 
         spectrum / cube1 = cube2 (cube2[k,j,i]=spectrum[k]/cube1[k,j,i])
-        The last dimension of cube1 must be equal to the spectrum dimension.
+        The first dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
 
         Note : divide functions that have a validity domain returns the masked constant whenever the input is masked or falls outside the validity domain.
@@ -684,7 +670,6 @@ class Spectrum(object):
                     res.data = self.data / other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -707,7 +692,6 @@ class Spectrum(object):
                         res.data = self.data[:,np.newaxis,np.newaxis] / other.data
                         if self.unit == other.unit:
                             res.unit = self.unit
-                        res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                         return res
             except:
                 print 'Operation forbidden'
@@ -1229,9 +1213,15 @@ class Spectrum(object):
         return self.__getitem__(slice(i1,i2,1))
 
     def fwhm(self, l0, cont=0):
-        """ returns the fwhm of a peak
-        l0 is the peak position
-        cont is the continuum [default 0]
+        """ Returns the fwhm of a peak
+
+        Parameters
+        ----------
+        l0 : float
+        wavelength value corresponding to the peak position.
+
+        cont : integer
+        The continuum [default 0].
         """
         k0 = self.wave.pixel(l0, nearest=True)
         d = self.data - cont
@@ -1557,16 +1547,13 @@ class Image(object):
     Array containing the pixel values of the image
 
     shape : array of 2 integers
-    Lengths of data in X and Y (python notation: (ny,nx))
+    Lengths of data in Y and X (python notation: (ny,nx))
 
     var : array
     Array containing the variance
 
     fscale : float
     Flux scaling factor (1 by default)
-
-    maskinfo : string
-    Information about the masked array (if relevant)
 
     wcs : WCS
     World coordinates
@@ -1598,7 +1585,7 @@ class Image(object):
         Use getnoise=False to create image without variance extension
 
         shape : integer or (integer,integer)
-        Lengths of data in X and Y. (101,101) by default.
+        Lengths of data in Y and X. (101,101) by default.
         python notation: (ny,nx)
 
         wcs : WCS
@@ -1631,7 +1618,6 @@ class Image(object):
         self.image = True
         #possible FITS filename
         self.filename = filename
-        self.maskinfo = ""
         if filename is not None:
             f = pyfits.open(filename)
             # primary header
@@ -1741,7 +1727,6 @@ class Image(object):
         except:
             ima.var = None
         ima.fscale = self.fscale
-        ima.maskinfo = self.maskinfo
         try:
             ima.wcs = self.wcs.copy()
         except:
@@ -1856,7 +1841,6 @@ class Image(object):
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " <= %f"%item
         return result
 
     def __lt__ (self, item):
@@ -1868,7 +1852,6 @@ class Image(object):
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " < %f"%item
         return result
 
     def __ge__ (self, item):
@@ -1880,7 +1863,6 @@ class Image(object):
             result.data = np.ma.masked_less(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >= %f"%item
         return result
 
     def __gt__ (self, item):
@@ -1892,7 +1874,6 @@ class Image(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >%f"%item
         return result
 
     def remove_mask(self):
@@ -1900,7 +1881,6 @@ class Image(object):
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
             self.data = self.data.data
-            self.maskinfo = ""
 
     def resize(self):
         """resize the image to have a minimum number of masked values
@@ -1932,7 +1912,7 @@ class Image(object):
         If not equal to None, world coordinates must be the same.
 
         image + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
-        The first two dimensions of cube1 must be equal to the image dimensions.
+        The last two dimensions of cube1 must be equal to the image dimensions.
         If not equal to None, world coordinates in spatial directions must be the same.
         """
         if self.data is None:
@@ -1962,7 +1942,6 @@ class Image(object):
                     res.data = self.data + (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -1989,7 +1968,7 @@ class Image(object):
         If not equal to None, world coordinates must be the same.
 
         image - cube1 = cube2 (cube2[k,j,i]=image[j,i] - cube1[k,j,i])
-        The first two dimensions of cube1 must be equal to the image dimensions.
+        The last two dimensions of cube1 must be equal to the image dimensions.
         If not equal to None, world coordinates in spatial directions must be the same.
         """
         if self.data is None:
@@ -2019,7 +1998,6 @@ class Image(object):
                     res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -2042,7 +2020,6 @@ class Image(object):
                         res.data = self.data[np.newaxis,:,:] - (other.data*np.double(other.fscale/self.fscale))
                         if self.unit == other.unit:
                             res.unit = self.unit
-                        res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                         return res
             except:
                 print 'Operation forbidden'
@@ -2076,7 +2053,7 @@ class Image(object):
         If not equal to None, world coordinates must be the same.
 
         image * cube1 = cube2 (cube2[k,j,i]=image[j,i] * cube1[k,j,i])
-        The first two dimensions of cube1 must be equal to the image dimensions.
+        The last two dimensions of cube1 must be equal to the image dimensions.
         If not equal to None, world coordinates in spatial directions must be the same.
 
         image * spectrum = cube (cube[k,j,i]=image[j,i]*spectrum[k]
@@ -2110,7 +2087,6 @@ class Image(object):
                     res.data = self.data * other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -2133,7 +2109,6 @@ class Image(object):
                             res.data = self.data[np.newaxis,:,:] * other.data[:,np.newaxis,np.newaxis]
                             if self.unit == other.unit:
                                 res.unit = self.unit
-                            res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                             return res
                 except:
                     print 'Operation forbidden'
@@ -2152,7 +2127,7 @@ class Image(object):
         If not equal to None, world coordinates must be the same.
 
         image / cube1 = cube2 (cube2[k,j,i]=image[j,i] / cube1[k,j,i])
-        The first two dimensions of cube1 must be equal to the image dimensions.
+        The last two dimensions of cube1 must be equal to the image dimensions.
         If not equal to None, world coordinates in spatial directions must be the same.
         """
         if self.data is None:
@@ -2184,7 +2159,6 @@ class Image(object):
                     res.data = self.data / other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -2205,7 +2179,6 @@ class Image(object):
                         res.data = self.data[np.newaxis,:,:] / other.data
                         if self.unit == other.unit:
                             res.unit = self.unit
-                        res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                         return res
             except:
                 print 'Operation forbidden'
@@ -2378,16 +2351,13 @@ class Cube(object):
     Array containing the pixel values of the cube
 
     shape : array of 3 integers
-    Lengths of data in X and Y and Z
+    Lengths of data in X and Y and Z (python notation (nz,ny,nx)
 
     var : array
     Array containing the variance
 
     fscale : float
     Flux scaling factor (1 by default)
-
-    maskinfo : string
-    Information about the masked array (if relevant)
 
     wcs : WCS
     World coordinates
@@ -2421,8 +2391,8 @@ class Cube(object):
         True if the noise Variance image is read (if it exists)
         Use getnoise=False to create image without variance extension
 
-        shape : integer or (integer,integer)
-        Lengths of data in X and Y. (101,101) by default.
+        shape : integer or (integer,integer,integer)
+        Lengths of data in Z, Y and X. (101,101,101) by default.
 
         wcs : WCS
         World coordinates
@@ -2452,7 +2422,6 @@ class Cube(object):
         #possible FITS filename
         self.cube = True
         self.filename = filename
-        self.maskinfo = ""
         if filename is not None:
             f = pyfits.open(filename)
             # primary header
@@ -2594,7 +2563,6 @@ class Cube(object):
         except:
             cub.var = None
         cub.fscale = self.fscale
-        cub.maskinfo = self.maskinfo
         try:
             cub.wcs = self.wcs.copy()
         except:
@@ -2715,7 +2683,6 @@ class Cube(object):
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " <= %f"%item
         return result
 
     def __lt__ (self, item):
@@ -2727,7 +2694,6 @@ class Cube(object):
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " < %f"%item
         return result
 
     def __ge__ (self, item):
@@ -2739,7 +2705,6 @@ class Cube(object):
             result.data = np.ma.masked_less(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >= %f"%item
         return result
 
     def __gt__ (self, item):
@@ -2751,7 +2716,6 @@ class Cube(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         if self.var is not None:
             result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
-        result.maskinfo += " >%f"%item
         return result
 
     def remove_mask(self):
@@ -2759,7 +2723,6 @@ class Cube(object):
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
             self.data = self.data.data
-            self.maskinfo = ""
 
     def resize(self):
         """resize the cube to have a minimum number of masked values
@@ -2847,7 +2810,6 @@ class Cube(object):
                     res.data = self.data + (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -2870,7 +2832,6 @@ class Cube(object):
                         res.data = self.data + (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
                         if self.unit == other.unit:
                             res.unit = self.unit
-                        res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                         return res
             except:
                 try:
@@ -2893,7 +2854,6 @@ class Cube(object):
                             res.data = self.data + (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
                             if self.unit == other.unit:
                                 res.unit = self.unit
-                            res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                             return res
                 except:
                     print 'Operation forbidden'
@@ -2954,7 +2914,6 @@ class Cube(object):
                     res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -2977,7 +2936,6 @@ class Cube(object):
                         res.data = self.data - (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
                         if self.unit == other.unit:
                             res.unit = self.unit
-                        res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                         return res
             except:
                 try:
@@ -3000,7 +2958,6 @@ class Cube(object):
                             res.data = self.data - (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
                             if self.unit == other.unit:
                                 res.unit = self.unit
-                            res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                             return res
                 except:
                     print 'Operation forbidden'
@@ -3082,7 +3039,6 @@ class Cube(object):
                     res.data = self.data * other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -3105,7 +3061,6 @@ class Cube(object):
                         res.data = self.data * other.data[np.newaxis,:,:]
                         if self.unit == other.unit:
                             res.unit = self.unit
-                        res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                         return res
             except:
                 try:
@@ -3128,7 +3083,6 @@ class Cube(object):
                             res.data = self.data * other.data[:,np.newaxis,np.newaxis]
                             if self.unit == other.unit:
                                 res.unit = self.unit
-                            res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                             return res
                 except:
                     print 'Operation forbidden'
@@ -3190,7 +3144,6 @@ class Cube(object):
                     res.data = self.data / other.data
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                     return res
         except:
             try:
@@ -3213,7 +3166,6 @@ class Cube(object):
                         res.data = self.data / other.data[np.newaxis,:,:]
                         if self.unit == other.unit:
                             res.unit = self.unit
-                        res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                         return res
             except:
                 try:
@@ -3236,7 +3188,6 @@ class Cube(object):
                             res.data = self.data / other.data[:,np.newaxis,np.newaxis]
                             if self.unit == other.unit:
                                 res.unit = self.unit
-                            res.maskinfo = " [%s] + [%s]"%(self.maskinfo,other.maskinfo)
                             return res
                 except:
                     print 'Operation forbidden'

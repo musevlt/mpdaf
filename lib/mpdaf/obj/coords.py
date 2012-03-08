@@ -189,6 +189,7 @@ class WCS(object):
         """
         out = WCS()
         out.wcs = self.wcs.__copy__()
+        out.cdelt = self.cdelt.__copy__()
         return out
 
     def info(self):
