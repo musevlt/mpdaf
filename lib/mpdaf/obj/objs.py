@@ -156,8 +156,7 @@ class Spectrum(object):
                 crpix = hdr.get('CRPIX1')
                 crval = hdr.get('CRVAL1')
                 cunit = hdr.get('CUNIT1')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit)
-                self.wave.dim = self.shape
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -181,8 +180,7 @@ class Spectrum(object):
                 crpix = h.get('CRPIX1')
                 crval = h.get('CRVAL1')
                 cunit = h.get('CUNIT1')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit)
-                self.wave.dim = self.shape
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
                 # STAT extension
                 self.var = None
                 if getnoise:
@@ -223,6 +221,9 @@ class Spectrum(object):
             self.fscale = np.float(fscale)
             try:
                 self.wave = wave
+                if wave.dim is not None and wave.dim != self.shape:
+                    print "warning: wavelength coordinates and data have not the same dimensions."
+                    self.wave = None
                 self.wave.dim = self.shape
             except :
                 self.wave = None
@@ -811,8 +812,12 @@ class Spectrum(object):
         wave : WaveCoord
         Wavelength coordinates
         """
-        self.wave = wave
-        self.wave.dim = self.shape
+        if wave.dim is not None and wave.dim != self.shape:
+            print "warning: wavelength coordinates and data have not the same dimensions."
+            self.wave = None
+        else:
+            self.wave = wave
+            self.wave.dim = self.shape
         
     def interp(self, wavelengths, spline=False):
         """ returns the interpolated values corresponding to the wavelength array
@@ -1704,9 +1709,15 @@ class Image(object):
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                self.wcs = wcs
-                self.wcs.wcs.naxis1 = self.shape[1]
-                self.wcs.wcs.naxis2 = self.shape[0]
+                if wcs.wcs.naxis1 == 0. and wcs.wcs.naxis2 == 0.:
+                    self.wcs = wcs
+                    self.wcs.wcs.naxis1 = self.shape[1]
+                    self.wcs.wcs.naxis2 = self.shape[0]
+                elif wcs.wcs.naxis1 != self.shape[1] or wcs.wcs.naxis2 != self.shape[0]:
+                    print "warning: world coordinates and data have not the same dimensions."
+                    self.wcs =  None
+                else:
+                    self.wcs = wcs
             except :
                 self.wcs = None
 
@@ -2329,9 +2340,15 @@ class Image(object):
         wcs : WCS
         World coordinates
         """
-        self.wcs = wcs
-        self.wcs.wcs.naxis1 = self.shape[1]
-        self.wcs.wcs.naxis2 = self.shape[0]
+        if wcs.wcs.naxis1 == 0. and wcs.wcs.naxis2 == 0.:
+            self.wcs = wcs
+            self.wcs.wcs.naxis1 = self.shape[1]
+            self.wcs.wcs.naxis2 = self.shape[0]
+        elif wcs.wcs.naxis1 != self.shape[1] or wcs.wcs.naxis2 != self.shape[0]:
+            print "warning: world coordinates and data have not the same dimensions."
+            self.wcs =  None
+        else:
+            self.wcs = wcs
 
 class Cube(object):
     """cube class
@@ -2453,8 +2470,7 @@ class Cube(object):
                 crpix = hdr.get('CRPIX3')
                 crval = hdr.get('CRVAL3')
                 cunit = hdr.get('CUNIT3')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit)
-                self.wave.dim = self.shape[0]
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit,self.shape[0])
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -2484,8 +2500,7 @@ class Cube(object):
                 crpix = h.get('CRPIX3')
                 crval = h.get('CRVAL3')
                 cunit = h.get('CUNIT3')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit)
-                self.wave.dim = self.shape[0]
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
                 self.var = None
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 3:
@@ -2535,14 +2550,24 @@ class Cube(object):
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                self.wcs = wcs
-                self.wcs.wcs.naxis1 = self.shape[2]
-                self.wcs.wcs.naxis2 = self.shape[1]
+                if wcs.wcs.naxis1 == 0. and wcs.wcs.naxis2 == 0.:
+                    self.wcs = wcs
+                    self.wcs.wcs.naxis1 = self.shape[2]
+                    self.wcs.wcs.naxis2 = self.shape[1]
+                elif wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]:
+                    print "warning: world coordinates and data have not the same dimensions."
+                    self.wcs =  None
+                else:
+                    self.wcs = wcs
             except :
                 self.wcs = None
             try:
-                self.wave = wave
-                self.wave.dim = self.shape[0]
+                if wave.dim is not None and wave.dim != self.shape[0]:
+                    print "warning: wavelength coordinates and data have not the same dimensions."
+                    self.wave = None
+                else:
+                    self.wave = wave
+                    self.wave.dim = self.shape[0]
             except :
                 self.wave = None
 
@@ -3376,8 +3401,19 @@ class Cube(object):
         wave : WaveCoord
         Wavelength coordinates
         """
-        self.wcs = wcs
-        self.wcs.wcs.naxis1 = self.shape[2]
-        self.wcs.wcs.naxis2 = self.shape[1]
-        self.wave = wave
-        self.wave.dim = self.shape[0]
+        if wcs.wcs.naxis1 == 0. and wcs.wcs.naxis2 == 0.:
+            self.wcs = wcs
+            self.wcs.wcs.naxis1 = self.shape[2]
+            self.wcs.wcs.naxis2 = self.shape[1]
+        elif wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]:
+            print "warning: world coordinates and data have not the same dimensions."
+            self.wcs =  None
+        else:
+            self.wcs = wcs
+        
+        if wave.dim is not None and wave.dim != self.shape[0]:
+            print "warning: wavelength coordinates and data have not the same dimensions."
+            self.wave = None
+        else:
+            self.wave = wave
+            self.wave.dim = self.shape[0]

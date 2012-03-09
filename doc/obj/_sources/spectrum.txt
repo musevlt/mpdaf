@@ -32,12 +32,23 @@ This class manages spectrum, optionally including a variance and a bad pixel mas
   
 Examples::
  
+  import numpy as np
   from mpdaf.obj import Spectrum
   from mpdaf.obj import WaveCoord
+  
   spe = Spectrum(filename="spectrum.fits",ext=1,getnoise=False) # spectrum from file (extension number is 1)
-  wave = WaveCoord(cdelt=1.25, crval=4000.0, cunit = 'Angstrom')
-  spe = Spectrum(shape=4000, wave=wave) # spectrum filled with zeros
-  spe = Spectrum(wave=wave, data = MyData) # spectrum filled with MyData
+  
+  wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom')
+  wave2 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom', dim=3000)
+  MyData = np.ones(4000)
+  
+  spe = Spectrum(shape=4000, wave=wave1) # spectrum filled with zeros
+  spe = Spectrum(wave=wave1, data=MyData) # spectrum filled with MyData
+  spe = Spectrum(shape=4000, wave=wave2) # warning: wavelength coordinates and spectrum have not the same dimensions
+					 # spe.wave = None
+  spe = Spectrum(wave=wave2, data=MyData) # warning: wavelength coordinates and data have not the same dimensions
+					    # spe.wave = None
+  
 
 
 Attributes

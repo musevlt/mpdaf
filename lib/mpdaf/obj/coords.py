@@ -98,7 +98,7 @@ class WCS(object):
 
     Info: info, isEqual
     """
-    def __init__(self,hdr=None,crpix=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0):
+    def __init__(self,hdr=None,crpix=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0, shape = None):
         """creates a WCS object
 
         Parameters
@@ -126,6 +126,9 @@ class WCS(object):
         hdr : pyfits.CardList
         A FITS header.
         If hdr is not equal to None, WCS object is created from data header and other parameters are not used.
+        
+        shape : array of 2 integers
+        Lengths of data in Y and X (python notation: (ny,nx))
 
         Examples
         --------
@@ -162,6 +165,13 @@ class WCS(object):
                     pass
                 else:
                     raise ValueError, 'crpix with dimension > 2'
+            if shape!=None:
+                if isinstance(shape,int):
+                    shape = (shape,shape)
+                elif len(shape) == 2:
+                    pass
+                else:
+                    raise ValueError, 'shape with dimension > 2'
             #create pywcs object
             self.wcs = pywcs.WCS(naxis=2)
             self.cdelt = np.array(cdelt)
@@ -182,6 +192,9 @@ class WCS(object):
                 self.wcs.wcs.cd = np.array([[cdelt[0], 0], [0, cdelt[1]]])
             # rotation
             self.wcs.rotateCD(rot)
+            # dimensions
+            self.wcs.naxis1 = shape[1]
+            self.wcs.naxis2 = shape[0]
 
 
     def copy(self):
@@ -354,7 +367,7 @@ class WaveCoord(object):
     Info: info, isEqual
     """
 
-    def __init__(self, crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom'):
+    def __init__(self, crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom', dim = None):
         """creates a WaveCoord object
 
         Parameters
@@ -373,8 +386,11 @@ class WaveCoord(object):
 
         cunit : string
         Wavelength unit (Angstrom by default).
+        
+        dim : integer
+        Size of spectrum.
         """
-        self.dim = 0
+        self.dim = dim
         self.crpix = crpix
         self.cdelt = cdelt
         self.crval = crval
@@ -396,7 +412,10 @@ class WaveCoord(object):
     def info(self):
         """prints information
         """
-        print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.__getitem__(self.dim-1),self.cdelt,self.cunit)
+        if self.dim is None:
+            print 'wavelength: min:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.cdelt,self.cunit)
+        else:
+            print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.__getitem__(self.dim-1),self.cdelt,self.cunit)
 
 
     def isEqual(self,other):
@@ -417,12 +436,15 @@ class WaveCoord(object):
         """ returns the coordinate corresponding to pixel
         if pixel is None, the full coordinate array is returned
         """
-        pix = np.arange(self.dim,dtype=np.float)
-        lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
         if pixel is None:
-            return lbda
+            if self.dim is None:
+                print "error : wavelength coordinates without dimension"
+            else:
+                pix = np.arange(self.dim,dtype=np.float)
+                lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
+                return lbda
         else:
-            return lbda[pixel]
+            return (pixel - self.crpix + 1) * self.cdelt + self.crval
 
     def pixel(self, lbda, nearest=False):
         """ Returns the decimal pixel corresponding to the wavelength lbda
@@ -430,25 +452,26 @@ class WaveCoord(object):
         """
         pix = (lbda - self.crval)/self.cdelt + self.crpix - 1
         if nearest:
-            pix = min( max( int(pix+0.5), 0), self.dim)
+            if self.dim is None:
+                pix = max( int(pix+0.5), 0)
+            else:
+                pix = min( max( int(pix+0.5), 0), self.dim)
         return pix
 
     def __getitem__(self, item):
         """ returns the coordinate corresponding to pixel if item is an integer
         returns the corresponding WaveCoord object if item is a slice
         """
-        pix = np.arange(self.dim,dtype=np.float)
-        lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
         if isinstance(item, int):
-            return lbda[item]
+            return (item - self.crpix + 1) * self.cdelt + self.crval
         elif isinstance(item, slice):
-            newlbda = lbda[item]
+            pix = np.arange(item.start,item.stop,item.start,dtype=np.float)
+            newlbda = (pix - self.crpix + 1) * self.cdelt + self.crval
             dim = newlbda.shape[0]
             if dim < 2:
                 raise ValueError, 'Spectrum with dim < 2'
             cdelt = newlbda[1] - newlbda[0]
-            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0], cunit = self.cunit)
-            res.dim = dim
+            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0], cunit = self.cunit, dim = dim)
             return res
         else:
             raise ValueError, 'Operation forbidden'
@@ -462,6 +485,5 @@ class WaveCoord(object):
             start = lbda[0] + step*0.5
         # pixel number necessary to cover old range
         dim = np.ceil((lbda[-1] + self.cdelt - (start-step*0.5)) / step)
-        res = WaveCoord(crpix=1.0, cdelt=step, crval=start, cunit = self.cunit)
-        res.dim = int(dim)
+        res = WaveCoord(crpix=1.0, cdelt=step, crval=start, cunit = self.cunit, dim = int(dim))
         return res

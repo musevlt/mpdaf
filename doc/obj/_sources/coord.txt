@@ -82,7 +82,7 @@ World coordinates in spatial direction
 
 WCS class manages spatial world coordinates.
 
-.. class:: obj.WCS([hdr=None,crpix=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0])
+.. class:: obj.WCS([hdr=None,crpix=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0,shape = None])
   
   :param hdr: A FITS header. If hdr is not equal to None, WCS object is created from data header and other parameters are not used.
   :type hdr: pyfits.CardList
@@ -96,13 +96,15 @@ WCS class manages spatial world coordinates.
   :type deg: boolean
   :param rot: Rotation angle in degree.
   :type rot: float
+  :param shape: Dimensions in Y and X. Python notation is used: (ny,nx). No mandatory.
+  :type shape: integer or (integer,integer)
   
 Examples::
 
   from mpdaf.obj import WCS
   wcs = WCS(hdr) # creates a WCS object from data header
-  wcs = WCS() # the reference point is the first pixel in the image
-  wcs = WCS(crval=(1.46E+02,-3.11E+01),cdelt=4E-04, deg=True, rot = 20) # the reference point is in decimal degree
+  wcs = WCS(shape=(300,300)) # the reference point is the first pixel in the image
+  wcs = WCS(crval=(1.46E+02,-3.11E+01),cdelt=4E-04, deg=True, rot = 20, shape=(300,300)) # the reference point is in decimal degree
 
 
 Attributes
@@ -167,7 +169,7 @@ World coordinates in spectral direction
 WaveCoord class manages world coordinates in spectral direction.
 
 
-.. class:: obj.WaveCoord([crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom'])
+.. class:: obj.WaveCoord([crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom', dim = None])
 
   :param crpix: Reference pixel coordinates. 1.0 by default. Note that for crpix definition, the first pixel in the spectrum has pixel coordinates.
   :type crpix: float
@@ -177,6 +179,8 @@ WaveCoord class manages world coordinates in spectral direction.
   :type crval: float
   :param cunit: Wavelength unit (Angstrom by default).
   :type cunit: string
+  :param dim: Size of spectrum (no mandatory).
+  :type dim: integer or None
 
 
 Attributes
