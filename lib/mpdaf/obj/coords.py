@@ -193,8 +193,9 @@ class WCS(object):
             # rotation
             self.wcs.rotateCD(rot)
             # dimensions
-            self.wcs.naxis1 = shape[1]
-            self.wcs.naxis2 = shape[0]
+            if shape!=None:
+                self.wcs.naxis1 = shape[1]
+                self.wcs.naxis2 = shape[0]
 
 
     def copy(self):
@@ -202,7 +203,7 @@ class WCS(object):
         """
         out = WCS()
         out.wcs = self.wcs.__copy__()
-        out.cdelt = self.cdelt.__copy__()
+        out.cdelt = self.cdelt
         return out
 
     def info(self):
@@ -465,7 +466,22 @@ class WaveCoord(object):
         if isinstance(item, int):
             return (item - self.crpix + 1) * self.cdelt + self.crval
         elif isinstance(item, slice):
-            pix = np.arange(item.start,item.stop,item.start,dtype=np.float)
+            if item.start is None:
+                start = 0
+            else:
+                start = item.start
+            if item.stop is None:
+                if self.dim is None:
+                    print "error : wavelength coordinates without dimension"
+                else:
+                    stop = self.dim
+            else:
+                stop = item.stop
+            if item.step is None:
+                step = 1
+            else:
+                step = item.step
+            pix = np.arange(start,stop,step,dtype=np.float)
             newlbda = (pix - self.crpix + 1) * self.cdelt + self.crval
             dim = newlbda.shape[0]
             if dim < 2:
