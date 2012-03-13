@@ -186,7 +186,7 @@ class Spectrum(object):
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 1:
                         raise IOError, 'Wrong dimension number in STAT extension'
-                    if f['STAT'].header['NAXIS1'] != shape:
+                    if f['STAT'].header['NAXIS1'] != self.shape:
                         raise IOError, 'Number of points in STAT not equal to DATA'
                     self.var = f['STAT'].data
                 # DQ extension
@@ -420,15 +420,18 @@ class Spectrum(object):
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
             ksel = np.where(self.data.mask==False)
-            item = slice (ksel[0][0],ksel[0][-1]+1,None)
-            self.data = self.data[item]
-            self.shape = self.data.shape[0]
-            if self.var is not None:
-                self.var = self.var[item]
             try:
-                self.wave = self.wave[item]
+                item = slice (ksel[0][0],ksel[0][-1]+1,None)
+                self.data = self.data[item]
+                self.shape = self.data.shape[0]
+                if self.var is not None:
+                    self.var = self.var[item]
+                    try:
+                        self.wave = self.wave[item]
+                    except:
+                        self.wave = None
             except:
-                self.wave = None
+                pass
 
     def __add__(self, other):
         """ adds other
@@ -986,7 +989,7 @@ class Spectrum(object):
         else:
             flux = data[i1:i2].mean()*self.fscale
             if self.var is not None:
-                err = numpy.sqrt(self.var[i1:i2].sum()/(self.var[i1:i2].shape[0])**2)*self.fscale
+                err = np.sqrt(self.var[i1:i2].sum()/(self.var[i1:i2].shape[0])**2)*self.fscale
                 return flux,err
         return flux
 
@@ -1390,21 +1393,21 @@ class Spectrum(object):
         res = self.truncate(lmin,lmax)
         x = res.wave.coord()
         f = res.data*res.fscale
-        if noise:
-            res = self.var
         if max != None:
-            f = f*max/f.max()            
+            f = f*max/f.max()
+        if res.var is  None:
+            noise = False
         plt.clf() #Clear the current figure
         if (logy):
             plt.semilogy(x, f, drawstyle=drawstyle)
             if noise:              
-                plt.semilogy(x, f + numpy.sqrt(n)*res.fscale, 'r--')
-                plt.semilogy(x, f - numpy.sqrt(n)*res.fscale, 'r--')
+                plt.semilogy(x, f + np.sqrt(res.var)*res.fscale, 'g--')
+                plt.semilogy(x, f - np.sqrt(res.var)*res.fscale, 'g--')
         else:
             plt.plot(x, f, drawstyle=drawstyle)
             if noise:              
-                plt.plot(x, numpy.sqrt(n)*res.fscale, 'r--')
-                plt.plot(x, -numpy.sqrt(n)*res.fscale, 'r--')
+                plt.plot(x, f + np.sqrt(res.var)*res.fscale, 'g--')
+                plt.plot(x, f -np.sqrt(res.var)*res.fscale, 'g--')
         if title is not None:
                 plt.title(title)   
         if res.wave.cunit is not None:
@@ -1666,7 +1669,7 @@ class Image(object):
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 2:
                         raise IOError, 'Wrong dimension number in STAT extension'
-                    if f['STAT'].header['NAXIS1'] != ima.shape[1] and f['STAT'].header['NAXIS2'] != ima.shape[0]:
+                    if f['STAT'].header['NAXIS1'] != self.shape[1] and f['STAT'].header['NAXIS2'] != self.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
                     self.var = f['STAT'].data
                 # DQ extension
@@ -1898,20 +1901,23 @@ class Image(object):
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
             ksel = np.where(self.data.mask==False)
-            item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None))
-            self.data = self.data[item]
-            if isinstance(item[0],int):
-                self.shape = (1,self.data.shape[0])
-            elif isinstance(item[1],int):
-                self.shape = (self.data.shape[0],1)
-            else:
-                self.shape = (self.data.shape[0],self.data.shape[1])
-            if self.var is not None:
-                self.var = self.var[item]
             try:
-                self.wcs = self.wcs[item[1],item[0]] #data[y,x], image[y,x] but wcs[x,y]
+                item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None))
+                self.data = self.data[item]
+                if isinstance(item[0],int):
+                    self.shape = (1,self.data.shape[0])
+                elif isinstance(item[1],int):
+                    self.shape = (self.data.shape[0],1)
+                else:
+                    self.shape = (self.data.shape[0],self.data.shape[1])
+                if self.var is not None:
+                    self.var = self.var[item]
+                try:
+                    self.wcs = self.wcs[item[1],item[0]] #data[y,x], image[y,x] but wcs[x,y]
+                except:
+                    self.wcs = None
             except:
-                self.wcs = None
+                pass
 
     def __add__(self, other):
         """ adds other
@@ -2505,7 +2511,7 @@ class Cube(object):
                 if getnoise:
                     if f['STAT'].header['NAXIS'] != 3:
                         raise IOError, 'Wrong dimension number in STAT extension'
-                    if f['STAT'].header['NAXIS1'] != ima.shape[2] and f['STAT'].header['NAXIS2'] != ima.shape[1] and f['STAT'].header['NAXIS3'] != ima.shape[0]:
+                    if f['STAT'].header['NAXIS1'] != self.shape[2] and f['STAT'].header['NAXIS2'] != self.shape[1] and f['STAT'].header['NAXIS3'] != self.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
                     self.var = f['STAT'].data
                 # DQ extension
@@ -2754,34 +2760,37 @@ class Cube(object):
         """
         if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
             ksel = np.where(self.data.mask==False)
-            item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None),slice(ksel[2][0], ksel[2][-1]+1, None))
-            self.data = self.data[item]
-            if isinstance(item[0],int):
-                if isinstance(item[1],int):
-                    self.shape = (1,1,self.data.shape[0])
+            try:
+                item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None),slice(ksel[2][0], ksel[2][-1]+1, None))
+                self.data = self.data[item]
+                if isinstance(item[0],int):
+                    if isinstance(item[1],int):
+                        self.shape = (1,1,self.data.shape[0])
+                    elif isinstance(item[2],int):
+                        self.shape = (1,self.data.shape[0],1)
+                    else:
+                        self.shape = (1,self.data.shape[0],self.data.shape[1])
+                elif isinstance(item[1],int):
+                    if isinstance(item[2],int):
+                        self.shape = (self.data.shape[0],1,1)
+                    else:
+                        self.shape = (self.data.shape[0],1,self.data.shape[1])
                 elif isinstance(item[2],int):
-                    self.shape = (1,self.data.shape[0],1)
+                        self.shape = (self.data.shape[0],self.data.shape[1],1)
                 else:
-                    self.shape = (1,self.data.shape[0],self.data.shape[1])
-            elif isinstance(item[1],int):
-                if isinstance(item[2],int):
-                    self.shape = (self.data.shape[0],1,1)
-                else:
-                    self.shape = (self.data.shape[0],1,self.data.shape[1])
-            elif isinstance(item[2],int):
-                    self.shape = (self.data.shape[0],self.data.shape[1],1)
-            else:
-                self.shape = self.data.shape
-            if self.var is not None:
-                self.var = self.var[item]
-            try:
-                self.wcs = self.wcs[item[2],item[1]] #data[y,x], image[y,x] but wcs[x,y]
+                    self.shape = self.data.shape
+                if self.var is not None:
+                    self.var = self.var[item]
+                try:
+                    self.wcs = self.wcs[item[2],item[1]] #data[y,x], image[y,x] but wcs[x,y]
+                except:
+                    self.wcs = None
+                try:
+                    self.wave = self.wave[item[0]]
+                except:
+                    self.wave = None
             except:
-                self.wcs = None
-            try:
-                self.wave = self.wave[item[0]]
-            except:
-                self.wave = None
+                pass
 
     def __add__(self, other):
         """ adds other
