@@ -370,9 +370,9 @@ class PixTable(object):
         # update attributes
         self.filename = filename
 
-    def extract(self, center, size, lbda=None, shape='C'):
+    def extract(self, center, size=None, lbda=None, shape='C'):
         """ extracts a spatial aperture and a wavelength range from a PixTable,
-        aperture is define as center,size [if size=None the full field is used NOT IMPLEMENTED]
+        aperture is define as center,size [if size=None the full field is used]
         size = radius (for circular aperture) or half side length (for square aperture)
         wavelength range = (l1,l2) if None the full wavelength range is used
 
@@ -399,7 +399,9 @@ class PixTable(object):
             col_ypos = self.get_ypos()
 
             if lbda is None:
-                if shape == 'C':
+                if size is None:
+                    return self
+                elif shape == 'C':
                     ksel = np.where(((col_xpos-x0)**2 + (col_ypos-y0)**2)<size**2)
                 elif shape == 'S':
                     ksel = np.where((np.abs(col_xpos-x0)<size) & (np.abs(col_ypos-y0)<size))
@@ -408,14 +410,17 @@ class PixTable(object):
             else:
                 l1,l2 = lbda
                 col_lambda = self.get_lambda()
-                if shape == 'C':
-                    ksel = np.where((((col_xpos-x0)**2 + (col_ypos-y0)**2)<size**2) &
-                                    (col_lambda>l1) & (col_lambda<l2))
-                elif shape == 'S':
-                    ksel = np.where((np.abs(col_xpos-x0)<size) & (np.abs(col_ypos-y0)<size) &
-                                    (col_lambda>l1) & (col_lambda<l2))
+                if size is None:
+                    ksel = np.where((col_lambda>l1) & (col_lambda<l2))
                 else:
-                    raise ValueError, 'Unknown shape parameter'
+                    if shape == 'C':
+                        ksel = np.where((((col_xpos-x0)**2 + (col_ypos-y0)**2)<size**2) &
+                                        (col_lambda>l1) & (col_lambda<l2))
+                    elif shape == 'S':
+                        ksel = np.where((np.abs(col_xpos-x0)<size) & (np.abs(col_ypos-y0)<size) &
+                                        (col_lambda>l1) & (col_lambda<l2))
+                    else:
+                        raise ValueError, 'Unknown shape parameter'
                 del col_lambda
             npts = len(ksel[0])
             if npts == 0:
