@@ -40,7 +40,7 @@ class TestWaveCoord(unittest.TestCase):
 
     def setUp(self):
         self.wave = WaveCoord()
-        self.wave.dim = 10
+        self.wave.shape = 10
 
     def tearDown(self):
         del self.wave

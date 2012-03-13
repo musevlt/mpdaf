@@ -221,10 +221,10 @@ class Spectrum(object):
             self.fscale = np.float(fscale)
             try:
                 self.wave = wave
-                if wave.dim is not None and wave.dim != self.shape:
+                if wave.shape is not None and wave.shape != self.shape:
                     print "warning: wavelength coordinates and data have not the same dimensions."
                     self.wave = None
-                self.wave.dim = self.shape
+                self.wave.shape = self.shape
             except :
                 self.wave = None
 
@@ -815,12 +815,12 @@ class Spectrum(object):
         wave : WaveCoord
         Wavelength coordinates
         """
-        if wave.dim is not None and wave.dim != self.shape:
+        if wave.shape is not None and wave.shape != self.shape:
             print "warning: wavelength coordinates and data have not the same dimensions."
             self.wave = None
         else:
             self.wave = wave
-            self.wave.dim = self.shape
+            self.wave.shape = self.shape
         
     def interp(self, wavelengths, spline=False):
         """ returns the interpolated values corresponding to the wavelength array
@@ -937,7 +937,7 @@ class Spectrum(object):
         f = lambda x: data[int(self.wave.pixel(x)+0.5)]
         
         newwave = self.wave.rebin(step,start)
-        newshape = newwave.dim   
+        newshape = newwave.shape   
             
         newdata = np.zeros(newshape)        
         pix = np.arange(newshape,dtype=np.float)
@@ -1068,7 +1068,7 @@ class Spectrum(object):
             l1 = np.array(wind)[0::2]
             l2 = np.array(wind)[1::2]
             # create mask array
-            mask = np.ones(self.dim, dtype=np.bool)
+            mask = np.ones(self.shape, dtype=np.bool)
             for lb1,lb2 in zip(l1,l2):
                 i1 = self.wave.pixel(lb1, True)
                 i2 = self.wave.pixel(lb2, True)
@@ -1110,7 +1110,7 @@ class Spectrum(object):
                 sig = np.std(err)
                 n = len(ind[0])
             if not quiet:
-                print 'Number of iteration: %d Std: %10.4e Np: %d Frac: %4.2f'%(iter+1, sig, n, 100.*n/self.dim)
+                print 'Number of iteration: %d Std: %10.4e Np: %d Frac: %4.2f'%(iter+1, sig, n, 100.*n/self.shape)
         return p
 
     def abmag_band(self, lbda, dlbda, out=1, spline=False):
@@ -2568,12 +2568,12 @@ class Cube(object):
             except :
                 self.wcs = None
             try:
-                if wave.dim is not None and wave.dim != self.shape[0]:
+                if wave.shape is not None and wave.shape != self.shape[0]:
                     print "warning: wavelength coordinates and data have not the same dimensions."
                     self.wave = None
                 else:
                     self.wave = wave
-                    self.wave.dim = self.shape[0]
+                    self.wave.shape = self.shape[0]
             except :
                 self.wave = None
 
@@ -3420,7 +3420,7 @@ class Cube(object):
         else:
             self.wcs = wcs
         
-        if wave.dim is not None and wave.dim != self.shape[0]:
+        if wave.shape is not None and wave.shape != self.shape[0]:
             print "warning: wavelength coordinates and data have not the same dimensions."
             self.wave = None
         else:

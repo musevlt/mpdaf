@@ -368,7 +368,7 @@ class WaveCoord(object):
     Info: info, isEqual
     """
 
-    def __init__(self, crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom', dim = None):
+    def __init__(self, crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom', shape = None):
         """creates a WaveCoord object
 
         Parameters
@@ -388,10 +388,10 @@ class WaveCoord(object):
         cunit : string
         Wavelength unit (Angstrom by default).
         
-        dim : integer
+        shape : integer
         Size of spectrum.
         """
-        self.dim = dim
+        self.shape = shape
         self.crpix = crpix
         self.cdelt = cdelt
         self.crval = crval
@@ -402,7 +402,7 @@ class WaveCoord(object):
         """copies WaveCoord object in a new one and returns it
         """
         out = WaveCoord()
-        out.dim = self.dim
+        out.shape = self.shape
         out.crpix = self.crpix
         out.cdelt = self.cdelt
         out.crval = self.crval
@@ -413,10 +413,10 @@ class WaveCoord(object):
     def info(self):
         """prints information
         """
-        if self.dim is None:
+        if self.shape is None:
             print 'wavelength: min:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.cdelt,self.cunit)
         else:
-            print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.__getitem__(self.dim-1),self.cdelt,self.cunit)
+            print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.__getitem__(self.shape-1),self.cdelt,self.cunit)
 
 
     def isEqual(self,other):
@@ -425,7 +425,7 @@ class WaveCoord(object):
         if isinstance(other,WaveCoord):
             if self.crpix == other.crpix and self.cdelt == other.cdelt and \
                self.crval == other.crval and self.cunit == other.cunit and \
-               self.dim == other.dim :
+               self.shape == other.shape :
                 return True
             else:
                 return False
@@ -438,10 +438,10 @@ class WaveCoord(object):
         if pixel is None, the full coordinate array is returned
         """
         if pixel is None:
-            if self.dim is None:
+            if self.shape is None:
                 print "error : wavelength coordinates without dimension"
             else:
-                pix = np.arange(self.dim,dtype=np.float)
+                pix = np.arange(self.shape,dtype=np.float)
                 lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
                 return lbda
         else:
@@ -453,10 +453,10 @@ class WaveCoord(object):
         """
         pix = (lbda - self.crval)/self.cdelt + self.crpix - 1
         if nearest:
-            if self.dim is None:
+            if self.shape is None:
                 pix = max( int(pix+0.5), 0)
             else:
-                pix = min( max( int(pix+0.5), 0), self.dim)
+                pix = min( max( int(pix+0.5), 0), self.shape)
         return pix
 
     def __getitem__(self, item):
@@ -471,10 +471,10 @@ class WaveCoord(object):
             else:
                 start = item.start
             if item.stop is None:
-                if self.dim is None:
+                if self.shape is None:
                     print "error : wavelength coordinates without dimension"
                 else:
-                    stop = self.dim
+                    stop = self.shape
             else:
                 stop = item.stop
             if item.step is None:
@@ -487,19 +487,19 @@ class WaveCoord(object):
             if dim < 2:
                 raise ValueError, 'Spectrum with dim < 2'
             cdelt = newlbda[1] - newlbda[0]
-            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0], cunit = self.cunit, dim = dim)
+            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0], cunit = self.cunit, shape = dim)
             return res
         else:
             raise ValueError, 'Operation forbidden'
 
     def rebin(self,step,start):
         # vector of pixel edges
-        pix = np.arange(self.dim,dtype=np.float)
+        pix = np.arange(self.shape,dtype=np.float)
         lbda = (pix - self.crpix + 1) * self.cdelt + self.crval - 0.5 * self.cdelt
         # vector of new pixel positions
         if start == None:
             start = lbda[0] + step*0.5
         # pixel number necessary to cover old range
         dim = np.ceil((lbda[-1] + self.cdelt - (start-step*0.5)) / step)
-        res = WaveCoord(crpix=1.0, cdelt=step, crval=start, cunit = self.cunit, dim = int(dim))
+        res = WaveCoord(crpix=1.0, cdelt=step, crval=start, cunit = self.cunit, shape = int(dim))
         return res
