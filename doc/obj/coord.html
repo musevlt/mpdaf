@@ -300,7 +300,7 @@
 <p>WaveCoord class manages world coordinates in spectral direction.</p>
 <dl class="class">
 <dt id="obj.WCS.obj.WaveCoord">
-<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">WaveCoord</tt><big>(</big><span class="optional">[</span><em>crpix=1.0</em>, <em>cdelt=1.0</em>, <em>crval=0.0</em>, <em>cunit = 'Angstrom'</em>, <em>dim = None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.WCS.obj.WaveCoord" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">WaveCoord</tt><big>(</big><span class="optional">[</span><em>crpix=1.0</em>, <em>cdelt=1.0</em>, <em>crval=0.0</em>, <em>cunit = 'Angstrom'</em>, <em>shape = None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.WCS.obj.WaveCoord" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -310,7 +310,7 @@
 <li><strong>cdelt</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Step in wavelength (1.0 by default).</li>
 <li><strong>crval</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Coordinates of the reference pixel (0.0 by default).</li>
 <li><strong>cunit</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Wavelength unit (Angstrom by default).</li>
-<li><strong>dim</strong> (<em>integer or None</em>) &#8211; Size of spectrum (no mandatory).</li>
+<li><strong>shape</strong> (<em>integer or None</em>) &#8211; Size of spectrum (no mandatory).</li>
 </ul>
 </td>
 </tr>
@@ -327,7 +327,7 @@
 <col width="70%" />
 </colgroup>
 <tbody valign="top">
-<tr><td>dim</td>
+<tr><td>shape</td>
 <td>integer</td>
 <td>Size of spectrum.</td>
 </tr>

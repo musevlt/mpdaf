@@ -169,7 +169,7 @@ World coordinates in spectral direction
 WaveCoord class manages world coordinates in spectral direction.
 
 
-.. class:: obj.WaveCoord([crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom', dim = None])
+.. class:: obj.WaveCoord([crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom', shape = None])
 
   :param crpix: Reference pixel coordinates. 1.0 by default. Note that for crpix definition, the first pixel in the spectrum has pixel coordinates.
   :type crpix: float
@@ -179,15 +179,15 @@ WaveCoord class manages world coordinates in spectral direction.
   :type crval: float
   :param cunit: Wavelength unit (Angstrom by default).
   :type cunit: string
-  :param dim: Size of spectrum (no mandatory).
-  :type dim: integer or None
+  :param shape: Size of spectrum (no mandatory).
+  :type shape: integer or None
 
 
 Attributes
 ----------
 
 +-------+---------+-------------------------------------+
-| dim   | integer | Size of spectrum.                   |
+| shape | integer | Size of spectrum.                   |
 +-------+---------+-------------------------------------+
 | crpix | float   | Reference pixel coordinates.        |
 +-------+---------+-------------------------------------+
