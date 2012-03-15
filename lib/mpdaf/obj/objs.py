@@ -192,7 +192,7 @@ class Spectrum(object):
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
-                    self.data = np.ma.MaskedArray(self.data, mask=mask)
+                    self.data = np.ma.array(self.data, mask=mask)
                 except:
                     pass
             f.close()
@@ -372,8 +372,6 @@ class Spectrum(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __lt__ (self, item):
@@ -383,8 +381,6 @@ class Spectrum(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __ge__ (self, item):
@@ -394,8 +390,6 @@ class Spectrum(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_less(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __gt__ (self, item):
@@ -405,8 +399,6 @@ class Spectrum(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def remove_mask(self):
@@ -784,24 +776,24 @@ class Spectrum(object):
         """
         self.data[key] = value
 
-    def get_lambda(self,lbda_min,lbda_max=None):
+    def get_lambda(self,lmin,lmax=None):
         """ returns the corresponding value or sub-spectrum
 
         Parameters
         ----------
-        lbda_min : float
+        lmin : float
         minimum wavelength
 
-        lbda_max : float
+        lmax : float
         maximum wavelength
         """
-        if lbda_max is None:
-            lbda_max = lbda_min
+        if lmax is None:
+            lmax = lbda_min
         if self.wave is None:
             raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
         else:
-            pix_min = int(self.wave.pixel(lbda_min))
-            pix_max = int(self.wave.pixel(lbda_max)) + 1
+            pix_min = int(self.wave.pixel(lmin))
+            pix_max = int(self.wave.pixel(lmax)) + 1
             if pix_min==pix_max:
                 return self.data[pix_min]
             else:
@@ -821,6 +813,38 @@ class Spectrum(object):
         else:
             self.wave = wave
             self.wave.shape = self.shape
+            
+    def mask(self, lmin=None, lmax=None):
+        """ mask the corresponding sub-spectrum
+
+        Parameters
+        ----------
+        lmin : float
+        minimum wavelength
+
+        lmax : float
+        maximum wavelength
+        """
+        if self.wave is None:
+            raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
+        else:
+            if lmin is None:
+                pix_min = 0
+            else:
+                pix_min = int(self.wave.pixel(lmin))
+            if lmax is None:
+                pix_max = self.shape
+            else:
+                pix_max = int(self.wave.pixel(lmax)) + 1
+            if isinstance(self.data,np.ma.core.MaskedArray):
+                self.data[pix_min:pix_max] = np.ma.masked
+            else:
+                mask = np.zeros(self.shape,dtype=bool)
+                mask[pix_min:pix_max] = True
+                print mask[pix_min-1:pix_max+1]
+                self.data = np.ma.array(self.data, mask=mask)
+                
+            
         
     def interp(self, wavelengths, spline=False):
         """ returns the interpolated values corresponding to the wavelength array
@@ -979,7 +1003,7 @@ class Spectrum(object):
         if lmax is None:
             i2 = self.shape
         else:
-            i2 = self.wave.pixel(lmax, nearest=True)+1
+            i2 = self.wave.pixel(lmax, nearest=True)
 
         #replace masked values by interpolated values
         data = self.interp_data(spline)
@@ -1019,8 +1043,8 @@ class Spectrum(object):
         if lmax is None:
             i2 = self.shape
         else:
-            i2 = self.wave.pixel(lmax, True)+1
-
+            i2 = self.wave.pixel(lmax, True)
+            
         #replace masked values by interpolated values
         data = self.interp_data(spline)
 
@@ -1139,14 +1163,13 @@ class Spectrum(object):
         if out == 2:
             return mag,vflux,lbda
 
-    def abmag_filter(self, name, out=1, spline=False):
+    def abmag_filter_name(self, name, out=1, spline=False):
         """ computes AB magnitude using the filter name.
 
         Parameters
         ----------
         name : string
         'U', 'B', 'V', 'Rc', 'Ic', 'z', 'R-Johnson','F606W'
-        or txt file with lbda (A) eff
 
         out : 1 or 2
         1: the magnitude is returned
@@ -1169,15 +1192,66 @@ class Spectrum(object):
             return abmag_band(893.0, 147., out)
         elif name == 'R-Johnson':
             (l0,lmin,lmax,tck) = ABmag_filters.mag_RJohnson()
+            return self._filter(l0, lmin, lmax, tck, out, spline)
         elif name == 'F606W':
             (l0,lmin,lmax,tck) = ABmag_filters.mag_F606W()
+            return self._filter(l0, lmin, lmax, tck, out, spline)
         else:
-            l,f = numpy.loadtxt(name, unpack=True)
-            l0 = np.average(l, weights=f)
-            lmin = l[0]
-            lmax = l[-1]
-            tck = interpolate.splrep(l,f)
+            pass
+        
+    def abmag_filter(self, lbda, eff, out=1, spline=False):
+        """ computes AB magnitude using array filter.
 
+        Parameters
+        ----------
+        lbda : array
+        Wavelength values.
+        
+        eff : array
+        Efficiency values.
+
+        out : 1 or 2
+        1: the magnitude is returned
+        2: the magnitude, mean flux and mean lbda are returned
+
+        spline : boolean
+        linear/spline interpolation to interpolate masked values
+        
+        if you want to use a txt file :
+        lbda,eff = np.loadtxt(name, unpack=True)
+        """            
+        l0 = np.average(lbda, weights=eff)
+        lmin = lbda[0]
+        lmax = lbda[-1]
+        tck = interpolate.splrep(lbda,eff)           
+        return self._filter(l0, lmin, lmax, tck, out, spline)
+
+        
+    def _filter(self, l0, lmin, lmax, tck, out=1, spline=False):
+        """ computes AB magnitude
+
+        Parameters
+        ----------
+        l0 : float
+        Mean wavelength
+        
+        lmin : float
+        Minimum wavelength
+        
+        lmax : float
+        Maximum wavelength
+        
+        tck : 3-tuple
+        (t,c,k) contains the spline representation. 
+        t = the knot-points, c = coefficients and  k = the order of the spline.
+
+        out : 1 or 2
+        1: the magnitude is returned
+        2: the magnitude, mean flux and mean lbda are returned
+
+        spline : boolean
+        linear/spline interpolation to interpolate masked values
+        """
         imin = self.wave.pixel(lmin,True)
         imax = self.wave.pixel(lmax,True)
         if imin == imax:
@@ -1217,7 +1291,7 @@ class Spectrum(object):
         if lmax is None:
             i2 = self.shape
         else:
-            i2 = self.wave.pixel(lmax, True)+1
+            i2 = self.wave.pixel(lmax, True)
         return self.__getitem__(slice(i1,i2,1))
 
     def fwhm(self, l0, cont=0):
@@ -1319,7 +1393,7 @@ class Spectrum(object):
 
 #        import matplotlib.pyplot as plt
 #        plt.figure()
-#        plt.plot(l,d,'r',xxx,ccc,'b--',xxx,iii,'g--')
+        plt.plot(xxx,ccc,'r--')
 #        plt.show()
 
         return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
@@ -1359,7 +1433,7 @@ class Spectrum(object):
 
         return res
     
-    def plot(self, max=None, title=None, logy=False, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
+    def plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
         """ plots the spectrum.
         
         Parameters
@@ -1370,9 +1444,6 @@ class Spectrum(object):
         
         title : string
         Figure tiltle (None by default).
-        
-        logy : boolean
-        If logy is True, the plot is in y logarithmic scale.
         
         noise : boolean
         If noise is True, the +/- standard deviation is overplotted.
@@ -1398,16 +1469,61 @@ class Spectrum(object):
         if res.var is  None:
             noise = False
         plt.clf() #Clear the current figure
-        if (logy):
-            plt.semilogy(x, f, drawstyle=drawstyle)
-            if noise:              
-                plt.semilogy(x, f + np.sqrt(res.var)*res.fscale, 'g--')
-                plt.semilogy(x, f - np.sqrt(res.var)*res.fscale, 'g--')
-        else:
-            plt.plot(x, f, drawstyle=drawstyle)
-            if noise:              
-                plt.plot(x, f + np.sqrt(res.var)*res.fscale, 'g--')
-                plt.plot(x, f -np.sqrt(res.var)*res.fscale, 'g--')
+        plt.plot(x, f, drawstyle=drawstyle)
+        if noise: 
+            plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
+#            if isinstance(self.data,np.ma.core.MaskedArray):
+#                f = res.data.data*res.fscale
+#                plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
+#            else:        
+#                plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
+        if title is not None:
+                plt.title(title)   
+        if res.wave.cunit is not None:
+            plt.xlabel(res.wave.cunit)
+        if res.unit is not None:
+            plt.ylabel(res.unit)
+        plt.connect('motion_notify_event', self._on_move)
+        
+    def log_plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
+        """ plots the spectrum with y logarithmic scale.
+        
+        Parameters
+        ----------
+        
+        max : boolean
+        If max is True, the plot is normalized to peak at max value.
+        
+        title : string
+        Figure tiltle (None by default).
+        
+        noise : boolean
+        If noise is True, the +/- standard deviation is overplotted.
+        
+        lmin : float
+        Minimum wavelength.
+
+        lmax : float
+        Maximum wavelength.
+        
+        drawstyle : [ 'default' | 'steps' | 'steps-pre' | 'steps-mid' | 'steps-post' ]
+        Drawstyle of the plot. 'default' connects the points with lines. 
+        The steps variants produce step-plots. 'steps' is equivalent to 'steps-pre'.
+        'steps-pre' by default.        
+        """
+        plt.ion()
+        
+        res = self.truncate(lmin,lmax)
+        x = res.wave.coord()
+        f = res.data*res.fscale
+        if max != None:
+            f = f*max/f.max()
+        if res.var is  None:
+            noise = False
+        plt.clf() #Clear the current figure
+        plt.semilogy(x, f, drawstyle=drawstyle)
+        if noise: 
+           plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f - np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5)   
         if title is not None:
                 plt.title(title)   
         if res.wave.cunit is not None:
@@ -1425,7 +1541,10 @@ class Spectrum(object):
             try:
                 i = self.wave.pixel(xc, True)
                 x = self.wave.coord(i)
-                val = self.data[i]*self.fscale
+                if isinstance(self.data,np.ma.core.MaskedArray):
+                    val = self.data.data[i]*self.fscale
+                else:
+                    val = self.data[i]*self.fscale
                 s = 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
                 plt.get_current_fig_manager().toolbar.set_message(s)
             except:
@@ -1434,8 +1553,9 @@ class Spectrum(object):
     def print_cursor_pos(self, filename='None'):
         """Prints cursor position.   
         To read cursor position, click on the left mouse button
-        To quit the interactive mode, click on the right mouse button
-        
+        To remove a cursor position, click on the left mouse button + <shift>
+        To quit the interactive mode, click on the right mouse button.
+        At the end, clicks are saved in self.clicks as dictionary {'xc','yc','x','y'}.
         Parameters
         ----------
         
@@ -1452,44 +1572,77 @@ class Spectrum(object):
     def _on_click(self,event):
         """ prints x,y,i,lbda and data corresponding to the cursor position.
         """
-        if event.button == 1:
-            if event.inaxes is not None:
-                try:
-                    xc, yc = event.xdata, event.ydata
-                    i = self.wave.pixel(xc, True)
-                    x = self.wave.coord(i)
-                    val = self.data[i]*self.fscale
-                    if len(self._clicks.x)==0:
-                        print ''
-                    plt.plot(xc,yc,'r+')
-                    self._clicks.xc.append(xc)
-                    self._clicks.yc.append(yc)
-                    self._clicks.i.append(i)
-                    self._clicks.x.append(x)
-                    self._clicks.data.append(val)
-                    self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)
-                    if self.fscale == 1:
-                        print 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
-                    else:
-                        print 'x= %g y=%g i=%d lbda=%g data=%g [scaled=%g]'%(xc,yc,i,x,val,val/self.fscale)
-                except:
-                    pass 
-        else: 
-            if self._clicks.filename is not None:
-                c1 = pyfits.Column(name='XC', format='E', array=self._clicks.xc)
-                c2 = pyfits.Column(name='YC', format='E', array=self._clicks.yc)
-                c3 = pyfits.Column(name='I', format='I', array=self._clicks.i)
-                c4 = pyfits.Column(name='X', format='E', array=self._clicks.x)
-                c5 = pyfits.Column(name='DATA', format='E', array=self._clicks.data)
-                tbhdu=pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
-                tbhdu.writeto(self._clicks.filename, clobber=True)
-                print 'printing coordinates in fits table %s'%self._clicks.filename
-            print "disconnecting console coordinate printout..."
-            plt.disconnect(self._clicks.binding_id)
-            for i in self._clicks.id_lines:
-                del plt.gca().lines[i]
-            plt.draw()
-            self._clicks = None
+        if event.key == 'shift':
+            if event.button == 1:
+                if event.inaxes is not None:
+                    try:
+                        xc, yc = event.xdata, event.ydata
+                        i = np.argmin(np.abs(self._clicks.xc-xc))
+                        line = self._clicks.id_lines[i]
+                        del plt.gca().lines[line]
+                        self._clicks.xc.pop(i)
+                        self._clicks.yc.pop(i)
+                        self._clicks.i.pop(i)
+                        self._clicks.x.pop(i)
+                        self._clicks.data.pop(i)
+                        self._clicks.id_lines.pop(i)
+                        for j in range(i,len(self._clicks.id_lines)):
+                            self._clicks.id_lines[j] -= 1
+                        plt.draw() 
+                        print "new selection:"
+                        if self.fscale == 1:
+                            for i in range(len(self._clicks.xc)):
+                                print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(self._clicks.xc[i],self._clicks.yc[i],self._clicks.i[i],self._clicks.x[i],self._clicks.data[i])
+                        else:
+                            for i in range(len(self._clicks.xc)):
+                                print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(self._clicks.xc[i],self._clicks.yc[i],self._clicks.i[i],self._clicks.x[i],self._clicks.data[i],self._clicks.data[i]/self.fscale)                           
+                    except:
+                        pass 
+        else:
+            if event.button == 1:
+                if event.inaxes is not None:
+                    try:
+                        xc, yc = event.xdata, event.ydata
+                        i = self.wave.pixel(xc, True)
+                        x = self.wave.coord(i)
+                        val = self.data[i]*self.fscale
+                        if len(self._clicks.x)==0:
+                            print ''
+                        plt.plot(xc,yc,'r+')
+                        self._clicks.xc.append(xc)
+                        self._clicks.yc.append(yc)
+                        self._clicks.i.append(i)
+                        self._clicks.x.append(x)
+                        self._clicks.data.append(val)
+                        self._clicks.id_lines.append(len(plt.gca().lines)-1)
+                        if self.fscale == 1:
+                            print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(xc,yc,i,x,val)
+                        else:
+                            print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(xc,yc,i,x,val,val/self.fscale)
+                    except:
+                        pass 
+            else: 
+                if self._clicks.filename != 'None':
+                    c1 = pyfits.Column(name='XC', format='E', array=self._clicks.xc)
+                    c2 = pyfits.Column(name='YC', format='E', array=self._clicks.yc)
+                    c3 = pyfits.Column(name='I', format='I', array=self._clicks.i)
+                    c4 = pyfits.Column(name='X', format='E', array=self._clicks.x)
+                    c5 = pyfits.Column(name='DATA', format='E', array=self._clicks.data)
+                    tbhdu=pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+                    tbhdu.writeto(self._clicks.filename, clobber=True)
+                    print 'printing coordinates in fits table %s'%self._clicks.filename
+                # save clicks in a dictionary {'xc','yc','x','y'}
+                d = {'xc':self._clicks.xc, 'yc':self._clicks.yc, 'x':self._clicks.x, 'y':self._clicks.data}
+                self.clicks = d
+                print "disconnecting console coordinate printout..."
+                plt.disconnect(self._clicks.binding_id)
+                nlines =  len(self._clicks.id_lines)
+                for i in range(nlines):
+                    line = self._clicks.id_lines[nlines - i -1]
+                    del plt.gca().lines[line]
+                plt.draw()
+                self._clicks = None
+                
             
     def get_distance(self):
         """Gets distance and center from 2 cursor positions.
@@ -1520,9 +1673,9 @@ class Spectrum(object):
                     self._clicks.data.append(val)
                     self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)
                     if self.fscale == 1:
-                        print 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
+                        print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(xc,yc,i,x,val)
                     else:
-                        print 'x= %g y=%g i=%d lbda=%g data=%g [scaled=%g]'%(xc,yc,i,x,val,val/self.fscale)
+                        print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(xc,yc,i,x,val,val/self.fscale)
                     if np.sometrue(np.mod( len(self._clicks.x), 2 )) == False:
                         dx = abs(self._clicks.xc[-1] - self._clicks.xc[-2])
                         xc = (self._clicks.xc[-1] + self._clicks.xc[-2])/2
@@ -1536,6 +1689,16 @@ class Spectrum(object):
                 del plt.gca().lines[i]
             plt.draw()
             self._clicks = None
+            
+    def plot_mask(self):
+        if isinstance(self.data,np.ma.core.MaskedArray):
+            lbda = self.wave.coord()
+#            ksel = np.where(self.data.mask==True)
+#            x = lbda[ksel]
+#            f = self.data.data[ksel]
+            drawstyle = plt.gca().lines[0].get_drawstyle()
+#            plt.plot(x, f, 'r+')
+            plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
 
 class Image(object):
     """Image class
@@ -1675,7 +1838,7 @@ class Image(object):
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
-                    self.data = np.ma.MaskedArray(self.data, mask=mask)
+                    self.data = np.ma.array(self.data, mask=mask)
                 except:
                     pass
             f.close()
@@ -1853,8 +2016,6 @@ class Image(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __lt__ (self, item):
@@ -1864,8 +2025,6 @@ class Image(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __ge__ (self, item):
@@ -1875,8 +2034,6 @@ class Image(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_less(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __gt__ (self, item):
@@ -1886,8 +2043,6 @@ class Image(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def remove_mask(self):
@@ -2712,8 +2867,6 @@ class Cube(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_greater(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __lt__ (self, item):
@@ -2723,8 +2876,6 @@ class Cube(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __ge__ (self, item):
@@ -2734,8 +2885,6 @@ class Cube(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_less(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def __gt__ (self, item):
@@ -2745,8 +2894,6 @@ class Cube(object):
         result = self.copy()
         if self.data is not None:
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
-        if self.var is not None:
-            result.var = np.ma.MaskedArray(self.var, mask=result.data.mask, copy=True)
         return result
 
     def remove_mask(self):
@@ -3425,4 +3572,3 @@ class Cube(object):
             self.wave = None
         else:
             self.wave = wave
-            self.wave.dim = self.shape[0]

@@ -336,6 +336,17 @@ class WCS(object):
             return res
         else:
             raise ValueError, 'Operation forbidden'
+        
+    def get_range(self):
+        """returns (ra_min,ra_max),(dec_min,dec_max)
+        """
+        pixcrd = [ [0,0], [self.wcs.naxis1 -1,0], [0,self.wcs.naxis2 -1], [self.wcs.naxis1 -1,self.wcs.naxis2 -1]]
+        pixsky = self.pix2sky(pixcrd)
+        ra_min = np.min(pixsky[:,0])
+        dec_min = np.min(pixsky[:,1])
+        ra_max = np.max(pixsky[:,0])
+        dec_max = np.max(pixsky[:,1])
+        return [ [ra_min,dec_min], [ra_max,dec_max] ]
 
 class WaveCoord(object):
     """WaveCoord class manages coordinates of spectrum
@@ -463,26 +474,14 @@ class WaveCoord(object):
         """ returns the coordinate corresponding to pixel if item is an integer
         returns the corresponding WaveCoord object if item is a slice
         """
+        if self.shape is None:
+            print "error : wavelength coordinates without dimension"
+        else:
+            lbda = (np.arange(self.shape,dtype=np.float) - self.crpix + 1) * self.cdelt + self.crval
         if isinstance(item, int):
-            return (item - self.crpix + 1) * self.cdelt + self.crval
+            return lbda[item]
         elif isinstance(item, slice):
-            if item.start is None:
-                start = 0
-            else:
-                start = item.start
-            if item.stop is None:
-                if self.shape is None:
-                    print "error : wavelength coordinates without dimension"
-                else:
-                    stop = self.shape
-            else:
-                stop = item.stop
-            if item.step is None:
-                step = 1
-            else:
-                step = item.step
-            pix = np.arange(start,stop,step,dtype=np.float)
-            newlbda = (pix - self.crpix + 1) * self.cdelt + self.crval
+            newlbda = lbda[item]
             dim = newlbda.shape[0]
             if dim < 2:
                 raise ValueError, 'Spectrum with dim < 2'

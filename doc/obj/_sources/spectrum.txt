@@ -254,14 +254,14 @@ Methods
   :rtype: Spectrum object.
 
 
-.. function:: get_lambda(lbda_min [,lbda_max=None])
+.. function:: get_lambda(lmin [,lmax=None])
 
   Returns the corresponding value or sub-spectrum.
   
-  :param lbda_min: minimum wavelength.
-  :type lbda_min: float
-  :param lbda_max: maximum wavelength.
-  :type lbda_max: float
+  :param lmin: minimum wavelength.
+  :type lmin: float
+  :param lmax: maximum wavelength.
+  :type lmax: float
   :rtype: float or Spectrum
 
 
@@ -271,6 +271,16 @@ Methods
   
   :param wave: Wavelength coordinates.
   :type wave: WaveCoord
+  
+  
+.. function:: mask([lmin=None,lmax=None])
+
+  Masks the corresponding sub-spectrum
+  
+  :param lmin: minimum wavelength.
+  :type lmin: float
+  :param lmax: maximum wavelength.
+  :type lmax: float
 
 
 .. function:: interp(wavelengths [, spline=False])
@@ -345,6 +355,7 @@ Methods
   :type spline: boolean
   :rtype: Returns flux or flux,std.
  
+ 
 .. function:: polfit(order [, maxiter=0, nsig=(-3.0,3.0), wind=None, weight=True, quiet=False])
 
   Performs polynomial fit on spectrum.
@@ -379,17 +390,42 @@ Methods
   :rtype: magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).
 
 
-.. function:: abmag_filter(name [, out=1, spline=False])
+.. function:: abmag_filter_name(name [, out=1, spline=False])
 
   Computes AB magnitude using the filter name.
   
-  :param name: 'U', 'B', 'V', 'Rc', 'Ic', 'z', 'R-Johnson','F606W' or txt filename with lbda (A) eff
+  :param name: 'U', 'B', 'V', 'Rc', 'Ic', 'z', 'R-Johnson','F606W'
   :type name: string 
   :param out: 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.
   :type out: 1 or 2
   :param spline: Linear/spline interpolation to interpolate masked values.
   :type spline: boolean
   :rtype: magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).
+  
+
+.. function:: abmag_filter(lbda, eff [, out=1, spline=False])
+
+  Computes AB magnitude using array filter.
+  
+  :param lbda: Wavelength values.
+  :type lbda: float array
+  :param eff: Efficiency values.
+  :type eff: float array
+  :param out: 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.
+  :type out: 1 or 2
+  :param spline: Linear/spline interpolation to interpolate masked values.
+  :type spline: boolean
+  :rtype: magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).
+
+        
+Examples::
+ 
+  import numpy as np
+  from mpdaf.obj import Spectrum
+  
+  spe = Spectrum(filename='spectrum.fits')
+  lbda,eff = np.loadtxt('filter.txt', unpack=True)
+  print spe.abmag_filter(lbda, eff)
 
 
 .. function:: truncate([lmin=None, lmax=None])
@@ -448,7 +484,7 @@ Plotting
 --------
  
  
-.. function:: plot([max=None, title=None, logy=False, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'])
+.. function:: plot([max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'])
 
   Plots the spectrum.
         
@@ -456,8 +492,24 @@ Plotting
   :type max: boolean
   :param title: Figure tiltle (None by default).
   :type title: string
-  :param logy: If logy is True, the plot is in y logarithmic scale.
-  :type logy: boolean
+  :param noise: If noise is True, the +/- standard deviation is overplotted.
+  :type noise: boolean
+  :param lmin: Minimum wavelength.
+  :type lmin: float
+  :param lmax: Maximum wavelength.
+  :type lmax: float
+  :param drawstyle: Drawstyle of the plot. 'steps-pre' by default.
+  :type drawstyle: [ 'default' | 'steps' | 'steps-pre' | 'steps-mid' | 'steps-post' ]
+  
+
+.. function:: log_plot([max=None, title=None, logy=False, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'])
+
+  Plots the spectrum with y logarithmic scale.
+        
+  :param max: If max is True, the plot is normalized to peak at max value.
+  :type max: boolean
+  :param title: Figure tiltle (None by default).
+  :type title: string
   :param noise: If noise is True, the +/- standard deviation is overplotted.
   :type noise: boolean
   :param lmin: Minimum wavelength.
@@ -472,7 +524,9 @@ Plotting
 
   Prints cursor position.
   To read cursor position, click on the left mouse button.
-  To quit the interactive mode, click on the right mouse button
+  To remove a cursor position, click on the left mouse button + <shift>
+  To quit the interactive mode, click on the right mouse button.
+  At the end, clicks are saved in self.clicks as dictionary {'xc','yc','x','y'}.
   
   :param filename: If filename is not None, the cursor values are saved as a fits table.
   :type filename: string
@@ -481,3 +535,8 @@ Plotting
 .. function:: get_distance()
 
   Gets distance and center from 2 cursor positions.
+  
+  
+.. function:: plot_mask()
+
+  Over-plots masked values.

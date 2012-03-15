@@ -198,6 +198,13 @@ Attributes
 | cunit | string  | Wavelength unit.                    |
 +-------+---------+-------------------------------------+
 
+Indexing
+--------
+
+``WaveCoord[i]`` returns the corresponding wavelength.
+
+``WaveCoord[i1:i2]`` returns a WaveCoord object.
+
 
 Methods
 -------

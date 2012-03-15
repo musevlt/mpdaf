@@ -406,15 +406,15 @@ Wavelength coordinates must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Spectrum.get_lambda">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_lambda</tt><big>(</big><em>lbda_min</em><span class="optional">[</span>, <em>lbda_max=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.get_lambda" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_lambda</tt><big>(</big><em>lmin</em><span class="optional">[</span>, <em>lmax=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.get_lambda" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the corresponding value or sub-spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lbda_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; minimum wavelength.</li>
-<li><strong>lbda_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; maximum wavelength.</li>
+<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; minimum wavelength.</li>
+<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; maximum wavelength.</li>
 </ul>
 </td>
 </tr>
@@ -434,6 +434,24 @@ Wavelength coordinates must be the same.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wave</strong> (<em>WaveCoord</em>) &#8211; Wavelength coordinates.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.mask">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">mask</tt><big>(</big><span class="optional">[</span><em>lmin=None</em>, <em>lmax=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Masks the corresponding sub-spectrum</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; minimum wavelength.</li>
+<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; maximum wavelength.</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -610,15 +628,15 @@ The new shape must be a factor of self.shape.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="obj.Spectrum.abmag_filter">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">abmag_filter</tt><big>(</big><em>name</em><span class="optional">[</span>, <em>out=1</em>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.abmag_filter" title="Permalink to this definition">¶</a></dt>
+<dt id="obj.Spectrum.abmag_filter_name">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">abmag_filter_name</tt><big>(</big><em>name</em><span class="optional">[</span>, <em>out=1</em>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.abmag_filter_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes AB magnitude using the filter name.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>name</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; &#8216;U&#8217;, &#8216;B&#8217;, &#8216;V&#8217;, &#8216;Rc&#8217;, &#8216;Ic&#8217;, &#8216;z&#8217;, &#8216;R-Johnson&#8217;,&#8217;F606W&#8217; or txt filename with lbda (A) eff</li>
+<li><strong>name</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; &#8216;U&#8217;, &#8216;B&#8217;, &#8216;V&#8217;, &#8216;Rc&#8217;, &#8216;Ic&#8217;, &#8216;z&#8217;, &#8216;R-Johnson&#8217;,&#8217;F606W&#8217;</li>
 <li><strong>out</strong> (<em>1 or 2</em>) &#8211; 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.</li>
 <li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
 </ul>
@@ -631,6 +649,38 @@ The new shape must be a factor of self.shape.</p>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.Spectrum.abmag_filter">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">abmag_filter</tt><big>(</big><em>lbda</em>, <em>eff</em><span class="optional">[</span>, <em>out=1</em>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.abmag_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes AB magnitude using array filter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lbda</strong> (<em>float array</em>) &#8211; Wavelength values.</li>
+<li><strong>eff</strong> (<em>float array</em>) &#8211; Efficiency values.</li>
+<li><strong>out</strong> (<em>1 or 2</em>) &#8211; 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.</li>
+<li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">Spectrum</span>
+
+<span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&#39;spectrum.fits&#39;</span><span class="p">)</span>
+<span class="n">lbda</span><span class="p">,</span><span class="n">eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s">&#39;filter.txt&#39;</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">spe</span><span class="o">.</span><span class="n">abmag_filter</span><span class="p">(</span><span class="n">lbda</span><span class="p">,</span> <span class="n">eff</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="function">
 <dt id="obj.Spectrum.truncate">
 <tt class="descclassname">obj.Spectrum.</tt><tt class="descname">truncate</tt><big>(</big><span class="optional">[</span><em>lmin=None</em>, <em>lmax=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.truncate" title="Permalink to this definition">¶</a></dt>
@@ -724,7 +774,7 @@ The new shape must be a factor of self.shape.</p>
 <h3>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="obj.Spectrum.plot">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">plot</tt><big>(</big><span class="optional">[</span><em>max=None</em>, <em>title=None</em>, <em>logy=False</em>, <em>noise=False</em>, <em>lmin=None</em>, <em>lmax=None</em>, <em>drawstyle='steps-mid'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.plot" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">plot</tt><big>(</big><span class="optional">[</span><em>max=None</em>, <em>title=None</em>, <em>noise=False</em>, <em>lmin=None</em>, <em>lmax=None</em>, <em>drawstyle='steps-mid'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -733,7 +783,28 @@ The new shape must be a factor of self.shape.</p>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>max</strong> (<em>boolean</em>) &#8211; If max is True, the plot is normalized to peak at max value.</li>
 <li><strong>title</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Figure tiltle (None by default).</li>
-<li><strong>logy</strong> (<em>boolean</em>) &#8211; If logy is True, the plot is in y logarithmic scale.</li>
+<li><strong>noise</strong> (<em>boolean</em>) &#8211; If noise is True, the +/- standard deviation is overplotted.</li>
+<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum wavelength.</li>
+<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum wavelength.</li>
+<li><strong>drawstyle</strong> (<em>[ &#8216;default&#8217; | &#8216;steps&#8217; | &#8216;steps-pre&#8217; | &#8216;steps-mid&#8217; | &#8216;steps-post&#8217; ]</em>) &#8211; Drawstyle of the plot. &#8216;steps-pre&#8217; by default.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.log_plot">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">log_plot</tt><big>(</big><span class="optional">[</span><em>max=None</em>, <em>title=None</em>, <em>logy=False</em>, <em>noise=False</em>, <em>lmin=None</em>, <em>lmax=None</em>, <em>drawstyle='steps-mid'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.log_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the spectrum with y logarithmic scale.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max</strong> (<em>boolean</em>) &#8211; If max is True, the plot is normalized to peak at max value.</li>
+<li><strong>title</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Figure tiltle (None by default).</li>
 <li><strong>noise</strong> (<em>boolean</em>) &#8211; If noise is True, the +/- standard deviation is overplotted.</li>
 <li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum wavelength.</li>
 <li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum wavelength.</li>
@@ -750,7 +821,9 @@ The new shape must be a factor of self.shape.</p>
 <tt class="descclassname">obj.Spectrum.</tt><tt class="descname">print_cursor_pos</tt><big>(</big><span class="optional">[</span><em>filename='None'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.print_cursor_pos" title="Permalink to this definition">¶</a></dt>
 <dd><p>Prints cursor position.
 To read cursor position, click on the left mouse button.
-To quit the interactive mode, click on the right mouse button</p>
+To remove a cursor position, click on the left mouse button + &lt;shift&gt;
+To quit the interactive mode, click on the right mouse button.
+At the end, clicks are saved in self.clicks as dictionary {&#8216;xc&#8217;,&#8217;yc&#8217;,&#8217;x&#8217;,&#8217;y&#8217;}.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -765,6 +838,12 @@ To quit the interactive mode, click on the right mouse button</p>
 <dt id="obj.Spectrum.get_distance">
 <tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_distance</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.get_distance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets distance and center from 2 cursor positions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.plot_mask">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">plot_mask</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.plot_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Over-plots masked values.</p>
 </dd></dl>
 
 </div>

@@ -98,6 +98,32 @@ class TestObj(unittest.TestCase):
                 for i in range(5):
                     self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,self.spectrum1.data[k]*self.spectrum1.fscale * (self.image1.data[j,i]*self.image1.fscale))
 
+    def test_get_Spectrum(self):
+        """tests Spectrum[]"""
+        a = self.spectrum1[1:7]
+        self.assertEqual(a.shape,6)
+        a = self.spectrum1.get_lambda(1.2,5.6)
+        self.assertEqual(a.shape,5)
+        
+    def test_rebin(self):
+        """tests rebin functions"""
+        spectrum2 = self.spectrum1.rebin(0.3) 
+        #flux1 = self.spectrum1.data.sum()*self.spectrum1.wave.cdelt
+        #flux2 = spectrum2.data.sum()*spectrum2.wave.cdelt
+        flux1 = self.spectrum1.sum()*self.spectrum1.wave.cdelt
+        flux2 = spectrum2.sum()*spectrum2.wave.cdelt
+        self.assertAlmostEqual(flux1,flux2)
+        
+    def test_spectrum_methods(self):
+        """tests spectrum methods"""
+        spectrum2 = self.spectrum1[1:-2]
+        sum1 =  self.spectrum1.sum(lmin=self.spectrum1.wave[1],lmax=self.spectrum1.wave[-2])
+        sum2 = spectrum2.sum()
+        self.assertAlmostEqual(sum1,sum2)
+        mean1 =  self.spectrum1.mean(lmin=self.spectrum1.wave[1],lmax=self.spectrum1.wave[-2])
+        mean2 = spectrum2.mean()
+        self.assertAlmostEqual(mean1,mean2)
+    
     def test_arithmetricOperator_Image(self):
         """tests arithmetic functions on Image object"""
         # +
@@ -240,19 +266,6 @@ class TestObj(unittest.TestCase):
         self.assertEqual(a.shape[0],2)
         self.assertEqual(a.shape[1],3)
 
-    def test_get_Spectrum(self):
-        """tests Spectrum[]"""
-        a = self.spectrum1[1:7]
-        self.assertEqual(a.shape,6)
-        a = self.spectrum1.get_lambda(1.2,5.6)
-        self.assertEqual(a.shape,5)
-        
-    def test_rebin(self):
-        """tests rebin functions"""
-        spectrum2 = self.spectrum1.rebin(0.3) 
-        flux1 = self.spectrum1.data.sum()*self.spectrum1.wave.cdelt
-        flux2 = spectrum2.data.sum()*spectrum2.wave.cdelt
-        self.assertAlmostEqual(flux1,flux2)
 
 if __name__=='__main__':
     unittest.main()
