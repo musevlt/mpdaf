@@ -581,7 +581,7 @@ The new shape must be a factor of self.shape.</p>
 
 <dl class="function">
 <dt id="obj.Spectrum.polfit">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">polfit</tt><big>(</big><em>order</em><span class="optional">[</span>, <em>maxiter=0</em>, <em>nsig=(-3.0</em>, <em>3.0)</em>, <em>wind=None</em>, <em>weight=True</em>, <em>quiet=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.polfit" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">polfit</tt><big>(</big><em>order</em><span class="optional">[</span>, <em>wind=None</em>, <em>weight=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.polfit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs polynomial fit on spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -589,11 +589,8 @@ The new shape must be a factor of self.shape.</p>
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>order</strong> (<em>integer</em>) &#8211; Polynomial order.</li>
-<li><strong>maxiter</strong> (<em>integer</em>) &#8211; Maximum allowed iterations (0 by default).</li>
-<li><strong>nsig</strong> (<em>(float,float)</em>) &#8211; Low and high rejection factor in std units. (-3.0,3.0) by default.</li>
 <li><strong>wind</strong> (<em>list of float</em>) &#8211; wind is the list of wavelength interval to skip in the fit (None by default).</li>
 <li><strong>weight</strong> (<em>boolean</em>) &#8211; If weight is True, the weight is computed as the inverse of variance.</li>
-<li><strong>quiet</strong> (<em>boolean</em>) &#8211; If True, some outputs are printed.</li>
 </ul>
 </td>
 </tr>
@@ -725,7 +722,7 @@ The new shape must be a factor of self.shape.</p>
 
 <dl class="function">
 <dt id="obj.Spectrum.gauss_fit">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>lmin</em>, <em>lmax</em><span class="optional">[</span>, <em>fwhm=None</em>, <em>lpeak=None</em>, <em>fpeak=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.gauss_fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>lmin</em>, <em>lmax</em><span class="optional">[</span>, <em>fwhm=None</em>, <em>lpeak=None</em>, <em>fpeak=None</em>, <em>cont=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.gauss_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs polynomial fit on spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -737,6 +734,7 @@ The new shape must be a factor of self.shape.</p>
 <li><strong>fwhm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian fwhm, if None it is estimated.</li>
 <li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian center, if None it is estimated.</li>
 <li><strong>fpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian peak value, if None it is estimated.</li>
+<li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Continuum value, if None it is estimated.</li>
 </ul>
 </td>
 </tr>
@@ -749,7 +747,7 @@ The new shape must be a factor of self.shape.</p>
 
 <dl class="function">
 <dt id="obj.Spectrum.add_gaussian">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">add_gaussian</tt><big>(</big><em>fwhm</em>, <em>lpeak</em>, <em>fpeak</em><big>)</big><a class="headerlink" href="#obj.Spectrum.add_gaussian" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">add_gaussian</tt><big>(</big><em>fwhm</em>, <em>lpeak</em>, <em>fpeak</em><span class="optional">[</span>, <em>cont=0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.add_gaussian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a gausian on spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -759,6 +757,7 @@ The new shape must be a factor of self.shape.</p>
 <li><strong>fwhm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian fwhm.</li>
 <li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian center.</li>
 <li><strong>fpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian peak value.</li>
+<li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Continuum value.</li>
 </ul>
 </td>
 </tr>

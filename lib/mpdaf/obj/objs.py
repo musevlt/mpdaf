@@ -1057,19 +1057,13 @@ class Spectrum(object):
                 return flux,err
         return flux
 
-    def polfit(self, order, maxiter=0, nsig=(-3.0,3.0), wind=None, weight=True, quiet=False):
+    def polfit(self, order, wind=None, weight=True):
         """ performs polynomial fit on spectrum
 
         Parameters
         ----------
         order : integer
         Polynomial order.
-
-        maxiter : integer
-        Maximum allowed iterations (0 by default).
-
-        nsig : (float,float)
-        Low and high rejection factor in std units. (-3.0,3.0) by default.
 
         wind : list of float
         wind is the list of wavelength interval to skip in the fit (None by default)
@@ -1114,27 +1108,8 @@ class Spectrum(object):
                 d = self.data
                 w = self.wave.coord()
 
-        #p = np.polyfit(w, d, order, w=vec_weight) numpy 1.5
-        if weight:
-            d *= vec_weight/vec_weight.sum()
+        #p = np.polyfit(w, d, order, w=vec_weight) numpy 1.5     
         p = np.polyfit(w, d, order)
-        if maxiter > 0:
-            err = d - np.polyval(p, w)
-            sig = np.std(err)
-            n = len(d)
-            for iter in range(maxiter):
-                ind = np.where((err >= nsig[0]*sig) & (np.abs(err) <= nsig[1]*sig))
-                if len(ind[0]) == n:
-                    break
-                if len(ind[0]) <= order+1:
-                    raise ValueError, 'Too few points to perform polynomial fit'
-                #p = np.polyfit(w[ind], d[ind], order, w=vec_weight[ind])
-                p = np.polyfit(w[ind], d[ind], order)
-                err = d[ind] - np.polyval(p, w[ind])
-                sig = np.std(err)
-                n = len(ind[0])
-            if not quiet:
-                print 'Number of iteration: %d Std: %10.4e Np: %d Frac: %4.2f'%(iter+1, sig, n, 100.*n/self.shape)
         return p
 
     def abmag_band(self, lbda, dlbda, out=1, spline=False):
@@ -1315,7 +1290,7 @@ class Spectrum(object):
         fwhm = (i2 - i1)*self.wave.cdelt
         return fwhm
 
-    def gauss_fit(self,lmin,lmax,fwhm=None,lpeak=None,fpeak=None):
+    def gauss_fit(self,lmin,lmax,fwhm=None,lpeak=None,fpeak=None, cont=None):
         """performs polynomial fit on spectrum.
         Returns [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
 
@@ -1328,40 +1303,57 @@ class Spectrum(object):
         Maximum wavelength.
 
         fwhm : float
-        input gaussian fwhm, if None it is estimated
+        input gaussian fwhm, if None it is estimated.
 
         lpeak : float
-        input gaussian center, if None it is estimated
+        input gaussian center, if None it is estimated.
 
         fpeak : float
-        input gaussian peak value, if None it is estimated
+        input gaussian peak value, if None it is estimated.
+        
+        cont : float
+        continuum value, if None it is estimated.
         """
-        gauss_fit = lambda p, x: p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
+        
+        if cont is None:
+            dmin = self.data[self.wave.pixel(lmin,nearest=True)]
+            dmax = self.data[self.wave.pixel(lmax,nearest=True)]
+            cont = (dmin + dmax)/2.
+        gauss_fit = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
         e_gauss_fit = lambda p, x, y: (gauss_fit(p,x) -y) #1d Gaussian fit
 
         spec = self.truncate(lmin, lmax)
+        
+        if spec.var is None:
+            weight = None
+        else:
+            weight = 1./spec.var
 
         if isinstance(spec.data,np.ma.core.MaskedArray):
             mask = np.array(1 - spec.data.mask,dtype=bool)
             l = spec.wave.coord().compress(mask)
             d = spec.data.compress(mask)*self.fscale
             x = np.arange(self.shape).compress(mask)
+            if weight is not None:
+                weight = weight.compress(mask)
         else:
             l = spec.wave.coord() #!!!!!this is expected to be pixel number
             d = spec.data*self.fscale
             x = np.arange(self.shape)
 
+        if weight is not None:
+            dw = d * weight
         if lpeak is None:
-            lpeak = l[d.argmax()]
+            lpeak = l[dw.argmax()]
         if fpeak is None:
-            fpeak = d.max()
+            pixel = spec.wave.pixel(lpeak,nearest=True)
+            fpeak = d[dw.argmax()]
         if fwhm is None:
-            fwhm = spec.fwhm(lpeak, 0)
+            fwhm = spec.fwhm(lpeak, cont)
 
         sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
 
         v0 = [fpeak,lpeak,sigma] #inital guesses for Gaussian Fit. $just do it around the peak
-        print v0
         out = leastsq(e_gauss_fit, v0[:], args=(l, d), maxfev=100000, full_output=1) #Gauss Fit
         v = out[0] #fit parammeters out
         covar = out[1] #covariance matrix output
@@ -1381,24 +1373,13 @@ class Spectrum(object):
         fpeak = v[0]
         err_fpeak = err[0]
 
-        print "lpeak", lpeak, err_lpeak
-        print 'sigma',sigma, err_sigma
-        print 'fwhm',fwhm, err_fwhm
-        print 'fpeak',fpeak,err_fpeak
-
-
-        xxx = np.arange(min(l),max(l),l[1]-l[0])
-        ccc = gauss_fit(v,xxx) # this will only work if the units are pixel and not wavelength
-        iii = gauss_fit(v0,xxx)
-
-#        import matplotlib.pyplot as plt
-#        plt.figure()
-        plt.plot(xxx,ccc,'r--')
-#        plt.show()
+#        xxx = np.arange(min(l),max(l),l[1]-l[0])
+#        ccc = gauss_fit(v,xxx) # this will only work if the units are pixel and not wavelength
+#        plt.plot(xxx,ccc,'r--')
 
         return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
 
-    def add_gaussian(self,fwhm,lpeak,fpeak):
+    def add_gaussian(self,fwhm,lpeak,fpeak,cont=0):
         """adds a gausian on spectrum.
 
         Parameters
@@ -1412,8 +1393,11 @@ class Spectrum(object):
 
         fpeak : float
         gaussian peak value
+        
+        cont : float
+        continuum value. O by deafult.
         """
-        gauss = lambda p, x: p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
+        gauss = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
 
         sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
 
@@ -1472,11 +1456,6 @@ class Spectrum(object):
         plt.plot(x, f, drawstyle=drawstyle)
         if noise: 
             plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
-#            if isinstance(self.data,np.ma.core.MaskedArray):
-#                f = res.data.data*res.fscale
-#                plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
-#            else:        
-#                plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
                 plt.title(title)   
         if res.wave.cunit is not None:
@@ -1693,11 +1672,7 @@ class Spectrum(object):
     def plot_mask(self):
         if isinstance(self.data,np.ma.core.MaskedArray):
             lbda = self.wave.coord()
-#            ksel = np.where(self.data.mask==True)
-#            x = lbda[ksel]
-#            f = self.data.data[ksel]
             drawstyle = plt.gca().lines[0].get_drawstyle()
-#            plt.plot(x, f, 'r+')
             plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
 
 class Image(object):

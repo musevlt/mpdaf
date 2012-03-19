@@ -356,22 +356,16 @@ Methods
   :rtype: Returns flux or flux,std.
  
  
-.. function:: polfit(order [, maxiter=0, nsig=(-3.0,3.0), wind=None, weight=True, quiet=False])
+.. function:: polfit(order [, wind=None, weight=True])
 
   Performs polynomial fit on spectrum.
   
   :param order: Polynomial order.
   :type order: integer
-  :param maxiter: Maximum allowed iterations (0 by default).
-  :type maxiter: integer
-  :param nsig: Low and high rejection factor in std units. (-3.0,3.0) by default.
-  :type nsig: (float,float)
   :param wind: wind is the list of wavelength interval to skip in the fit (None by default).
   :type wind: list of float
   :param weight:  If weight is True, the weight is computed as the inverse of variance.
   :type weight: boolean
-  :param quiet: If True, some outputs are printed.
-  :type quiet: boolean
   :rtype: ndarray, shape. Polynomial coefficients, highest power first.
   
   
@@ -450,7 +444,7 @@ Examples::
   :rtype: float
         
 
-.. function:: gauss_fit(lmin, lmax [, fwhm=None, lpeak=None, fpeak=None])
+.. function:: gauss_fit(lmin, lmax [, fwhm=None, lpeak=None, fpeak=None, cont=None])
 
   Performs polynomial fit on spectrum.
   
@@ -464,10 +458,12 @@ Examples::
   :type lpeak: float
   :param fpeak: Input gaussian peak value, if None it is estimated.
   :type fpeak: float
+  :param cont: Continuum value, if None it is estimated.
+  :type cont: float
   :returns: [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
   
         
-.. function:: add_gaussian(fwhm, lpeak, fpeak)
+.. function:: add_gaussian(fwhm, lpeak, fpeak [, cont=0])
 
   Adds a gausian on spectrum.
   
@@ -477,6 +473,8 @@ Examples::
   :type lpeak: float
   :param fpeak: Gaussian peak value.
   :type fpeak: float
+  :param cont: Continuum value.
+  :type cont: float
   :rtype: Spectrum
 
 
