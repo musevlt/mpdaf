@@ -1057,13 +1057,13 @@ class Spectrum(object):
                 return flux,err
         return flux
 
-    def polfit(self, order, wind=None, weight=True):
+    def poly_fit(self, deg, wind=None, weight=True):
         """ performs polynomial fit on spectrum
 
         Parameters
         ----------
-        order : integer
-        Polynomial order.
+        deg : integer
+        Degree of the fitting polynomial
 
         wind : list of float
         wind is the list of wavelength interval to skip in the fit (None by default)
@@ -1071,7 +1071,7 @@ class Spectrum(object):
         weight : boolean
         if weight is True, the weight is computed as the inverse of variance
         """
-        if self.shape <= order+1:
+        if self.shape <= deg+1:
             raise ValueError, 'Too few points to perform polynomial fit'
 
         if self.var is None:
@@ -1108,9 +1108,54 @@ class Spectrum(object):
                 d = self.data
                 w = self.wave.coord()
 
-        #p = np.polyfit(w, d, order, w=vec_weight) numpy 1.5     
-        p = np.polyfit(w, d, order)
-        return p
+        #p = np.polyfit(w, d, deg, w=vec_weight) numpy 1.5     
+        order = int(deg) + 1
+        x = np.asarray(w) + 0.0
+        y = np.asarray(d) + 0.0
+
+        # check arguments.
+        if deg < 0 :
+            raise ValueError("expected deg >= 0")
+        if x.ndim != 1:
+            raise TypeError("expected 1D vector for x")
+        if x.size == 0:
+            raise TypeError("expected non-empty vector for x")
+        if y.ndim < 1 or y.ndim > 2 :
+            raise TypeError("expected 1D or 2D array for y")
+        if x.shape[0] != y.shape[0] :
+            raise TypeError("expected x and y to have same length")
+
+        rcond = len(x)*np.finfo(x.dtype).eps
+
+        # set up least squares equation for powers of x
+        lhs = np.vander(x, order)
+        rhs = y
+
+        # apply weighting
+        if vec_weight is not None:
+            w = np.asarray(vec_weight) + 0.0
+            if w.ndim != 1:
+                raise TypeError, "expected a 1-d array for weights"
+            if w.shape[0] != y.shape[0] :
+                raise TypeError, "expected w and y to have the same length"
+            lhs *= w[:, np.newaxis]
+            if rhs.ndim == 2:
+                rhs *= w[:, np.newaxis]
+            else:
+                rhs *= w
+
+        # scale lhs to improve condition number and solve
+        scale = np.sqrt((lhs*lhs).sum(axis=0))
+        lhs /= scale
+        c, resids, rank, s = np.linalg.lstsq(lhs, rhs, rcond)
+        c = (c.T/scale).T # broadcast scale coefficients
+
+        # warn on rank reduction, which indicates an ill conditioned matrix
+        if rank != order and not full:
+            msg = "Polyfit may be poorly conditioned"
+            warnings.warn(msg, RankWarning)
+
+        return c
 
     def abmag_band(self, lbda, dlbda, out=1, spline=False):
         """computes AB magnitude corresponding to the wavelength band.
@@ -1290,7 +1335,7 @@ class Spectrum(object):
         fwhm = (i2 - i1)*self.wave.cdelt
         return fwhm
 
-    def gauss_fit(self,lmin,lmax,fwhm=None,lpeak=None,fpeak=None, cont=None):
+    def gauss_fit(self,lmin,lmax,fwhm=None,lpeak=None,fpeak=None, cont=None, plot=False):
         """performs polynomial fit on spectrum.
         Returns [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
 
@@ -1313,14 +1358,18 @@ class Spectrum(object):
         
         cont : float
         continuum value, if None it is estimated.
+        
+        plot : boolean
+        If True, the gaussian is plotted.
         """
         
         if cont is None:
             dmin = self.data[self.wave.pixel(lmin,nearest=True)]
             dmax = self.data[self.wave.pixel(lmax,nearest=True)]
             cont = (dmin + dmax)/2.
-        gauss_fit = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
-        e_gauss_fit = lambda p, x, y: (gauss_fit(p,x) -y) #1d Gaussian fit
+            print cont
+        gaussfit = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
+        e_gauss_fit = lambda p, x, y: (gaussfit(p,x) -y) #1d Gaussian fit
 
         spec = self.truncate(lmin, lmax)
         
@@ -1343,11 +1392,14 @@ class Spectrum(object):
 
         if weight is not None:
             dw = d * weight
+        else:
+            dw = d
+        
         if lpeak is None:
             lpeak = l[dw.argmax()]
         if fpeak is None:
             pixel = spec.wave.pixel(lpeak,nearest=True)
-            fpeak = d[dw.argmax()]
+            fpeak = d[pixel]
         if fwhm is None:
             fwhm = spec.fwhm(lpeak, cont)
 
@@ -1373,9 +1425,10 @@ class Spectrum(object):
         fpeak = v[0]
         err_fpeak = err[0]
 
-#        xxx = np.arange(min(l),max(l),l[1]-l[0])
-#        ccc = gauss_fit(v,xxx) # this will only work if the units are pixel and not wavelength
-#        plt.plot(xxx,ccc,'r--')
+        if plot:
+            xxx = np.arange(min(l),max(l),l[1]-l[0])
+            ccc = gaussfit(v,xxx) # this will only work if the units are pixel and not wavelength
+            plt.plot(xxx,ccc,'r--')
 
         return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
 
@@ -1529,8 +1582,9 @@ class Spectrum(object):
             except:
                 pass
             
-    def print_cursor_pos(self, filename='None'):
-        """Prints cursor position.   
+    def ipos(self, filename='None'):
+        """Interactive mode.
+        Prints cursor position.   
         To read cursor position, click on the left mouse button
         To remove a cursor position, click on the left mouse button + <shift>
         To quit the interactive mode, click on the right mouse button.
@@ -1623,8 +1677,9 @@ class Spectrum(object):
                 self._clicks = None
                 
             
-    def get_distance(self):
-        """Gets distance and center from 2 cursor positions.
+    def idist(self):
+        """Interactive mode.
+        Gets distance and center from 2 cursor positions.
         """
         print 'Use 2 mouse clicks to get center and distance'
         if self._clicks is None:
@@ -1669,11 +1724,61 @@ class Spectrum(object):
             plt.draw()
             self._clicks = None
             
-    def plot_mask(self):
+    def igauss_fit(self):
+        """Interactive mode.
+        Performs polynomial fit on spectrum.
+        Prints [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+        """
+        print 'Use 3 mouse clicks to get minimim, peak and maximum wavelengths'
+        if self._clicks is None:
+            binding_id = plt.connect('button_press_event', self._on_click_gauss_fit)
+            plt.connect('motion_notify_event', self._on_move)
+            self._clicks = SpectrumClicks(binding_id)
+    
+    def _on_click_gauss_fit(self,event):
+        """Performs polynomial fit on spectrum (interactive mode).
+        """
+        if event.button == 1:
+            if event.inaxes is not None:
+                try:
+                    xc, yc = event.xdata, event.ydata
+                    i = self.wave.pixel(xc, True)
+                    x = self.wave.coord(i)
+                    val = self.data[i]*self.fscale
+                    if len(self._clicks.x)==0:
+                        print ''
+                    plt.plot(xc,yc,'r+')
+                    self._clicks.xc.append(xc)
+                    self._clicks.yc.append(yc)
+                    self._clicks.i.append(i)
+                    self._clicks.x.append(x)
+                    self._clicks.data.append(val)
+                    self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)
+                    if np.sometrue(np.mod( len(self._clicks.x), 3 )) == False:
+                        lmin = self._clicks.xc[-3]
+                        lpeak = self._clicks.xc[-2]
+                        lmax = self._clicks.xc[-1]
+                        print self.gauss_fit(lmin, lmax, lpeak=lpeak, plot=True)
+                        self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)  
+                except:
+                    pass
+        else: 
+            print "disconnecting console distance printout..."
+            plt.disconnect(self._clicks.binding_id)
+            for i in self._clicks.id_lines:
+                del plt.gca().lines[i]
+            plt.draw()
+            self._clicks = None
+            
+    def imask(self):
+        """Interactive mode.
+        Plots masked values.
+        """
         if isinstance(self.data,np.ma.core.MaskedArray):
             lbda = self.wave.coord()
             drawstyle = plt.gca().lines[0].get_drawstyle()
             plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
+            
 
 class Image(object):
     """Image class

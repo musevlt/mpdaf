@@ -356,12 +356,12 @@ Methods
   :rtype: Returns flux or flux,std.
  
  
-.. function:: polfit(order [, wind=None, weight=True])
+.. function:: poly_fit(deg [, wind=None, weight=True])
 
   Performs polynomial fit on spectrum.
   
-  :param order: Polynomial order.
-  :type order: integer
+  :param deg: Polynomial degree.
+  :type deg: integer
   :param wind: wind is the list of wavelength interval to skip in the fit (None by default).
   :type wind: list of float
   :param weight:  If weight is True, the weight is computed as the inverse of variance.
@@ -444,7 +444,7 @@ Examples::
   :rtype: float
         
 
-.. function:: gauss_fit(lmin, lmax [, fwhm=None, lpeak=None, fpeak=None, cont=None])
+.. function:: gauss_fit(lmin, lmax [, fwhm=None, lpeak=None, fpeak=None, cont=None, plot=False])
 
   Performs polynomial fit on spectrum.
   
@@ -460,6 +460,8 @@ Examples::
   :type fpeak: float
   :param cont: Continuum value, if None it is estimated.
   :type cont: float
+  :param plot: If True, the Gaussian is plotted.
+  :type plot: boolean
   :returns: [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
   
         
@@ -518,23 +520,40 @@ Plotting
   :type drawstyle: [ 'default' | 'steps' | 'steps-pre' | 'steps-mid' | 'steps-post' ]
         
 
-.. function:: print_cursor_pos([filename='None'])
+.. function:: ipos([filename='None'])
 
-  Prints cursor position.
+  Prints cursor position in interactive mode.
+  
   To read cursor position, click on the left mouse button.
+  
   To remove a cursor position, click on the left mouse button + <shift>
-  To quit the interactive mode, click on the right mouse button.
+  
+  To quit the interactive mode, click on the right mouse button. 
+  
   At the end, clicks are saved in self.clicks as dictionary {'xc','yc','x','y'}.
+  
   
   :param filename: If filename is not None, the cursor values are saved as a fits table.
   :type filename: string
         
        
-.. function:: get_distance()
+.. function:: idist()
 
-  Gets distance and center from 2 cursor positions.
+  Gets distance and center from 2 cursor positions (interactive mode).
+  
+  To quit the interactive mode, click on the right mouse button.
   
   
-.. function:: plot_mask()
+.. function:: imask()
 
-  Over-plots masked values.
+  Over-plots masked values (interactive mode).
+  
+.. function:: igauss_fit()
+
+  Plots polynomial fit on spectrum.
+  
+  Prints [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]].
+  
+  To select minimum, peak and maximum wavelengths, click on the left mouse button.
+  
+  To quit the interactive mode, click on the right mouse button.

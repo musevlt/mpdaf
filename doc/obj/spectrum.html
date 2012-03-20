@@ -580,15 +580,15 @@ The new shape must be a factor of self.shape.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="obj.Spectrum.polfit">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">polfit</tt><big>(</big><em>order</em><span class="optional">[</span>, <em>wind=None</em>, <em>weight=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.polfit" title="Permalink to this definition">¶</a></dt>
+<dt id="obj.Spectrum.poly_fit">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">poly_fit</tt><big>(</big><em>deg</em><span class="optional">[</span>, <em>wind=None</em>, <em>weight=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.poly_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs polynomial fit on spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>order</strong> (<em>integer</em>) &#8211; Polynomial order.</li>
+<li><strong>deg</strong> (<em>integer</em>) &#8211; Polynomial degree.</li>
 <li><strong>wind</strong> (<em>list of float</em>) &#8211; wind is the list of wavelength interval to skip in the fit (None by default).</li>
 <li><strong>weight</strong> (<em>boolean</em>) &#8211; If weight is True, the weight is computed as the inverse of variance.</li>
 </ul>
@@ -722,7 +722,7 @@ The new shape must be a factor of self.shape.</p>
 
 <dl class="function">
 <dt id="obj.Spectrum.gauss_fit">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>lmin</em>, <em>lmax</em><span class="optional">[</span>, <em>fwhm=None</em>, <em>lpeak=None</em>, <em>fpeak=None</em>, <em>cont=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.gauss_fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>lmin</em>, <em>lmax</em><span class="optional">[</span>, <em>fwhm=None</em>, <em>lpeak=None</em>, <em>fpeak=None</em>, <em>cont=None</em>, <em>plot=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.gauss_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs polynomial fit on spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -735,6 +735,7 @@ The new shape must be a factor of self.shape.</p>
 <li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian center, if None it is estimated.</li>
 <li><strong>fpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian peak value, if None it is estimated.</li>
 <li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Continuum value, if None it is estimated.</li>
+<li><strong>plot</strong> (<em>boolean</em>) &#8211; If True, the Gaussian is plotted.</li>
 </ul>
 </td>
 </tr>
@@ -816,13 +817,13 @@ The new shape must be a factor of self.shape.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="obj.Spectrum.print_cursor_pos">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">print_cursor_pos</tt><big>(</big><span class="optional">[</span><em>filename='None'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.print_cursor_pos" title="Permalink to this definition">¶</a></dt>
-<dd><p>Prints cursor position.
-To read cursor position, click on the left mouse button.
-To remove a cursor position, click on the left mouse button + &lt;shift&gt;
-To quit the interactive mode, click on the right mouse button.
-At the end, clicks are saved in self.clicks as dictionary {&#8216;xc&#8217;,&#8217;yc&#8217;,&#8217;x&#8217;,&#8217;y&#8217;}.</p>
+<dt id="obj.Spectrum.ipos">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">ipos</tt><big>(</big><span class="optional">[</span><em>filename='None'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.ipos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints cursor position in interactive mode.</p>
+<p>To read cursor position, click on the left mouse button.</p>
+<p>To remove a cursor position, click on the left mouse button + &lt;shift&gt;</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
+<p>At the end, clicks are saved in self.clicks as dictionary {&#8216;xc&#8217;,&#8217;yc&#8217;,&#8217;x&#8217;,&#8217;y&#8217;}.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -834,15 +835,25 @@ At the end, clicks are saved in self.clicks as dictionary {&#8216;xc&#8217;,&#82
 </dd></dl>
 
 <dl class="function">
-<dt id="obj.Spectrum.get_distance">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_distance</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.get_distance" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets distance and center from 2 cursor positions.</p>
+<dt id="obj.Spectrum.idist">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">idist</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.idist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets distance and center from 2 cursor positions (interactive mode).</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="obj.Spectrum.plot_mask">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">plot_mask</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.plot_mask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Over-plots masked values.</p>
+<dt id="obj.Spectrum.imask">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">imask</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.imask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Over-plots masked values (interactive mode).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.igauss_fit">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">igauss_fit</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.igauss_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots polynomial fit on spectrum.</p>
+<p>Prints [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]].</p>
+<p>To select minimum, peak and maximum wavelengths, click on the left mouse button.</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
 </dd></dl>
 
 </div>
