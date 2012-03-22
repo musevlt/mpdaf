@@ -128,6 +128,7 @@ class Spectrum(object):
         Spectrum(shape=4000, wave=wave) : spectrum filled with zeros
         Spectrum(wave=wave, data = MyData) : spectrum filled with MyData
         """
+        self._fig = None
         self._clicks = None
         self.spectrum = True
         #possible FITS filename
@@ -1425,10 +1426,12 @@ class Spectrum(object):
         fpeak = v[0]
         err_fpeak = err[0]
 
-        if plot:
+        if plot and self._fig is not None:
             xxx = np.arange(min(l),max(l),l[1]-l[0])
             ccc = gaussfit(v,xxx) # this will only work if the units are pixel and not wavelength
+            plt.figure(self._fig.number)
             plt.plot(xxx,ccc,'r--')
+            self._fig.show()
 
         return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
 
@@ -1505,17 +1508,20 @@ class Spectrum(object):
             f = f*max/f.max()
         if res.var is  None:
             noise = False
-        plt.clf() #Clear the current figure
-        plt.plot(x, f, drawstyle=drawstyle)
+            
+        self._fig = plt.figure()
+        ax = self._fig.add_subplot(111)
+        ax.plot(x, f, drawstyle=drawstyle)
         if noise: 
-            plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
+            ax.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
-                plt.title(title)   
+                ax.title(title)   
         if res.wave.cunit is not None:
-            plt.xlabel(res.wave.cunit)
+            ax.set_xlabel(res.wave.cunit)
         if res.unit is not None:
-            plt.ylabel(res.unit)
-        plt.connect('motion_notify_event', self._on_move)
+            ax.set_ylabel(res.unit)
+        self._manager = plt.get_current_fig_manager()
+        self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
         
     def log_plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
         """ plots the spectrum with y logarithmic scale.
@@ -1552,17 +1558,20 @@ class Spectrum(object):
             f = f*max/f.max()
         if res.var is  None:
             noise = False
-        plt.clf() #Clear the current figure
-        plt.semilogy(x, f, drawstyle=drawstyle)
+            
+        self._fig = plt.figure()
+        ax = self._fig.add_subplot(111)
+        ax.semilogy(x, f, drawstyle=drawstyle)
         if noise: 
-           plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f - np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5)   
+            ax.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
-                plt.title(title)   
+                ax.title(title)   
         if res.wave.cunit is not None:
-            plt.xlabel(res.wave.cunit)
+            ax.set_xlabel(res.wave.cunit)
         if res.unit is not None:
-            plt.ylabel(res.unit)
-        plt.connect('motion_notify_event', self._on_move)
+            ax.set_ylabel(res.unit)
+        self._manager = plt.get_current_fig_manager()
+        self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
 
         
     def _on_move(self,event):
@@ -1578,7 +1587,7 @@ class Spectrum(object):
                 else:
                     val = self.data[i]*self.fscale
                 s = 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
-                plt.get_current_fig_manager().toolbar.set_message(s)
+                self._manager.toolbar.set_message(s)
             except:
                 pass
             
@@ -1596,8 +1605,8 @@ class Spectrum(object):
         If filename is not None, the cursor values are saved as a fits table.
         """
         if self._clicks is None:
-            binding_id = plt.connect('button_press_event', self._on_click)
-            plt.connect('motion_notify_event', self._on_move)
+            binding_id = self._fig.canvas.mpl_connect('button_press_event', self._on_click)
+            self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
             self._clicks = SpectrumClicks(binding_id,filename)
         else:
             self._clicks.filename = filename
@@ -1612,7 +1621,7 @@ class Spectrum(object):
                         xc, yc = event.xdata, event.ydata
                         i = np.argmin(np.abs(self._clicks.xc-xc))
                         line = self._clicks.id_lines[i]
-                        del plt.gca().lines[line]
+                        del self._fig.gca().lines[line]
                         self._clicks.xc.pop(i)
                         self._clicks.yc.pop(i)
                         self._clicks.i.pop(i)
@@ -1621,7 +1630,7 @@ class Spectrum(object):
                         self._clicks.id_lines.pop(i)
                         for j in range(i,len(self._clicks.id_lines)):
                             self._clicks.id_lines[j] -= 1
-                        plt.draw() 
+                        self._fig.show()
                         print "new selection:"
                         if self.fscale == 1:
                             for i in range(len(self._clicks.xc)):
@@ -1641,13 +1650,15 @@ class Spectrum(object):
                         val = self.data[i]*self.fscale
                         if len(self._clicks.x)==0:
                             print ''
+                        plt.figure(self._fig.number)
                         plt.plot(xc,yc,'r+')
+                        self._fig.show()
                         self._clicks.xc.append(xc)
                         self._clicks.yc.append(yc)
                         self._clicks.i.append(i)
                         self._clicks.x.append(x)
                         self._clicks.data.append(val)
-                        self._clicks.id_lines.append(len(plt.gca().lines)-1)
+                        self._clicks.id_lines.append(len(self._fig.gca().lines)-1)
                         if self.fscale == 1:
                             print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(xc,yc,i,x,val)
                         else:
@@ -1668,12 +1679,12 @@ class Spectrum(object):
                 d = {'xc':self._clicks.xc, 'yc':self._clicks.yc, 'x':self._clicks.x, 'y':self._clicks.data}
                 self.clicks = d
                 print "disconnecting console coordinate printout..."
-                plt.disconnect(self._clicks.binding_id)
+                self._fig.canvas.mpl_disconnect(self._clicks.binding_id)
                 nlines =  len(self._clicks.id_lines)
                 for i in range(nlines):
                     line = self._clicks.id_lines[nlines - i -1]
-                    del plt.gca().lines[line]
-                plt.draw()
+                    del self._fig.gca().lines[line]
+                self._fig.show()
                 self._clicks = None
                 
             
@@ -1683,8 +1694,8 @@ class Spectrum(object):
         """
         print 'Use 2 mouse clicks to get center and distance'
         if self._clicks is None:
-            binding_id = plt.connect('button_press_event', self._on_click_dist)
-            plt.connect('motion_notify_event', self._on_move)
+            binding_id = self._fig.canvas.mpl_connect('button_press_event', self._on_click_dist)
+            self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
             self._clicks = SpectrumClicks(binding_id)
     
     def _on_click_dist(self,event):
@@ -1699,13 +1710,14 @@ class Spectrum(object):
                     val = self.data[i]*self.fscale
                     if len(self._clicks.x)==0:
                         print ''
+                    plt.figure(self._fig.number)
                     plt.plot(xc,yc,'r+')
                     self._clicks.xc.append(xc)
                     self._clicks.yc.append(yc)
                     self._clicks.i.append(i)
                     self._clicks.x.append(x)
                     self._clicks.data.append(val)
-                    self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)
+                    self._clicks.id_lines.append(len(self._fig.gca().lines)-1)
                     if self.fscale == 1:
                         print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(xc,yc,i,x,val)
                     else:
@@ -1718,10 +1730,12 @@ class Spectrum(object):
                     pass 
         else: 
             print "disconnecting console distance printout..."
-            plt.disconnect(self._clicks.binding_id)
-            for i in self._clicks.id_lines:
-                del plt.gca().lines[i]
-            plt.draw()
+            self._fig.canvas.mpl_disconnect(self._clicks.binding_id)
+            nlines =  len(self._clicks.id_lines)
+            for i in range(nlines):
+                line = self._clicks.id_lines[nlines - i -1]
+                del self._fig.gca().lines[line]
+            self._fig.show()
             self._clicks = None
             
     def igauss_fit(self):
@@ -1731,8 +1745,8 @@ class Spectrum(object):
         """
         print 'Use 3 mouse clicks to get minimim, peak and maximum wavelengths'
         if self._clicks is None:
-            binding_id = plt.connect('button_press_event', self._on_click_gauss_fit)
-            plt.connect('motion_notify_event', self._on_move)
+            binding_id = self._fig.canvas.mpl_connect('button_press_event', self._on_click_gauss_fit)
+            self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
             self._clicks = SpectrumClicks(binding_id)
     
     def _on_click_gauss_fit(self,event):
@@ -1747,27 +1761,30 @@ class Spectrum(object):
                     val = self.data[i]*self.fscale
                     if len(self._clicks.x)==0:
                         print ''
+                    plt.figure(self._fig.number)
                     plt.plot(xc,yc,'r+')
                     self._clicks.xc.append(xc)
                     self._clicks.yc.append(yc)
                     self._clicks.i.append(i)
                     self._clicks.x.append(x)
                     self._clicks.data.append(val)
-                    self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)
+                    self._clicks.id_lines.append(len(self._fig.gca().lines)-1)
                     if np.sometrue(np.mod( len(self._clicks.x), 3 )) == False:
                         lmin = self._clicks.xc[-3]
                         lpeak = self._clicks.xc[-2]
                         lmax = self._clicks.xc[-1]
                         print self.gauss_fit(lmin, lmax, lpeak=lpeak, plot=True)
-                        self._clicks.id_lines.insert(0,len(plt.gca().lines)-1)  
+                        self._clicks.id_lines.append(len(self._fig.gca().lines)-1)
                 except:
                     pass
         else: 
             print "disconnecting console distance printout..."
-            plt.disconnect(self._clicks.binding_id)
-            for i in self._clicks.id_lines:
-                del plt.gca().lines[i]
-            plt.draw()
+            self._fig.canvas.mpl_disconnect(self._clicks.binding_id)
+            nlines =  len(self._clicks.id_lines)
+            for i in range(nlines):
+                line = self._clicks.id_lines[nlines - i -1]
+                del self._fig.gca().lines[line]
+            self._fig.show()
             self._clicks = None
             
     def imask(self):
@@ -1776,7 +1793,8 @@ class Spectrum(object):
         """
         if isinstance(self.data,np.ma.core.MaskedArray):
             lbda = self.wave.coord()
-            drawstyle = plt.gca().lines[0].get_drawstyle()
+            drawstyle = self._fig.gca().lines[0].get_drawstyle()
+            plt.figure(self._fig.number)
             plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
             
 
@@ -2590,6 +2608,69 @@ class Image(object):
             self.wcs =  None
         else:
             self.wcs = wcs
+            
+    def plot(self, max=None, title=None, noise=False): 
+        """ plots the image.
+        
+        Parameters
+        ----------
+        
+        max : boolean
+        If max, the plot is normalized to peak at max value.
+        
+        title : string
+        Figure tiltle (None by default).
+        
+        noise : boolean
+        If noise is True, the +/- standard deviation is overplotted.
+              
+        """
+        plt.ion()
+        
+        f = self.data*self.fscale
+        if max != None:
+            f = f*max/f.max()
+            
+        pixcrd = np.zeros((self.shape[1],2))
+        pixcrd[:,0] = np.arange(self.shape[1], dtype=np.float)
+        pixsky = self.wcs.pix2sky(pixcrd)
+        xaxis = pixsky[:,0]
+        
+        pixcrd = np.zeros((self.shape[0],2))
+        pixcrd[:,1] = np.arange(self.shape[0], dtype=np.float)
+        pixsky = self.wcs.pix2sky(pixcrd)
+        yaxis = pixsky[:,1]
+        
+        self._fig = plt.figure()
+        ax = self._fig.add_subplot(111)
+        
+        cax = ax.contourf(xaxis, yaxis, f, 100)
+        self._fig.colorbar(cax)
+        
+#        if noise: 
+#            plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
+        if title is not None:
+                plt.title(title)   
+        plt.xlabel('ra (%s)' %ima.wcs.wcs.wcs.cunit[0])
+        plt.ylabel('dec (%s)' %ima.wcs.wcs.wcs.cunit[1])
+        self._manager = plt.get_current_fig_manager()
+        self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
+        
+    def _on_move(self,event):
+        """ prints x,y,i,lbda and data in the figure toolbar.
+        """
+        if event.inaxes is not None:
+            xc, yc = event.xdata, event.ydata
+            try:
+                pixcrd = self.wcs.sky2pix([xc,yc])
+                if isinstance(self.data,np.ma.core.MaskedArray):
+                    val = self.data.data[pixcrd[0][0],pixcrd[0][1]]*self.fscale
+                else:
+                    val = self.data[pixcrd[0][1],pixcrd[0][0]]*self.fscale
+                s = 'x= %g y=%g data=%g'%(xc,yc,val)
+                self._manager.toolbar.set_message(s)
+            except:
+                pass    
 
 class Cube(object):
     """cube class
