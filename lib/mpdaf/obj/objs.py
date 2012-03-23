@@ -74,7 +74,7 @@ class Spectrum(object):
     --------------
     Creation: init, copy
 
-    Selection: <, >, <=, >=, remove_mask
+    Selection: <, >, <=, >=
 
     Arithmetic: + - * / pow
 
@@ -228,6 +228,9 @@ class Spectrum(object):
                 self.wave.shape = self.shape
             except :
                 self.wave = None
+        #Mask an array where invalid values occur (NaNs or infs).
+        if self.data is not None:
+            self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
         """copies spectrum object in a new one and returns it
@@ -271,7 +274,7 @@ class Spectrum(object):
         prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
         prihdu.header.update('author', 'MPDAF', 'origin of the file')
 
-        if isinstance(self.data,np.ma.core.MaskedArray):
+        if np.ma.count_masked(self.data) != 0:
             hdulist = [prihdu]
             # create spectrum DATA in first extension
             tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
@@ -402,29 +405,22 @@ class Spectrum(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         return result
 
-    def remove_mask(self):
-        """removes the mask on the array
-        """
-        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
-            self.data = self.data.data
-
     def resize(self):
         """resizes the spectrum to have a minimum number of masked values
         """
-        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
-            ksel = np.where(self.data.mask==False)
-            try:
-                item = slice (ksel[0][0],ksel[0][-1]+1,None)
-                self.data = self.data[item]
-                self.shape = self.data.shape[0]
-                if self.var is not None:
-                    self.var = self.var[item]
-                    try:
-                        self.wave = self.wave[item]
-                    except:
-                        self.wave = None
-            except:
-                pass
+        ksel = np.where(self.data.mask==False)
+        try:
+            item = slice (ksel[0][0],ksel[0][-1]+1,None)
+            self.data = self.data[item]
+            self.shape = self.data.shape[0]
+            if self.var is not None:
+                self.var = self.var[item]
+                try:
+                    self.wave = self.wave[item]
+                except:
+                    self.wave = None
+        except:
+            pass
 
     def __add__(self, other):
         """ adds other
@@ -837,14 +833,7 @@ class Spectrum(object):
                 pix_max = self.shape
             else:
                 pix_max = int(self.wave.pixel(lmax)) + 1
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                self.data[pix_min:pix_max] = np.ma.masked
-            else:
-                mask = np.zeros(self.shape,dtype=bool)
-                mask[pix_min:pix_max] = True
-                print mask[pix_min-1:pix_max+1]
-                self.data = np.ma.array(self.data, mask=mask)
-                
+            self.data[pix_min:pix_max] = np.ma.masked  
             
         
     def interp(self, wavelengths, spline=False):
@@ -859,30 +848,21 @@ class Spectrum(object):
         False: linear interpolation, True: spline interpolation 
         """
         lbda = self.wave.coord()
-        if isinstance(self.data,np.ma.core.MaskedArray):
-            ksel = np.where(self.data.mask==False)            
-            d = np.zeros(np.shape(ksel)[1]+2)
-            d[1:-1] = self.data.data[ksel]
-            w = np.zeros(np.shape(ksel)[1]+2)      
-            w[1:-1] = lbda[ksel]
-            if self.var is not None:    
-                weight = np.zeros(np.shape(ksel)[1]+2)
-                weight[1:-1] = 1./self.var[ksel]
-        else:
-            d = np.zeros(self.shape+2)
-            d[1:-1] = self.data[:]
-            w = np.zeros(self.shape+2)
-            w[1:-1] = lbda[:]
-            if self.var is not None:    
-                weight = np.zeros(self.shape+2)
-                weight[1:-1] = 1./self.var[:]
+        ksel = np.where(self.data.mask==False)            
+        d = np.zeros(np.shape(ksel)[1]+2)
+        d[1:-1] = self.data.data[ksel]
+        w = np.zeros(np.shape(ksel)[1]+2)      
+        w[1:-1] = lbda[ksel]
+        if self.var is not None:    
+            weight = np.zeros(np.shape(ksel)[1]+2)
+            weight[1:-1] = 1./self.var[ksel]
         d[0] = d[1]
         d[-1] = d[-2]
         w[0] = (-self.wave.crpix + 1) * self.wave.cdelt + self.wave.crval - 0.5 * self.wave.cdelt
         w[-1] = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
         if self.var is not None:
-            weight[0] = var[1]
-            weight[-1] = var[-2]
+            weight[0] = self.var[1]
+            weight[-1] = self.var[-2]
         else:
             weight = None
         if spline:
@@ -903,15 +883,12 @@ class Spectrum(object):
         spline : boolean
         False: linear interpolation, True: spline interpolation 
         """
-        if isinstance(self.data,np.ma.core.MaskedArray):
-            lbda = self.wave.coord()
-            ksel = np.where(self.data.mask==True)
-            wnew = lbda[ksel]
-            data = self.data.data
-            data[ksel] = self.interp(wnew,spline)
-            return data
-        else:
-            return self.data
+        lbda = self.wave.coord()
+        ksel = np.where(self.data.mask==True)
+        wnew = lbda[ksel]
+        data = self.data.data
+        data[ksel] = self.interp(wnew,spline)
+        return data
             
     
     def rebin_factor(self, factor):
@@ -1092,8 +1069,7 @@ class Spectrum(object):
                 i1 = self.wave.pixel(lb1, True)
                 i2 = self.wave.pixel(lb2, True)
                 mask[i1:i2] = np.zeros(i2-i1, dtype=np.bool)
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                mask *= np.array(1 - self.data.mask,dtype=bool)
+            mask *= np.array(1 - self.data.mask,dtype=bool)
             d = self.data.compress(mask)
             w = self.wave.coord().compress(mask)
             if weight:
@@ -1315,7 +1291,7 @@ class Spectrum(object):
             i2 = self.wave.pixel(lmax, True)
         return self.__getitem__(slice(i1,i2,1))
 
-    def fwhm(self, l0, cont=0):
+    def fwhm(self, l0, cont=0, spline=False):
         """ Returns the fwhm of a peak
 
         Parameters
@@ -1325,9 +1301,12 @@ class Spectrum(object):
 
         cont : integer
         The continuum [default 0].
+        
+        spline : boolean
+        linear/spline interpolation to interpolate masked values
         """
         k0 = self.wave.pixel(l0, nearest=True)
-        d = self.data - cont
+        d = self.interp_data(spline) - cont
         f2 = d[k0]/2
         k2 = np.argwhere(d[k0:]<f2)[0][0] + k0
         i2 = np.interp(f2, d[k2:k2-2:-1], [k2,k2-1])
@@ -1336,7 +1315,7 @@ class Spectrum(object):
         fwhm = (i2 - i1)*self.wave.cdelt
         return fwhm
 
-    def gauss_fit(self,lmin,lmax,fwhm=None,lpeak=None,fpeak=None, cont=None, plot=False):
+    def gauss_fit(self,lmin,lmax,fwhm=None,lpeak=None,fpeak=None, cont=None, spline=False, plot=False):
         """performs polynomial fit on spectrum.
         Returns [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
 
@@ -1360,36 +1339,28 @@ class Spectrum(object):
         cont : float
         continuum value, if None it is estimated.
         
+        spline : boolean
+        linear/spline interpolation to interpolate masked values
+        
         plot : boolean
         If True, the gaussian is plotted.
         """
+        spec = self.truncate(lmin, lmax)
+        data = spec.interp_data(spline)
         
         if cont is None:
-            dmin = self.data[self.wave.pixel(lmin,nearest=True)]
-            dmax = self.data[self.wave.pixel(lmax,nearest=True)]
-            cont = (dmin + dmax)/2.
-            print cont
+            cont = (data[0] + data[-1])/2.
+            
         gaussfit = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
         e_gauss_fit = lambda p, x, y: (gaussfit(p,x) -y) #1d Gaussian fit
-
-        spec = self.truncate(lmin, lmax)
         
         if spec.var is None:
             weight = None
         else:
             weight = 1./spec.var
 
-        if isinstance(spec.data,np.ma.core.MaskedArray):
-            mask = np.array(1 - spec.data.mask,dtype=bool)
-            l = spec.wave.coord().compress(mask)
-            d = spec.data.compress(mask)*self.fscale
-            x = np.arange(self.shape).compress(mask)
-            if weight is not None:
-                weight = weight.compress(mask)
-        else:
-            l = spec.wave.coord() #!!!!!this is expected to be pixel number
-            d = spec.data*self.fscale
-            x = np.arange(self.shape)
+        l = spec.wave.coord()
+        d = data * self.fscale
 
         if weight is not None:
             dw = d * weight
@@ -1402,7 +1373,7 @@ class Spectrum(object):
             pixel = spec.wave.pixel(lpeak,nearest=True)
             fpeak = d[pixel]
         if fwhm is None:
-            fwhm = spec.fwhm(lpeak, cont)
+            fwhm = spec.fwhm(lpeak, cont, spline)
 
         sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
 
@@ -1582,10 +1553,7 @@ class Spectrum(object):
             try:
                 i = self.wave.pixel(xc, True)
                 x = self.wave.coord(i)
-                if isinstance(self.data,np.ma.core.MaskedArray):
-                    val = self.data.data[i]*self.fscale
-                else:
-                    val = self.data[i]*self.fscale
+                val = self.data[i]*self.fscale
                 s = 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
                 self._manager.toolbar.set_message(s)
             except:
@@ -1791,11 +1759,10 @@ class Spectrum(object):
         """Interactive mode.
         Plots masked values.
         """
-        if isinstance(self.data,np.ma.core.MaskedArray):
-            lbda = self.wave.coord()
-            drawstyle = self._fig.gca().lines[0].get_drawstyle()
-            plt.figure(self._fig.number)
-            plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
+        lbda = self.wave.coord()
+        drawstyle = self._fig.gca().lines[0].get_drawstyle()
+        plt.figure(self._fig.number)
+        plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
             
 
 class Image(object):
@@ -1984,6 +1951,9 @@ class Image(object):
                     self.wcs = wcs
             except :
                 self.wcs = None
+        #Mask an array where invalid values occur (NaNs or infs).
+        if self.data is not None:
+            self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
         """copies Image object in a new one and returns it
@@ -2029,7 +1999,7 @@ class Image(object):
         #world coordinates
         wcs_cards = self.wcs.to_header().ascardlist()
 
-        if isinstance(self.data,np.ma.core.MaskedArray):
+        if np.ma.count_masked(self.data) != 0:
             hdulist = [prihdu]
             # create spectrum DATA in first extension
             tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
@@ -2143,16 +2113,10 @@ class Image(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         return result
 
-    def remove_mask(self):
-        """removes the mask on the array
-        """
-        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
-            self.data = self.data.data
-
     def resize(self):
         """resize the image to have a minimum number of masked values
         """
-        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
+        if self.data is not None:
             ksel = np.where(self.data.mask==False)
             try:
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None))
@@ -2541,7 +2505,7 @@ class Image(object):
         """
         self.data[key] = value
 
-    def get_deg(self,ra_min,ra_max,dec_min,dec_max):
+    def truncate(self,ra_min,ra_max,dec_min,dec_max):
         """ returns the corresponding sub-image
 
         Parameters
@@ -2560,7 +2524,6 @@ class Image(object):
         """
         skycrd = [[ra_min,dec_min],[ra_min,dec_max],[ra_max,dec_min],[ra_max,dec_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
-        print pixcrd
         imin = int(np.min(pixcrd[:,0]))
         if imin<0:
             imin = 0
@@ -2609,6 +2572,119 @@ class Image(object):
         else:
             self.wcs = wcs
             
+    
+            
+#    def gauss_fit(self, ra_min , ra_max, dec_min, dec_max, fpeak, ra, dec, width_ra, width_dec, cont):
+#        """
+#        """
+#        """performs polynomial fit on spectrum.
+#        Returns [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+#
+#        Parameters
+#        ----------
+#        lmin : float
+#        Minimum wavelength.
+#
+#        lmax : float
+#        Maximum wavelength.
+#
+#        fwhm : float
+#        input gaussian fwhm, if None it is estimated.
+#
+#        lpeak : float
+#        input gaussian center, if None it is estimated.
+#
+#        fpeak : float
+#        input gaussian peak value, if None it is estimated.
+#        
+#        cont : float
+#        continuum value, if None it is estimated.
+#        
+#        plot : boolean
+#        If True, the gaussian is plotted.
+#        """
+#        
+#        if cont is None: #pb mask
+#            skycrd = [[ra_min,dec_min],[ra_min,dec_max],[ra_max,dec_min],[ra_max,dec_max]]
+#            pixcrd = self.wcs.sky2pix(skycrd)
+#            cont = ( self.data[pixcrd[0,1],pixcrd[0,0]] + self.data[pixcrd[1,1],pixcrd[1,0]] + \
+#                     self.data[pixcrd[2,1],pixcrd[2,0]] + self.data[pixcrd[3,1],pixcrd[3,0]] ) /4.
+#            
+#        gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) \
+#                                        * p[3]*(1/np.sqrt(2*np.pi*(p[5]**2)))*np.exp(-(y-p[4])**2/(2*p[5]**2)) #2d Gaussian func
+#        e_gauss_fit = lambda p, x, y, data: (gaussfit(p,x,y) -data)
+#
+#        ima = self.truncate(ra_min, ra_max, dec_min, dec_max)
+#        
+#        if ima.var is None:
+#            weight = None
+#        else:
+#            weight = 1./ima.var
+#
+#        if isinstance(spec.data,np.ma.core.MaskedArray):
+#            mask = np.array(1 - spec.data.mask,dtype=bool)
+#            l = spec.wave.coord().compress(mask)
+#            d = spec.data.compress(mask)*self.fscale
+#            x = np.arange(self.shape).compress(mask)
+#            if weight is not None:
+#                weight = weight.compress(mask)
+#        else:
+#            l = spec.wave.coord() #!!!!!this is expected to be pixel number
+#            d = spec.data*self.fscale
+#            x = np.arange(self.shape)
+#
+#        if weight is not None:
+#            dw = d * weight
+#        else:
+#            dw = d
+#        
+#        if lpeak is None:
+#            lpeak = l[dw.argmax()]
+#        if fpeak is None:
+#            pixel = spec.wave.pixel(lpeak,nearest=True)
+#            fpeak = d[pixel]
+#        if fwhm is None:
+#            fwhm = spec.fwhm(lpeak, cont)
+#
+#        sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
+#
+#        v0 = [fpeak,lpeak,sigma] #inital guesses for Gaussian Fit. $just do it around the peak
+#        out = leastsq(e_gauss_fit, v0[:], args=(l, d), maxfev=100000, full_output=1) #Gauss Fit
+#        v = out[0] #fit parammeters out
+#        covar = out[1] #covariance matrix output
+#
+#        if self.shape > len(v) and covar is not None:
+#            s_sq = (e_gauss_fit(v, l, d)**2).sum()/(self.shape-len(v))
+#            err = np.diag(covar * s_sq)
+#        else:
+#            err = np.zeros(len(v))
+#
+#        lpeak = v[1]
+#        err_lpeak = err[1]
+#        sigma = v[2]
+#        fwhm = sigma*2*np.sqrt(2*np.log(2))
+#        err_sigma = err[2]
+#        err_fwhm = err_sigma*2*np.sqrt(2*np.log(2))
+#        fpeak = v[0]
+#        err_fpeak = err[0]
+#
+#        if plot and self._fig is not None:
+#            xxx = np.arange(min(l),max(l),l[1]-l[0])
+#            ccc = gaussfit(v,xxx) # this will only work if the units are pixel and not wavelength
+#            plt.figure(self._fig.number)
+#            plt.plot(xxx,ccc,'r--')
+#            self._fig.show()
+#
+#        return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+            
+#    def get_line(self, dec, aver=0):
+#        """returns a line or an average of line from image
+#        """
+#        
+#        pixsky = self.wcs.pix2sky(pixcrd)
+#        if aver==0:
+#            return self.__getitem__((200, slice(None, None, None))
+        
     def plot(self, max=None, title=None, noise=False): 
         """ plots the image.
         
@@ -2642,32 +2718,43 @@ class Image(object):
         yaxis = pixsky[:,1]
         
         self._fig = plt.figure()
+        self._manager = plt.get_current_fig_manager()
         ax = self._fig.add_subplot(111)
         
-        cax = ax.contourf(xaxis, yaxis, f, 100)
-        self._fig.colorbar(cax)
+        if np.shape(xaxis)[0] == 1:
+            #plot a  column
+            ax.plot(yaxis,f)
+            plt.xlabel('dec (%s)' %ima.wcs.wcs.wcs.cunit[1])
+            plt.ylabel(self.unit)
+        elif np.shape(yaxis)[0] == 1:
+            #plot a line
+            ax.plot(xaxis,f)
+            plt.xlabel('ra (%s)' %ima.wcs.wcs.wcs.cunit[0])
+            plt.ylabel(self.unit)
+        else:
+            cax = ax.contourf(xaxis, yaxis, f, 100)
+            self._fig.colorbar(cax)
+            plt.xlabel('ra (%s)' %ima.wcs.wcs.wcs.cunit[0])
+            plt.ylabel('dec (%s)' %ima.wcs.wcs.wcs.cunit[1])
+            
         
 #        if noise: 
 #            plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
                 plt.title(title)   
-        plt.xlabel('ra (%s)' %ima.wcs.wcs.wcs.cunit[0])
-        plt.ylabel('dec (%s)' %ima.wcs.wcs.wcs.cunit[1])
-        self._manager = plt.get_current_fig_manager()
         self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
         
     def _on_move(self,event):
-        """ prints x,y,i,lbda and data in the figure toolbar.
+        """ prints x,y,i,j and data in the figure toolbar.
         """
         if event.inaxes is not None:
             xc, yc = event.xdata, event.ydata
             try:
                 pixcrd = self.wcs.sky2pix([xc,yc])
-                if isinstance(self.data,np.ma.core.MaskedArray):
-                    val = self.data.data[pixcrd[0][0],pixcrd[0][1]]*self.fscale
-                else:
-                    val = self.data[pixcrd[0][1],pixcrd[0][0]]*self.fscale
-                s = 'x= %g y=%g data=%g'%(xc,yc,val)
+                i = pixcrd[0][1]
+                j = pixcrd[0][0]
+                val = self.data.data[i,j]*self.fscale
+                s = 'ra= %g dec=%g j=%i i=%i data=%g'%(xc,yc,j,i,val)
                 self._manager.toolbar.set_message(s)
             except:
                 pass    
@@ -2892,6 +2979,9 @@ class Cube(object):
                     self.wave.shape = self.shape[0]
             except :
                 self.wave = None
+        #Mask an array where invalid values occur (NaNs or infs).
+        if self.data is not None:
+            self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
         """copies Cube object in a new one and returns it
@@ -3057,16 +3147,10 @@ class Cube(object):
             result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
         return result
 
-    def remove_mask(self):
-        """removes the mask on the array
-        """
-        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
-            self.data = self.data.data
-
     def resize(self):
         """resize the cube to have a minimum number of masked values
         """
-        if self.data is not None and isinstance(self.data,np.ma.core.MaskedArray):
+        if self.data is not None:
             ksel = np.where(self.data.mask==False)
             try:
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None),slice(ksel[2][0], ksel[2][-1]+1, None))

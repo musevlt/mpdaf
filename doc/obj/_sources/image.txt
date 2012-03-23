@@ -59,7 +59,7 @@ Attributes
 +---------+-----------------------+-------------------------------------------------------+
 | cards   | pyfits.CardList       | Possible FITS header instance.                        |
 +---------+-----------------------+-------------------------------------------------------+
-| data    | array or masked array | Array containing the pixel values of the image.       |
+| data    | masked array          | Pixel values and masked pixel of the image.           |
 +---------+-----------------------+-------------------------------------------------------+
 | shape   | array of 2 integers   | Lengths of data in Y and X (python notation: (ny,nx)) |
 +---------+-----------------------+-------------------------------------------------------+
@@ -254,7 +254,7 @@ Methods
   :rtype: Image object.
 
 
-.. function:: get_deg(ra_min, ra_max, dec_min, dec_max)
+.. function:: truncate(ra_min, ra_max, dec_min, dec_max)
 
   Returns the corresponding sub-image.
   

@@ -68,7 +68,7 @@ Attributes
 +---------+-----------------------+-------------------------------------------------------------+
 | cards   | pyfits.CardList       | Possible FITS header instance.                              |
 +---------+-----------------------+-------------------------------------------------------------+
-| data    | array or masked array | Array containing the pixel values of the cube.              |
+| data    | masked array          | Pixel values or masked pixels of the cube.                  |
 +---------+-----------------------+-------------------------------------------------------------+
 | shape   | array of 3 integers   | Lengths of data in Z, Y and X (python notation: (nz,ny,nx)) |
 +---------+-----------------------+-------------------------------------------------------------+

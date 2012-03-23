@@ -61,7 +61,7 @@ Attributes
 +---------+-----------------------+----------------------------------------------------+
 | cards   | pyfits.CardList       | Possible FITS header instance.                     |
 +---------+-----------------------+----------------------------------------------------+
-| data    | array or masked array | Array containing the pixel values of the spectrum. |
+| data    | masked array          | Pixel values and masked pixels of the spectrum.    |
 +---------+-----------------------+----------------------------------------------------+
 | shape   | integer               | Size of spectrum.                                  |
 +---------+-----------------------+----------------------------------------------------+
@@ -433,7 +433,7 @@ Examples::
   :rtype: Spectrum
   
   
-.. function:: fwhm(l0 [, cont=0])
+.. function:: fwhm(l0 [, cont=0, spline=False])
 
   Returns the fwhm of a peak.
   
@@ -441,10 +441,12 @@ Examples::
   :type l0: float 
   :param cont: The continuum [default 0].
   :type cont: integer
+  :param spline: Linear/spline interpolation to interpolate masked values.
+  :type spline: boolean
   :rtype: float
         
 
-.. function:: gauss_fit(lmin, lmax [, fwhm=None, lpeak=None, fpeak=None, cont=None, plot=False])
+.. function:: gauss_fit(lmin, lmax [, fwhm=None, lpeak=None, fpeak=None, cont=None, spline=False, plot=False])
 
   Performs polynomial fit on spectrum.
   
@@ -460,6 +462,8 @@ Examples::
   :type fpeak: float
   :param cont: Continuum value, if None it is estimated.
   :type cont: float
+  :param spline: Linear/spline interpolation to interpolate masked values.
+  :type spline: boolean
   :param plot: If True, the Gaussian is plotted.
   :type plot: boolean
   :returns: [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
