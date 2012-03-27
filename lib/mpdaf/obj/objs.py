@@ -768,11 +768,6 @@ class Spectrum(object):
         else:
             raise ValueError, 'Operation forbidden'
 
-    def __setitem__(self,key,value):
-        """ sets the corresponding part of data
-        """
-        self.data[key] = value
-
     def get_lambda(self,lmin,lmax=None):
         """ returns the corresponding value or sub-spectrum
 
@@ -795,6 +790,19 @@ class Spectrum(object):
                 return self.data[pix_min]
             else:
                 return self[pix_min:pix_max]
+            
+    def get_step(self):
+        """returns the wavelength step
+        """
+        if self.wave is not None:
+            return self.wave.cdelt
+        else:
+            return None
+            
+    def __setitem__(self,key,value):
+        """ sets the corresponding part of data
+        """
+        self.data[key] = value
 
     def set_wcs(self, wave):
         """sets the world coordinates
@@ -853,14 +861,13 @@ class Spectrum(object):
         d[1:-1] = self.data.data[ksel]
         w = np.zeros(np.shape(ksel)[1]+2)      
         w[1:-1] = lbda[ksel]
-        if self.var is not None:    
-            weight = np.zeros(np.shape(ksel)[1]+2)
-            weight[1:-1] = 1./self.var[ksel]
         d[0] = d[1]
         d[-1] = d[-2]
         w[0] = (-self.wave.crpix + 1) * self.wave.cdelt + self.wave.crval - 0.5 * self.wave.cdelt
         w[-1] = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
         if self.var is not None:
+            weight = np.zeros(np.shape(ksel)[1]+2)
+            weight[1:-1] = 1./self.var[ksel]
             weight[0] = self.var[1]
             weight[-1] = self.var[-2]
         else:
@@ -869,8 +876,6 @@ class Spectrum(object):
             tck = interpolate.splrep(w,d,w=weight)
             return interpolate.splev(wavelengths,tck,der=0)
         else:
-            if weight is not None:
-                w *= weight / weight.sum()
             f = interpolate.interp1d(w, d)
             return f(wavelengths)
 
@@ -1349,7 +1354,8 @@ class Spectrum(object):
         data = spec.interp_data(spline)
         
         if cont is None:
-            cont = (data[0] + data[-1])/2.
+            #cont = (data[0] + data[-1])/2.
+            cont = np.ma.median(self.data.ravel())
             
         gaussfit = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
         e_gauss_fit = lambda p, x, y: (gaussfit(p,x) -y) #1d Gaussian fit
@@ -2002,7 +2008,7 @@ class Image(object):
         if np.ma.count_masked(self.data) != 0:
             hdulist = [prihdu]
             # create spectrum DATA in first extension
-            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
             for card in wcs_cards:
                 tbhdu.header.update(card.key, card.value, card.comment)
             if self.unit is not None:
@@ -2050,6 +2056,7 @@ class Image(object):
                 hdulist.append(nbhdu)
         # save to disk
         hdu = pyfits.HDUList(hdulist)
+        hdu.info()
         hdu.writeto(filename, clobber=True)
 
         self.filename = filename
@@ -2499,61 +2506,20 @@ class Image(object):
                 return res
         else:
             raise ValueError, 'Operation forbidden'
+        
+    def get_step(self):
+        """ returns the image steps [dDec,dRa]
+        """
+        step = np.zeros(2)
+        step[0] = self.wcs.cdelt[1]
+        step[1] = self.wcs.cdelt[0]
+        return step
 
     def __setitem__(self,key,value):
         """ sets the corresponding part of data
         """
         self.data[key] = value
-
-    def truncate(self,ra_min,ra_max,dec_min,dec_max):
-        """ returns the corresponding sub-image
-
-        Parameters
-        ----------
-        ra_min : float
-        minimum right ascension in degrees
-
-        ra_max : float
-        maximum right ascension in degrees
-
-        dec_min : float
-        minimum declination in degrees
-
-        dec_max : float
-        maximum declination in degrees
-        """
-        skycrd = [[ra_min,dec_min],[ra_min,dec_max],[ra_max,dec_min],[ra_max,dec_max]]
-        pixcrd = self.wcs.sky2pix(skycrd)
-        imin = int(np.min(pixcrd[:,0]))
-        if imin<0:
-            imin = 0
-        imax = int(np.max(pixcrd[:,0]))+1
-        jmin = int(np.min(pixcrd[:,1]))
-        if jmin<0:
-            jmin = 0
-        jmax = int(np.max(pixcrd[:,1]))+1
-        res = self[jmin:jmax,imin:imax]
-        #mask outside pixels
-        mask = np.ma.make_mask_none(res.data.shape)
-        for j in range(res.shape[0]):
-            print j
-            pixcrd = np.array([np.arange(res.shape[1]),np.ones(res.shape[1])*j]).T
-            print pixcrd
-            skycrd = self.wcs.pix2sky(pixcrd)
-            print skycrd
-            test_ra_min = np.array(skycrd[:,0]) < ra_min
-            test_ra_max = np.array(skycrd[:,0]) > ra_max
-            test_dec_min = np.array(skycrd[:,1]) < dec_min
-            test_dec_max = np.array(skycrd[:,1]) > dec_max
-            mask[j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
-            print mask[j,:]
-        try:
-            mask = np.ma.mask_or(mask,np.ma.getmask(res.data))
-        except:
-            pass
-        res.data = np.ma.MaskedArray(res.data, mask=mask)
-        return res
-
+        
     def set_wcs(self, wcs):
         """sets the world coordinates
 
@@ -2571,10 +2537,113 @@ class Image(object):
             self.wcs =  None
         else:
             self.wcs = wcs
+
+    def truncate(self,ra_min,ra_max,dec_min,dec_max, mask=True):
+        """ returns the corresponding sub-image
+
+        Parameters
+        ----------
+        ra_min : float
+        minimum right ascension in degrees
+
+        ra_max : float
+        maximum right ascension in degrees
+
+        dec_min : float
+        minimum declination in degrees
+
+        dec_max : float
+        maximum declination in degrees       
+        
+        mask : boolean
+        if True, pixels outside [ra_min,ra_max] and [dec_min,dec_max] are masked
+        """
+        skycrd = [[ra_min,dec_min],[ra_min,dec_max],[ra_max,dec_min],[ra_max,dec_max]]
+        pixcrd = self.wcs.sky2pix(skycrd)
+        imin = int(np.min(pixcrd[:,0]))
+        if imin<0:
+            imin = 0
+        imax = int(np.max(pixcrd[:,0]))+1
+        jmin = int(np.min(pixcrd[:,1]))
+        if jmin<0:
+            jmin = 0
+        jmax = int(np.max(pixcrd[:,1]))+1
+        
+        res = self[jmin:jmax,imin:imax]
+        if mask:
+            #mask outside pixels
+            m = np.ma.make_mask_none(res.data.shape)
+            for j in range(res.shape[0]):
+                pixcrd = np.array([np.arange(res.shape[1]),np.ones(res.shape[1])*j]).T
+                skycrd = self.wcs.pix2sky(pixcrd)
+                test_ra_min = np.array(skycrd[:,0]) < ra_min
+                test_ra_max = np.array(skycrd[:,0]) > ra_max
+                test_dec_min = np.array(skycrd[:,1]) < dec_min
+                test_dec_max = np.array(skycrd[:,1]) > dec_max
+                m[j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
+            try:
+                m = np.ma.mask_or(m,np.ma.getmask(res.data))
+            except:
+                pass
+            res.data = np.ma.MaskedArray(res.data, mask=m)
+        return res
             
-    
-            
-#    def gauss_fit(self, ra_min , ra_max, dec_min, dec_max, fpeak, ra, dec, width_ra, width_dec, cont):
+    def interp(self, grid, spline=False):
+        """ returns the interpolated values corresponding to the grid points
+        
+        Parameters
+        ----------
+        grid : 
+        pixel values
+        
+        spline : boolean
+        False: linear interpolation, True: spline interpolation 
+        """
+        ksel = np.where(self.data.mask==False)
+        x = ksel[0] 
+        y = ksel[1]
+        data = self.data.data[ksel]
+        
+        grid = np.array(grid)
+        n = np.shape(grid)[0]
+        
+        if spline:
+            if self.var is not None:    
+                weight = np.zeros(n,dtype=float)
+                for i in range(n):
+                    weight[i] = 1./self.var[grid[i,0],grid[i,1]]
+            else:
+                weight = None
+                
+            tck = interpolate.bisplrep(x,y,data,w=weight)
+            res = np.zeros(n,dtype=float)
+            for i in range(n):
+                res[i] = interpolate.bisplev(grid[i,0],grid[i,1],tck)
+            return res
+        else:
+            #scipy 0.9 griddata
+            #interpolate.interp2d segfaults when there are too many data points
+            f = interpolate.interp2d(x, y, data)
+            res = np.zeros(n,dtype=float)
+            for i in range(n):
+                res[i] = f(grid[i,0],grid[i,1])
+            return res
+        
+#    def moments(self):
+#        """Returns (width_x, width_y) first moments of the 2D gaussian
+#        """
+#        total = np.abs(self.data).sum()
+#        Y, X = np.indices(self.data.shape) # python convention: reverse x,y numpy.indices
+#        y = np.argmax((X*np.abs(self.data)).sum(axis=1)/total)
+#        x = np.argmax((Y*np.abs(self.data)).sum(axis=0)/total)
+#        col = self.data[int(y),:]
+#        # FIRST moment, not second!
+#        width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())*self.wcs.cdelt[0]
+#        row = self.data[:, int(x)]
+#        width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*self.wcs.cdelt[1]
+#        return [width_x,width_y]
+#            
+#    def gauss_fit(self, ra_min , ra_max, dec_min, dec_max, fpeak=None, ra_peak=None, dec_peak=None, ra_width=None, dec_width=None, cont=None):
 #        """
 #        """
 #        """performs polynomial fit on spectrum.
@@ -2605,77 +2674,97 @@ class Image(object):
 #        """
 #        
 #        if cont is None: #pb mask
-#            skycrd = [[ra_min,dec_min],[ra_min,dec_max],[ra_max,dec_min],[ra_max,dec_max]]
-#            pixcrd = self.wcs.sky2pix(skycrd)
-#            cont = ( self.data[pixcrd[0,1],pixcrd[0,0]] + self.data[pixcrd[1,1],pixcrd[1,0]] + \
-#                     self.data[pixcrd[2,1],pixcrd[2,0]] + self.data[pixcrd[3,1],pixcrd[3,0]] ) /4.
+#            cont = np.ma.median(self.data.ravel())
+#            print cont
 #            
 #        gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) \
-#                                        * p[3]*(1/np.sqrt(2*np.pi*(p[5]**2)))*np.exp(-(y-p[4])**2/(2*p[5]**2)) #2d Gaussian func
-#        e_gauss_fit = lambda p, x, y, data: (gaussfit(p,x,y) -data)
+#                                              *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-(y-p[3])**2/(2*p[4]**2)) #2d Gaussian func
+#        e_gauss_fit = lambda p, x, y, data: (gaussfit(p,x,y) - data)
 #
-#        ima = self.truncate(ra_min, ra_max, dec_min, dec_max)
+#        ima = self.truncate(ra_min, ra_max, dec_min, dec_max, mask = False)
+#        ima.plot()
 #        
 #        if ima.var is None:
 #            weight = None
 #        else:
 #            weight = 1./ima.var
-#
-#        if isinstance(spec.data,np.ma.core.MaskedArray):
-#            mask = np.array(1 - spec.data.mask,dtype=bool)
-#            l = spec.wave.coord().compress(mask)
-#            d = spec.data.compress(mask)*self.fscale
-#            x = np.arange(self.shape).compress(mask)
-#            if weight is not None:
-#                weight = weight.compress(mask)
-#        else:
-#            l = spec.wave.coord() #!!!!!this is expected to be pixel number
-#            d = spec.data*self.fscale
-#            x = np.arange(self.shape)
-#
-#        if weight is not None:
-#            dw = d * weight
-#        else:
-#            dw = d
+#            
+#        ksel = np.where(self.data.mask==False)
+#        pixcrd = np.zeros((np.shape(ksel[0])[0],2))
+#        pixcrd[:,0] = ksel[1] #ra
+#        pixcrd[:,1] = ksel[0] #dec
+#        pixsky = self.wcs.pix2sky(pixcrd)
+#        x = pixsky[:,0] #ra
+#        y = pixsky[:,1] #dec        
+#        data = self.data.data[ksel]*self.fscale
 #        
-#        if lpeak is None:
-#            lpeak = l[dw.argmax()]
-#        if fpeak is None:
-#            pixel = spec.wave.pixel(lpeak,nearest=True)
-#            fpeak = d[pixel]
-#        if fwhm is None:
-#            fwhm = spec.fwhm(lpeak, cont)
-#
-#        sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
-#
-#        v0 = [fpeak,lpeak,sigma] #inital guesses for Gaussian Fit. $just do it around the peak
-#        out = leastsq(e_gauss_fit, v0[:], args=(l, d), maxfev=100000, full_output=1) #Gauss Fit
-#        v = out[0] #fit parammeters out
-#        covar = out[1] #covariance matrix output
-#
-#        if self.shape > len(v) and covar is not None:
-#            s_sq = (e_gauss_fit(v, l, d)**2).sum()/(self.shape-len(v))
-#            err = np.diag(covar * s_sq)
+#        if weight is not None:
+#            dw = data * weight
 #        else:
-#            err = np.zeros(len(v))
+#            dw = data
+#        
+#        imax = dw.argmax()
+#        if ra_peak is None:
+#            ra_peak = x[imax]
+#        if dec_peak is None:
+#            dec_peak = y[imax]
+#        if fpeak is None:
+#            fpeak = data[imax]
+#        width= ima.moments()
+#        if ra_width is None:
+#            ra_width = width[0]
+#        if dec_width is None:
+#            dec_width = width[1]
+#            
+#        print 'ra_peak', ra_peak
+#        print 'dec_peak', dec_peak
+#        print 'fpeak', fpeak
+#        print 'ra_width', ra_width
+#        print 'dec_width', dec_width
+#        
+#        
+#        v0 = [fpeak, ra_peak, ra_width, dec_peak, dec_width]
+#        
+##        init_gaussfit= gaussfit(v0,x,y)
+#        xx = np.arange(x[0],x[-1],x[1]-x[0])
+#        yy = np.arange(y[0],y[-1],y[1]-y[0])
+#        ff = np.zeros((np.shape(xx)[0],np.shape(yy)[0]))
+#        for i in range(np.shape(xx)[0]):
+#            xxx = np.zeros(np.shape(yy)[0])
+#            xxx[:] = xx[i]
+#            ff[i,:] = gaussfit(v0,xxx,yy)
+#        plt.contour(xx, yy, ff, 50)
+##        plt.plot(x,init_gaussfit)
 #
-#        lpeak = v[1]
-#        err_lpeak = err[1]
-#        sigma = v[2]
-#        fwhm = sigma*2*np.sqrt(2*np.log(2))
-#        err_sigma = err[2]
-#        err_fwhm = err_sigma*2*np.sqrt(2*np.log(2))
-#        fpeak = v[0]
-#        err_fpeak = err[0]
-#
-#        if plot and self._fig is not None:
-#            xxx = np.arange(min(l),max(l),l[1]-l[0])
-#            ccc = gaussfit(v,xxx) # this will only work if the units are pixel and not wavelength
-#            plt.figure(self._fig.number)
-#            plt.plot(xxx,ccc,'r--')
-#            self._fig.show()
-#
-#        return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+#        out = leastsq(e_gauss_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1) #Gauss Fit
+#        v = out[0] #fit parammeters out
+#        print v
+##        covar = out[1] #covariance matrix output
+##
+##        if self.shape > len(v) and covar is not None:
+##            s_sq = (e_gauss_fit(v, l, d)**2).sum()/(self.shape-len(v))
+##            err = np.diag(covar * s_sq)
+##        else:
+##            err = np.zeros(len(v))
+##
+##        lpeak = v[1]
+##        err_lpeak = err[1]
+##        sigma = v[2]
+##        fwhm = sigma*2*np.sqrt(2*np.log(2))
+##        err_sigma = err[2]
+##        err_fwhm = err_sigma*2*np.sqrt(2*np.log(2))
+##        fpeak = v[0]
+##        err_fpeak = err[0]
+##
+##        if plot and self._fig is not None:
+##            xxx = np.arange(min(l),max(l),l[1]-l[0])
+##            ccc = gaussfit(v,xxx) # this will only work if the units are pixel and not wavelength
+##            plt.figure(self._fig.number)
+##            plt.plot(xxx,ccc,'r--')
+##            self._fig.show()
+##
+##        return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+
             
 #    def get_line(self, dec, aver=0):
 #        """returns a line or an average of line from image
@@ -2707,15 +2796,23 @@ class Image(object):
         if max != None:
             f = f*max/f.max()
             
-        pixcrd = np.zeros((self.shape[1],2))
-        pixcrd[:,0] = np.arange(self.shape[1], dtype=np.float)
-        pixsky = self.wcs.pix2sky(pixcrd)
-        xaxis = pixsky[:,0]
+        if self.wcs is None:
+            xaxis = np.arange(self.shape[1], dtype=np.float)
+            yaxis = np.arange(self.shape[0], dtype=np.float)
+            xunit = 'pixel'
+            yunit = 'pixel'
+        else:
+            pixcrd = np.zeros((self.shape[1],2))
+            pixcrd[:,0] = np.arange(self.shape[1], dtype=np.float)
+            pixsky = self.wcs.pix2sky(pixcrd)
+            xaxis = pixsky[:,0]
+            xunit = self.wcs.wcs.wcs.cunit[1]
         
-        pixcrd = np.zeros((self.shape[0],2))
-        pixcrd[:,1] = np.arange(self.shape[0], dtype=np.float)
-        pixsky = self.wcs.pix2sky(pixcrd)
-        yaxis = pixsky[:,1]
+            pixcrd = np.zeros((self.shape[0],2))
+            pixcrd[:,1] = np.arange(self.shape[0], dtype=np.float)
+            pixsky = self.wcs.pix2sky(pixcrd)
+            yaxis = pixsky[:,1]
+            yunit = self.wcs.wcs.wcs.cunit[0]
         
         self._fig = plt.figure()
         self._manager = plt.get_current_fig_manager()
@@ -2724,18 +2821,18 @@ class Image(object):
         if np.shape(xaxis)[0] == 1:
             #plot a  column
             ax.plot(yaxis,f)
-            plt.xlabel('dec (%s)' %ima.wcs.wcs.wcs.cunit[1])
+            plt.xlabel('dec (%s)' %yunit)
             plt.ylabel(self.unit)
         elif np.shape(yaxis)[0] == 1:
             #plot a line
             ax.plot(xaxis,f)
-            plt.xlabel('ra (%s)' %ima.wcs.wcs.wcs.cunit[0])
+            plt.xlabel('ra (%s)' %xunit)
             plt.ylabel(self.unit)
         else:
             cax = ax.contourf(xaxis, yaxis, f, 100)
             self._fig.colorbar(cax)
-            plt.xlabel('ra (%s)' %ima.wcs.wcs.wcs.cunit[0])
-            plt.ylabel('dec (%s)' %ima.wcs.wcs.wcs.cunit[1])
+            plt.xlabel('ra (%s)' %xunit)
+            plt.ylabel('dec (%s)' %yunit)
             
         
 #        if noise: 
@@ -3035,7 +3132,7 @@ class Cube(object):
         wcs_cards = self.wcs.to_header().ascardlist()
 
         if self.var is None: # write simple fits file without extension
-            prihdu.data = self.data
+            prihdu.data = self.data.data
             # add world coordinate
             for card in wcs_cards:
                 prihdu.header.update(card.key, card.value, card.comment)
@@ -3051,7 +3148,7 @@ class Cube(object):
         else: # write fits file with primary header and two extensions
             hdulist = [prihdu]
             # create spectrum DATA in first extension
-            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+            tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
             # add world coordinate
             for card in wcs_cards:
                 tbhdu.header.update(card.key, card.value, card.comment)
@@ -3763,11 +3860,6 @@ class Cube(object):
         else:
             raise ValueError, 'Operation forbidden'
 
-    def __setitem__(self,key,value):
-        """ sets the corresponding part of data
-        """
-        self.data[key] = value
-
     def get_lambda(self,lbda_min,lbda_max=None):
         """ returns the corresponding sub-cube
 
@@ -3790,7 +3882,21 @@ class Cube(object):
                 return self.data[pix_min,:,:]
             else:
                 return self[pix_min:pix_max,:,:]
-
+            
+    def get_step(self):
+        """ returns the cube steps [dLambda,dDec,dRa]
+        """
+        step = np.zeros(3)
+        step[0] = self.wave.cdelt
+        step[1] = self.wcs.cdelt[1]
+        step[2] = self.wcs.cdelt[0]
+        return step
+            
+    def __setitem__(self,key,value):
+        """ sets the corresponding part of data
+        """
+        self.data[key] = value
+            
     def set_wcs(self, wcs, wave):
         """sets the world coordinates
 
@@ -3817,3 +3923,42 @@ class Cube(object):
             self.wave = None
         else:
             self.wave = wave
+            
+    def sum(self,axis=None):
+        """ Returns the sum over the given axis.
+        axis = None returns a float
+        axis = 0 returns an image
+        axis = (1,2) returns a spectrum
+        Other cases return None.
+        """
+        if axis is None:
+            return self.data.sum()    
+        elif axis==0:
+            #return an image
+            data = self.data.sum(axis)
+            getnoise = False
+            var = None
+            if self.var is not None:
+                getnoise = True
+                var = self.var.sum(axis)
+            res = Image(getnoise=getnoise, shape=data.shape, wcs = self.wcs, unit=self.unit, empty=True,fscale=self.fscale)
+            res.data = data
+            if getnoise:
+                res.var =var
+            return res
+        elif axis==tuple([1,2]):
+            #return a spectrum
+            data = self.data.sum(axis=1).sum(axis=1)
+            getnoise = False
+            var = None
+            if self.var is not None:
+                getnoise = True
+                var = self.var.sum(axis=1).sum(axis=1)
+            res = Spectrum(getnoise=getnoise, shape=data.shape[0], wave = self.wave, unit=self.unit, empty=True,fscale=self.fscale)
+            res.data = data
+            if getnoise:
+                res.var =var
+            return res
+        else:
+            return None
+        

@@ -140,9 +140,16 @@ class WCS(object):
         if hdr!=None:
             self.wcs = pywcs.WCS(hdr,naxis=2)  # WCS object from data header
             try:
-                self.cdelt = [hdr['CDELT1'],hdr['CDELT2']]
+                dx = np.sqrt(self.wcs.wcs.cd[0,0]*self.wcs.wcs.cd[0,0] + self.wcs.wcs.cd[0,1]*self.wcs.wcs.cd[0][1])
+                dy = np.sqrt(self.wcs.wcs.cd[1,0]*self.wcs.wcs.cd[1,0] + self.wcs.wcs.cd[1,1]*self.wcs.wcs.cd[1][1])
+                self.cdelt = [dx,dy]
             except:
-                self.cdelt = None
+                try:
+                    dx = np.sqrt(self.wcs.wcs.pc[0,0]*self.wcs.wcs.pc[0,0] + self.wcs.wcs.pc[0,1]*self.wcs.wcs.pc[0][1])
+                    dy = np.sqrt(self.wcs.wcs.pc[1,0]*self.wcs.wcs.pc[1,0] + self.wcs.wcs.pc[1,1]*self.wcs.wcs.pc[1][1])
+                    self.cdelt = [dx,dy]
+                except:
+                    self.cdelt = None
             # bug http://mail.scipy.org/pipermail/astropy/2011-April/001242.html if naxis=3
         else:
             #check attribute dimensions
@@ -213,9 +220,7 @@ class WCS(object):
         if self.wcs.wcs.ctype[0] == 'LINEAR':
             pixcrd = [[0,0],[self.wcs.naxis1 -1,self.wcs.naxis2 -1]]
             pixsky = self.pix2sky(pixcrd)
-            dx = np.sqrt(self.wcs.wcs.cd[0,0]*self.wcs.wcs.cd[0,0] + self.wcs.wcs.cd[0,1]*self.wcs.wcs.cd[0][1])
-            dy = np.sqrt(self.wcs.wcs.cd[1,0]*self.wcs.wcs.cd[1,0] + self.wcs.wcs.cd[1,1]*self.wcs.wcs.cd[1][1])
-            print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) step:(%0.1f,%0.1f)' %(pixsky[0,0],pixsky[0,1],pixsky[1,0],pixsky[1,1],dx,dy)
+            print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) step:(%0.1f,%0.1f)' %(pixsky[0,0],pixsky[0,1],pixsky[1,0],pixsky[1,1],self.cdelt[0],self.cdelt[1])
         else:
             # center in sexadecimal
             xc = (self.wcs.naxis1 -1) / 2.
@@ -226,9 +231,8 @@ class WCS(object):
             ra = sexa[0][0]
             dec = sexa[0][1]
             # step in arcsec
-            dx = np.sqrt(self.wcs.wcs.cd[0,0]*self.wcs.wcs.cd[0,0] + self.wcs.wcs.cd[0,1]*self.wcs.wcs.cd[0][1]) * 3600
-            dy = np.sqrt(self.wcs.wcs.cd[1,0]*self.wcs.wcs.cd[1,0] + self.wcs.wcs.cd[1,1]*self.wcs.wcs.cd[1][1]) * 3600
-            # size in arcsec
+            dx = self.cdelt[0]  * 3600
+            dy = self.cdelt[1]  * 3600
             sizex = self.wcs.naxis1 * dx
             sizey = self.wcs.naxis2 * dx
             print 'center:(%s,%s) size in arcsec:(%0.2f,%0.2f) step in arcsec:(%0.2f,%0.2f)' %(ra,dec,sizex,sizey,dx,dy)
@@ -276,7 +280,7 @@ class WCS(object):
         if isinstance(other,WCS):
             if self.wcs.naxis1 == other.wcs.naxis1 and self.wcs.naxis2 == other.wcs.naxis2 and \
                (self.wcs.wcs.crpix == other.wcs.wcs.crpix).all() and (self.wcs.wcs.crval == other.wcs.wcs.crval).all() and \
-               (self.wcs.wcs.cd == other.wcs.wcs.cd).all() :
+               (self.cdelt == other.cdelt).all() :
                 return True
             else:
                 return False

@@ -265,6 +265,13 @@ Methods
   :rtype: float or Spectrum
 
 
+.. function:: get_step()
+
+  Returns the wavelength step.
+  
+  :rtype: float
+
+
 .. function:: set_wcs(wave)
 
   Sets the world coordinates.

@@ -254,7 +254,7 @@ Methods
   :rtype: Image object.
 
 
-.. function:: truncate(ra_min, ra_max, dec_min, dec_max)
+.. function:: truncate(ra_min, ra_max, dec_min, dec_max [, mask=True])
 
   Returns the corresponding sub-image.
   
@@ -266,6 +266,8 @@ Methods
   :type dec_min: float
   :param dec_max: Maximum declination in degrees.
   :type dec_max: float
+  :param mask: if True, pixels outside [ra_min,ra_max] and [dec_min,dec_max] are masked.
+  :type mask: boolean
   :rtype: Image
   
 
@@ -275,6 +277,12 @@ Methods
   
   :param wcs: World coordinates.
   :type wcs: WCS
+  
+.. function:: get_step()
+
+  Returns the image steps [dDec, dRa].
+  
+  :rtype: float array
 
 
 

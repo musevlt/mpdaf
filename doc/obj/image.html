@@ -404,7 +404,7 @@ World coordinates in spatial directions must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Image.truncate">
-<tt class="descclassname">obj.Image.</tt><tt class="descname">truncate</tt><big>(</big><em>ra_min</em>, <em>ra_max</em>, <em>dec_min</em>, <em>dec_max</em><big>)</big><a class="headerlink" href="#obj.Image.truncate" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Image.</tt><tt class="descname">truncate</tt><big>(</big><em>ra_min</em>, <em>ra_max</em>, <em>dec_min</em>, <em>dec_max</em><span class="optional">[</span>, <em>mask=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.truncate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the corresponding sub-image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -415,6 +415,7 @@ World coordinates in spatial directions must be the same.</dd>
 <li><strong>ra_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum right ascension in degrees.</li>
 <li><strong>dec_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum declination in degrees.</li>
 <li><strong>dec_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum declination in degrees.</li>
+<li><strong>mask</strong> (<em>boolean</em>) &#8211; if True, pixels outside [ra_min,ra_max] and [dec_min,dec_max] are masked.</li>
 </ul>
 </td>
 </tr>
@@ -434,6 +435,20 @@ World coordinates in spatial directions must be the same.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.get_step">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">get_step</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.get_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the image steps [dDec, dRa].</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float array</td>
 </tr>
 </tbody>
 </table>

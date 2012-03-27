@@ -303,6 +303,13 @@ Methods
   :rtype: Cube or Image
   
 
+.. function:: get_step()
+
+  Returns the cube steps [dLambda, dDec, dRa].
+  
+  :rtype: float array
+  
+
 .. function:: set_wcs(wcs,wave)
 
   Sets the world coordinates.
@@ -311,6 +318,21 @@ Methods
   :type wcs: WCS
   :param wave: Wavelength coordinates.
   :type wave: WaveCoord
+  
+.. function:: sum(axis=None)
+
+  Returns the sum over the given axis.
+  
+  :param axis: Axis or axes along which a sum is performed.
+  :type axis: integer or tuple of integer
+  :rtype: axis = None returns a float,
+		
+		  axis = 0 returns an image,
+		  
+		  axis = (1,2) returns a spectrum,
+		  
+		  other cases return None.
+	    
 
 
 

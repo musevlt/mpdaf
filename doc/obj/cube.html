@@ -449,6 +449,20 @@ World coordinates in spatial/spectral directions must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="obj.Cube.get_step">
+<tt class="descclassname">obj.Cube.</tt><tt class="descname">get_step</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Cube.get_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the cube steps [dLambda, dDec, dRa].</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="obj.Cube.set_wcs">
 <tt class="descclassname">obj.Cube.</tt><tt class="descname">set_wcs</tt><big>(</big><em>wcs</em>, <em>wave</em><big>)</big><a class="headerlink" href="#obj.Cube.set_wcs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the world coordinates.</p>
@@ -460,6 +474,25 @@ World coordinates in spatial/spectral directions must be the same.</dd>
 <li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
 <li><strong>wave</strong> (<em>WaveCoord</em>) &#8211; Wavelength coordinates.</li>
 </ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Cube.sum">
+<tt class="descclassname">obj.Cube.</tt><tt class="descname">sum</tt><big>(</big><em>axis=None</em><big>)</big><a class="headerlink" href="#obj.Cube.sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the sum over the given axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>axis</strong> (<em>integer or tuple of integer</em>) &#8211; Axis or axes along which a sum is performed.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">axis = None returns a float,<p>axis = 0 returns an image,</p>
+<p>axis = (1,2) returns a spectrum,</p>
+<p>other cases return None.</p>
 </td>
 </tr>
 </tbody>
