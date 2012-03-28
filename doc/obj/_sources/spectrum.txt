@@ -39,7 +39,7 @@ Examples::
   spe = Spectrum(filename="spectrum.fits",ext=1,getnoise=False) # spectrum from file (extension number is 1)
   
   wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom')
-  wave2 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom', dim=3000)
+  wave2 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom', shape=3000)
   MyData = np.ones(4000)
   
   spe = Spectrum(shape=4000, wave=wave1) # spectrum filled with zeros
@@ -290,33 +290,30 @@ Methods
   :type lmax: float
 
 
-.. function:: interp(wavelengths [, spline=False])
+.. function:: interp_mask([spline=False])
 
-  Returns the interpolated values corresponding to the wavelength array.
-  
-  :param wavelengths: wavelength values.
-  :type wavelengths: array of float
-  :param spline: False: linear interpolation, True: spline interpolation.
-  :type spline: boolean
-  :rtype: array of float
-
-
-.. function:: interp_data([spline=False])
-
-  Returns data array with interpolated values for masked pixels.
+  Returns a spectrum built with interpolated values for masked pixels.
   
   :param spline: False: linear interpolation, True: spline interpolation.
   :type spline: boolean
-  :rtype: array of float
-
-
-.. function:: rebin_factor(factor)
-
-  Rebins the Spectrum to a new shape.
-  The new shape must be a factor of self.shape.
+  :rtype: Spectrum
   
-  :param factor: factor (new_shape = old_shape/factor).
+
+.. function:: rebin_factor(factor [, margin='center')
+
+  Shrinks the size of the spectrum by factor.
+  
+  :param factor: factor
   :type factor: integer
+  :param margin: This parameters is used if new size is not an integer multiple of the original size.
+  
+		'center' : two pixels added, on the left and on the right of the spectrum.
+		
+		'right': one pixel added on the right of the spectrum.
+		
+		'left': one pixel added on the left of the spectrum.
+		
+  :type margin: string in 'center'|'right'|'left'
   :rtype: Spectrum
 
 
@@ -363,18 +360,35 @@ Methods
   :rtype: Returns flux or flux,std.
  
  
-.. function:: poly_fit(deg [, wind=None, weight=True])
+.. function:: poly_fit(deg [, weight=True])
 
   Performs polynomial fit on spectrum.
   
   :param deg: Polynomial degree.
   :type deg: integer
-  :param wind: wind is the list of wavelength interval to skip in the fit (None by default).
-  :type wind: list of float
   :param weight:  If weight is True, the weight is computed as the inverse of variance.
   :type weight: boolean
   :rtype: ndarray, shape. Polynomial coefficients, highest power first.
   
+  
+.. function:: poly_val(z)
+
+  Returns a spectrum containing polynomial fit values.       
+        
+  :param z: The polynomial coefficients, in decreasing powers.
+  :type z: array
+  :rtype: Spectrum
+  
+Examples of polynomial fit on a spectrum::
+ 
+  from mpdaf.obj import Spectrum
+  
+  spe = Spectrum(filename='spectrum.fits')
+  spe.plot()
+  z = spe.poly_fit(4)
+  spe2 = spe.poly_val(z)
+  spe2.plot()
+   
   
 .. function:: abmag_band(lbda, dlbda [, out=1, spline=False])
 
@@ -568,3 +582,47 @@ Plotting
   To select minimum, peak and maximum wavelengths, click on the left mouse button.
   
   To quit the interactive mode, click on the right mouse button.
+  
+  The parameters of the last gaussian are saved in self.gauss (`Gauss1D class`_) 
+  
+
+Gauss1D class
+=============
+
+This class stores 1D gaussian parameters.
+
+
+Attributes
+----------
+
++-----------+-------+-----------------------------------------+
+| cont      | float | Continuum value.                        |
++-----------+-------+-----------------------------------------+    
+| fwhm      | float | Gaussian fwhm.                          |
++-----------+-------+-----------------------------------------+
+| lpeak     | float | Gaussian center.                        |
++-----------+-------+-----------------------------------------+
+| fpeak     | float | Gaussian peak value.                    |
++-----------+-------+-----------------------------------------+        
+| err_fwhm  | float | Estimated error on Gaussian fwhm.       |
++-----------+-------+-----------------------------------------+    
+| err_lpeak | float | Estimated error on Gaussian center.     |
++-----------+-------+-----------------------------------------+    
+| err_fpeak | float | Estimated error on Gaussian peak value. |
++-----------+-------+-----------------------------------------+
+
+
+Methods
+-------
+
+.. currentmodule:: obj.Gauss1D
+
+.. function:: copy()
+
+  Copies Gauss1D object in a new one and returns it.
+  
+  :rtype: Gauss1D object
+  
+.. function:: print_param()
+
+  Prints Gaussian parameters.

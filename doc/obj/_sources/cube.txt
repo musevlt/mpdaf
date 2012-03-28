@@ -42,7 +42,7 @@ Examples::
   wcs1 = WCS(crval=0,cdelt=0.2)
   wcs2 = WCS(crval=0,cdelt=0.2, shape=400)
   wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom')
-  wave2 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom', dim=3000)
+  wave2 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom', shape=3000)
   MyData = np.ones((4000,300,300))
   
   cub = Cube(filename="cube.fits",ext=1,getnoise=False) # cube from file (extension number is 1)

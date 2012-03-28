@@ -86,7 +86,7 @@
 <span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;spectrum.fits&quot;</span><span class="p">,</span><span class="n">ext</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">getnoise</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c"># spectrum from file (extension number is 1)</span>
 
 <span class="n">wave1</span> <span class="o">=</span> <span class="n">WaveCoord</span><span class="p">(</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span> <span class="n">crval</span><span class="o">=</span><span class="mf">4000.0</span><span class="p">,</span> <span class="n">cunit</span><span class="o">=</span><span class="s">&#39;Angstrom&#39;</span><span class="p">)</span>
-<span class="n">wave2</span> <span class="o">=</span> <span class="n">WaveCoord</span><span class="p">(</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span> <span class="n">crval</span><span class="o">=</span><span class="mf">4000.0</span><span class="p">,</span> <span class="n">cunit</span><span class="o">=</span><span class="s">&#39;Angstrom&#39;</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
+<span class="n">wave2</span> <span class="o">=</span> <span class="n">WaveCoord</span><span class="p">(</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span> <span class="n">crval</span><span class="o">=</span><span class="mf">4000.0</span><span class="p">,</span> <span class="n">cunit</span><span class="o">=</span><span class="s">&#39;Angstrom&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
 <span class="n">MyData</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
 
 <span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">wave</span><span class="o">=</span><span class="n">wave1</span><span class="p">)</span> <span class="c"># spectrum filled with zeros</span>
@@ -472,37 +472,16 @@ Wavelength coordinates must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
-<dt id="obj.Spectrum.interp">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">interp</tt><big>(</big><em>wavelengths</em><span class="optional">[</span>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.interp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the interpolated values corresponding to the wavelength array.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>wavelengths</strong> (<em>array of float</em>) &#8211; wavelength values.</li>
-<li><strong>spline</strong> (<em>boolean</em>) &#8211; False: linear interpolation, True: spline interpolation.</li>
-</ul>
-</td>
-</tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">array of float</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="obj.Spectrum.interp_data">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">interp_data</tt><big>(</big><span class="optional">[</span><em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.interp_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns data array with interpolated values for masked pixels.</p>
+<dt id="obj.Spectrum.interp_mask">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">interp_mask</tt><big>(</big><span class="optional">[</span><em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.interp_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a spectrum built with interpolated values for masked pixels.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>spline</strong> (<em>boolean</em>) &#8211; False: linear interpolation, True: spline interpolation.</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">array of float</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum</td>
 </tr>
 </tbody>
 </table>
@@ -510,16 +489,24 @@ Wavelength coordinates must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Spectrum.rebin_factor">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">rebin_factor</tt><big>(</big><em>factor</em><big>)</big><a class="headerlink" href="#obj.Spectrum.rebin_factor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rebins the Spectrum to a new shape.
-The new shape must be a factor of self.shape.</p>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">rebin_factor</tt><big>(</big><em>factor [, margin='center'</em><big>)</big><a class="headerlink" href="#obj.Spectrum.rebin_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shrinks the size of the spectrum by factor.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>factor</strong> (<em>integer</em>) &#8211; factor (new_shape = old_shape/factor).</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>factor</strong> (<em>integer</em>) &#8211; factor</li>
+<li><strong>margin</strong> (<em>string in &#8216;center&#8217;|&#8217;right&#8217;|&#8217;left&#8217;</em>) &#8211; <p>This parameters is used if new size is not an integer multiple of the original size.</p>
+<p>&#8216;center&#8217; : two pixels added, on the left and on the right of the spectrum.</p>
+<p>&#8216;right&#8217;: one pixel added on the right of the spectrum.</p>
+<p>&#8216;left&#8217;: one pixel added on the left of the spectrum.</p>
+</li>
+</ul>
+</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Spectrum</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -595,7 +582,7 @@ The new shape must be a factor of self.shape.</p>
 
 <dl class="function">
 <dt id="obj.Spectrum.poly_fit">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">poly_fit</tt><big>(</big><em>deg</em><span class="optional">[</span>, <em>wind=None</em>, <em>weight=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.poly_fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">poly_fit</tt><big>(</big><em>deg</em><span class="optional">[</span>, <em>weight=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.poly_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs polynomial fit on spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -603,7 +590,6 @@ The new shape must be a factor of self.shape.</p>
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>deg</strong> (<em>integer</em>) &#8211; Polynomial degree.</li>
-<li><strong>wind</strong> (<em>list of float</em>) &#8211; wind is the list of wavelength interval to skip in the fit (None by default).</li>
 <li><strong>weight</strong> (<em>boolean</em>) &#8211; If weight is True, the weight is computed as the inverse of variance.</li>
 </ul>
 </td>
@@ -615,6 +601,32 @@ The new shape must be a factor of self.shape.</p>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.Spectrum.poly_val">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">poly_val</tt><big>(</big><em>z</em><big>)</big><a class="headerlink" href="#obj.Spectrum.poly_val" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a spectrum containing polynomial fit values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>z</strong> (<a class="reference external" href="http://docs.python.org/library/array.html#array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The polynomial coefficients, in decreasing powers.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Examples of polynomial fit on a spectrum:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">Spectrum</span>
+
+<span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&#39;spectrum.fits&#39;</span><span class="p">)</span>
+<span class="n">spe</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">spe</span><span class="o">.</span><span class="n">poly_fit</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">spe2</span> <span class="o">=</span> <span class="n">spe</span><span class="o">.</span><span class="n">poly_val</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+<span class="n">spe2</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
 <dl class="function">
 <dt id="obj.Spectrum.abmag_band">
 <tt class="descclassname">obj.Spectrum.</tt><tt class="descname">abmag_band</tt><big>(</big><em>lbda</em>, <em>dlbda</em><span class="optional">[</span>, <em>out=1</em>, <em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.abmag_band" title="Permalink to this definition">¶</a></dt>
@@ -870,6 +882,74 @@ The new shape must be a factor of self.shape.</p>
 <p>Prints [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]].</p>
 <p>To select minimum, peak and maximum wavelengths, click on the left mouse button.</p>
 <p>To quit the interactive mode, click on the right mouse button.</p>
+<p>The parameters of the last gaussian are saved in self.gauss (<a class="reference internal" href="#gauss1d-class">Gauss1D class</a>)</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="gauss1d-class">
+<h2>Gauss1D class<a class="headerlink" href="#gauss1d-class" title="Permalink to this headline">¶</a></h2>
+<p>This class stores 1D gaussian parameters.</p>
+<div class="section" id="id1">
+<h3>Attributes<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="12%" />
+<col width="69%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>cont</td>
+<td>float</td>
+<td>Continuum value.</td>
+</tr>
+<tr><td>fwhm</td>
+<td>float</td>
+<td>Gaussian fwhm.</td>
+</tr>
+<tr><td>lpeak</td>
+<td>float</td>
+<td>Gaussian center.</td>
+</tr>
+<tr><td>fpeak</td>
+<td>float</td>
+<td>Gaussian peak value.</td>
+</tr>
+<tr><td>err_fwhm</td>
+<td>float</td>
+<td>Estimated error on Gaussian fwhm.</td>
+</tr>
+<tr><td>err_lpeak</td>
+<td>float</td>
+<td>Estimated error on Gaussian center.</td>
+</tr>
+<tr><td>err_fpeak</td>
+<td>float</td>
+<td>Estimated error on Gaussian peak value.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id2">
+<h3>Methods<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.Gauss1D.copy">
+<tt class="descclassname">obj.Gauss1D.</tt><tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Gauss1D.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies Gauss1D object in a new one and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Gauss1D object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Gauss1D.print_param">
+<tt class="descclassname">obj.Gauss1D.</tt><tt class="descname">print_param</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Gauss1D.print_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints Gaussian parameters.</p>
 </dd></dl>
 
 </div>
@@ -893,6 +973,11 @@ The new shape must be a factor of self.shape.</p>
 <li><a class="reference internal" href="#indexing">Indexing</a></li>
 <li><a class="reference internal" href="#methods">Methods</a></li>
 <li><a class="reference internal" href="#plotting">Plotting</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#gauss1d-class">Gauss1D class</a><ul>
+<li><a class="reference internal" href="#id1">Attributes</a></li>
+<li><a class="reference internal" href="#id2">Methods</a></li>
 </ul>
 </li>
 </ul>

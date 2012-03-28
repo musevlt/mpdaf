@@ -30,16 +30,149 @@ def mag2flux(mag, wave):
     return flux
 
 class SpectrumClicks:
-    "Spec Cursor"
+    """Object used to save click on spectrum plot.
+    
+    Attributes
+    ---------- 
+    filename : string
+    Name of the table fits file where are saved the clicks values.
+    
+    binding_id : integer
+    Connection id.
+    
+    xc : list of float
+    Cursor position in spectrum (world coordinates).
+    
+    yc : list of float
+    Cursor position in spectrum (world coordinates).
+    
+    i : list of integer
+    Nearest pixel in spectrum.
+    
+    x : list of float
+    Corresponding nearest position in spectrum (world coordinates)
+    
+    data : list of float
+    Corresponding spectrum data value.
+    
+    id_lines : list of integer
+    Plot id (cross for cursor positions).
+    """
     def __init__(self, binding_id, filename=None):
-        self.filename = filename # name of the table fits file where are saved the clicks vlaues.
-        self.binding_id = binding_id # connection id
-        self.xc = [] # cursor position in spectrum (world coord)
-        self.yc = [] # cursor position in spectrum (world coord)
-        self.i = [] # nearest pixel in spectrum
-        self.x = [] # corresponding nearest position in spectrum (world coord)
-        self.data = [] # corresponding spectrum data values
-        self.id_lines = []  # list of plots (points for cursor positions)
+        self.filename = filename
+        self.binding_id = binding_id
+        self.xc = []
+        self.yc = []
+        self.i = []
+        self.x = []
+        self.data = []
+        self.id_lines = []
+        
+    def remove(self,xc):
+        """removes a cursor position
+        """
+        i = np.argmin(np.abs(self.xc-xc))
+        line = self.id_lines[i]
+        del plt.gca().lines[line]
+        self.xc.pop(i)
+        self.yc.pop(i)
+        self.i.pop(i)
+        self.x.pop(i)
+        self.data.pop(i)
+        self.id_lines.pop(i)
+        for j in range(i,len(self.id_lines)):
+            self.id_lines[j] -= 1
+        plt.draw()
+        
+    def add(self,xc,yc,i,x,data):
+        plt.plot(xc,yc,'r+')
+        self.xc.append(xc)
+        self.yc.append(yc)
+        self.i.append(i)
+        self.x.append(x)
+        self.data.append(data)        
+        self.id_lines.append(len(plt.gca().lines)-1)
+        
+    def iprint(self,i,fscale):
+        """prints a cursor positions
+        """
+        if fscale == 1:
+            print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(self.xc[i],self.yc[i],self.i[i],self.x[i],self.data[i])
+        else:
+            print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(self.xc[i],self.yc[i],self.i[i],self.x[i],self.data[i],self.data[i]/fscale) 
+           
+    def write_fits(self): 
+        """prints coordinates in fits table.
+        """
+        if self.filename != 'None':
+            c1 = pyfits.Column(name='XC', format='E', array=self.xc)
+            c2 = pyfits.Column(name='YC', format='E', array=self.yc)
+            c3 = pyfits.Column(name='I', format='I', array=self.i)
+            c4 = pyfits.Column(name='X', format='E', array=self.x)
+            c5 = pyfits.Column(name='DATA', format='E', array=self.data)
+            tbhdu=pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            tbhdu.writeto(self.filename, clobber=True)
+            print 'printing coordinates in fits table %s'%self.filename     
+          
+    def clear(self):
+        """disconnects and clears
+        """
+        print "disconnecting console coordinate printout..."
+        plt.disconnect(self.binding_id)
+        nlines =  len(self.id_lines)
+        for i in range(nlines):
+            line = self.id_lines[nlines - i -1]
+            del plt.gca().lines[line]
+        plt.draw()                
+        
+class Gauss1D:
+    """ Object used to saved 1d gaussian parameters
+    
+    Attributes
+    ---------- 
+    
+    cont : float
+    Continuum value.
+    
+    fwhm : float
+    Gaussian fwhm.
+
+    lpeak : float
+    Gaussian center.
+
+    fpeak : float
+    Gaussian peak value.
+        
+    err_fwhm : float
+    Estimated error on Gaussian fwhm.
+    
+    err_lpeak : float
+    Estimated error on Gaussian center.
+    
+    err_fpeak : float
+    Estimated error on Gaussian peak value.
+    
+    """
+    def __init__(self, cont, fwhm, lpeak, fpeak, err_fwhm, err_lpeak, err_fpeak):
+        self.cont = cont
+        self.fwhm = fwhm
+        self.lpeak = lpeak
+        self.fpeak = fpeak
+        self.err_fwhm = err_fwhm
+        self.err_lpeak = err_lpeak
+        self.err_fpeak = err_fpeak
+        
+    def copy(self):
+        res = Gauss1D(self.cont, self.fwhm, self.lpeak, self.fpeak, self.err_fwhm, self.err_lpeak, self.err_fpeak)
+        return res
+        
+    def print_param(self):
+        print 'Gaussian continuum = %g' %self.cont
+        print 'Gaussian fwhm = %g (error:%g)' %(self.fwhm,self.err_fwhm)
+        print 'Gaussian center = %g (error:%g)' %(self.lpeak,self.err_lpeak)
+        print 'Gaussian peak value = %g (error:%g)' %(self.fpeak,self.err_fpeak)
+        print ''
+        
 
 class Spectrum(object):
     """Spectrum class
@@ -128,7 +261,6 @@ class Spectrum(object):
         Spectrum(shape=4000, wave=wave) : spectrum filled with zeros
         Spectrum(wave=wave, data = MyData) : spectrum filled with MyData
         """
-        self._fig = None
         self._clicks = None
         self.spectrum = True
         #possible FITS filename
@@ -307,7 +439,7 @@ class Spectrum(object):
             hdulist.append(dqhdu)
         else:
             if self.var is None: # write simple fits file without extension
-                prihdu.data = self.data
+                prihdu.data = self.data.data
                 prihdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
                 prihdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
                 prihdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
@@ -320,7 +452,7 @@ class Spectrum(object):
             else: # write fits file with primary header and two extensions
                 hdulist = [prihdu]
                 # create spectrum DATA in first extension
-                tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+                tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
                 tbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
                 tbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
                 tbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
@@ -363,7 +495,7 @@ class Spectrum(object):
             unit = 'no unit'
         else:
             unit = self.unit
-        print '%s (%s) fscale=%0.2f, %s' %(data,unit,self.fscale,noise)
+        print '%s (%s) fscale=%g, %s' %(data,unit,self.fscale,noise)
         if self.wave is None:
             print 'no coordinates'
         else:
@@ -408,19 +540,20 @@ class Spectrum(object):
     def resize(self):
         """resizes the spectrum to have a minimum number of masked values
         """
-        ksel = np.where(self.data.mask==False)
-        try:
-            item = slice (ksel[0][0],ksel[0][-1]+1,None)
-            self.data = self.data[item]
-            self.shape = self.data.shape[0]
-            if self.var is not None:
-                self.var = self.var[item]
-                try:
-                    self.wave = self.wave[item]
-                except:
-                    self.wave = None
-        except:
-            pass
+        if np.ma.count_masked(self.data) != 0:
+            ksel = np.where(self.data.mask==False)
+            try:
+                item = slice (ksel[0][0],ksel[0][-1]+1,None)
+                self.data = self.data[item]
+                self.shape = self.data.shape[0]
+                if self.var is not None:
+                    self.var = self.var[item]
+                    try:
+                        self.wave = self.wave[item]
+                    except:
+                        self.wave = None
+            except:
+                pass
 
     def __add__(self, other):
         """ adds other
@@ -844,7 +977,7 @@ class Spectrum(object):
             self.data[pix_min:pix_max] = np.ma.masked  
             
         
-    def interp(self, wavelengths, spline=False):
+    def _interp(self, wavelengths, spline=False):
         """ returns the interpolated values corresponding to the wavelength array
         
         Parameters
@@ -880,7 +1013,7 @@ class Spectrum(object):
             return f(wavelengths)
 
         
-    def interp_data(self, spline=False):
+    def _interp_data(self, spline=False):
         """ returns data array with interpolated values for masked pixels
         
         Parameter
@@ -888,33 +1021,51 @@ class Spectrum(object):
         spline : boolean
         False: linear interpolation, True: spline interpolation 
         """
-        lbda = self.wave.coord()
-        ksel = np.where(self.data.mask==True)
-        wnew = lbda[ksel]
-        data = self.data.data
-        data[ksel] = self.interp(wnew,spline)
-        return data
-            
+        if np.ma.count_masked(self.data) == 0:
+            return self.data.data
+        else:
+            lbda = self.wave.coord()
+            ksel = np.where(self.data.mask==True)
+            wnew = lbda[ksel]
+            data = self.data.data
+            print self._interp(wnew,spline)
+            data[ksel] = self._interp(wnew,spline)
+            return data
     
-    def rebin_factor(self, factor):
-        '''rebins an array to a new shape.
-        The new shape must be a factor of self.shape.
+    def interp_mask(self, spline=False):
+        """ returns a spectrum equal to the current spectrum with interpolated values for masked pixels.
         
         Parameter
         ----------
-        factor : int
+        
+        spline : boolean
+        False: linear interpolation, True: spline interpolation 
+        """
+        res = self.copy()
+        res.data = np.ma.masked_invalid(self._interp_data(spline))
+        return res
+            
+    def _rebin_factor(self, factor):
+        '''shrinks the size of the spectrum by factor.
+        New size is an integer multiple of the original size.
+        
+        Parameter
+        ----------
+        factor : integer
         Factor
         '''
         assert not np.sometrue(np.mod( self.shape, factor ))
+        # new size is an integer multiple of the original size
         newshape = self.shape/factor
-        data = self.data.reshape(newshape,factor).sum(1)
+        data = self.data.reshape(newshape,factor).sum(1) / factor
         getnoise = False
         var = None
         if self.var is not None:
             getnoise = True
-            var = self.var.reshape(newshape,factor).sum(1)
+            var = self.var.reshape(newshape,factor).sum(1) / factor / factor
         try:
-            crval = self.wave.coord()[slice(0,factor,1)].sum()/factor
+            #crval = self.wave.coord()[slice(0,factor,1)].sum()/factor
+            crval = self.wave.coord()[0:factor].sum()/factor
             wave = WaveCoord(1, self.wave.cdelt*factor, crval, self.wave.cunit)
         except:
             wave = None
@@ -923,6 +1074,105 @@ class Spectrum(object):
         if getnoise:
             res.var = var
         return res
+
+        
+    def rebin_factor(self, factor, margin='center'):
+        '''shrinks the size of the spectrum by factor.
+        
+        Parameter
+        ----------
+        factor : integer
+        Factor
+        
+        margin : 'center' or 'right' or 'left'
+        This parameters is used if new size is not an integer multiple of the original size.
+        'center' : two pixels added, on the left and on the right of the spectrum.
+        'right': one pixel added on the right of the spectrum.
+        'left': one pixel added on the left of the spectrum.
+        '''
+        if factor<=1 or factor>=self.shape:
+            raise ValueError, 'factor must be in ]1,shape['
+        #assert not np.sometrue(np.mod( self.shape, factor ))
+        if not np.sometrue(np.mod( self.shape, factor )):
+            # new size is an integer multiple of the original size
+            return self._rebin_factor(factor)
+        else:
+            newshape = self.shape/factor
+            n = self.shape - newshape*factor
+            if margin == 'center' and n==1:
+                margin = 'right'
+            if margin == 'center':
+                n_left = n/2
+                n_right = self.shape - n + n_left
+                spe = self[n_left:n_right]._rebin_factor(factor)
+                newshape = spe.shape + 2
+                data = np.ones(newshape)
+                data[1:-1] = spe.data
+                data[0] = self.data[0:n_left].sum() / factor
+                data[-1] = self.data[n_right:].sum() / factor
+                if self.var is not None:
+                    getnoise = True
+                    var = np.ones(newshape)
+                    var[1:-1] = spe.var
+                    var[0] = self.var[0:n_left].sum() / factor / factor
+                    var[-1] = self.var[n_right:].sum() / factor / factor
+                try:
+                    crval = spe.wave.crval - spe.wave.cdelt
+                    wave = WaveCoord(1, spe.wave.cdelt, crval, spe.wave.cunit)
+                except:
+                    wave = None
+                res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale, empty=True)
+                res.data = np.ma.masked_invalid(data)
+                if getnoise:
+                    res.var = var
+                return res
+            elif margin == 'right':
+                spe = self[0:self.shape-n]._rebin_factor(factor)
+                newshape = spe.shape + 1
+                data = np.ones(newshape)
+                data[:-1] = spe.data
+                data[-1] = self.data[self.shape-n:].sum() / factor
+                getnoise = False
+                if self.var is not None:
+                    getnoise = True
+                    var = np.ones(newshape)
+                    var[:-1] = spe.var
+                    var[-1] = self.var[self.shape-n:].sum() / factor / factor
+                try:
+                    wave = WaveCoord(1, spe.wave.cdelt, spe.wave.crval, spe.wave.cunit)
+                except:
+                    wave = None
+                res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale, empty=True)
+                res.data = np.ma.masked_invalid(data)
+                if getnoise:
+                    res.var = var
+                return res
+            elif margin == 'left':
+                spe = self[n:]._rebin_factor(factor)
+                newshape = spe.shape + 1
+                data = np.ones(newshape)
+                data[0] = self.data[0:n].sum() / factor
+                data[1:] = spe.data
+                getnoise = False
+                var = None
+                if self.var is not None:
+                    getnoise = True
+                    var = np.ones(newshape)
+                    var[0] = self.var[0:n].sum() / factor / factor
+                    var[1:] = spe.var
+                try:
+                    crval = spe.wave.crval - spe.wave.cdelt
+                    wave = WaveCoord(1, spe.wave.cdelt, crval, spe.wave.cunit)
+                except:
+                    wave = None
+                res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale, empty=True)
+                res.data = np.ma.masked_invalid(data)
+                if getnoise:
+                    res.var = var
+                return res
+            else:
+                raise ValueError, 'margin must be center|right|left'
+            pass
     
     def rebin(self, step, start=None, spline = False):
         """returns a spectrum with data rebinned to different wavelength step size.
@@ -939,7 +1189,7 @@ class Spectrum(object):
         spline : boolean
         linear/spline interpolation to interpolate masked values
         """
-        data = self.interp_data(spline)
+        data = self._interp_data(spline)
 
         f = lambda x: data[int(self.wave.pixel(x)+0.5)]
         
@@ -947,16 +1197,15 @@ class Spectrum(object):
         newshape = newwave.shape   
             
         newdata = np.zeros(newshape)        
-        pix = np.arange(newshape,dtype=np.float)
-        x1 = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval - 0.5 * newwave.cdelt
-        x2 = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval + 0.5 * newwave.cdelt
+        pix = np.arange(newshape+1,dtype=np.float)
+        x = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval - 0.5 * newwave.cdelt
         lbdamax = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
-        if x2[-1]> lbdamax:
-            x2[-1] = lbdamax
+        if x[-1]> lbdamax:
+            x[-1] = lbdamax
         
         for i in range(newshape):
-            newdata[i] = integrate.quad(f,x1[i],x2[i])[0]/newwave.cdelt
-        
+            newdata[i] = integrate.quad(f,x[i],x[i+1],full_output=1)[0] / newwave.cdelt
+            
         res = Spectrum(getnoise=False, shape=newshape, wave = newwave, unit=self.unit, data=newdata,fscale=self.fscale)
         return res
 
@@ -989,7 +1238,7 @@ class Spectrum(object):
             i2 = self.wave.pixel(lmax, nearest=True)
 
         #replace masked values by interpolated values
-        data = self.interp_data(spline)
+        data = self._interp_data(spline)
 
         if weight:
             flux = np.average(data[i1:i2], weights=1.0/self.var[i1:i2])*self.fscale
@@ -1029,7 +1278,7 @@ class Spectrum(object):
             i2 = self.wave.pixel(lmax, True)
             
         #replace masked values by interpolated values
-        data = self.interp_data(spline)
+        data = self._interp_data(spline)
 
         if weight:
             flux = (i2-i1)*np.average(data[i1:i2], weights=1.0/self.var[i1:i2])*self.fscale
@@ -1040,16 +1289,13 @@ class Spectrum(object):
                 return flux,err
         return flux
 
-    def poly_fit(self, deg, wind=None, weight=True):
+    def poly_fit(self, deg, weight=True):
         """ performs polynomial fit on spectrum
 
         Parameters
         ----------
         deg : integer
         Degree of the fitting polynomial
-
-        wind : list of float
-        wind is the list of wavelength interval to skip in the fit (None by default)
 
         weight : boolean
         if weight is True, the weight is computed as the inverse of variance
@@ -1065,30 +1311,11 @@ class Spectrum(object):
         else:
             vec_weight = None
 
-        if wind is not None:
-            l1 = np.array(wind)[0::2]
-            l2 = np.array(wind)[1::2]
-            # create mask array
-            mask = np.ones(self.shape, dtype=np.bool)
-            for lb1,lb2 in zip(l1,l2):
-                i1 = self.wave.pixel(lb1, True)
-                i2 = self.wave.pixel(lb2, True)
-                mask[i1:i2] = np.zeros(i2-i1, dtype=np.bool)
-            mask *= np.array(1 - self.data.mask,dtype=bool)
-            d = self.data.compress(mask)
-            w = self.wave.coord().compress(mask)
-            if weight:
-                vec_weight = vec_weight.compress(mask)
-        else:
-            if isinstance(self.data,np.ma.core.MaskedArray):
-                mask = np.array(1 - self.data.mask,dtype=bool)
-                d = self.data.compress(mask)
-                w = self.wave.coord().compress(mask)
-                if weight:
-                    vec_weight = vec_weight.compress(mask)
-            else:
-                d = self.data
-                w = self.wave.coord()
+        mask = np.array(1 - self.data.mask,dtype=bool)
+        d = self.data.compress(mask) * self.fscale
+        w = self.wave.coord().compress(mask)
+        if weight:
+            vec_weight = vec_weight.compress(mask)
 
         #p = np.polyfit(w, d, deg, w=vec_weight) numpy 1.5     
         order = int(deg) + 1
@@ -1138,6 +1365,21 @@ class Spectrum(object):
             warnings.warn(msg, RankWarning)
 
         return c
+    
+    def poly_val(self, z):
+        """returns a spectrum containing polynomial fit values.       
+        
+        Parameter
+        ---------
+        z : array_like
+        The polynomial coefficients, in decreasing powers.
+        """
+        l = self.wave.coord()
+        p = np.poly1d(z)
+        data = p(l)
+        res = Spectrum(shape=self.shape, wave = self.wave, unit=self.unit, data=data, fscale=1.0)
+        return res
+        
 
     def abmag_band(self, lbda, dlbda, out=1, spline=False):
         """computes AB magnitude corresponding to the wavelength band.
@@ -1157,7 +1399,7 @@ class Spectrum(object):
         spline : boolean
         linear/spline interpolation to interpolate masked values
         """
-        data = self.interp_data(spline)
+        data = self._interp_data(spline)
         vflux = data[self.wave.pixel(lbda-dlbda/2,nearest=True):self.wave.pixel(lbda+dlbda/2,nearest=True)].mean()*self.fscale
         mag = flux2mag(vflux, lbda)
         if out == 1:
@@ -1263,7 +1505,7 @@ class Spectrum(object):
                 raise ValueError, 'filter band smaller than spectrum step'
         lb = (numpy.arange(imin,imax) - self.wave.crpix + 1) * self.wave.cdelt + self.wave.crval
         w = interpolate.splev(lb,tck,der=0)
-        data = self.interp_data(spline)
+        data = self._interp_data(spline)
         vflux = np.average(data[imin:imax], weights=w)*self.fscale
         mag = flux2mag(vflux, l0)
 #        if vflux > 0:
@@ -1311,7 +1553,7 @@ class Spectrum(object):
         linear/spline interpolation to interpolate masked values
         """
         k0 = self.wave.pixel(l0, nearest=True)
-        d = self.interp_data(spline) - cont
+        d = self._interp_data(spline) - cont
         f2 = d[k0]/2
         k2 = np.argwhere(d[k0:]<f2)[0][0] + k0
         i2 = np.interp(f2, d[k2:k2-2:-1], [k2,k2-1])
@@ -1351,11 +1593,11 @@ class Spectrum(object):
         If True, the gaussian is plotted.
         """
         spec = self.truncate(lmin, lmax)
-        data = spec.interp_data(spline)
+        data = spec._interp_data(spline)
         
         if cont is None:
-            #cont = (data[0] + data[-1])/2.
-            cont = np.ma.median(self.data.ravel())
+            cont = (data[0] + data[-1])/2.
+            #cont = np.ma.median(self.data.ravel())
             
         gaussfit = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
         e_gauss_fit = lambda p, x, y: (gaussfit(p,x) -y) #1d Gaussian fit
@@ -1403,14 +1645,13 @@ class Spectrum(object):
         fpeak = v[0]
         err_fpeak = err[0]
 
-        if plot and self._fig is not None:
+        if plot:
             xxx = np.arange(min(l),max(l),l[1]-l[0])
             ccc = gaussfit(v,xxx) # this will only work if the units are pixel and not wavelength
-            plt.figure(self._fig.number)
             plt.plot(xxx,ccc,'r--')
-            self._fig.show()
 
-        return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+        return Gauss1D(cont, fwhm, lpeak, fpeak, err_fwhm, err_lpeak, err_fpeak)
+    
 
     def add_gaussian(self,fwhm,lpeak,fpeak,cont=0):
         """adds a gausian on spectrum.
@@ -1486,19 +1727,16 @@ class Spectrum(object):
         if res.var is  None:
             noise = False
             
-        self._fig = plt.figure()
-        ax = self._fig.add_subplot(111)
-        ax.plot(x, f, drawstyle=drawstyle)
+        plt.plot(x, f, drawstyle=drawstyle)
         if noise: 
-            ax.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
+            plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
-                ax.title(title)   
+                plt.title(title)   
         if res.wave.cunit is not None:
-            ax.set_xlabel(res.wave.cunit)
+            plt.xlabel(res.wave.cunit)
         if res.unit is not None:
-            ax.set_ylabel(res.unit)
-        self._manager = plt.get_current_fig_manager()
-        self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
+            plt.ylabel(res.unit)
+        plt.connect('motion_notify_event', self._on_move)
         
     def log_plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
         """ plots the spectrum with y logarithmic scale.
@@ -1536,19 +1774,16 @@ class Spectrum(object):
         if res.var is  None:
             noise = False
             
-        self._fig = plt.figure()
-        ax = self._fig.add_subplot(111)
-        ax.semilogy(x, f, drawstyle=drawstyle)
+        plt.semilogy(x, f, drawstyle=drawstyle)
         if noise: 
-            ax.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
+            plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
-                ax.title(title)   
+                plt.title(title)   
         if res.wave.cunit is not None:
-            ax.set_xlabel(res.wave.cunit)
+            plt.xlabel(res.wave.cunit)
         if res.unit is not None:
-            ax.set_ylabel(res.unit)
-        self._manager = plt.get_current_fig_manager()
-        self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
+            plt.ylabel(res.unit)
+        plt.connect('motion_notify_event', self._on_move)
 
         
     def _on_move(self,event):
@@ -1559,9 +1794,9 @@ class Spectrum(object):
             try:
                 i = self.wave.pixel(xc, True)
                 x = self.wave.coord(i)
-                val = self.data[i]*self.fscale
+                val = self.data.data[i]*self.fscale
                 s = 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
-                self._manager.toolbar.set_message(s)
+                plt.get_current_fig_manager().toolbar.set_message(s)
             except:
                 pass
             
@@ -1569,7 +1804,7 @@ class Spectrum(object):
         """Interactive mode.
         Prints cursor position.   
         To read cursor position, click on the left mouse button
-        To remove a cursor position, click on the left mouse button + <shift>
+        To remove a cursor position, click on the left mouse button + <r>
         To quit the interactive mode, click on the right mouse button.
         At the end, clicks are saved in self.clicks as dictionary {'xc','yc','x','y'}.
         Parameters
@@ -1578,9 +1813,13 @@ class Spectrum(object):
         filename : string
         If filename is not None, the cursor values are saved as a fits table.
         """
+        print 'To read cursor position, click on the left mouse button'
+        print 'To remove a cursor position, click on the left mouse button + <r>'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        print 'After quit, clicks are saved in self.clicks as dictionary {xc,yc,x,y}.'
+        
         if self._clicks is None:
-            binding_id = self._fig.canvas.mpl_connect('button_press_event', self._on_click)
-            self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
+            binding_id = plt.connect('button_press_event', self._on_click)
             self._clicks = SpectrumClicks(binding_id,filename)
         else:
             self._clicks.filename = filename
@@ -1588,30 +1827,15 @@ class Spectrum(object):
     def _on_click(self,event):
         """ prints x,y,i,lbda and data corresponding to the cursor position.
         """
-        if event.key == 'shift':
+        if event.key == 'r':
             if event.button == 1:
                 if event.inaxes is not None:
                     try:
                         xc, yc = event.xdata, event.ydata
-                        i = np.argmin(np.abs(self._clicks.xc-xc))
-                        line = self._clicks.id_lines[i]
-                        del self._fig.gca().lines[line]
-                        self._clicks.xc.pop(i)
-                        self._clicks.yc.pop(i)
-                        self._clicks.i.pop(i)
-                        self._clicks.x.pop(i)
-                        self._clicks.data.pop(i)
-                        self._clicks.id_lines.pop(i)
-                        for j in range(i,len(self._clicks.id_lines)):
-                            self._clicks.id_lines[j] -= 1
-                        self._fig.show()
+                        self._clicks.remove(xc)
                         print "new selection:"
-                        if self.fscale == 1:
-                            for i in range(len(self._clicks.xc)):
-                                print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(self._clicks.xc[i],self._clicks.yc[i],self._clicks.i[i],self._clicks.x[i],self._clicks.data[i])
-                        else:
-                            for i in range(len(self._clicks.xc)):
-                                print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(self._clicks.xc[i],self._clicks.yc[i],self._clicks.i[i],self._clicks.x[i],self._clicks.data[i],self._clicks.data[i]/self.fscale)                           
+                        for i in range(len(self._clicks.xc)):
+                            self._clicks.iprint(i,self.fscale)
                     except:
                         pass 
         else:
@@ -1624,41 +1848,17 @@ class Spectrum(object):
                         val = self.data[i]*self.fscale
                         if len(self._clicks.x)==0:
                             print ''
-                        plt.figure(self._fig.number)
-                        plt.plot(xc,yc,'r+')
-                        self._fig.show()
-                        self._clicks.xc.append(xc)
-                        self._clicks.yc.append(yc)
-                        self._clicks.i.append(i)
-                        self._clicks.x.append(x)
-                        self._clicks.data.append(val)
-                        self._clicks.id_lines.append(len(self._fig.gca().lines)-1)
-                        if self.fscale == 1:
-                            print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(xc,yc,i,x,val)
-                        else:
-                            print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(xc,yc,i,x,val,val/self.fscale)
+                        self._clicks.add(xc,yc,i,x,val)
+                        self._clicks.iprint(len(self._clicks.x)-1, self.fscale)
                     except:
-                        pass 
-            else: 
-                if self._clicks.filename != 'None':
-                    c1 = pyfits.Column(name='XC', format='E', array=self._clicks.xc)
-                    c2 = pyfits.Column(name='YC', format='E', array=self._clicks.yc)
-                    c3 = pyfits.Column(name='I', format='I', array=self._clicks.i)
-                    c4 = pyfits.Column(name='X', format='E', array=self._clicks.x)
-                    c5 = pyfits.Column(name='DATA', format='E', array=self._clicks.data)
-                    tbhdu=pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
-                    tbhdu.writeto(self._clicks.filename, clobber=True)
-                    print 'printing coordinates in fits table %s'%self._clicks.filename
+                        pass
+            else:
+                self._clicks.write_fits()
                 # save clicks in a dictionary {'xc','yc','x','y'}
                 d = {'xc':self._clicks.xc, 'yc':self._clicks.yc, 'x':self._clicks.x, 'y':self._clicks.data}
                 self.clicks = d
-                print "disconnecting console coordinate printout..."
-                self._fig.canvas.mpl_disconnect(self._clicks.binding_id)
-                nlines =  len(self._clicks.id_lines)
-                for i in range(nlines):
-                    line = self._clicks.id_lines[nlines - i -1]
-                    del self._fig.gca().lines[line]
-                self._fig.show()
+                #clear
+                self._clicks.clear()
                 self._clicks = None
                 
             
@@ -1666,10 +1866,10 @@ class Spectrum(object):
         """Interactive mode.
         Gets distance and center from 2 cursor positions.
         """
-        print 'Use 2 mouse clicks to get center and distance'
+        print 'Use 2 mouse clicks to get center and distance.'
+        print 'To quit the interactive mode, click on the right mouse button.'
         if self._clicks is None:
-            binding_id = self._fig.canvas.mpl_connect('button_press_event', self._on_click_dist)
-            self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
+            binding_id = plt.connect('button_press_event', self._on_click_dist)
             self._clicks = SpectrumClicks(binding_id)
     
     def _on_click_dist(self,event):
@@ -1684,18 +1884,8 @@ class Spectrum(object):
                     val = self.data[i]*self.fscale
                     if len(self._clicks.x)==0:
                         print ''
-                    plt.figure(self._fig.number)
-                    plt.plot(xc,yc,'r+')
-                    self._clicks.xc.append(xc)
-                    self._clicks.yc.append(yc)
-                    self._clicks.i.append(i)
-                    self._clicks.x.append(x)
-                    self._clicks.data.append(val)
-                    self._clicks.id_lines.append(len(self._fig.gca().lines)-1)
-                    if self.fscale == 1:
-                        print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(xc,yc,i,x,val)
-                    else:
-                        print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(xc,yc,i,x,val,val/self.fscale)
+                    self._clicks.add(xc,yc,i,x,val)
+                    self._clicks.iprint(len(self._clicks.x)-1, self.fscale)
                     if np.sometrue(np.mod( len(self._clicks.x), 2 )) == False:
                         dx = abs(self._clicks.xc[-1] - self._clicks.xc[-2])
                         xc = (self._clicks.xc[-1] + self._clicks.xc[-2])/2
@@ -1703,24 +1893,22 @@ class Spectrum(object):
                 except:
                     pass 
         else: 
-            print "disconnecting console distance printout..."
-            self._fig.canvas.mpl_disconnect(self._clicks.binding_id)
-            nlines =  len(self._clicks.id_lines)
-            for i in range(nlines):
-                line = self._clicks.id_lines[nlines - i -1]
-                del self._fig.gca().lines[line]
-            self._fig.show()
+            self._clicks.clear()
             self._clicks = None
             
     def igauss_fit(self):
         """Interactive mode.
         Performs polynomial fit on spectrum.
-        Prints [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+        Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
+        To quit the interactive mode, click on the right mouse button.
+        The parameters of the last gaussian are saved in self.gauss.
         """
-        print 'Use 3 mouse clicks to get minimim, peak and maximum wavelengths'
+        print 'Use 3 mouse clicks to get minimim, peak and maximum wavelengths.'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        print 'The parameters of the last gaussian are saved in self.gauss.'
         if self._clicks is None:
-            binding_id = self._fig.canvas.mpl_connect('button_press_event', self._on_click_gauss_fit)
-            self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
+            binding_id = plt.connect('button_press_event', self._on_click_gauss_fit)
+            plt.connect('motion_notify_event', self._on_move)
             self._clicks = SpectrumClicks(binding_id)
     
     def _on_click_gauss_fit(self,event):
@@ -1735,30 +1923,18 @@ class Spectrum(object):
                     val = self.data[i]*self.fscale
                     if len(self._clicks.x)==0:
                         print ''
-                    plt.figure(self._fig.number)
-                    plt.plot(xc,yc,'r+')
-                    self._clicks.xc.append(xc)
-                    self._clicks.yc.append(yc)
-                    self._clicks.i.append(i)
-                    self._clicks.x.append(x)
-                    self._clicks.data.append(val)
-                    self._clicks.id_lines.append(len(self._fig.gca().lines)-1)
+                    self._clicks.add(xc,yc,i,x,val)
                     if np.sometrue(np.mod( len(self._clicks.x), 3 )) == False:
                         lmin = self._clicks.xc[-3]
                         lpeak = self._clicks.xc[-2]
                         lmax = self._clicks.xc[-1]
-                        print self.gauss_fit(lmin, lmax, lpeak=lpeak, plot=True)
-                        self._clicks.id_lines.append(len(self._fig.gca().lines)-1)
+                        self.gauss = self.gauss_fit(lmin, lmax, lpeak=lpeak, plot=True)
+                        self.gauss.print_param()
+                        self._clicks.id_lines.append(len(plt.gca().lines)-1)
                 except:
                     pass
         else: 
-            print "disconnecting console distance printout..."
-            self._fig.canvas.mpl_disconnect(self._clicks.binding_id)
-            nlines =  len(self._clicks.id_lines)
-            for i in range(nlines):
-                line = self._clicks.id_lines[nlines - i -1]
-                del self._fig.gca().lines[line]
-            self._fig.show()
+            self._clicks.clear()
             self._clicks = None
             
     def imask(self):
@@ -1766,8 +1942,7 @@ class Spectrum(object):
         Plots masked values.
         """
         lbda = self.wave.coord()
-        drawstyle = self._fig.gca().lines[0].get_drawstyle()
-        plt.figure(self._fig.number)
+        drawstyle = plt.gca().lines[0].get_drawstyle()
         plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
             
 
@@ -2029,7 +2204,7 @@ class Image(object):
             hdulist.append(dqhdu)
         else:
             if self.var is None: # write simple fits file without extension
-                prihdu.data = self.data
+                prihdu.data = self.data.data
                 for card in wcs_cards:
                     prihdu.header.update(card.key, card.value, card.comment)
                 if self.unit is not None:
@@ -2039,7 +2214,7 @@ class Image(object):
             else: # write fits file with primary header and two extensions
                 hdulist = [prihdu]
                 # create spectrum DATA in first extension
-                tbhdu = pyfits.ImageHDU(name='DATA', data=self.data)
+                tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
                 for card in wcs_cards:
                     tbhdu.header.update(card.key, card.value, card.comment)
                 if self.unit is not None:
@@ -2078,7 +2253,7 @@ class Image(object):
             unit = 'no unit'
         else:
             unit = self.unit
-        print '%s (%s) fscale=%0.2f, %s' %(data,unit,self.fscale,noise)
+        print '%s (%s) fscale=%g, %s' %(data,unit,self.fscale,noise)
         if self.wcs is None:
             print 'no world coordinates'
         else:
@@ -2588,7 +2763,7 @@ class Image(object):
             res.data = np.ma.MaskedArray(res.data, mask=m)
         return res
             
-    def interp(self, grid, spline=False):
+    def _interp(self, grid, spline=False):
         """ returns the interpolated values corresponding to the grid points
         
         Parameters
@@ -2814,32 +2989,29 @@ class Image(object):
             yaxis = pixsky[:,1]
             yunit = self.wcs.wcs.wcs.cunit[0]
         
-        self._fig = plt.figure()
-        self._manager = plt.get_current_fig_manager()
-        ax = self._fig.add_subplot(111)
+#        self._fig = plt.figure()
+#        self._manager = plt.get_current_fig_manager()
+#        ax = self._fig.add_subplot(111)
         
         if np.shape(xaxis)[0] == 1:
             #plot a  column
-            ax.plot(yaxis,f)
+            plt.plot(yaxis,f)
             plt.xlabel('dec (%s)' %yunit)
             plt.ylabel(self.unit)
         elif np.shape(yaxis)[0] == 1:
             #plot a line
-            ax.plot(xaxis,f)
+            plt.plot(xaxis,f)
             plt.xlabel('ra (%s)' %xunit)
             plt.ylabel(self.unit)
         else:
-            cax = ax.contourf(xaxis, yaxis, f, 100)
-            self._fig.colorbar(cax)
+            cax = plt.contourf(xaxis, yaxis, f, 100)
+            plt.colorbar(cax)
             plt.xlabel('ra (%s)' %xunit)
             plt.ylabel('dec (%s)' %yunit)
             
-        
-#        if noise: 
-#            plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
                 plt.title(title)   
-        self._fig.canvas.mpl_connect('motion_notify_event', self._on_move)
+        plt.connect('motion_notify_event', self._on_move)
         
     def _on_move(self,event):
         """ prints x,y,i,j and data in the figure toolbar.
@@ -2852,7 +3024,7 @@ class Image(object):
                 j = pixcrd[0][0]
                 val = self.data.data[i,j]*self.fscale
                 s = 'ra= %g dec=%g j=%i i=%i data=%g'%(xc,yc,j,i,val)
-                self._manager.toolbar.set_message(s)
+                plt.get_current_fig_manager().toolbar.set_message(s)
             except:
                 pass    
 
@@ -3197,7 +3369,7 @@ class Cube(object):
             unit = 'no unit'
         else:
             unit = self.unit
-        print '%s (%s) fscale=%0.2f, %s' %(data,unit,self.fscale,noise)
+        print '%s (%s) fscale=%g, %s' %(data,unit,self.fscale,noise)
         if self.wcs is None:
             print 'no world coordinates for spectral direction'
         else:
@@ -3961,4 +4133,3 @@ class Cube(object):
             return res
         else:
             return None
-        
