@@ -1174,7 +1174,7 @@ class Spectrum(object):
                 raise ValueError, 'margin must be center|right|left'
             pass
     
-    def rebin(self, step, start=None, spline = False):
+    def rebin(self, step, start=None, shape= None, spline = False):
         """returns a spectrum with data rebinned to different wavelength step size.
         
         Parameters
@@ -1186,6 +1186,9 @@ class Spectrum(object):
         Spectral position of the first new pixel.
         It can be set or kept at the edge of the old first one.     
         
+        shape : integer
+        Size of the new spectrum.
+        
         spline : boolean
         linear/spline interpolation to interpolate masked values
         """
@@ -1194,7 +1197,11 @@ class Spectrum(object):
         f = lambda x: data[int(self.wave.pixel(x)+0.5)]
         
         newwave = self.wave.rebin(step,start)
-        newshape = newwave.shape   
+        if shape is None:
+            newshape = newwave.shape   
+        else:
+            newshape = min(shape, newwave.shape)
+            newwave.shape = newshape
             
         newdata = np.zeros(newshape)        
         pix = np.arange(newshape+1,dtype=np.float)
