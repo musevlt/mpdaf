@@ -190,7 +190,7 @@ class WCS(object):
             #value of reference pixel
             self.wcs.wcs.crval = np.array(crval)
             if deg: #in decimal degree
-                self.wcs.wcs.ctype = ['RA---TAN','DEC---TAN']
+                self.wcs.wcs.ctype = ['RA___TAN','DEC___TAN']
                 self.wcs.wcs.cunit = ['deg','deg']
                 self.wcs.wcs.cd = np.array([[-cdelt[0], 0], [0, cdelt[1]]])
             else:   #in pixel or arcsec
