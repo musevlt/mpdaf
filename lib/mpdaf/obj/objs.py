@@ -8,6 +8,7 @@ from coords import WaveCoord
 from scipy import integrate
 from scipy import interpolate
 from scipy.optimize import leastsq
+from scipy import signal
 
 import matplotlib.pyplot as plt
 
@@ -976,6 +977,11 @@ class Spectrum(object):
                 pix_max = int(self.wave.pixel(lmax)) + 1
             self.data[pix_min:pix_max] = np.ma.masked  
             
+    def unmask(self):
+        """unmasks the spectrum
+        """
+        self.data.mask = False
+        self.data = np.ma.masked_invalid(self.data)
         
     def _interp(self, wavelengths, spline=False):
         """ returns the interpolated values corresponding to the wavelength array
@@ -1028,7 +1034,6 @@ class Spectrum(object):
             ksel = np.where(self.data.mask==True)
             wnew = lbda[ksel]
             data = self.data.data
-            print self._interp(wnew,spline)
             data[ksel] = self._interp(wnew,spline)
             return data
     
@@ -1324,7 +1329,8 @@ class Spectrum(object):
         if weight:
             vec_weight = vec_weight.compress(mask)
 
-        #p = np.polyfit(w, d, deg, w=vec_weight) numpy 1.5     
+        #p = np.polyfit(w, d, deg, w=vec_weight) #numpy 1.7  
+        
         order = int(deg) + 1
         x = np.asarray(w) + 0.0
         y = np.asarray(d) + 0.0
@@ -1374,7 +1380,7 @@ class Spectrum(object):
         return c
     
     def poly_val(self, z):
-        """returns a spectrum containing polynomial fit values.       
+        """returns a spectrum containing polynomial fit values, from polynomial coefficients.     
         
         Parameter
         ---------
@@ -1386,6 +1392,21 @@ class Spectrum(object):
         data = p(l)
         res = Spectrum(shape=self.shape, wave = self.wave, unit=self.unit, data=data, fscale=1.0)
         return res
+    
+    def poly_spec(self, deg, weight=True):
+        """ performs polynomial fit on spectrum and returns a spectrum containing polynomial fit values.
+
+        Parameters
+        ----------
+        deg : integer
+        Degree of the fitting polynomial
+
+        weight : boolean
+        if weight is True, the weight is computed as the inverse of variance
+        """
+        z = self.poly_fit(deg, weight)
+        return self.poly_val(z)
+        
         
 
     def abmag_band(self, lbda, dlbda, out=1, spline=False):
@@ -1626,7 +1647,7 @@ class Spectrum(object):
             lpeak = l[dw.argmax()]
         if fpeak is None:
             pixel = spec.wave.pixel(lpeak,nearest=True)
-            fpeak = d[pixel]
+            fpeak = d[pixel] - cont
         if fwhm is None:
             fwhm = spec.fwhm(lpeak, cont, spline)
 
@@ -1637,8 +1658,8 @@ class Spectrum(object):
         v = out[0] #fit parammeters out
         covar = out[1] #covariance matrix output
 
-        if self.shape > len(v) and covar is not None:
-            s_sq = (e_gauss_fit(v, l, d)**2).sum()/(self.shape-len(v))
+        if spec.shape > len(v) and covar is not None:
+            s_sq = (e_gauss_fit(v, l, d)**2).sum()/(spec.shape-len(v))
             err = np.diag(covar * s_sq)
         else:
             err = np.zeros(len(v))
@@ -1696,6 +1717,20 @@ class Spectrum(object):
         res = self.copy()
         res.data[imin:imax] = self.data[imin:imax] + gauss(v,wave)
 
+        return res
+    
+    def median_filter(self, kernel_size=None):
+        """performs a median filter on the spectrum
+        
+        Parameter
+        ---------
+        
+        kernel_size : float
+        Size of the median filter window.
+
+        """
+        data = signal.medfit(self.data)
+        res = Spectrum(shape=self.shape, wave = self.wave, unit=self.unit, data=data, fscale=1.0)
         return res
     
     def plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
@@ -2785,6 +2820,7 @@ class Image(object):
         x = ksel[0] 
         y = ksel[1]
         data = self.data.data[ksel]
+        npoints = np.shape(data)[0]
         
         grid = np.array(grid)
         n = np.shape(grid)[0]
@@ -2792,8 +2828,8 @@ class Image(object):
         if spline:
             if self.var is not None:    
                 weight = np.zeros(n,dtype=float)
-                for i in range(n):
-                    weight[i] = 1./self.var[grid[i,0],grid[i,1]]
+                for i in range(npoints):
+                    weight[i] = 1./self.var[x[i],y[i]]
             else:
                 weight = None
                 
@@ -2805,10 +2841,13 @@ class Image(object):
         else:
             #scipy 0.9 griddata
             #interpolate.interp2d segfaults when there are too many data points
-            f = interpolate.interp2d(x, y, data)
+            #f = interpolate.interp2d(x, y, data)
+            points = np.zeros((npoints,2),dtype=float)
+            points[:,0] = ksel[0]
+            points[:,1] = ksel[1]
             res = np.zeros(n,dtype=float)
             for i in range(n):
-                res[i] = f(grid[i,0],grid[i,1])
+                res[i] = interpolate.griddata(points, data, (grid[i,0],grid[i,1]), method='linear')
             return res
         
 #    def moments(self):
@@ -2825,7 +2864,7 @@ class Image(object):
 #        width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*self.wcs.cdelt[1]
 #        return [width_x,width_y]
 #            
-#    def gauss_fit(self, ra_min , ra_max, dec_min, dec_max, fpeak=None, ra_peak=None, dec_peak=None, ra_width=None, dec_width=None, cont=None):
+#    def gauss_fit(self, ra_min , ra_max, dec_min, dec_max, fpeak=None, ra_peak=None, dec_peak=None, ra_width=None, dec_width=None, cont=None, plot = False):
 #        """
 #        """
 #        """performs polynomial fit on spectrum.
@@ -2871,14 +2910,14 @@ class Image(object):
 #        else:
 #            weight = 1./ima.var
 #            
-#        ksel = np.where(self.data.mask==False)
+#        ksel = np.where(ima.data.mask==False)
 #        pixcrd = np.zeros((np.shape(ksel[0])[0],2))
 #        pixcrd[:,0] = ksel[1] #ra
 #        pixcrd[:,1] = ksel[0] #dec
-#        pixsky = self.wcs.pix2sky(pixcrd)
+#        pixsky = ima.wcs.pix2sky(pixcrd)
 #        x = pixsky[:,0] #ra
 #        y = pixsky[:,1] #dec        
-#        data = self.data.data[ksel]*self.fscale
+#        data = ima.data.data[ksel]*self.fscale
 #        
 #        if weight is not None:
 #            dw = data * weight
@@ -2891,60 +2930,53 @@ class Image(object):
 #        if dec_peak is None:
 #            dec_peak = y[imax]
 #        if fpeak is None:
-#            fpeak = data[imax]
+#            fpeak = data[imax] - cont
 #        width= ima.moments()
 #        if ra_width is None:
 #            ra_width = width[0]
 #        if dec_width is None:
 #            dec_width = width[1]
-#            
-#        print 'ra_peak', ra_peak
-#        print 'dec_peak', dec_peak
-#        print 'fpeak', fpeak
-#        print 'ra_width', ra_width
-#        print 'dec_width', dec_width
-#        
 #        
 #        v0 = [fpeak, ra_peak, ra_width, dec_peak, dec_width]
-#        
-##        init_gaussfit= gaussfit(v0,x,y)
-#        xx = np.arange(x[0],x[-1],x[1]-x[0])
-#        yy = np.arange(y[0],y[-1],y[1]-y[0])
-#        ff = np.zeros((np.shape(xx)[0],np.shape(yy)[0]))
-#        for i in range(np.shape(xx)[0]):
-#            xxx = np.zeros(np.shape(yy)[0])
-#            xxx[:] = xx[i]
-#            ff[i,:] = gaussfit(v0,xxx,yy)
-#        plt.contour(xx, yy, ff, 50)
-##        plt.plot(x,init_gaussfit)
 #
 #        out = leastsq(e_gauss_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1) #Gauss Fit
 #        v = out[0] #fit parammeters out
-#        print v
-##        covar = out[1] #covariance matrix output
-##
-##        if self.shape > len(v) and covar is not None:
-##            s_sq = (e_gauss_fit(v, l, d)**2).sum()/(self.shape-len(v))
-##            err = np.diag(covar * s_sq)
-##        else:
-##            err = np.zeros(len(v))
-##
-##        lpeak = v[1]
-##        err_lpeak = err[1]
-##        sigma = v[2]
-##        fwhm = sigma*2*np.sqrt(2*np.log(2))
-##        err_sigma = err[2]
-##        err_fwhm = err_sigma*2*np.sqrt(2*np.log(2))
-##        fpeak = v[0]
-##        err_fpeak = err[0]
-##
-##        if plot and self._fig is not None:
-##            xxx = np.arange(min(l),max(l),l[1]-l[0])
-##            ccc = gaussfit(v,xxx) # this will only work if the units are pixel and not wavelength
-##            plt.figure(self._fig.number)
-##            plt.plot(xxx,ccc,'r--')
-##            self._fig.show()
-##
+#        
+#        if plot:
+#            xx = np.arange(x[0],x[-1],(x[1]-x[0]))
+#            yy = np.arange(y[0],y[-1],10000*(y[0]-y[1]))
+#            ff = np.zeros((np.shape(yy)[0],np.shape(xx)[0]))
+#            for i in range(np.shape(xx)[0]):
+#                xxx = np.zeros(np.shape(yy)[0])
+#                xxx[:] = xx[i]
+#                ff[:,i] = gaussfit(v,xxx,yy)
+#            plt.contour(xx, yy, ff, 10)
+#            
+#        covar = out[1] #covariance matrix output
+#
+#        if ima.shape.prod() > len(v) and covar is not None:
+#            s_sq = (e_gauss_fit(v, x , y, data)**2).sum()/(ima.shape.prod()-len(v))
+#            err = np.diag(covar * s_sq)
+#        else:
+#            err = np.zeros(len(v))
+#
+#        fpeak = v[0]
+#        err_fpeak = err[0]
+#        ra_peak = v[1]
+#        err_ra_peak = err[1]
+#        ra_width = v[2]
+#        err_ra_width = err[2]
+#        dec_peak = v[3]
+#        err_dec_peak = err[3]
+#        dec_width = v[4]
+#        err_dec_width = err[4]
+#        
+#        print 'fpeak',fpeak,err_fpeak
+#        print 'ra_peak',ra_peak,err_ra_peak
+#        print 'dec_peak',dec_peak,err_dec_peak
+#        print 'ra_width',ra_width,err_ra_width
+#        print 'dec_width',dec_width,err_dec_width
+#
 ##        return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
 
             

@@ -472,6 +472,12 @@ Wavelength coordinates must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="obj.Spectrum.unmask">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">unmask</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.unmask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unmasks the spectrum (just invalid data (nan,inf) are masked).</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="obj.Spectrum.interp_mask">
 <tt class="descclassname">obj.Spectrum.</tt><tt class="descname">interp_mask</tt><big>(</big><span class="optional">[</span><em>spline=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.interp_mask" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a spectrum built with interpolated values for masked pixels.</p>
@@ -514,7 +520,7 @@ Wavelength coordinates must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Spectrum.rebin">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">rebin</tt><big>(</big><em>step</em><span class="optional">[</span>, <em>start=None</em>, <em>spline = False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.rebin" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">rebin</tt><big>(</big><em>step</em><span class="optional">[</span>, <em>start=None</em>, <em>shape=None</em>, <em>spline = False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.rebin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a spectrum with data rebinned to different wavelength step size.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -523,6 +529,7 @@ Wavelength coordinates must be the same.</dd>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>step</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New pixel size in spectral direction.</li>
 <li><strong>start</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Spectral position of the first new pixel. It can be set or kept at the edge of the old first one.</li>
+<li><strong>shape</strong> (<em>integer</em>) &#8211; Size of the new spectrum.</li>
 <li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
 </ul>
 </td>
@@ -617,13 +624,37 @@ Wavelength coordinates must be the same.</dd>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.Spectrum.poly_spec">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">poly_spec</tt><big>(</big><em>deg</em><span class="optional">[</span>, <em>weight=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.poly_spec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs polynomial fit on spectrum and returns a spectrum containing polynomial fit values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>deg</strong> (<em>integer</em>) &#8211; Polynomial degree.</li>
+<li><strong>weight</strong> (<em>boolean</em>) &#8211; If weight is True, the weight is computed as the inverse of variance.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Spectrum</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <p>Examples of polynomial fit on a spectrum:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">Spectrum</span>
 
 <span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&#39;spectrum.fits&#39;</span><span class="p">)</span>
 <span class="n">spe</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="c"># use poly_fit and poly_val</span>
 <span class="n">z</span> <span class="o">=</span> <span class="n">spe</span><span class="o">.</span><span class="n">poly_fit</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
 <span class="n">spe2</span> <span class="o">=</span> <span class="n">spe</span><span class="o">.</span><span class="n">poly_val</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+<span class="c"># poly_spec is equivalent to poly_fit and poly_val</span>
+<span class="n">spe2</span> <span class="o">=</span> <span class="n">spe</span><span class="o">.</span><span class="n">poly_spec</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
 <span class="n">spe2</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>

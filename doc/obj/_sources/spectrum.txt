@@ -288,6 +288,11 @@ Methods
   :type lmin: float
   :param lmax: maximum wavelength.
   :type lmax: float
+  
+  
+.. function:: unmask()
+
+  Unmasks the spectrum (just invalid data (nan,inf) are masked).
 
 
 .. function:: interp_mask([spline=False])
@@ -317,7 +322,7 @@ Methods
   :rtype: Spectrum
 
 
-.. function:: rebin(step [, start=None, spline = False])
+.. function:: rebin(step [, start=None, shape=None, spline = False])
 
   Returns a spectrum with data rebinned to different wavelength step size.
   
@@ -325,6 +330,8 @@ Methods
   :type step: float
   :param start: Spectral position of the first new pixel. It can be set or kept at the edge of the old first one.
   :type start: float
+  :param shape: Size of the new spectrum.
+  :type shape: integer
   :param spline: Linear/spline interpolation to interpolate masked values.
   :type spline: boolean
   :rtype: Spectrum
@@ -379,14 +386,27 @@ Methods
   :type z: array
   :rtype: Spectrum
   
+.. function:: poly_spec(deg [, weight=True])
+
+  Performs polynomial fit on spectrum and returns a spectrum containing polynomial fit values.
+  
+  :param deg: Polynomial degree.
+  :type deg: integer
+  :param weight:  If weight is True, the weight is computed as the inverse of variance.
+  :type weight: boolean
+  :rtype: Spectrum
+  
 Examples of polynomial fit on a spectrum::
  
   from mpdaf.obj import Spectrum
   
   spe = Spectrum(filename='spectrum.fits')
   spe.plot()
+  # use poly_fit and poly_val
   z = spe.poly_fit(4)
   spe2 = spe.poly_val(z)
+  # poly_spec is equivalent to poly_fit and poly_val
+  spe2 = spe.poly_spec(4)
   spe2.plot()
    
   
