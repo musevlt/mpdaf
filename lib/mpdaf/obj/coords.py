@@ -235,7 +235,7 @@ class WCS(object):
             dy = self.cdelt[1]  * 3600
             sizex = self.wcs.naxis1 * dx
             sizey = self.wcs.naxis2 * dx
-            print 'center:(%s,%s) size in arcsec:(%0.2f,%0.2f) step in arcsec:(%0.2f,%0.2f)' %(ra,dec,sizex,sizey,dx,dy)
+            print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) step in arcsec:(%0.3f,%0.3f)' %(ra,dec,sizex,sizey,dx,dy)
 
     def to_header(self):
         return self.wcs.to_header()
@@ -342,7 +342,7 @@ class WCS(object):
             raise ValueError, 'Operation forbidden'
         
     def get_range(self):
-        """returns (ra_min,ra_max),(dec_min,dec_max)
+        """returns [ [ra_min,dec_min], [ra_max,dec_max] ]
         """
         pixcrd = [ [0,0], [self.wcs.naxis1 -1,0], [0,self.wcs.naxis2 -1], [self.wcs.naxis1 -1,self.wcs.naxis2 -1]]
         pixsky = self.pix2sky(pixcrd)
@@ -471,7 +471,7 @@ class WaveCoord(object):
             if self.shape is None:
                 pix = max( int(pix+0.5), 0)
             else:
-                pix = min( max( int(pix+0.5), 0), self.shape)
+                pix = min( max( int(pix+0.5), 0), self.shape-1)
         return pix
 
     def __getitem__(self, item):

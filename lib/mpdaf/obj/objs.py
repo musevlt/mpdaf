@@ -9,6 +9,7 @@ from scipy import integrate
 from scipy import interpolate
 from scipy.optimize import leastsq
 from scipy import signal
+from scipy import special
 
 import matplotlib.pyplot as plt
 
@@ -141,8 +142,11 @@ class Gauss1D:
     lpeak : float
     Gaussian center.
 
-    fpeak : float
+    peak : float
     Gaussian peak value.
+    
+    flux : float
+    Gaussian integrated flux.
         
     err_fwhm : float
     Estimated error on Gaussian fwhm.
@@ -150,28 +154,37 @@ class Gauss1D:
     err_lpeak : float
     Estimated error on Gaussian center.
     
-    err_fpeak : float
+    err_peak : float
     Estimated error on Gaussian peak value.
     
+    flux : float
+    Gaussian integrated flux.
+    
     """
-    def __init__(self, cont, fwhm, lpeak, fpeak, err_fwhm, err_lpeak, err_fpeak):
+    def __init__(self, lpeak, peak, flux, fwhm, cont, err_lpeak, err_peak, err_flux,err_fwhm):
         self.cont = cont
         self.fwhm = fwhm
         self.lpeak = lpeak
-        self.fpeak = fpeak
+        self.peak = peak
+        self.flux = flux
         self.err_fwhm = err_fwhm
         self.err_lpeak = err_lpeak
-        self.err_fpeak = err_fpeak
+        self.err_peak = err_peak
+        self.err_flux = err_flux
         
     def copy(self):
-        res = Gauss1D(self.cont, self.fwhm, self.lpeak, self.fpeak, self.err_fwhm, self.err_lpeak, self.err_fpeak)
+        res = Gauss1D(self.lpeak, self.peak, self.flux, self.fwhm, self.cont, self.err_lpeak, self.err_peak, self.err_flux,self.err_fwhm)
         return res
         
     def print_param(self):
-        print 'Gaussian continuum = %g' %self.cont
+        print 'Gaussian center = %g (error:%g)' %(self.lpeak,self.err_lpeak)   
+        print 'Gaussian integrated flux = %g (error:%g)' %(self.flux,self.err_flux)
+        print 'Gaussian peak value = %g (error:%g)' %(self.peak,self.err_peak)
         print 'Gaussian fwhm = %g (error:%g)' %(self.fwhm,self.err_fwhm)
-        print 'Gaussian center = %g (error:%g)' %(self.lpeak,self.err_lpeak)
-        print 'Gaussian peak value = %g (error:%g)' %(self.fpeak,self.err_fpeak)
+        print 'Gaussian continuum = %g' %self.cont
+        
+        
+        
         print ''
         
 
@@ -223,8 +236,8 @@ class Spectrum(object):
         filename : string
         Possible FITS filename
 
-        ext : integer
-        Number of the corresponding extension in the file
+        ext : integer or (integer,integer)
+        Number of the data extension or numbers of the data and variance extensions.
 
         getnoise: boolean
         True if the noise Variance spectrum is read (if it exists)
@@ -278,7 +291,7 @@ class Spectrum(object):
                 self.unit = hdr.get('BUNIT', None)
                 self.cards = hdr.ascardlist()
                 self.shape =hdr['NAXIS1']
-                self.data = f[0].data
+                self.data = np.array(f[0].data,dtype=float)
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
                 if hdr.has_key('CDELT1'):
@@ -289,15 +302,20 @@ class Spectrum(object):
                     cdelt = 1.0
                 crpix = hdr.get('CRPIX1')
                 crval = hdr.get('CRVAL1')
-                cunit = hdr.get('CUNIT1')
+                cunit = hdr.get('CUNIT1','')
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
             else:
                 if ext is None:
                     h = f['DATA'].header
-                    d = f['DATA'].data
+                    d = np.array(f['DATA'].data, dtype=float)
                 else:
-                    h = f[ext].header
-                    d = f[ext].data
+                    if isinstance(ext,int):
+                        n = ext
+                    else:
+                        n = ext[0]
+                    h = f[n].header
+                    d = np.array(f[n].data, dtype=float)
+                        
                 if h['NAXIS'] != 1:
                     raise IOError, 'Wrong dimension number: not a spectrum'
                 self.unit = h.get('BUNIT', None)
@@ -313,16 +331,21 @@ class Spectrum(object):
                     cdelt = 1.0
                 crpix = h.get('CRPIX1')
                 crval = h.get('CRVAL1')
-                cunit = h.get('CUNIT1')
+                cunit = h.get('CUNIT1','')
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
                 # STAT extension
                 self.var = None
                 if getnoise:
-                    if f['STAT'].header['NAXIS'] != 1:
+                    if ext is None:
+                        fstat = f['STAT']
+                    else:
+                        n = ext[1]
+                        fstat = f[n]
+                    if fstat.header['NAXIS'] != 1:
                         raise IOError, 'Wrong dimension number in STAT extension'
-                    if f['STAT'].header['NAXIS1'] != self.shape:
+                    if fstat.header['NAXIS1'] != self.shape:
                         raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = f['STAT'].data
+                    self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -996,7 +1019,7 @@ class Spectrum(object):
         """
         lbda = self.wave.coord()
         ksel = np.where(self.data.mask==False)            
-        d = np.zeros(np.shape(ksel)[1]+2)
+        d = np.zeros(np.shape(ksel)[1]+2, dtype= float)
         d[1:-1] = self.data.data[ksel]
         w = np.zeros(np.shape(ksel)[1]+2)      
         w[1:-1] = lbda[ksel]
@@ -1564,6 +1587,8 @@ class Spectrum(object):
             i2 = self.shape
         else:
             i2 = self.wave.pixel(lmax, True)
+        if i1==i2:
+            raise ValueError, 'Minimum and maximum wavelengths are equal'
         return self.__getitem__(slice(i1,i2,1))
 
     def fwhm(self, l0, cont=0, spline=False):
@@ -1581,7 +1606,7 @@ class Spectrum(object):
         linear/spline interpolation to interpolate masked values
         """
         k0 = self.wave.pixel(l0, nearest=True)
-        d = self._interp_data(spline) - cont
+        d = self._interp_data(spline)*self.fscale - cont
         f2 = d[k0]/2
         k2 = np.argwhere(d[k0:]<f2)[0][0] + k0
         i2 = np.interp(f2, d[k2:k2-2:-1], [k2,k2-1])
@@ -1590,29 +1615,33 @@ class Spectrum(object):
         fwhm = (i2 - i1)*self.wave.cdelt
         return fwhm
 
-    def gauss_fit(self,lmin,lmax,fwhm=None,lpeak=None,fpeak=None, cont=None, spline=False, plot=False):
+    def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None, cont=None, peak=False, spline=False, plot=False):
         """performs polynomial fit on spectrum.
-        Returns [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+        Returns Gauss1D
 
         Parameters
         ----------
-        lmin : float
-        Minimum wavelength.
+        lmin : float or (float,float)
+        Minimum wavelength value or wavelength range used to compute the gaussian left value.
 
-        lmax : float
-        Maximum wavelength.
+        lmax : float or (float,float)
+        Maximum wavelength value or wavelength range used to compute the gaussian right value.
+        
+        lpeak : float
+        input gaussian center, if None it is estimated with the wavelength corresponding to the maximum value in [max(lmin), min(lmax)]
+        
+        flux : float
+        integrated gaussian flux or gaussian peak value if peak is True.
+        If None peak value is estimated.
 
         fwhm : float
         input gaussian fwhm, if None it is estimated.
 
-        lpeak : float
-        input gaussian center, if None it is estimated.
-
-        fpeak : float
-        input gaussian peak value, if None it is estimated.
-        
         cont : float
-        continuum value, if None it is estimated.
+        continuum value, if None it is estimated by the line through points (max(lmin),mean(data[lmin])) and (min(lmax),mean(data[lmax]))
+        
+        peak : boolean
+        If true, flux contains the gaussian peak value 
         
         spline : boolean
         linear/spline interpolation to interpolate masked values
@@ -1620,88 +1649,128 @@ class Spectrum(object):
         plot : boolean
         If True, the gaussian is plotted.
         """
+
+        # truncate the spectrum and compute right and left gaussian values
+        if isinstance(lmin,int) or isinstance(lmin,float):
+                fmin = None
+        else:
+            lmin = np.array(lmin, dtype=float)
+            fmin = self.mean(lmin[0],lmin[1])
+            lmin = lmin[1]
+            
+        if isinstance(lmax,int) or isinstance(lmax,float):
+                fmax = None
+        else:
+            lmax = np.array(lmax, dtype=float)
+            fmax = self.mean(lmax[0],lmax[1])
+            lmax = lmax[0]
+            
         spec = self.truncate(lmin, lmax)
         data = spec._interp_data(spline)
-        
-        if cont is None:
-            cont = (data[0] + data[-1])/2.
-            #cont = np.ma.median(self.data.ravel())
-            
-        gaussfit = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
-        e_gauss_fit = lambda p, x, y: (gaussfit(p,x) -y) #1d Gaussian fit
-        
-        if spec.var is None:
-            weight = None
-        else:
-            weight = 1./spec.var
-
         l = spec.wave.coord()
         d = data * self.fscale
-
-        if weight is not None:
-            dw = d * weight
-        else:
-            dw = d
         
+        if fmin is None:
+            fmin = d[0]
+        if fmax is None:
+            fmax = d[-1]
+            
+        # weigth           
+        if spec.var is None:
+            dw = d
+        else:
+            dw = d * 1./spec.var
+
+        # initial gaussian peak value 
         if lpeak is None:
             lpeak = l[dw.argmax()]
-        if fpeak is None:
-            pixel = spec.wave.pixel(lpeak,nearest=True)
-            fpeak = d[pixel] - cont
+            
+        # continuum value 
+        if cont is None:
+            cont = ((fmax-fmin)*lpeak +lmax*fmin-lmin*fmax)/(lmax-lmin)
+        
+        # initial sigma value    
         if fwhm is None:
             fwhm = spec.fwhm(lpeak, cont, spline)
-
         sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
-
-        v0 = [fpeak,lpeak,sigma] #inital guesses for Gaussian Fit. $just do it around the peak
-        out = leastsq(e_gauss_fit, v0[:], args=(l, d), maxfev=100000, full_output=1) #Gauss Fit
-        v = out[0] #fit parammeters out
-        covar = out[1] #covariance matrix output
-
-        if spec.shape > len(v) and covar is not None:
-            s_sq = (e_gauss_fit(v, l, d)**2).sum()/(spec.shape-len(v))
-            err = np.diag(covar * s_sq)
+            
+        # intitial gaussian integrated flux
+        if flux is None:
+            pixel = spec.wave.pixel(lpeak,nearest=True)
+            peak = d[pixel] - cont
+            flux = peak * np.sqrt(2*np.pi*(sigma**2))
+        elif peak is True:
+            peak = flux - cont
+            flux = peak * np.sqrt(2*np.pi*(sigma**2))
         else:
-            err = np.zeros(len(v))
+            pass
+        
+        # 1d gaussian function
+        if cont is None:
+            gaussfit = lambda p, x: ((fmax-fmin)*x +lmax*fmin-lmin*fmax)/(lmax-lmin) + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2))
+        else:
+            gaussfit = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2))
+        # 1d Gaussian fit  
+        e_gauss_fit = lambda p, x, y: (gaussfit(p,x) -y)
+        
+        # inital guesses for Gaussian Fit
+        v0 = [flux,lpeak,sigma]
+        # Minimize the sum of squares
+        v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(l, d), maxfev=100000, full_output=1) #Gauss Fit
+          
+        # calculate the errors from the estimated covariance matrix
+        chisq = sum(info["fvec"] * info["fvec"])
+        dof = len(info["fvec"]) - len(v)
+        err = np.array([np.sqrt(covar[i, i]) * np.sqrt(chisq / dof) for i in range(len(v))])
+        
+        #plot
+        if plot:
+            xxx = np.arange(min(l),max(l),l[1]-l[0])
+            ccc = gaussfit(v,xxx)
+            plt.plot(xxx,ccc,'r--')
 
+        # return a Gauss1D object
+        flux = v[0]
+        err_flux = err[0]
         lpeak = v[1]
         err_lpeak = err[1]
         sigma = v[2]
-        fwhm = sigma*2*np.sqrt(2*np.log(2))
         err_sigma = err[2]
+        fwhm = sigma*2*np.sqrt(2*np.log(2))
         err_fwhm = err_sigma*2*np.sqrt(2*np.log(2))
-        fpeak = v[0]
-        err_fpeak = err[0]
-
-        if plot:
-            xxx = np.arange(min(l),max(l),l[1]-l[0])
-            ccc = gaussfit(v,xxx) # this will only work if the units are pixel and not wavelength
-            plt.plot(xxx,ccc,'r--')
-
-        return Gauss1D(cont, fwhm, lpeak, fpeak, err_fwhm, err_lpeak, err_fpeak)
+        peak = flux/np.sqrt(2*np.pi*(sigma**2))
+        err_peak = np.abs(1./np.sqrt(2*np.pi)*(err_flux*sigma-flux*err_sigma)/sigma/sigma)            
+        return Gauss1D(lpeak, peak, flux, fwhm, cont, err_lpeak, err_peak, err_flux,err_fwhm)        
     
 
-    def add_gaussian(self,fwhm,lpeak,fpeak,cont=0):
+    def add_gaussian(self, lpeak, flux, fwhm, cont=0, peak=False ):
         """adds a gausian on spectrum.
 
         Parameters
         ----------
-
-        fwhm : float
-        gaussian fwhm
-
+        
         lpeak : float
         gaussian center
-
-        fpeak : float
-        gaussian peak value
+        
+        flux : float
+        gaussian integrated flux or gaussian peak value
+        
+        fwhm : float
+        gaussian fwhm
         
         cont : float
-        continuum value. O by deafult.
+        continuum value. O by default.
+        
+        peak : boolean
+        If true, flux contains the gaussian peak value
         """
         gauss = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
 
         sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
+        
+        
+        if peak is True:
+            flux = flux * np.sqrt(2*np.pi*(sigma**2))
 
         lmin = lpeak - 5*sigma
         lmax = lpeak + 5*sigma
@@ -1712,26 +1781,151 @@ class Spectrum(object):
                 raise ValueError, 'Gaussian outside spectrum wavelength range'
 
         wave  = self.wave.coord()[imin:imax]
-        v = [fpeak,lpeak,sigma]
+        v = [flux,lpeak,sigma]
 
         res = self.copy()
-        res.data[imin:imax] = self.data[imin:imax] + gauss(v,wave)
+        res.data[imin:imax] = self.data[imin:imax] + gauss(v,wave)/self.fscale
 
         return res
     
-    def median_filter(self, kernel_size=None):
+    def median_filter(self, kernel_size=None, pixel=True):
         """performs a median filter on the spectrum
+        
+        Parameters
+        ----------
+        
+        kernel_size : float
+        Size of the median filter window.
+        
+        pixel : booelan
+        If True, kernel_size is in pixels.
+        If False, kernel_size is in spectrum coordinate unit.
+
+        """
+        if pixel is False:
+            kernel_size = kernel_size / self.get_step()
+        ks = int(kernel_size/2)*2 +1
+        data = signal.medfilt(self.data, ks)
+        res = Spectrum(shape=self.shape, wave = self.wave, unit=self.unit, data=data, fscale=1.0)
+        return res
+    
+    def convolve(self, other):
+        """convolves self and other.
         
         Parameter
         ---------
         
-        kernel_size : float
-        Size of the median filter window.
-
+        other : 1d-array or Spectrum
+        second Spectrum or 1d-array
         """
-        data = signal.medfit(self.data)
-        res = Spectrum(shape=self.shape, wave = self.wave, unit=self.unit, data=data, fscale=1.0)
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is np.array:
+            res = self.copy()
+            res.data = signal.convolve(self.data ,other ,mode='same')
+            return res
+        try:
+            if other.spectrum:
+                if other.data is None or self.shape != other.shape:
+                    print 'Operation forbidden for spectra with different sizes'
+                    return None
+                else:
+                    res = self.copy()
+                    res.data = signal.convolve(self.data ,other.data ,mode='same')
+                    res.fscale = self.fscale * other.fscale
+                    return res
+        except:
+            print 'Operation forbidden'
+            return None
+        
+    def fftconvolve(self, other):
+        """convolves self and other using fft.
+        
+        Parameter
+        ---------
+        
+        other : 1d-array or Spectrum
+        second Spectrum or 1d-array
+        """
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is np.array:
+            res = self.copy()
+            res.data = signal.fftconvolve(self.data ,other ,mode='same')
+            return res
+        try:
+            if other.spectrum:
+                if other.data is None or self.shape != other.shape:
+                    print 'Operation forbidden for spectra with different sizes'
+                    return None
+                else:
+                    res = self.copy()
+                    res.data = signal.fftconvolve(self.data ,other.data ,mode='same')
+                    res.fscale = self.fscale * other.fscale
+                    return res
+        except:
+            print 'Operation forbidden'
+            return None
+        
+    def correlate(self, other):
+        """cross-correlates self and other.
+        
+        Parameter
+        ---------
+        
+        other : 1d-array or Spectrum
+        second Spectrum or 1d-array
+        """
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is np.array:
+            res = self.copy()
+            res.data = signal.correlate(self.data ,other ,mode='same')
+            return res
+        try:
+            if other.spectrum:
+                if other.data is None or self.shape != other.shape:
+                    print 'Operation forbidden for spectra with different sizes'
+                    return None
+                else:
+                    res = self.copy()
+                    res.data = signal.correlate(self.data ,other.data ,mode='same')
+                    res.fscale = self.fscale * other.fscale
+                    return res
+        except:
+            print 'Operation forbidden'
+            return None
+                
+    def fftconvolve_gauss(self, fwhm, nsig=5):
+        """convolves the spectrum with a Gaussian using fft.
+        
+        Parameters
+        ----------
+        
+        fwhm : float
+        Gaussian fwhm.
+        
+        nsig : integer
+        Number of standard deviations.
+        """
+        sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
+        s = sigma/self.get_step()
+        n = nsig * int(s+0.5)
+        n = int(n/2)*2
+        d = np.arange(-n,n+1)
+        kernel = special.erf((1+2*d)/(2*np.sqrt(2)*s)) + special.erf((1-2*d)/(2*np.sqrt(2)*s))
+        kernel /= kernel.sum()
+        
+        res = self.copy()
+        res.data = signal.correlate(self.data ,kernel ,mode='same')
         return res
+    
+#    def peak_detector(self, threshold, kernel_size=None):
+#        d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
+#        ksel = np.where(d>threshold)
+#        wave  = self.wave.coord()
+#        return wave[ksel]
+        
     
     def plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
         """ plots the spectrum.
@@ -1775,10 +1969,11 @@ class Spectrum(object):
         if title is not None:
                 plt.title(title)   
         if res.wave.cunit is not None:
-            plt.xlabel(res.wave.cunit)
+            plt.xlabel(r'$\lambda$ (%s)' %res.wave.cunit)
         if res.unit is not None:
             plt.ylabel(res.unit)
         plt.connect('motion_notify_event', self._on_move)
+        self._plot_id = len(plt.gca().lines)-1
         
     def log_plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
         """ plots the spectrum with y logarithmic scale.
@@ -1822,11 +2017,11 @@ class Spectrum(object):
         if title is not None:
                 plt.title(title)   
         if res.wave.cunit is not None:
-            plt.xlabel(res.wave.cunit)
+            plt.xlabel(r'$\lambda$ (%s)' %res.wave.cunit)
         if res.unit is not None:
             plt.ylabel(res.unit)
         plt.connect('motion_notify_event', self._on_move)
-
+        self._plot_id = len(plt.gca().lines)-1
         
     def _on_move(self,event):
         """ prints x,y,i,lbda and data in the figure toolbar.
@@ -1849,8 +2044,9 @@ class Spectrum(object):
         To remove a cursor position, click on the left mouse button + <r>
         To quit the interactive mode, click on the right mouse button.
         At the end, clicks are saved in self.clicks as dictionary {'xc','yc','x','y'}.
-        Parameters
-        ----------
+        
+        Parameter
+        ---------
         
         filename : string
         If filename is not None, the cursor values are saved as a fits table.
@@ -1886,6 +2082,7 @@ class Spectrum(object):
                     try:
                         xc, yc = event.xdata, event.ydata
                         i = self.wave.pixel(xc, True)
+                        print i
                         x = self.wave.coord(i)
                         val = self.data[i]*self.fscale
                         if len(self._clicks.x)==0:
@@ -1938,22 +2135,37 @@ class Spectrum(object):
             self._clicks.clear()
             self._clicks = None
             
-    def igauss_fit(self):
-        """Interactive mode.
-        Performs polynomial fit on spectrum.
-        Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
+    def igauss_fit(self,nclicks=5):
+        """Interactive mode. Performs polynomial fit on spectrum.
+        Use 3 or 5 mouse clicks to get minimim, peak and maximum wavelengths.
         To quit the interactive mode, click on the right mouse button.
         The parameters of the last gaussian are saved in self.gauss.
+        
+        Parameter
+        ---------
+        nclicks : 3 or 5
+        Number of clicks.
+        
+        
         """
-        print 'Use 3 mouse clicks to get minimim, peak and maximum wavelengths.'
-        print 'To quit the interactive mode, click on the right mouse button.'
-        print 'The parameters of the last gaussian are saved in self.gauss.'
-        if self._clicks is None:
-            binding_id = plt.connect('button_press_event', self._on_click_gauss_fit)
-            plt.connect('motion_notify_event', self._on_move)
-            self._clicks = SpectrumClicks(binding_id)
+        if nclicks==3:
+            print 'Use 3 mouse clicks to get minimim, peak and maximum wavelengths.'
+            print 'To quit the interactive mode, click on the right mouse button.'
+            print 'The parameters of the last gaussian are saved in self.gauss.'
+            if self._clicks is None:
+                binding_id = plt.connect('button_press_event', self._on_3clicks_gauss_fit)
+                self._clicks = SpectrumClicks(binding_id)
+        else:
+            print 'Use the 2 first mouse clicks to get the wavelength range to compute the gaussian left value.'
+            print 'Use the next click to get the peak wavelength.'
+            print 'Use the 2 last mouse clicks to get the wavelength range to compute the gaussian rigth value.'
+            print 'To quit the interactive mode, click on the right mouse button.'
+            print 'The parameters of the last gaussian are saved in self.gauss.'
+            if self._clicks is None:
+                binding_id = plt.connect('button_press_event', self._on_5clicks_gauss_fit)
+                self._clicks = SpectrumClicks(binding_id)
     
-    def _on_click_gauss_fit(self,event):
+    def _on_3clicks_gauss_fit(self,event):
         """Performs polynomial fit on spectrum (interactive mode).
         """
         if event.button == 1:
@@ -1979,13 +2191,49 @@ class Spectrum(object):
             self._clicks.clear()
             self._clicks = None
             
+    def _on_5clicks_gauss_fit(self,event):
+        """Performs polynomial fit on spectrum (interactive mode).
+        """
+        if event.button == 1:
+            if event.inaxes is not None:
+                try:
+                    xc, yc = event.xdata, event.ydata
+                    i = self.wave.pixel(xc, True)
+                    x = self.wave.coord(i)
+                    val = self.data[i]*self.fscale
+                    if len(self._clicks.x)==0:
+                        print ''
+                    self._clicks.add(xc,yc,i,x,val)
+                    if np.sometrue(np.mod( len(self._clicks.x), 5 )) == False:
+                        lmin1 = self._clicks.xc[-5]
+                        lmin2 = self._clicks.xc[-4]
+                        lpeak = self._clicks.xc[-3]
+                        lmax1 = self._clicks.xc[-2]
+                        lmax2 = self._clicks.xc[-1]
+                        self.gauss = self.gauss_fit((lmin1,lmin2), (lmax1,lmax2), lpeak=lpeak, plot=True)
+                        self.gauss.print_param()
+                        self._clicks.id_lines.append(len(plt.gca().lines)-1)
+                except:
+                    pass
+        else: 
+            self._clicks.clear()
+            self._clicks = None
+            
     def imask(self):
         """Interactive mode.
         Plots masked values.
         """
-        lbda = self.wave.coord()
-        drawstyle = plt.gca().lines[0].get_drawstyle()
-        plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
+        try:
+            try:
+                del plt.gca().lines[self._plot_mask_id]
+            except:
+                pass
+            lbda = self.wave.coord()
+            drawstyle = plt.gca().lines[self._plot_id].get_drawstyle()
+            plt.plot(lbda,self.data.data,drawstyle=drawstyle, hold = True, alpha=0.3)
+            self._plot_mask_id = len(plt.gca().lines)-1
+        except:
+            pass
             
 
 class Image(object):
@@ -2089,7 +2337,7 @@ class Image(object):
                 self.unit = hdr.get('BUNIT', None)
                 self.cards = hdr.ascardlist()
                 self.shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
-                self.data = f[0].data
+                self.data = np.array(f[0].data, dtype=float)
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
                 try:
@@ -2100,10 +2348,10 @@ class Image(object):
             else:
                 if ext is None:
                     h = f['DATA'].header
-                    d = f['DATA'].data
+                    d = np.array(f['DATA'].data, dtype=float)
                 else:
                     h = f[ext].header
-                    d = f[ext].data
+                    d = np.array(f[ext].data, dtype=float)
                 if h['NAXIS'] != 2:
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('BUNIT', None)
@@ -2122,7 +2370,7 @@ class Image(object):
                         raise IOError, 'Wrong dimension number in STAT extension'
                     if f['STAT'].header['NAXIS1'] != self.shape[1] and f['STAT'].header['NAXIS2'] != self.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = f['STAT'].data
+                    self.var = np.array(f['STAT'].data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -3168,7 +3416,7 @@ class Cube(object):
                 self.unit = hdr.get('BUNIT', None)
                 self.cards = hdr.ascardlist()
                 self.shape = np.array([hdr['NAXIS3'],hdr['NAXIS2'],hdr['NAXIS1']])
-                self.data = f[0].data
+                self.data = np.array(f[0].data, dtype=float)
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
                 # WCS object from data header
@@ -3186,15 +3434,15 @@ class Cube(object):
                     cdelt = 1.0
                 crpix = hdr.get('CRPIX3')
                 crval = hdr.get('CRVAL3')
-                cunit = hdr.get('CUNIT3')
+                cunit = hdr.get('CUNIT3','')
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit,self.shape[0])
             else:
                 if ext is None:
                     h = f['DATA'].header
-                    d = f['DATA'].data
+                    d = np.array(f['DATA'].data, dtype=float)
                 else:
                     h = f[ext].header
-                    d = f[ext].data
+                    d = np.array(f[ext].data, dtype=float)
                 if h['NAXIS'] != 3:
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('BUNIT', None)
@@ -3216,7 +3464,7 @@ class Cube(object):
                     cdelt = 1.0
                 crpix = h.get('CRPIX3')
                 crval = h.get('CRVAL3')
-                cunit = h.get('CUNIT3')
+                cunit = h.get('CUNIT3','')
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
                 self.var = None
                 if getnoise:
@@ -3224,7 +3472,7 @@ class Cube(object):
                         raise IOError, 'Wrong dimension number in STAT extension'
                     if f['STAT'].header['NAXIS1'] != self.shape[2] and f['STAT'].header['NAXIS2'] != self.shape[1] and f['STAT'].header['NAXIS3'] != self.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = f['STAT'].data
+                    self.var = np.array(f['STAT'].data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)

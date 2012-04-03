@@ -120,6 +120,16 @@ class TestObj(unittest.TestCase):
         mean1 =  self.spectrum1.mean(lmin=self.spectrum1.wave[1],lmax=self.spectrum1.wave[-2])
         mean2 = spectrum2.mean()
         self.assertAlmostEqual(mean1,mean2)
+        
+    def test_gauss_fit(self):
+        wave = WaveCoord(crpix=1, cdelt=3.0, crval=4000, cunit = 'Angstrom')
+        data = np.zeros(6000)
+        spe = Spectrum(shape=6000, data=data,wave=wave,fscale= 2.3)
+        spem = spe.add_gaussian(5000, 1200, 20)
+        gauss = spem.gauss_fit(lmin=(4500,4800),lmax=(5200,6000), lpeak = 5000)
+        self.assertAlmostEqual(gauss.lpeak,5000,2)
+        self.assertAlmostEqual(gauss.flux,1200,2)
+        self.assertAlmostEqual(gauss.fwhm,20,2)
     
     def test_arithmetricOperator_Image(self):
         """tests arithmetic functions on Image object"""

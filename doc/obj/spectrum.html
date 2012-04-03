@@ -62,7 +62,7 @@
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Possible FITS filename.</li>
-<li><strong>ext</strong> (<em>integer</em>) &#8211; Number of the corresponding extension in the file.</li>
+<li><strong>ext</strong> (<em>integer or (integer,integer)</em>) &#8211; Number of the data extension or numbers of the data and variance extensions.</li>
 <li><strong>getnoise</strong> (<em>boolean</em>) &#8211; True if the noise Variance spectrum is read (if it exists). Use getnoise=False to create spectrum without variance extension</li>
 <li><strong>shape</strong> (<em>integer</em>) &#8211; size of the spectrum. 101 by default.</li>
 <li><strong>wave</strong> (<em>WaveCoord</em>) &#8211; Wavelength coordinates.</li>
@@ -780,25 +780,26 @@ Wavelength coordinates must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Spectrum.gauss_fit">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>lmin</em>, <em>lmax</em><span class="optional">[</span>, <em>fwhm=None</em>, <em>lpeak=None</em>, <em>fpeak=None</em>, <em>cont=None</em>, <em>spline=False</em>, <em>plot=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.gauss_fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>lmin</em>, <em>lmax</em><span class="optional">[</span>, <em>lpeak=None</em>, <em>flux=None</em>, <em>fwhm=None</em>, <em>cont=None</em>, <em>peak=False</em>, <em>spline=False</em>, <em>plot=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.gauss_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs polynomial fit on spectrum.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lmin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum wavelength.</li>
-<li><strong>lmax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum wavelength.</li>
+<li><strong>lmin</strong> (<em>float or (float,float)</em>) &#8211; Minimum wavelength value or wavelength range used to compute the gaussian left value.</li>
+<li><strong>lmax</strong> (<em>float or (float,float)</em>) &#8211; Maximum wavelength or wavelength range used to compute the gaussian right value.</li>
+<li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian center, if None it is estimated with the wavelength corresponding to the maximum value in [max(lmin), min(lmax)]</li>
+<li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Integrated gaussian flux or gaussian peak value if peak is True.</li>
 <li><strong>fwhm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian fwhm, if None it is estimated.</li>
-<li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian center, if None it is estimated.</li>
-<li><strong>fpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Input gaussian peak value, if None it is estimated.</li>
-<li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Continuum value, if None it is estimated.</li>
+<li><strong>peak</strong> (<em>boolean</em>) &#8211; If true, flux contains the gaussian peak value .</li>
+<li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Continuum value, if None it is estimated by the line through points (max(lmin),mean(data[lmin])) and (min(lmax),mean(data[lmax])).</li>
 <li><strong>spline</strong> (<em>boolean</em>) &#8211; Linear/spline interpolation to interpolate masked values.</li>
 <li><strong>plot</strong> (<em>boolean</em>) &#8211; If True, the Gaussian is plotted.</li>
 </ul>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]</p>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">return an objs.Gauss1D object (<a class="reference internal" href="#gauss1d-class">Gauss1D class</a>)</p>
 </td>
 </tr>
 </tbody>
@@ -807,17 +808,120 @@ Wavelength coordinates must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Spectrum.add_gaussian">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">add_gaussian</tt><big>(</big><em>fwhm</em>, <em>lpeak</em>, <em>fpeak</em><span class="optional">[</span>, <em>cont=0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.add_gaussian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a gausian on spectrum.</p>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">add_gaussian</tt><big>(</big><em>lpeak</em>, <em>flux</em>, <em>fwhm</em><span class="optional">[</span>, <em>cont=0</em>, <em>peak=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.add_gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a gaussian on spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian center.</li>
+<li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Integrated gaussian flux or gaussian peak value if peak is True.</li>
+<li><strong>fwhm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian fwhm.</li>
+<li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Continuum value.</li>
+<li><strong>peak</strong> (<em>boolean</em>) &#8211; If true, flux contains the gaussian peak value .</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Spectrum</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Examples of gaussian fit:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">Spectrum</span>
+
+<span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&#39;spectrum.fits&#39;</span><span class="p">)</span>
+<span class="n">spe2</span> <span class="o">=</span> <span class="n">spe</span><span class="o">.</span><span class="n">add_gaussian</span><span class="p">(</span><span class="mi">5000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">spe2</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">gauss</span> <span class="o">=</span> <span class="n">spe2</span><span class="o">.</span><span class="n">gauss_fit</span><span class="p">(</span><span class="n">lmin</span><span class="o">=</span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="mi">4800</span><span class="p">),</span> <span class="n">lmax</span><span class="o">=</span><span class="p">(</span><span class="mi">5200</span><span class="p">,</span><span class="mi">6000</span><span class="p">),</span> <span class="n">lpeak</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">gauss</span><span class="o">.</span><span class="n">print_param</span><span class="p">()</span>
+<span class="n">gauss2</span> <span class="o">=</span> <span class="n">spe2</span><span class="o">.</span><span class="n">gauss_fit</span><span class="p">(</span><span class="n">lmin</span><span class="o">=</span><span class="mi">4800</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="mi">5400</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">gauss2</span><span class="o">.</span><span class="n">print_param</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="function">
+<dt id="obj.Spectrum.median_filter">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">median_filter</tt><big>(</big><span class="optional">[</span><em>kernel_size=None</em>, <em>pixel=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.median_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a median filter on the spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_size</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Size of the median filter window.</li>
+<li><strong>pixel</strong> (<em>boolean</em>) &#8211; True: kernel_size is in pixels, False: kernel_size is in spectrum coordinate unit.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Spectrum</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.convolve">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">convolve</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#obj.Spectrum.convolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolves self and other.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>1d-array or Spectrum</em>) &#8211; Second spectrum or 1d-array.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.fftconvolve">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">fftconvolve</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#obj.Spectrum.fftconvolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolves self and other using fft.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>1d-array or Spectrum</em>) &#8211; Second spectrum or 1d-array.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.correlate">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">correlate</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#obj.Spectrum.correlate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross-correlates self and other.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>1d-array or Spectrum</em>) &#8211; Second spectrum or 1d-array.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Spectrum</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.fftconvolve_gauss">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">fftconvolve_gauss</tt><big>(</big><em>fwhm</em><span class="optional">[</span>, <em>nsig=5</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.fftconvolve_gauss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolves the spectrum with a Gaussian using fft.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>fwhm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian fwhm.</li>
-<li><strong>lpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian center.</li>
-<li><strong>fpeak</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Gaussian peak value.</li>
-<li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Continuum value.</li>
+<li><strong>nsig</strong> (<em>integer</em>) &#8211; Number of standard deviations.</li>
 </ul>
 </td>
 </tr>
@@ -908,12 +1012,21 @@ Wavelength coordinates must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Spectrum.igauss_fit">
-<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">igauss_fit</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.igauss_fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plots polynomial fit on spectrum.</p>
-<p>Prints [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]].</p>
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">igauss_fit</tt><big>(</big><span class="optional">[</span><em>nclicks=5</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.igauss_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform an plots a polynomial fit on spectrum.</p>
 <p>To select minimum, peak and maximum wavelengths, click on the left mouse button.</p>
 <p>To quit the interactive mode, click on the right mouse button.</p>
 <p>The parameters of the last gaussian are saved in self.gauss (<a class="reference internal" href="#gauss1d-class">Gauss1D class</a>)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nclicks</strong> (<em>integer</em>) &#8211; 3 or 5 clicks.
+Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
+Use 5 mouse clicks: the two first select a range of minimum wavelengths, the 3th selects the peak wavelength and the two last clicks select a range of maximum wavelengths - see <a class="reference internal" href="#obj.Spectrum.gauss_fit" title="obj.Spectrum.gauss_fit"><tt class="xref py py-func docutils literal"><span class="pre">gauss_fit()</span></tt></a>.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>
@@ -925,38 +1038,46 @@ Wavelength coordinates must be the same.</dd>
 <h3>Attributes<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <table border="1" class="docutils">
 <colgroup>
-<col width="19%" />
-<col width="12%" />
-<col width="69%" />
+<col width="17%" />
+<col width="11%" />
+<col width="71%" />
 </colgroup>
 <tbody valign="top">
-<tr><td>cont</td>
-<td>float</td>
-<td>Continuum value.</td>
-</tr>
-<tr><td>fwhm</td>
-<td>float</td>
-<td>Gaussian fwhm.</td>
-</tr>
 <tr><td>lpeak</td>
 <td>float</td>
 <td>Gaussian center.</td>
-</tr>
-<tr><td>fpeak</td>
-<td>float</td>
-<td>Gaussian peak value.</td>
-</tr>
-<tr><td>err_fwhm</td>
-<td>float</td>
-<td>Estimated error on Gaussian fwhm.</td>
 </tr>
 <tr><td>err_lpeak</td>
 <td>float</td>
 <td>Estimated error on Gaussian center.</td>
 </tr>
-<tr><td>err_fpeak</td>
+<tr><td>flux</td>
+<td>float</td>
+<td>Gaussian integrated flux</td>
+</tr>
+<tr><td>err_flux</td>
+<td>float</td>
+<td>Estimated error on Gaussian integrated flux</td>
+</tr>
+<tr><td>peak</td>
+<td>float</td>
+<td>Gaussian peak value.</td>
+</tr>
+<tr><td>err_peak</td>
 <td>float</td>
 <td>Estimated error on Gaussian peak value.</td>
+</tr>
+<tr><td>fwhm</td>
+<td>float</td>
+<td>Gaussian fwhm.</td>
+</tr>
+<tr><td>err_fwhm</td>
+<td>float</td>
+<td>Estimated error on Gaussian fwhm.</td>
+</tr>
+<tr><td>cont</td>
+<td>float</td>
+<td>Continuum value.</td>
 </tr>
 </tbody>
 </table>

@@ -11,8 +11,8 @@ This class manages spectrum, optionally including a variance and a bad pixel mas
 
   :param filename: Possible FITS filename.
   :type filename: string
-  :param ext: Number of the corresponding extension in the file.
-  :type ext: integer
+  :param ext: Number of the data extension or numbers of the data and variance extensions.
+  :type ext: integer or (integer,integer)
   :param getnoise: True if the noise Variance spectrum is read (if it exists). Use getnoise=False to create spectrum without variance extension
   :type getnoise: boolean
   :param shape: size of the spectrum. 101 by default.
@@ -487,43 +487,109 @@ Examples::
   :rtype: float
         
 
-.. function:: gauss_fit(lmin, lmax [, fwhm=None, lpeak=None, fpeak=None, cont=None, spline=False, plot=False])
+.. function:: gauss_fit(lmin, lmax [, lpeak=None, flux=None, fwhm=None, cont=None, peak=False, spline=False, plot=False])
 
   Performs polynomial fit on spectrum.
   
-  :param lmin: Minimum wavelength.
-  :type lmin: float
-  :param lmax: Maximum wavelength.
-  :type lmax: float
+  :param lmin: Minimum wavelength value or wavelength range used to compute the gaussian left value.
+  :type lmin: float or (float,float)
+  :param lmax: Maximum wavelength or wavelength range used to compute the gaussian right value.
+  :type lmax: float or (float,float)
+  :param lpeak: Input gaussian center, if None it is estimated with the wavelength corresponding to the maximum value in [max(lmin), min(lmax)]
+  :type lpeak: float
+  :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
+  :type flux: float
   :param fwhm: Input gaussian fwhm, if None it is estimated.
   :type fwhm: float
-  :param lpeak: Input gaussian center, if None it is estimated.
-  :type lpeak: float
-  :param fpeak: Input gaussian peak value, if None it is estimated.
-  :type fpeak: float
-  :param cont: Continuum value, if None it is estimated.
+  :param peak: If true, flux contains the gaussian peak value .
+  :type peak: boolean
+  :param cont: Continuum value, if None it is estimated by the line through points (max(lmin),mean(data[lmin])) and (min(lmax),mean(data[lmax])).
   :type cont: float
   :param spline: Linear/spline interpolation to interpolate masked values.
   :type spline: boolean
   :param plot: If True, the Gaussian is plotted.
   :type plot: boolean
-  :returns: [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
-  
+  :returns: return an objs.Gauss1D object (`Gauss1D class`_) 
+    
         
-.. function:: add_gaussian(fwhm, lpeak, fpeak [, cont=0])
+.. function:: add_gaussian(lpeak, flux, fwhm [, cont=0, peak=False])
 
-  Adds a gausian on spectrum.
+  Adds a gaussian on spectrum.
+  
+  :param lpeak: Gaussian center.
+  :type lpeak: float
+  :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
+  :type flux: float
+  :param fwhm: Gaussian fwhm.
+  :type fwhm: float
+  :param cont: Continuum value.
+  :type cont: float
+  :param peak: If true, flux contains the gaussian peak value .
+  :type peak: boolean
+  :rtype: Spectrum
+
+
+Examples of gaussian fit::
+ 
+  from mpdaf.obj import Spectrum
+  
+  spe = Spectrum(filename='spectrum.fits')
+  spe2 = spe.add_gaussian(5000, 1000, 20)
+  spe2.plot()
+  gauss = spe2.gauss_fit(lmin=(4500,4800), lmax=(5200,6000), lpeak = 5000, plot=True)
+  gauss.print_param()
+  gauss2 = spe2.gauss_fit(lmin=4800, lmax=5400, plot=True)
+  gauss2.print_param()
+  
+  
+.. function:: median_filter([kernel_size=None, pixel=True])
+
+  Performs a median filter on the spectrum.
+  
+  :param kernel_size: Size of the median filter window.
+  :type kernel_size: float
+  :param pixel: True: kernel_size is in pixels, False: kernel_size is in spectrum coordinate unit.
+  :type pixel: boolean
+  :rtype: Spectrum
+
+
+.. function:: convolve(other)
+
+  Convolves self and other.
+  
+  :param other: Second spectrum or 1d-array.
+  :type other: 1d-array or Spectrum
+  :rtype: Spectrum
+  
+
+.. function:: fftconvolve(other)
+
+  Convolves self and other using fft.
+  
+  :param other: Second spectrum or 1d-array.
+  :type other: 1d-array or Spectrum
+  :rtype: Spectrum
+
+
+.. function:: correlate(other)
+
+  Cross-correlates self and other.
+  
+  :param other: Second spectrum or 1d-array.
+  :type other: 1d-array or Spectrum
+  :rtype: Spectrum
+  
+  
+.. function:: fftconvolve_gauss(fwhm [, nsig=5])
+
+  Convolves the spectrum with a Gaussian using fft.
   
   :param fwhm: Gaussian fwhm.
   :type fwhm: float
-  :param lpeak: Gaussian center.
-  :type lpeak: float
-  :param fpeak: Gaussian peak value.
-  :type fpeak: float
-  :param cont: Continuum value.
-  :type cont: float
+  :param nsig: Number of standard deviations.
+  :type nsig: integer
   :rtype: Spectrum
-
+  
 
 Plotting
 --------
@@ -593,17 +659,22 @@ Plotting
 
   Over-plots masked values (interactive mode).
   
-.. function:: igauss_fit()
+  
+  
+.. function:: igauss_fit([nclicks=5])
 
-  Plots polynomial fit on spectrum.
-  
-  Prints [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]].
-  
+  Perform an plots a polynomial fit on spectrum.
+    
   To select minimum, peak and maximum wavelengths, click on the left mouse button.
   
   To quit the interactive mode, click on the right mouse button.
   
   The parameters of the last gaussian are saved in self.gauss (`Gauss1D class`_) 
+  
+  :param nclicks: 3 or 5 clicks.
+		  Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
+		  Use 5 mouse clicks: the two first select a range of minimum wavelengths, the 3th selects the peak wavelength and the two last clicks select a range of maximum wavelengths - see :func:`gauss_fit`.
+  :type nclicks: integer
   
 
 Gauss1D class
@@ -615,22 +686,25 @@ This class stores 1D gaussian parameters.
 Attributes
 ----------
 
-+-----------+-------+-----------------------------------------+
-| cont      | float | Continuum value.                        |
-+-----------+-------+-----------------------------------------+    
-| fwhm      | float | Gaussian fwhm.                          |
-+-----------+-------+-----------------------------------------+
-| lpeak     | float | Gaussian center.                        |
-+-----------+-------+-----------------------------------------+
-| fpeak     | float | Gaussian peak value.                    |
-+-----------+-------+-----------------------------------------+        
-| err_fwhm  | float | Estimated error on Gaussian fwhm.       |
-+-----------+-------+-----------------------------------------+    
-| err_lpeak | float | Estimated error on Gaussian center.     |
-+-----------+-------+-----------------------------------------+    
-| err_fpeak | float | Estimated error on Gaussian peak value. |
-+-----------+-------+-----------------------------------------+
-
++-----------+-------+---------------------------------------------+
+| lpeak     | float | Gaussian center.                            |
++-----------+-------+---------------------------------------------+
+| err_lpeak | float | Estimated error on Gaussian center.         |
++-----------+-------+---------------------------------------------+ 
+| flux      | float | Gaussian integrated flux                    |
++-----------+-------+---------------------------------------------+           
+| err_flux  | float | Estimated error on Gaussian integrated flux |
++-----------+-------+---------------------------------------------+ 
+| peak      | float | Gaussian peak value.                        |
++-----------+-------+---------------------------------------------+           
+| err_peak  | float | Estimated error on Gaussian peak value.     |
++-----------+-------+---------------------------------------------+
+| fwhm      | float | Gaussian fwhm.                              |
++-----------+-------+---------------------------------------------+
+| err_fwhm  | float | Estimated error on Gaussian fwhm.           |
++-----------+-------+---------------------------------------------+  
+| cont      | float | Continuum value.                            |
++-----------+-------+---------------------------------------------+
 
 Methods
 -------

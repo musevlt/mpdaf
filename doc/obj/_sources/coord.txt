@@ -13,7 +13,7 @@ Interface for world coordinates
 Degree / sexagesimal conversion
 ===============================
 
-.. currentmodule:: coord
+.. currentmodule:: coords
 
 .. function:: deg2hms(x)
 
@@ -66,7 +66,7 @@ Degree / sexagesimal conversion
   
 Example of conversion::
 
-  from mpdaf.obj import coord 
+  from mpdaf.obj import coords
   ac = np.array([2.5,2.5])
   ac2 = [ac,ac*2,ac*4]
   print ac2
@@ -164,7 +164,7 @@ Methods
   
 .. function:: get_range()
 
-  Returns (ra_min,ra_max),(dec_min,dec_max)
+  Returns [ [ra_min,dec_min], [ra_max,dec_max] ]
     
     
 World coordinates in spectral direction
