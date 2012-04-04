@@ -105,7 +105,8 @@ class WCS(object):
         ----------
         crpix : float or (float,float)
         Reference pixel coordinates.
-        If crpix=None crpix = 1.0 and the reference point is the first pixel in the image.
+        If crpix is None and shape is None crpix = 1.0 and the reference point is the first pixel of the image.
+        If crpix is None and shape is not None crpix = (shape + 1.0)/2.0 and the reference point is the center of the image.
         Note that for crpix definition, the first pixel in the image has pixel coordinates (1.0,1.0).
 
         crval : float or (float,float)
@@ -143,13 +144,16 @@ class WCS(object):
                 dx = np.sqrt(self.wcs.wcs.cd[0,0]*self.wcs.wcs.cd[0,0] + self.wcs.wcs.cd[0,1]*self.wcs.wcs.cd[0][1])
                 dy = np.sqrt(self.wcs.wcs.cd[1,0]*self.wcs.wcs.cd[1,0] + self.wcs.wcs.cd[1,1]*self.wcs.wcs.cd[1][1])
                 self.cdelt = [dx,dy]
+                self.rot = np.arctan2(self.wcs.wcs.cd[1,0],self.wcs.wcs.cd[1,1])
             except:
                 try:
-                    dx = np.sqrt(self.wcs.wcs.pc[0,0]*self.wcs.wcs.pc[0,0] + self.wcs.wcs.pc[0,1]*self.wcs.wcs.pc[0][1])
-                    dy = np.sqrt(self.wcs.wcs.pc[1,0]*self.wcs.wcs.pc[1,0] + self.wcs.wcs.pc[1,1]*self.wcs.wcs.pc[1][1])
+                    dx = self.wcs.wcs.cdelt[0]*np.sqrt(self.wcs.wcs.pc[0,0]*self.wcs.wcs.pc[0,0] + self.wcs.wcs.pc[0,1]*self.wcs.wcs.pc[0][1])
+                    dy = self.wcs.wcs.cdelt[1]*np.sqrt(self.wcs.wcs.pc[1,0]*self.wcs.wcs.pc[1,0] + self.wcs.wcs.pc[1,1]*self.wcs.wcs.pc[1][1])
                     self.cdelt = [dx,dy]
+                    self.rot = np.arctan2(self.wcs.wcs.pc[1,0],self.wcs.wcs.pc[1,1])
                 except:
                     self.cdelt = None
+                    self.rot = None
             # bug http://mail.scipy.org/pipermail/astropy/2011-April/001242.html if naxis=3
         else:
             #check attribute dimensions
@@ -165,14 +169,14 @@ class WCS(object):
                 pass
             else:
                 raise ValueError, 'cdelt with dimension > 2'
-            if crpix!=None:
+            if crpix is not None:
                 if isinstance(crpix,int) or isinstance(crpix,float):
                     crpix = (crpix,crpix)
                 elif len(crpix) == 2:
                     pass
                 else:
                     raise ValueError, 'crpix with dimension > 2'
-            if shape!=None:
+            if shape is not None:
                 if isinstance(shape,int):
                     shape = (shape,shape)
                 elif len(shape) == 2:
@@ -183,10 +187,13 @@ class WCS(object):
             self.wcs = pywcs.WCS(naxis=2)
             self.cdelt = np.array(cdelt)
             #reference pixel
-            if crpix!=None:
+            if crpix is not None:
                 self.wcs.wcs.crpix = np.array(crpix)
             else:
-                self.wcs.wcs.crpix = np.array([1.0,1.0])
+                if shape is None:
+                    self.wcs.wcs.crpix = np.array([1.0,1.0])
+                else:
+                    self.wcs.wcs.crpix = (np.array(shape)+1)/2.
             #value of reference pixel
             self.wcs.wcs.crval = np.array(crval)
             if deg: #in decimal degree
@@ -199,6 +206,7 @@ class WCS(object):
                 self.wcs.wcs.cd = np.array([[cdelt[0], 0], [0, cdelt[1]]])
             # rotation
             self.wcs.rotateCD(rot)
+            self.rot = rot
             # dimensions
             if shape!=None:
                 self.wcs.naxis1 = shape[1]
@@ -209,7 +217,7 @@ class WCS(object):
         """copies WCS object in a new one and returns it
         """
         out = WCS()
-        out.wcs = self.wcs.__copy__()
+        out.wcs = self.wcs.deepcopy()
         out.cdelt = self.cdelt
         return out
 
@@ -220,7 +228,7 @@ class WCS(object):
         if self.wcs.wcs.ctype[0] == 'LINEAR':
             pixcrd = [[0,0],[self.wcs.naxis1 -1,self.wcs.naxis2 -1]]
             pixsky = self.pix2sky(pixcrd)
-            print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) step:(%0.1f,%0.1f)' %(pixsky[0,0],pixsky[0,1],pixsky[1,0],pixsky[1,1],self.cdelt[0],self.cdelt[1])
+            print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) step:(%0.1f,%0.1f) rot:%0.1f' %(pixsky[0,0],pixsky[0,1],pixsky[1,0],pixsky[1,1],self.cdelt[0],self.cdelt[1],self.rot)
         else:
             # center in sexadecimal
             xc = (self.wcs.naxis1 -1) / 2.
@@ -235,7 +243,7 @@ class WCS(object):
             dy = self.cdelt[1]  * 3600
             sizex = self.wcs.naxis1 * dx
             sizey = self.wcs.naxis2 * dx
-            print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) step in arcsec:(%0.3f,%0.3f)' %(ra,dec,sizex,sizey,dx,dy)
+            print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) step in arcsec:(%0.3f,%0.3f) rot:%0.1f' %(ra,dec,sizex,sizey,dx,dy,self.rot)
 
     def to_header(self):
         return self.wcs.to_header()
@@ -332,10 +340,10 @@ class WCS(object):
                 jmin = item[1]
                 jmax = item[1]+1
             crpix = (self.wcs.wcs.crpix[0]-imin,self.wcs.wcs.crpix[1]-jmin)
-            res = self.copy()
+            
+            res = self.copy()            
             res.wcs.wcs.crpix = np.array(crpix)
-            # problem with item.step
-            res.wcs.naxis1 = int(imax-imin)
+            res.wcs.naxis1 = int(imax-imin)       
             res.wcs.naxis2 = int(jmax-jmin)
             return res
         else:

@@ -11,8 +11,8 @@ This class manages images, optionally including a variance and a bad pixel mask.
 
   :param filename: Possible FITS filename.
   :type filename: string
-  :param ext: Number of the corresponding extension in the file.
-  :type ext: integer
+  :param ext: Number of the data extension or numbers of the data and variance extensions.
+  :type ext: integer or (integer,integer)
   :param getnoise: True if the noise Variance image is read (if it exists). Use getnoise=False to create image without variance extension.
   :type getnoise: boolean
   :param shape: Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.
@@ -284,9 +284,98 @@ Methods
   
   :rtype: float array
 
+.. function:: moments()
+
+  Returns [width_x, width_y] first moments of the 2D gaussian.
+  
+  :rtype: float array
+  
+.. function:: gauss_fit(pos_min, pos_max, pos_peak=None, flux=None, width=None, cont=None, rot = 0, peak=False, plot=False)
+
+  Performs polynomial fit on image.
+  
+  :param pos_min: Minimum right ascension and declination in degrees (ra_min, dec_min).
+  :type pos_min: (float,float)
+  :param pos_max: Maximum right ascension and declination in degrees (ra_max, dec_max)
+  :type pos_max: (float,float)
+  :param pos_peak: Initial gaussian center (ra_peak, dec_peak). If None it is estimated.
+  :type pos_peak: (float,float)
+  :param flux: Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.
+  :type flux: float
+  :param width: Initial spreads of the Gaussian blob (ra_width,dec_width). If None, they are estimated.
+  :type width: (float,float)
+  :param cont: Initial continuum value, if None it is estimated.
+  :type cont: float
+  :param rot: Initial rotation in degree.
+  :type rot: float
+  :param peak: If true, flux contains a gaussian peak value. 
+  :type peak: boolean
+  :param plot: If True, the gaussian is plotted.
+  :type plot: boolean
+  :rtype: objs.Gauss2D object (`Gauss2D class`_) 
 
 
 Plotting
 --------
  
- 
+.. function:: plot(max=None, title=None, noise=False)
+
+  Plots the image.
+  
+  :param max: If max, the plot is normalized to peak at max value.
+  :type max: boolean
+  :param title: Figure title (None by default).
+  :type title: string
+  :param noise: If noise is True, the +/- standard deviation is overplotted. False by default.
+  :type noise: boolean
+
+
+
+Gauss2D class
+=============
+
+This class stores 2D gaussian parameters.
+
+
+Attributes
+----------
+
++------------+---------------+----------------------------------------------------+
+| center     | (float,float) | Gaussian center (ra,dec).                          |
++------------+---------------+----------------------------------------------------+    
+| flux       | float         | Gaussian integrated flux.                          |
++------------+---------------+----------------------------------------------------+
+| width      | (float,float) | Spreads of the Gaussian blob (ra_width,dec_width). |
++------------+---------------+----------------------------------------------------+    
+| cont       | float         | Continuum value.                                   |
++------------+---------------+----------------------------------------------------+    
+| rot        | float         | Rotation in degrees.                               |
++------------+---------------+----------------------------------------------------+    
+| peak       | float         | Gaussian peak value.                               |
++------------+---------------+----------------------------------------------------+    
+| err_center | (float,float) | Estimated error on Gaussian center.                |
++------------+---------------+----------------------------------------------------+        
+| err_flux   | float         | Estimated error on Gaussian integrated flux.       |
++------------+---------------+----------------------------------------------------+    
+| err_width  | (float,float) | Estimated error on Gaussian width.                 |
++------------+---------------+----------------------------------------------------+    
+| err_rot    | float         | Estimated error on rotation.                       |
++------------+---------------+----------------------------------------------------+   
+| err_peak   | float         | Estimated error on Gaussian peak value.            | 
++------------+---------------+----------------------------------------------------+
+
+
+Methods
+-------
+
+.. currentmodule:: obj.Gauss2D
+
+.. function:: copy()
+
+  Copies Gauss2D object in a new one and returns it.
+  
+  :rtype: Gauss2D object
+  
+.. function:: print_param()
+
+  Prints Gaussian parameters.

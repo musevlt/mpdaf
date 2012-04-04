@@ -182,9 +182,6 @@ class Gauss1D:
         print 'Gaussian peak value = %g (error:%g)' %(self.peak,self.err_peak)
         print 'Gaussian fwhm = %g (error:%g)' %(self.fwhm,self.err_fwhm)
         print 'Gaussian continuum = %g' %self.cont
-        
-        
-        
         print ''
         
 
@@ -993,11 +990,11 @@ class Spectrum(object):
             if lmin is None:
                 pix_min = 0
             else:
-                pix_min = int(self.wave.pixel(lmin))
+                pix_min = self.wave.pixel(lmin,nearest=True)
             if lmax is None:
                 pix_max = self.shape
             else:
-                pix_max = int(self.wave.pixel(lmax)) + 1
+                pix_max = self.wave.pixel(lmax,nearest=True)
             self.data[pix_min:pix_max] = np.ma.masked  
             
     def unmask(self):
@@ -1681,7 +1678,7 @@ class Spectrum(object):
         else:
             dw = d * 1./spec.var
 
-        # initial gaussian peak value 
+        # initial gaussian peak position
         if lpeak is None:
             lpeak = l[dw.argmax()]
             
@@ -1694,7 +1691,7 @@ class Spectrum(object):
             fwhm = spec.fwhm(lpeak, cont, spline)
         sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
             
-        # intitial gaussian integrated flux
+        # initial gaussian integrated flux
         if flux is None:
             pixel = spec.wave.pixel(lpeak,nearest=True)
             peak = d[pixel] - cont
@@ -2235,7 +2232,72 @@ class Spectrum(object):
         except:
             pass
             
-
+class Gauss2D:
+    """ Object used to saved 2d gaussian parameters
+    
+    Attributes
+    ---------- 
+    
+    center : (float,float)
+    Gaussian center (ra,dec).
+    
+    flux : float
+    Gaussian integrated flux.
+    
+    width : (float,float)
+    Spreads of the Gaussian blob (ra_width,dec_width).
+    
+    cont : float
+    Continuum value.
+    
+    rot : float
+    Rotation in degrees.
+    
+    peak : float
+    Gaussian peak value.
+    
+    err_center : (float,float)
+    Estimated error on Gaussian center.
+        
+    err_flux : float
+    Estimated error on Gaussian integrated flux.
+    
+    err_width : (float,float)
+    Estimated error on Gaussian width.
+    
+    err_rot : float
+    Estimated error on rotation.
+    
+    err_peak : float
+    Estimated error on Gaussian peak value.  
+    """
+    def __init__(self, center, flux, width, cont, rot, peak, err_center, err_flux, err_width, err_rot, err_peak):
+        self.center = center
+        self.flux = flux
+        self.width = width
+        self.cont = cont
+        self.rot = rot
+        self.peak = peak
+        self.err_center = err_center
+        self.err_flux = err_flux
+        self.err_width = err_width
+        self.err_rot = err_rot
+        self.err_peak = err_peak
+        
+    def copy(self):
+        res = Gauss2D(self.center, self.flux, self.width, self.cont, self.rot, self.peak, self.err_center, self.err_flux, self.err_width, self.err_rot, self.err_peak)
+        return res
+        
+    def print_param(self):
+        print 'Gaussian center = (%g,%g) (error:(%g,%g))' %(self.center[0],self.center[1],self.err_center[0],self.err_center[1])   
+        print 'Gaussian integrated flux = %g (error:%g)' %(self.flux,self.err_flux)
+        print 'Gaussian peak value = %g (error:%g)' %(self.peak,self.err_peak)
+        print 'Gaussian width = (%g,%g) (error:(%g,%g))' %(self.width[0],self.width[1],self.err_width[0],self.err_width[1])
+        print 'Rotation in degree: %g (error:%g)' %(self.rot, self.err_rot)
+        print 'Gaussian continuum = %g' %self.cont
+        print ''
+        
+        
 class Image(object):
     """Image class
 
@@ -2284,8 +2346,8 @@ class Image(object):
         filename : string
         Possible FITS filename
 
-        ext : integer
-        Number of the corresponding extension in the file
+        ext : integer or (integer,integer)
+        Number of the data extension or numbers of the data and variance extensions.
 
         getnoise: boolean
         True if the noise Variance image is read (if it exists)
@@ -2350,8 +2412,12 @@ class Image(object):
                     h = f['DATA'].header
                     d = np.array(f['DATA'].data, dtype=float)
                 else:
-                    h = f[ext].header
-                    d = np.array(f[ext].data, dtype=float)
+                    if isinstance(ext,int):
+                        n = ext
+                    else:
+                        n = ext[0]
+                    h = f[n].header
+                    d = np.array(f[n].data, dtype=float)
                 if h['NAXIS'] != 2:
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('BUNIT', None)
@@ -2366,11 +2432,17 @@ class Image(object):
                     self.wcs = None
                 self.var = None
                 if getnoise:
-                    if f['STAT'].header['NAXIS'] != 2:
+                    if ext is None:
+                        fstat = f['STAT']
+                    else:
+                        n = ext[1]
+                        fstat = f[n]
+                        
+                    if fstat['STAT'].header['NAXIS'] != 2:
                         raise IOError, 'Wrong dimension number in STAT extension'
-                    if f['STAT'].header['NAXIS1'] != self.shape[1] and f['STAT'].header['NAXIS2'] != self.shape[0]:
+                    if fstat['STAT'].header['NAXIS1'] != self.shape[1] and fstat['STAT'].header['NAXIS2'] != self.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = np.array(f['STAT'].data, dtype=float)
+                    self.var = np.array(fstat['STAT'].data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -3098,134 +3170,163 @@ class Image(object):
                 res[i] = interpolate.griddata(points, data, (grid[i,0],grid[i,1]), method='linear')
             return res
         
-#    def moments(self):
-#        """Returns (width_x, width_y) first moments of the 2D gaussian
-#        """
-#        total = np.abs(self.data).sum()
-#        Y, X = np.indices(self.data.shape) # python convention: reverse x,y numpy.indices
-#        y = np.argmax((X*np.abs(self.data)).sum(axis=1)/total)
-#        x = np.argmax((Y*np.abs(self.data)).sum(axis=0)/total)
-#        col = self.data[int(y),:]
-#        # FIRST moment, not second!
-#        width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())*self.wcs.cdelt[0]
-#        row = self.data[:, int(x)]
-#        width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*self.wcs.cdelt[1]
-#        return [width_x,width_y]
-#            
-#    def gauss_fit(self, ra_min , ra_max, dec_min, dec_max, fpeak=None, ra_peak=None, dec_peak=None, ra_width=None, dec_width=None, cont=None, plot = False):
-#        """
-#        """
-#        """performs polynomial fit on spectrum.
-#        Returns [[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
-#
-#        Parameters
-#        ----------
-#        lmin : float
-#        Minimum wavelength.
-#
-#        lmax : float
-#        Maximum wavelength.
-#
-#        fwhm : float
-#        input gaussian fwhm, if None it is estimated.
-#
-#        lpeak : float
-#        input gaussian center, if None it is estimated.
-#
-#        fpeak : float
-#        input gaussian peak value, if None it is estimated.
-#        
-#        cont : float
-#        continuum value, if None it is estimated.
-#        
-#        plot : boolean
-#        If True, the gaussian is plotted.
-#        """
-#        
-#        if cont is None: #pb mask
-#            cont = np.ma.median(self.data.ravel())
-#            print cont
-#            
-#        gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) \
-#                                              *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-(y-p[3])**2/(2*p[4]**2)) #2d Gaussian func
-#        e_gauss_fit = lambda p, x, y, data: (gaussfit(p,x,y) - data)
-#
-#        ima = self.truncate(ra_min, ra_max, dec_min, dec_max, mask = False)
+    def moments(self):
+        """Returns [width_x, width_y] first moments of the 2D gaussian
+        """
+        total = np.abs(self.data).sum()
+        Y, X = np.indices(self.data.shape) # python convention: reverse x,y numpy.indices
+        y = np.argmax((X*np.abs(self.data)).sum(axis=1)/total)
+        x = np.argmax((Y*np.abs(self.data)).sum(axis=0)/total)
+        col = self.data[int(y),:]
+        # FIRST moment, not second!
+        width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())*self.wcs.cdelt[0]
+        row = self.data[:, int(x)]
+        width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*self.wcs.cdelt[1]
+        return [width_x,width_y]
+        
+        
+    def gauss_fit(self, pos_min, pos_max, pos_peak=None, flux=None, width=None, cont=None, rot = 0, peak = False, plot = False):
+        """performs polynomial fit on image.
+        Returns Gauss2D object
+
+        Parameters
+        ----------
+        
+        pos_min : (float,float)
+        Minimum right ascension and declination in degrees (ra_min, dec_min)
+
+        pos_max : (float,float)
+        Maximum right ascension and declination in degrees (ra_max, dec_max)
+        
+        pos_peak : (float,float)
+        Initial gaussian center (ra_peak, dec_peak). If None they are estimated.
+        
+        flux : float
+        Initial integrated gaussian flux or gaussian peak value if peak is True.
+        If None peak value is estimated.
+
+        width : (float,float)
+        Initial spreads of the Gaussian blob (ra_width,dec_width). If None, they are estimated.
+
+        cont : float
+        Initial continuum value, if None it is estimated.
+        
+        rot : float
+        Initial rotation in degree.
+        
+        peak : boolean
+        If true, flux contains a gaussian peak value.
+        
+        plot : boolean
+        If True, the gaussian is plotted.
+        """
+        ra_min = pos_min[0]
+        dec_min = pos_min[1]
+        ra_max = pos_max[0]
+        dec_max = pos_max[1]
+        ima = self.truncate(ra_min, ra_max, dec_min, dec_max, mask = False)
+#        plt.figure()
 #        ima.plot()
-#        
-#        if ima.var is None:
-#            weight = None
-#        else:
-#            weight = 1./ima.var
-#            
-#        ksel = np.where(ima.data.mask==False)
-#        pixcrd = np.zeros((np.shape(ksel[0])[0],2))
-#        pixcrd[:,0] = ksel[1] #ra
-#        pixcrd[:,1] = ksel[0] #dec
-#        pixsky = ima.wcs.pix2sky(pixcrd)
-#        x = pixsky[:,0] #ra
-#        y = pixsky[:,1] #dec        
-#        data = ima.data.data[ksel]*self.fscale
-#        
-#        if weight is not None:
-#            dw = data * weight
-#        else:
-#            dw = data
-#        
-#        imax = dw.argmax()
-#        if ra_peak is None:
-#            ra_peak = x[imax]
-#        if dec_peak is None:
-#            dec_peak = y[imax]
-#        if fpeak is None:
-#            fpeak = data[imax] - cont
-#        width= ima.moments()
-#        if ra_width is None:
-#            ra_width = width[0]
-#        if dec_width is None:
-#            dec_width = width[1]
-#        
-#        v0 = [fpeak, ra_peak, ra_width, dec_peak, dec_width]
-#
-#        out = leastsq(e_gauss_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1) #Gauss Fit
-#        v = out[0] #fit parammeters out
-#        
-#        if plot:
-#            xx = np.arange(x[0],x[-1],(x[1]-x[0]))
-#            yy = np.arange(y[0],y[-1],10000*(y[0]-y[1]))
-#            ff = np.zeros((np.shape(yy)[0],np.shape(xx)[0]))
-#            for i in range(np.shape(xx)[0]):
-#                xxx = np.zeros(np.shape(yy)[0])
-#                xxx[:] = xx[i]
-#                ff[:,i] = gaussfit(v,xxx,yy)
-#            plt.contour(xx, yy, ff, 10)
-#            
-#        covar = out[1] #covariance matrix output
-#
-#        if ima.shape.prod() > len(v) and covar is not None:
-#            s_sq = (e_gauss_fit(v, x , y, data)**2).sum()/(ima.shape.prod()-len(v))
-#            err = np.diag(covar * s_sq)
-#        else:
-#            err = np.zeros(len(v))
-#
-#        fpeak = v[0]
-#        err_fpeak = err[0]
-#        ra_peak = v[1]
-#        err_ra_peak = err[1]
-#        ra_width = v[2]
-#        err_ra_width = err[2]
-#        dec_peak = v[3]
-#        err_dec_peak = err[3]
-#        dec_width = v[4]
-#        err_dec_width = err[4]
-#        
-#        print 'fpeak',fpeak,err_fpeak
-#        print 'ra_peak',ra_peak,err_ra_peak
-#        print 'dec_peak',dec_peak,err_dec_peak
-#        print 'ra_width',ra_width,err_ra_width
-#        print 'dec_width',dec_width,err_dec_width
-#
-##        return[[fwhm,lpeak,fpeak],[err_fwhm,err_lpeak,err_fpeak]]
+        
+        ksel = np.where(ima.data.mask==False)
+        pixcrd = np.zeros((np.shape(ksel[0])[0],2))
+        pixcrd[:,0] = ksel[1] #ra
+        pixcrd[:,1] = ksel[0] #dec
+        pixsky = ima.wcs.pix2sky(pixcrd)
+        x = pixsky[:,0] #ra
+        y = pixsky[:,1] #dec    
+        data = ima.data.data[ksel]*self.fscale
+        
+        #weight
+        if ima.var is None:
+            dw = data
+        else:
+            dw = data / ima.var[ksel]
+        
+        # initial gaussian peak position
+        if pos_peak is None:
+            imax = dw.argmax()
+            ra_peak = x[imax]
+            dec_peak = y[imax]
+        else:
+            ra_peak = pos_peak[0]
+            dec_peak = pos_peak[1]
+            
+        # continuum value 
+        if cont is None:
+            imin = dw.argmin()
+            cont =  max(0,data[imin])
+            
+        # initial width value    
+        if width is None:
+            width= ima.moments()
+        ra_width = width[0]
+        dec_width = width[1]
+        
+        # initial gaussian integrated flux
+        if flux is None:
+            pixsky = [[ra_peak,dec_peak]]
+            pixcrd = ima.wcs.sky2pix(pixsky)
+            peak = ima.data.data[pixcrd[0,1],pixcrd[0,0]] - cont
+            flux = peak * np.sqrt(2*np.pi*(ra_width**2)) * np.sqrt(2*np.pi*(dec_width**2))
+        elif peak is True:
+            peak = flux - cont
+            flux = peak * np.sqrt(2*np.pi*(ra_width**2)) * np.sqrt(2*np.pi*(dec_width**2))
+        else:
+            pass
+        
+        #rotation angle in rad
+        theta = np.pi * rot / 180.0
+        
+        # 2d gaussian functio
+        gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
+                                              *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-((x-p[1])*np.sin(p[5])+(y-p[3])*np.cos(p[5]))**2/(2*p[4]**2)) 
+        # 2d Gaussian fit  
+        e_gauss_fit = lambda p, x, y, data: (gaussfit(p,x,y) - data)
+            
+        # inital guesses for Gaussian Fit
+        v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
+        # Minimize the sum of squares
+        v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1)
+
+        # calculate the errors from the estimated covariance matrix
+        chisq = sum(info["fvec"] * info["fvec"])
+        dof = len(info["fvec"]) - len(v)
+        err = np.array([np.sqrt(covar[i, i]) * np.sqrt(chisq / dof) for i in range(len(v))])
+        
+        # plot
+        if plot:
+            xmin = np.min(x)
+            xmax = np.max(x)
+            xx = np.arange(xmin,xmax,(xmax-xmin)/100)
+            ymin = np.min(y)
+            ymax = np.max(y)
+            yy = np.arange(ymin,ymax,(ymax-ymin)/100)
+            
+            ff = np.zeros((np.shape(yy)[0],np.shape(xx)[0]))
+            for i in range(np.shape(xx)[0]):
+                xxx = np.zeros(np.shape(yy)[0])
+                xxx[:] = xx[i]
+                ff[:,i] = gaussfit(v,xxx,yy)
+            
+            plt.contour(xx, yy, ff, 10)
+            
+        # return a Gauss2D object
+        flux = v[0]
+        err_flux = err[0]
+        ra_peak = v[1]
+        err_ra_peak = err[1]
+        ra_width = v[2]
+        err_ra_width = err[2]
+        dec_peak = v[3]
+        err_dec_peak = err[3]
+        dec_width = v[4]
+        err_dec_width = err[4]
+        rot = v[5] * 180.0 / np.pi
+        err_rot = err[5] * 180.0 / np.pi
+        peak = flux / np.sqrt(2*np.pi*(ra_width**2)) / np.sqrt(2*np.pi*(dec_width**2))
+        err_peak = (err_flux*ra_width*dec_width - flux*(err_ra_width*dec_width+err_dec_width*ra_width)) / (2*np.pi*ra_width*ra_width*dec_width*dec_width)
+        return Gauss2D((ra_peak,dec_peak), flux, (ra_width,dec_width), cont, rot, peak, (err_ra_peak,err_dec_peak), err_flux, (err_ra_width,err_dec_width), err_rot, err_peak)
 
             
 #    def get_line(self, dec, aver=0):
@@ -3246,7 +3347,7 @@ class Image(object):
         If max, the plot is normalized to peak at max value.
         
         title : string
-        Figure tiltle (None by default).
+        Figure title (None by default).
         
         noise : boolean
         If noise is True, the +/- standard deviation is overplotted.
@@ -3366,8 +3467,8 @@ class Cube(object):
         filename : string
         Possible FITS filename
 
-        ext : integer
-        Number of the corresponding extension in the file
+        ext : integer or (integer,integer)
+        Number of the data extension or numbers of the data and variance extensions.
 
         getnoise: boolean
         True if the noise Variance image is read (if it exists)
@@ -3441,8 +3542,12 @@ class Cube(object):
                     h = f['DATA'].header
                     d = np.array(f['DATA'].data, dtype=float)
                 else:
-                    h = f[ext].header
-                    d = np.array(f[ext].data, dtype=float)
+                    if isinstance(ext,int):
+                        n = ext
+                    else:
+                        n = ext[0]
+                    h = f[n].header
+                    d = np.array(f[n].data, dtype=float)
                 if h['NAXIS'] != 3:
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('BUNIT', None)
@@ -3468,11 +3573,16 @@ class Cube(object):
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
                 self.var = None
                 if getnoise:
-                    if f['STAT'].header['NAXIS'] != 3:
+                    if ext is None:
+                        fstat = f['STAT']
+                    else:
+                        n = ext[1]
+                        fstat = f[n]
+                    if fstat['STAT'].header['NAXIS'] != 3:
                         raise IOError, 'Wrong dimension number in STAT extension'
-                    if f['STAT'].header['NAXIS1'] != self.shape[2] and f['STAT'].header['NAXIS2'] != self.shape[1] and f['STAT'].header['NAXIS3'] != self.shape[0]:
+                    if fstat['STAT'].header['NAXIS1'] != self.shape[2] and fstat['STAT'].header['NAXIS2'] != self.shape[1] and fstat['STAT'].header['NAXIS3'] != self.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = np.array(f['STAT'].data, dtype=float)
+                    self.var = np.array(fstat['STAT'].data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)

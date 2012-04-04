@@ -62,7 +62,7 @@
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Possible FITS filename.</li>
-<li><strong>ext</strong> (<em>integer</em>) &#8211; Number of the corresponding extension in the file.</li>
+<li><strong>ext</strong> (<em>integer or (integer,integer)</em>) &#8211; Number of the data extension or numbers of the data and variance extensions.</li>
 <li><strong>getnoise</strong> (<em>boolean</em>) &#8211; True if the noise Variance image is read (if it exists). Use getnoise=False to create image without variance extension.</li>
 <li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.</li>
 <li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
@@ -454,9 +454,153 @@ World coordinates in spatial directions must be the same.</dd>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.Image.moments">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">moments</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.moments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns [width_x, width_y] first moments of the 2D gaussian.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.gauss_fit">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>pos_min</em>, <em>pos_max</em>, <em>pos_peak=None</em>, <em>flux=None</em>, <em>width=None</em>, <em>cont=None</em>, <em>rot = 0</em>, <em>peak=False</em>, <em>plot=False</em><big>)</big><a class="headerlink" href="#obj.Image.gauss_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs polynomial fit on image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pos_min</strong> (<em>(float,float)</em>) &#8211; Minimum right ascension and declination in degrees (ra_min, dec_min).</li>
+<li><strong>pos_max</strong> (<em>(float,float)</em>) &#8211; Maximum right ascension and declination in degrees (ra_max, dec_max)</li>
+<li><strong>pos_peak</strong> (<em>(float,float)</em>) &#8211; Initial gaussian center (ra_peak, dec_peak). If None it is estimated.</li>
+<li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.</li>
+<li><strong>width</strong> (<em>(float,float)</em>) &#8211; Initial spreads of the Gaussian blob (ra_width,dec_width). If None, they are estimated.</li>
+<li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Initial continuum value, if None it is estimated.</li>
+<li><strong>rot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Initial rotation in degree.</li>
+<li><strong>peak</strong> (<em>boolean</em>) &#8211; If true, flux contains a gaussian peak value.</li>
+<li><strong>plot</strong> (<em>boolean</em>) &#8211; If True, the gaussian is plotted.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">objs.Gauss2D object (<a class="reference internal" href="#gauss2d-class">Gauss2D class</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="plotting">
 <h3>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.Image.plot">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">plot</tt><big>(</big><em>max=None</em>, <em>title=None</em>, <em>noise=False</em><big>)</big><a class="headerlink" href="#obj.Image.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max</strong> (<em>boolean</em>) &#8211; If max, the plot is normalized to peak at max value.</li>
+<li><strong>title</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Figure title (None by default).</li>
+<li><strong>noise</strong> (<em>boolean</em>) &#8211; If noise is True, the +/- standard deviation is overplotted. False by default.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="gauss2d-class">
+<h2>Gauss2D class<a class="headerlink" href="#gauss2d-class" title="Permalink to this headline">¶</a></h2>
+<p>This class stores 2D gaussian parameters.</p>
+<div class="section" id="id1">
+<h3>Attributes<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="19%" />
+<col width="66%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>center</td>
+<td>(float,float)</td>
+<td>Gaussian center (ra,dec).</td>
+</tr>
+<tr><td>flux</td>
+<td>float</td>
+<td>Gaussian integrated flux.</td>
+</tr>
+<tr><td>width</td>
+<td>(float,float)</td>
+<td>Spreads of the Gaussian blob (ra_width,dec_width).</td>
+</tr>
+<tr><td>cont</td>
+<td>float</td>
+<td>Continuum value.</td>
+</tr>
+<tr><td>rot</td>
+<td>float</td>
+<td>Rotation in degrees.</td>
+</tr>
+<tr><td>peak</td>
+<td>float</td>
+<td>Gaussian peak value.</td>
+</tr>
+<tr><td>err_center</td>
+<td>(float,float)</td>
+<td>Estimated error on Gaussian center.</td>
+</tr>
+<tr><td>err_flux</td>
+<td>float</td>
+<td>Estimated error on Gaussian integrated flux.</td>
+</tr>
+<tr><td>err_width</td>
+<td>(float,float)</td>
+<td>Estimated error on Gaussian width.</td>
+</tr>
+<tr><td>err_rot</td>
+<td>float</td>
+<td>Estimated error on rotation.</td>
+</tr>
+<tr><td>err_peak</td>
+<td>float</td>
+<td>Estimated error on Gaussian peak value.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id2">
+<h3>Methods<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.Gauss2D.copy">
+<tt class="descclassname">obj.Gauss2D.</tt><tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Gauss2D.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies Gauss2D object in a new one and returns it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Gauss2D object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Gauss2D.print_param">
+<tt class="descclassname">obj.Gauss2D.</tt><tt class="descname">print_param</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Gauss2D.print_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints Gaussian parameters.</p>
+</dd></dl>
+
 </div>
 </div>
 </div>
@@ -478,6 +622,11 @@ World coordinates in spatial directions must be the same.</dd>
 <li><a class="reference internal" href="#indexing">Indexing</a></li>
 <li><a class="reference internal" href="#methods">Methods</a></li>
 <li><a class="reference internal" href="#plotting">Plotting</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#gauss2d-class">Gauss2D class</a><ul>
+<li><a class="reference internal" href="#id1">Attributes</a></li>
+<li><a class="reference internal" href="#id2">Methods</a></li>
 </ul>
 </li>
 </ul>

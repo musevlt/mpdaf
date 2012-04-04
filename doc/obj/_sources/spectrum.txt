@@ -509,7 +509,7 @@ Examples::
   :type spline: boolean
   :param plot: If True, the Gaussian is plotted.
   :type plot: boolean
-  :returns: return an objs.Gauss1D object (`Gauss1D class`_) 
+  :returns: objs.Gauss1D object (`Gauss1D class`_) 
     
         
 .. function:: add_gaussian(lpeak, flux, fwhm [, cont=0, peak=False])

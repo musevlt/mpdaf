@@ -177,7 +177,9 @@
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>hdr</strong> (<em>pyfits.CardList</em>) &#8211; A FITS header. If hdr is not equal to None, WCS object is created from data header and other parameters are not used.</li>
-<li><strong>crpix</strong> (<em>float or (float,float)</em>) &#8211; Reference pixel coordinates. If crpix=None crpix = 1.0 and the reference point is the first pixel in the image.</li>
+<li><strong>crpix</strong> (<em>float or (float,float)</em>) &#8211; Reference pixel coordinates.
+If crpix is None and shape is None crpix = 1.0 and the reference point is the first pixel of the image.
+If crpix is None and shape is not None crpix = (shape + 1.0)/2.0 and the reference point is the center of the image.</li>
 <li><strong>crval</strong> (<em>float or (float,float)</em>) &#8211; Coordinates of the reference pixel. (0.0,0.0) by default.</li>
 <li><strong>cdelt</strong> (<em>float or (float,float)</em>) &#8211; Sizes of one pixel along the axis. (1.0,1.0) by default.</li>
 <li><strong>deg</strong> (<em>boolean</em>) &#8211; If True, world coordinates are in decimal degrees (CTYPE1=&#8217;RA&#8212;TAN&#8217;,CTYPE2=&#8217;DEC&#8211;TAN&#8217;,CUNIT1=CUNIT2=&#8217;deg). If False (by default), world coordinates are linear (CTYPE1=CTYPE2=&#8217;LINEAR&#8217;).</li>
@@ -193,7 +195,7 @@
 <p>Examples:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">WCS</span>
 <span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">hdr</span><span class="p">)</span> <span class="c"># creates a WCS object from data header</span>
-<span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span><span class="mi">300</span><span class="p">))</span> <span class="c"># the reference point is the first pixel in the image</span>
+<span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span><span class="mi">300</span><span class="p">))</span> <span class="c"># the reference point is the center of the image</span>
 <span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">crval</span><span class="o">=</span><span class="p">(</span><span class="mf">1.46E+02</span><span class="p">,</span><span class="o">-</span><span class="mf">3.11E+01</span><span class="p">),</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">4E-04</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">rot</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span><span class="mi">300</span><span class="p">))</span> <span class="c"># the reference point is in decimal degree</span>
 </pre></div>
 </div>
@@ -213,6 +215,10 @@
 <tr><td>cdelt</td>
 <td>float array</td>
 <td>Sizes of one pixel along the axis.</td>
+</tr>
+<tr><td>rot</td>
+<td>float array</td>
+<td>Rotation angle in degree.</td>
 </tr>
 </tbody>
 </table>
