@@ -11,8 +11,8 @@ This class manages cubes, optionally including a variance and a bad pixel mask.
 
   :param filename: Possible FITS filename.
   :type filename: string
-  :param ext: Number of the data extension or numbers of the data and variance extensions.
-  :type ext: integer or (integer,integer)
+  :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+  :type ext: integer or (integer,integer) or string or (string,string)
   :param getnoise: True if the noise Variance cube is read (if it exists). Use getnoise=False to create cube without variance extension.
   :type getnoise: boolean
   :param shape: Lengths of data in Z, Y and X. Python notation is used (nz,ny,nx). (101,101,101) by default.

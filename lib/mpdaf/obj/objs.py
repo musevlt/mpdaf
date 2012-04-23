@@ -233,8 +233,8 @@ class Spectrum(object):
         filename : string
         Possible FITS filename
 
-        ext : integer or (integer,integer)
-        Number of the data extension or numbers of the data and variance extensions.
+        ext : integer or (integer,integer) or string or (string,string)
+        Number/name of the data extension or numbers/names of the data and variance extensions.
 
         getnoise: boolean
         True if the noise Variance spectrum is read (if it exists)
@@ -306,7 +306,7 @@ class Spectrum(object):
                     h = f['DATA'].header
                     d = np.array(f['DATA'].data, dtype=float)
                 else:
-                    if isinstance(ext,int):
+                    if isinstance(ext,int) or isinstance(ext,str):
                         n = ext
                     else:
                         n = ext[0]
@@ -2346,8 +2346,8 @@ class Image(object):
         filename : string
         Possible FITS filename
 
-        ext : integer or (integer,integer)
-        Number of the data extension or numbers of the data and variance extensions.
+        ext : integer or (integer,integer) or string or (string,string)
+        Number/name of the data extension or numbers/names of the data and variance extensions.
 
         getnoise: boolean
         True if the noise Variance image is read (if it exists)
@@ -2412,12 +2412,13 @@ class Image(object):
                     h = f['DATA'].header
                     d = np.array(f['DATA'].data, dtype=float)
                 else:
-                    if isinstance(ext,int):
+                    if isinstance(ext,int) or isinstance(ext,str):
                         n = ext
                     else:
                         n = ext[0]
                     h = f[n].header
                     d = np.array(f[n].data, dtype=float)
+                        
                 if h['NAXIS'] != 2:
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('BUNIT', None)
@@ -2438,11 +2439,11 @@ class Image(object):
                         n = ext[1]
                         fstat = f[n]
                         
-                    if fstat['STAT'].header['NAXIS'] != 2:
+                    if fstat.header['NAXIS'] != 2:
                         raise IOError, 'Wrong dimension number in STAT extension'
-                    if fstat['STAT'].header['NAXIS1'] != self.shape[1] and fstat['STAT'].header['NAXIS2'] != self.shape[0]:
+                    if fstat.header['NAXIS1'] != self.shape[1] and fstat.header['NAXIS2'] != self.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = np.array(fstat['STAT'].data, dtype=float)
+                    self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -3467,8 +3468,8 @@ class Cube(object):
         filename : string
         Possible FITS filename
 
-        ext : integer or (integer,integer)
-        Number of the data extension or numbers of the data and variance extensions.
+        ext : integer or (integer,integer) or string or (string,sting)
+        Number/name of the data extension or numbers/names of the data and variance extensions.
 
         getnoise: boolean
         True if the noise Variance image is read (if it exists)
@@ -3542,7 +3543,7 @@ class Cube(object):
                     h = f['DATA'].header
                     d = np.array(f['DATA'].data, dtype=float)
                 else:
-                    if isinstance(ext,int):
+                    if isinstance(ext,int) or isinstance(ext,str):
                         n = ext
                     else:
                         n = ext[0]
@@ -3578,11 +3579,11 @@ class Cube(object):
                     else:
                         n = ext[1]
                         fstat = f[n]
-                    if fstat['STAT'].header['NAXIS'] != 3:
-                        raise IOError, 'Wrong dimension number in STAT extension'
-                    if fstat['STAT'].header['NAXIS1'] != self.shape[2] and fstat['STAT'].header['NAXIS2'] != self.shape[1] and fstat['STAT'].header['NAXIS3'] != self.shape[0]:
+                    if fstat.header['NAXIS'] != 3:
+                        raise IOError, 'Wrong dimension number in variance extension'
+                    if fstat.header['NAXIS1'] != self.shape[2] and fstat.header['NAXIS2'] != self.shape[1] and fstat.header['NAXIS3'] != self.shape[0]:
                         raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = np.array(fstat['STAT'].data, dtype=float)
+                    self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
