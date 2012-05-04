@@ -81,6 +81,12 @@ def dms2deg(x):
     deg = ac.d
     return deg
 
+def deg2rad(deg):
+    return (deg * np.pi / 180.)
+  
+def rad2deg(rad):
+    return (rad * 180. / np.pi)
+
 
 class WCS(object):
     """WCS class manages world coordinates
@@ -144,13 +150,13 @@ class WCS(object):
                 dx = np.sqrt(self.wcs.wcs.cd[0,0]*self.wcs.wcs.cd[0,0] + self.wcs.wcs.cd[0,1]*self.wcs.wcs.cd[0][1])
                 dy = np.sqrt(self.wcs.wcs.cd[1,0]*self.wcs.wcs.cd[1,0] + self.wcs.wcs.cd[1,1]*self.wcs.wcs.cd[1][1])
                 self.cdelt = [dx,dy]
-                self.rot = np.arctan2(self.wcs.wcs.cd[1,0],self.wcs.wcs.cd[1,1])
+                self.rot = deg2rad( np.arctan2(self.wcs.wcs.cd[1,0],self.wcs.wcs.cd[1,1]) )
             except:
                 try:
                     dx = self.wcs.wcs.cdelt[0]*np.sqrt(self.wcs.wcs.pc[0,0]*self.wcs.wcs.pc[0,0] + self.wcs.wcs.pc[0,1]*self.wcs.wcs.pc[0][1])
                     dy = self.wcs.wcs.cdelt[1]*np.sqrt(self.wcs.wcs.pc[1,0]*self.wcs.wcs.pc[1,0] + self.wcs.wcs.pc[1,1]*self.wcs.wcs.pc[1][1])
                     self.cdelt = [dx,dy]
-                    self.rot = np.arctan2(self.wcs.wcs.pc[1,0],self.wcs.wcs.pc[1,1])
+                    self.rot = deg2rad( np.arctan2(self.wcs.wcs.pc[1,0],self.wcs.wcs.pc[1,1]) )
                 except:
                     self.cdelt = None
                     self.rot = None
@@ -205,7 +211,7 @@ class WCS(object):
                 self.wcs.wcs.cunit = ['UNITLESS','UNITLESS']
                 self.wcs.wcs.cd = np.array([[cdelt[0], 0], [0, cdelt[1]]])
             # rotation
-            self.wcs.rotateCD(rot)
+            self.wcs.rotateCD(-rot)
             self.rot = rot
             # dimensions
             if shape!=None:
@@ -219,6 +225,7 @@ class WCS(object):
         out = WCS()
         out.wcs = self.wcs.deepcopy()
         out.cdelt = self.cdelt
+        out.rot = self.rot
         return out
 
     def info(self):
@@ -359,6 +366,56 @@ class WCS(object):
         ra_max = np.max(pixsky[:,0])
         dec_max = np.max(pixsky[:,1])
         return [ [ra_min,dec_min], [ra_max,dec_max] ]
+    
+    def rotate(self, theta):
+        """rotates WCS coordinates to new orientation given by theta
+        
+        Parameter
+        ---------
+        
+        theta : float
+        Rotation in degree.
+        """
+        _theta = deg2rad(theta)
+        _mrot = np.zeros(shape=(2,2),dtype=np.double)
+        _mrot[0] = (np.cos(_theta),-np.sin(_theta))
+        _mrot[1] = (np.sin(_theta),np.cos(_theta))
+        try:
+            new_cd = np.dot(self.wcs.wcs.cd, _mrot)
+            self.wcs.wcs.cd = new_cd
+            self.rot = rad2deg( np.arctan2(self.wcs.wcs.cd[1,0],self.wcs.wcs.cd[1,1]) )
+        except:
+            try:
+                new_pc = np.dot(self.wcs.wcs.pc, _mrot)
+                self.wcs.wcs.pc = new_pc
+                self.rot = rad2deg( np.arctan2(self.wcs.wcs.pc[1,0],self.wcs.wcs.pc[1,1]) )
+            except:
+                print "problem with rotation"
+                self.cdelt = None
+                self.rot = None
+                
+    def rebin(self, step, start):
+        
+        if self.wcs.wcs.ctype[0] == 'LINEAR':
+            deg = False
+        else:
+            deg = True
+        #x-axis
+        pix = np.arange(self.wcs.naxis1,dtype=np.float)
+        x = (pix - self.wcs.wcs.crpix[0] + 1) * self.cdelt[0] + self.wcs.wcs.crval[0] - 0.5 * self.cdelt[0]
+        if start == None:
+            startx = x[0] + step[0]*0.5
+        dimx = np.ceil((pix[-1] + self.cdelt[0] - (start[0]-step[0]*0.5)) / step[0])
+        pix = np.arange(self.wcs.naxis2,dtype=np.float)
+        #y-axis
+        y = (pix - self.wcs.wcs.crpix[1] + 1) * self.cdelt[1] + self.wcs.wcs.crval[1] - 0.5 * self.cdelt[1]
+        if start == None:
+            starty = y[0] + step[1]*0.5
+            start = (startx,starty)
+        dimy = np.ceil((pix[-1] + self.cdelt[1] - (start[1]-step[1]*0.5)) / step[1])
+          
+        res = WCS(crpix=1.0,crval=start,cdelt=step,deg=deg,rot=self.rot, shape=(dimy,dimx))
+        return res
 
 class WaveCoord(object):
     """WaveCoord class manages coordinates of spectrum
@@ -468,18 +525,24 @@ class WaveCoord(object):
                 lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
                 return lbda
         else:
+            pixel = np.array(pixel)
             return (pixel - self.crpix + 1) * self.cdelt + self.crval
 
     def pixel(self, lbda, nearest=False):
         """ Returns the decimal pixel corresponding to the wavelength lbda
         If nearest=True; returns the nearest integer pixel
         """
+        lbda = np.array(lbda)
         pix = (lbda - self.crval)/self.cdelt + self.crpix - 1
         if nearest:
             if self.shape is None:
                 pix = max( int(pix+0.5), 0)
             else:
-                pix = min( max( int(pix+0.5), 0), self.shape-1)
+                try:
+                    pix = min( max( int(pix+0.5), 0), self.shape-1)
+                except:
+                    for i in range(len(pix)):
+                        pix[i] = min( max( int(pix[i]+0.5), 0), self.shape-1)
         return pix
 
     def __getitem__(self, item):

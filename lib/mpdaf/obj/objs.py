@@ -10,8 +10,11 @@ from scipy import interpolate
 from scipy.optimize import leastsq
 from scipy import signal
 from scipy import special
+from scipy import ndimage
+from scipy import special
 
 import matplotlib.pyplot as plt
+from matplotlib.widgets import RectangleSelector
 
 import ABmag_filters
 
@@ -99,9 +102,9 @@ class SpectrumClicks:
         """prints a cursor positions
         """
         if fscale == 1:
-            print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g'%(self.xc[i],self.yc[i],self.i[i],self.x[i],self.data[i])
+            print 'xc=%g\tyc=%g\ti=%d\tx=%g\tdata=%g'%(self.xc[i],self.yc[i],self.i[i],self.x[i],self.data[i])
         else:
-            print 'x= %g\ty=%g\ti=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(self.xc[i],self.yc[i],self.i[i],self.x[i],self.data[i],self.data[i]/fscale) 
+            print 'xc=%g\tyc=%g\ti=%d\tx=%g\tdata=%g\t[scaled=%g]'%(self.xc[i],self.yc[i],self.i[i],self.x[i],self.data[i],self.data[i]/fscale) 
            
     def write_fits(self): 
         """prints coordinates in fits table.
@@ -418,19 +421,19 @@ class Spectrum(object):
         # create primary header
         assert self.data is not None
         prihdu = pyfits.PrimaryHDU()
-        if self.cards is not None:
-            for card in self.cards:
-                try:
-                    prihdu.header.update(card.key, card.value, card.comment)
-                except:
-                    pass
-        prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
-        prihdu.header.update('author', 'MPDAF', 'origin of the file')
 
         if np.ma.count_masked(self.data) != 0:
             hdulist = [prihdu]
             # create spectrum DATA in first extension
             tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
+            if self.cards is not None:
+                for card in self.cards:
+                    try:
+                        tbhdu.header.update(card.key, card.value, card.comment)
+                    except:
+                        pass
+            tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+            tbhdu.header.update('author', 'MPDAF', 'origin of the file')
             tbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
             tbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
             tbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
@@ -461,6 +464,14 @@ class Spectrum(object):
         else:
             if self.var is None: # write simple fits file without extension
                 prihdu.data = self.data.data
+                if self.cards is not None:
+                    for card in self.cards:
+                        try:
+                            prihdu.header.update(card.key, card.value, card.comment)
+                        except:
+                            pass
+                prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+                prihdu.header.update('author', 'MPDAF', 'origin of the file')
                 prihdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
                 prihdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
                 prihdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
@@ -474,6 +485,14 @@ class Spectrum(object):
                 hdulist = [prihdu]
                 # create spectrum DATA in first extension
                 tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
+                if self.cards is not None:
+                    for card in self.cards:
+                        try:
+                            tbhdu.header.update(card.key, card.value, card.comment)
+                        except:
+                            pass
+                tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+                tbhdu.header.update('author', 'MPDAF', 'origin of the file')
                 tbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
                 tbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
                 tbhdu.header.update('CDELT1', self.wave.cdelt, 'Step in world coordinate')
@@ -1969,6 +1988,7 @@ class Spectrum(object):
             plt.xlabel(r'$\lambda$ (%s)' %res.wave.cunit)
         if res.unit is not None:
             plt.ylabel(res.unit)
+        self._fig = plt.get_current_fig_manager()
         plt.connect('motion_notify_event', self._on_move)
         self._plot_id = len(plt.gca().lines)-1
         
@@ -2017,6 +2037,8 @@ class Spectrum(object):
             plt.xlabel(r'$\lambda$ (%s)' %res.wave.cunit)
         if res.unit is not None:
             plt.ylabel(res.unit)
+            
+        self._fig = plt.get_current_fig_manager()
         plt.connect('motion_notify_event', self._on_move)
         self._plot_id = len(plt.gca().lines)-1
         
@@ -2030,7 +2052,7 @@ class Spectrum(object):
                 x = self.wave.coord(i)
                 val = self.data.data[i]*self.fscale
                 s = 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
-                plt.get_current_fig_manager().toolbar.set_message(s)
+                self._fig.toolbar.set_message(s)
             except:
                 pass
             
@@ -2049,9 +2071,9 @@ class Spectrum(object):
         If filename is not None, the cursor values are saved as a fits table.
         """
         print 'To read cursor position, click on the left mouse button'
-        print 'To remove a cursor position, click on the left mouse button + <r>'
+        print 'To remove a cursor position, click on the left mouse button + <d>'
         print 'To quit the interactive mode, click on the right mouse button.'
-        print 'After quit, clicks are saved in self.clicks as dictionary {xc,yc,x,y}.'
+        print 'After quit, clicks are saved in self.clicks as dictionary {xc,yc,x,data}.'
         
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
@@ -2062,7 +2084,7 @@ class Spectrum(object):
     def _on_click(self,event):
         """ prints x,y,i,lbda and data corresponding to the cursor position.
         """
-        if event.key == 'r':
+        if event.key == 'd':
             if event.button == 1:
                 if event.inaxes is not None:
                     try:
@@ -2079,7 +2101,6 @@ class Spectrum(object):
                     try:
                         xc, yc = event.xdata, event.ydata
                         i = self.wave.pixel(xc, True)
-                        print i
                         x = self.wave.coord(i)
                         val = self.data[i]*self.fscale
                         if len(self._clicks.x)==0:
@@ -2090,8 +2111,8 @@ class Spectrum(object):
                         pass
             else:
                 self._clicks.write_fits()
-                # save clicks in a dictionary {'xc','yc','x','y'}
-                d = {'xc':self._clicks.xc, 'yc':self._clicks.yc, 'x':self._clicks.x, 'y':self._clicks.data}
+                # save clicks in a dictionary {'xc','yc','x','data'}
+                d = {'xc':self._clicks.xc, 'yc':self._clicks.yc, 'x':self._clicks.x, 'data':self._clicks.data}
                 self.clicks = d
                 #clear
                 self._clicks.clear()
@@ -2231,7 +2252,105 @@ class Spectrum(object):
             self._plot_mask_id = len(plt.gca().lines)-1
         except:
             pass
-            
+        
+        
+class ImageClicks:
+    """Object used to save click on image plot.
+    
+    Attributes
+    ---------- 
+    filename : string
+    Name of the table fits file where are saved the clicks values.
+    
+    binding_id : integer
+    Connection id.
+    
+    i : list of integer
+    Nearest pixel of the cursor position along the y-axis.
+    
+    j : list of integer
+    Nearest pixel of the cursor position along the x-axis.
+    
+    ra : list of float
+    Corresponding nearest position along the x-axis (world coordinates)
+    
+    dec : list of float
+    Corresponding nearest position along the y-axis (world coordinates)
+    
+    data : list of float
+    Corresponding image data value.
+    
+    id_lines : list of integer
+    Plot id (cross for cursor positions).
+    """
+    def __init__(self, binding_id, filename=None):
+        self.filename = filename
+        self.binding_id = binding_id
+        self.i = []
+        self.j = []
+        self.ra = []
+        self.dec = []
+        self.data = []
+        self.id_lines = []
+        
+    def remove(self,ic,jc):
+        """removes a cursor position
+        """
+        d2 = (self.i-ic)*(self.i-ic) + (self.j-jc)*(self.j-jc)
+        i = np.argmin(d2)
+        line = self.id_lines[i]
+        del plt.gca().lines[line]
+        self.i.pop(i)
+        self.j.pop(i)
+        self.ra.pop(i)
+        self.dec.pop(i)
+        self.data.pop(i)
+        self.id_lines.pop(i)
+        for j in range(i,len(self.id_lines)):
+            self.id_lines[j] -= 1
+        plt.draw()
+        
+    def add(self,i,j,x,y,data):
+        plt.plot(j,i,'r+')
+        self.i.append(i)
+        self.j.append(j)
+        self.ra.append(x)
+        self.dec.append(y)
+        self.data.append(data)        
+        self.id_lines.append(len(plt.gca().lines)-1)
+        
+    def iprint(self,i,fscale):
+        """prints a cursor positions
+        """
+        if fscale == 1:
+            print 'ra=%g\tdec=%g\tj=%d\ti=%d\tdata=%g'%(self.ra[i],self.dec[i],self.j[i],self.i[i],self.data[i])
+        else:
+            print 'ra=%g\tdec=%g\tj=%d\ti=%d\tdata=%g\t[scaled=%g]'%(self.ra[i],self.dec[i],self.j[i],self.i[i],self.data[i],self.data[i]/fscale)
+           
+    def write_fits(self): 
+        """prints coordinates in fits table.
+        """
+        if self.filename != 'None':
+            c1 = pyfits.Column(name='I', format='I', array=self.i)
+            c2 = pyfits.Column(name='J', format='I', array=self.j)
+            c3 = pyfits.Column(name='RA', format='E', array=self.ra)
+            c4 = pyfits.Column(name='DEC', format='E', array=self.dec)
+            c5 = pyfits.Column(name='DATA', format='E', array=self.data)
+            tbhdu=pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            tbhdu.writeto(self.filename, clobber=True)
+            print 'printing coordinates in fits table %s'%self.filename     
+          
+    def clear(self):
+        """disconnects and clears
+        """
+        print "disconnecting console coordinate printout..."
+        plt.disconnect(self.binding_id)
+        nlines =  len(self.id_lines)
+        for i in range(nlines):
+            line = self.id_lines[nlines - i -1]
+            del plt.gca().lines[line]
+        plt.draw()                
+                    
 class Gauss2D:
     """ Object used to saved 2d gaussian parameters
     
@@ -2385,6 +2504,8 @@ class Image(object):
         """
 
         self.image = True
+        self._clicks = None
+        self._selector = None
         #possible FITS filename
         self.filename = filename
         if filename is not None:
@@ -2489,6 +2610,8 @@ class Image(object):
                     self.wcs.wcs.naxis1 = self.shape[1]
                     self.wcs.wcs.naxis2 = self.shape[0]
                 elif wcs.wcs.naxis1 != self.shape[1] or wcs.wcs.naxis2 != self.shape[0]:
+                    print 'shape', shape
+                    print 'wcs.wcs.naxis1',wcs.wcs.naxis1,'wcs.wcs.naxis2',wcs.wcs.naxis2
                     print "warning: world coordinates and data have not the same dimensions."
                     self.wcs =  None
                 else:
@@ -2531,14 +2654,6 @@ class Image(object):
         """
         # create primary header
         prihdu = pyfits.PrimaryHDU()
-        if self.cards is not None:
-            for card in self.cards:
-                try:
-                    prihdu.header.update(card.key, card.value, card.comment)
-                except:
-                    pass
-        prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
-        prihdu.header.update('author', 'MPDAF', 'origin of the file')
 
         #world coordinates
         wcs_cards = self.wcs.to_header().ascardlist()
@@ -2547,6 +2662,14 @@ class Image(object):
             hdulist = [prihdu]
             # create spectrum DATA in first extension
             tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
+            if self.cards is not None:
+                for card in self.cards:
+                    try:
+                        tbhdu.header.update(card.key, card.value, card.comment)
+                    except:
+                        pass
+            tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+            tbhdu.header.update('author', 'MPDAF', 'origin of the file')
             for card in wcs_cards:
                 tbhdu.header.update(card.key, card.value, card.comment)
             if self.unit is not None:
@@ -2568,6 +2691,14 @@ class Image(object):
         else:
             if self.var is None: # write simple fits file without extension
                 prihdu.data = self.data.data
+                if self.cards is not None:
+                    for card in self.cards:
+                        try:
+                            prihdu.header.update(card.key, card.value, card.comment)
+                        except:
+                            pass
+                prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+                prihdu.header.update('author', 'MPDAF', 'origin of the file')
                 for card in wcs_cards:
                     prihdu.header.update(card.key, card.value, card.comment)
                 if self.unit is not None:
@@ -2578,6 +2709,14 @@ class Image(object):
                 hdulist = [prihdu]
                 # create spectrum DATA in first extension
                 tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
+                if self.cards is not None:
+                    for card in self.cards:
+                        try:
+                            tbhdu.header.update(card.key, card.value, card.comment)
+                        except:
+                            pass
+                tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+                tbhdu.header.update('author', 'MPDAF', 'origin of the file')
                 for card in wcs_cards:
                     tbhdu.header.update(card.key, card.value, card.comment)
                 if self.unit is not None:
@@ -2592,10 +2731,12 @@ class Image(object):
     #                nbhdu.header.update('UNIT', self.unit, 'data unit type')
     #            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
                 hdulist.append(nbhdu)
+                
+                
         # save to disk
         hdu = pyfits.HDUList(hdulist)
-        hdu.info()
         hdu.writeto(filename, clobber=True)
+        hdu.info()
 
         self.filename = filename
 
@@ -3125,6 +3266,66 @@ class Image(object):
                 pass
             res.data = np.ma.MaskedArray(res.data, mask=m)
         return res
+    
+    def rotate_wcs(self, theta):
+        """rotates WCS coordinates to new orientation given by theta
+        
+        Parameter
+        ---------
+        
+        theta : float
+        Rotation in degrees.
+        """
+        res = self.copy()
+        res.wcs.rotate(theta)
+        return res
+    
+    def rotate(self, theta):
+        """rotates the image using spline interpolation
+        
+        Parameter
+        ---------
+        
+        theta : float
+        Rotation in degrees.
+        """
+        res = self.copy()
+        mask = np.array(1 - self.data.mask,dtype=bool)
+        mask_rot = ndimage.rotate(mask, theta, reshape=False, order=0)
+        data_rot = ndimage.rotate(self.data.filled(0), theta, reshape=False)
+        mask_ma = np.ma.make_mask(1-mask_rot)
+        res.data = np.ma.array(data_rot, mask=mask_ma)
+        return res         
+    
+    def sum(self,axis=None):
+        """ Returns the sum over the given axis.
+        axis = None returns a float
+        axis = 0  or 1 returns a line or a column
+        Other cases return None.
+        """
+        if axis is None:
+            return self.data.sum()    
+        elif axis==0 or axis==1:
+            #return an image
+            data = self.data.sum(axis)
+            getnoise = False
+            var = None
+            if self.var is not None:
+                getnoise = True
+                var = self.var.sum(axis)
+            if axis==0:
+                wcs = self.wcs[:,0]
+                shape = (1,data.shape[0])
+            else:
+                wcs = self.wcs[0,:]
+                shape = (data.shape[0],1)
+            res = Image(getnoise=getnoise, shape=shape, wcs = wcs, unit=self.unit, empty=True,fscale=self.fscale)
+            res.data = data
+            if getnoise:
+                res.var =var
+            return res
+        else:
+            return None
             
     def _interp(self, grid, spline=False):
         """ returns the interpolated values corresponding to the grid points
@@ -3186,7 +3387,7 @@ class Image(object):
         return [width_x,width_y]
         
         
-    def gauss_fit(self, pos_min, pos_max, pos_peak=None, flux=None, width=None, cont=None, rot = 0, peak = False, plot = False):
+    def gauss_fit(self, pos_min, pos_max, center=None, flux=None, width=None, cont=None, rot = 0, peak = False, plot = False):
         """performs polynomial fit on image.
         Returns Gauss2D object
 
@@ -3199,7 +3400,7 @@ class Image(object):
         pos_max : (float,float)
         Maximum right ascension and declination in degrees (ra_max, dec_max)
         
-        pos_peak : (float,float)
+        center : (float,float)
         Initial gaussian center (ra_peak, dec_peak). If None they are estimated.
         
         flux : float
@@ -3245,13 +3446,13 @@ class Image(object):
             dw = data / ima.var[ksel]
         
         # initial gaussian peak position
-        if pos_peak is None:
+        if center is None:
             imax = dw.argmax()
             ra_peak = x[imax]
             dec_peak = y[imax]
         else:
-            ra_peak = pos_peak[0]
-            dec_peak = pos_peak[1]
+            ra_peak = center[0]
+            dec_peak = center[1]
             
         # continuum value 
         if cont is None:
@@ -3310,7 +3511,11 @@ class Image(object):
                 xxx[:] = xx[i]
                 ff[:,i] = gaussfit(v,xxx,yy)
             
-            plt.contour(xx, yy, ff, 10)
+            pixsky = [[xmin,ymin],[xmax,ymax]]
+            [[xmin,ymin],[xmax,ymax]] = self.wcs.sky2pix(pixsky)
+            xx = np.arange(xmin,xmax,(xmax-xmin)/np.shape(xx)[0])
+            yy = np.arange(ymin,ymax,(ymax-ymin)/np.shape(yy)[0])
+            plt.contour(xx, yy, ff, 5)
             
         # return a Gauss2D object
         flux = v[0]
@@ -3323,20 +3528,11 @@ class Image(object):
         err_dec_peak = err[3]
         dec_width = v[4]
         err_dec_width = err[4]
-        rot = v[5] * 180.0 / np.pi
+        rot = (v[5] * 180.0 / np.pi)%180
         err_rot = err[5] * 180.0 / np.pi
         peak = flux / np.sqrt(2*np.pi*(ra_width**2)) / np.sqrt(2*np.pi*(dec_width**2))
         err_peak = (err_flux*ra_width*dec_width - flux*(err_ra_width*dec_width+err_dec_width*ra_width)) / (2*np.pi*ra_width*ra_width*dec_width*dec_width)
         return Gauss2D((ra_peak,dec_peak), flux, (ra_width,dec_width), cont, rot, peak, (err_ra_peak,err_dec_peak), err_flux, (err_ra_width,err_dec_width), err_rot, err_peak)
-
-            
-#    def get_line(self, dec, aver=0):
-#        """returns a line or an average of line from image
-#        """
-#        
-#        pixsky = self.wcs.pix2sky(pixcrd)
-#        if aver==0:
-#            return self.__getitem__((200, slice(None, None, None))
         
     def plot(self, max=None, title=None, noise=False): 
         """ plots the image.
@@ -3360,27 +3556,11 @@ class Image(object):
         if max != None:
             f = f*max/f.max()
             
-        if self.wcs is None:
-            xaxis = np.arange(self.shape[1], dtype=np.float)
-            yaxis = np.arange(self.shape[0], dtype=np.float)
-            xunit = 'pixel'
-            yunit = 'pixel'
-        else:
-            pixcrd = np.zeros((self.shape[1],2))
-            pixcrd[:,0] = np.arange(self.shape[1], dtype=np.float)
-            pixsky = self.wcs.pix2sky(pixcrd)
-            xaxis = pixsky[:,0]
-            xunit = self.wcs.wcs.wcs.cunit[1]
         
-            pixcrd = np.zeros((self.shape[0],2))
-            pixcrd[:,1] = np.arange(self.shape[0], dtype=np.float)
-            pixsky = self.wcs.pix2sky(pixcrd)
-            yaxis = pixsky[:,1]
-            yunit = self.wcs.wcs.wcs.cunit[0]
-        
-#        self._fig = plt.figure()
-#        self._manager = plt.get_current_fig_manager()
-#        ax = self._fig.add_subplot(111)
+        xaxis = np.arange(self.shape[1], dtype=np.float)
+        yaxis = np.arange(self.shape[0], dtype=np.float)
+        xunit = 'pixel'
+        yunit = 'pixel'
         
         if np.shape(xaxis)[0] == 1:
             #plot a  column
@@ -3393,29 +3573,367 @@ class Image(object):
             plt.xlabel('ra (%s)' %xunit)
             plt.ylabel(self.unit)
         else:
-            cax = plt.contourf(xaxis, yaxis, f, 100)
+            cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]))
             plt.colorbar(cax)
             plt.xlabel('ra (%s)' %xunit)
             plt.ylabel('dec (%s)' %yunit)
+            self._ax = cax
             
         if title is not None:
                 plt.title(title)   
+                
+        self._fig = plt.get_current_fig_manager()
         plt.connect('motion_notify_event', self._on_move)
         
     def _on_move(self,event):
         """ prints x,y,i,j and data in the figure toolbar.
         """
         if event.inaxes is not None:
-            xc, yc = event.xdata, event.ydata
+            j, i = event.xdata, event.ydata
             try:
-                pixcrd = self.wcs.sky2pix([xc,yc])
-                i = pixcrd[0][1]
-                j = pixcrd[0][0]
+                pixsky = self.wcs.pix2sky([j,i])
+                xc = pixsky[0][0]
+                yc = pixsky[0][1]
                 val = self.data.data[i,j]*self.fscale
                 s = 'ra= %g dec=%g j=%i i=%i data=%g'%(xc,yc,j,i,val)
-                plt.get_current_fig_manager().toolbar.set_message(s)
+                self._fig.toolbar.set_message(s)
             except:
                 pass    
+            
+    def ipos(self, filename='None'):
+        """Interactive mode.
+        Prints cursor position.   
+        To read cursor position, click on the left mouse button
+        To remove a cursor position, click on the left mouse button + <r>
+        To quit the interactive mode, click on the right mouse button.
+        At the end, clicks are saved in self.clicks as dictionary {'ra','dec','i','j','data'}.
+        
+        Parameter
+        ---------
+        
+        filename : string
+        If filename is not None, the cursor values are saved as a fits table.
+        """
+        print 'To read cursor position, click on the left mouse button'
+        print 'To remove a cursor position, click on the left mouse button + <d>'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        print 'After quit, clicks are saved in self.clicks as dictionary {ra,dec,i,j,data}.'
+        
+        if self._clicks is None:
+            binding_id = plt.connect('button_press_event', self._on_click)
+            self._clicks = ImageClicks(binding_id,filename)
+        else:
+            self._clicks.filename = filename
+        
+    def _on_click(self,event):
+        """ prints ra,dec,i,j and data corresponding to the cursor position.
+        """
+        if event.key == 'd':
+            if event.button == 1:
+                if event.inaxes is not None:
+                    try:
+                        j, i = event.xdata, event.ydata
+                        self._clicks.remove(i,j)
+                        print "new selection:"
+                        for i in range(len(self._clicks.ra)):
+                            self._clicks.iprint(i,self.fscale)
+                    except:
+                        pass 
+        else:
+            if event.button == 1:
+                if event.inaxes is not None:
+                    j, i = event.xdata, event.ydata
+                    try:
+                        i = int(i)
+                        j = int(j)
+                        [[x,y]] = self.wcs.pix2sky([j,i])
+                        val = self.data[i,j]*self.fscale
+                        if len(self._clicks.ra)==0:
+                            print ''
+                        self._clicks.add(i,j,x,y,val)
+                        self._clicks.iprint(len(self._clicks.ra)-1, self.fscale)
+                    except:
+                        pass
+            else:
+                self._clicks.write_fits()
+                # save clicks in a dictionary {'i','j','x','y','data'}
+                d = {'i':self._clicks.i, 'j':self._clicks.j, 'ra':self._clicks.ra, 'dec':self._clicks.dec, 'data':self._clicks.data}
+                self.clicks = d
+                #clear
+                self._clicks.clear()
+                self._clicks = None
+                
+            
+    def idist(self):
+        """Interactive mode.
+        Gets distance and center from 2 cursor positions.
+        """
+        print 'Use left mouse button to define the line.'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        if self._clicks is None and self._selector is None:
+            ax = plt.subplot(111)
+            self._selector = RectangleSelector(ax, self._on_select_dist, drawtype='line')
+            
+    def _on_select_dist(self, eclick, erelease):
+        """Prints distance and center between 2 cursor positions.
+        """
+        if eclick.button == 1:
+            try:
+                j1, i1 = int(eclick.xdata), int(eclick.ydata)
+                [[x1,y1]] = self.wcs.pix2sky([j1,i1])
+                j2, i2 = int(erelease.xdata), int(erelease.ydata)
+                [[x2,y2]] = self.wcs.pix2sky([j2,i2])
+                dist = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+                xc = (x1 + x2)/2
+                yc = (y1 + y2)/2
+                print 'Center: (%g,%g)\tDistance: %g' % (xc,yc,dist)
+            except:
+                pass
+        else: 
+            print 'idist deactivated.'
+            self._selector.set_active(False)
+            self._selector = None
+
+            
+    def istat(self):
+        """Interactive mode.
+        Computes image statistics from windows defined by 2 cursor positions.
+        mean is the mean value, median the median value
+        std is the rms standard deviation, sum the sum, peak the peak value
+        npts is the total number of points.
+        """
+        print 'Use left mouse button to define the box.'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        if self._clicks is None and self._selector is None:
+            ax = plt.subplot(111)
+            self._selector = RectangleSelector(ax, self._on_select_stat, drawtype='box')
+            
+    def _on_select_stat(self,eclick, erelease):
+        """Prints image statistics from windows defined by 2 cursor positions.
+        """
+        if eclick.button == 1:
+            try:
+                j1 = int(min(eclick.xdata,erelease.xdata))
+                j2 = int(max(eclick.xdata,erelease.xdata))
+                i1 = int(min(eclick.ydata,erelease.ydata))
+                i2 = int(max(eclick.ydata,erelease.ydata))
+                d = self.data[i1:i2, j1:j2]
+                mean = self.fscale*np.mean(d)
+                median = self.fscale*np.median(np.ravel(d))
+                vsum = self.fscale*d.sum()
+                std = self.fscale*np.std(d)
+                npts = d.shape[0]*d.shape[1]
+                peak = self.fscale*d.max()
+                print 'mean=%g\tmedian=%g\tstd=%g\tsum=%g\tpeak=%g\tnpts=%d' % (mean, median, std, vsum, peak, npts)
+            except:
+                pass
+        else: 
+            print 'istat deactivated.'
+            self._selector.set_active(False)
+            self._selector = None
+            
+            
+def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=True):
+    """creates a new image from a 2D gaussian.
+    Returns Image object
+
+    Parameters
+    ----------
+        
+    shape : integer or (integer,integer)
+    Lengths of the image in Y and X. (101,101) by default.
+    python notation: (ny,nx)
+    if wcs object contains dimensions, theses dimensions are used.
+
+    wcs : WCS
+    World coordinates 
+    
+    center : (float,float)
+    Gaussian center (ra_peak, dec_peak). If None the center of the image is used.
+        
+    flux : float
+    Integrated gaussian flux or gaussian peak value if peak is True.
+
+    width : (float,float)
+    Spreads of the Gaussian blob (ra_width,dec_width).
+        
+    peak : boolean
+    If true, flux contains a gaussian peak value.
+    
+    rot : float
+    Angle position in degree.
+      
+    factor : integer
+    If factor<=1, pixel contains the gaussian value.
+    If factor>1, pixel contains the integral of the gaussian on the pixel divided by the pixel area.
+    True by default.
+    """
+    if len(shape) == 1:
+        shape = (shape,shape)
+    elif len(shape) == 2:
+        pass
+    else:
+        raise ValueError, 'dim with dimension > 2'
+    shape = np.array(shape)
+    
+    if wcs.wcs.naxis1 != 0. or wcs.wcs.naxis2 != 0.:
+        shape[1] = wcs.wcs.naxis1
+        shape[0] = wcs.wcs.naxis2
+    
+    if center is None:
+        pixcrd = [[(shape[1]-1)/2.0,(shape[0]-1)/2.0]]
+        pixsky = wcs.pix2sky(pixcrd)
+        center = [0,0]
+        center[0] = pixsky[0,0]
+        center[1] = pixsky[0,1]
+    
+    data = np.zeros(shape=shape, dtype = float)
+    
+    ra_width = width[0]
+    dec_width = width[1]
+    
+    #rotation angle in rad
+    theta = np.pi * rot / 180.0
+        
+    if peak is True:
+        I = flux * np.sqrt(2*np.pi*(ra_width**2)) * np.sqrt(2*np.pi*(dec_width**2))
+    else:
+        I = flux
+        
+    gauss = lambda x, y: I*(1/np.sqrt(2*np.pi*(ra_width**2)))*np.exp(-((x-center[0])*np.cos(theta)-(y-center[1])*np.sin(theta))**2/(2*ra_width**2)) \
+                          *(1/np.sqrt(2*np.pi*(dec_width**2)))*np.exp(-((x-center[0])*np.sin(theta)+(y-center[1])*np.cos(theta))**2/(2*dec_width**2))  
+    
+    if factor>1:
+        if rot == 0:
+            X,Y = np.meshgrid(xrange(shape[1]),xrange(shape[0]))
+            pixcrd = np.array(zip(X.ravel(),Y.ravel())) -0.5
+            pixsky_min = wcs.pix2sky(pixcrd)               
+            xmin = (pixsky_min[:,0]-center[0])/np.sqrt(2.0)/ra_width
+            ymin = (pixsky_min[:,1]-center[1])/np.sqrt(2.0)/dec_width
+                    
+            pixcrd = np.array(zip(X.ravel(),Y.ravel())) +0.5
+            pixsky_max = wcs.pix2sky(pixcrd)
+            xmax = (pixsky_max[:,0]-center[0])/np.sqrt(2.0)/ra_width
+            ymax = (pixsky_max[:,1]-center[1])/np.sqrt(2.0)/dec_width
+            
+            dx = pixsky_max[:,0] - pixsky_min[:,0]
+            dy = pixsky_max[:,1] - pixsky_min[:,1]
+            data = I * 0.25 / dx / dy * (special.erf(xmax)-special.erf(xmin)) * (special.erf(ymax)-special.erf(ymin))
+            data = np.reshape(data,(shape[0],shape[1]))
+        else:
+#            import time
+#            t1 = time.clock()
+            X,Y = np.meshgrid(xrange(shape[1]*factor),xrange(shape[0]*factor))
+#            t2 = time.clock()
+#            print 'init1', t2-t1
+#            t1 = time.clock()
+            factor = float(factor)
+#            from itertools import izip,count       
+#            pixcrd = list(izip(X.ravel()/factor, Y.ravel()/factor))
+            pixcrd = zip(X.ravel()/factor,Y.ravel()/factor)
+#            t2 = time.clock()
+#            print 'init2', t2-t1
+#            t1 = time.clock()
+            pixsky = wcs.pix2sky(pixcrd)
+#            t2 = time.clock()
+#            print 'wcs', t2-t1
+#            t1 = time.clock()
+            data = gauss(pixsky[:,0],pixsky[:,1])
+#            t2 = time.clock()
+#            print 'gauss', t2-t1
+#            t1 = time.clock()
+            data = data.reshape(shape[0],factor,shape[1],factor).sum(1).sum(2)/factor/factor
+#            t2 = time.clock()
+#            print 'reshape', t2-t1
+    else:       
+        X,Y = np.meshgrid(xrange(shape[1]),xrange(shape[0]))
+        pixcrd = zip(X.ravel(),Y.ravel())
+        pixsky = wcs.pix2sky(pixcrd)        
+        data = gauss(pixsky[:,0],pixsky[:,1])
+        data = np.reshape(data,(shape[0],shape[1]))
+            
+    return Image(data=data, wcs=wcs)
+
+def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=True):
+    """creates a new image from a 2D Moffat function.
+    Returns Image object
+
+    Parameters
+    ----------
+        
+    shape : integer or (integer,integer)
+    Lengths of the image in Y and X. (101,101) by default.
+    python notation: (ny,nx)
+    if wcs object contains dimensions, theses dimensions are used.
+
+    wcs : WCS
+    World coordinates 
+    
+    center : (float,float)
+    Moffat center (ra_peak, dec_peak). If None the center of the image is used.
+        
+    I : float
+    Intensity at image center. 1 by default.
+
+    a : float
+    Half width at half maximum of the image in the absence of atmospheric scattering. 1 by default.
+    
+    q : float
+    axis ratio, 1 by default.
+    
+    n : integer
+    Atmospheric scattering coefficient. 2 by default.
+    
+    rot : float
+    Angle position in degree.
+      
+    factor : boolean
+    If False, pixel contains the gaussian value.
+    If True, pixel contains the integral of the gaussian on the pixel divided by the pixel area.
+    True by default.
+    """
+    if len(shape) == 1:
+        shape = (shape,shape)
+    elif len(shape) == 2:
+        pass
+    else:
+        raise ValueError, 'dim with dimension > 2'
+    shape = np.array(shape)
+    
+    if wcs.wcs.naxis1 != 0. or wcs.wcs.naxis2 != 0.:
+        shape[1] = wcs.wcs.naxis1
+        shape[0] = wcs.wcs.naxis2
+    
+    if center is None:
+        pixcrd = [[(shape[1]-1)/2.0,(shape[0]-1)/2.0]]
+        pixsky = wcs.pix2sky(pixcrd)
+        center = [0,0]
+        center[0] = pixsky[0,0]
+        center[1] = pixsky[0,1]
+    
+    data = np.zeros(shape=shape, dtype = float)
+    
+    #rotation angle in rad
+    theta = np.pi * rot / 180.0
+        
+    moffat = lambda x, y: I*(1+(((x-center[0])*np.cos(theta)-(y-center[1])*np.sin(theta))/a)**2 \
+                              +(((x-center[0])*np.sin(theta)+(y-center[1])*np.cos(theta))/a/q)**2)**n
+    
+    if factor>1:
+        X,Y = np.meshgrid(xrange(shape[1]*factor),xrange(shape[0]*factor))
+        factor = float(factor)
+        pixcrd = zip(X.ravel()/factor,Y.ravel()/factor)
+        pixsky = wcs.pix2sky(pixcrd)
+        data = moffat(pixsky[:,0],pixsky[:,1])
+        data = data.reshape(shape[0],factor,shape[1],factor).sum(1).sum(2)/factor/factor
+    else:       
+        X,Y = np.meshgrid(xrange(shape[1]),xrange(shape[0]))
+        pixcrd = zip(X.ravel(),Y.ravel())
+        pixsky = wcs.pix2sky(pixcrd)        
+        data = moffat(pixsky[:,0],pixsky[:,1])
+        data = np.reshape(data,(shape[0],shape[1]))
+            
+    return Image(data=data, wcs=wcs)
 
 class Cube(object):
     """cube class
@@ -3459,7 +3977,7 @@ class Cube(object):
 
     Info: info, []
     """
-
+    
     def __init__(self, filename=None, ext = None, getnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
         """creates a Cube object
 
@@ -3689,20 +4207,20 @@ class Cube(object):
 
         # create primary header
         prihdu = pyfits.PrimaryHDU()
-        if self.cards is not None:
-            for card in self.cards:
-                try:
-                    prihdu.header.update(card.key, card.value, card.comment)
-                except:
-                    pass
-        prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
-        prihdu.header.update('author', 'MPDAF', 'origin of the file')
 
         #world coordinates
         wcs_cards = self.wcs.to_header().ascardlist()
 
         if self.var is None: # write simple fits file without extension
             prihdu.data = self.data.data
+            if self.cards is not None:
+                for card in self.cards:
+                    try:
+                        prihdu.header.update(card.key, card.value, card.comment)
+                    except:
+                        pass
+            prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+            prihdu.header.update('author', 'MPDAF', 'origin of the file')
             # add world coordinate
             for card in wcs_cards:
                 prihdu.header.update(card.key, card.value, card.comment)
@@ -3719,6 +4237,14 @@ class Cube(object):
             hdulist = [prihdu]
             # create spectrum DATA in first extension
             tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
+            if self.cards is not None:
+                for card in self.cards:
+                    try:
+                        tbhdu.header.update(card.key, card.value, card.comment)
+                    except:
+                        pass
+            tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+            tbhdu.header.update('author', 'MPDAF', 'origin of the file')
             # add world coordinate
             for card in wcs_cards:
                 tbhdu.header.update(card.key, card.value, card.comment)
@@ -4506,28 +5032,38 @@ class Cube(object):
         elif axis==0:
             #return an image
             data = self.data.sum(axis)
-            getnoise = False
-            var = None
-            if self.var is not None:
-                getnoise = True
-                var = self.var.sum(axis)
-            res = Image(getnoise=getnoise, shape=data.shape, wcs = self.wcs, unit=self.unit, empty=True,fscale=self.fscale)
+            res = Image(getnoise=False, shape=data.shape, wcs = self.wcs, unit=self.unit, empty=True,fscale=self.fscale)
             res.data = data
-            if getnoise:
-                res.var =var
             return res
         elif axis==tuple([1,2]):
             #return a spectrum
             data = self.data.sum(axis=1).sum(axis=1)
-            getnoise = False
-            var = None
-            if self.var is not None:
-                getnoise = True
-                var = self.var.sum(axis=1).sum(axis=1)
-            res = Spectrum(getnoise=getnoise, shape=data.shape[0], wave = self.wave, unit=self.unit, empty=True,fscale=self.fscale)
+            res = Spectrum(getnoise=False, shape=data.shape[0], wave = self.wave, unit=self.unit, empty=True,fscale=self.fscale)
             res.data = data
-            if getnoise:
-                res.var =var
+            return res
+        else:
+            return None
+        
+    def mean(self,axis=None):
+        """ Returns the mean over the given axis.
+        axis = None returns a float
+        axis = 0 returns an image
+        axis = (1,2) returns a spectrum
+        Other cases return None.
+        """
+        if axis is None:
+            return self.data.mean()    
+        elif axis==0:
+            #return an image
+            data = self.data.mean(axis)
+            res = Image(getnoise=False, shape=data.shape, wcs = self.wcs, unit=self.unit, empty=True,fscale=self.fscale)
+            res.data = data
+            return res
+        elif axis==tuple([1,2]):
+            #return a spectrum
+            data = self.data.mean(axis=1).mean(axis=1)
+            res = Spectrum(getnoise=False, shape=data.shape[0], wave = self.wave, unit=self.unit, empty=True,fscale=self.fscale)
+            res.data = data
             return res
         else:
             return None
