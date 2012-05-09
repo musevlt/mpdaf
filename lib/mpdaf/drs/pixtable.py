@@ -168,14 +168,14 @@ class PixTable(object):
         # pixel quality
         (fd,result.dq) = tempfile.mkstemp(prefix='mpdaf')
         selfdq = self.get_dq()
-        dq = np.memmap(result.dq,dtype="int32",shape=(self.nrows))
+        dq = np.memmap(result.dq,dtype="uint32",shape=(self.nrows))
         dq[:] = selfdq[:]
         del dq, selfdq
         os.close(fd)
         # origin
         (fd,result.origin) = tempfile.mkstemp(prefix='mpdaf')
         selforigin = self.get_origin()
-        origin = np.memmap(result.origin,dtype="int32",shape=(self.nrows))
+        origin = np.memmap(result.origin,dtype="uint32",shape=(self.nrows))
         origin[:] = selforigin[:]
         del origin, selforigin
         os.close(fd)
@@ -295,7 +295,7 @@ class PixTable(object):
     def get_dq(self):
         """loads the dq column and returns it"""
         if self.dq != None:
-            dq = np.memmap(self.dq,dtype="int32",shape=(self.nrows))
+            dq = np.memmap(self.dq,dtype="uint32",shape=(self.nrows))
             return dq
         else:
             if self.filename == None:
@@ -306,7 +306,7 @@ class PixTable(object):
                 hdulist = pyfits.open(self.filename,memmap=1)
                 (fd,self.dq) = tempfile.mkstemp(prefix='mpdaf')
                 data_dq = hdulist[1].data.field('dq')
-                dq = np.memmap(self.dq,dtype="int32",shape=(self.nrows))
+                dq = np.memmap(self.dq,dtype="uint32",shape=(self.nrows))
                 dq[:] = data_dq[:]
                 hdulist.close()
                 os.close(fd)
@@ -315,7 +315,7 @@ class PixTable(object):
     def get_origin(self):
         """loads the origin column and returns it"""
         if self.origin != None:
-            origin = np.memmap(self.origin,dtype="int32",shape=(self.nrows))
+            origin = np.memmap(self.origin,dtype="uint32",shape=(self.nrows))
             return origin
         else:
             if self.filename == None:
@@ -326,7 +326,7 @@ class PixTable(object):
                 hdulist = pyfits.open(self.filename,memmap=1)
                 (fd,self.origin) = tempfile.mkstemp(prefix='mpdaf')
                 data_origin = hdulist[1].data.field('origin')
-                origin = np.memmap(self.origin,dtype="int32",shape=(self.nrows))
+                origin = np.memmap(self.origin,dtype="uint32",shape=(self.nrows))
                 origin[:] = data_origin[:]
                 hdulist.close()
                 os.close(fd)
@@ -462,14 +462,14 @@ class PixTable(object):
             # pixel quality
             (fd,ptab.dq) = tempfile.mkstemp(prefix='mpdaf')
             selfdq = self.get_dq()
-            dq = np.memmap(ptab.dq,dtype="int32",shape=(npts))
+            dq = np.memmap(ptab.dq,dtype="uint32",shape=(npts))
             dq[:] = selfdq[ksel]
             del dq,selfdq
             os.close(fd)
             # origin
             (fd,ptab.origin) = tempfile.mkstemp(prefix='mpdaf')
             selforigin = self.get_origin()
-            origin = np.memmap(ptab.origin,dtype="int32",shape=(npts))
+            origin = np.memmap(ptab.origin,dtype="uint32",shape=(npts))
             origin[:] = selforigin[ksel]
             del origin,selforigin
             os.close(fd)
