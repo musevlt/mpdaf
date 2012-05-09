@@ -523,7 +523,7 @@ class PixTable(object):
         slices = {'list':slicelist, 'skypos':skypos, 'ifupix':ifupix, 'slicepix':slicepix,
                        'xpix':xpix, 'ypix':ypix}
 
-        print('%d slices found, stucture returned in slices dictionary '%(nslice))
+        print('%d slices found, structure returned in slices dictionary '%(nslice))
 
         return slices
 
