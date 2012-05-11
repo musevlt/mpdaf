@@ -471,6 +471,161 @@ World coordinates in spatial directions must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="obj.Image.peak">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">peak</tt><big>(</big><span class="optional">[</span><em>center=None</em>, <em>radius=0</em>, <em>pix = False</em>, <em>dpix=2</em>, <em>plot=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.peak" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds image peak location.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; <p>Center of the explored region.</p>
+<p>If pix is False, center = (dec, ra) is in degrees.</p>
+<p>If pix is True, center = (i,j) is in pixels.</p>
+<p>If center is None, the full image is explored.</p>
+</li>
+<li><strong>radius</strong> (<em>float or (float,float)</em>) &#8211; <p>Radius defined the explored region.</p>
+<p>If pix is False, radius = (ddec/2, dra/2) is in arcsecs.</p>
+<p>If pix is True, radius = (di,dj) is in pixels.</p>
+</li>
+<li><strong>pix</strong> (<em>boolean</em>) &#8211; <p>If pix is False, center and radius are in degrees and arcsecs.</p>
+<p>If pix is True, center and radius are in pixels.</p>
+</li>
+<li><strong>dpix</strong> (<em>integer</em>) &#8211; Half size of the window to compute the center of gravity.</li>
+<li><strong>plot</strong> (<em>boolean</em>) &#8211; If True, the peak center is overplotted on the image.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Returns a dictionary {&#8216;dec&#8217;, &#8216;ra&#8217;, &#8216;i&#8217;, &#8216;j&#8217;, &#8216;data&#8217;} containing the peak position and the peak intensity.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.fwhm">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">fwhm</tt><big>(</big><span class="optional">[</span><em>center=None</em>, <em>radius=0</em>, <em>pix = False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.fwhm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the fwhm center.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; <p>Center of the explored region.</p>
+<p>If pix is False, center = (dec, ra) is in degrees.</p>
+<p>If pix is True, center = (i,j) is in pixels.</p>
+<p>If center is None, the full image is explored.</p>
+</li>
+<li><strong>radius</strong> (<em>float or (float,float)</em>) &#8211; <p>Radius defined the explored region.</p>
+<p>If pix is False, radius = (ddec/2, dra/2) is in arcsecs.</p>
+<p>If pix is True, radius = (di,dj) is in pixels.</p>
+</li>
+<li><strong>pix</strong> (<em>boolean</em>) &#8211; <p>If pix is False, center and radius are in degrees and arcsecs.</p>
+<p>If pix is True, center and radius are in pixels.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Returns [fwhm_dec,fwhm_ra].</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.ee">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">ee</tt><big>(</big><span class="optional">[</span><em>center=None</em>, <em>radius=0</em>, <em>pix = False</em>, <em>frac = False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.ee" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes ensquared energy.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; <p>Center of the explored region.</p>
+<p>If pix is False, center = (dec, ra) is in degrees.</p>
+<p>If pix is True, center = (i,j) is in pixels.</p>
+<p>If center is None, the full image is explored.</p>
+</li>
+<li><strong>radius</strong> (<em>float or (float,float)</em>) &#8211; <p>Radius defined the explored region.</p>
+<p>If radius is float, it defined a circular region.</p>
+<p>If radius is (float,float), it defined a rectangular region.</p>
+<p>If pix is False, radius = (ddec/2, dra/2) is in arcsecs.</p>
+<p>If pix is True, radius = (di,dj) is in pixels.</p>
+</li>
+<li><strong>pix</strong> (<em>boolean</em>) &#8211; <p>If pix is False, center and radius are in degrees and arcsecs.</p>
+<p>If pix is True, center and radius are in pixels.</p>
+</li>
+<li><strong>frac</strong> (<em>boolean</em>) &#8211; If frac is True, result is given relative to the total energy.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.ee_curve">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">ee_curve</tt><big>(</big><span class="optional">[</span><em>center=None</em>, <em>pix = False</em>, <em>etot = None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.ee_curve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns Spectrum object containing enclosed energy as function of radius.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; <p>Center of the explored region.</p>
+<p>If pix is False, center = (dec, ra) is in degrees.</p>
+<p>If pix is True, center = (i,j) is in pixels.</p>
+<p>If center is None, center of the image is used.</p>
+</li>
+<li><strong>pix</strong> (<em>boolean</em>) &#8211; <p>If pix is False, center is in degrees.</p>
+<p>If pix is True, center is in pixels.</p>
+</li>
+<li><strong>etot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Total energy. If etot is not set it is computed from the full image.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obj.Spectrum</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.ee_size">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">ee_size</tt><big>(</big><span class="optional">[</span><em>center=None</em>, <em>pix = False</em>, <em>ee = None</em>, <em>frac = 0.90</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.ee_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the size of the square center on (dec,ra) containing the fraction of the energy.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; <p>Center of the explored region.</p>
+<p>If pix is False, center = (dec, ra) is in degrees.</p>
+<p>If pix is True, center = (i,j) is in pixels.</p>
+<p>If center is None, center of the image is used.</p>
+</li>
+<li><strong>pix</strong> (<em>boolean</em>) &#8211; <p>If pix is False, center is in degrees.</p>
+<p>If pix is True, center is in pixels.</p>
+</li>
+<li><strong>ee</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Enclosed energy. If ee is not set it is computed from the full image that contain the fraction (frac) of the total energy.</li>
+<li><strong>frac</strong> (<em>float in ]0,1]</em>) &#8211; Fraction of energy.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(float,float)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="obj.Image.add">
 <tt class="descclassname">obj.Image.</tt><tt class="descname">add</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#obj.Image.add" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds the image other to the current image. The coordinate are taken into account.</p>
@@ -511,7 +666,7 @@ World coordinates in spatial directions must be the same.</dd>
 <dl class="function">
 <dt id="obj.Image.moments">
 <tt class="descclassname">obj.Image.</tt><tt class="descname">moments</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.moments" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns [width_x, width_y] first moments of the 2D gaussian.</p>
+<dd><p>Returns [width_dec, width_ra] first moments of the 2D gaussian.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -524,21 +679,24 @@ World coordinates in spatial directions must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Image.gauss_fit">
-<tt class="descclassname">obj.Image.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>pos_min</em>, <em>pos_max</em><span class="optional">[</span>, <em>center=None</em>, <em>flux=None</em>, <em>width=None</em>, <em>cont=None</em>, <em>rot = 0</em>, <em>peak=False</em>, <em>plot=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.gauss_fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Image.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>pos_min</em>, <em>pos_max</em><span class="optional">[</span>, <em>center=None</em>, <em>flux=None</em>, <em>width=None</em>, <em>cont=None</em>, <em>rot = 0</em>, <em>peak=False</em>, <em>factor = 1</em>, <em>plot=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.gauss_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs polynomial fit on image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>pos_min</strong> (<em>(float,float)</em>) &#8211; Minimum right ascension and declination in degrees (ra_min, dec_min).</li>
-<li><strong>pos_max</strong> (<em>(float,float)</em>) &#8211; Maximum right ascension and declination in degrees (ra_max, dec_max)</li>
-<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Initial gaussian center (ra_peak, dec_peak). If None it is estimated.</li>
+<li><strong>pos_min</strong> (<em>(float,float)</em>) &#8211; Minimum declination and right ascension in degrees (dec_min, ra_min).</li>
+<li><strong>pos_max</strong> (<em>(float,float)</em>) &#8211; Maximum declination and right ascension in degrees (dec_max, ra_max)</li>
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Initial gaussian center (dec_peak, ra_peak). If None it is estimated.</li>
 <li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.</li>
-<li><strong>width</strong> (<em>(float,float)</em>) &#8211; Initial spreads of the Gaussian blob (ra_width,dec_width). If None, they are estimated.</li>
+<li><strong>width</strong> (<em>(float,float)</em>) &#8211; Initial spreads of the Gaussian blob (dec_width, ra_width). If None, they are estimated.</li>
 <li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Initial continuum value, if None it is estimated.</li>
 <li><strong>rot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Initial rotation in degree.</li>
 <li><strong>peak</strong> (<em>boolean</em>) &#8211; If true, flux contains a gaussian peak value.</li>
+<li><strong>factor</strong> (<em>integer</em>) &#8211; <p>If factor&lt;=1, gaussian value is computed in the center of each pixel.</p>
+<p>If factor&gt;1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.</p>
+</li>
 <li><strong>plot</strong> (<em>boolean</em>) &#8211; If True, the gaussian is plotted.</li>
 </ul>
 </td>
@@ -550,23 +708,140 @@ World coordinates in spatial directions must be the same.</dd>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.Image.add_gaussian_noise">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">add_gaussian_noise</tt><big>(</big><em>sigma</em><big>)</big><a class="headerlink" href="#obj.Image.add_gaussian_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds Gaussian noise to image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sigma</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Standard deviation.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">obj.Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.add_poisson_noise">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">add_poisson_noise</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.add_poisson_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds Poisson noise to image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">obj.Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.inside">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">inside</tt><big>(</big><em>coord</em><big>)</big><a class="headerlink" href="#obj.Image.inside" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if coord is inside image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>(float,float)</em>) &#8211; declination and right ascension in degrees (dec, ra).</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.fftconvolve">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">fftconvolve</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#obj.Image.fftconvolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolves image with other using fft.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>2d-array or Image</em>) &#8211; Second Image or 2d-array.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">obj.Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.fftconvolve_gauss">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">fftconvolve_gauss</tt><big>(</big><span class="optional">[</span><em>center=None</em>, <em>flux=1.</em>, <em>width=(1.</em>, <em>1.)</em>, <em>peak=False</em>, <em>rot = 0.</em>, <em>factor=1</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.fftconvolve_gauss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolves image with a 2D gaussian.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Gaussian center (dec_peak, ra_peak). If None the center of the image is used.</li>
+<li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Integrated gaussian flux or gaussian peak value if peak is True.</li>
+<li><strong>width</strong> (<em>(float,float)</em>) &#8211; Spreads of the Gaussian blob (dec_width,ra_width).</li>
+<li><strong>peak</strong> (<em>boolean</em>) &#8211; If true, flux contains a gaussian peak value.</li>
+<li><strong>rot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Angle position in degree.</li>
+<li><strong>factor</strong> (<em>integer</em>) &#8211; <p>If factor&lt;=1, gaussian value is computed in the center of each pixel.</p>
+<p>If factor&gt;1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obj.Image</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.fftconvolve_moffat">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">fftconvolve_moffat</tt><big>(</big><span class="optional">[</span><em>center=None</em>, <em>I=1.</em>, <em>a=1.0</em>, <em>q=1.0</em>, <em>n=2</em>, <em>rot = 0.</em>, <em>factor=1</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.fftconvolve_moffat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolves image with a 2D moffat.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Gaussian center (dec_peak, ra_peak). If None the center of the image is used.</li>
+<li><strong>I</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Intensity at image center. 1 by default.</li>
+<li><strong>a</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Half width at half maximum of the image in the absence of atmospheric scattering. 1 by default.</li>
+<li><strong>q</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Axis ratio, 1 by default.</li>
+<li><strong>n</strong> (<em>integer</em>) &#8211; Atmospheric scattering coefficient. 2 by default.</li>
+<li><strong>rot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Angle position in degree.</li>
+<li><strong>factor</strong> (<em>integer</em>) &#8211; <p>If factor&lt;=1, moffat value is computed in the center of each pixel.</p>
+<p>If factor&gt;1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obj.Image</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="transformation">
 <h3>Transformation<a class="headerlink" href="#transformation" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="obj.Image.truncate">
-<tt class="descclassname">obj.Image.</tt><tt class="descname">truncate</tt><big>(</big><em>ra_min</em>, <em>ra_max</em>, <em>dec_min</em>, <em>dec_max</em><span class="optional">[</span>, <em>mask=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.truncate" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Image.</tt><tt class="descname">truncate</tt><big>(</big><em>dec_min</em>, <em>dec_max</em>, <em>ra_min</em>, <em>ra_max</em><span class="optional">[</span>, <em>mask=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.truncate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the corresponding sub-image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ra_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum right ascension in degrees.</li>
-<li><strong>ra_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum right ascension in degrees.</li>
 <li><strong>dec_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum declination in degrees.</li>
 <li><strong>dec_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum declination in degrees.</li>
-<li><strong>mask</strong> (<em>boolean</em>) &#8211; if True, pixels outside [ra_min,ra_max] and [dec_min,dec_max] are masked.</li>
+<li><strong>ra_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum right ascension in degrees.</li>
+<li><strong>ra_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum right ascension in degrees.</li>
+<li><strong>mask</strong> (<em>boolean</em>) &#8211; if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.</li>
 </ul>
 </td>
 </tr>
@@ -643,8 +918,8 @@ World coordinates in spatial directions must be the same.</dd>
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>newdim</strong> (<em>integer or (integer,integer)</em>) &#8211; New dimensions. Python notation: (ny,nx)</li>
-<li><strong>newstart</strong> (<em>float or (float, float)</em>) &#8211; New positions (x,y) for the pixel (0,0). If None, old position is used.</li>
-<li><strong>newstep</strong> (<em>float or (float, float)</em>) &#8211; New step (dx,dy).</li>
+<li><strong>newstart</strong> (<em>float or (float, float)</em>) &#8211; New positions (dec,ra) for the pixel (0,0). If None, old position is used.</li>
+<li><strong>newstep</strong> (<em>float or (float, float)</em>) &#8211; New step (ddec,dra).</li>
 <li><strong>flux</strong> (<em>boolean</em>) &#8211; if flux is True, the flux is conserved.</li>
 <li><strong>order</strong> (<em>integer</em>) &#8211; The order of the spline interpolation, default is 3. The order has to be in the range 0-5.</li>
 </ul>
@@ -753,7 +1028,7 @@ World coordinates in spatial directions must be the same.</dd>
 <p>To read cursor position, click on the left mouse button.</p>
 <p>To remove a cursor position, click on the left mouse button + &lt;d&gt;</p>
 <p>To quit the interactive mode, click on the right mouse button.</p>
-<p>At the end, clicks are saved in self.clicks as dictionary {&#8216;ra&#8217;,&#8217;dec&#8217;,&#8217;i&#8217;,&#8217;j&#8217;,&#8217;data&#8217;}.</p>
+<p>At the end, clicks are saved in self.clicks as dictionary {&#8216;dec&#8217;,&#8217;ra&#8217;,&#8217;i&#8217;,&#8217;j&#8217;,&#8217;data&#8217;}.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -778,13 +1053,34 @@ World coordinates in spatial directions must be the same.</dd>
 <p>To quit the interactive mode, click on the right mouse button.</p>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.Image.ipeak">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">ipeak</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.ipeak" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds peak location in windows defined with left mouse button.</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.ifwhm">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">ifwhm</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.ifwhm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes fwhm in windows defined with left mouse button.</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.iee">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">iee</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.iee" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes enclosed energy in windows defined with left mouse button.</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="functions-to-create-a-new-image">
 <h2>Functions to create a new image<a class="headerlink" href="#functions-to-create-a-new-image" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="obj.gauss_image">
-<tt class="descclassname">obj.</tt><tt class="descname">gauss_image</tt><big>(</big><span class="optional">[</span><em>shape=(101</em>, <em>101)</em>, <em>wcs=WCS()</em>, <em>center=None</em>, <em>flux=1.</em>, <em>width=(1.</em>, <em>1.)</em>, <em>peak=False</em>, <em>int=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.gauss_image" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.</tt><tt class="descname">gauss_image</tt><big>(</big><span class="optional">[</span><em>shape=(101</em>, <em>101)</em>, <em>wcs=WCS()</em>, <em>center=None</em>, <em>flux=1.</em>, <em>width=(1.</em>, <em>1.)</em>, <em>peak=False</em>, <em>rot = 0.</em>, <em>factor=1</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.gauss_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a new image from a 2D gaussian.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -793,12 +1089,43 @@ World coordinates in spatial directions must be the same.</dd>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default. If wcs object contains dimensions, shape is ignored and wcs dimensions are used.</li>
 <li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
-<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Gaussian center (ra_peak, dec_peak). If None the center of the image is used.</li>
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Gaussian center (dec_peak, ra_peak). If None the center of the image is used.</li>
 <li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Integrated gaussian flux or gaussian peak value if peak is True.</li>
-<li><strong>width</strong> (<em>(float,float)</em>) &#8211; Spreads of the Gaussian blob (ra_width,dec_width).</li>
+<li><strong>width</strong> (<em>(float,float)</em>) &#8211; Spreads of the Gaussian blob (dec_width,ra_width).</li>
 <li><strong>peak</strong> (<em>boolean</em>) &#8211; If true, flux contains a gaussian peak value.</li>
-<li><strong>int</strong> (<em>boolean</em>) &#8211; <p>If False, pixel contains the gaussian value.</p>
-<p>If True, pixel contains the integral of the gaussian on the pixel divided by the pixel area. True by default.</p>
+<li><strong>rot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Angle position in degree.</li>
+<li><strong>factor</strong> (<em>integer</em>) &#8211; <p>If factor&lt;=1, gaussian value is computed in the center of each pixel.</p>
+<p>If factor&gt;1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obj.Image object (<a class="reference internal" href="#image-class">Image class</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.moffat_image">
+<tt class="descclassname">obj.</tt><tt class="descname">moffat_image</tt><big>(</big><span class="optional">[</span><em>shape=(101</em>, <em>101)</em>, <em>wcs=WCS()</em>, <em>center=None</em>, <em>I=1.</em>, <em>a=1.0</em>, <em>q=1.0</em>, <em>n=2</em>, <em>rot = 0.</em>, <em>factor=1</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.moffat_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new image from a 2D Moffat function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default. If wcs object contains dimensions, shape is ignored and wcs dimensions are used.</li>
+<li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Gaussian center (dec_peak, ra_peak). If None the center of the image is used.</li>
+<li><strong>I</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Intensity at image center. 1 by default.</li>
+<li><strong>a</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Half width at half maximum of the image in the absence of atmospheric scattering. 1 by default.</li>
+<li><strong>q</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Axis ratio, 1 by default.</li>
+<li><strong>n</strong> (<em>integer</em>) &#8211; Atmospheric scattering coefficient. 2 by default.</li>
+<li><strong>rot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Angle position in degree.</li>
+<li><strong>factor</strong> (<em>integer</em>) &#8211; <p>If factor&lt;=1, moffat value is computed in the center of each pixel.</p>
+<p>If factor&gt;1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.</p>
 </li>
 </ul>
 </td>
@@ -825,7 +1152,7 @@ World coordinates in spatial directions must be the same.</dd>
 <tbody valign="top">
 <tr><td>center</td>
 <td>(float,float)</td>
-<td>Gaussian center (ra,dec).</td>
+<td>Gaussian center (dec,ra).</td>
 </tr>
 <tr><td>flux</td>
 <td>float</td>
@@ -833,7 +1160,7 @@ World coordinates in spatial directions must be the same.</dd>
 </tr>
 <tr><td>width</td>
 <td>(float,float)</td>
-<td>Spreads of the Gaussian blob (ra_width,dec_width).</td>
+<td>Spreads of the Gaussian blob (dec_width,ra_width).</td>
 </tr>
 <tr><td>cont</td>
 <td>float</td>

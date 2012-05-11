@@ -44,7 +44,7 @@
    <h1 id="index">Index</h1>
 
    <div class="genindex-jumpbox">
-   <a href="#_"><strong>_</strong></a> | <a href="#A"><strong>A</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#O"><strong>O</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#W"><strong>W</strong></a> 
+   <a href="#_"><strong>_</strong></a> | <a href="#A"><strong>A</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#O"><strong>O</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#W"><strong>W</strong></a> 
    </div>
 <h2 id="_">_</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
@@ -105,15 +105,17 @@
     <dt><a href="spectrum.html#obj.Spectrum.abmag_band">abmag_band() (in module obj.Spectrum)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.abmag_filter">abmag_filter() (in module obj.Spectrum)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.abmag_filter_name">abmag_filter_name() (in module obj.Spectrum)</a></dt>
-</dl></td>
-  <td style="width: 33%" valign="top"><dl>
     <dt><a href="cube.html#obj.Cube.abs">abs() (in module obj.Cube)</a></dt>
     <dd><dl>
       <dt><a href="image.html#obj.Image.abs">(in module obj.Image)</a></dt>
       <dt><a href="spectrum.html#obj.Spectrum.abs">(in module obj.Spectrum)</a></dt>
   </dl></dd>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
     <dt><a href="image.html#obj.Image.add">add() (in module obj.Image)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.add_gaussian">add_gaussian() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.add_gaussian_noise">add_gaussian_noise() (in module obj.Image)</a></dt>
+    <dt><a href="image.html#obj.Image.add_poisson_noise">add_poisson_noise() (in module obj.Image)</a></dt>
 </dl></td>
 </tr></table>
 
@@ -149,14 +151,35 @@
 </dl></td>
 </tr></table>
 
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="image.html#obj.Image.ee">ee() (in module obj.Image)</a></dt>
+    <dt><a href="image.html#obj.Image.ee_curve">ee_curve() (in module obj.Image)</a></dt>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="image.html#obj.Image.ee_size">ee_size() (in module obj.Image)</a></dt>
+</dl></td>
+</tr></table>
+
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="spectrum.html#obj.Spectrum.fftconvolve">fftconvolve() (in module obj.Spectrum)</a></dt>
-    <dt><a href="spectrum.html#obj.Spectrum.fftconvolve_gauss">fftconvolve_gauss() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.fftconvolve">fftconvolve() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="spectrum.html#obj.Spectrum.fftconvolve">(in module obj.Spectrum)</a></dt>
+  </dl></dd>
+    <dt><a href="image.html#obj.Image.fftconvolve_gauss">fftconvolve_gauss() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="spectrum.html#obj.Spectrum.fftconvolve_gauss">(in module obj.Spectrum)</a></dt>
+  </dl></dd>
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="spectrum.html#obj.Spectrum.fwhm">fwhm() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.fftconvolve_moffat">fftconvolve_moffat() (in module obj.Image)</a></dt>
+    <dt><a href="image.html#obj.Image.fwhm">fwhm() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="spectrum.html#obj.Spectrum.fwhm">(in module obj.Spectrum)</a></dt>
+  </dl></dd>
 </dl></td>
 </tr></table>
 
@@ -199,6 +222,8 @@
     <dd><dl>
       <dt><a href="spectrum.html#obj.Spectrum.idist">(in module obj.Spectrum)</a></dt>
   </dl></dd>
+    <dt><a href="image.html#obj.Image.iee">iee() (in module obj.Image)</a></dt>
+    <dt><a href="image.html#obj.Image.ifwhm">ifwhm() (in module obj.Image)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.igauss_fit">igauss_fit() (in module obj.Spectrum)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.imask">imask() (in module obj.Spectrum)</a></dt>
     <dt><a href="cube.html#obj.Cube.info">info() (in module obj.Cube)</a></dt>
@@ -208,9 +233,11 @@
       <dt><a href="coord.html#obj.WCS.info">(in module obj.WCS)</a></dt>
       <dt><a href="coord.html#obj.WaveCoord.info">(in module obj.WaveCoord)</a></dt>
   </dl></dd>
-    <dt><a href="spectrum.html#obj.Spectrum.interp_mask">interp_mask() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.inside">inside() (in module obj.Image)</a></dt>
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="spectrum.html#obj.Spectrum.interp_mask">interp_mask() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.ipeak">ipeak() (in module obj.Image)</a></dt>
     <dt><a href="image.html#obj.Image.ipos">ipos() (in module obj.Image)</a></dt>
     <dd><dl>
       <dt><a href="spectrum.html#obj.Spectrum.ipos">(in module obj.Spectrum)</a></dt>
@@ -237,13 +264,14 @@
     <dt><a href="spectrum.html#obj.Spectrum.mask">mask() (in module obj.Spectrum)</a></dt>
     <dt><a href="image.html#obj.Image.maximum_filter">maximum_filter() (in module obj.Image)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.mean">mean() (in module obj.Spectrum)</a></dt>
-</dl></td>
-  <td style="width: 33%" valign="top"><dl>
     <dt><a href="image.html#obj.Image.median_filter">median_filter() (in module obj.Image)</a></dt>
     <dd><dl>
       <dt><a href="spectrum.html#obj.Spectrum.median_filter">(in module obj.Spectrum)</a></dt>
   </dl></dd>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
     <dt><a href="image.html#obj.Image.minimum_filter">minimum_filter() (in module obj.Image)</a></dt>
+    <dt><a href="image.html#obj.moffat_image">moffat_image() (in module obj)</a></dt>
     <dt><a href="image.html#obj.Image.moments">moments() (in module obj.Image)</a></dt>
 </dl></td>
 </tr></table>
@@ -271,15 +299,16 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="image.html#obj.Image.peak">peak() (in module obj.Image)</a></dt>
     <dt><a href="coord.html#obj.WCS.pix2sky">pix2sky() (in module obj.WCS)</a></dt>
     <dt><a href="coord.html#obj.WaveCoord.pixel">pixel() (in module obj.WaveCoord)</a></dt>
     <dt><a href="image.html#obj.Image.plot">plot() (in module obj.Image)</a></dt>
     <dd><dl>
       <dt><a href="spectrum.html#obj.Spectrum.plot">(in module obj.Spectrum)</a></dt>
   </dl></dd>
-    <dt><a href="spectrum.html#obj.Spectrum.poly_fit">poly_fit() (in module obj.Spectrum)</a></dt>
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="spectrum.html#obj.Spectrum.poly_fit">poly_fit() (in module obj.Spectrum)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.poly_spec">poly_spec() (in module obj.Spectrum)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.poly_val">poly_val() (in module obj.Spectrum)</a></dt>
     <dt><a href="spectrum.html#obj.Gauss1D.print_param">print_param() (in module obj.Gauss1D)</a></dt>

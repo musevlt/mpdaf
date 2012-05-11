@@ -321,7 +321,7 @@ class Spectrum(object):
                     h = f['DATA'].header
                     d = np.array(f['DATA'].data, dtype=float)
                 else:
-                    if isinstance(ext,int) or isinstance(ext,str):
+                    if is_int(ext) or isinstance(ext,str):
                         n = ext
                     else:
                         n = ext[0]
@@ -931,7 +931,7 @@ class Spectrum(object):
     def __getitem__(self,item):
         """ returns the corresponding value or sub-spectrum
         """
-        if isinstance(item, int):
+        if is_int(item):
             return self.data[item]
         elif isinstance(item, slice):
             data = self.data[item]
@@ -1679,14 +1679,14 @@ class Spectrum(object):
         """
 
         # truncate the spectrum and compute right and left gaussian values
-        if isinstance(lmin,int) or isinstance(lmin,float):
+        if is_int(lmin) or is_float(lmin):
                 fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0],lmin[1])
             lmin = lmin[1]
             
-        if isinstance(lmax,int) or isinstance(lmax,float):
+        if is_int(lmax) or is_float(lmax):
                 fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
@@ -2335,9 +2335,9 @@ class ImageClicks:
         """prints a cursor positions
         """
         if fscale == 1:
-            print 'ra=%g\tdec=%g\tj=%d\ti=%d\tdata=%g'%(self.ra[i],self.dec[i],self.j[i],self.i[i],self.data[i])
+            print 'dec=%g\tra=%g\ti=%d\tj=%d\tdata=%g'%(self.dec[i],self.ra[i],self.i[i],self.j[i],self.data[i])
         else:
-            print 'ra=%g\tdec=%g\tj=%d\ti=%d\tdata=%g\t[scaled=%g]'%(self.ra[i],self.dec[i],self.j[i],self.i[i],self.data[i],self.data[i]/fscale)
+            print 'dec=%g\tra=%g\ti=%d\tj=%d\tdata=%g\t[scaled=%g]'%(self.dec[i],self.ra[i],self.i[i],self.j[i],self.data[i],self.data[i]/fscale)
            
     def write_fits(self): 
         """prints coordinates in fits table.
@@ -2370,13 +2370,13 @@ class Gauss2D:
     ---------- 
     
     center : (float,float)
-    Gaussian center (ra,dec).
+    Gaussian center (dec,ra).
     
     flux : float
     Gaussian integrated flux.
     
     width : (float,float)
-    Spreads of the Gaussian blob (ra_width,dec_width).
+    Spreads of the Gaussian blob (dec_width,ra_width).
     
     cont : float
     Continuum value.
@@ -2545,7 +2545,7 @@ class Image(object):
                     h = f['DATA'].header
                     d = np.array(f['DATA'].data, dtype=float)
                 else:
-                    if isinstance(ext,int) or isinstance(ext,str):
+                    if is_int(ext) or isinstance(ext,str):
                         n = ext
                     else:
                         n = ext[0]
@@ -2590,7 +2590,7 @@ class Image(object):
             # possible FITS header instance
             self.cards = pyfits.CardList()
             #data
-            if isinstance(shape,int):
+            if is_int(shape):
                 shape = (shape,shape)
             if data is None:
                 if empty:
@@ -2815,9 +2815,9 @@ class Image(object):
             try:
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None))
                 self.data = self.data[item]
-                if isinstance(item[0],int):
+                if is_int(item[0]):
                     self.shape = (1,self.data.shape[0])
-                elif isinstance(item[1],int):
+                elif is_int(item[1]):
                     self.shape = (self.data.shape[0],1)
                 else:
                     self.shape = (self.data.shape[0],self.data.shape[1])
@@ -3171,9 +3171,9 @@ class Image(object):
         """
         if isinstance(item, tuple) and len(item)==2:
                 data = self.data[item]
-                if isinstance(item[0],int):
+                if is_int(item[0]):
                     shape = (1,data.shape[0])
-                elif isinstance(item[1],int):
+                elif is_int(item[1]):
                     shape = (data.shape[0],1)
                 else:
                     shape = (data.shape[0],data.shape[1])
@@ -3225,28 +3225,29 @@ class Image(object):
         else:
             self.wcs = wcs
 
-    def truncate(self,ra_min,ra_max,dec_min,dec_max, mask=True):
+    def truncate(self, dec_min, dec_max, ra_min, ra_max, mask=True):
         """ returns the corresponding sub-image
 
         Parameters
         ----------
+        dec_min : float
+        minimum declination in degrees
+
+        dec_max : float
+        maximum declination in degrees 
+        
         ra_min : float
         minimum right ascension in degrees
 
         ra_max : float
         maximum right ascension in degrees
 
-        dec_min : float
-        minimum declination in degrees
-
-        dec_max : float
-        maximum declination in degrees       
-        
         mask : boolean
-        if True, pixels outside [ra_min,ra_max] and [dec_min,dec_max] are masked
+        if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked
         """
         skycrd = [[ra_min,dec_min],[ra_min,dec_max],[ra_max,dec_min],[ra_max,dec_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
+        
         imin = int(np.min(pixcrd[:,0]))
         if imin<0:
             imin = 0
@@ -3257,6 +3258,7 @@ class Image(object):
         jmax = int(np.max(pixcrd[:,1]))+1
         
         res = self[jmin:jmax,imin:imax]
+        
         if mask:
             #mask outside pixels
             m = np.ma.make_mask_none(res.data.shape)
@@ -3307,6 +3309,9 @@ class Image(object):
     
     def sum(self,axis=None):
         """ Returns the sum over the given axis.
+        
+        Parameter
+        ---------
         axis = None returns a float
         axis = 0  or 1 returns a line or a column
         Other cases return None.
@@ -3359,7 +3364,305 @@ class Image(object):
         res = self.copy()
         res *= norm
         return res
+    
+    def peak(self, center=None, radius=0, pix = False, dpix=2, plot=False):
+        """ Finds image peak location.
+        Returns a dictionary {'ra', 'dec', 'j', 'i', 'data'} containing the peak position and the peak intensity.
         
+        Parameters
+        ----------
+        
+        center : (float,float)
+        Center of the explored region.
+        If pix is False, center = (dec, ra) is in degrees.
+        If pix is True, center = (i,j) is in pixels.
+        If center is None, the full image is explored.
+        
+        radius : (float,float)
+        Radius defined the explored region.
+        If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
+        If pix is True, radius = (di,dj) is in pixels.
+        
+        pix : boolean
+        If pix is False, center and radius are in degrees and arcsecs.
+        If pix is True, center and radius are in pixels.
+        
+        dpix : integer
+        Half size of the window to compute the center of gravity.
+        
+        plot : boolean
+        If True, the peak center is overplotted on the image.
+        """
+        if center is None or radius==0:
+            d = self.data
+            imin = 0
+            jmin = 0
+        else:
+            if is_int(radius) or is_float(radius):
+                radius = (radius,radius)
+            if pix:
+                imin = center[0] - radius[0]
+                imax = center[0] + radius[0] + 1
+                jmin = center[1] - radius[1]
+                jmax = center[1] + radius[1] + 1
+            else:
+                dec_min = center[0] - radius[0]/3600.0
+                dec_max = center[0] + radius[0]/3600.0
+                ra_min = center[1] - radius[1]/3600.0
+                ra_max = center[1] + radius[1]/3600.0
+                skycrd = [ [ra_min,dec_min], [ra_min,dec_max], [ra_max,dec_min], [ra_max,dec_max] ]
+                pixcrd = self.wcs.sky2pix(skycrd)
+                jmin = int(np.min(pixcrd[:,0]))
+                if jmin<0:
+                    jmin = 0
+                jmax = int(np.max(pixcrd[:,0]))+1
+                imin = int(np.min(pixcrd[:,1]))
+                if imin<0:
+                    imin = 0
+                imax = int(np.max(pixcrd[:,1]))+1
+            d = self.data[imin:imax,jmin:jmax]
+            if np.shape(d)[0]==0 or np.shape(d)[1]==0:
+                raise ValueError, 'Coord area outside image limits'
+            
+        ic,jc = ndimage.measurements.maximum_position(d)
+        if dpix == 0:
+            di = 0
+            dj = 0
+        else:
+            if ic-dpix<0 or ic+dpix>self.shape[0] or jc-dpix<0 or jc+dpix>self.shape[1]:
+                raise ValueError, 'Cannot compute center of mass, peak at the edges of the image'
+            di,dj = ndimage.measurements.center_of_mass(d[ic-dpix:ic+dpix+1,jc-dpix:jc+dpix+1])
+        ic = imin+ic-dpix+di
+        jc = jmin+jc-dpix+dj
+        [[ra,dec]] = self.wcs.pix2sky([[jc,ic]])
+        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
+        if plot:
+            plt.plot(jc,ic,'r+')
+        return {'ra':ra, 'dec':dec, 'j':jc, 'i':ic, 'data': maxv}
+    
+    def fwhm(self, center=None, radius=0, pix = False):
+        """ Computes the fwhm center. Returns [fwhm_dec,fwhm_ra].
+        
+        center : (float,float)
+        Center of the explored region.
+        If pix is False, center = (dec, ra) is in degrees.
+        If pix is True, center = (i,j) is in pixels.
+        If center is None, the full image is explored.
+        
+        radius : (float,float)
+        Radius defined the explored region.
+        If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
+        If pix is True, radius = (di,dj) is in pixels.
+        
+        pix : boolean
+        If pix is False, center and radius are in degrees and arcsecs.
+        If pix is True, center and radius are in pixels.
+        """
+        if center is None or radius==0:
+            sigma = self.moments()
+        else:
+            if is_int(radius) or is_float(radius):
+                radius = (radius,radius)
+            if pix:
+                imin = center[0] - radius[0]
+                imax = center[0] + radius[0] + 1
+                jmin = center[1] - radius[1]
+                jmax = center[1] + radius[1] + 1
+            else:
+                dec_min = center[0] - radius[0]/3600.0
+                dec_max = center[0] + radius[0]/3600.0
+                ra_min = center[1] - radius[1]/3600.0
+                ra_max = center[1] + radius[1]/3600.0
+                skycrd = [ [ra_min,dec_min], [ra_min,dec_max], [ra_max,dec_min], [ra_max,dec_max] ]    
+                pixcrd = self.wcs.sky2pix(skycrd)
+                jmin = int(np.min(pixcrd[:,0]))
+                if jmin<0:
+                    jmin = 0
+                jmax = int(np.max(pixcrd[:,0]))+1
+                imin = int(np.min(pixcrd[:,1]))
+                if imin<0:
+                    imin = 0
+                imax = int(np.max(pixcrd[:,1]))+1
+            sigma = self[imin:imax,jmin:jmax].moments()
+        fwhmx = sigma[0]*2.*np.sqrt(2.*np.log(2.0))
+        fwhmy = sigma[1]*2.*np.sqrt(2.*np.log(2.0))
+        return [fwhmx,fwhmy]
+    
+    def ee(self, center=None, radius=0, pix = False, frac = False):
+        """ Computes ensquared energy.
+        
+        center : (float,float)
+        Center of the explored region.
+        If pix is False, center = (dec, ra) is in degrees.
+        If pix is True, center = (i,j) is in pixels.
+        If center is None, the full image is explored.
+        
+        radius : float or (float,float)
+        Radius defined the explored region.
+        If radius is float, it defined a circular region.
+        If radius is (float,float), it defined a rectangular region.
+        If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
+        If pix is True, radius = (di,dj) is in pixels.
+        
+        pix : boolean
+        If pix is False, center and radius are in degrees and arcsecs.
+        If pix is True, center and radius are in pixels.
+        
+        frac : boolean
+        If frac is True, result is given relative to the total energy.
+        """
+        if center is None or radius==0:
+            if frac:
+                return 1.
+            else:
+                return self.data.sum()*self.fscale
+        else:
+            if is_int(radius) or is_float(radius):
+                circular = True
+                radius2 = radius*radius
+                radius = (radius,radius)
+            else:
+                circular = False
+                
+            if pix:
+                imin = center[0] - radius[0]
+                imax = center[0] + radius[0]
+                jmin = center[1] - radius[1]
+                jmax = center[1] + radius[1]
+            else:
+                dec_min = center[0] - radius[0]/3600.0
+                dec_max = center[0] + radius[0]/3600.0
+                ra_min = center[1] - radius[1]/3600.0
+                ra_max = center[1] + radius[1]/3600.0
+                skycrd = [ [ra_min,dec_min], [ra_min,dec_max], [ra_max,dec_min], [ra_max,dec_max] ] 
+                pixcrd = self.wcs.sky2pix(skycrd)
+                jmin = int(np.min(pixcrd[:,0]))
+                if jmin<0:
+                    jmin = 0
+                jmax = int(np.max(pixcrd[:,0]))+1
+                imin = int(np.min(pixcrd[:,1]))
+                if imin<0:
+                    imin = 0
+                imax = int(np.max(pixcrd[:,1]))+1
+            ima = self[imin:imax,jmin:jmax]
+            if circular:
+                if pix:
+                    xaxis = np.arange(ima.shape[0], dtype=np.float) - ima.shape[0]/2.
+                    yaxis = np.arange(ima.shape[1], dtype=np.float) - ima.shape[1]/2.
+                else:
+                    step = self.get_step()
+                    xaxis = (np.arange(ima.shape[0], dtype=np.float) - ima.shape[0]/2.) * step[0] * 3600.0
+                    yaxis = (np.arange(ima.shape[1], dtype=np.float) - ima.shape[1]/2.) * step[1] * 3600.0
+                gridx = np.zeros(ima.shape, dtype=np.float)
+                gridy = np.zeros(ima.shape, dtype=np.float)
+                for j in range(ima.shape[1]):
+                    gridx[:,j] = xaxis
+                for i in range(ima.shape[0]):
+                    gridy[i,:] = yaxis
+                r2 = gridx * gridx + gridy * gridy
+                ksel = np.where(r2 < radius2)
+                if frac:
+                    return ima.data[ksel].sum()/self.data.sum()
+                else:
+                    return ima.data[ksel].sum()*self.fscale
+            else:
+                if frac:
+                    return ima.data.sum()/self.data.sum()
+                else:
+                    return ima.data.sum()*self.fscale
+
+    def ee_curve(self, center=None, pix = False, etot = None):
+        """Returns Spectrum object containing enclosed energy as function of radius.
+        
+        center : (float,float)
+        Center of the explored region.
+        If pix is False, center = (dec, ra) is in degrees.
+        If pix is True, center = (i,j) is in pixels.
+        If center is None, the full image is explored.
+        
+        pix : boolean
+        If pix is False, center is in degrees.
+        If pix is True, center is in pixels.
+        
+        etot : float
+        Total energy.
+        If etot is not set it is computed from the full image.
+        """
+        if center is None:
+            i = self.shape[0]/2
+            j = self.shape[1]/2
+        else:
+            if pix:
+                i = center[0]
+                j = center[1]
+            else:  
+                pixcrd = self.wcs.sky2pix([[center[1],center[0]]])
+                i = int(pixcrd[0][1]+0.5)
+                j = int(pixcrd[0][0]+0.5)
+        nmax = min(self.shape[0]-i,self.shape[1]-j,i,j)
+        if etot is None:
+            etot = self.fscale*self.data.sum()
+        step = self.get_step()
+        if nmax <= 1:
+            raise ValueError, 'Coord area outside image limits'
+        ee = np.zeros(nmax)
+        for d in range(0, nmax):
+            ee[d] = self.fscale*self.data[i-d:i+d+1, j-d:j+d+1].sum()/etot
+        plt.plot(rad,ee)
+        wave = WaveCoord(cdelt=np.sqrt(step[0]**2+step[1]**2), crval=0.0, cunit = '')
+        return Spectrum(wave=wave, data = ee)
+        
+    def ee_size(self, center=None, pix = False, ee = None, frac = 0.90):
+        """Computes the size of the square center on (dec,ra) containing the fraction of the energy.
+        
+        center : (float,float)
+        Center of the explored region.
+        If pix is False, center = (dec, ra) is in degrees.
+        If pix is True, center = (i,j) is in pixels.
+        If center is None, the full image is explored.
+        
+        pix : boolean
+        If pix is False, center is in degrees.
+        If pix is True, center is in pixels.
+        
+        ee : float
+        Enclosed energy.
+        If ee is not set it is computed from the full image that contain the fraction (frac) of the total energy
+        
+        frac : float
+        Fraction of energy.
+        """
+        if center is None:
+            i = self.shape[0]/2
+            j = self.shape[1]/2
+        else:
+            if pix:
+                i = center[0]
+                j = center[1]
+            else:  
+                pixcrd = self.wcs.sky2pix([[center[1],center[0]]])
+                i = int(pixcrd[0][1]+0.5)
+                j = int(pixcrd[0][0]+0.5)
+        nmax = min(self.shape[0]-i,self.shape[1]-j,i,j)
+        if ee is None:
+            ee = self.fscale*self.data.sum()
+        step = self.get_step()
+        
+        if nmax <= 1:
+            return step[0], step[1], 0, 0
+        for d in range(1, nmax):
+            ee2 = self.fscale*self.data[i-d:i+d+1, j-d:j+d+1].sum()/ee
+            if ee2 > frac:
+                break;
+        d -= 1
+        ee1 = self.fscale*self.data[i-d:i+d+1, i-d:i+d+1].sum()/ee
+        d += (frac-ee1)/(ee2-ee1) # interpolate
+        dx = d*step[0]*2
+        dy = d*step[1]*2
+        return [dx,dy]
+                
+    
+       
             
     def _interp(self, grid, spline=False):
         """ returns the interpolated values corresponding to the grid points
@@ -3407,7 +3710,7 @@ class Image(object):
             return res
         
     def moments(self):
-        """Returns [width_x, width_y] first moments of the 2D gaussian
+        """Returns [width_dec, width_ra] first moments of the 2D gaussian
         """
         total = np.abs(self.data).sum()
         Y, X = np.indices(self.data.shape) # python convention: reverse x,y numpy.indices
@@ -3418,31 +3721,30 @@ class Image(object):
         width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())*self.wcs.cdelt[0]
         row = self.data[:, int(x)]
         width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*self.wcs.cdelt[1]
-        return [width_x,width_y]
+        return [width_y,width_x]
         
-        
-    def gauss_fit(self, pos_min, pos_max, center=None, flux=None, width=None, cont=None, rot = 0, peak = False, plot = False):
-        """performs polynomial fit on image.
+    def gauss_fit(self, pos_min, pos_max, center=None, flux=None, width=None, cont=None, rot = 0, peak = False, factor = 1, plot = False):
+        """performs gaussian fit on image.
         Returns Gauss2D object
 
         Parameters
         ----------
         
         pos_min : (float,float)
-        Minimum right ascension and declination in degrees (ra_min, dec_min)
+        Minimum declination and right ascension in degrees (dec_min, ra_min)
 
         pos_max : (float,float)
-        Maximum right ascension and declination in degrees (ra_max, dec_max)
+        Maximum declination and right ascension in degrees (dec_max,ra_max)
         
         center : (float,float)
-        Initial gaussian center (ra_peak, dec_peak). If None they are estimated.
+        Initial gaussian center (dec_peak, ra_peak). If None they are estimated.
         
         flux : float
         Initial integrated gaussian flux or gaussian peak value if peak is True.
         If None peak value is estimated.
 
         width : (float,float)
-        Initial spreads of the Gaussian blob (ra_width,dec_width). If None, they are estimated.
+        Initial spreads of the Gaussian blob (dec_width, ra_width). If None, they are estimated.
 
         cont : float
         Initial continuum value, if None it is estimated.
@@ -3453,16 +3755,18 @@ class Image(object):
         peak : boolean
         If true, flux contains a gaussian peak value.
         
+        factor : integer
+        If factor<=1, gaussian is computed in the center of each pixel.
+        If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+        
         plot : boolean
         If True, the gaussian is plotted.
         """
-        ra_min = pos_min[0]
-        dec_min = pos_min[1]
-        ra_max = pos_max[0]
-        dec_max = pos_max[1]
-        ima = self.truncate(ra_min, ra_max, dec_min, dec_max, mask = False)
-#        plt.figure()
-#        ima.plot()
+        ra_min = pos_min[1]
+        dec_min = pos_min[0]
+        ra_max = pos_max[1]
+        dec_max = pos_max[0]
+        ima = self.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
         
         ksel = np.where(ima.data.mask==False)
         pixcrd = np.zeros((np.shape(ksel[0])[0],2))
@@ -3470,7 +3774,7 @@ class Image(object):
         pixcrd[:,1] = ksel[0] #dec
         pixsky = ima.wcs.pix2sky(pixcrd)
         x = pixsky[:,0] #ra
-        y = pixsky[:,1] #dec    
+        y = pixsky[:,1] #dec  
         data = ima.data.data[ksel]*self.fscale
         
         #weight
@@ -3485,8 +3789,8 @@ class Image(object):
             ra_peak = x[imax]
             dec_peak = y[imax]
         else:
-            ra_peak = center[0]
-            dec_peak = center[1]
+            ra_peak = center[1]
+            dec_peak = center[0]
             
         # continuum value 
         if cont is None:
@@ -3496,8 +3800,8 @@ class Image(object):
         # initial width value    
         if width is None:
             width= ima.moments()
-        ra_width = width[0]
-        dec_width = width[1]
+        ra_width = width[1]
+        dec_width = width[0]
         
         # initial gaussian integrated flux
         if flux is None:
@@ -3514,17 +3818,24 @@ class Image(object):
         #rotation angle in rad
         theta = np.pi * rot / 180.0
         
-        # 2d gaussian functio
-        gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
-                                              *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-((x-p[1])*np.sin(p[5])+(y-p[3])*np.cos(p[5]))**2/(2*p[4]**2)) 
-        # 2d Gaussian fit  
-        e_gauss_fit = lambda p, x, y, data: (gaussfit(p,x,y) - data)
-            
-        # inital guesses for Gaussian Fit
-        v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
-        # Minimize the sum of squares
-        v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1)
-
+        
+        if factor > 1:
+            gaussfit = lambda p: gauss_image(ima.shape, ima.wcs, (p[3],p[1]), p[0], (p[4],p[2]), False, p[5], factor).data.data[ksel]*ima.fscale + cont
+            e_gauss_fit = lambda p, data: (gaussfit(p) - data)
+            v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
+            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data), maxfev=100000, full_output=1)           
+        else:                                             
+            # 2d gaussian functio
+            gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
+                                                  *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-((x-p[1])*np.sin(p[5])+(y-p[3])*np.cos(p[5]))**2/(2*p[4]**2)) 
+            # 2d Gaussian fit  
+            e_gauss_fit = lambda p, x, y, data: (gaussfit(p,x,y) - data)
+                
+            # inital guesses for Gaussian Fit
+            v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
+            # Minimize the sum of squares
+            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1)
+    
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
@@ -3532,6 +3843,9 @@ class Image(object):
         
         # plot
         if plot:
+            gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
+                                                  *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-((x-p[1])*np.sin(p[5])+(y-p[3])*np.cos(p[5]))**2/(2*p[4]**2)) 
+            
             xmin = np.min(x)
             xmax = np.max(x)
             xx = np.arange(xmin,xmax,(xmax-xmin)/100)
@@ -3566,8 +3880,159 @@ class Image(object):
         err_rot = err[5] * 180.0 / np.pi
         peak = flux / np.sqrt(2*np.pi*(ra_width**2)) / np.sqrt(2*np.pi*(dec_width**2))
         err_peak = (err_flux*ra_width*dec_width - flux*(err_ra_width*dec_width+err_dec_width*ra_width)) / (2*np.pi*ra_width*ra_width*dec_width*dec_width)
-        return Gauss2D((ra_peak,dec_peak), flux, (ra_width,dec_width), cont, rot, peak, (err_ra_peak,err_dec_peak), err_flux, (err_ra_width,err_dec_width), err_rot, err_peak)
+        return Gauss2D((dec_peak,ra_peak), flux, (dec_width,ra_width), cont, rot, peak, (err_dec_peak,err_ra_peak), err_flux, (err_dec_width,err_ra_width), err_rot, err_peak)
     
+    def moffat_fit(self, pos_min, pos_max,  center=None, I=None, a=None , q=1, n=2.0, cont=None, rot=0, factor = 1, plot = False):
+        """performs moffat fit on image.
+        Returns Gauss2D object
+
+        Parameters
+        ----------
+        
+        pos_min : (float,float)
+        Minimum declination and right ascension in degrees (dec_min, ra_min)
+
+        pos_max : (float,float)
+        Maximum declination and right ascension in degrees (dec_max,ra_max)
+        
+        center : (float,float)
+        Initial Moffat center (dec_peak, ra_peak). If None they are estimated.
+            
+        I : float
+        Initial intensity at image center. 
+    
+        a : float
+        Initial half width at half maximum of the image in the absence of atmospheric scattering.
+        
+        q : float
+        Initial axis ratio.
+        
+        n : integer
+        Initial atmospheric scattering coefficient.
+        
+        cont : float
+        Initial continuum value, if None it is estimated.
+        
+        rot : float
+        Initial angle position in degree.
+        
+        factor : integer
+        If factor<=1, gaussian is computed in the center of each pixel.
+        If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+        
+        plot : boolean
+        If True, the gaussian is plotted.
+        """
+        ra_min = pos_min[1]
+        dec_min = pos_min[0]
+        ra_max = pos_max[1]
+        dec_max = pos_max[0]
+        ima = self.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
+        
+        ksel = np.where(ima.data.mask==False)
+        pixcrd = np.zeros((np.shape(ksel[0])[0],2))
+        pixcrd[:,0] = ksel[1] #ra
+        pixcrd[:,1] = ksel[0] #dec
+        pixsky = ima.wcs.pix2sky(pixcrd)
+        x = pixsky[:,0] #ra
+        y = pixsky[:,1] #dec  
+        data = ima.data.data[ksel]*self.fscale
+        
+        #weight
+        if ima.var is None:
+            dw = data
+        else:
+            dw = data / ima.var[ksel]
+        
+        # initial peak position
+        if center is None:
+            imax = dw.argmax()
+            ra_peak = x[imax]
+            dec_peak = y[imax]
+        else:
+            ra_peak = center[1]
+            dec_peak = center[0]
+            
+        # continuum value 
+        if cont is None:
+            imin = dw.argmin()
+            cont =  max(0,data[imin])
+            
+        # initial width value    
+        if a is None:
+            fwhm = ima.fwhm(center)
+            a = fwhm[0]/(2*np.sqrt(2**(1.0/n)-1.0))
+        
+        # initial gaussian integrated flux
+        if I is None:
+           imax = dw.argmax()
+           I = dw[imax]
+        
+        #rotation angle in rad
+        theta = np.pi * rot / 180.0
+        
+        
+        if factor > 1:
+            moffatfit = lambda p: moffat_image(ima.shape, ima.wcs, (p[2],p[1]), p[0], p[3], p[5], p[4], p[6],factor).data.data[ksel]*ima.fscale + cont
+            e_moffat_fit = lambda p, data: (moffatfit(p) - data)
+            v0 = [I,ra_peak, dec_peak, a, n, q, rot]
+            v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(data), maxfev=100000, full_output=1)           
+        else:                                             
+            moffatfit = lambda p,x, y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
+                              +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**p[4]
+            e_moffat_fit = lambda p, x, y, data: (moffatfit(p,x,y) - data)                
+            v0 = [I,ra_peak, dec_peak, a, n, q, rot]
+            v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1)
+    
+        # calculate the errors from the estimated covariance matrix
+        chisq = sum(info["fvec"] * info["fvec"])
+        dof = len(info["fvec"]) - len(v)
+        err = np.array([np.sqrt(covar[i, i]) * np.sqrt(chisq / dof) for i in range(len(v))])
+        
+        # plot
+        if plot:
+            moffatfit = lambda p,x, y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
+                              +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**p[4]            
+            xmin = np.min(x)
+            xmax = np.max(x)
+            xx = np.arange(xmin,xmax,(xmax-xmin)/100)
+            ymin = np.min(y)
+            ymax = np.max(y)
+            yy = np.arange(ymin,ymax,(ymax-ymin)/100)
+            
+            ff = np.zeros((np.shape(yy)[0],np.shape(xx)[0]))
+            for i in range(np.shape(xx)[0]):
+                xxx = np.zeros(np.shape(yy)[0])
+                xxx[:] = xx[i]
+                ff[:,i] = moffatfit(v,xxx,yy)
+            
+            pixsky = [[xmin,ymin],[xmax,ymax]]
+            [[xmin,ymin],[xmax,ymax]] = self.wcs.sky2pix(pixsky)
+            xx = np.arange(xmin,xmax,(xmax-xmin)/np.shape(xx)[0])
+            yy = np.arange(ymin,ymax,(ymax-ymin)/np.shape(yy)[0])
+            plt.contour(xx, yy, ff, 5)
+
+        I = v[0]
+        err_I = err[0]
+        ra = v[1]
+        err_ra = err[1]
+        dec = v[2]
+        err_dec = err[2]
+        a = v[3]
+        err_a = err[3]
+        n = v[4]
+        err_n = err[4]
+        q = v[5]
+        err_q = err[5]
+        rot = (v[6] * 180.0 / np.pi)%180
+        err_rot = err[6] * 180.0 / np.pi
+        print 'I',I,err_I
+        print 'ra',ra,err_ra
+        print 'dec',dec,err_dec
+        print 'a',a,err_a
+        print 'n',n,err_n
+        print 'q',q,err_q
+        print 'rot',rot,err_rot
     
     def _rebin_factor(self, factor):
         '''shrinks the size of the image by factor.
@@ -3612,7 +4077,7 @@ class Image(object):
         'origin': pixels added on (n+1) line/column.
         '''
         getnoise = False
-        if isinstance(factor,int):
+        if is_int(factor):
             factor = (factor,factor)
         if factor[0]<=1 or factor[0]>=self.shape[0] or factor[1]<=1 or factor[1]>=self.shape[1]:
             raise ValueError, 'factor must be in ]1,shape['
@@ -3821,10 +4286,10 @@ class Image(object):
         New dimensions. Python notation: (ny,nx)
         
         newstart : float or (float, float)
-        New positions (x,y) for the pixel (0,0). If None, old position is used.
+        New positions (dec,ra) for the pixel (0,0). If None, old position is used.
         
         newstep : float or (float, float)
-        New step (dx,dy).
+        New step (ddec,dra).
         
         flux : boolean
         if flux is True, the flux is conserved.
@@ -3832,14 +4297,18 @@ class Image(object):
         order : integer
         The order of the spline interpolation, default is 3. The order has to be in the range 0-5.   
         """
-        if isinstance(newdim,int):
+        if is_int(newdim):
             newdim = (newdim,newdim)
         if newstart is None:
             newstart = self.wcs.get_start()
-        if isinstance(newstart,int) or isinstance(newstart,float):
+        elif is_int(newstart) or is_float(newstart):
             newstart = (newstart,newstart)
-        if isinstance(newstep,int) or isinstance(newstep,float):
+        else:
+            newstart = (newstart[1],newstart[0])
+        if is_int(newstep) or is_float(newstep):
             newstep = (newstep,newstep)
+        else:
+            newstep = (newstep[1],newstep[0])
         newdim = np.array(newdim)
         newstart = np.array(newstart)
         newstep = np.array(newstep)
@@ -4004,7 +4473,136 @@ class Image(object):
             res = Image(data=self.data[slices[i]],wcs=wcs)
             imalist.append(res)
         return imalist
+    
+    def add_gaussian_noise(self, sigma):
+        """ Adds gaussian noise to image
+        
+        Parameter
+        ---------
+        
+        sigma : float
+        Standard deviation.
+        """
+        res = self.copy()
+        res.data = np.ma.array(np.random.normal(res.data.filled(0), sigma),mask=res.data.mask)
+        return res
+    
+    def add_poisson_noise(self):
+        """ Adds poisson noise to image
+        """
+        res = self.copy()
+        res.data = np.ma.array(np.random.poisson(res.data.filled(0)),mask=res.data.mask)
+        return res
+    
+    def inside(self, coord):
+        """ Returns True if coord is inside image
+        """
+        pixcrd = [ [0,0], [self.shape[1]-1,0], [ self.shape[1]-1,self.shape[0]-1], [0,self.shape[0]-1]]
+        pixsky = self.wcs.pix2sky(pixcrd)
+        #Compute the cross product
+        if ((coord[0]-pixsky[0][1])*(pixsky[1][0]-pixsky[0][0])-(coord[1]-pixsky[0][0])*(pixsky[1][1]-pixsky[0][1]))<0 :
+            Normal1IsPositive = False
+        if ((coord[0]-pixsky[1][1])*(pixsky[2][0]-pixsky[1][0])-(coord[1]-pixsky[1][0])*(pixsky[2][1]-pixsky[1][1]))<0 :
+            Normal2IsPositive = False
+        if ((coord[0]-pixsky[2][1])*(pixsky[3][0]-pixsky[2][0])-(coord[1]-pixsky[2][0])*(pixsky[3][1]-pixsky[2][1]))<0 :
+            Normal3IsPositive = False
+        if ((coord[0]-pixsky[3][1])*(pixsky[0][0]-pixsky[3][0])-(coord[1]-pixsky[3][0])*(pixsky[0][1]-pixsky[3][1]))<0 :
+            Normal4IsPositive = False;
+        if (Normal1IsPositive==Normal2IsPositive) and (Normal2IsPositive==Normal3IsPositive) and (Normal3IsPositive==Normal4IsPositive) :
+            return True
+        else:
+            return False
+        
+    def fftconvolve(self, other):
+        """convolves self and other using fft.
+        
+        Parameter
+        ---------
+        
+        other : 2d-array or Image
+        Second Image or 2d-array
+        """
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        if type(other) is np.array:
+            res = self.copy()
+            res.data = np.ma.array(signal.fftconvolve(self.data.filled(0) ,other ,mode='same'), mask=self.data.mask)
+            return res
+        try:
+            if other.image:
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
+                    print 'Operation forbidden for images with different sizes'
+                    return None
+                else:
+                    res = self.copy()
+                    res.data = np.ma.array(signal.fftconvolve(self.data.filled(0) ,other.data.filled(0) ,mode='same'), mask=self.data.mask)
+                    res.fscale = self.fscale * other.fscale
+                    return res
+        except:
+            print 'Operation forbidden'
+            return None
+        
+    def fftconvolve_gauss(self,center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1):
+        """Convolves image with a 2D gaussian.
+        
+        Parameters
+        ----------
+        
+        center : (float,float)
+        Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
+        
+        flux : float
+        Integrated gaussian flux or gaussian peak value if peak is True.
+
+        width : (float,float)
+        Spreads of the Gaussian blob (dec_width,ra_width).
+        
+        peak : boolean
+        If true, flux contains a gaussian peak value.
+    
+        rot : float
+        Angle position in degree.
+      
+        factor : integer
+        If factor<=1, gaussian is computed in the center of each pixel.
+        If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+        """
+        ima = gauss_image(self.shape, self.wcs, center, flux, width, peak, rot, factor)
+        ima.norm(type='sum')
+        return self.fftconvolve(ima)
+    
+    def fftconvolve_moffat(self, center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=1):
+        """Convolves image with a 2D moffat.
+        
+        Parameters
+        ----------
+        
+        center : (float,float)
+        Moffat center (dec_peak, ra_peak). If None the center of the image is used.
             
+        I : float
+        Intensity at image center. 1 by default.
+    
+        a : float
+        Half width at half maximum of the image in the absence of atmospheric scattering. 1 by default.
+        
+        q : float
+        axis ratio, 1 by default.
+        
+        n : integer
+        Atmospheric scattering coefficient. 2 by default.
+        
+        rot : float
+        Angle position in degree.
+          
+        factor : integer
+        If factor<=1, moffat value is computed in the center of each pixel.
+        If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
+        """
+        ima = moffat_image(self.shape, self.wcs, center, I, a, q, n, rot, factor)
+        ima.norm(type='sum')
+        return self.fftconvolve(ima)
+    
     def plot(self, max=None, title=None, noise=False): 
         """ plots the image.
         
@@ -4057,7 +4655,7 @@ class Image(object):
         plt.connect('motion_notify_event', self._on_move)
         
     def _on_move(self,event):
-        """ prints x,y,i,j and data in the figure toolbar.
+        """ prints y,x,i,j and data in the figure toolbar.
         """
         if event.inaxes is not None:
             j, i = event.xdata, event.ydata
@@ -4066,7 +4664,7 @@ class Image(object):
                 xc = pixsky[0][0]
                 yc = pixsky[0][1]
                 val = self.data.data[i,j]*self.fscale
-                s = 'ra= %g dec=%g j=%i i=%i data=%g'%(xc,yc,j,i,val)
+                s = 'dec= %g ra=%g i=%i j=%i data=%g'%(yc,xc,i,j,val)
                 self._fig.toolbar.set_message(s)
             except:
                 pass    
@@ -4097,7 +4695,7 @@ class Image(object):
             self._clicks.filename = filename
         
     def _on_click(self,event):
-        """ prints ra,dec,i,j and data corresponding to the cursor position.
+        """ prints dec,ra,i,j and data corresponding to the cursor position.
         """
         if event.key == 'd':
             if event.button == 1:
@@ -4203,8 +4801,98 @@ class Image(object):
             self._selector.set_active(False)
             self._selector = None
             
+    def ipeak(self):
+        """Interactive mode.
+        Prints peak location in windows defined by 2 cursor positions.
+        """
+        print 'Use left mouse button to define the box.'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        if self._clicks is None and self._selector is None:
+            ax = plt.subplot(111)
+            self._selector = RectangleSelector(ax, self._on_select_peak, drawtype='box')
             
-def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=True):
+    def _on_select_peak(self,eclick, erelease):
+        """Prints image peak location in windows defined by 2 cursor positions.
+        """
+        if eclick.button == 1:
+            try:
+                j1 = int(min(eclick.xdata,erelease.xdata))
+                j2 = int(max(eclick.xdata,erelease.xdata))
+                i1 = int(min(eclick.ydata,erelease.ydata))
+                i2 = int(max(eclick.ydata,erelease.ydata))
+                center = ((i2+i1)/2,(j2+j1)/2)
+                radius = (np.abs(i2-i1)/2,np.abs(j2-j1)/2)
+                peak =  self.peak(center,radius,True)
+                print 'peak: dec=%g\tra=%g\ti=%d\tj=%d\tdata=%g' % (peak['dec'], peak['ra'], peak['i'], peak['j'], peak['data'])
+            except:
+                pass
+        else: 
+            print 'ipeak deactivated.'
+            self._selector.set_active(False)
+            self._selector = None
+            
+    def ifwhm(self):
+        """Interactive mode.
+        Computes fwhm in windows defined by 2 cursor positions.
+        """
+        print 'Use left mouse button to define the box.'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        if self._clicks is None and self._selector is None:
+            ax = plt.subplot(111)
+            self._selector = RectangleSelector(ax, self._on_select_fwhm, drawtype='box')
+            
+    def _on_select_fwhm(self,eclick, erelease):
+        """Prints image peak location in windows defined by 2 cursor positions.
+        """
+        if eclick.button == 1:
+            try:
+                j1 = int(min(eclick.xdata,erelease.xdata))
+                j2 = int(max(eclick.xdata,erelease.xdata))
+                i1 = int(min(eclick.ydata,erelease.ydata))
+                i2 = int(max(eclick.ydata,erelease.ydata))
+                center = ((i2+i1)/2,(j2+j1)/2)
+                radius = (np.abs(i2-i1)/2,np.abs(j2-j1)/2)
+                fwhm =  self.fwhm(center,radius,True)
+                print 'fwhm_dec=%g\tfwhm_ra=%g' % (fwhm[0], fwhm[1])
+            except:
+                pass
+        else: 
+            print 'ifwhm deactivated.'
+            self._selector.set_active(False)
+            self._selector = None
+            
+    def iee(self):
+        """Interactive mode.
+        Computes encloded energy in windows defined by 2 cursor positions.
+        """
+        print 'Use left mouse button to define the box.'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        if self._clicks is None and self._selector is None:
+            ax = plt.subplot(111)
+            self._selector = RectangleSelector(ax, self._on_select_ee, drawtype='box')
+            
+    def _on_select_ee(self,eclick, erelease):
+        """Prints image peak location in windows defined by 2 cursor positions.
+        """
+        if eclick.button == 1:
+            try:
+                j1 = int(min(eclick.xdata,erelease.xdata))
+                j2 = int(max(eclick.xdata,erelease.xdata))
+                i1 = int(min(eclick.ydata,erelease.ydata))
+                i2 = int(max(eclick.ydata,erelease.ydata))
+                center = ((i2+i1)/2,(j2+j1)/2)
+                radius = (np.abs(i2-i1)/2,np.abs(j2-j1)/2)
+                ee =  self.ee(center,radius,True)
+                print 'ee=%g' %ee
+            except:
+                pass
+        else: 
+            print 'iee deactivated.'
+            self._selector.set_active(False)
+            self._selector = None
+            
+            
+def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1):
     """creates a new image from a 2D gaussian.
     Returns Image object
 
@@ -4220,13 +4908,13 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
     World coordinates 
     
     center : (float,float)
-    Gaussian center (ra_peak, dec_peak). If None the center of the image is used.
+    Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
         
     flux : float
     Integrated gaussian flux or gaussian peak value if peak is True.
 
     width : (float,float)
-    Spreads of the Gaussian blob (ra_width,dec_width).
+    Spreads of the Gaussian blob (dec_width,ra_width).
         
     peak : boolean
     If true, flux contains a gaussian peak value.
@@ -4235,11 +4923,10 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
     Angle position in degree.
       
     factor : integer
-    If factor<=1, pixel contains the gaussian value.
-    If factor>1, pixel contains the integral of the gaussian on the pixel divided by the pixel area.
-    True by default.
+    If factor<=1, gaussian is computed in the center of each pixel.
+    If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
     """
-    if isinstance(shape,int):
+    if is_int(shape):
         shape = (shape,shape)
     shape = np.array(shape)
     
@@ -4253,11 +4940,13 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
         center = [0,0]
         center[0] = pixsky[0,0]
         center[1] = pixsky[0,1]
+    else:
+        center = [center[1],center[0]]
     
     data = np.zeros(shape=shape, dtype = float)
     
-    ra_width = width[0]
-    dec_width = width[1]
+    ra_width = width[1]
+    dec_width = width[0]
     
     #rotation angle in rad
     theta = np.pi * rot / 180.0
@@ -4288,30 +4977,12 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
             data = I * 0.25 / dx / dy * (special.erf(xmax)-special.erf(xmin)) * (special.erf(ymax)-special.erf(ymin))
             data = np.reshape(data,(shape[0],shape[1]))
         else:
-#            import time
-#            t1 = time.clock()
             X,Y = np.meshgrid(xrange(shape[1]*factor),xrange(shape[0]*factor))
-#            t2 = time.clock()
-#            print 'init1', t2-t1
-#            t1 = time.clock()
             factor = float(factor)
-#            from itertools import izip,count       
-#            pixcrd = list(izip(X.ravel()/factor, Y.ravel()/factor))
             pixcrd = zip(X.ravel()/factor,Y.ravel()/factor)
-#            t2 = time.clock()
-#            print 'init2', t2-t1
-#            t1 = time.clock()
             pixsky = wcs.pix2sky(pixcrd)
-#            t2 = time.clock()
-#            print 'wcs', t2-t1
-#            t1 = time.clock()
             data = gauss(pixsky[:,0],pixsky[:,1])
-#            t2 = time.clock()
-#            print 'gauss', t2-t1
-#            t1 = time.clock()
             data = data.reshape(shape[0],factor,shape[1],factor).sum(1).sum(2)/factor/factor
-#            t2 = time.clock()
-#            print 'reshape', t2-t1
     else:       
         X,Y = np.meshgrid(xrange(shape[1]),xrange(shape[0]))
         pixcrd = zip(X.ravel(),Y.ravel())
@@ -4321,7 +4992,7 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
             
     return Image(data=data, wcs=wcs)
 
-def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=True):
+def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=1):
     """creates a new image from a 2D Moffat function.
     Returns Image object
 
@@ -4337,7 +5008,7 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
     World coordinates 
     
     center : (float,float)
-    Moffat center (ra_peak, dec_peak). If None the center of the image is used.
+    Moffat center (dec_peak, ra_peak). If None the center of the image is used.
         
     I : float
     Intensity at image center. 1 by default.
@@ -4354,12 +5025,11 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
     rot : float
     Angle position in degree.
       
-    factor : boolean
-    If False, pixel contains the gaussian value.
-    If True, pixel contains the integral of the gaussian on the pixel divided by the pixel area.
-    True by default.
+    factor : integer
+    If factor<=1, moffat value is computed in the center of each pixel.
+    If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
     """
-    if isinstance(shape,int):
+    if is_int(shape):
         shape = (shape,shape)
     shape = np.array(shape)
     
@@ -4373,6 +5043,8 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
         center = [0,0]
         center[0] = pixsky[0,0]
         center[1] = pixsky[0,1]
+    else:
+        center = [center[1],center[0]]
     
     data = np.zeros(shape=shape, dtype = float)
     
@@ -4578,7 +5250,7 @@ class Cube(object):
             # possible FITS header instance
             self.cards = pyfits.CardList()
             #data
-            if isinstance(shape,int):
+            if is_int(shape):
                 shape = (shape,shape,shape)
             elif len(shape) == 2:
                 shape = (shape[0],shape[1],shape[1])
@@ -4811,19 +5483,19 @@ class Cube(object):
             try:
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None),slice(ksel[2][0], ksel[2][-1]+1, None))
                 self.data = self.data[item]
-                if isinstance(item[0],int):
-                    if isinstance(item[1],int):
+                if is_int(item[0]):
+                    if is_int(item[1]):
                         self.shape = (1,1,self.data.shape[0])
-                    elif isinstance(item[2],int):
+                    elif is_int(item[2]):
                         self.shape = (1,self.data.shape[0],1)
                     else:
                         self.shape = (1,self.data.shape[0],self.data.shape[1])
-                elif isinstance(item[1],int):
-                    if isinstance(item[2],int):
+                elif is_int(item[1]):
+                    if is_int(item[2]):
                         self.shape = (self.data.shape[0],1,1)
                     else:
                         self.shape = (self.data.shape[0],1,self.data.shape[1])
-                elif isinstance(item[2],int):
+                elif is_int(item[2]):
                         self.shape = (self.data.shape[0],self.data.shape[1],1)
                 else:
                     self.shape = self.data.shape
@@ -5347,15 +6019,15 @@ class Cube(object):
         """
         if isinstance(item, tuple) and len(item)==3:
             data = self.data[item]
-            if isinstance(item[0],int):
-                if isinstance(item[1],int) and isinstance(item[2],int):
+            if is_int(item[0]):
+                if is_int(item[1]) and is_int(item[2]):
                     #return a float
                     return data
                 else:
                     #return an image
-                    if isinstance(item[1],int):
+                    if is_int(item[1]):
                         shape = (1,data.shape[0])
-                    elif isinstance(item[2],int):
+                    elif is_int(item[2]):
                         shape = (data.shape[0],1)
                     else:
                         shape = data.shape
@@ -5373,7 +6045,7 @@ class Cube(object):
                     if getnoise:
                         res.var =var
                     return res
-            elif isinstance(item[1],int) and isinstance(item[2],int):
+            elif is_int(item[1]) and is_int(item[2]):
                 #return a spectrum
                 shape = data.shape[0]
                 getnoise = False
@@ -5392,9 +6064,9 @@ class Cube(object):
                 return res
             else:
                 #return a cube
-                if isinstance(item[1],int):
+                if is_int(item[1]):
                     shape = (data.shape[0],1,data.shape[1])
-                elif isinstance(item[2],int):
+                elif is_int(item[2]):
                     shape = (data.shape[0],data.shape[1],1)
                 else:
                     shape = data.shape
