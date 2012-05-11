@@ -305,6 +305,32 @@ If crpix is None and shape is not None crpix = (shape + 1.0)/2.0 and the referen
 <dd><p>Returns [ [ra_min,dec_min], [ra_max,dec_max] ]</p>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.WCS.get_start">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">get_start</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.WCS.get_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns [ra,dec] corresponding to pixel (0,0).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WCS.is_deg">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">is_deg</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.WCS.is_deg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if world coordinates are in decimal degrees (CTYPE1=&#8217;RA&#8212;TAN&#8217;,CTYPE2=&#8217;DEC&#8211;TAN&#8217;,CUNIT1=CUNIT2=&#8217;deg).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.WCS.rotate">
+<tt class="descclassname">obj.WCS.</tt><tt class="descname">rotate</tt><big>(</big><em>theta</em><big>)</big><a class="headerlink" href="#obj.WCS.rotate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotates WCS coordinates to new orientation given by theta.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>theta</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Rotation in degree.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="world-coordinates-in-spectral-direction">

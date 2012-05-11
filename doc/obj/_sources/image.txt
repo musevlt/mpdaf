@@ -252,7 +252,95 @@ Methods
   Computes the absolute value of data extension.
   
   :rtype: Image object.
+  
+.. function:: set_wcs(wcs)
 
+  Sets the world coordinates.
+  
+  :param wcs: World coordinates.
+  :type wcs: WCS
+  
+.. function:: get_step()
+
+  Returns the image steps [dDec, dRa].
+  
+  :rtype: float array
+  
+.. function:: sum([axis=None])
+
+  Returns the sum over the given axis.
+  
+  :param axis: axis = None returns a float, axis=0 or 1 returns a line or a column, other cases return None.
+  :type axis: None, 0 or 1
+  :rtype: float or Image
+  
+.. function:: norm([type='flux', value=1.0])
+
+  Normalizes total flux to value (default 1).
+  
+  :param type: If 'flux',the flux is normalized and the pixel area is taken into account.
+  
+	      If 'sum', the flux is normalized to the sum of flux independantly of pixel size.
+	      
+	      If 'max', the flux is normalized so that the maximum of intensity will be 'value'.  
+  :type type: 'flux' | 'sum' | 'max'
+  :param value: Normalized value (default 1).   
+  :type value: float
+  :rtype: Image
+  
+.. function:: add(other)
+
+  Adds the image other to the current image. The coordinate are taken into account.
+  
+  :param other: Second image to add.
+  :type other: Image
+  :rtype: Image
+  
+.. function:: segment([shape=(2,2), minsize=20, background = 20])
+
+  Segments the image in a number of smaller images. Returns a list of images.
+  
+  :param shape: Shape used for connectivity.
+  :type shape: (integer,integer)
+  :param minsize: Minimmum size of the images.
+  :type minsize: integer
+  :param background: Under this value, flux is considered as background.
+  :type background: float
+  :rtype: List of Image objects.
+        
+.. function:: moments()
+
+  Returns [width_x, width_y] first moments of the 2D gaussian.
+  
+  :rtype: float array
+  
+.. function:: gauss_fit(pos_min, pos_max [, center=None, flux=None, width=None, cont=None, rot = 0, peak=False, plot=False])
+
+  Performs polynomial fit on image.
+  
+  :param pos_min: Minimum right ascension and declination in degrees (ra_min, dec_min).
+  :type pos_min: (float,float)
+  :param pos_max: Maximum right ascension and declination in degrees (ra_max, dec_max)
+  :type pos_max: (float,float)
+  :param center: Initial gaussian center (ra_peak, dec_peak). If None it is estimated.
+  :type center: (float,float)
+  :param flux: Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.
+  :type flux: float
+  :param width: Initial spreads of the Gaussian blob (ra_width,dec_width). If None, they are estimated.
+  :type width: (float,float)
+  :param cont: Initial continuum value, if None it is estimated.
+  :type cont: float
+  :param rot: Initial rotation in degree.
+  :type rot: float
+  :param peak: If true, flux contains a gaussian peak value. 
+  :type peak: boolean
+  :param plot: If True, the gaussian is plotted.
+  :type plot: boolean
+  :rtype: objs.Gauss2D object (`Gauss2D class`_) 
+  
+  
+Transformation
+--------------
 
 .. function:: truncate(ra_min, ra_max, dec_min, dec_max [, mask=True])
 
@@ -270,55 +358,92 @@ Methods
   :type mask: boolean
   :rtype: Image
   
+.. function:: rotate_wcs(theta)
 
-.. function:: set_wcs(wcs)
-
-  Sets the world coordinates.
+  Rotates WCS coordinates to new orientation given by theta.
   
-  :param wcs: World coordinates.
-  :type wcs: WCS
+  :param theta: Rotation in degree.
+  :type theta: float
+  :rtype: Image
   
-.. function:: get_step()
+.. function:: rotate(theta)
 
-  Returns the image steps [dDec, dRa].
+  Rotates the image using spline interpolation.
   
-  :rtype: float array
-
-.. function:: moments()
-
-  Returns [width_x, width_y] first moments of the 2D gaussian.
+  :param theta: Rotation in degree.
+  :type theta: float
+  :rtype: Image
   
-  :rtype: float array
-  
-.. function:: gauss_fit(pos_min, pos_max, pos_peak=None, flux=None, width=None, cont=None, rot = 0, peak=False, plot=False)
+.. function:: rebin_factor(factor [, margin='center'])
 
-  Performs polynomial fit on image.
+  Shrinks the size of the image by factor.
   
-  :param pos_min: Minimum right ascension and declination in degrees (ra_min, dec_min).
-  :type pos_min: (float,float)
-  :param pos_max: Maximum right ascension and declination in degrees (ra_max, dec_max)
-  :type pos_max: (float,float)
-  :param pos_peak: Initial gaussian center (ra_peak, dec_peak). If None it is estimated.
-  :type pos_peak: (float,float)
-  :param flux: Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.
-  :type flux: float
-  :param width: Initial spreads of the Gaussian blob (ra_width,dec_width). If None, they are estimated.
-  :type width: (float,float)
-  :param cont: Initial continuum value, if None it is estimated.
-  :type cont: float
-  :param rot: Initial rotation in degree.
-  :type rot: float
-  :param peak: If true, flux contains a gaussian peak value. 
-  :type peak: boolean
-  :param plot: If True, the gaussian is plotted.
-  :type plot: boolean
-  :rtype: objs.Gauss2D object (`Gauss2D class`_) 
+  :param factor: Factor in X and Y. Python notation: (ny,nx).
+  :type factor: integer or (integer,integer)
+  :param margin: This parameters is used if new size is not an integer multiple of the original size. 
+  
+		In 'center' case, pixels will be added on the left and on the right, on the bottom and of the top of the image. 
+		
+		In 'origin'case, pixels will be added on (n+1) line/column.
+  :type margin: 'center' or 'origin'
+  :rtype: Image
+        
+.. function:: rebin(newdim, newstart, newstep [, flux=False, order=3])
 
+  Rebins the image to a new coordinate system.
+  
+  :param newdim: New dimensions. Python notation: (ny,nx)
+  :type newdim: integer or (integer,integer)
+  :param newstart: New positions (x,y) for the pixel (0,0). If None, old position is used.
+  :type newstart: float or (float, float)
+  :param newstep: New step (dx,dy).
+  :type newstep: float or (float, float)
+  :param flux: if flux is True, the flux is conserved.
+  :type flux: boolean
+  :param order: The order of the spline interpolation, default is 3. The order has to be in the range 0-5.
+  :type order: integer
+  :rtype: Image
+  
+  
+Filter
+------
+  
+.. function:: gaussian_filter([sigma=3])
+
+  Applies gaussian filter to the image.
+        
+  :param sigma: Standard deviation for Gaussian kernel
+  :type sigma: float
+  :rtype: Image        
+            
+.. function:: median_filter([size=3])
+
+  Applies median filter to the image.
+        
+  :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+  :type size: float
+  :rtype: Image          
+    
+.. function:: maximum_filter([size=3])
+  
+  Applies maximum filter to the image.
+        
+  :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+  :type size: float
+  :rtype: Image       
+    
+.. function:: minimum_filter([size=3])
+
+  Applies minimum filter to the image.
+        
+  :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+  :type size: float
+  :rtype: Image       
 
 Plotting
 --------
  
-.. function:: plot(max=None, title=None, noise=False)
+.. function:: plot([max=None, title=None, noise=False])
 
   Plots the image.
   
@@ -328,7 +453,65 @@ Plotting
   :type title: string
   :param noise: If noise is True, the +/- standard deviation is overplotted. False by default.
   :type noise: boolean
+  
+  
+.. function:: ipos([filename='None'])
 
+  Prints cursor position in interactive mode (i and j define the nearest pixel, ra and dec are the position, data contains the image data value (data[i,j]) ).
+  
+  To read cursor position, click on the left mouse button.
+  
+  To remove a cursor position, click on the left mouse button + <d>
+  
+  To quit the interactive mode, click on the right mouse button. 
+  
+  At the end, clicks are saved in self.clicks as dictionary {'ra','dec','i','j','data'}.
+  
+  
+  :param filename: If filename is not None, the cursor values are saved as a fits table with columns labeled 'I'|'J'|'RA'|'DEC'|'DATA'.
+  :type filename: string
+  
+
+.. function:: idist()
+
+  Gets distance and center from 2 cursor positions (interactive mode).
+  
+  To quit the interactive mode, click on the right mouse button.
+  
+.. function:: istat()
+
+  Computes image statistics from windows defined with left mouse button (mean is the mean value, median the median value, std is the rms standard deviation, sum the sum, peak the peak value, npts is the total number of points).
+  
+  To quit the interactive mode, click on the right mouse button.
+  
+
+
+Functions to create a new image
+===============================
+
+.. currentmodule:: obj
+
+.. function:: gauss_image([shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.), peak=False, int=True])
+
+  Creates a new image from a 2D gaussian.
+  
+  :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default. If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
+  :type shape: integer or (integer,integer)
+  :param wcs: World coordinates.
+  :type wcs: WCS
+  :param center: Gaussian center (ra_peak, dec_peak). If None the center of the image is used.
+  :type center: (float,float)
+  :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
+  :type flux: float
+  :param width: Spreads of the Gaussian blob (ra_width,dec_width).
+  :type width: (float,float)
+  :param peak: If true, flux contains a gaussian peak value.
+  :type peak: boolean
+  :param int: If False, pixel contains the gaussian value. 
+  
+	      If True, pixel contains the integral of the gaussian on the pixel divided by the pixel area. True by default.
+  :type int: boolean
+  :rtype: obj.Image object (`Image class`_) 
 
 
 Gauss2D class

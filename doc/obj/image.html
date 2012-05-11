@@ -403,30 +403,6 @@ World coordinates in spatial directions must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
-<dt id="obj.Image.truncate">
-<tt class="descclassname">obj.Image.</tt><tt class="descname">truncate</tt><big>(</big><em>ra_min</em>, <em>ra_max</em>, <em>dec_min</em>, <em>dec_max</em><span class="optional">[</span>, <em>mask=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.truncate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the corresponding sub-image.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ra_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum right ascension in degrees.</li>
-<li><strong>ra_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum right ascension in degrees.</li>
-<li><strong>dec_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum declination in degrees.</li>
-<li><strong>dec_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum declination in degrees.</li>
-<li><strong>mask</strong> (<em>boolean</em>) &#8211; if True, pixels outside [ra_min,ra_max] and [dec_min,dec_max] are masked.</li>
-</ul>
-</td>
-</tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Image</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
 <dt id="obj.Image.set_wcs">
 <tt class="descclassname">obj.Image.</tt><tt class="descname">set_wcs</tt><big>(</big><em>wcs</em><big>)</big><a class="headerlink" href="#obj.Image.set_wcs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the world coordinates.</p>
@@ -455,6 +431,84 @@ World coordinates in spatial directions must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="obj.Image.sum">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">sum</tt><big>(</big><span class="optional">[</span><em>axis=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the sum over the given axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>axis</strong> (<em>None, 0 or 1</em>) &#8211; axis = None returns a float, axis=0 or 1 returns a line or a column, other cases return None.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float or Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.norm">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">norm</tt><big>(</big><span class="optional">[</span><em>type='flux'</em>, <em>value=1.0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalizes total flux to value (default 1).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>type</strong> (<em>&#8216;flux&#8217; | &#8216;sum&#8217; | &#8216;max&#8217;</em>) &#8211; <p>If &#8216;flux&#8217;,the flux is normalized and the pixel area is taken into account.</p>
+<p>If &#8216;sum&#8217;, the flux is normalized to the sum of flux independantly of pixel size.</p>
+<p>If &#8216;max&#8217;, the flux is normalized so that the maximum of intensity will be &#8216;value&#8217;.</p>
+</li>
+<li><strong>value</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Normalized value (default 1).</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Image</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.add">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">add</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#obj.Image.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds the image other to the current image. The coordinate are taken into account.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>Image</em>) &#8211; Second image to add.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.segment">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">segment</tt><big>(</big><span class="optional">[</span><em>shape=(2</em>, <em>2)</em>, <em>minsize=20</em>, <em>background = 20</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.segment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Segments the image in a number of smaller images. Returns a list of images.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>shape</strong> (<em>(integer,integer)</em>) &#8211; Shape used for connectivity.</li>
+<li><strong>minsize</strong> (<em>integer</em>) &#8211; Minimmum size of the images.</li>
+<li><strong>background</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Under this value, flux is considered as background.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">List of Image objects.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="obj.Image.moments">
 <tt class="descclassname">obj.Image.</tt><tt class="descname">moments</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.moments" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns [width_x, width_y] first moments of the 2D gaussian.</p>
@@ -470,7 +524,7 @@ World coordinates in spatial directions must be the same.</dd>
 
 <dl class="function">
 <dt id="obj.Image.gauss_fit">
-<tt class="descclassname">obj.Image.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>pos_min</em>, <em>pos_max</em>, <em>pos_peak=None</em>, <em>flux=None</em>, <em>width=None</em>, <em>cont=None</em>, <em>rot = 0</em>, <em>peak=False</em>, <em>plot=False</em><big>)</big><a class="headerlink" href="#obj.Image.gauss_fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Image.</tt><tt class="descname">gauss_fit</tt><big>(</big><em>pos_min</em>, <em>pos_max</em><span class="optional">[</span>, <em>center=None</em>, <em>flux=None</em>, <em>width=None</em>, <em>cont=None</em>, <em>rot = 0</em>, <em>peak=False</em>, <em>plot=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.gauss_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs polynomial fit on image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -479,7 +533,7 @@ World coordinates in spatial directions must be the same.</dd>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>pos_min</strong> (<em>(float,float)</em>) &#8211; Minimum right ascension and declination in degrees (ra_min, dec_min).</li>
 <li><strong>pos_max</strong> (<em>(float,float)</em>) &#8211; Maximum right ascension and declination in degrees (ra_max, dec_max)</li>
-<li><strong>pos_peak</strong> (<em>(float,float)</em>) &#8211; Initial gaussian center (ra_peak, dec_peak). If None it is estimated.</li>
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Initial gaussian center (ra_peak, dec_peak). If None it is estimated.</li>
 <li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.</li>
 <li><strong>width</strong> (<em>(float,float)</em>) &#8211; Initial spreads of the Gaussian blob (ra_width,dec_width). If None, they are estimated.</li>
 <li><strong>cont</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Initial continuum value, if None it is estimated.</li>
@@ -497,11 +551,185 @@ World coordinates in spatial directions must be the same.</dd>
 </dd></dl>
 
 </div>
+<div class="section" id="transformation">
+<h3>Transformation<a class="headerlink" href="#transformation" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.Image.truncate">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">truncate</tt><big>(</big><em>ra_min</em>, <em>ra_max</em>, <em>dec_min</em>, <em>dec_max</em><span class="optional">[</span>, <em>mask=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.truncate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the corresponding sub-image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ra_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum right ascension in degrees.</li>
+<li><strong>ra_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum right ascension in degrees.</li>
+<li><strong>dec_min</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum declination in degrees.</li>
+<li><strong>dec_max</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum declination in degrees.</li>
+<li><strong>mask</strong> (<em>boolean</em>) &#8211; if True, pixels outside [ra_min,ra_max] and [dec_min,dec_max] are masked.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Image</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.rotate_wcs">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">rotate_wcs</tt><big>(</big><em>theta</em><big>)</big><a class="headerlink" href="#obj.Image.rotate_wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotates WCS coordinates to new orientation given by theta.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>theta</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Rotation in degree.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.rotate">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">rotate</tt><big>(</big><em>theta</em><big>)</big><a class="headerlink" href="#obj.Image.rotate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotates the image using spline interpolation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>theta</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Rotation in degree.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.rebin_factor">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">rebin_factor</tt><big>(</big><em>factor</em><span class="optional">[</span>, <em>margin='center'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.rebin_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shrinks the size of the image by factor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>factor</strong> (<em>integer or (integer,integer)</em>) &#8211; Factor in X and Y. Python notation: (ny,nx).</li>
+<li><strong>margin</strong> (<em>&#8216;center&#8217; or &#8216;origin&#8217;</em>) &#8211; <p>This parameters is used if new size is not an integer multiple of the original size.</p>
+<p>In &#8216;center&#8217; case, pixels will be added on the left and on the right, on the bottom and of the top of the image.</p>
+<p>In &#8216;origin&#8217;case, pixels will be added on (n+1) line/column.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Image</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.rebin">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">rebin</tt><big>(</big><em>newdim</em>, <em>newstart</em>, <em>newstep</em><span class="optional">[</span>, <em>flux=False</em>, <em>order=3</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.rebin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rebins the image to a new coordinate system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>newdim</strong> (<em>integer or (integer,integer)</em>) &#8211; New dimensions. Python notation: (ny,nx)</li>
+<li><strong>newstart</strong> (<em>float or (float, float)</em>) &#8211; New positions (x,y) for the pixel (0,0). If None, old position is used.</li>
+<li><strong>newstep</strong> (<em>float or (float, float)</em>) &#8211; New step (dx,dy).</li>
+<li><strong>flux</strong> (<em>boolean</em>) &#8211; if flux is True, the flux is conserved.</li>
+<li><strong>order</strong> (<em>integer</em>) &#8211; The order of the spline interpolation, default is 3. The order has to be in the range 0-5.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Image</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="filter">
+<h3>Filter<a class="headerlink" href="#filter" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="obj.Image.gaussian_filter">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">gaussian_filter</tt><big>(</big><span class="optional">[</span><em>sigma=3</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.gaussian_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies gaussian filter to the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sigma</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Standard deviation for Gaussian kernel</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.median_filter">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">median_filter</tt><big>(</big><span class="optional">[</span><em>size=3</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.median_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies median filter to the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>size</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.maximum_filter">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">maximum_filter</tt><big>(</big><span class="optional">[</span><em>size=3</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.maximum_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies maximum filter to the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>size</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.minimum_filter">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">minimum_filter</tt><big>(</big><span class="optional">[</span><em>size=3</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.minimum_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies minimum filter to the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>size</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Image</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
 <div class="section" id="plotting">
 <h3>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="obj.Image.plot">
-<tt class="descclassname">obj.Image.</tt><tt class="descname">plot</tt><big>(</big><em>max=None</em>, <em>title=None</em>, <em>noise=False</em><big>)</big><a class="headerlink" href="#obj.Image.plot" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Image.</tt><tt class="descname">plot</tt><big>(</big><span class="optional">[</span><em>max=None</em>, <em>title=None</em>, <em>noise=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -518,7 +746,70 @@ World coordinates in spatial directions must be the same.</dd>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.Image.ipos">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">ipos</tt><big>(</big><span class="optional">[</span><em>filename='None'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.ipos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints cursor position in interactive mode (i and j define the nearest pixel, ra and dec are the position, data contains the image data value (data[i,j]) ).</p>
+<p>To read cursor position, click on the left mouse button.</p>
+<p>To remove a cursor position, click on the left mouse button + &lt;d&gt;</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
+<p>At the end, clicks are saved in self.clicks as dictionary {&#8216;ra&#8217;,&#8217;dec&#8217;,&#8217;i&#8217;,&#8217;j&#8217;,&#8217;data&#8217;}.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; If filename is not None, the cursor values are saved as a fits table with columns labeled &#8216;I&#8217;|&#8217;J&#8217;|&#8217;RA&#8217;|&#8217;DEC&#8217;|&#8217;DATA&#8217;.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.idist">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">idist</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.idist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets distance and center from 2 cursor positions (interactive mode).</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.istat">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">istat</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.istat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes image statistics from windows defined with left mouse button (mean is the mean value, median the median value, std is the rms standard deviation, sum the sum, peak the peak value, npts is the total number of points).</p>
+<p>To quit the interactive mode, click on the right mouse button.</p>
+</dd></dl>
+
 </div>
+</div>
+<div class="section" id="functions-to-create-a-new-image">
+<h2>Functions to create a new image<a class="headerlink" href="#functions-to-create-a-new-image" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="obj.gauss_image">
+<tt class="descclassname">obj.</tt><tt class="descname">gauss_image</tt><big>(</big><span class="optional">[</span><em>shape=(101</em>, <em>101)</em>, <em>wcs=WCS()</em>, <em>center=None</em>, <em>flux=1.</em>, <em>width=(1.</em>, <em>1.)</em>, <em>peak=False</em>, <em>int=True</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.gauss_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new image from a 2D gaussian.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default. If wcs object contains dimensions, shape is ignored and wcs dimensions are used.</li>
+<li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; Gaussian center (ra_peak, dec_peak). If None the center of the image is used.</li>
+<li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Integrated gaussian flux or gaussian peak value if peak is True.</li>
+<li><strong>width</strong> (<em>(float,float)</em>) &#8211; Spreads of the Gaussian blob (ra_width,dec_width).</li>
+<li><strong>peak</strong> (<em>boolean</em>) &#8211; If true, flux contains a gaussian peak value.</li>
+<li><strong>int</strong> (<em>boolean</em>) &#8211; <p>If False, pixel contains the gaussian value.</p>
+<p>If True, pixel contains the integral of the gaussian on the pixel divided by the pixel area. True by default.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obj.Image object (<a class="reference internal" href="#image-class">Image class</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="gauss2d-class">
 <h2>Gauss2D class<a class="headerlink" href="#gauss2d-class" title="Permalink to this headline">¶</a></h2>
@@ -621,9 +912,12 @@ World coordinates in spatial directions must be the same.</dd>
 <li><a class="reference internal" href="#attributes">Attributes</a></li>
 <li><a class="reference internal" href="#indexing">Indexing</a></li>
 <li><a class="reference internal" href="#methods">Methods</a></li>
+<li><a class="reference internal" href="#transformation">Transformation</a></li>
+<li><a class="reference internal" href="#filter">Filter</a></li>
 <li><a class="reference internal" href="#plotting">Plotting</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#functions-to-create-a-new-image">Functions to create a new image</a></li>
 <li><a class="reference internal" href="#gauss2d-class">Gauss2D class</a><ul>
 <li><a class="reference internal" href="#id1">Attributes</a></li>
 <li><a class="reference internal" href="#id2">Methods</a></li>

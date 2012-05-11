@@ -18,6 +18,18 @@ from matplotlib.widgets import RectangleSelector
 
 import ABmag_filters
 
+def is_float(x):
+    if type(x) is float or type(x) is np.float32 or type(x) is np.float64:
+        return True
+    else:
+        return False
+    
+def is_int(x):
+     if type(x) is int or type(x) is np.int32 or type(x) is np.int64:
+         return True
+     else:
+        return False
+
 def flux2mag(flux, wave):
     """ convert flux from erg.s-1.cm-2.A-1 to AB mag
     wave is the wavelength in A
@@ -610,7 +622,7 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #spectrum1 + number = spectrum2 (spectrum2[k]=spectrum1[k]+number)
             res = self.copy()
             res.data = self.data + (other/np.double(self.fscale))
@@ -666,7 +678,7 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #spectrum1 - number = spectrum2 (spectrum2[k]=spectrum1[k]-number)
             res = self.copy()
             res.data = self.data - (other/np.double(self.fscale))
@@ -721,7 +733,7 @@ class Spectrum(object):
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             res = self.copy()
             res.data = (other/np.double(self.fscale)) - self.data
             return res
@@ -753,7 +765,7 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #spectrum1 * number = spectrum2 (spectrum2[k]=spectrum1[k]*number)
             res = self.copy()
             res.fscale *= other
@@ -809,7 +821,7 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #spectrum1 / number = spectrum2 (spectrum2[k]=spectrum1[k]/number)
             res = self.copy()
             res.fscale /= other
@@ -866,7 +878,7 @@ class Spectrum(object):
     def __rdiv__(self, other):
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             res = self.copy()
             res.fscale = other / res.fscale
             if res.var is not None:
@@ -888,7 +900,7 @@ class Spectrum(object):
         if self.data is None:
             raise ValueError, 'empty data array'
         res = self.copy()
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             res.data = self.data**other
             res.fscale = res.fscale**other
             res.var = None
@@ -2578,12 +2590,8 @@ class Image(object):
             # possible FITS header instance
             self.cards = pyfits.CardList()
             #data
-            if len(shape) == 1:
+            if isinstance(shape,int):
                 shape = (shape,shape)
-            elif len(shape) == 2:
-                pass
-            else:
-                raise ValueError, 'dim with dimension > 2'
             if data is None:
                 if empty:
                     self.data = None
@@ -2837,7 +2845,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #image1 + number = image2 (image2[j,i]=image1[j,i]+number)
             res = self.copy()
             res.data = self.data + (other/np.double(self.fscale))
@@ -2893,7 +2901,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #image1 - number = image2 (image2[j,i]=image1[j,i]-number)
             res = self.copy()
             res.data = self.data - (other/np.double(self.fscale))
@@ -2948,7 +2956,7 @@ class Image(object):
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             res = self.copy()
             res.data = (other/np.double(self.fscale)) - self.data
             return res
@@ -2980,7 +2988,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #image1 * number = image2 (image2[j,i]=image1[j,i]*number)
             res = self.copy()
             res.fscale *= other
@@ -3052,7 +3060,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #image1 / number = image2 (image2[j,i]=image1[j,i]/number
             res = self.copy()
             res.fscale /= other
@@ -3107,7 +3115,7 @@ class Image(object):
     def __rdiv__(self, other):
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #image1 / number = image2 (image2[j,i]=image1[j,i]/number
             res = self.copy()
             res.fscale = other / res.fscale
@@ -3130,7 +3138,7 @@ class Image(object):
         if self.data is None:
             raise ValueError, 'empty data array'
         res = self.copy()
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             res.data = self.data**other
             res.fscale = res.fscale**other
             res.var = None
@@ -3326,6 +3334,32 @@ class Image(object):
             return res
         else:
             return None
+        
+    def norm(self, type='flux', value=1.0):
+        """ Normalizes total flux to value (default 1).
+            
+        Parameters
+        ----------
+        type : 'flux' or 'sum' or 'max'
+        If 'flux',the flux is normalized and the pixel area is taken into account.
+        If 'sum', the flux is normalized to the sum of flux independantly of pixel size.
+        If 'max', the flux is normalized so that the maximum of intensity will be 'value'.    
+        
+        value : float
+        Normalized value.    
+        """
+        if type == 'flux':
+            norm = value/(self.wcs.cdelt.prod()*self.fscale*self.data.sum())
+        elif type == 'sum':
+            norm = value/(self.fscale*self.data.sum())
+        elif type == 'max':
+            norm = value/(self.fscale*self.data.max())
+        else:
+            raise ValueError, 'Error in type: only flux,sum,max permitted'
+        res = self.copy()
+        res *= norm
+        return res
+        
             
     def _interp(self, grid, spline=False):
         """ returns the interpolated values corresponding to the grid points
@@ -3533,7 +3567,444 @@ class Image(object):
         peak = flux / np.sqrt(2*np.pi*(ra_width**2)) / np.sqrt(2*np.pi*(dec_width**2))
         err_peak = (err_flux*ra_width*dec_width - flux*(err_ra_width*dec_width+err_dec_width*ra_width)) / (2*np.pi*ra_width*ra_width*dec_width*dec_width)
         return Gauss2D((ra_peak,dec_peak), flux, (ra_width,dec_width), cont, rot, peak, (err_ra_peak,err_dec_peak), err_flux, (err_ra_width,err_dec_width), err_rot, err_peak)
+    
+    
+    def _rebin_factor(self, factor):
+        '''shrinks the size of the image by factor.
+        New size is an integer multiple of the original size.
         
+        Parameter
+        ----------
+        factor : (integer,integer)
+        Factor in X and Y.
+        Python notation: (ny,nx)
+        '''
+        assert not np.sometrue(np.mod( self.shape[0], factor[0] ))
+        assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
+        # new size is an integer multiple of the original size
+        newshape = (self.shape[0]/factor[0],self.shape[1]/factor[1])
+        data = self.data.reshape(newshape[0],factor[0],newshape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
+        getnoise = False
+        var = None
+        if self.var is not None:
+            getnoise = True
+            var = self.var.reshape(newshape[0],factor[0],newshape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]/factor[0]/factor[1]
+        wcs = self.wcs.rebin(step=(self.wcs.cdelt[1]*factor[0],self.wcs.cdelt[0]*factor[1]),start=None)
+        res = Image(getnoise=getnoise, shape=newshape, wcs = wcs, unit=self.unit, fscale=self.fscale, empty=True)
+        res.data = np.ma.masked_invalid(data)
+        if getnoise:
+            res.var = var
+        return res
+
+        
+    def rebin_factor(self, factor, margin='center'):
+        '''shrinks the size of the image by factor.
+        
+        Parameters
+        ----------
+        factor : integer or (integer,integer)
+        Factor in X and Y.
+        Python notation: (ny,nx)
+        
+        margin : 'center' or 'origin'
+        This parameters is used if new size is not an integer multiple of the original size.
+        'center' : pixels added, on the left and on the right, on the bottom and of the top of the image.
+        'origin': pixels added on (n+1) line/column.
+        '''
+        getnoise = False
+        if isinstance(factor,int):
+            factor = (factor,factor)
+        if factor[0]<=1 or factor[0]>=self.shape[0] or factor[1]<=1 or factor[1]>=self.shape[1]:
+            raise ValueError, 'factor must be in ]1,shape['
+        if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )):
+            # new size is an integer multiple of the original size
+            return self._rebin_factor(factor)
+        elif not np.sometrue(np.mod( self.shape[0], factor[0] )):
+            newshape1 = self.shape[1]/factor[1]
+            n1 = self.shape[1] - newshape1*factor[1]
+            if margin == 'origin' or n1==1:
+                ima = self[:,:-n1]._rebin_factor(factor)
+                newshape = (ima.shape[0], ima.shape[1] + 1)
+                data = np.ones(newshape)
+                mask = np.zeros(newshape,dtype=bool)
+                data[:,0:-1] = ima.data
+                mask[:,0:-1] = ima.data.mask
+                data[:,-1] = self.data[:,-n1:].sum() / factor[1]
+                mask[:,-1] = self.data.mask[:,-n1:].any()
+                if self.var is not None:
+                    getnoise = True
+                    var = np.ones(newshape)
+                    var[:,0:-1] = ima.var
+                    var[:,-1] = self.var[:,-n1:].sum() / factor[1] / factor[1]
+                wcs = ima.wcs
+                wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
+            else:
+                n_left = n1/2
+                n_right = self.shape[1] - n1 + n_left
+                ima = self[:,n_left:n_right]._rebin_factor(factor)
+                newshape = (ima.shape[0], ima.shape[1] + 2)
+                data = np.ones(newshape)
+                mask = np.zeros(newshape,dtype=bool)
+                data[:,1:-1] = ima.data
+                mask[:,1:-1] = ima.data.mask
+                data[:,0] = self.data[:,0:n_left].sum() / factor[1]
+                mask[:,0] = self.data.mask[:,0:n_left].any()
+                data[:,-1] = self.data[:,n_right:].sum() / factor[1]
+                mask[:,-1] = self.data.mask[:,n_right:].any()
+                if self.var is not None:
+                    getnoise = True
+                    var = np.ones(newshape)
+                    var[:,1:-1] = ima.var
+                    var[:,0] = self.var[:,0:n_left].sum() / factor[1] / factor[1]
+                    var[:,-1] = self.var[:,n_right:].sum() / factor[1] / factor[1]
+                wcs = ima.wcs
+                wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.cdelt[0] , wcs.wcs.wcs.crval[1]]
+                wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
+        elif not np.sometrue(np.mod( self.shape[1], factor[1] )):
+            newshape0 = self.shape[0]/factor[0]
+            n0 = self.shape[0] - newshape0*factor[0]
+            if margin == 'origin' or n0==1:
+                ima = self[:-n0,:]._rebin_factor(factor)
+                newshape = (ima.shape[0] + 1, ima.shape[1])
+                data = np.ones(newshape)
+                mask = np.zeros(newshape,dtype=bool)
+                data[0:-1,:] = ima.data
+                mask[0:-1,:] = ima.data.mask
+                data[-1,:] = self.data[-n0:,:].sum() / factor[0]
+                mask[-1,:] = self.data.mask[-n0:,:].any()
+                if self.var is not None:
+                    getnoise = True
+                    var = np.ones(newshape)
+                    var[0:-1,:] = ima.var
+                    var[-1,:] = self.var[-n0:,:].sum() / factor[0] / factor[0]
+                wcs = ima.wcs
+                wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
+            else:
+                n_left = n0/2
+                n_right = self.shape[0] - n0 + n_left
+                ima = self[n_left:n_right,:]._rebin_factor(factor)
+                newshape = (ima.shape[0] + 2, ima.shape[1])
+                data = np.ones(newshape)
+                mask = np.zeros(newshape,dtype=bool)
+                data[1:-1,:] = ima.data
+                mask[1:-1,:] = ima.data.mask
+                data[0,:] = self.data[0:n_left,:].sum() / factor[0]
+                mask[0,:] = self.data.mask[0:n_left,:].any()
+                data[-1,:] = self.data[n_right:,:].sum() / factor[0]
+                mask[-1,:] = self.data.mask[n_right:,:].any()
+                if self.var is not None:
+                    getnoise = True
+                    var = np.ones(newshape)
+                    var[1:-1,:] = ima.var
+                    var[0,:] = self.var[0:n_left,:].sum() / factor[0] / factor[0]
+                    var[-1,:] = self.var[n_right:,:].sum() / factor[0] / factor[0]
+                wcs = ima.wcs
+                wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.cdelt[1]]
+                wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
+        else:
+            factor = np.array(factor)
+            newshape = self.shape/factor
+            n = self.shape - newshape*factor
+            if n[0]==1 and n[1]==1:
+                margin = 'origin'
+            if margin == 'center':
+                n_left = n/2
+                n_right = self.shape - n + n_left
+                ima = self[n_left[0]:n_right[0],n_left[1]:n_right[1]]._rebin_factor(factor)
+                if n_left[0]!=0 and n_left[1]!=0:
+                    newshape = ima.shape + 2
+                    data = np.ones(newshape)
+                    mask = np.zeros(newshape,dtype=bool)
+                    data[1:-1,1:-1] = ima.data
+                    mask[1:-1,1:-1] = ima.data.mask
+                    data[0,:] = self.data[0:n_left[0],:].sum() / factor[0]
+                    mask[0,:] = self.data.mask[0:n_left[0],:].any()
+                    data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
+                    mask[-1,:] = self.data.mask[n_right[0]:,:].any()
+                    data[:,0] = self.data[:,0:n_left[1]].sum() / factor[1]
+                    mask[:,0] = self.data.mask[:,0:n_left[1]].any()
+                    data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
+                    mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    if self.var is not None:
+                        getnoise = True
+                        var = np.ones(newshape)
+                        var[1:-1,1:-1] = var.data
+                        var[0,:] = self.var[0:n_left[0],:].sum() / factor[0] / factor[0]
+                        var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
+                        var[:,0] = self.var[:,0:n_left[1]].sum() / factor[1] / factor[1]
+                        var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
+                    wcs = ima.wcs
+                    wcs.wcs.wcs.crval = wcs.wcs.wcs.crval - wcs.cdelt
+                    wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
+                    wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
+                elif n_left[0]==0:
+                    newshape = (ima.shape[0] + 1, ima.shape[1] + 2)
+                    data = np.ones(newshape)
+                    mask = np.zeros(newshape,dtype=bool)
+                    data[0:-1,1:-1] = ima.data
+                    mask[0:-1,1:-1] = ima.data.mask
+                    data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
+                    mask[-1,:] = self.data.mask[n_right[0]:,:].any()
+                    data[:,0] = self.data[:,0:n_left[1]].sum() / factor[1]
+                    mask[:,0] = self.data.mask[:,0:n_left[1]].any()
+                    data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
+                    mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    if self.var is not None:
+                        getnoise = True
+                        var = np.ones(newshape)
+                        var[0:-1,1:-1] = var.data
+                        var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
+                        var[:,0] = self.var[:,0:n_left[1]].sum() / factor[1] / factor[1]
+                        var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
+                    wcs = ima.wcs
+                    wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.cdelt[0] , wcs.wcs.wcs.crval[1]]
+                    wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
+                    wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
+                else:
+                    newshape = (ima.shape[0] + 2, ima.shape[1] + 1)
+                    data = np.ones(newshape)
+                    mask = np.zeros(newshape,dtype=bool)
+                    data[1:-1,0:-1] = ima.data
+                    mask[1:-1,0:-1] = ima.data.mask
+                    data[0,:] = self.data[0:n_left[0],:].sum() / factor[0]
+                    mask[0,:] = self.data.mask[0:n_left[0],:].any()
+                    data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
+                    mask[-1,:] = self.data.mask[n_right[0]:,:].any()
+                    data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
+                    mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    if self.var is not None:
+                        getnoise = True
+                        var = np.ones(newshape)
+                        var[1:-1,0:-1] = var.data
+                        var[0,:] = self.var[0:n_left[0],:].sum() / factor[0] / factor[0]
+                        var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
+                        var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
+                    wcs = ima.wcs
+                    wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.cdelt[1]] 
+                    wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
+                    wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
+            elif margin=='origin':
+                n_right = self.shape - n
+                ima = self[0:n_right[0],0:n_right[1]]._rebin_factor(factor)
+                newshape = ima.shape + 1
+                data = np.ones(newshape)
+                mask = np.zeros(newshape,dtype=bool)
+                data[0:-1,0:-1] = ima.data
+                mask[0:-1,0:-1] = ima.data.mask
+                data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
+                mask[-1,:] = self.data.mask[n_right[0]:,:].any()
+                data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
+                mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                if self.var is not None:
+                    getnoise = True
+                    var = np.ones(newshape)
+                    var[0:-1,0:-1] = ima.var
+                    var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
+                    var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
+                wcs = ima.wcs
+                wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
+                wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
+            else:
+                raise ValueError, 'margin must be center|origin'
+        res = Image(getnoise=getnoise, shape=newshape, wcs = wcs, unit=self.unit, fscale=self.fscale, empty=True)
+        res.data = np.ma.array(data, mask=mask)
+        if getnoise:
+            res.var = var
+        return res
+    
+    def rebin(self, newdim, newstart, newstep, flux=False, order=3):
+        """rebins the image to a new coordinate system.
+        
+        Parameters
+        ----------
+        newdim : integer or (integer,integer)
+        New dimensions. Python notation: (ny,nx)
+        
+        newstart : float or (float, float)
+        New positions (x,y) for the pixel (0,0). If None, old position is used.
+        
+        newstep : float or (float, float)
+        New step (dx,dy).
+        
+        flux : boolean
+        if flux is True, the flux is conserved.
+        
+        order : integer
+        The order of the spline interpolation, default is 3. The order has to be in the range 0-5.   
+        """
+        if isinstance(newdim,int):
+            newdim = (newdim,newdim)
+        if newstart is None:
+            newstart = self.wcs.get_start()
+        if isinstance(newstart,int) or isinstance(newstart,float):
+            newstart = (newstart,newstart)
+        if isinstance(newstep,int) or isinstance(newstep,float):
+            newstep = (newstep,newstep)
+        newdim = np.array(newdim)
+        newstart = np.array(newstart)
+        newstep = np.array(newstep)
+                   
+        wcs =WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.rot, shape = newdim)
+        pstep = newstep/self.wcs.cdelt        
+        poffset = (newstart-self.wcs.get_start())/newstep
+        data = ndimage.affine_transform(self.data.filled(0), pstep, poffset,output_shape=newdim, order=order)
+        mask = np.array(1 - self.data.mask,dtype=bool)
+        newmask = ndimage.affine_transform(mask, pstep, poffset,output_shape=newdim, order=0)
+        mask = np.ma.make_mask(1-newmask)
+        
+        if flux:
+            rflux = self.wcs.cdelt.prod()/newstep.prod()
+            data *= rflux
+        res = Image(getnoise=False, shape=newdim, wcs = wcs, unit=self.unit, fscale=self.fscale, empty=True)
+        res.data = np.ma.array(data, mask=mask)
+        return res 
+
+    def gaussian_filter(self, sigma=3):
+        """Applies gaussian filter to the image.
+        
+        Parameter
+        ---------
+        sigma : float
+        Standard deviation for Gaussian kernel.
+        """
+        res = self.copy()
+        res.data = np.ma.array(ndimage.gaussian_filter(res.data.filled(0), sigma),mask=res.data.mask)
+        return res
+            
+    def median_filter(self, size=3):
+        """Applies median filter to the image.
+        
+        Parameter
+        ---------
+        size : float
+        Shape that is taken from the input array, at every element position, to define the input to the filter function.
+
+        """
+        res = self.copy()
+        res.data = np.ma.array(ndimage.median_filter(res.data.filled(0), size),mask=res.data.mask)
+        return res
+    
+    def maximum_filter(self, size=3):
+        """Applies maximum filter to the image.
+        
+        Parameter
+        ---------
+        size : float
+        Shape that is taken from the input array, at every element position, to define the input to the filter function.
+
+        """
+        res = self.copy()
+        res.data = np.ma.array(ndimage.maximum_filter(res.data.filled(0), size),mask=res.data.mask)
+        return res     
+    
+    def minimum_filter(self, size=3):
+        """Applies minimum filter to the image.
+        
+        Parameter
+        ---------
+        size : float
+        Shape that is taken from the input array, at every element position, to define the input to the filter function.
+
+        """
+        res = self.copy()
+        res.data = np.ma.array(ndimage.minimum_filter(res.data.filled(0), size),mask=res.data.mask)
+        return res   
+    
+    def add(self, other):
+        """ Adds the image other to the current image.
+        The coordinate are taken into account.
+        
+        Parameter
+        ---------
+        other : Image
+        Second image to add.
+        """
+        try:
+            if other.image:
+                ima = other.copy()
+                if self.wcs.rot != ima.wcs.rot:
+                    ima = ima.rotate(self.wcs.rot-ima.wcs.rot)
+                if (self.wcs.cdelt != ima.wcs.cdelt).all():
+                    try :
+                        factor = (self.wcs.cdelt[1]/ima.wcs.cdelt[1],self.wcs.cdelt[0]/ima.wcs.cdelt[0])
+                        if not np.sometrue(np.mod( self.wcs.cdelt[0],  ima.wcs.cdelt[0])) and not np.sometrue(np.mod( self.wcs.cdelt[0],  ima.wcs.cdelt[0] )):
+                            # ima.step is an integer multiple of the self.step
+                            ima = ima.rebin_factor(factor)
+                        else:
+                            raise ValueError, 'steps are not integer multiple'
+                    except:
+                        newdim = ima.shape/factor
+                        ima = ima.rebin(newdim, None, self.wcs.cdelt, flux=True)
+                # here ima and self have the same step
+                [[l1,k1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
+                l1 = int(l1 + 0.5)
+                k1 = int(k1 + 0.5)
+                if k1 < 0:
+                    nk1 = -k1
+                    k1 = 0
+                else:
+                    nk1 = 0
+                k2 = k1 + ima.shape[0] 
+                if k2 > self.shape[0]:
+                    nk2 = ima.shape[0] - (k2 - self.shape[0])
+                    k2 = self.shape[0] 
+                else:
+                    nk2 = ima.shape[0]
+                
+                if l1 < 0:
+                    nl1 = -l1
+                    l1 = 0
+                else:
+                    nl1 = 0                    
+                l2 = l1 + ima.shape[1] 
+                if l2 > self.shape[1]:
+                    nl2 = ima.shape[1] - (l2 - self.shape[1])
+                    l2 = self.shape[1] 
+                else:
+                    nl2 = ima.shape[1]
+        
+                data = self.data.filled(0)  
+                
+                data[k1:k2,l1:l2] += (ima.data.filled(0)[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
+                res = Image(getnoise=False, shape=self.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale, empty=True)
+                res.data = np.ma.array(data, mask=self.data.mask)
+                return res 
+        except:
+            print 'Operation forbidden'
+            return None
+        
+    def segment(self, shape=(2,2), minsize=20, background = 20):
+        """ Segments the image in a number of smaller images.
+        Returns a list of images.
+        
+        Parameters
+        ----------
+        
+        shape : (integer,integer)
+        Shape used for connectivity.
+        
+        minsize : integer
+        Minimmum size of the images.
+        
+        background : float
+        Under this value, flux is considered as background.
+        """
+        structure = ndimage.morphology.generate_binary_structure(shape[0], shape[1])
+        expanded = ndimage.morphology.grey_dilation(self.data.filled(0), (minsize,minsize))
+        ksel = np.where(expanded<background)
+        expanded[ksel] = 0
+        
+        lab = ndimage.measurements.label(expanded, structure)
+        slices = ndimage.measurements.find_objects(lab[0])
+
+        imalist = []
+        for i in range(lab[1]):
+            [[startx,starty]] = self.wcs.pix2sky(ima.wcs.pix2sky([[slices[i][1].start,slices[i][0].start]]))
+            wcs = WCS(crpix=(1.0,1.0),crval=(startx,starty),cdelt=self.wcs.cdelt,deg=self.wcs.is_deg(),rot=self.wcs.rot)
+            res = Image(data=self.data[slices[i]],wcs=wcs)
+            imalist.append(res)
+        return imalist
+            
     def plot(self, max=None, title=None, noise=False): 
         """ plots the image.
         
@@ -3768,12 +4239,8 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
     If factor>1, pixel contains the integral of the gaussian on the pixel divided by the pixel area.
     True by default.
     """
-    if len(shape) == 1:
+    if isinstance(shape,int):
         shape = (shape,shape)
-    elif len(shape) == 2:
-        pass
-    else:
-        raise ValueError, 'dim with dimension > 2'
     shape = np.array(shape)
     
     if wcs.wcs.naxis1 != 0. or wcs.wcs.naxis2 != 0.:
@@ -3892,12 +4359,8 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
     If True, pixel contains the integral of the gaussian on the pixel divided by the pixel area.
     True by default.
     """
-    if len(shape) == 1:
+    if isinstance(shape,int):
         shape = (shape,shape)
-    elif len(shape) == 2:
-        pass
-    else:
-        raise ValueError, 'dim with dimension > 2'
     shape = np.array(shape)
     
     if wcs.wcs.naxis1 != 0. or wcs.wcs.naxis2 != 0.:
@@ -4115,7 +4578,7 @@ class Cube(object):
             # possible FITS header instance
             self.cards = pyfits.CardList()
             #data
-            if len(shape) == 1:
+            if isinstance(shape,int):
                 shape = (shape,shape,shape)
             elif len(shape) == 2:
                 shape = (shape[0],shape[1],shape[1])
@@ -4396,7 +4859,7 @@ class Cube(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             # cube + number = cube (add pixel per pixel)
             res = self.copy()
             res.data = self.data + (other/np.double(self.fscale))
@@ -4500,7 +4963,7 @@ class Cube(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #cube1 - number = cube2 (cube2[k,j,i]=cube1[k,j,i]-number)
             res = self.copy()
             res.data = self.data - (other/np.double(self.fscale))
@@ -4585,7 +5048,7 @@ class Cube(object):
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             res = self.copy()
             res.data = (other/np.double(self.fscale)) - self.data
             return res
@@ -4623,7 +5086,7 @@ class Cube(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #cube1 * number = cube2 (cube2[k,j,i]=cube1[k,j,i]*number)
             res = self.copy()
             res.fscale *= other
@@ -4729,7 +5192,7 @@ class Cube(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
             res = self.copy()
             res.fscale /= other
@@ -4815,7 +5278,7 @@ class Cube(object):
     def __rdiv__(self, other):
         if self.data is None:
             raise ValueError, 'empty data array'
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             #cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
             res = self.copy()
             res.fscale = other / res.fscale
@@ -4847,7 +5310,7 @@ class Cube(object):
         if self.data is None:
             raise ValueError, 'empty data array'
         res = self.copy()
-        if type(other) is float or type(other) is int:
+        if is_float(other) or is_int(other):
             res.data = self.data**other
             res.fscale = res.fscale**other
             res.var = None

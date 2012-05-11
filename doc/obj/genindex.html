@@ -44,7 +44,7 @@
    <h1 id="index">Index</h1>
 
    <div class="genindex-jumpbox">
-   <a href="#_"><strong>_</strong></a> | <a href="#A"><strong>A</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#O"><strong>O</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#W"><strong>W</strong></a> 
+   <a href="#_"><strong>_</strong></a> | <a href="#A"><strong>A</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#O"><strong>O</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#W"><strong>W</strong></a> 
    </div>
 <h2 id="_">_</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
@@ -112,6 +112,7 @@
       <dt><a href="image.html#obj.Image.abs">(in module obj.Image)</a></dt>
       <dt><a href="spectrum.html#obj.Spectrum.abs">(in module obj.Spectrum)</a></dt>
   </dl></dd>
+    <dt><a href="image.html#obj.Image.add">add() (in module obj.Image)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.add_gaussian">add_gaussian() (in module obj.Spectrum)</a></dt>
 </dl></td>
 </tr></table>
@@ -166,6 +167,8 @@
     <dd><dl>
       <dt><a href="spectrum.html#obj.Spectrum.gauss_fit">(in module obj.Spectrum)</a></dt>
   </dl></dd>
+    <dt><a href="image.html#obj.gauss_image">gauss_image() (in module obj)</a></dt>
+    <dt><a href="image.html#obj.Image.gaussian_filter">gaussian_filter() (in module obj.Image)</a></dt>
     <dt><a href="cube.html#obj.Cube.get_lambda">get_lambda() (in module obj.Cube)</a></dt>
     <dd><dl>
       <dt><a href="spectrum.html#obj.Spectrum.get_lambda">(in module obj.Spectrum)</a></dt>
@@ -173,6 +176,7 @@
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
     <dt><a href="coord.html#obj.WCS.get_range">get_range() (in module obj.WCS)</a></dt>
+    <dt><a href="coord.html#obj.WCS.get_start">get_start() (in module obj.WCS)</a></dt>
     <dt><a href="cube.html#obj.Cube.get_step">get_step() (in module obj.Cube)</a></dt>
     <dd><dl>
       <dt><a href="image.html#obj.Image.get_step">(in module obj.Image)</a></dt>
@@ -191,7 +195,10 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="spectrum.html#obj.Spectrum.idist">idist() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.idist">idist() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="spectrum.html#obj.Spectrum.idist">(in module obj.Spectrum)</a></dt>
+  </dl></dd>
     <dt><a href="spectrum.html#obj.Spectrum.igauss_fit">igauss_fit() (in module obj.Spectrum)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.imask">imask() (in module obj.Spectrum)</a></dt>
     <dt><a href="cube.html#obj.Cube.info">info() (in module obj.Cube)</a></dt>
@@ -201,14 +208,19 @@
       <dt><a href="coord.html#obj.WCS.info">(in module obj.WCS)</a></dt>
       <dt><a href="coord.html#obj.WaveCoord.info">(in module obj.WaveCoord)</a></dt>
   </dl></dd>
+    <dt><a href="spectrum.html#obj.Spectrum.interp_mask">interp_mask() (in module obj.Spectrum)</a></dt>
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="spectrum.html#obj.Spectrum.interp_mask">interp_mask() (in module obj.Spectrum)</a></dt>
-    <dt><a href="spectrum.html#obj.Spectrum.ipos">ipos() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.ipos">ipos() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="spectrum.html#obj.Spectrum.ipos">(in module obj.Spectrum)</a></dt>
+  </dl></dd>
+    <dt><a href="coord.html#obj.WCS.is_deg">is_deg() (in module obj.WCS)</a></dt>
     <dt><a href="coord.html#obj.WaveCoord.isEqual">isEqual() (in module obj.WaveCoord)</a></dt>
     <dd><dl>
       <dt><a href="coord.html#obj.WCS.isEqual">(in module obj.WCS)</a></dt>
   </dl></dd>
+    <dt><a href="image.html#obj.Image.istat">istat() (in module obj.Image)</a></dt>
 </dl></td>
 </tr></table>
 
@@ -223,11 +235,23 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
     <dt><a href="spectrum.html#obj.Spectrum.mask">mask() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.maximum_filter">maximum_filter() (in module obj.Image)</a></dt>
     <dt><a href="spectrum.html#obj.Spectrum.mean">mean() (in module obj.Spectrum)</a></dt>
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="spectrum.html#obj.Spectrum.median_filter">median_filter() (in module obj.Spectrum)</a></dt>
+    <dt><a href="image.html#obj.Image.median_filter">median_filter() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="spectrum.html#obj.Spectrum.median_filter">(in module obj.Spectrum)</a></dt>
+  </dl></dd>
+    <dt><a href="image.html#obj.Image.minimum_filter">minimum_filter() (in module obj.Image)</a></dt>
     <dt><a href="image.html#obj.Image.moments">moments() (in module obj.Image)</a></dt>
+</dl></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="image.html#obj.Image.norm">norm() (in module obj.Image)</a></dt>
 </dl></td>
 </tr></table>
 
@@ -268,30 +292,42 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="spectrum.html#obj.Spectrum.rebin">rebin() (in module obj.Spectrum)</a></dt>
-    <dt><a href="spectrum.html#obj.Spectrum.rebin_factor">rebin_factor() (in module obj.Spectrum)</a></dt>
-</dl></td>
-  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="image.html#obj.Image.rebin">rebin() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="spectrum.html#obj.Spectrum.rebin">(in module obj.Spectrum)</a></dt>
+  </dl></dd>
+    <dt><a href="image.html#obj.Image.rebin_factor">rebin_factor() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="spectrum.html#obj.Spectrum.rebin_factor">(in module obj.Spectrum)</a></dt>
+  </dl></dd>
     <dt><a href="cube.html#obj.Cube.resize">resize() (in module obj.Cube)</a></dt>
     <dd><dl>
       <dt><a href="image.html#obj.Image.resize">(in module obj.Image)</a></dt>
       <dt><a href="spectrum.html#obj.Spectrum.resize">(in module obj.Spectrum)</a></dt>
   </dl></dd>
 </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="image.html#obj.Image.rotate">rotate() (in module obj.Image)</a></dt>
+    <dd><dl>
+      <dt><a href="coord.html#obj.WCS.rotate">(in module obj.WCS)</a></dt>
+  </dl></dd>
+    <dt><a href="image.html#obj.Image.rotate_wcs">rotate_wcs() (in module obj.Image)</a></dt>
+</dl></td>
 </tr></table>
 
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="image.html#obj.Image.segment">segment() (in module obj.Image)</a></dt>
     <dt><a href="cube.html#obj.Cube.set_wcs">set_wcs() (in module obj.Cube)</a></dt>
     <dd><dl>
       <dt><a href="image.html#obj.Image.set_wcs">(in module obj.Image)</a></dt>
       <dt><a href="spectrum.html#obj.Spectrum.set_wcs">(in module obj.Spectrum)</a></dt>
   </dl></dd>
     <dt><a href="coord.html#coords.sexa2deg">sexa2deg() (in module coords)</a></dt>
-    <dt><a href="coord.html#obj.WCS.sky2pix">sky2pix() (in module obj.WCS)</a></dt>
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="coord.html#obj.WCS.sky2pix">sky2pix() (in module obj.WCS)</a></dt>
     <dt><a href="cube.html#obj.Cube.sqrt">sqrt() (in module obj.Cube)</a></dt>
     <dd><dl>
       <dt><a href="image.html#obj.Image.sqrt">(in module obj.Image)</a></dt>
@@ -299,6 +335,7 @@
   </dl></dd>
     <dt><a href="cube.html#obj.Cube.sum">sum() (in module obj.Cube)</a></dt>
     <dd><dl>
+      <dt><a href="image.html#obj.Image.sum">(in module obj.Image)</a></dt>
       <dt><a href="spectrum.html#obj.Spectrum.sum">(in module obj.Spectrum)</a></dt>
   </dl></dd>
 </dl></td>

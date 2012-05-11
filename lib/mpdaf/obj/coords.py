@@ -149,13 +149,13 @@ class WCS(object):
             try:
                 dx = np.sqrt(self.wcs.wcs.cd[0,0]*self.wcs.wcs.cd[0,0] + self.wcs.wcs.cd[0,1]*self.wcs.wcs.cd[0][1])
                 dy = np.sqrt(self.wcs.wcs.cd[1,0]*self.wcs.wcs.cd[1,0] + self.wcs.wcs.cd[1,1]*self.wcs.wcs.cd[1][1])
-                self.cdelt = [dx,dy]
+                self.cdelt = np.array([dx,dy])
                 self.rot = deg2rad( np.arctan2(self.wcs.wcs.cd[1,0],self.wcs.wcs.cd[1,1]) )
             except:
                 try:
                     dx = self.wcs.wcs.cdelt[0]*np.sqrt(self.wcs.wcs.pc[0,0]*self.wcs.wcs.pc[0,0] + self.wcs.wcs.pc[0,1]*self.wcs.wcs.pc[0][1])
                     dy = self.wcs.wcs.cdelt[1]*np.sqrt(self.wcs.wcs.pc[1,0]*self.wcs.wcs.pc[1,0] + self.wcs.wcs.pc[1,1]*self.wcs.wcs.pc[1][1])
-                    self.cdelt = [dx,dy]
+                    self.cdelt = np.array([dx,dy])
                     self.rot = deg2rad( np.arctan2(self.wcs.wcs.pc[1,0],self.wcs.wcs.pc[1,1]) )
                 except:
                     self.cdelt = None
@@ -240,8 +240,7 @@ class WCS(object):
             # center in sexadecimal
             xc = (self.wcs.naxis1 -1) / 2.
             yc = (self.wcs.naxis2 -1) / 2.
-            pixcrd = [xc,yc]
-            pixsky = self.pix2sky(pixcrd)
+            pixsky = self.pix2sky([xc,yc])
             sexa = deg2sexa(pixsky)
             ra = sexa[0][0]
             dec = sexa[0][1]
@@ -249,7 +248,7 @@ class WCS(object):
             dx = self.cdelt[0]  * 3600
             dy = self.cdelt[1]  * 3600
             sizex = self.wcs.naxis1 * dx
-            sizey = self.wcs.naxis2 * dx
+            sizey = self.wcs.naxis2 * dy
             print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) step in arcsec:(%0.3f,%0.3f) rot:%0.1f' %(ra,dec,sizex,sizey,dx,dy,self.rot)
 
     def to_header(self):
@@ -295,7 +294,7 @@ class WCS(object):
         if isinstance(other,WCS):
             if self.wcs.naxis1 == other.wcs.naxis1 and self.wcs.naxis2 == other.wcs.naxis2 and \
                (self.wcs.wcs.crpix == other.wcs.wcs.crpix).all() and (self.wcs.wcs.crval == other.wcs.wcs.crval).all() and \
-               (self.cdelt == other.cdelt).all() :
+               (self.cdelt == other.cdelt).all() and self.rot == other.rot:
                 return True
             else:
                 return False
@@ -312,7 +311,7 @@ class WCS(object):
                 else:
                     imin = item[0].start
                     if imin < 0:
-                        imin = 0
+                        imin = self.wcs.naxis1 + imin
                     if imin > self.wcs.naxis1 :
                         imin = self.wcs.naxis1
                 if item[0].stop is None:
@@ -320,7 +319,7 @@ class WCS(object):
                 else:
                     imax = item[0].stop
                     if imax < 0:
-                        imax = 0
+                        imax = self.wcs.naxis1 + imax
                     if imax > self.wcs.naxis1 :
                         imax = self.wcs.naxis1
             except:
@@ -332,7 +331,7 @@ class WCS(object):
                 else:
                     jmin = item[1].start
                     if jmin < 0:
-                        jmin = 0
+                        jmin = self.wcs.naxis2 + jmin
                     if jmin > self.wcs.naxis2 :
                         jmin = self.wcs.naxis2
                 if item[1].stop is None:
@@ -340,7 +339,7 @@ class WCS(object):
                 else:
                     jmax = item[1].stop
                     if jmax < 0:
-                        jmax = 0
+                        jmax = self.wcs.naxis2 + jmax
                         if jmax > self.wcs.naxis2 :
                             jmax = self.wcs.naxis2
             except:
@@ -366,6 +365,15 @@ class WCS(object):
         ra_max = np.max(pixsky[:,0])
         dec_max = np.max(pixsky[:,1])
         return [ [ra_min,dec_min], [ra_max,dec_max] ]
+    
+    def get_start(self):
+        """returns [ra,dec] corresponding to pixel (0,0)
+        """
+        pixcrd = [[0,0]]
+        pixsky = self.pix2sky(pixcrd)
+        ra = pixsky[0,0]
+        dec = pixsky[0,1]
+        return [ra,dec]
     
     def rotate(self, theta):
         """rotates WCS coordinates to new orientation given by theta
@@ -395,27 +403,28 @@ class WCS(object):
                 self.rot = None
                 
     def rebin(self, step, start):
-        
+        """rebins to a new coordinate system.
+        """
         if self.wcs.wcs.ctype[0] == 'LINEAR':
             deg = False
         else:
             deg = True
-        #x-axis
-        pix = np.arange(self.wcs.naxis1,dtype=np.float)
-        x = (pix - self.wcs.wcs.crpix[0] + 1) * self.cdelt[0] + self.wcs.wcs.crval[0] - 0.5 * self.cdelt[0]
         if start == None:
-            startx = x[0] + step[0]*0.5
-        dimx = np.ceil((pix[-1] + self.cdelt[0] - (start[0]-step[0]*0.5)) / step[0])
-        pix = np.arange(self.wcs.naxis2,dtype=np.float)
-        #y-axis
-        y = (pix - self.wcs.wcs.crpix[1] + 1) * self.cdelt[1] + self.wcs.wcs.crval[1] - 0.5 * self.cdelt[1]
-        if start == None:
-            starty = y[0] + step[1]*0.5
-            start = (startx,starty)
-        dimy = np.ceil((pix[-1] + self.cdelt[1] - (start[1]-step[1]*0.5)) / step[1])
-          
-        res = WCS(crpix=1.0,crval=start,cdelt=step,deg=deg,rot=self.rot, shape=(dimy,dimx))
+            xc = 0
+            yc = 0
+            pixsky = self.pix2sky([xc,yc])
+            start = (pixsky[0][0] -0.5*self.cdelt[0] + 0.5*step[0],pixsky[0][1] -0.5*self.cdelt[1] + 0.5*step[1])
+        
+        res = WCS(crpix=1.0,crval=start,cdelt=step,deg=deg,rot=self.rot)
         return res
+    
+    def is_deg(self):
+        """Returns True if world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg)
+        """
+        if self.wcs.wcs.ctype[0] == 'LINEAR':
+            return False
+        else:
+            return True
 
 class WaveCoord(object):
     """WaveCoord class manages coordinates of spectrum

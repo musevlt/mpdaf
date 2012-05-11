@@ -633,18 +633,18 @@ Plotting
 
 .. function:: ipos([filename='None'])
 
-  Prints cursor position in interactive mode.
+  Prints cursor position in interactive mode (xc and yc correspond to the cursor position, i is the nearest pixel, x contains the wavelength value and data contains spectrum data value.)
   
   To read cursor position, click on the left mouse button.
   
-  To remove a cursor position, click on the left mouse button + <shift>
+  To remove a cursor position, click on the left mouse button + <d>
   
   To quit the interactive mode, click on the right mouse button. 
   
-  At the end, clicks are saved in self.clicks as dictionary {'xc','yc','x','y'}.
+  At the end, clicks are saved in self.clicks as dictionary {'xc','yc','x','data'}.
   
   
-  :param filename: If filename is not None, the cursor values are saved as a fits table.
+  :param filename: If filename is not None, the cursor values are saved as a fits table with columns labeled 'XC'|'YC'|'I'|'X'|'DATA'
   :type filename: string
         
        

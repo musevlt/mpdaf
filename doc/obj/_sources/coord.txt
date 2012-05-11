@@ -168,6 +168,22 @@ Methods
 .. function:: get_range()
 
   Returns [ [ra_min,dec_min], [ra_max,dec_max] ]
+  
+.. function:: get_start()
+
+  Returns [ra,dec] corresponding to pixel (0,0).
+  
+.. function:: is_deg()
+
+  Returns True if world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
+  
+.. function:: rotate(theta)
+
+  Rotates WCS coordinates to new orientation given by theta.
+  
+  :param theta: Rotation in degree.
+  :type theta: float
+  
     
     
 World coordinates in spectral direction
