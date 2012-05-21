@@ -254,6 +254,7 @@ class Spectrum(object):
         getnoise: boolean
         True if the noise Variance spectrum is read (if it exists)
         Use getnoise=False to create spectrum without variance extension
+        If var is not None, getnoise is automatically set to True.
 
         shape : integer
         size of the spectrum. 101 by default.
@@ -289,6 +290,8 @@ class Spectrum(object):
         """
         self._clicks = None
         self.spectrum = True
+        if var is not None:
+            getnoise = True
         #possible FITS filename
         self.filename = filename
         if filename is not None:
@@ -2483,6 +2486,7 @@ class Image(object):
         getnoise: boolean
         True if the noise Variance image is read (if it exists)
         Use getnoise=False to create image without variance extension
+        If var is not None, getnoise is automatically set to True.
 
         shape : integer or (integer,integer)
         Lengths of data in Y and X. (101,101) by default.
@@ -2518,6 +2522,8 @@ class Image(object):
         self.image = True
         self._clicks = None
         self._selector = None
+        if var is not None:
+            getnoise = True
         #possible FITS filename
         self.filename = filename
         if filename is not None:
@@ -5127,6 +5133,7 @@ class Cube(object):
         getnoise: boolean
         True if the noise Variance image is read (if it exists)
         Use getnoise=False to create image without variance extension
+        If var is not None, getnoise is automatically set to True.
 
         shape : integer or (integer,integer,integer)
         Lengths of data in Z, Y and X. (101,101,101) by default.
@@ -5156,6 +5163,8 @@ class Cube(object):
         --------
 
         """
+        if var is not None:
+            getnoise = True
         #possible FITS filename
         self.cube = True
         self.filename = filename

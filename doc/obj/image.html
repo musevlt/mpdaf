@@ -63,7 +63,10 @@
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Possible FITS filename.</li>
 <li><strong>ext</strong> (<em>integer or (integer,integer) or string or (string,string)</em>) &#8211; Number/name of the data extension or numbers/names of the data and variance extensions.</li>
-<li><strong>getnoise</strong> (<em>boolean</em>) &#8211; True if the noise Variance image is read (if it exists). Use getnoise=False to create image without variance extension.</li>
+<li><strong>getnoise</strong> (<em>boolean</em>) &#8211; <p>True if the noise Variance image is read (if it exists).</p>
+<p>Use getnoise=False to create image without variance extension.</p>
+<p>If var is not None, getnoise is automatically set to True.</p>
+</li>
 <li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.</li>
 <li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
 <li><strong>unit</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Possible data unit type. None by default.</li>

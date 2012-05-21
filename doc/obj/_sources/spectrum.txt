@@ -13,7 +13,11 @@ This class manages spectrum, optionally including a variance and a bad pixel mas
   :type filename: string
   :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
   :type ext: integer or (integer,integer) or string or (string,string)
-  :param getnoise: True if the noise Variance spectrum is read (if it exists). Use getnoise=False to create spectrum without variance extension
+  :param getnoise: True if the noise Variance spectrum is read (if it exists).
+  
+		   Use getnoise=False to create spectrum without variance extension.
+		   
+		   If var is not None, getnoise is automatically set to True.
   :type getnoise: boolean
   :param shape: size of the spectrum. 101 by default.
   :type shape: integer

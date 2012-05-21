@@ -13,7 +13,11 @@ This class manages images, optionally including a variance and a bad pixel mask.
   :type filename: string
   :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
   :type ext: integer or (integer,integer) or string or (string,string)
-  :param getnoise: True if the noise Variance image is read (if it exists). Use getnoise=False to create image without variance extension.
+  :param getnoise: True if the noise Variance image is read (if it exists).
+  
+		   Use getnoise=False to create image without variance extension.
+		   
+		   If var is not None, getnoise is automatically set to True.
   :type getnoise: boolean
   :param shape: Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.
   :type shape: integer or (integer,integer)
