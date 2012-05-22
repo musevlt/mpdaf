@@ -490,11 +490,14 @@ class PixTable(object):
 
         if isinstance(origin, np.ndarray):
             xoffset = np.zeros_like(xslice)
-            for i in range(len(xoffset)):
-                xoffset[i] = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu[i], slice[i])].value
+            for ifu_index in set(ifu):
+                for slice_index in set(slice):
+                    value = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu_index, slice_index)].value
+                    xoffset[np.where((ifu == ifu_index) & (slice == slice_index))] = value
         else:
             xoffset[i] = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
         x = xoffset + xslice
+
         return (ifu, slice, y, x)
 
     def get_slices(self):
