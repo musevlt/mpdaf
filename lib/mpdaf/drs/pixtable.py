@@ -502,17 +502,11 @@ class PixTable(object):
 
     def get_slices(self):
         '''returns slices dictionary'''
-        xpix = np.zeros(self.nrows, dtype='int')
-        ypix = np.zeros(self.nrows, dtype='int')
-        ifupix = np.zeros(self.nrows, dtype='int')
-        slicepix = np.zeros(self.nrows, dtype='int')
-
         col_origin = self.get_origin()
         col_xpos = self.get_xpos()
         col_ypos = self.get_ypos()
 
-        for i,orig in enumerate(col_origin):
-            ifupix[i],slicepix[i],ypix[i],xpix[i] = self.origin2coords(orig)
+        ifupix,slicepix,ypix,xpix = self.origin2coords(col_origin)
 
         # build the slicelist
         slicelist = []
