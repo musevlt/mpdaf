@@ -56,7 +56,7 @@ class PixTable(object):
 
     Get: get_xpos, get_ypos, get_lambda, get_data, get_dq, get_stat, get_origin
 
-    Other: extract, origin2coords, get_slices
+    Other: extract, origin2ifu, origin2slice, origin2ypix, origin2xoffset, origin2xpix, origin2coords, get_slices
     """
 
     def __init__(self, filename=None):
@@ -475,30 +475,74 @@ class PixTable(object):
             os.close(fd)
         return ptab
 
-    def origin2coords(self, origin):
-        """ converts the origin value and returns (ifu, slice, y, x)
+    def origin2ifu(self, origin):
+        """ converts the origin value and returns the ifu number
 
         Parameters
         ----------
         origin: integer
         origin value
         """
-        slice = origin & 0x3f
-        ifu = (origin >> 6) & 0x1f
-        y = ((origin >> 11) & 0x1fff) - 1
-        xslice = ((origin >> 24) & 0x7f) - 1
+        return (origin >> 6) & 0x1f
 
+    def origin2slice(self, origin):
+        """ converts the origin value and returns the slice number
+
+        Parameters
+        ----------
+        origin: integer
+        origin value
+        """
+        return origin & 0x3f
+
+    def origin2ypix(self, origin):
+        """ converts the origin value and returns the y coordinates
+
+        Parameters
+        ----------
+        origin: integer
+        origin value
+        """
+        return ((origin >> 11) & 0x1fff) - 1
+
+    def origin2xoffset(self, origin):
+        """ converts the origin value and returns the x coordinates offset
+        Parameters
+        ----------
+        origin: integer
+        origin value
+        """
+        col_ifu = self.origin2ifu(origin)
+        col_slice = self.origin2slice(origin)
         if isinstance(origin, np.ndarray):
-            xoffset = np.zeros_like(xslice)
-            for ifu_index in set(ifu):
-                for slice_index in set(slice):
-                    value = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu_index, slice_index)].value
-                    xoffset[np.where((ifu == ifu_index) & (slice == slice_index))] = value
+            xoffset = np.zeros_like(origin)
+            for ifu in np.unique(col_ifu):
+                for slice in np.unique(col_slice):
+                    value = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+                    xoffset[np.where((col_ifu == ifu) & (col_slice == slice))] = value
         else:
-            xoffset[i] = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
-        x = xoffset + xslice
+            xoffset = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+        return xoffset
 
-        return (ifu, slice, y, x)
+    def origin2xpix(self, origin):
+        """ converts the origin value and returns the x coordinates offset
+        Parameters
+        ----------
+        origin: integer
+        origin value
+        """
+        return self.origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1
+
+    def origin2coords(self, origin):
+        """ converts the origin value and returns (ifu, slice, ypix, xpix)
+
+        Parameters
+        ----------
+        origin: integer
+        origin value
+        """
+        return (self.origin2ifu(origin), self.origin2slice(origin),
+                self.origin2ypix(origin), self.origin2xpix(origin))
 
     def get_slices(self):
         '''returns slices dictionary'''
