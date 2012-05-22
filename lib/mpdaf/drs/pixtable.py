@@ -487,7 +487,13 @@ class PixTable(object):
         ifu = (origin >> 6) & 0x1f
         y = ((origin >> 11) & 0x1fff) - 1
         xslice = ((origin >> 24) & 0x7f) - 1
-        xoffset = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+
+        if isinstance(origin, np.ndarray):
+            xoffset = np.zeros_like(xslice)
+            for i in range(len(xoffset)):
+                xoffset[i] = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu[i], slice[i])].value
+        else:
+            xoffset[i] = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
         x = xoffset + xslice
         return (ifu, slice, y, x)
 
