@@ -35,6 +35,22 @@ class TestWCS(unittest.TestCase):
         self.assertEqual(pixcrd[1][1],pixcrd2[1][1])
         self.assertEqual(pixcrd[2][0],pixcrd2[2][0])
         self.assertEqual(pixcrd[2][1],pixcrd2[2][1])
+        
+    def test_get(self):
+        self.assertEqual(self.wcs.get_step()[0],1.0)
+        self.assertEqual(self.wcs.get_step()[1],1.0)
+        self.assertEqual(self.wcs.get_start()[0],0.0)
+        self.assertEqual(self.wcs.get_start()[1],0.0)
+        self.assertEqual(self.wcs.get_end()[0],4.0)
+        self.assertEqual(self.wcs.get_end()[1],5.0)
+        wcs2 = WCS(shape=(5,6))
+        self.assertEqual(wcs2.get_step()[0],1.0)
+        self.assertEqual(wcs2.get_step()[1],1.0)
+        self.assertEqual(wcs2.get_start()[0],-2.0)
+        self.assertEqual(wcs2.get_start()[1],-2.5)
+        self.assertEqual(wcs2.get_end()[0],2.0)
+        self.assertEqual(wcs2.get_end()[1],2.5)
+        del wcs2
 
 class TestWaveCoord(unittest.TestCase):
 
@@ -56,6 +72,11 @@ class TestWaveCoord(unittest.TestCase):
         value = self.wave.coord(5)
         pixel = self.wave.pixel(value, nearest=True)
         self.assertEqual(pixel,5)
+        
+    def test_get(self):
+        self.assertEqual(self.wave.get_step(),1.0)
+        self.assertEqual(self.wave.get_start(),0.0)
+        self.assertEqual(self.wave.get_end(),9.0)
 
 if __name__=='__main__':
     unittest.main()

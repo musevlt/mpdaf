@@ -240,7 +240,7 @@ class Spectrum(object):
     Info: info, []
     """
 
-    def __init__(self, filename=None, ext = None, getnoise=False, shape=101, wave = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
+    def __init__(self, filename=None, ext = None, notnoise=False, shape=101, wave = None, unit=None, data=None, var=None,fscale=1.0):
         """creates a Spectrum object
 
         Parameters
@@ -251,10 +251,9 @@ class Spectrum(object):
         ext : integer or (integer,integer) or string or (string,string)
         Number/name of the data extension or numbers/names of the data and variance extensions.
 
-        getnoise: boolean
-        True if the noise Variance spectrum is read (if it exists)
-        Use getnoise=False to create spectrum without variance extension
-        If var is not None, getnoise is automatically set to True.
+        notnoise: boolean
+        True if the noise Variance spectrum is not read (if it exists)
+        Use notnoise=True to create spectrum without variance extension
 
         shape : integer
         size of the spectrum. 101 by default.
@@ -274,15 +273,12 @@ class Spectrum(object):
         dq : array
         Array containing bad pixel
 
-        empty : boolean
-        If empty is True, the data and variance array are set to None
-
         fscale : float
         Flux scaling factor (1 by default)
 
         Examples
         --------
-        Spectrum(filename="toto.fits",ext=1,getnoise=False): spectrum from file (extension number is 1).
+        Spectrum(filename="toto.fits",ext=1,nonoise=False): spectrum from file (extension number is 1).
 
         wave = WaveCoord(cdelt=1.25, crval=4000.0, cunit = 'Angstrom')
         Spectrum(shape=4000, wave=wave) : spectrum filled with zeros
@@ -290,8 +286,6 @@ class Spectrum(object):
         """
         self._clicks = None
         self.spectrum = True
-        if var is not None:
-            getnoise = True
         #possible FITS filename
         self.filename = filename
         if filename is not None:
@@ -350,17 +344,20 @@ class Spectrum(object):
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
                 # STAT extension
                 self.var = None
-                if getnoise:
-                    if ext is None:
-                        fstat = f['STAT']
-                    else:
-                        n = ext[1]
-                        fstat = f[n]
-                    if fstat.header['NAXIS'] != 1:
-                        raise IOError, 'Wrong dimension number in STAT extension'
-                    if fstat.header['NAXIS1'] != self.shape:
-                        raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = np.array(fstat.data, dtype=float)
+                if not notnoise:
+                    try:
+                        if ext is None:
+                            fstat = f['STAT']
+                        else:
+                            n = ext[1]
+                            fstat = f[n]
+                        if fstat.header['NAXIS'] != 1:
+                            raise IOError, 'Wrong dimension number in STAT extension'
+                        if fstat.header['NAXIS1'] != self.shape:
+                            raise IOError, 'Number of points in STAT not equal to DATA'
+                        self.var = np.array(fstat.data, dtype=float)
+                    except:
+                        self.var = None
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -375,19 +372,14 @@ class Spectrum(object):
             self.cards = pyfits.CardList()
             #data
             if data is None:
-                if empty:
-                    self.data = None
-                else:
-                    self.data = np.zeros(shape, dtype = float)
+                self.data = None
                 self.shape = shape
             else:
                 self.data = np.array(data, dtype = float)
                 self.shape = data.shape[0]
 
-            if not getnoise or empty:
+            if notnoise or var is None:
                 self.var = None
-            elif var is None:
-                self.var = numpy.zeros(shape, dtype = float)
             else:
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
@@ -406,7 +398,7 @@ class Spectrum(object):
     def copy(self):
         """copies spectrum object in a new one and returns it
         """
-        spe = Spectrum(empty=True)
+        spe = Spectrum()
         spe.filename = self.filename
         spe.unit = self.unit
         spe.cards = pyfits.CardList(self.cards)
@@ -639,7 +631,7 @@ class Spectrum(object):
                     print 'Operation forbidden for spectra with different sizes'
                     return None
                 else:
-                    res = Spectrum(empty=True,shape=self.shape,fscale=self.fscale)
+                    res = Spectrum(shape=self.shape,fscale=self.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -695,7 +687,7 @@ class Spectrum(object):
                     print 'Operation forbidden for spectra with different sizes'
                     return None
                 else:
-                    res = Spectrum(empty=True,shape=self.shape,fscale=self.fscale)
+                    res = Spectrum(shape=self.shape,fscale=self.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -717,7 +709,7 @@ class Spectrum(object):
                         print 'Operation forbidden for objects with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,shape=other.shape , wcs= other.wcs, fscale=self.fscale)
+                        res = Cube(shape=other.shape , wcs= other.wcs, fscale=self.fscale)
                         if self.wave is None or other.wave is None:
                             res.wave = None
                         elif self.wave.isEqual(other.wave):
@@ -784,7 +776,7 @@ class Spectrum(object):
                     print 'Operation forbidden for spectra with different sizes'
                     return None
                 else:
-                    res = Spectrum(empty=True,shape=self.shape,fscale=self.fscale*other.fscale)
+                    res = Spectrum(shape=self.shape,fscale=self.fscale*other.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -840,7 +832,7 @@ class Spectrum(object):
                     print 'Operation forbidden for spectra with different sizes'
                     return None
                 else:
-                    res = Spectrum(empty=True,shape=self.shape,fscale=self.fscale/other.fscale)
+                    res = Spectrum(shape=self.shape,fscale=self.fscale/other.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -862,7 +854,7 @@ class Spectrum(object):
                         print 'Operation forbidden for objects with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,shape=other.shape , wcs= other.wcs, fscale=self.fscale/other.fscale)
+                        res = Cube(shape=other.shape , wcs= other.wcs, fscale=self.fscale/other.fscale)
                         if self.wave is None or other.wave is None:
                             res.wave = None
                         elif self.wave.isEqual(other.wave):
@@ -939,19 +931,16 @@ class Spectrum(object):
         elif isinstance(item, slice):
             data = self.data[item]
             shape = data.shape[0]
-            getnoise = False
             var = None
             if self.var is not None:
-                getnoise = True
                 var = self.var[item]
             try:
                 wave = self.wave[item]
             except:
                 wave = None
-            res = Spectrum(getnoise=getnoise, shape=shape, wave = wave, unit=self.unit, empty = True,fscale=self.fscale)
+            res = Spectrum(shape=shape, wave = wave, unit=self.unit, fscale=self.fscale)
             res.data = data
-            if getnoise:
-                res.var = var
+            res.var = var
             return res
         else:
             raise ValueError, 'Operation forbidden'
@@ -983,7 +972,31 @@ class Spectrum(object):
         """returns the wavelength step
         """
         if self.wave is not None:
-            return self.wave.cdelt
+            return self.wave.get_step()
+        else:
+            return None
+        
+    def get_start(self):
+        """returns the value of the first pixel.
+        """
+        if self.wave is not None:
+            return self.wave.get_start()
+        else:
+            return None
+    
+    def get_end(self):
+        """returns the value of the last pixel.
+        """
+        if self.wave is not None:
+            return self.wave.get_end()
+        else:
+            return None
+        
+    def get_range(self):
+        """returns the wavelength range [Lambda_min,Lambda_max]
+        """
+        if self.wave is not None:
+            return self.wave.get_range()
         else:
             return None
             
@@ -995,8 +1008,8 @@ class Spectrum(object):
     def set_wcs(self, wave):
         """sets the world coordinates
 
-        Parameters
-        ----------
+        Parameter
+        ---------
         wave : WaveCoord
         Wavelength coordinates
         """
@@ -1006,6 +1019,22 @@ class Spectrum(object):
         else:
             self.wave = wave
             self.wave.shape = self.shape
+            
+    def set_var(self,var=None):
+        """sets the variance array
+        
+        Parameter
+        ---------
+        var : float array
+        Input variance array. If None, variance is set with zeros
+        """
+        if var is None:
+            self.var = np.zeros(self.shape)
+        else:
+            if self.shape == np.shape(var)[0]:
+                self.var = var
+            else:
+                raise ValueError, 'var and data have not the same dimensions.'
             
     def mask(self, lmin=None, lmax=None):
         """ mask the corresponding sub-spectrum
@@ -1117,10 +1146,8 @@ class Spectrum(object):
         # new size is an integer multiple of the original size
         newshape = self.shape/factor
         data = self.data.reshape(newshape,factor).sum(1) / factor
-        getnoise = False
         var = None
         if self.var is not None:
-            getnoise = True
             var = self.var.reshape(newshape,factor).sum(1) / factor / factor
         try:
             #crval = self.wave.coord()[slice(0,factor,1)].sum()/factor
@@ -1128,10 +1155,9 @@ class Spectrum(object):
             wave = WaveCoord(1, self.wave.cdelt*factor, crval, self.wave.cunit)
         except:
             wave = None
-        res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale, empty=True)
+        res = Spectrum(shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale)
         res.data = data
-        if getnoise:
-            res.var = var
+        res.var = var
         return res
 
         
@@ -1169,8 +1195,8 @@ class Spectrum(object):
                 data[1:-1] = spe.data
                 data[0] = self.data[0:n_left].sum() / factor
                 data[-1] = self.data[n_right:].sum() / factor
+                var = None
                 if self.var is not None:
-                    getnoise = True
                     var = np.ones(newshape)
                     var[1:-1] = spe.var
                     var[0] = self.var[0:n_left].sum() / factor / factor
@@ -1180,10 +1206,9 @@ class Spectrum(object):
                     wave = WaveCoord(1, spe.wave.cdelt, crval, spe.wave.cunit)
                 except:
                     wave = None
-                res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale, empty=True)
+                res = Spectrum(shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale)
                 res.data = np.ma.masked_invalid(data)
-                if getnoise:
-                    res.var = var
+                res.var = var
                 return res
             elif margin == 'right':
                 spe = self[0:self.shape-n]._rebin_factor(factor)
@@ -1191,9 +1216,8 @@ class Spectrum(object):
                 data = np.ones(newshape)
                 data[:-1] = spe.data
                 data[-1] = self.data[self.shape-n:].sum() / factor
-                getnoise = False
+                var = None
                 if self.var is not None:
-                    getnoise = True
                     var = np.ones(newshape)
                     var[:-1] = spe.var
                     var[-1] = self.var[self.shape-n:].sum() / factor / factor
@@ -1201,10 +1225,9 @@ class Spectrum(object):
                     wave = WaveCoord(1, spe.wave.cdelt, spe.wave.crval, spe.wave.cunit)
                 except:
                     wave = None
-                res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale, empty=True)
+                res = Spectrum(shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale)
                 res.data = np.ma.masked_invalid(data)
-                if getnoise:
-                    res.var = var
+                res.var = var
                 return res
             elif margin == 'left':
                 spe = self[n:]._rebin_factor(factor)
@@ -1212,10 +1235,8 @@ class Spectrum(object):
                 data = np.ones(newshape)
                 data[0] = self.data[0:n].sum() / factor
                 data[1:] = spe.data
-                getnoise = False
                 var = None
                 if self.var is not None:
-                    getnoise = True
                     var = np.ones(newshape)
                     var[0] = self.var[0:n].sum() / factor / factor
                     var[1:] = spe.var
@@ -1224,10 +1245,9 @@ class Spectrum(object):
                     wave = WaveCoord(1, spe.wave.cdelt, crval, spe.wave.cunit)
                 except:
                     wave = None
-                res = Spectrum(getnoise=getnoise, shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale, empty=True)
+                res = Spectrum(shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale)
                 res.data = np.ma.masked_invalid(data)
-                if getnoise:
-                    res.var = var
+                res.var = var
                 return res
             else:
                 raise ValueError, 'margin must be center|right|left'
@@ -1272,7 +1292,7 @@ class Spectrum(object):
         for i in range(newshape):
             newdata[i] = integrate.quad(f,x[i],x[i+1],full_output=1)[0] / newwave.cdelt
             
-        res = Spectrum(getnoise=False, shape=newshape, wave = newwave, unit=self.unit, data=newdata,fscale=self.fscale)
+        res = Spectrum(notnoise=True, shape=newshape, wave = newwave, unit=self.unit, data=newdata,fscale=self.fscale)
         return res
 
     def mean(self, lmin=None, lmax=None, weight=True, spline=False):
@@ -2472,7 +2492,7 @@ class Image(object):
     Info: info, []
     """
 
-    def __init__(self, filename=None, ext = None, getnoise=False, shape=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
+    def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0):
         """creates a Image object
 
         Parameters
@@ -2483,10 +2503,9 @@ class Image(object):
         ext : integer or (integer,integer) or string or (string,string)
         Number/name of the data extension or numbers/names of the data and variance extensions.
 
-        getnoise: boolean
-        True if the noise Variance image is read (if it exists)
-        Use getnoise=False to create image without variance extension
-        If var is not None, getnoise is automatically set to True.
+        notnoise: boolean
+        True if the noise Variance image is not read (if it exists)
+        Use notnoise=True to create image without variance extension
 
         shape : integer or (integer,integer)
         Lengths of data in Y and X. (101,101) by default.
@@ -2504,15 +2523,12 @@ class Image(object):
         var : array
         Array containing the variance. None by default.
 
-        empty : bool
-        If empty is True, the data and variance array are set to None
-
         fscale : float
         Flux scaling factor (1 by default)
 
         Examples
         --------
-        Image(filename="toto.fits",ext=1,getnoise=False): image from file (extension number is 1).
+        Image(filename="toto.fits",ext=1): image from file (extension number is 1).
 
         wcs = WCS(crval=0,cdelt=0.2)
         Image(shape=300, wcs=wcs) : image 300x300 filled with zeros
@@ -2522,8 +2538,6 @@ class Image(object):
         self.image = True
         self._clicks = None
         self._selector = None
-        if var is not None:
-            getnoise = True
         #possible FITS filename
         self.filename = filename
         if filename is not None:
@@ -2571,18 +2585,21 @@ class Image(object):
                     print "Invalid wcs self.wcs=None"
                     self.wcs = None
                 self.var = None
-                if getnoise:
-                    if ext is None:
-                        fstat = f['STAT']
-                    else:
-                        n = ext[1]
-                        fstat = f[n]
-                        
-                    if fstat.header['NAXIS'] != 2:
-                        raise IOError, 'Wrong dimension number in STAT extension'
-                    if fstat.header['NAXIS1'] != self.shape[1] and fstat.header['NAXIS2'] != self.shape[0]:
-                        raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = np.array(fstat.data, dtype=float)
+                if not notnoise:
+                    try:
+                        if ext is None:
+                            fstat = f['STAT']
+                        else:
+                            n = ext[1]
+                            fstat = f[n]
+                            
+                        if fstat.header['NAXIS'] != 2:
+                            raise IOError, 'Wrong dimension number in STAT extension'
+                        if fstat.header['NAXIS1'] != self.shape[1] and fstat.header['NAXIS2'] != self.shape[0]:
+                            raise IOError, 'Number of points in STAT not equal to DATA'
+                        self.var = np.array(fstat.data, dtype=float)
+                    except:
+                        self.var = None
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -2599,10 +2616,7 @@ class Image(object):
             if is_int(shape):
                 shape = (shape,shape)
             if data is None:
-                if empty:
-                    self.data = None
-                else:
-                    self.data = np.zeros(shape=shape, dtype = float)
+                self.data = None
                 self.shape = np.array(shape)
             else:
                 self.data = np.array(data, dtype = float)
@@ -2611,10 +2625,8 @@ class Image(object):
                 except:
                     self.shape = np.array(shape)
 
-            if not getnoise or empty:
+            if notnoise or var is None:
                 self.var = None
-            elif var is None:
-                self.var = numpy.zeros(shape=shape, dtype = float)
             else:
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
@@ -2639,7 +2651,7 @@ class Image(object):
     def copy(self):
         """copies Image object in a new one and returns it
         """
-        ima = Image(empty=True)
+        ima = Image()
         ima.filename = self.filename
         ima.unit = self.unit
         ima.cards = pyfits.CardList(self.cards)
@@ -2750,7 +2762,6 @@ class Image(object):
         # save to disk
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True)
-        hdu.info()
 
         self.filename = filename
 
@@ -2830,7 +2841,8 @@ class Image(object):
                 if self.var is not None:
                     self.var = self.var[item]
                 try:
-                    self.wcs = self.wcs[item[1],item[0]] #data[y,x], image[y,x] but wcs[x,y]
+                    self.wcs = self.wcs[item[0],item[1]]
+                    #self.wcs = self.wcs[item]
                 except:
                     self.wcs = None
             except:
@@ -2865,7 +2877,7 @@ class Image(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Image(empty=True,shape=self.shape,fscale=self.fscale)
+                    res = Image(shape=self.shape,fscale=self.fscale)
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -2921,7 +2933,7 @@ class Image(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Image(empty=True,shape=self.shape,fscale=self.fscale)
+                    res = Image(shape=self.shape,fscale=self.fscale)
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -2943,7 +2955,7 @@ class Image(object):
                         print 'Operation forbidden for images with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,shape=other.shape , wave= other.wave, fscale=self.fscale)
+                        res = Cube(shape=other.shape , wave= other.wave, fscale=self.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -3010,7 +3022,7 @@ class Image(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Image(empty=True,shape=self.shape,fscale=self.fscale * other.fscale)
+                    res = Image(shape=self.shape,fscale=self.fscale * other.fscale)
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -3039,7 +3051,7 @@ class Image(object):
                             return None
                         else:
                             shape = (other.shape,self.shape[0],self.shape[1])
-                            res = Cube(empty=True ,shape=shape , wave= other.wave, wcs = self.wcs, fscale=self.fscale * other.fscale)
+                            res = Cube(shape=shape , wave= other.wave, wcs = self.wcs, fscale=self.fscale * other.fscale)
                             res.data = self.data[np.newaxis,:,:] * other.data[:,np.newaxis,np.newaxis]
                             if self.unit == other.unit:
                                 res.unit = self.unit
@@ -3082,7 +3094,7 @@ class Image(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Image(empty=True,shape=self.shape,fscale=self.fscale / other.fscale)
+                    res = Image(shape=self.shape,fscale=self.fscale / other.fscale)
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -3103,7 +3115,7 @@ class Image(object):
                     if other.data is None or self.shape[0] != other.shape[1] or self.shape[1] != other.shape[2]:
                         raise ValueError, 'Operation forbidden for images with different sizes'
                     else:
-                        res = Cube(empty=True ,shape=other.shape , wave= other.wave, fscale=self.fscale / other.fscale)
+                        res = Cube(shape=other.shape , wave= other.wave, fscale=self.fscale / other.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -3183,19 +3195,16 @@ class Image(object):
                     shape = (data.shape[0],1)
                 else:
                     shape = (data.shape[0],data.shape[1])
-                getnoise = False
                 var = None
                 if self.var is not None:
-                    getnoise = True
                     var = self.var[item]
                 try:
-                    wcs = self.wcs[item[1],item[0]] #data[y,x], image[y,x] but wcs[x,y]
+                    wcs = self.wcs[item]
                 except:
                     wcs = None
-                res = Image(getnoise=getnoise, shape=shape, wcs = wcs, unit=self.unit, empty=True,fscale=self.fscale)
+                res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
                 res.data = data
-                if getnoise:
-                    res.var = var
+                res.var = var
                 return res
         else:
             raise ValueError, 'Operation forbidden'
@@ -3203,10 +3212,27 @@ class Image(object):
     def get_step(self):
         """ returns the image steps [dDec,dRa]
         """
-        step = np.zeros(2)
-        step[0] = self.wcs.cdelt[1]
-        step[1] = self.wcs.cdelt[0]
-        return step
+        return self.wcs.get_step()
+    
+    def get_range(self):
+        """returns [ [dec_min,ra_min], [dec_max,ra_max] ]
+        """
+        return self.wcs.get_range()
+    
+    def get_start(self):
+        """returns [dec,ra] corresponding to pixel (0,0)
+        """
+        return self.wcs.get_start()
+    
+    def get_end(self):
+        """returns [dec,ra] corresponding to pixel (-1,-1)
+        """
+        return self.wcs.get_end()
+    
+    def get_rot(self):
+        """returns the rotation angle
+        """
+        return self.wcs.get_rot()
 
     def __setitem__(self,key,value):
         """ sets the corresponding part of data
@@ -3216,8 +3242,8 @@ class Image(object):
     def set_wcs(self, wcs):
         """sets the world coordinates
 
-        Parameters
-        ----------
+        Parameter
+        ---------
         wcs : WCS
         World coordinates
         """
@@ -3230,6 +3256,22 @@ class Image(object):
             self.wcs =  None
         else:
             self.wcs = wcs
+            
+    def set_var(self, var):
+        """sets the variance array
+        
+        Parameter
+        ---------
+        var : float array
+        Input variance array. If None, variance is set with zeros
+        """
+        if var is None:
+            self.var = np.zeros((self.shape[0],self.shape[1]))
+        else:
+            if self.shape[0] == np.shape(var)[0] and self.shape[1] == np.shape(var)[1]:
+                self.var = var
+            else:
+                raise ValueError, 'var and data have not the same dimensions.'
 
     def truncate(self, dec_min, dec_max, ra_min, ra_max, mask=True):
         """ returns the corresponding sub-image
@@ -3251,30 +3293,35 @@ class Image(object):
         mask : boolean
         if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked
         """
-        skycrd = [[ra_min,dec_min],[ra_min,dec_max],[ra_max,dec_min],[ra_max,dec_max]]
+        skycrd = [[dec_min,ra_min],[dec_min,ra_max],[dec_max,ra_min],[dec_max,ra_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
         
         imin = int(np.min(pixcrd[:,0]))
         if imin<0:
             imin = 0
         imax = int(np.max(pixcrd[:,0]))+1
+        if imax>self.shape[0]:
+            imax = self.shape[0]
         jmin = int(np.min(pixcrd[:,1]))
         if jmin<0:
             jmin = 0
         jmax = int(np.max(pixcrd[:,1]))+1
+        if jmax>self.shape[1]:
+            jmax=self.shape[1]
         
-        res = self[jmin:jmax,imin:imax]
+        res = self[imin:imax,jmin:jmax]
         
         if mask:
             #mask outside pixels
             m = np.ma.make_mask_none(res.data.shape)
             for j in range(res.shape[0]):
-                pixcrd = np.array([np.arange(res.shape[1]),np.ones(res.shape[1])*j]).T
+                #pixcrd = np.array([np.arange(res.shape[1]),np.ones(res.shape[1])*j]).T
+                pixcrd = np.array([np.ones(res.shape[1])*j,np.arange(res.shape[1])]).T
                 skycrd = self.wcs.pix2sky(pixcrd)
-                test_ra_min = np.array(skycrd[:,0]) < ra_min
-                test_ra_max = np.array(skycrd[:,0]) > ra_max
-                test_dec_min = np.array(skycrd[:,1]) < dec_min
-                test_dec_max = np.array(skycrd[:,1]) > dec_max
+                test_ra_min = np.array(skycrd[:,1]) < ra_min
+                test_ra_max = np.array(skycrd[:,1]) > ra_max
+                test_dec_min = np.array(skycrd[:,0]) < dec_min
+                test_dec_max = np.array(skycrd[:,0]) > dec_max
                 m[j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
             try:
                 m = np.ma.mask_or(m,np.ma.getmask(res.data))
@@ -3327,21 +3374,18 @@ class Image(object):
         elif axis==0 or axis==1:
             #return an image
             data = self.data.sum(axis)
-            getnoise = False
             var = None
             if self.var is not None:
-                getnoise = True
                 var = self.var.sum(axis)
             if axis==0:
-                wcs = self.wcs[:,0]
+                wcs = self.wcs[0,:]
                 shape = (1,data.shape[0])
             else:
-                wcs = self.wcs[0,:]
+                wcs = self.wcs[:,0]
                 shape = (data.shape[0],1)
-            res = Image(getnoise=getnoise, shape=shape, wcs = wcs, unit=self.unit, empty=True,fscale=self.fscale)
+            res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
             res.data = data
-            if getnoise:
-                res.var =var
+            res.var =var
             return res
         else:
             return None
@@ -3360,7 +3404,7 @@ class Image(object):
         Normalized value.    
         """
         if type == 'flux':
-            norm = value/(self.wcs.cdelt.prod()*self.fscale*self.data.sum())
+            norm = value/(self.get_step().prod()*self.fscale*self.data.sum())
         elif type == 'sum':
             norm = value/(self.fscale*self.data.sum())
         elif type == 'max':
@@ -3416,16 +3460,16 @@ class Image(object):
                 dec_max = center[0] + radius[0]/3600.0
                 ra_min = center[1] - radius[1]/3600.0
                 ra_max = center[1] + radius[1]/3600.0
-                skycrd = [ [ra_min,dec_min], [ra_min,dec_max], [ra_max,dec_min], [ra_max,dec_max] ]
+                skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ]
                 pixcrd = self.wcs.sky2pix(skycrd)
-                jmin = int(np.min(pixcrd[:,0]))
+                jmin = int(np.min(pixcrd[:,1]))
                 if jmin<0:
                     jmin = 0
-                jmax = int(np.max(pixcrd[:,0]))+1
-                imin = int(np.min(pixcrd[:,1]))
+                jmax = int(np.max(pixcrd[:,1]))+1
+                imin = int(np.min(pixcrd[:,0]))
                 if imin<0:
                     imin = 0
-                imax = int(np.max(pixcrd[:,1]))+1
+                imax = int(np.max(pixcrd[:,0]))+1
             d = self.data[imin:imax,jmin:jmax]
             if np.shape(d)[0]==0 or np.shape(d)[1]==0:
                 raise ValueError, 'Coord area outside image limits'
@@ -3440,7 +3484,7 @@ class Image(object):
             di,dj = ndimage.measurements.center_of_mass(d[ic-dpix:ic+dpix+1,jc-dpix:jc+dpix+1])
         ic = imin+ic-dpix+di
         jc = jmin+jc-dpix+dj
-        [[ra,dec]] = self.wcs.pix2sky([[jc,ic]])
+        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
         maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
         if plot:
             plt.plot(jc,ic,'r+')
@@ -3479,16 +3523,16 @@ class Image(object):
                 dec_max = center[0] + radius[0]/3600.0
                 ra_min = center[1] - radius[1]/3600.0
                 ra_max = center[1] + radius[1]/3600.0
-                skycrd = [ [ra_min,dec_min], [ra_min,dec_max], [ra_max,dec_min], [ra_max,dec_max] ]    
+                skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ]    
                 pixcrd = self.wcs.sky2pix(skycrd)
-                jmin = int(np.min(pixcrd[:,0]))
+                jmin = int(np.min(pixcrd[:,1]))
                 if jmin<0:
                     jmin = 0
-                jmax = int(np.max(pixcrd[:,0]))+1
-                imin = int(np.min(pixcrd[:,1]))
+                jmax = int(np.max(pixcrd[:,1]))+1
+                imin = int(np.min(pixcrd[:,0]))
                 if imin<0:
                     imin = 0
-                imax = int(np.max(pixcrd[:,1]))+1
+                imax = int(np.max(pixcrd[:,0]))+1
             sigma = self[imin:imax,jmin:jmax].moments()
         fwhmx = sigma[0]*2.*np.sqrt(2.*np.log(2.0))
         fwhmy = sigma[1]*2.*np.sqrt(2.*np.log(2.0))
@@ -3540,16 +3584,16 @@ class Image(object):
                 dec_max = center[0] + radius[0]/3600.0
                 ra_min = center[1] - radius[1]/3600.0
                 ra_max = center[1] + radius[1]/3600.0
-                skycrd = [ [ra_min,dec_min], [ra_min,dec_max], [ra_max,dec_min], [ra_max,dec_max] ] 
+                skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ] 
                 pixcrd = self.wcs.sky2pix(skycrd)
-                jmin = int(np.min(pixcrd[:,0]))
+                jmin = int(np.min(pixcrd[:,1]))
                 if jmin<0:
                     jmin = 0
-                jmax = int(np.max(pixcrd[:,0]))+1
-                imin = int(np.min(pixcrd[:,1]))
+                jmax = int(np.max(pixcrd[:,1]))+1
+                imin = int(np.min(pixcrd[:,0]))
                 if imin<0:
                     imin = 0
-                imax = int(np.max(pixcrd[:,1]))+1
+                imax = int(np.max(pixcrd[:,0]))+1
             ima = self[imin:imax,jmin:jmax]
             if circular:
                 if pix:
@@ -3602,9 +3646,9 @@ class Image(object):
                 i = center[0]
                 j = center[1]
             else:  
-                pixcrd = self.wcs.sky2pix([[center[1],center[0]]])
-                i = int(pixcrd[0][1]+0.5)
-                j = int(pixcrd[0][0]+0.5)
+                pixcrd = self.wcs.sky2pix([[center[0],center[1]]])
+                i = int(pixcrd[0][0]+0.5)
+                j = int(pixcrd[0][1]+0.5)
         nmax = min(self.shape[0]-i,self.shape[1]-j,i,j)
         if etot is None:
             etot = self.fscale*self.data.sum()
@@ -3646,9 +3690,9 @@ class Image(object):
                 i = center[0]
                 j = center[1]
             else:  
-                pixcrd = self.wcs.sky2pix([[center[1],center[0]]])
-                i = int(pixcrd[0][1]+0.5)
-                j = int(pixcrd[0][0]+0.5)
+                pixcrd = self.wcs.sky2pix([[center[0],center[1]]])
+                i = int(pixcrd[0][0]+0.5)
+                j = int(pixcrd[0][1]+0.5)
         nmax = min(self.shape[0]-i,self.shape[1]-j,i,j)
         if ee is None:
             ee = self.fscale*self.data.sum()
@@ -3699,9 +3743,10 @@ class Image(object):
                 weight = None
                 
             tck = interpolate.bisplrep(x,y,data,w=weight)
-            res = np.zeros(n,dtype=float)
-            for i in range(n):
-                res[i] = interpolate.bisplev(grid[i,0],grid[i,1],tck)
+            res = interpolate.bisplev(grid[:,0],grid[:,1],tck)
+#            res = np.zeros(n,dtype=float)
+#            for i in range(n):
+#                res[i] = interpolate.bisplev(grid[i,0],grid[i,1],tck)
             return res
         else:
             #scipy 0.9 griddata
@@ -3710,9 +3755,10 @@ class Image(object):
             points = np.zeros((npoints,2),dtype=float)
             points[:,0] = ksel[0]
             points[:,1] = ksel[1]
-            res = np.zeros(n,dtype=float)
-            for i in range(n):
-                res[i] = interpolate.griddata(points, data, (grid[i,0],grid[i,1]), method='linear')
+            res = interpolate.griddata(points, data, (grid[:,0],grid[:,1]), method='linear')
+#            res = np.zeros(n,dtype=float)
+#            for i in range(n):
+#                res[i] = interpolate.griddata(points, data, (grid[i,0],grid[i,1]), method='linear')
             return res
         
     def moments(self):
@@ -3724,9 +3770,10 @@ class Image(object):
         x = np.argmax((Y*np.abs(self.data)).sum(axis=0)/total)
         col = self.data[int(y),:]
         # FIRST moment, not second!
-        width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())*self.wcs.cdelt[0]
+        cdelt = self.wcs.get_step()
+        width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())*cdelt[1]
         row = self.data[:, int(x)]
-        width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*self.wcs.cdelt[1]
+        width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*cdelt[0]
         return [width_y,width_x]
         
     def gauss_fit(self, pos_min, pos_max, center=None, flux=None, width=None, cont=None, rot = 0, peak = False, factor = 1, plot = False):
@@ -3776,11 +3823,11 @@ class Image(object):
         
         ksel = np.where(ima.data.mask==False)
         pixcrd = np.zeros((np.shape(ksel[0])[0],2))
-        pixcrd[:,0] = ksel[1] #ra
-        pixcrd[:,1] = ksel[0] #dec
+        pixcrd[:,1] = ksel[1] #ra
+        pixcrd[:,0] = ksel[0] #dec
         pixsky = ima.wcs.pix2sky(pixcrd)
-        x = pixsky[:,0] #ra
-        y = pixsky[:,1] #dec  
+        x = pixsky[:,1] #ra
+        y = pixsky[:,0] #dec  
         data = ima.data.data[ksel]*self.fscale
         
         #weight
@@ -3811,9 +3858,9 @@ class Image(object):
         
         # initial gaussian integrated flux
         if flux is None:
-            pixsky = [[ra_peak,dec_peak]]
+            pixsky = [[dec_peak,ra_peak]]
             pixcrd = ima.wcs.sky2pix(pixsky)
-            peak = ima.data.data[pixcrd[0,1],pixcrd[0,0]] - cont
+            peak = ima.data.data[pixcrd[0,0],pixcrd[0,1]] - cont
             flux = peak * np.sqrt(2*np.pi*(ra_width**2)) * np.sqrt(2*np.pi*(dec_width**2))
         elif peak is True:
             peak = flux - cont
@@ -3865,8 +3912,8 @@ class Image(object):
                 xxx[:] = xx[i]
                 ff[:,i] = gaussfit(v,xxx,yy)
             
-            pixsky = [[xmin,ymin],[xmax,ymax]]
-            [[xmin,ymin],[xmax,ymax]] = self.wcs.sky2pix(pixsky)
+            pixsky = [[ymin,xmin],[ymax,xmax]]
+            [[ymin,xmin],[ymax,xmax]] = self.wcs.sky2pix(pixsky)
             xx = np.arange(xmin,xmax,(xmax-xmin)/np.shape(xx)[0])
             yy = np.arange(ymin,ymax,(ymax-ymin)/np.shape(yy)[0])
             plt.contour(xx, yy, ff, 5)
@@ -3937,11 +3984,11 @@ class Image(object):
         
         ksel = np.where(ima.data.mask==False)
         pixcrd = np.zeros((np.shape(ksel[0])[0],2))
-        pixcrd[:,0] = ksel[1] #ra
-        pixcrd[:,1] = ksel[0] #dec
+        pixcrd[:,1] = ksel[1] #ra
+        pixcrd[:,0] = ksel[0] #dec
         pixsky = ima.wcs.pix2sky(pixcrd)
-        x = pixsky[:,0] #ra
-        y = pixsky[:,1] #dec  
+        x = pixsky[:,1] #ra
+        y = pixsky[:,0] #dec  
         data = ima.data.data[ksel]*self.fscale
         
         #weight
@@ -4012,8 +4059,8 @@ class Image(object):
                 xxx[:] = xx[i]
                 ff[:,i] = moffatfit(v,xxx,yy)
             
-            pixsky = [[xmin,ymin],[xmax,ymax]]
-            [[xmin,ymin],[xmax,ymax]] = self.wcs.sky2pix(pixsky)
+            pixsky = [[ymin,xmin],[ymax,xmax]]
+            [[ymin,xmin],[ymax,xmax]] = self.wcs.sky2pix(pixsky)
             xx = np.arange(xmin,xmax,(xmax-xmin)/np.shape(xx)[0])
             yy = np.arange(ymin,ymax,(ymax-ymin)/np.shape(yy)[0])
             plt.contour(xx, yy, ff, 5)
@@ -4055,16 +4102,14 @@ class Image(object):
         # new size is an integer multiple of the original size
         newshape = (self.shape[0]/factor[0],self.shape[1]/factor[1])
         data = self.data.reshape(newshape[0],factor[0],newshape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
-        getnoise = False
         var = None
         if self.var is not None:
-            getnoise = True
             var = self.var.reshape(newshape[0],factor[0],newshape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]/factor[0]/factor[1]
-        wcs = self.wcs.rebin(step=(self.wcs.cdelt[1]*factor[0],self.wcs.cdelt[0]*factor[1]),start=None)
-        res = Image(getnoise=getnoise, shape=newshape, wcs = wcs, unit=self.unit, fscale=self.fscale, empty=True)
+        cdelt = self.wcs.get_step()
+        wcs = self.wcs.rebin(step=(cdelt[0]*factor[0],cdelt[1]*factor[1]),start=None)
+        res = Image(shape=newshape, wcs = wcs, unit=self.unit, fscale=self.fscale)
         res.data = np.ma.masked_invalid(data)
-        if getnoise:
-            res.var = var
+        res.var = var
         return res
 
         
@@ -4082,7 +4127,6 @@ class Image(object):
         'center' : pixels added, on the left and on the right, on the bottom and of the top of the image.
         'origin': pixels added on (n+1) line/column.
         '''
-        getnoise = False
         if is_int(factor):
             factor = (factor,factor)
         if factor[0]<=1 or factor[0]>=self.shape[0] or factor[1]<=1 or factor[1]>=self.shape[1]:
@@ -4102,8 +4146,8 @@ class Image(object):
                 mask[:,0:-1] = ima.data.mask
                 data[:,-1] = self.data[:,-n1:].sum() / factor[1]
                 mask[:,-1] = self.data.mask[:,-n1:].any()
+                var = None
                 if self.var is not None:
-                    getnoise = True
                     var = np.ones(newshape)
                     var[:,0:-1] = ima.var
                     var[:,-1] = self.var[:,-n1:].sum() / factor[1] / factor[1]
@@ -4122,14 +4166,14 @@ class Image(object):
                 mask[:,0] = self.data.mask[:,0:n_left].any()
                 data[:,-1] = self.data[:,n_right:].sum() / factor[1]
                 mask[:,-1] = self.data.mask[:,n_right:].any()
+                var = None
                 if self.var is not None:
-                    getnoise = True
                     var = np.ones(newshape)
                     var[:,1:-1] = ima.var
                     var[:,0] = self.var[:,0:n_left].sum() / factor[1] / factor[1]
                     var[:,-1] = self.var[:,n_right:].sum() / factor[1] / factor[1]
                 wcs = ima.wcs
-                wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.cdelt[0] , wcs.wcs.wcs.crval[1]]
+                wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
                 wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
         elif not np.sometrue(np.mod( self.shape[1], factor[1] )):
             newshape0 = self.shape[0]/factor[0]
@@ -4143,8 +4187,8 @@ class Image(object):
                 mask[0:-1,:] = ima.data.mask
                 data[-1,:] = self.data[-n0:,:].sum() / factor[0]
                 mask[-1,:] = self.data.mask[-n0:,:].any()
+                var = None
                 if self.var is not None:
-                    getnoise = True
                     var = np.ones(newshape)
                     var[0:-1,:] = ima.var
                     var[-1,:] = self.var[-n0:,:].sum() / factor[0] / factor[0]
@@ -4163,14 +4207,14 @@ class Image(object):
                 mask[0,:] = self.data.mask[0:n_left,:].any()
                 data[-1,:] = self.data[n_right:,:].sum() / factor[0]
                 mask[-1,:] = self.data.mask[n_right:,:].any()
+                var = None
                 if self.var is not None:
-                    getnoise = True
                     var = np.ones(newshape)
                     var[1:-1,:] = ima.var
                     var[0,:] = self.var[0:n_left,:].sum() / factor[0] / factor[0]
                     var[-1,:] = self.var[n_right:,:].sum() / factor[0] / factor[0]
                 wcs = ima.wcs
-                wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.cdelt[1]]
+                wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]]
                 wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
         else:
             factor = np.array(factor)
@@ -4196,8 +4240,8 @@ class Image(object):
                     mask[:,0] = self.data.mask[:,0:n_left[1]].any()
                     data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
                     mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    var = None
                     if self.var is not None:
-                        getnoise = True
                         var = np.ones(newshape)
                         var[1:-1,1:-1] = var.data
                         var[0,:] = self.var[0:n_left[0],:].sum() / factor[0] / factor[0]
@@ -4205,7 +4249,8 @@ class Image(object):
                         var[:,0] = self.var[:,0:n_left[1]].sum() / factor[1] / factor[1]
                         var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
                     wcs = ima.wcs
-                    wcs.wcs.wcs.crval = wcs.wcs.wcs.crval - wcs.cdelt
+                    step = wcs.get_step()
+                    wcs.wcs.wcs.crval = wcs.wcs.wcs.crval - np.array([step[1],step[0]])
                     wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
                 elif n_left[0]==0:
@@ -4220,15 +4265,15 @@ class Image(object):
                     mask[:,0] = self.data.mask[:,0:n_left[1]].any()
                     data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
                     mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    var = None
                     if self.var is not None:
-                        getnoise = True
                         var = np.ones(newshape)
                         var[0:-1,1:-1] = var.data
                         var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
                         var[:,0] = self.var[:,0:n_left[1]].sum() / factor[1] / factor[1]
                         var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
                     wcs = ima.wcs
-                    wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.cdelt[0] , wcs.wcs.wcs.crval[1]]
+                    wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
                     wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
                 else:
@@ -4243,15 +4288,15 @@ class Image(object):
                     mask[-1,:] = self.data.mask[n_right[0]:,:].any()
                     data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
                     mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    var = None
                     if self.var is not None:
-                        getnoise = True
                         var = np.ones(newshape)
                         var[1:-1,0:-1] = var.data
                         var[0,:] = self.var[0:n_left[0],:].sum() / factor[0] / factor[0]
                         var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
                         var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
                     wcs = ima.wcs
-                    wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.cdelt[1]] 
+                    wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]] 
                     wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
             elif margin=='origin':
@@ -4266,8 +4311,8 @@ class Image(object):
                 mask[-1,:] = self.data.mask[n_right[0]:,:].any()
                 data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
                 mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                var = None
                 if self.var is not None:
-                    getnoise = True
                     var = np.ones(newshape)
                     var[0:-1,0:-1] = ima.var
                     var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
@@ -4277,10 +4322,9 @@ class Image(object):
                 wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
             else:
                 raise ValueError, 'margin must be center|origin'
-        res = Image(getnoise=getnoise, shape=newshape, wcs = wcs, unit=self.unit, fscale=self.fscale, empty=True)
+        res = Image(shape=newshape, wcs = wcs, unit=self.unit, fscale=self.fscale)
         res.data = np.ma.array(data, mask=mask)
-        if getnoise:
-            res.var = var
+        res.var = var
         return res
     
     def rebin(self, newdim, newstart, newstep, flux=False, order=3):
@@ -4310,17 +4354,15 @@ class Image(object):
         elif is_int(newstart) or is_float(newstart):
             newstart = (newstart,newstart)
         else:
-            newstart = (newstart[1],newstart[0])
+            pass
         if is_int(newstep) or is_float(newstep):
             newstep = (newstep,newstep)
-        else:
-            newstep = (newstep[1],newstep[0])
         newdim = np.array(newdim)
         newstart = np.array(newstart)
         newstep = np.array(newstep)
                    
-        wcs =WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.rot, shape = newdim)
-        pstep = newstep/self.wcs.cdelt        
+        wcs =WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
+        pstep = newstep/self.wcs.get_step()   
         poffset = (newstart-self.wcs.get_start())/newstep
         data = ndimage.affine_transform(self.data.filled(0), pstep, poffset,output_shape=newdim, order=order)
         mask = np.array(1 - self.data.mask,dtype=bool)
@@ -4328,9 +4370,9 @@ class Image(object):
         mask = np.ma.make_mask(1-newmask)
         
         if flux:
-            rflux = self.wcs.cdelt.prod()/newstep.prod()
+            rflux = self.wcs.get_step().prod()/newstep.prod()
             data *= rflux
-        res = Image(getnoise=False, shape=newdim, wcs = wcs, unit=self.unit, fscale=self.fscale, empty=True)
+        res = Image(notnoise=True, shape=newdim, wcs = wcs, unit=self.unit, fscale=self.fscale)
         res.data = np.ma.array(data, mask=mask)
         return res 
 
@@ -4397,21 +4439,25 @@ class Image(object):
         try:
             if other.image:
                 ima = other.copy()
-                if self.wcs.rot != ima.wcs.rot:
-                    ima = ima.rotate(self.wcs.rot-ima.wcs.rot)
-                if (self.wcs.cdelt != ima.wcs.cdelt).all():
+                self_rot = self.wcs.get_rot()
+                ima_rot = ima.wcs.get_rot()
+                if self_rot != ima_rot:
+                    ima = ima.rotate(self_rot-ima_rot)
+                self_cdelt = self.wcs.get_step()
+                ima_cdelt = ima.wcs.get_step()
+                if (self_cdelt != ima_cdelt).all():
                     try :
-                        factor = (self.wcs.cdelt[1]/ima.wcs.cdelt[1],self.wcs.cdelt[0]/ima.wcs.cdelt[0])
-                        if not np.sometrue(np.mod( self.wcs.cdelt[0],  ima.wcs.cdelt[0])) and not np.sometrue(np.mod( self.wcs.cdelt[0],  ima.wcs.cdelt[0] )):
+                        factor = self_cdelt/ima_cdelt
+                        if not np.sometrue(np.mod( self_cdelt[0],  ima_cdelt[0])) and not np.sometrue(np.mod( self_cdelt[1],  ima_cdelt[1] )):
                             # ima.step is an integer multiple of the self.step
                             ima = ima.rebin_factor(factor)
                         else:
                             raise ValueError, 'steps are not integer multiple'
                     except:
                         newdim = ima.shape/factor
-                        ima = ima.rebin(newdim, None, self.wcs.cdelt, flux=True)
+                        ima = ima.rebin(newdim, None, self_cdelt, flux=True)
                 # here ima and self have the same step
-                [[l1,k1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
+                [[k1,l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
                 l1 = int(l1 + 0.5)
                 k1 = int(k1 + 0.5)
                 if k1 < 0:
@@ -4441,7 +4487,7 @@ class Image(object):
                 data = self.data.filled(0)  
                 
                 data[k1:k2,l1:l2] += (ima.data.filled(0)[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
-                res = Image(getnoise=False, shape=self.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale, empty=True)
+                res = Image(notnoise=True, shape=self.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
                 res.data = np.ma.array(data, mask=self.data.mask)
                 return res 
         except:
@@ -4474,8 +4520,8 @@ class Image(object):
 
         imalist = []
         for i in range(lab[1]):
-            [[startx,starty]] = self.wcs.pix2sky(ima.wcs.pix2sky([[slices[i][1].start,slices[i][0].start]]))
-            wcs = WCS(crpix=(1.0,1.0),crval=(startx,starty),cdelt=self.wcs.cdelt,deg=self.wcs.is_deg(),rot=self.wcs.rot)
+            [[starty,startx]] = self.wcs.pix2sky(ima.wcs.pix2sky([[slices[i][0].start,slices[i][1].start]]))
+            wcs = WCS(crpix=(1.0,1.0),crval=(starty,startx),cdelt=self.wcs.get_step(),deg=self.wcs.is_deg(),rot=self.wcs.get_rot())
             res = Image(data=self.data[slices[i]],wcs=wcs)
             imalist.append(res)
         return imalist
@@ -4503,16 +4549,16 @@ class Image(object):
     def inside(self, coord):
         """ Returns True if coord is inside image
         """
-        pixcrd = [ [0,0], [self.shape[1]-1,0], [ self.shape[1]-1,self.shape[0]-1], [0,self.shape[0]-1]]
+        pixcrd = [ [0,0], [self.shape[0]-1,0], [ self.shape[0]-1,self.shape[1]-1], [0,self.shape[1]-1]]
         pixsky = self.wcs.pix2sky(pixcrd)
         #Compute the cross product
-        if ((coord[0]-pixsky[0][1])*(pixsky[1][0]-pixsky[0][0])-(coord[1]-pixsky[0][0])*(pixsky[1][1]-pixsky[0][1]))<0 :
+        if ((coord[0]-pixsky[0][0])*(pixsky[1][1]-pixsky[0][1])-(coord[1]-pixsky[0][1])*(pixsky[1][0]-pixsky[0][0]))<0 :
             Normal1IsPositive = False
-        if ((coord[0]-pixsky[1][1])*(pixsky[2][0]-pixsky[1][0])-(coord[1]-pixsky[1][0])*(pixsky[2][1]-pixsky[1][1]))<0 :
+        if ((coord[0]-pixsky[1][0])*(pixsky[2][1]-pixsky[1][1])-(coord[1]-pixsky[1][1])*(pixsky[2][0]-pixsky[1][0]))<0 :
             Normal2IsPositive = False
-        if ((coord[0]-pixsky[2][1])*(pixsky[3][0]-pixsky[2][0])-(coord[1]-pixsky[2][0])*(pixsky[3][1]-pixsky[2][1]))<0 :
+        if ((coord[0]-pixsky[2][0])*(pixsky[3][1]-pixsky[2][1])-(coord[1]-pixsky[2][1])*(pixsky[3][0]-pixsky[2][0]))<0 :
             Normal3IsPositive = False
-        if ((coord[0]-pixsky[3][1])*(pixsky[0][0]-pixsky[3][0])-(coord[1]-pixsky[3][0])*(pixsky[0][1]-pixsky[3][1]))<0 :
+        if ((coord[0]-pixsky[3][0])*(pixsky[0][1]-pixsky[3][1])-(coord[1]-pixsky[3][1])*(pixsky[0][0]-pixsky[3][0]))<0 :
             Normal4IsPositive = False;
         if (Normal1IsPositive==Normal2IsPositive) and (Normal2IsPositive==Normal3IsPositive) and (Normal3IsPositive==Normal4IsPositive) :
             return True
@@ -4666,9 +4712,9 @@ class Image(object):
         if event.inaxes is not None:
             j, i = event.xdata, event.ydata
             try:
-                pixsky = self.wcs.pix2sky([j,i])
-                xc = pixsky[0][0]
-                yc = pixsky[0][1]
+                pixsky = self.wcs.pix2sky([i,j])
+                yc = pixsky[0][0]
+                xc = pixsky[0][1]
                 val = self.data.data[i,j]*self.fscale
                 s = 'dec= %g ra=%g i=%i j=%i data=%g'%(yc,xc,i,j,val)
                 self._fig.toolbar.set_message(s)
@@ -4721,7 +4767,7 @@ class Image(object):
                     try:
                         i = int(i)
                         j = int(j)
-                        [[x,y]] = self.wcs.pix2sky([j,i])
+                        [[y,x]] = self.wcs.pix2sky([i,j])
                         val = self.data[i,j]*self.fscale
                         if len(self._clicks.ra)==0:
                             print ''
@@ -4755,9 +4801,9 @@ class Image(object):
         if eclick.button == 1:
             try:
                 j1, i1 = int(eclick.xdata), int(eclick.ydata)
-                [[x1,y1]] = self.wcs.pix2sky([j1,i1])
+                [[y1,x1]] = self.wcs.pix2sky([i1,j1])
                 j2, i2 = int(erelease.xdata), int(erelease.ydata)
-                [[x2,y2]] = self.wcs.pix2sky([j2,i2])
+                [[y2,x2]] = self.wcs.pix2sky([i2,j2])
                 dist = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
                 xc = (x1 + x2)/2
                 yc = (y1 + y2)/2
@@ -4941,13 +4987,13 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
         shape[0] = wcs.wcs.naxis2
     
     if center is None:
-        pixcrd = [[(shape[1]-1)/2.0,(shape[0]-1)/2.0]]
+        pixcrd = [[(shape[0]-1)/2.0,(shape[1]-1)/2.0]]
         pixsky = wcs.pix2sky(pixcrd)
         center = [0,0]
         center[0] = pixsky[0,0]
         center[1] = pixsky[0,1]
     else:
-        center = [center[1],center[0]]
+        center = [center[0],center[1]]
     
     data = np.zeros(shape=shape, dtype = float)
     
@@ -4962,39 +5008,39 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
     else:
         I = flux
         
-    gauss = lambda x, y: I*(1/np.sqrt(2*np.pi*(ra_width**2)))*np.exp(-((x-center[0])*np.cos(theta)-(y-center[1])*np.sin(theta))**2/(2*ra_width**2)) \
-                          *(1/np.sqrt(2*np.pi*(dec_width**2)))*np.exp(-((x-center[0])*np.sin(theta)+(y-center[1])*np.cos(theta))**2/(2*dec_width**2))  
+    gauss = lambda x, y: I*(1/np.sqrt(2*np.pi*(ra_width**2)))*np.exp(-((x-center[1])*np.cos(theta)-(y-center[0])*np.sin(theta))**2/(2*ra_width**2)) \
+                          *(1/np.sqrt(2*np.pi*(dec_width**2)))*np.exp(-((x-center[1])*np.sin(theta)+(y-center[0])*np.cos(theta))**2/(2*dec_width**2))  
     
     if factor>1:
         if rot == 0:
-            X,Y = np.meshgrid(xrange(shape[1]),xrange(shape[0]))
+            X,Y = np.meshgrid(xrange(shape[0]),xrange(shape[1]))
             pixcrd = np.array(zip(X.ravel(),Y.ravel())) -0.5
             pixsky_min = wcs.pix2sky(pixcrd)               
-            xmin = (pixsky_min[:,0]-center[0])/np.sqrt(2.0)/ra_width
-            ymin = (pixsky_min[:,1]-center[1])/np.sqrt(2.0)/dec_width
+            xmin = (pixsky_min[:,1]-center[1])/np.sqrt(2.0)/ra_width
+            ymin = (pixsky_min[:,0]-center[0])/np.sqrt(2.0)/dec_width
                     
             pixcrd = np.array(zip(X.ravel(),Y.ravel())) +0.5
             pixsky_max = wcs.pix2sky(pixcrd)
-            xmax = (pixsky_max[:,0]-center[0])/np.sqrt(2.0)/ra_width
-            ymax = (pixsky_max[:,1]-center[1])/np.sqrt(2.0)/dec_width
+            xmax = (pixsky_max[:,1]-center[1])/np.sqrt(2.0)/ra_width
+            ymax = (pixsky_max[:,0]-center[0])/np.sqrt(2.0)/dec_width
             
-            dx = pixsky_max[:,0] - pixsky_min[:,0]
-            dy = pixsky_max[:,1] - pixsky_min[:,1]
+            dx = pixsky_max[:,1] - pixsky_min[:,1]
+            dy = pixsky_max[:,0] - pixsky_min[:,0]
             data = I * 0.25 / dx / dy * (special.erf(xmax)-special.erf(xmin)) * (special.erf(ymax)-special.erf(ymin))
-            data = np.reshape(data,(shape[0],shape[1]))
+            data = np.reshape(data,(shape[1],shape[0])).T
         else:
-            X,Y = np.meshgrid(xrange(shape[1]*factor),xrange(shape[0]*factor))
+            X,Y = np.meshgrid(xrange(shape[0]*factor),xrange(shape[1]*factor))
             factor = float(factor)
             pixcrd = zip(X.ravel()/factor,Y.ravel()/factor)
             pixsky = wcs.pix2sky(pixcrd)
-            data = gauss(pixsky[:,0],pixsky[:,1])
-            data = data.reshape(shape[0],factor,shape[1],factor).sum(1).sum(2)/factor/factor
+            data = gauss(pixsky[:,1],pixsky[:,0])
+            data = (data.reshape(shape[1],factor,shape[0],factor).sum(1).sum(2)/factor/factor).T
     else:       
-        X,Y = np.meshgrid(xrange(shape[1]),xrange(shape[0]))
+        X,Y = np.meshgrid(xrange(shape[0]),xrange(shape[1]))
         pixcrd = zip(X.ravel(),Y.ravel())
         pixsky = wcs.pix2sky(pixcrd)        
-        data = gauss(pixsky[:,0],pixsky[:,1])
-        data = np.reshape(data,(shape[0],shape[1]))
+        data = gauss(pixsky[:,1],pixsky[:,0])
+        data = np.reshape(data,(shape[1],shape[0])).T
             
     return Image(data=data, wcs=wcs)
 
@@ -5044,37 +5090,189 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
         shape[0] = wcs.wcs.naxis2
     
     if center is None:
-        pixcrd = [[(shape[1]-1)/2.0,(shape[0]-1)/2.0]]
+        pixcrd = [[(shape[0]-1)/2.0,(shape[1]-1)/2.0]]
         pixsky = wcs.pix2sky(pixcrd)
         center = [0,0]
         center[0] = pixsky[0,0]
         center[1] = pixsky[0,1]
     else:
-        center = [center[1],center[0]]
+        center = [center[0],center[1]]
     
     data = np.zeros(shape=shape, dtype = float)
     
     #rotation angle in rad
     theta = np.pi * rot / 180.0
         
-    moffat = lambda x, y: I*(1+(((x-center[0])*np.cos(theta)-(y-center[1])*np.sin(theta))/a)**2 \
-                              +(((x-center[0])*np.sin(theta)+(y-center[1])*np.cos(theta))/a/q)**2)**n
+    moffat = lambda x, y: I*(1+(((x-center[1])*np.cos(theta)-(y-center[0])*np.sin(theta))/a)**2 \
+                              +(((x-center[1])*np.sin(theta)+(y-center[0])*np.cos(theta))/a/q)**2)**n
     
     if factor>1:
-        X,Y = np.meshgrid(xrange(shape[1]*factor),xrange(shape[0]*factor))
+        X,Y = np.meshgrid(xrange(shape[0]*factor),xrange(shape[1]*factor))
         factor = float(factor)
         pixcrd = zip(X.ravel()/factor,Y.ravel()/factor)
         pixsky = wcs.pix2sky(pixcrd)
-        data = moffat(pixsky[:,0],pixsky[:,1])
-        data = data.reshape(shape[0],factor,shape[1],factor).sum(1).sum(2)/factor/factor
+        data = moffat(pixsky[:,1],pixsky[:,0])
+        data = (data.reshape(shape[0],factor,shape[1],factor).sum(1).sum(2)/factor/factor).T
     else:       
-        X,Y = np.meshgrid(xrange(shape[1]),xrange(shape[0]))
+        X,Y = np.meshgrid(xrange(shape[0]),xrange(shape[1]))
         pixcrd = zip(X.ravel(),Y.ravel())
         pixsky = wcs.pix2sky(pixcrd)        
-        data = moffat(pixsky[:,0],pixsky[:,1])
-        data = np.reshape(data,(shape[0],shape[1]))
+        data = moffat(pixsky[:,1],pixsky[:,0])
+        data = np.reshape(data,(shape[0],shape[1])).T
             
     return Image(data=data, wcs=wcs)
+
+def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smooth=0):
+    """ interpolates z(x,y) and returns an image.
+    
+    Parameters
+    ----------
+    
+    x : float array
+    Coordinate array corresponding to the declinaison.
+    
+    y : float arry
+    Coordinate array corresponding to the right ascension.
+    
+    z : float array
+    Input data.
+    
+    steps : (float,float)
+    Steps of the output image (dDec,dRa).
+    
+    deg : boolean
+    If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg')
+    If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR')
+    
+    limits : (float,float,float,float)
+    (dec_min,ra_min,dec_max,ra_max). If None, minum and maximum values of x,y arrays are used.
+    
+    spline : boolean
+    False: bilinear interpolation, True: spline interpolation 
+    
+    order : integer
+    Polynomial order for spline interpolation (default 3)
+    
+    smooth : float
+    Smoothing parameter for spline interpolation (default 0: no smoothing)
+    """
+    if limits == None:
+        x1 = x.min()
+        x2 = x.max()
+        y1 = y.min()
+        y2 = y.max()
+    else:
+        x1,x2,y1,y2 = limits
+    dx,dy = steps
+    nx = int((x2-x1)/dx + 1.5)
+    ny = int((y2-y1)/dy + 1.5)
+    
+    wcs = WCS(crpix=(1,1), crval=(x1,y1), cdelt=(dx,dy), deg=deg, shape=(nx,ny))
+    
+    xi = np.arange(nx)*dx + x1
+    yi = np.arange(ny)*dy + y1 
+    
+    Y,X = np.meshgrid(y,x)
+    
+    if spline:
+        tck = interpolate.bisplrep(X, Y, z, s=smooth, kx=order, ky=order)
+        data = interpolate.bisplev(xi, yi, tck)
+    else:
+        n = np.shape(x)[0]*np.shape(y)[0]
+        points = np.zeros((n,2),dtype=float)
+        points[:,0] = X.ravel()[:]
+        points[:,1] = Y.ravel()[:]
+        Yi,Xi = np.meshgrid(yi,xi)
+        data = interpolate.griddata(points, z.ravel(), (Xi,Yi), method='linear')
+    
+    return Image(data=data, wcs=wcs)
+
+#def composite_images(ImaColList, mode='lin', cuts=(10,90), quiet=False, bar=False):
+#    """ build composite image from a list of image and colors
+#    input: ImaColList=[(Ima, hue, saturation)] 
+#    input: intensity mode: lin, sqrt
+#    input: cut=(min,max) in %
+#    input: if bar is True a color bar image is created
+#    output: a PIL RGB image (or 2 PIL images if bar is True)
+#    Example:
+#    > imalist = [stars, lowz, highz]
+#    > tab = zip(imalist,linspace(250,0,3),ones(3)*100)
+#    > p1 = composite_images(tab,cuts=(0,99.5),mode='sqrt')
+#    > p1.show()
+#    > p1.save('udf_test_composite.jpg')
+#    """
+#    from PIL import Image, ImageColor, ImageChops
+#    
+#    # compute statistic of intensity and derive cuts
+#    first = True
+#    for ImaCol in ImaColList:
+#        ima,col,sat = ImaCol
+#        if mode == 'lin':
+#            f = ima.data.data
+#        elif mode == 'sqrt':
+#            f = np.sqrt(np.clip(ima.data.data, 0, 1.e99))
+#        else:
+#            raise ValueError, 'Wrong cut mode'
+#        if first:
+#            d = f.ravel()
+#            first = False
+#        else:
+#            d = np.concatenate([d, f.ravel()])
+#    d.sort()
+#    k1,k2 = cuts
+#    d1 = d[max(int(0.01*k1*len(d)+0.5),0)]
+#    d2 = d[min(int(0.01*k2*len(d)+0.5),len(d)-1)]
+##    if not quiet:
+##        print 'Cuts %5.2e %5.2e'%(d1,d2)
+#
+#    # first image
+#    ima,col,sat = ImaColList[0]
+#    p1 = Image.new('RGB', (ima.dim[0],ima.dim[1]))
+#    if not quiet:
+#        print 'Processing Image %s Hue %d Saturation %d'%(ima.name, col, sat)
+#    if mode == 'lin':
+#        f = ima.data
+#    elif mode == 'sqrt':
+#        f = numpy.sqrt(numpy.clip(ima.data, 0, 1.e99))
+#    lum = numpy.clip((f-d1)*100/(d2 - d1), 0, 100)
+#    for i in range(ima.dim[0]):
+#        for j in range(ima.dim[1]):
+#            p1.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(col,sat,lum[i,j])))
+#            
+#    for ImaCol in ImaColList[1:]:
+#        ima,col,sat = ImaCol
+#        if not quiet:
+#            print 'Processing Image %s Hue %d Saturation %d'%(ima.name, col, sat) 
+#        p2 = Image.new('RGB', (ima.dim[0],ima.dim[1]))
+#        if mode == 'lin':
+#            f = ima.data
+#        elif mode == 'sqrt':
+#            f = numpy.sqrt(numpy.clip(ima.data, 0, 1.e99))
+#        lum = numpy.clip((f-d1)*100/(d2 - d1), 0, 100)
+#        for i in range(ima.dim[0]):
+#            for j in range(ima.dim[1]):
+#                p2.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(col,sat,lum[i,j])))
+#        p1 = ImageChops.add(p1, p2)
+#
+#    if bar:
+#        if not quiet:
+#                print 'Creating color bar with legend'
+#        nxb = ima.dim[0]
+#        nyb = 50
+#        dx = nxb/len(ImaColList)
+#        p3 = Image.new('RGB', (nxb,nyb))
+#        i1 = 0
+#        for ImaCol in ImaColList:
+#            ima,col,sat = ImaCol    
+#            for i in range(i1,i1+dx):
+#                for j in range(nyb):
+#                    p3.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(col,sat,50)))
+#            i1 += dx
+#
+#    if bar:
+#        return p1,p3
+#    else:
+#        return p1
 
 class Cube(object):
     """cube class
@@ -5119,7 +5317,7 @@ class Cube(object):
     Info: info, []
     """
     
-    def __init__(self, filename=None, ext = None, getnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0,empty=False):
+    def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0):
         """creates a Cube object
 
         Parameters
@@ -5130,10 +5328,9 @@ class Cube(object):
         ext : integer or (integer,integer) or string or (string,sting)
         Number/name of the data extension or numbers/names of the data and variance extensions.
 
-        getnoise: boolean
-        True if the noise Variance image is read (if it exists)
-        Use getnoise=False to create image without variance extension
-        If var is not None, getnoise is automatically set to True.
+        notnoise: boolean
+        True if the noise Variance image is not read (if it exists)
+        Use notnoise=True to create image without variance extension
 
         shape : integer or (integer,integer,integer)
         Lengths of data in Z, Y and X. (101,101,101) by default.
@@ -5153,9 +5350,6 @@ class Cube(object):
         var : array
         Array containing the variance. None by default.
 
-        empty : bool
-        If empty is True, the data and variance array are set to None
-
         fscale : float
         Flux scaling factor (1 by default)
 
@@ -5163,8 +5357,6 @@ class Cube(object):
         --------
 
         """
-        if var is not None:
-            getnoise = True
         #possible FITS filename
         self.cube = True
         self.filename = filename
@@ -5235,17 +5427,20 @@ class Cube(object):
                 cunit = h.get('CUNIT3','')
                 self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
                 self.var = None
-                if getnoise:
-                    if ext is None:
-                        fstat = f['STAT']
-                    else:
-                        n = ext[1]
-                        fstat = f[n]
-                    if fstat.header['NAXIS'] != 3:
-                        raise IOError, 'Wrong dimension number in variance extension'
-                    if fstat.header['NAXIS1'] != self.shape[2] and fstat.header['NAXIS2'] != self.shape[1] and fstat.header['NAXIS3'] != self.shape[0]:
-                        raise IOError, 'Number of points in STAT not equal to DATA'
-                    self.var = np.array(fstat.data, dtype=float)
+                if not notnoise:
+                    try:
+                        if ext is None:
+                            fstat = f['STAT']
+                        else:
+                            n = ext[1]
+                            fstat = f[n]
+                        if fstat.header['NAXIS'] != 3:
+                            raise IOError, 'Wrong dimension number in variance extension'
+                        if fstat.header['NAXIS1'] != self.shape[2] and fstat.header['NAXIS2'] != self.shape[1] and fstat.header['NAXIS3'] != self.shape[0]:
+                            raise IOError, 'Number of points in STAT not equal to DATA'
+                        self.var = np.array(fstat.data, dtype=float)
+                    except:
+                        self.var = None
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -5268,10 +5463,7 @@ class Cube(object):
             else:
                 raise ValueError, 'dim with dimension > 3'
             if data is None:
-                if empty:
-                    self.data = None
-                else:
-                    self.data = np.zeros(shape=shape, dtype = float)
+                self.data = None
                 self.shape = np.array(shape)
             else:
                 self.data = np.array(data, dtype = float)
@@ -5280,10 +5472,8 @@ class Cube(object):
                 except:
                     self.shape = np.array(shape)
 
-            if not getnoise or empty:
+            if notnoise or var is None:
                 self.var = None
-            elif var is None:
-                self.var = numpy.zeros(shape=shape, dtype = float)
             else:
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
@@ -5315,7 +5505,7 @@ class Cube(object):
     def copy(self):
         """copies Cube object in a new one and returns it
         """
-        cub = Cube(empty=True)
+        cub = Cube()
         cub.filename = self.filename
         cub.unit = self.unit
         cub.cards = pyfits.CardList(self.cards)
@@ -5511,7 +5701,7 @@ class Cube(object):
                 if self.var is not None:
                     self.var = self.var[item]
                 try:
-                    self.wcs = self.wcs[item[2],item[1]] #data[y,x], image[y,x] but wcs[x,y]
+                    self.wcs = self.wcs[item[1],item[2]]
                 except:
                     self.wcs = None
                 try:
@@ -5555,7 +5745,7 @@ class Cube(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Cube(empty=True ,shape=self.shape , fscale=self.fscale)
+                    res = Cube(shape=self.shape , fscale=self.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -5584,7 +5774,7 @@ class Cube(object):
                         print 'Operation forbidden for objects with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,shape=self.shape , wave= self.wave, fscale=self.fscale)
+                        res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -5606,7 +5796,7 @@ class Cube(object):
                             print 'Operation forbidden for objects with different sizes'
                             return None
                         else:
-                            res = Cube(empty=True ,shape=self.shape , wcs= self.wcs, fscale=self.fscale)
+                            res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale)
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -5659,7 +5849,7 @@ class Cube(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Cube(empty=True ,shape=self.shape , fscale=self.fscale)
+                    res = Cube(shape=self.shape , fscale=self.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -5688,7 +5878,7 @@ class Cube(object):
                         print 'Operation forbidden for images with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,shape=self.shape , wave= self.wave, fscale=self.fscale)
+                        res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -5710,7 +5900,7 @@ class Cube(object):
                             print 'Operation forbidden for objects with different sizes'
                             return None
                         else:
-                            res = Cube(empty=True ,shape=self.shape , wcs= self.wcs, fscale=self.fscale)
+                            res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale)
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -5784,7 +5974,7 @@ class Cube(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Cube(empty=True ,shape=self.shape , fscale=self.fscale*other.fscale)
+                    res = Cube(shape=self.shape , fscale=self.fscale*other.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -5813,7 +6003,7 @@ class Cube(object):
                         print 'Operation forbidden for images with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,shape=self.shape , wave= self.wave, fscale=self.fscale * other.fscale)
+                        res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale * other.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -5835,7 +6025,7 @@ class Cube(object):
                             print 'Operation forbidden for objects with different sizes'
                             return None
                         else:
-                            res = Cube(empty=True ,shape=self.shape , wcs= self.wcs, fscale=self.fscale*other.fscale)
+                            res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale*other.fscale)
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -5890,7 +6080,7 @@ class Cube(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = Cube(empty=True ,shape=self.shape , fscale=self.fscale/other.fscale)
+                    res = Cube(shape=self.shape , fscale=self.fscale/other.fscale)
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -5918,7 +6108,7 @@ class Cube(object):
                         print 'Operation forbidden for images with different sizes'
                         return None
                     else:
-                        res = Cube(empty=True ,shape=self.shape , wave= self.wave, fscale=self.fscale / other.fscale)
+                        res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale / other.fscale)
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -5940,7 +6130,7 @@ class Cube(object):
                             print 'Operation forbidden for objects with different sizes'
                             return None
                         else:
-                            res = Cube(empty=True ,shape=self.shape , wcs= self.wcs, fscale=self.fscale/other.fscale)
+                            res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale/other.fscale)
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -6040,36 +6230,30 @@ class Cube(object):
                         shape = (data.shape[0],1)
                     else:
                         shape = data.shape
-                    getnoise = False
                     var = None
                     if self.var is not None:
-                        getnoise = True
                         var = self.var[item]
                     try:
-                        wcs = self.wcs[item[2],item[1]] #data[y,x], image[y,x] byt wcs[x,y]
+                        wcs = self.wcs[item[1],item[2]]
                     except:
                         wcs = None
-                    res = Image(getnoise=getnoise, shape=shape, wcs = wcs, unit=self.unit, empty=True,fscale=self.fscale)
+                    res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
                     res.data = data
-                    if getnoise:
-                        res.var =var
+                    res.var =var
                     return res
             elif is_int(item[1]) and is_int(item[2]):
                 #return a spectrum
                 shape = data.shape[0]
-                getnoise = False
                 var = None
                 if self.var is not None:
-                    getnoise = True
                     var = self.var[item]
                 try:
                     wave = self.wave[item[0]]
                 except:
                     wave = None
-                res = Spectrum(getnoise=getnoise, shape=shape, wave = wave, unit=self.unit, empty=True,fscale=self.fscale)
+                res = Spectrum(shape=shape, wave = wave, unit=self.unit, fscale=self.fscale)
                 res.data = data
-                if getnoise:
-                    res.var = var
+                res.var = var
                 return res
             else:
                 #return a cube
@@ -6079,23 +6263,20 @@ class Cube(object):
                     shape = (data.shape[0],data.shape[1],1)
                 else:
                     shape = data.shape
-                getnoise = False
                 var = None
                 if self.var is not None:
-                    getnoise = True
                     var = self.var[item]
                 try:
-                    wcs = self.wcs[item[2],item[1]] #data[y,x], image[y,x] but wcs[x,y]
+                    wcs = self.wcs[item[1],item[2]]
                 except:
                     wcs = None
                 try:
                     wave = self.wave[item[0]]
                 except:
                     wave = None
-                res = Cube(getnoise=getnoise, shape=shape, wcs = wcs, wave = wave, unit=self.unit, empty=True,fscale=self.fscale)
+                res = Cube(shape=shape, wcs = wcs, wave = wave, unit=self.unit, fscale=self.fscale)
                 res.data = data
-                if getnoise:
-                    res.var = var
+                res.var = var
                 return res
         else:
             raise ValueError, 'Operation forbidden'
@@ -6128,9 +6309,38 @@ class Cube(object):
         """
         step = np.zeros(3)
         step[0] = self.wave.cdelt
-        step[1] = self.wcs.cdelt[1]
-        step[2] = self.wcs.cdelt[0]
+        step[1:] = self.wcs.get_step()
         return step
+    
+    def get_range(self):
+        """returns [ [lambda_min,dec_min,ra_min], [lambda_max,dec_max,ra_max] ]
+        """
+        range = np.zeros((2,3))
+        range[:,0] = self.wave.get_range()
+        range[:,1:] = self.wcs.get_range()
+        return range
+    
+    def get_start(self):
+        """returns [lambda,dec,ra] corresponding to pixel (0,0,0)
+        """
+        start = np.zeros(3)
+        start[0] = self.wave.get_start()
+        start[1:] = self.wcs.get_start()
+        return start
+    
+    def get_end(self):
+        """returns [lambda,dec,ra] corresponding to pixel (-1,-1,-1)
+        """
+        end = np.zeros(3)
+        end[0] = self.wave.get_end()
+        end[1:] = self.wcs.get_end()
+        return end
+    
+    def get_rot(self):
+        """returns the rotation angle
+        """
+        return self.wcs.get_rot()
+        
             
     def __setitem__(self,key,value):
         """ sets the corresponding part of data
@@ -6164,6 +6374,22 @@ class Cube(object):
         else:
             self.wave = wave
             
+    def set_var(self,var):
+        """sets the variance array
+        
+        Parameter
+        ---------
+        var : float array
+        Input variance array. If None, variance is set with zeros
+        """
+        if var is None:
+            self.var = np.zeros((self.shape[0],self.shape[1], self.shape[2]))
+        else:
+            if self.shape[0] == np.shape(var)[0] and self.shape[1] == np.shape(var)[1] and self.shape[2] == np.shape(var)[2]:
+                self.var = var
+            else:
+                raise ValueError, 'var and data have not the same dimensions.'
+            
     def sum(self,axis=None):
         """ Returns the sum over the given axis.
         axis = None returns a float
@@ -6176,13 +6402,13 @@ class Cube(object):
         elif axis==0:
             #return an image
             data = self.data.sum(axis)
-            res = Image(getnoise=False, shape=data.shape, wcs = self.wcs, unit=self.unit, empty=True,fscale=self.fscale)
+            res = Image(notnoise=True, shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
             res.data = data
             return res
         elif axis==tuple([1,2]):
             #return a spectrum
             data = self.data.sum(axis=1).sum(axis=1)
-            res = Spectrum(getnoise=False, shape=data.shape[0], wave = self.wave, unit=self.unit, empty=True,fscale=self.fscale)
+            res = Spectrum(notnoise=True, shape=data.shape[0], wave = self.wave, unit=self.unit, fscale=self.fscale)
             res.data = data
             return res
         else:
@@ -6200,13 +6426,13 @@ class Cube(object):
         elif axis==0:
             #return an image
             data = self.data.mean(axis)
-            res = Image(getnoise=False, shape=data.shape, wcs = self.wcs, unit=self.unit, empty=True,fscale=self.fscale)
+            res = Image(notnoise=True, shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
             res.data = data
             return res
         elif axis==tuple([1,2]):
             #return a spectrum
             data = self.data.mean(axis=1).mean(axis=1)
-            res = Spectrum(getnoise=False, shape=data.shape[0], wave = self.wave, unit=self.unit, empty=True,fscale=self.fscale)
+            res = Spectrum(notnoise=True, shape=data.shape[0], wave = self.wave, unit=self.unit, fscale=self.fscale)
             res.data = data
             return res
         else:

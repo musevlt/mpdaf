@@ -7,18 +7,16 @@ Cube class
 
 This class manages cubes, optionally including a variance and a bad pixel mask.
 
-.. class:: obj.Cube([filename=None, ext = None, getnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0,empty=False])
+.. class:: obj.Cube([filename=None, ext = None, notnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0])
 
   :param filename: Possible FITS filename.
   :type filename: string
   :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
   :type ext: integer or (integer,integer) or string or (string,string)
-  :param getnoise: True if the noise Variance cube is read (if it exists).
+  :param notnoise: True if the noise Variance cube is not read (if it exists).
   
-		   Use getnoise=False to create cube without variance extension.
-		   
-		   If var is not None, getnoise is automatically set to True.
-  :type getnoise: boolean
+		   Use notnoise=True to create cube without variance extension.
+  :type notnoise: boolean
   :param shape: Lengths of data in Z, Y and X. Python notation is used (nz,ny,nx). (101,101,101) by default.
   :type shape: integer or (integer,integer,integer)
   :param wcs: World coordinates.
@@ -33,8 +31,6 @@ This class manages cubes, optionally including a variance and a bad pixel mask.
   :type var: float array
   :param fscale: Flux scaling factor (1 by default).
   :type fscale: float
-  :param empty: If empty is True, the data and variance array are set to None.
-  :type empty: boolean
   
 Examples::
  
@@ -49,7 +45,8 @@ Examples::
   wave2 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom', shape=3000)
   MyData = np.ones((4000,300,300))
   
-  cub = Cube(filename="cube.fits",ext=1,getnoise=False) # cube from file (extension number is 1)
+  cub = Cube(filename="cube.fits",ext=1) # cube from file without vaiance (extension number is 1)
+  cub = Cube(filename="cube.fits",ext=(1,2)) # cube from file with vaiance (extension numbers are 1 and 2)
   cub = Cube(shape=(4000,300,300), wcs=wcs1, wave=wave1) # cube 4000x300x300 filled with zeros
   cub = Cube(wcs=wcs1, wave=wave1, data=MyData) # cube filled with MyData
   cub = Cube(shape=(4000,300,300), wcs=wcs1, wave=wave2) # warning: dimensions of wavelength coordinates and data are incompatible
@@ -313,7 +310,30 @@ Methods
   
   :rtype: float array
   
+.. function:: get_range()
 
+  Returns [ [lambda_min,dec_min,ra_min], [lambda_max,dec_max,ra_max] ]
+  
+  :rtype: float array
+  
+.. function:: get_start()
+
+  Returns [lambda,dec,ra] corresponding to pixel (0,0,0).
+  
+  :rtype: float array
+  
+.. function:: get_end()
+
+  Returns [lambda,dec,ra] corresponding to pixel (-1,-1,-1).
+  
+  :rtype: float array
+  
+.. function:: get_rot()
+  
+   Returns the angle of rotation.
+   
+   :rtype: float
+  
 .. function:: set_wcs(wcs,wave)
 
   Sets the world coordinates.
@@ -322,6 +342,13 @@ Methods
   :type wcs: WCS
   :param wave: Wavelength coordinates.
   :type wave: WaveCoord
+  
+.. function:: set_var([var=None])
+
+  Sets the variance array.
+  
+  :param var: Input variance array. If None, variance is set with zeros.
+  :type var: float array
   
 .. function:: sum(axis=None)
 

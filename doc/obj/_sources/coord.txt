@@ -9,11 +9,13 @@ Interface for world coordinates
 
     deg2sexa and sexa2deg methods transforms coordinates from degree/sexagesimal to sexagesimal/degree.
     
+    Note that by convention python reverse x,y indices : (dec,ra) order is used.
+    
 
 Degree / sexagesimal conversion
 ===============================
 
-.. currentmodule:: coords
+.. currentmodule:: obj
 
 .. function:: deg2hms(x)
 
@@ -52,27 +54,27 @@ Degree / sexagesimal conversion
 
   Transforms the values of n coordinates from degrees to sexagesimal.
   
-  :param x: An (n,2) array of x- and y- coordinates in degrees.
+  :param x: An (n,2) array of dec- and ra- coordinates in degrees.
   :type x: float array
-  :rtype: (n,2) array of x- and y- coordinates in sexagesimal (string).
+  :rtype: (n,2) array of dec- and ra- coordinates in sexagesimal (string).
   
 .. function:: sexa2deg(x)
 
   Transforms the values of n coordinates from sexagesimal to degrees.
   
-  :param x: An (n,2) array of x- and y- coordinates in sexagesimal.
+  :param x: An (n,2) array of dec- and ra- coordinates in sexagesimal.
   :type x:  string array
-  :rtype: (n,2) array of x- and y- coordinates in degrees
+  :rtype: (n,2) array of dec- and ra- coordinates in degrees
   
 Example of conversion::
 
-  from mpdaf.obj import coords
+  from mpdaf.obj import deg2sexa,sexa2deg
   ac = np.array([2.5,2.5])
   ac2 = [ac,ac*2,ac*4]
   print ac2
-  ac3 = coord.deg2sexa(ac2)
+  ac3 = deg2sexa(ac2)
   print ac3
-  ac = coord.sexa2deg(ac3)
+  ac = sexa2deg(ac3)
   print ac
 
 
@@ -90,15 +92,15 @@ WCS class manages spatial world coordinates.
 		If crpix is None and shape is None crpix = 1.0 and the reference point is the first pixel of the image.
 		If crpix is None and shape is not None crpix = (shape + 1.0)/2.0 and the reference point is the center of the image.
   :type crpix: float or (float,float)
-  :param crval: Coordinates of the reference pixel. (0.0,0.0) by default.
+  :param crval: Coordinates of the reference pixel (ref_dec,ref_ra). (0.0,0.0) by default.
   :type crval: float or (float,float)
-  :param cdelt: Sizes of one pixel along the axis. (1.0,1.0) by default.
+  :param cdelt: Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
   :type cdelt: float or (float,float)
   :param deg: If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg). If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR').
   :type deg: boolean
   :param rot: Rotation angle in degree.
   :type rot: float
-  :param shape: Dimensions in Y and X. Python notation is used: (ny,nx). No mandatory.
+  :param shape: Dimensions. No mandatory.
   :type shape: integer or (integer,integer)
   
 Examples::
@@ -106,7 +108,7 @@ Examples::
   from mpdaf.obj import WCS
   wcs = WCS(hdr) # creates a WCS object from data header
   wcs = WCS(shape=(300,300)) # the reference point is the center of the image
-  wcs = WCS(crval=(1.46E+02,-3.11E+01),cdelt=4E-04, deg=True, rot = 20, shape=(300,300)) # the reference point is in decimal degree
+  wcs = WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(300,300)) # the reference point is in decimal degree
 
 
 Attributes
@@ -115,10 +117,7 @@ Attributes
 +-------+-------------+------------------------------------+
 | wcs   | pywcs.WCS   | World coordinates object.          |
 +-------+-------------+------------------------------------+
-| cdelt | float array | Sizes of one pixel along the axis. |
-+-------+-------------+------------------------------------+
-| rot   | float array | Rotation angle in degree.          |
-+-------+-------------+------------------------------------+
+
 
 Methods
 -------
@@ -145,17 +144,17 @@ Methods
 
   Converts world coordinates to pixel coordinates.
   
-  :param x: An (n,2) array of x- and y- world coordinates.
+  :param x: An (n,2) array of dec- and ra- world coordinates.
   :type x: float array
-  :rtype: (n,2) array of x- and y- pixel coordinates.
+  :rtype: (n,2) array of pixel coordinates.
   
 .. function:: pix2sky(x)
 
   Converts pixel coordinates to world coordinates.
   
-  :param x: An (n,2) array of x- and y- pixel coordinates.
+  :param x: An (n,2) array of pixel coordinates.
   :type x: float array
-  :rtype: (n,2) array of x- and y- world coordinates.
+  :rtype: (n,2) array of dec- and ra- world coordinates.
   
 .. function:: isEqual(other)
 
@@ -165,17 +164,41 @@ Methods
   :type other: obs.WCS
   :rtype: boolean
   
+.. function:: get_step()
+
+  Returns [dDec,dRa].
+  
+  :rtype: float array
+  
 .. function:: get_range()
 
-  Returns [ [ra_min,dec_min], [ra_max,dec_max] ]
+  Returns [ [dec_min,ra_min], [dec_max,ra_max] ]
+  
+  :rtype: float array
   
 .. function:: get_start()
 
-  Returns [ra,dec] corresponding to pixel (0,0).
+  Returns [dec,ra] corresponding to pixel (0,0).
+  
+  :rtype: float array
+  
+.. function:: get_end()
+
+  Returns [dec,ra] corresponding to pixel (-1,-1).
+  
+  :rtype: float array
+  
+.. function:: get_rot()
+  
+   Returns the angle of rotation.
+   
+   :rtype: float
   
 .. function:: is_deg()
 
   Returns True if world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
+  
+  :rtype: boolean
   
 .. function:: rotate(theta)
 
@@ -270,3 +293,28 @@ Methods
   :param nearest: If nearest=True returns the nearest integer pixel.
   :type nearest: boolean
   :rtype: float or integer according to nearest.
+  
+.. function:: get_step()
+
+  Returns the step in wavelength.
+  
+  :rtype: float
+  
+.. function:: get_start()
+
+  Returns the value of the first pixel.
+  
+  :rtype: float
+  
+.. function:: get_end()
+
+  Returns the value of the last pixel.
+  
+  :rtype: float
+  
+.. function:: get_range()
+
+  Returns the wavelength range [Lambda_min,Lambda_max]
+  
+  :rtype: float array
+  

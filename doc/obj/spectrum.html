@@ -55,7 +55,7 @@
 <p>This class manages spectrum, optionally including a variance and a bad pixel mask.</p>
 <dl class="class">
 <dt id="obj.Spectrum">
-<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">Spectrum</tt><big>(</big><span class="optional">[</span><em>filename=None</em>, <em>ext = None</em>, <em>getnoise=False</em>, <em>shape=101</em>, <em>wave = None</em>, <em>unit=None</em>, <em>data=None</em>, <em>var=None</em>, <em>fscale=1.0</em>, <em>empty=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">Spectrum</tt><big>(</big><span class="optional">[</span><em>filename=None</em>, <em>ext = None</em>, <em>notnoise=False</em>, <em>shape=101</em>, <em>wave = None</em>, <em>unit=None</em>, <em>data=None</em>, <em>var=None</em>, <em>fscale=1.0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -63,9 +63,8 @@
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Possible FITS filename.</li>
 <li><strong>ext</strong> (<em>integer or (integer,integer) or string or (string,string)</em>) &#8211; Number/name of the data extension or numbers/names of the data and variance extensions.</li>
-<li><strong>getnoise</strong> (<em>boolean</em>) &#8211; <p>True if the noise Variance spectrum is read (if it exists).</p>
-<p>Use getnoise=False to create spectrum without variance extension.</p>
-<p>If var is not None, getnoise is automatically set to True.</p>
+<li><strong>notnoise</strong> (<em>boolean</em>) &#8211; <p>True if the noise Variance spectrum is not read (if it exists).</p>
+<p>Use notnoise=True to create spectrum without variance extension.</p>
 </li>
 <li><strong>shape</strong> (<em>integer</em>) &#8211; size of the spectrum. 101 by default.</li>
 <li><strong>wave</strong> (<em>WaveCoord</em>) &#8211; Wavelength coordinates.</li>
@@ -73,7 +72,6 @@
 <li><strong>data</strong> (<em>float array</em>) &#8211; Array containing the pixel values of the spectrum. None by default.</li>
 <li><strong>var</strong> (<em>float array</em>) &#8211; Array containing the variance. None by default.</li>
 <li><strong>fscale</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Flux scaling factor (1 by default).</li>
-<li><strong>empty</strong> (<em>boolean</em>) &#8211; If empty is True, the data and variance array are set to None.</li>
 </ul>
 </td>
 </tr>
@@ -86,7 +84,7 @@
 <span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">Spectrum</span>
 <span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">WaveCoord</span>
 
-<span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;spectrum.fits&quot;</span><span class="p">,</span><span class="n">ext</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">getnoise</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c"># spectrum from file (extension number is 1)</span>
+<span class="n">spe</span> <span class="o">=</span> <span class="n">Spectrum</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;spectrum.fits&quot;</span><span class="p">,</span><span class="n">ext</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="c"># spectrum from file (extension number is 1)</span>
 
 <span class="n">wave1</span> <span class="o">=</span> <span class="n">WaveCoord</span><span class="p">(</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span> <span class="n">crval</span><span class="o">=</span><span class="mf">4000.0</span><span class="p">,</span> <span class="n">cunit</span><span class="o">=</span><span class="s">&#39;Angstrom&#39;</span><span class="p">)</span>
 <span class="n">wave2</span> <span class="o">=</span> <span class="n">WaveCoord</span><span class="p">(</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span> <span class="n">crval</span><span class="o">=</span><span class="mf">4000.0</span><span class="p">,</span> <span class="n">cunit</span><span class="o">=</span><span class="s">&#39;Angstrom&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
@@ -443,6 +441,48 @@ Wavelength coordinates must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="obj.Spectrum.get_start">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_start</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.get_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the value of the first pixel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.get_end">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_end</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.get_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the value of the last pixel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.get_range">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">get_range</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Spectrum.get_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the wavelength range [Lambda_min,Lambda_max]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="obj.Spectrum.set_wcs">
 <tt class="descclassname">obj.Spectrum.</tt><tt class="descname">set_wcs</tt><big>(</big><em>wave</em><big>)</big><a class="headerlink" href="#obj.Spectrum.set_wcs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the world coordinates.</p>
@@ -451,6 +491,20 @@ Wavelength coordinates must be the same.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wave</strong> (<em>WaveCoord</em>) &#8211; Wavelength coordinates.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Spectrum.set_var">
+<tt class="descclassname">obj.Spectrum.</tt><tt class="descname">set_var</tt><big>(</big><span class="optional">[</span><em>var=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Spectrum.set_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the variance array.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>var</strong> (<em>float array</em>) &#8211; Input variance array. If None, variance is set with zeros.</td>
 </tr>
 </tbody>
 </table>

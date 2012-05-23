@@ -55,7 +55,7 @@
 <p>This class manages images, optionally including a variance and a bad pixel mask.</p>
 <dl class="class">
 <dt id="obj.Image">
-<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">Image</tt><big>(</big><span class="optional">[</span><em>filename=None</em>, <em>ext = None</em>, <em>getnoise=False</em>, <em>shape=(101</em>, <em>101)</em>, <em>wcs = None</em>, <em>unit=None</em>, <em>data=None</em>, <em>var=None</em>, <em>fscale=1.0</em>, <em>empty=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">obj.</tt><tt class="descname">Image</tt><big>(</big><span class="optional">[</span><em>filename=None</em>, <em>ext = None</em>, <em>notnoise=False</em>, <em>shape=(101</em>, <em>101)</em>, <em>wcs = None</em>, <em>unit=None</em>, <em>data=None</em>, <em>var=None</em>, <em>fscale=1.0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -63,9 +63,8 @@
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Possible FITS filename.</li>
 <li><strong>ext</strong> (<em>integer or (integer,integer) or string or (string,string)</em>) &#8211; Number/name of the data extension or numbers/names of the data and variance extensions.</li>
-<li><strong>getnoise</strong> (<em>boolean</em>) &#8211; <p>True if the noise Variance image is read (if it exists).</p>
-<p>Use getnoise=False to create image without variance extension.</p>
-<p>If var is not None, getnoise is automatically set to True.</p>
+<li><strong>notnoise</strong> (<em>boolean</em>) &#8211; <p>True if the noise Variance image is not read (if it exists).</p>
+<p>Use notnoise=True to create image without variance extension.</p>
 </li>
 <li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.</li>
 <li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
@@ -73,7 +72,6 @@
 <li><strong>data</strong> (<em>float array</em>) &#8211; Array containing the pixel values of the image. None by default.</li>
 <li><strong>var</strong> (<em>float array</em>) &#8211; Array containing the variance. None by default.</li>
 <li><strong>fscale</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Flux scaling factor (1 by default).</li>
-<li><strong>empty</strong> (<em>boolean</em>) &#8211; If empty is True, the data and variance array are set to None.</li>
 </ul>
 </td>
 </tr>
@@ -90,7 +88,8 @@
 <span class="n">wcs2</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">crval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">cdelt</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span><span class="n">shape</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
 <span class="n">MyData</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">300</span><span class="p">,</span><span class="mi">300</span><span class="p">))</span>
 
-<span class="n">ima</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;image.fits&quot;</span><span class="p">,</span><span class="n">ext</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">getnoise</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c"># image from file (extension number is 1)</span>
+<span class="n">ima</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;image.fits&quot;</span><span class="p">,</span><span class="n">ext</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="c"># image from file without variance (extension number is 1)</span>
+<span class="n">ima</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;image.fits&quot;</span><span class="p">,</span><span class="n">ext</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span> <span class="c"># image from file with variance (extension numbers are 1 and 2)</span>
 <span class="n">ima</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs1</span><span class="p">)</span> <span class="c"># image 300x300 filled with zeros</span>
 <span class="n">ima</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">wcs</span><span class="o">=</span><span class="n">wcs1</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">MyData</span><span class="p">)</span> <span class="c"># image 300x300 filled with MyData</span>
 <span class="n">ima</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs2</span><span class="p">)</span> <span class="c"># warning: world coordinates and image have not the same dimensions</span>
@@ -420,6 +419,20 @@ World coordinates in spatial directions must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="obj.Image.set_var">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">set_var</tt><big>(</big><span class="optional">[</span><em>var=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.set_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the variance array.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>var</strong> (<em>float array</em>) &#8211; Input variance array. If None, variance is set with zeros.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="obj.Image.get_step">
 <tt class="descclassname">obj.Image.</tt><tt class="descname">get_step</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.get_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the image steps [dDec, dRa].</p>
@@ -428,6 +441,62 @@ World coordinates in spatial directions must be the same.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Return type:</th><td class="field-body">float array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.get_range">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">get_range</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.get_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns [ [dec_min,ra_min], [dec_max,ra_max] ]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.get_start">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">get_start</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.get_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns [dec,ra] corresponding to pixel (0,0).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.get_end">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">get_end</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.get_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns [dec,ra] corresponding to pixel (-1,-1).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.get_rot">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">get_rot</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.get_rot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the angle of rotation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">float</td>
 </tr>
 </tbody>
 </table>
@@ -1090,7 +1159,9 @@ World coordinates in spatial directions must be the same.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default. If wcs object contains dimensions, shape is ignored and wcs dimensions are used.</li>
+<li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; <p>Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.</p>
+<p>If wcs object contains dimensions, shape is ignored and wcs dimensions are used.</p>
+</li>
 <li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
 <li><strong>center</strong> (<em>(float,float)</em>) &#8211; Gaussian center (dec_peak, ra_peak). If None the center of the image is used.</li>
 <li><strong>flux</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Integrated gaussian flux or gaussian peak value if peak is True.</li>
@@ -1110,6 +1181,17 @@ World coordinates in spatial directions must be the same.</dd>
 </table>
 </dd></dl>
 
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">gauss_image</span>
+<span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">WCS</span>
+<span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span> <span class="p">(</span><span class="n">cdelt</span><span class="o">=</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span><span class="mf">0.3</span><span class="p">),</span> <span class="n">crval</span><span class="o">=</span><span class="p">(</span><span class="mf">8.5</span><span class="p">,</span><span class="mi">12</span><span class="p">),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span><span class="mi">30</span><span class="p">))</span>
+<span class="n">ima</span> <span class="o">=</span> <span class="n">gauss_image</span><span class="p">(</span><span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">,</span><span class="n">width</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="n">factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">rot</span> <span class="o">=</span> <span class="mi">60</span><span class="p">)</span>
+<span class="n">ima</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">gauss</span> <span class="o">=</span> <span class="n">ima</span><span class="o">.</span><span class="n">gauss_fit</span><span class="p">(</span><span class="n">pos_min</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="n">pos_max</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span><span class="mi">17</span><span class="p">),</span> <span class="n">cont</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">gauss</span><span class="o">.</span><span class="n">print_param</span><span class="p">()</span>
+</pre></div>
+</div>
 <dl class="function">
 <dt id="obj.moffat_image">
 <tt class="descclassname">obj.</tt><tt class="descname">moffat_image</tt><big>(</big><span class="optional">[</span><em>shape=(101</em>, <em>101)</em>, <em>wcs=WCS()</em>, <em>center=None</em>, <em>I=1.</em>, <em>a=1.0</em>, <em>q=1.0</em>, <em>n=2</em>, <em>rot = 0.</em>, <em>factor=1</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.moffat_image" title="Permalink to this definition">¶</a></dt>
@@ -1119,7 +1201,9 @@ World coordinates in spatial directions must be the same.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default. If wcs object contains dimensions, shape is ignored and wcs dimensions are used.</li>
+<li><strong>shape</strong> (<em>integer or (integer,integer)</em>) &#8211; <p>Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.</p>
+<p>If wcs object contains dimensions, shape is ignored and wcs dimensions are used.</p>
+</li>
 <li><strong>wcs</strong> (<em>WCS</em>) &#8211; World coordinates.</li>
 <li><strong>center</strong> (<em>(float,float)</em>) &#8211; Gaussian center (dec_peak, ra_peak). If None the center of the image is used.</li>
 <li><strong>I</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Intensity at image center. 1 by default.</li>
@@ -1130,6 +1214,38 @@ World coordinates in spatial directions must be the same.</dd>
 <li><strong>factor</strong> (<em>integer</em>) &#8211; <p>If factor&lt;=1, moffat value is computed in the center of each pixel.</p>
 <p>If factor&gt;1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.</p>
 </li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obj.Image object (<a class="reference internal" href="#image-class">Image class</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.make_image">
+<tt class="descclassname">obj.</tt><tt class="descname">make_image</tt><big>(</big><em>x</em>, <em>y</em>, <em>z</em>, <em>steps</em><span class="optional">[</span>, <em>deg=True</em>, <em>limits=None</em>, <em>spline=False</em>, <em>order=3</em>, <em>smooth=0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.make_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolates z(x,y) and returns an image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>float array</em>) &#8211; Coordinate array corresponding to the declinaison.</li>
+<li><strong>y</strong> (<em>float array</em>) &#8211; Coordinate array corresponding to the right ascension.</li>
+<li><strong>z</strong> (<em>float array</em>) &#8211; Input data.</li>
+<li><strong>steps</strong> (<em>(float,float)</em>) &#8211; Steps of the output image (dDec,dRa).</li>
+<li><strong>deg</strong> (<em>boolean</em>) &#8211; <p>If True, world coordinates are in decimal degrees (CTYPE1=&#8217;RA&#8212;TAN&#8217;,CTYPE2=&#8217;DEC&#8211;TAN&#8217;,CUNIT1=CUNIT2=&#8217;deg&#8217;)</p>
+<p>If False (by default), world coordinates are linear (CTYPE1=CTYPE2=&#8217;LINEAR&#8217;)</p>
+</li>
+<li><strong>limits</strong> (<em>(float,float,float,float)</em>) &#8211; <p>Limits of the image (dec_min,ra_min,dec_max,ra_max).</p>
+<p>If None, minum and maximum values of x,y arrays are used.</p>
+</li>
+<li><strong>spline</strong> (<em>boolean</em>) &#8211; False: bilinear interpolation, True: spline interpolation</li>
+<li><strong>order</strong> (<em>integer</em>) &#8211; Polynomial order for spline interpolation (default 3)</li>
+<li><strong>smooth</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Smoothing parameter for spline interpolation (default 0: no smoothing)</li>
 </ul>
 </td>
 </tr>

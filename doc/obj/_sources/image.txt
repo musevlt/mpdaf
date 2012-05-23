@@ -7,18 +7,16 @@ Image class
 
 This class manages images, optionally including a variance and a bad pixel mask.
 
-.. class:: obj.Image([filename=None, ext = None, getnoise=False, shape=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0,empty=False])
+.. class:: obj.Image([filename=None, ext = None, notnoise=False, shape=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0])
 
   :param filename: Possible FITS filename.
   :type filename: string
   :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
   :type ext: integer or (integer,integer) or string or (string,string)
-  :param getnoise: True if the noise Variance image is read (if it exists).
+  :param notnoise: True if the noise Variance image is not read (if it exists).
   
-		   Use getnoise=False to create image without variance extension.
-		   
-		   If var is not None, getnoise is automatically set to True.
-  :type getnoise: boolean
+		   Use notnoise=True to create image without variance extension.
+  :type notnoise: boolean
   :param shape: Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.
   :type shape: integer or (integer,integer)
   :param wcs: World coordinates.
@@ -31,8 +29,6 @@ This class manages images, optionally including a variance and a bad pixel mask.
   :type var: float array
   :param fscale: Flux scaling factor (1 by default).
   :type fscale: float
-  :param empty: If empty is True, the data and variance array are set to None.
-  :type empty: boolean
   
 Examples::
  
@@ -44,7 +40,8 @@ Examples::
   wcs2 = WCS(crval=0,cdelt=0.2,shape=400)
   MyData = np.ones((300,300))
   
-  ima = Image(filename="image.fits",ext=1,getnoise=False) # image from file (extension number is 1)  
+  ima = Image(filename="image.fits",ext=1) # image from file without variance (extension number is 1)  
+  ima = Image(filename="image.fits",ext=(1,2)) # image from file with variance (extension numbers are 1 and 2)
   ima = Image(shape=300, wcs=wcs1) # image 300x300 filled with zeros
   ima = Image(wcs=wcs1, data=MyData) # image 300x300 filled with MyData
   ima = Image(shape=300, wcs=wcs2) # warning: world coordinates and image have not the same dimensions
@@ -264,11 +261,42 @@ Methods
   :param wcs: World coordinates.
   :type wcs: WCS
   
+.. function:: set_var([var=None])
+
+  Sets the variance array.
+  
+  :param var: Input variance array. If None, variance is set with zeros.
+  :type var: float array
+  
 .. function:: get_step()
 
   Returns the image steps [dDec, dRa].
   
   :rtype: float array
+  
+.. function:: get_range()
+
+  Returns [ [dec_min,ra_min], [dec_max,ra_max] ]
+  
+  :rtype: float array
+  
+.. function:: get_start()
+
+  Returns [dec,ra] corresponding to pixel (0,0).
+  
+  :rtype: float array
+  
+.. function:: get_end()
+
+  Returns [dec,ra] corresponding to pixel (-1,-1).
+  
+  :rtype: float array
+  
+.. function:: get_rot()
+  
+   Returns the angle of rotation.
+   
+   :rtype: float
   
 .. function:: sum([axis=None])
 
@@ -719,7 +747,9 @@ Functions to create a new image
 
   Creates a new image from a 2D gaussian.
   
-  :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default. If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
+  :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.
+  
+		If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
   :type shape: integer or (integer,integer)
   :param wcs: World coordinates.
   :type wcs: WCS
@@ -739,11 +769,24 @@ Functions to create a new image
   :type factor: integer
   :rtype: obj.Image object (`Image class`_) 
   
+Examples::
+ 
+  import numpy as np
+  from mpdaf.obj import gauss_image
+  from mpdaf.obj import WCS
+  wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
+  ima = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
+  ima.plot()
+  gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0, plot=True)
+  gauss.print_param()
+  
 .. function:: moffat_image([shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=1])
 
   Creates a new image from a 2D Moffat function.
   
-  :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default. If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
+  :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.
+  
+		If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
   :type shape: integer or (integer,integer)
   :param wcs: World coordinates.
   :type wcs: WCS
@@ -764,7 +807,35 @@ Functions to create a new image
 		If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
   :type factor: integer
   :rtype: obj.Image object (`Image class`_) 
+  
 
+.. function:: make_image(x, y, z, steps [, deg=True, limits=None, spline=False, order=3, smooth=0])
+
+  Interpolates z(x,y) and returns an image.
+  
+  :param x: Coordinate array corresponding to the declinaison.
+  :type x: float array
+  :param y: Coordinate array corresponding to the right ascension.
+  :type y: float array
+  :param z: Input data.
+  :type z: float array
+  :param steps: Steps of the output image (dDec,dRa).
+  :type steps: (float,float)
+  :param deg: If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg')
+  
+	      If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR')
+  :type deg: boolean
+  :param limits: Limits of the image (dec_min,ra_min,dec_max,ra_max).
+		
+		 If None, minum and maximum values of x,y arrays are used.
+  :type limits: (float,float,float,float)
+  :param spline: False: bilinear interpolation, True: spline interpolation 
+  :type spline: boolean
+  :param order: Polynomial order for spline interpolation (default 3)
+  :type order: integer
+  :param smooth: Smoothing parameter for spline interpolation (default 0: no smoothing)
+  :type smooth: float
+  :rtype: obj.Image object (`Image class`_) 
 
 Gauss2D class
 =============

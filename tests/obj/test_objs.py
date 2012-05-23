@@ -10,6 +10,7 @@ from mpdaf.obj import Image
 from mpdaf.obj import Cube
 from mpdaf.obj import WCS
 from mpdaf.obj import WaveCoord
+from mpdaf.obj import gauss_image
 
 class TestObj(unittest.TestCase):
 
@@ -266,13 +267,76 @@ class TestObj(unittest.TestCase):
         self.assertEqual(a.shape[0],6)
         self.assertEqual(a.shape[1],6)
         self.assertEqual(a.shape[2],5)
+        a = self.cube1[2:4,0:2,1:4]
+        self.assertEqual(a.get_start()[0],3.5)
+        self.assertEqual(a.get_start()[1],0)
+        self.assertEqual(a.get_start()[2],1)
+        self.assertEqual(a.get_end()[0],6.5)
+        self.assertEqual(a.get_end()[1],1)
+        self.assertEqual(a.get_end()[2],3)
 
     def test_get_Image(self):
         """tests Image[]"""
-        a = self.image1[0:2,0:3]
-        self.assertEqual(a.shape[0],2)
-        self.assertEqual(a.shape[1],3)
-
+        ima = self.image1[0:2,1:4]
+        self.assertEqual(ima.shape[0],2)
+        self.assertEqual(ima.shape[1],3)
+        self.assertEqual(ima.get_start()[0],0)
+        self.assertEqual(ima.get_start()[1],1)
+        self.assertEqual(ima.get_end()[0],1)
+        self.assertEqual(ima.get_end()[1],3)
+        
+    def test_resize_Image(self):
+        """test Image.resize()"""
+        mask = np.ones((6,5),dtype=bool)
+        data = self.image1.data.data
+        data[2:4,1:4] = 8
+        mask[2:4,1:4] = 0
+        self.image1.data = np.ma.MaskedArray(data, mask=mask)
+        self.image1.resize()
+        self.assertEqual(self.image1.shape[0],2)
+        self.assertEqual(self.image1.shape[1],3)
+        self.assertEqual(self.image1.sum(),2*3*8)
+        self.assertEqual(self.image1.get_start()[0],2)
+        self.assertEqual(self.image1.get_start()[1],1)
+        self.assertEqual(self.image1.get_end()[0],3)
+        self.assertEqual(self.image1.get_end()[1],3)
+        
+    def test_truncate_Image(self):
+        """test Image.truncate()"""
+        ima = self.image1.truncate(0,1,1,3)
+        self.assertEqual(ima.shape[0],2)
+        self.assertEqual(ima.shape[1],3)
+        self.assertEqual(ima.get_start()[0],0)
+        self.assertEqual(ima.get_start()[1],1)
+        self.assertEqual(ima.get_end()[0],1)
+        self.assertEqual(ima.get_end()[1],3)
+        
+    def test_sum_Image(self):
+        """test Image.sum()"""
+        sum1 = self.image1.sum()
+        self.assertEqual(sum1,6*5*2)
+        sum2 = self.image1.sum(axis=0)
+        self.assertEqual(sum2.shape[0],1)
+        self.assertEqual(sum2.shape[1],5)
+        self.assertEqual(sum2.get_start()[0],0)
+        self.assertEqual(sum2.get_start()[1],0)
+        self.assertEqual(sum2.get_end()[0],0)
+        self.assertEqual(sum2.get_end()[1],4)
+        
+    def test_gauss_Image(self):
+        """test gauss_image and gauss_fit"""
+        wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
+        ima = gauss_image(wcs=wcs,width=(1,2),factor=1, rot = 60)
+        gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0)
+        ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
+        gauss2 = ima.gauss_fit(pos_min=(5, 6), pos_max=(12,16), cont=0)
+        self.assertAlmostEqual(gauss.center[0], 8.5)
+        self.assertAlmostEqual(gauss.center[1], 12)
+        self.assertAlmostEqual(gauss.flux, 1)
+        self.assertAlmostEqual(gauss2.center[0], 8.5)
+        self.assertAlmostEqual(gauss2.center[1], 12)
+        self.assertAlmostEqual(gauss2.flux, 1)
+        
 
 if __name__=='__main__':
     unittest.main()

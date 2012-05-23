@@ -48,7 +48,18 @@ Import the different submodules
 """
 from coords import WCS
 from coords import WaveCoord
+from coords import sexa2deg
+from coords import sexa2deg
+from coords import deg2hms
+from coords import hms2deg
+from coords import deg2dms
+from coords import dms2deg
+from coords import deg2rad
+from coords import rad2deg
 from objs import Spectrum
 from objs import Image
 from objs import Cube
 from astropysics_coords import AstropysicsAngularCoordinate
+from objs import gauss_image
+from objs import moffat_image
+from objs import make_image
