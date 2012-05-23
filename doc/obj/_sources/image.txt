@@ -268,6 +268,35 @@ Methods
   :param var: Input variance array. If None, variance is set with zeros.
   :type var: float array
   
+.. function:: mask(center, radius [, pix=False, inside=False])
+
+  Masks values inside/outside the described region.
+  
+  :param center: Center of the explored region.
+  
+		If pix is False, center = (dec, ra) is in degrees.
+		
+		If pix is True, center = (i,j) is in pixels.
+  :type center: (float,float)
+  :param radius: Radius defined the explored region.
+  
+		If radius is float, it defined a circular region.
+		
+		If radius is (float,float), it defined a rectangular region.
+		
+		If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
+		
+		If pix is True, radius = (di,dj) is in pixels.
+  :type radius: float or (float,float)       
+  :param pix: If pix is False, center and radius are in degrees and arcsecs.
+  
+	      If pix is True, center and radius are in pixels.
+  :type pix: boolean
+  :param inside: If inside is True, pixels inside the described region are masked.
+  
+		 If inside is False, pixels outside the described region are masked.
+  :type inside: boolean
+  
 .. function:: get_step()
 
   Returns the image steps [dDec, dRa].
@@ -677,16 +706,12 @@ Filter
 Plotting
 --------
  
-.. function:: plot([max=None, title=None, noise=False])
+.. function:: plot([title=None])
 
   Plots the image.
   
-  :param max: If max, the plot is normalized to peak at max value.
-  :type max: boolean
   :param title: Figure title (None by default).
   :type title: string
-  :param noise: If noise is True, the +/- standard deviation is overplotted. False by default.
-  :type noise: boolean
   
   
 .. function:: ipos([filename='None'])
@@ -736,7 +761,10 @@ Plotting
   
   To quit the interactive mode, click on the right mouse button.
   
+.. function:: imask()
 
+  Over-plots masked values (interactive mode).
+  
 
 Functions to create a new image
 ===============================
@@ -836,7 +864,36 @@ Examples::
   :param smooth: Smoothing parameter for spline interpolation (default 0: no smoothing)
   :type smooth: float
   :rtype: obj.Image object (`Image class`_) 
+  
+.. function:: composite_image(ImaColList [, mode='lin', cuts=(10,90), bar=False])
 
+  Builds composite image from a list of image and colors.
+  
+  :param ImaColList: List of images and colors [(Image, hue, saturation)] 
+  :type ImaColList: list of tuple (Image,float,float)
+  :param mode: Intensity mode. Use 'lin' for linear and 'sqrt' for root square.
+  :type mode: 'lin' or 'sqrt'
+  :param cuts: Minimum and maximum in percent.
+  :type cuts: (float,float)
+  :param bar: If bar is True a color bar image is created.
+  :type bar: boolean
+  :rtype: Returns a PIL RGB image (or 2 PIL images if bar is True).
+  
+Examples::
+ 
+  import numpy as np
+  from mpdaf.obj import Image
+  from mpdaf.obj import composite_image
+  
+  stars = Image(filename="stars.fits")
+  lowz = Image(filename="lowz.fits")
+  highz = Image(filename="highz.fits")
+  imalist = [stars, lowz, highz]
+  tab = zip(imalist,linspace(250,0,3),ones(3)*100)
+  p1 = composite_image(tab,cuts=(0,99.5),mode='sqrt')
+  p1.show()
+  p1.save('test_composite.jpg')
+  
 Gauss2D class
 =============
 

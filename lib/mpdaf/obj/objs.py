@@ -3272,7 +3272,184 @@ class Image(object):
                 self.var = var
             else:
                 raise ValueError, 'var and data have not the same dimensions.'
-
+            
+    def mask(self, center, radius, pix=False, inside=False):
+        """Masks values inside/outside the described region.
+        
+        Parameters
+        ----------
+        
+        center : (float,float)
+        Center of the explored region.
+        If pix is False, center = (dec, ra) is in degrees.
+        If pix is True, center = (i,j) is in pixels.
+        
+        radius : float or (float,float)
+        Radius defined the explored region.
+        If radius is float, it defined a circular region.
+        If radius is (float,float), it defined a rectangular region.
+        If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
+        If pix is True, radius = (di,dj) is in pixels.
+        
+        pix : boolean
+        If pix is False, center and radius are in degrees and arcsecs.
+        If pix is True, center and radius are in pixels.
+        
+        inside : boolean
+        If inside is True, pixels inside the described region are masked.
+        If inside is False, pixels outside the described region are masked.
+        """
+        if is_int(radius) or is_float(radius):
+            circular = True
+            radius2 = radius*radius
+            radius = (radius,radius)
+        else:
+            circular = False
+                
+        if pix:
+            imin = center[0] - radius[0]
+            imax = center[0] + radius[0]
+            jmin = center[1] - radius[1]
+            jmax = center[1] + radius[1]
+            if inside and not circular:
+                self.data.mask[imin:imax,jmin:jmax] = 1
+            elif inside and circular:
+                ni = int(imax-imin)
+                nj = int(jmax-jmin)
+                m = np.ma.make_mask_none((ni,nj))
+                for i_in in range(ni):
+                    i = i_in + imin                 
+                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
+                    pixcrd[:,0] -= center[0]
+                    pixcrd[:,1] -= center[1]
+                    m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) < radius2)
+                try:
+                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+                    self.data.mask[imin:imax,jmin:jmax] = m
+                except:
+                    pass
+            elif not inside and circular:
+                self.data.mask[0:imin,:] = 1
+                self.data.mask[imax:,:] = 1
+                self.data.mask[imin:imax,0:jmin] = 1
+                self.data.mask[imin:imax:,jmax:] = 1
+                ni = int(imax-imin)
+                nj = int(jmax-jmin)
+                m = np.ma.make_mask_none((ni,nj))
+                for i_in in range(ni):
+                    i = i_in + imin                 
+                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
+                    pixcrd[:,0] -= center[0]
+                    pixcrd[:,1] -= center[1]
+                    m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) > radius2)
+                try:
+                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+                    self.data.mask[imin:imax,jmin:jmax] = m
+                except:
+                    pass
+            else:
+                self.data.mask[0:imin,:] = 1
+                self.data.mask[imax:,:] = 1
+                self.data.mask[imin:imax,0:jmin] = 1
+                self.data.mask[imin:imax:,jmax:] = 1
+        else:
+            dec_min = center[0] - radius[0]/3600.0
+            dec_max = center[0] + radius[0]/3600.0
+            ra_min = center[1] - radius[1]/3600.0
+            ra_max = center[1] + radius[1]/3600.0
+            skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ] 
+            pixcrd = self.wcs.sky2pix(skycrd) 
+            
+            jmin = int(np.min(pixcrd[:,1]))
+            if jmin<0:
+                jmin = 0
+            jmax = int(np.max(pixcrd[:,1]))+1
+            if jmax > self.shape[1]:
+                jmax = self.shape[1]
+            imin = int(np.min(pixcrd[:,0]))
+            if imin<0:
+                imin = 0
+            imax = int(np.max(pixcrd[:,0]))+1
+            if imax > self.shape[0]:
+                imax = self.shape[0]
+                
+            if inside and not circular:
+                ni = int(imax-imin)
+                nj = int(jmax-jmin)
+                m = np.ma.make_mask_none((ni,nj))
+                for i_in in range(ni):
+                    i = i_in + imin                 
+                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
+                    skycrd = self.wcs.pix2sky(pixcrd)
+                    test_ra_min = np.array(skycrd[:,1]) > ra_min
+                    test_ra_max = np.array(skycrd[:,1]) < ra_max
+                    test_dec_min = np.array(skycrd[:,0]) > dec_min
+                    test_dec_max = np.array(skycrd[:,0]) < dec_max
+                    m[i_in,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
+                try:
+                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+                    self.data.mask[imin:imax,jmin:jmax] = m
+                except:
+                    pass
+            elif inside and circular:
+                ni = int(imax-imin)
+                nj = int(jmax-jmin)
+                m = np.ma.make_mask_none((ni,nj))
+                for i_in in range(ni):
+                    i = i_in + imin                 
+                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
+                    pixsky = self.wcs.pix2sky(pixcrd)
+                    pixsky[:,0] -= center[0]
+                    pixsky[:,1] -= center[1]
+                    m[i_in,:] = (np.array(pixsky[:,0])*np.array(pixsky[:,0]) + np.array(pixsky[:,1])*np.array(pixsky[:,1])) < radius2/3600.0/3600.0
+                try:
+                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+                    self.data.mask[imin:imax,jmin:jmax] = m
+                except:
+                    pass
+            elif not inside and circular:
+                self.data.mask[0:imin,:] = 1
+                self.data.mask[imax:,:] = 1
+                self.data.mask[imin:imax,0:jmin] = 1
+                self.data.mask[imin:imax:,jmax:] = 1
+                ni = int(imax-imin)
+                nj = int(jmax-jmin)
+                m = np.ma.make_mask_none((ni,nj))
+                for i_in in range(ni):
+                    i = i_in + imin                 
+                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
+                    pixsky= self.wcs.pix2sky(pixcrd)
+                    pixsky[:,0] -= center[0]
+                    pixsky[:,1] -= center[1]
+                    m[i_in,:] = (np.array(pixsky[:,0])*np.array(pixsky[:,0]) + np.array(pixsky[:,1])*np.array(pixsky[:,1])) > radius2/3600.0/3600.0
+                try:
+                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+                    self.data.mask[imin:imax,jmin:jmax] = m
+                except:
+                    pass
+            else:               
+                self.data.mask[0:imin,:] = 1
+                self.data.mask[imax:,:] = 1
+                self.data.mask[imin:imax,0:jmin] = 1
+                self.data.mask[imin:imax:,jmax:] = 1
+                ni = int(imax-imin)
+                nj = int(jmax-jmin)
+                m = np.ma.make_mask_none((ni,nj))
+                for i_in in range(ni):
+                    i = i_in + imin                 
+                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
+                    skycrd = self.wcs.pix2sky(pixcrd)
+                    test_ra_min = np.array(skycrd[:,1]) < ra_min
+                    test_ra_max = np.array(skycrd[:,1]) > ra_max
+                    test_dec_min = np.array(skycrd[:,0]) < dec_min
+                    test_dec_max = np.array(skycrd[:,0]) > dec_max
+                    m[i_in,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
+                try:
+                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+                    self.data.mask[imin:imax,jmin:jmax] = m
+                except:
+                    pass
+        
     def truncate(self, dec_min, dec_max, ra_min, ra_max, mask=True):
         """ returns the corresponding sub-image
 
@@ -4655,29 +4832,18 @@ class Image(object):
         ima.norm(type='sum')
         return self.fftconvolve(ima)
     
-    def plot(self, max=None, title=None, noise=False): 
+    def plot(self, title=None): 
         """ plots the image.
         
-        Parameters
-        ----------
-        
-        max : boolean
-        If max, the plot is normalized to peak at max value.
-        
+        Parameter
+        ---------     
         title : string
         Figure title (None by default).
         
-        noise : boolean
-        If noise is True, the +/- standard deviation is overplotted.
-              
         """
         plt.ion()
         
         f = self.data*self.fscale
-        if max != None:
-            f = f*max/f.max()
-            
-        
         xaxis = np.arange(self.shape[1], dtype=np.float)
         yaxis = np.arange(self.shape[0], dtype=np.float)
         xunit = 'pixel'
@@ -4943,6 +5109,32 @@ class Image(object):
             self._selector.set_active(False)
             self._selector = None
             
+    def imask(self):
+        """Interactive mode.
+        Plots masked values.
+        """
+        try:
+            try:
+                self._plot_mask_id.remove()
+                #plt.draw()
+            except:
+                pass
+            xaxis = np.arange(self.shape[1], dtype=np.float)
+            yaxis = np.arange(self.shape[0], dtype=np.float)
+            
+            if np.shape(xaxis)[0] == 1:
+                #plot a  column
+                plt.plot(yaxis,self.data.data,alpha=0.3)
+            elif np.shape(yaxis)[0] == 1:
+                #plot a line
+                plt.plot(xaxis,self.data.data,alpha=0.3)
+            else:
+                mask = np.array(1 - self.data.mask,dtype=bool)
+                data = np.ma.MaskedArray(self.data.data*self.fscale, mask=mask)
+                self._plot_mask_id = plt.imshow(data,interpolation='nearest',origin='lower',extent=(0,self.shape[1]-1,0,self.shape[0]-1),vmin=self.data.min(),vmax=self.data.max(), alpha=0.9)
+        except:
+            pass
+            
             
 def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1):
     """creates a new image from a 2D gaussian.
@@ -5187,92 +5379,98 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smo
     
     return Image(data=data, wcs=wcs)
 
-#def composite_images(ImaColList, mode='lin', cuts=(10,90), quiet=False, bar=False):
-#    """ build composite image from a list of image and colors
-#    input: ImaColList=[(Ima, hue, saturation)] 
-#    input: intensity mode: lin, sqrt
-#    input: cut=(min,max) in %
-#    input: if bar is True a color bar image is created
-#    output: a PIL RGB image (or 2 PIL images if bar is True)
-#    Example:
-#    > imalist = [stars, lowz, highz]
-#    > tab = zip(imalist,linspace(250,0,3),ones(3)*100)
-#    > p1 = composite_images(tab,cuts=(0,99.5),mode='sqrt')
-#    > p1.show()
-#    > p1.save('udf_test_composite.jpg')
-#    """
-#    from PIL import Image, ImageColor, ImageChops
-#    
-#    # compute statistic of intensity and derive cuts
-#    first = True
-#    for ImaCol in ImaColList:
-#        ima,col,sat = ImaCol
-#        if mode == 'lin':
-#            f = ima.data.data
-#        elif mode == 'sqrt':
-#            f = np.sqrt(np.clip(ima.data.data, 0, 1.e99))
-#        else:
-#            raise ValueError, 'Wrong cut mode'
-#        if first:
-#            d = f.ravel()
-#            first = False
-#        else:
-#            d = np.concatenate([d, f.ravel()])
-#    d.sort()
-#    k1,k2 = cuts
-#    d1 = d[max(int(0.01*k1*len(d)+0.5),0)]
-#    d2 = d[min(int(0.01*k2*len(d)+0.5),len(d)-1)]
-##    if not quiet:
-##        print 'Cuts %5.2e %5.2e'%(d1,d2)
-#
-#    # first image
-#    ima,col,sat = ImaColList[0]
-#    p1 = Image.new('RGB', (ima.dim[0],ima.dim[1]))
-#    if not quiet:
-#        print 'Processing Image %s Hue %d Saturation %d'%(ima.name, col, sat)
-#    if mode == 'lin':
-#        f = ima.data
-#    elif mode == 'sqrt':
-#        f = numpy.sqrt(numpy.clip(ima.data, 0, 1.e99))
-#    lum = numpy.clip((f-d1)*100/(d2 - d1), 0, 100)
-#    for i in range(ima.dim[0]):
-#        for j in range(ima.dim[1]):
-#            p1.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(col,sat,lum[i,j])))
-#            
-#    for ImaCol in ImaColList[1:]:
-#        ima,col,sat = ImaCol
-#        if not quiet:
-#            print 'Processing Image %s Hue %d Saturation %d'%(ima.name, col, sat) 
-#        p2 = Image.new('RGB', (ima.dim[0],ima.dim[1]))
-#        if mode == 'lin':
-#            f = ima.data
-#        elif mode == 'sqrt':
-#            f = numpy.sqrt(numpy.clip(ima.data, 0, 1.e99))
-#        lum = numpy.clip((f-d1)*100/(d2 - d1), 0, 100)
-#        for i in range(ima.dim[0]):
-#            for j in range(ima.dim[1]):
-#                p2.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(col,sat,lum[i,j])))
-#        p1 = ImageChops.add(p1, p2)
-#
-#    if bar:
-#        if not quiet:
-#                print 'Creating color bar with legend'
-#        nxb = ima.dim[0]
-#        nyb = 50
-#        dx = nxb/len(ImaColList)
-#        p3 = Image.new('RGB', (nxb,nyb))
-#        i1 = 0
-#        for ImaCol in ImaColList:
-#            ima,col,sat = ImaCol    
-#            for i in range(i1,i1+dx):
-#                for j in range(nyb):
-#                    p3.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(col,sat,50)))
-#            i1 += dx
-#
-#    if bar:
-#        return p1,p3
-#    else:
-#        return p1
+def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False):
+    """ builds composite image from a list of image and colors. 
+    Returns a PIL RGB image (or 2 PIL images if bar is True).
+    
+    Parameters
+    ----------
+    ImaColList : list of tuple (Image,float,float)
+    List of images and colors [(Ima, hue, saturation)] 
+    
+    mode : 'lin' or 'sqrt'
+    Intensity mode. Use 'lin' for linear and 'sqrt' for root square.
+    
+    cut : (float,float)
+    Minimum and maximum in percent.
+    
+    bar : boolean
+    If bar is True a color bar image is created.
+    
+    Example
+    -------
+    
+    imalist = [stars, lowz, highz]
+    tab = zip(imalist,linspace(250,0,3),ones(3)*100)
+    p1 = composite_image(tab,cuts=(0,99.5),mode='sqrt')
+    p1.show()
+    p1.save('test_composite.jpg')
+    """
+    from PIL import Image as PILima
+    from PIL import Image, ImageColor, ImageChops
+    
+    # compute statistic of intensity and derive cuts
+    first = True
+    for ImaCol in ImaColList:
+        ima,col,sat = ImaCol
+        if mode == 'lin':
+            f = ima.data.filled(0)
+        elif mode == 'sqrt':
+            f = np.sqrt(np.clip(ima.data.filled(0), 0, 1.e99))
+        else:
+            raise ValueError, 'Wrong cut mode'
+        if first:
+            d = f.ravel()
+            first = False
+        else:
+            d = np.concatenate([d, f.ravel()])
+    d.sort()
+    k1,k2 = cuts
+    d1 = d[max(int(0.01*k1*len(d)+0.5),0)]
+    d2 = d[min(int(0.01*k2*len(d)+0.5),len(d)-1)]
+
+    # first image
+    ima,col,sat = ImaColList[0]
+    p1 = PILima.new('RGB', (ima.shape[0],ima.shape[1]))
+    if mode == 'lin':
+        f = ima.data.filled(0)
+    elif mode == 'sqrt':
+        f = np.sqrt(np.clip(ima.data.filled(0), 0, 1.e99))
+    lum = np.clip((f-d1)*100/(d2 - d1), 0, 100)
+    for i in range(ima.shape[0]):
+        for j in range(ima.shape[1]):
+            p1.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(int(col),int(sat),int(lum[i,j]))))
+            
+    for ImaCol in ImaColList[1:]:
+        ima,col,sat = ImaCol
+        p2 = PILima.new('RGB', (ima.shape[0],ima.shape[1]))
+        if mode == 'lin':
+            f = ima.data.filled(0)
+        elif mode == 'sqrt':
+            f = np.sqrt(np.clip(ima.data.filled(0), 0, 1.e99))
+        lum = np.clip((f-d1)*100/(d2 - d1), 0, 100)
+        for i in range(ima.shape[0]):
+            for j in range(ima.shape[1]):
+                p2.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(int(col),int(sat),int(lum[i,j]))))
+        p1 = ImageChops.add(p1, p2)
+
+    if bar:
+        nxb = ima.shape[0]
+        nyb = 50
+        dx = nxb/len(ImaColList)
+        p3 = PILima.new('RGB', (nxb,nyb))
+        i1 = 0
+        for ImaCol in ImaColList:
+            ima,col,sat = ImaCol    
+            for i in range(i1,i1+dx):
+                for j in range(nyb):
+                    p3.putpixel((i,j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'%(int(col),int(sat),50)))
+            i1 += dx
+
+    if bar:
+        return p1,p3
+    else:
+        return p1
 
 class Cube(object):
     """cube class

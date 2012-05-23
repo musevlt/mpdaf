@@ -433,6 +433,38 @@ World coordinates in spatial directions must be the same.</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="obj.Image.mask">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">mask</tt><big>(</big><em>center</em>, <em>radius</em><span class="optional">[</span>, <em>pix=False</em>, <em>inside=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Masks values inside/outside the described region.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>center</strong> (<em>(float,float)</em>) &#8211; <p>Center of the explored region.</p>
+<p>If pix is False, center = (dec, ra) is in degrees.</p>
+<p>If pix is True, center = (i,j) is in pixels.</p>
+</li>
+<li><strong>radius</strong> (<em>float or (float,float)</em>) &#8211; <p>Radius defined the explored region.</p>
+<p>If radius is float, it defined a circular region.</p>
+<p>If radius is (float,float), it defined a rectangular region.</p>
+<p>If pix is False, radius = (ddec/2, dra/2) is in arcsecs.</p>
+<p>If pix is True, radius = (di,dj) is in pixels.</p>
+</li>
+<li><strong>pix</strong> (<em>boolean</em>) &#8211; <p>If pix is False, center and radius are in degrees and arcsecs.</p>
+<p>If pix is True, center and radius are in pixels.</p>
+</li>
+<li><strong>inside</strong> (<em>boolean</em>) &#8211; <p>If inside is True, pixels inside the described region are masked.</p>
+<p>If inside is False, pixels outside the described region are masked.</p>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="obj.Image.get_step">
 <tt class="descclassname">obj.Image.</tt><tt class="descname">get_step</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.get_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the image steps [dDec, dRa].</p>
@@ -1076,18 +1108,13 @@ World coordinates in spatial directions must be the same.</dd>
 <h3>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="obj.Image.plot">
-<tt class="descclassname">obj.Image.</tt><tt class="descname">plot</tt><big>(</big><span class="optional">[</span><em>max=None</em>, <em>title=None</em>, <em>noise=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.plot" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">obj.Image.</tt><tt class="descname">plot</tt><big>(</big><span class="optional">[</span><em>title=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.Image.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>max</strong> (<em>boolean</em>) &#8211; If max, the plot is normalized to peak at max value.</li>
-<li><strong>title</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Figure title (None by default).</li>
-<li><strong>noise</strong> (<em>boolean</em>) &#8211; If noise is True, the +/- standard deviation is overplotted. False by default.</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>title</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Figure title (None by default).</td>
 </tr>
 </tbody>
 </table>
@@ -1144,6 +1171,12 @@ World coordinates in spatial directions must be the same.</dd>
 <tt class="descclassname">obj.Image.</tt><tt class="descname">iee</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.iee" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes enclosed energy in windows defined with left mouse button.</p>
 <p>To quit the interactive mode, click on the right mouse button.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obj.Image.imask">
+<tt class="descclassname">obj.Image.</tt><tt class="descname">imask</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Image.imask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Over-plots masked values (interactive mode).</p>
 </dd></dl>
 
 </div>
@@ -1256,6 +1289,44 @@ World coordinates in spatial directions must be the same.</dd>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="obj.composite_image">
+<tt class="descclassname">obj.</tt><tt class="descname">composite_image</tt><big>(</big><em>ImaColList</em><span class="optional">[</span>, <em>mode='lin'</em>, <em>cuts=(10</em>, <em>90)</em>, <em>bar=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#obj.composite_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds composite image from a list of image and colors.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ImaColList</strong> (<em>list of tuple (Image,float,float)</em>) &#8211; List of images and colors [(Image, hue, saturation)]</li>
+<li><strong>mode</strong> (<em>&#8216;lin&#8217; or &#8216;sqrt&#8217;</em>) &#8211; Intensity mode. Use &#8216;lin&#8217; for linear and &#8216;sqrt&#8217; for root square.</li>
+<li><strong>cuts</strong> (<em>(float,float)</em>) &#8211; Minimum and maximum in percent.</li>
+<li><strong>bar</strong> (<em>boolean</em>) &#8211; If bar is True a color bar image is created.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Returns a PIL RGB image (or 2 PIL images if bar is True).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span> <span class="nn">mpdaf.obj</span> <span class="kn">import</span> <span class="n">composite_image</span>
+
+<span class="n">stars</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;stars.fits&quot;</span><span class="p">)</span>
+<span class="n">lowz</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;lowz.fits&quot;</span><span class="p">)</span>
+<span class="n">highz</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;highz.fits&quot;</span><span class="p">)</span>
+<span class="n">imalist</span> <span class="o">=</span> <span class="p">[</span><span class="n">stars</span><span class="p">,</span> <span class="n">lowz</span><span class="p">,</span> <span class="n">highz</span><span class="p">]</span>
+<span class="n">tab</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">imalist</span><span class="p">,</span><span class="n">linspace</span><span class="p">(</span><span class="mi">250</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">p1</span> <span class="o">=</span> <span class="n">composite_image</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span><span class="n">cuts</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">99.5</span><span class="p">),</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;sqrt&#39;</span><span class="p">)</span>
+<span class="n">p1</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">p1</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;test_composite.jpg&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="gauss2d-class">
 <h2>Gauss2D class<a class="headerlink" href="#gauss2d-class" title="Permalink to this headline">¶</a></h2>

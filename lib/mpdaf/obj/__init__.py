@@ -63,3 +63,4 @@ from astropysics_coords import AstropysicsAngularCoordinate
 from objs import gauss_image
 from objs import moffat_image
 from objs import make_image
+from objs import composite_image
