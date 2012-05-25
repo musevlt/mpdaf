@@ -1,0 +1,242 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Python interface for euro3D convention &mdash; mpdaf.euro3D v1.0.1-dev documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.1-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="mpdaf.euro3D v1.0.1-dev documentation" href="index.html" />
+    <link rel="prev" title="Welcome to mpdaf.fusion documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to mpdaf.fusion documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">mpdaf.euro3D v1.0.1-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="python-interface-for-euro3d-convention">
+<h1>Python interface for euro3D convention<a class="headerlink" href="#python-interface-for-euro3d-convention" title="Permalink to this headline">¶</a></h1>
+<p>The Euro3D Research Training Network introduces a common data format for Integral Field Spectroscopy.
+euro3D package contains Euro3D conventions about :</p>
+<blockquote>
+<div><ul class="simple">
+<li>the pixel data quality</li>
+</ul>
+</div></blockquote>
+<div class="section" id="data-quality-dq-pixel-dictionary">
+<h2>Data quality : DQ_PIXEL dictionary<a class="headerlink" href="#data-quality-dq-pixel-dictionary" title="Permalink to this headline">¶</a></h2>
+<p>The data quality is used to set a data quality flag for each pixel.
+It serves two purposes:</p>
+<blockquote>
+<div><ul class="simple">
+<li>to mask out pixels that do not contain any data (e.g. in the case that not all spectra span the same wavelength range)</li>
+<li>to flag any pixel affected by one or more anomalies (such as detector flaws, cosmic ray hits, ...).</li>
+</ul>
+</div></blockquote>
+<p>The Euro3D format links a condition to a bit and to a flag value. The higher the value, the more severe is the problem.</p>
+<p>euro3D.DQ_PIXEL dictionary contains these condition:value pairs:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="9%" />
+<col width="4%" />
+<col width="70%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>Key in DQ_PIXEL</td>
+<td>Flag value</td>
+<td>Bit</td>
+<td>Quality condition</td>
+</tr>
+<tr><td>&#8216;Good&#8217;</td>
+<td>0</td>
+<td>0</td>
+<td>Good pixel - no flaw detected</td>
+</tr>
+<tr><td>&#8216;TelluricCorrected&#8217;</td>
+<td>1</td>
+<td>1</td>
+<td>Affected by telluric feature (corrected)</td>
+</tr>
+<tr><td>&#8216;TelluricUnCorrected&#8217;</td>
+<td>2</td>
+<td>2</td>
+<td>Affected by telluric feature (uncorrected)</td>
+</tr>
+<tr><td>&#8216;GhostStrayLight&#8217;</td>
+<td>4</td>
+<td>3</td>
+<td>Ghost/stray light at &gt; 10% intensity level</td>
+</tr>
+<tr><td>&#8216;ElectronicNoise&#8217;</td>
+<td>8</td>
+<td>4</td>
+<td>Electronic pickup noise</td>
+</tr>
+<tr><td>&#8216;CosmicRemoved&#8217;</td>
+<td>16</td>
+<td>5</td>
+<td>Cosmic ray (removed)</td>
+</tr>
+<tr><td>&#8216;CosmicUnCorrected&#8217;</td>
+<td>32</td>
+<td>6</td>
+<td>Cosmic ray (unremoved)</td>
+</tr>
+<tr><td>&#8216;LowQE&#8217;</td>
+<td>64</td>
+<td>7</td>
+<td>Low QE pixel (&lt; 20% of the average sensitivity; e.g. defective CCD coating, vignetting...)</td>
+</tr>
+<tr><td>&#8216;CalibrationFileDefect&#8217;</td>
+<td>128</td>
+<td>8</td>
+<td>Calibration file defect (if pixel is flagged in any calibration file)</td>
+</tr>
+<tr><td>&#8216;HotPixel&#8217;</td>
+<td>256</td>
+<td>9</td>
+<td>Hot pixel (&gt; 5 sigma median dark)</td>
+</tr>
+<tr><td>&#8216;Dark&#8217;</td>
+<td>512</td>
+<td>10</td>
+<td>Dark pixel (permanent CCD charge trap)</td>
+</tr>
+<tr><td>&#8216;Questionable&#8217;</td>
+<td>1024</td>
+<td>11</td>
+<td>Questionable pixel (lying above a charge trap which may have affected it)</td>
+</tr>
+<tr><td>&#8216;WellSaturation&#8217;</td>
+<td>2048</td>
+<td>12</td>
+<td>Detector potential well saturation (signal irrecoverable, but known to exceed the max. e-number)</td>
+</tr>
+<tr><td>&#8216;ADSaturation&#8217;</td>
+<td>4096</td>
+<td>13</td>
+<td>A/D converter saturation (signal irrecoverable, but known to exceed the A/D full scale signal)</td>
+</tr>
+<tr><td>&#8216;PermanentCameraDefect&#8217;</td>
+<td>8192</td>
+<td>14</td>
+<td>Permanent camera defect (such as blocked columns, dead pixels)</td>
+</tr>
+<tr><td>&#8216;BadOther&#8217;</td>
+<td>16384</td>
+<td>15</td>
+<td>Bad pixel not fitting into any other category</td>
+</tr>
+<tr><td>&#8216;MissingData&#8217;</td>
+<td>230</td>
+<td>31</td>
+<td>Missing data (pixel was lost)</td>
+</tr>
+<tr><td>&#8216;OutsideDataRange&#8217;</td>
+<td>231</td>
+<td>32</td>
+<td>Outside data range (outside of spectral range, inactive detector area, mosaic gap, ...)</td>
+</tr>
+</tbody>
+</table>
+<p>Since each condition is linked to a bit, several simultaneous conditions can be directly expressed as the sum of all corresponding flag values.
+Example: a pixel with calibration defects, known as a hot pixel and saturated would have a flag value of 128 + 256 + 4096 = 4480:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf</span> <span class="kn">import</span> <span class="n">euro3D</span>
+<span class="n">flag</span> <span class="o">=</span> <span class="n">euro3D</span><span class="o">.</span><span class="n">DQ_PIXEL</span><span class="p">[</span><span class="s">&#39;CalibrationFileDefect&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">euro3D</span><span class="o">.</span><span class="n">DQ_PIXEL</span><span class="p">[</span><span class="s">&#39;HotPixel&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">euro3D</span><span class="o">.</span><span class="n">DQ_PIXEL</span><span class="p">[</span><span class="s">&#39;ADSaturation&#39;</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">flag</span> <span class="c">#4480</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo_mpdaf_small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Python interface for euro3D convention</a><ul>
+<li><a class="reference internal" href="#data-quality-dq-pixel-dictionary">Data quality : DQ_PIXEL dictionary</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to mpdaf.fusion documentation!</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/euro3D.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to mpdaf.fusion documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">mpdaf.euro3D v1.0.1-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, L. Piqueras.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
