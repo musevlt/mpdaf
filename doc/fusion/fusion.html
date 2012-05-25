@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Python interface for fusion software &mdash; mpdaf.drs v1.0.1-dev documentation</title>
+    <title>Python interface for fusion software &mdash; mpdaf.fusion v1.0.1-dev documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="mpdaf.drs v1.0.1-dev documentation" href="index.html" />
+    <link rel="top" title="mpdaf.fusion v1.0.1-dev documentation" href="index.html" />
     <link rel="prev" title="Welcome to mpdaf.fusion documentation!" href="index.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="index.html" title="Welcome to mpdaf.fusion documentation!"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">mpdaf.drs v1.0.1-dev documentation</a> &raquo;</li> 
+        <li><a href="index.html">mpdaf.fusion v1.0.1-dev documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -72,15 +72,33 @@ Fusion package lets the user to easily manage fusion software :</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>origin_x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Origin of the x-axis sampling grid (in arcsec). If None, initializes with the maximum xpos value of all pixtables.</li>
-<li><strong>delta_x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Step between two consecutive samples of the x-axis (in arcsec). Default value is -0.2.</li>
-<li><strong>size_x</strong> (<em>integer</em>) &#8211; Number of samples on the x-axis grid. If None, initializes to cover xpos range of all pixtables.</li>
-<li><strong>origin_y</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Origin of the y-axis sampling grid (in arcsec). If None, initializes with the minimum ypos value of all pixtables.</li>
-<li><strong>delta_y</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Step between two consecutive samples of the y-axis (in arcsec). Default value is 0.2.</li>
-<li><strong>size_y</strong> (<em>integer</em>) &#8211; Number of samples on the y-axis grid. If None, initializes to cover ypos range of all pixtables.</li>
-<li><strong>origin_l</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Origin of the lambda-axis sampling grid (in nm). If None, initializes with the minimum lambda value of all pixtables.</li>
-<li><strong>delta_l</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Step between two consecutive samples of the lambda-axis (in nm). Default value is 0.125.</li>
-<li><strong>size_l</strong> (<em>integer</em>) &#8211; Number of samples on the lambda-axis grid. If None, initializes to cover lambda range of all pixtables.</li>
+<li><strong>origin_x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Origin of the x-axis sampling grid (in arcsec).</p>
+<p>If None, initializes with the maximum xpos value of all pixtables.</p>
+</li>
+<li><strong>delta_x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Step between two consecutive samples of the x-axis (in arcsec).</p>
+<p>Default value is -0.2.</p>
+</li>
+<li><strong>size_x</strong> (<em>integer</em>) &#8211; <p>Number of samples on the x-axis grid.</p>
+<p>If None, initializes to cover xpos range of all pixtables.</p>
+</li>
+<li><strong>origin_y</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Origin of the y-axis sampling grid (in arcsec).</p>
+<p>If None, initializes with the minimum ypos value of all pixtables.</p>
+</li>
+<li><strong>delta_y</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Step between two consecutive samples of the y-axis (in arcsec).</p>
+<p>Default value is 0.2.</p>
+</li>
+<li><strong>size_y</strong> (<em>integer</em>) &#8211; <p>Number of samples on the y-axis grid.</p>
+<p>If None, initializes to cover ypos range of all pixtables.</p>
+</li>
+<li><strong>origin_l</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Origin of the lambda-axis sampling grid (in nm).</p>
+<p>If None, initializes with the minimum lambda value of all pixtables.</p>
+</li>
+<li><strong>delta_l</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Step between two consecutive samples of the lambda-axis (in nm).</p>
+<p>Default value is 0.125.</p>
+</li>
+<li><strong>size_l</strong> (<em>integer</em>) &#8211; <p>Number of samples on the lambda-axis grid.</p>
+<p>If None, initializes to cover lambda range of all pixtables.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -148,13 +166,27 @@ Fusion package lets the user to easily manage fusion software :</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>compute_initialization</strong> (<em>boolean</em>) &#8211; If true, the initialization image is computed (and overwritten if already existing) and saved before fusing observations. Otherwise, the image specified by the keyword &#8220;L_init&#8221; is loaded and used as an initialization image. WARNING: THE INITIALIZATION IMAGE SHOULD BE RE-COMPUTED WHENEVER THE MODEL SAMPLING CHANGES</li>
-<li><strong>L_init</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Output B-spline coefficients image used to initialize the fusion pipeline. If the provided path does not exist, it is automatically created. If &#8220;compute_initialization = TRUE&#8221; the initialization image is computed and saved (overwritten if already existing) before fusing observations. If &#8220;compute_initialization = FALSE&#8221; the specified image is loaded and acts as an initialization image. If undefined values are present within the initialization image (either loaded or computed), they are automatically filled with the mean of the cube. In addition, if compute_initialization was TRUE, the saved image will be the updated one.</li>
+<li><strong>compute_initialization</strong> (<em>boolean</em>) &#8211; <p>If true, the initialization image is computed (and overwritten if already existing) and saved before fusing observations.</p>
+<p>Otherwise, the image specified by the keyword &#8220;L_init&#8221; is loaded and used as an initialization image.</p>
+<p>WARNING: THE INITIALIZATION IMAGE SHOULD BE RE-COMPUTED WHENEVER THE MODEL SAMPLING CHANGES</p>
+</li>
+<li><strong>L_init</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; <p>Output B-spline coefficients image used to initialize the fusion pipeline.</p>
+<p>If the provided path does not exist, it is automatically created.</p>
+<p>If &#8220;compute_initialization = TRUE&#8221; the initialization image is computed and saved (overwritten if already existing) before fusing observations.</p>
+<p>If &#8220;compute_initialization = FALSE&#8221; the specified image is loaded and acts as an initialization image.</p>
+<p>If undefined values are present within the initialization image (either loaded or computed), they are automatically filled with the mean of the cube.</p>
+<p>In addition, if compute_initialization was TRUE, the saved image will be the updated one.</p>
+</li>
 <li><strong>epsilon</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Stop criterion for the conjugate gradient algorithm.</li>
 <li><strong>max_gradient_iteration</strong> (<em>integer</em>) &#8211; Maximum number of iterations for the conjugate gradient algorithm.</li>
-<li><strong>save_L_iteration</strong> (<em>boolean</em>) &#8211; If true, the B-spline coefficient image L is saved for each iteration of the conjugate gradient algorithm in the directory specified by the keyword &#8220;temp_results&#8221;. Output filenames are built as follows: &#8220;L_x.fits&#8221; where x is the iteration index.</li>
-<li><strong>save_X_iteration</strong> (<em>boolean</em>) &#8211; If true, the fused image X is saved for each iteration of the conjugate gradient algorithm in the directory specified by the keyword &#8220;temp_results&#8221;. Output filenames are built as follows: &#8220;X_x.fits&#8221; where x is the iteration index.</li>
-<li><strong>compute_criterion</strong> (<em>boolean</em>) &#8211; If true, the minimized criterion is computed (in a single thread) and displayed at each iteration (optional parameter). This computation must only be used for debugging purposes as its computation is slow and requires only MUSE observations as well as a smoothness prior.</li>
+<li><strong>save_L_iteration</strong> (<em>boolean</em>) &#8211; If true, the B-spline coefficient image L is saved for each iteration of the conjugate gradient algorithm in the directory specified by the keyword &#8220;temp_results&#8221;.
+Output filenames are built as follows: &#8220;L_x.fits&#8221; where x is the iteration index.</li>
+<li><strong>save_X_iteration</strong> (<em>boolean</em>) &#8211; <p>If true, the fused image X is saved for each iteration of the conjugate gradient algorithm in the directory specified by the keyword &#8220;temp_results&#8221;.</p>
+<p>Output filenames are built as follows: &#8220;X_x.fits&#8221; where x is the iteration index.</p>
+</li>
+<li><strong>compute_criterion</strong> (<em>boolean</em>) &#8211; <p>If true, the minimized criterion is computed (in a single thread) and displayed at each iteration (optional parameter).</p>
+<p>This computation must only be used for debugging purposes as its computation is slow and requires only MUSE observations as well as a smoothness prior.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -227,9 +259,15 @@ This computation must only be used for debugging purposes as its computation is 
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; This type describes the prior model used during the conjugate gradient algorithm. The default value &#8220;PRIOR_V1&#8221; type corresponds to the prior model defined in the STAMET paper (smoothness quadratic prior).</li>
-<li><strong>omega_xy</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Hyper-parameter weighting the spatial part of the quadratic prior. The default value is 5.5e-004.</li>
-<li><strong>omega_lambda</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Hyper-parameter weighting the spectral part of the quadratic prior. The default value is 5.5e-004.</li>
+<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; <p>This type describes the prior model used during the conjugate gradient algorithm.</p>
+<p>The default value &#8220;PRIOR_V1&#8221; type corresponds to the prior model defined in the STAMET paper (smoothness quadratic prior).</p>
+</li>
+<li><strong>omega_xy</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Hyper-parameter weighting the spatial part of the quadratic prior.</p>
+<p>The default value is 5.5e-004.</p>
+</li>
+<li><strong>omega_lambda</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Hyper-parameter weighting the spectral part of the quadratic prior.</p>
+<p>The default value is 5.5e-004.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -273,13 +311,28 @@ This computation must only be used for debugging purposes as its computation is 
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>percentage</strong> (<em>float value in ]0,1]</em>) &#8211; Percentage of the maximum LSF value from which coefficients are ignored. The default value is 0.01.</li>
-<li><strong>spectral_step</strong> (<em>Float value &gt; 0, in nm</em>) &#8211; Spectral step for the LSF pre-sampling. LSF should not be undersampled to prevent resampling errors. The default value is 0.125.</li>
-<li><strong>origin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Origin of the sampling of the spectral axis used to obtain each LSF (in nm). If None, equal to the origin of the reconstruction/fusion space.</li>
-<li><strong>delta</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Step between two consecutive samples on the spectral axis used to obtain each LSF (in nm). If None, equal to the delta of the reconstruction/fusion space.</li>
-<li><strong>size</strong> (<em>integer</em>) &#8211; Number of samples on the spectral axis used to obtain each LSF. If None, equal to the size of the reconstruction/fusion space.</li>
-<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; This type describes the model used to generate LSF associated to each model space location. The default &#8220;LSF_V1&#8221; type corresponds to the LSF model provided by the first fusion data package (17/03/11)</li>
-<li><strong>file</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Path of the fits file describing the parameterization of the LSF according to IFU and slice indexes (for the &#8220;LSF_V1&#8221; model)). Format: table fits file (columns: IFU, SLICE,b0 b1 c0 c1 c2 c3 c4 c5).</li>
+<li><strong>percentage</strong> (<em>float value in ]0,1]</em>) &#8211; <p>Percentage of the maximum LSF value from which coefficients are ignored.</p>
+<p>The default value is 0.01.</p>
+</li>
+<li><strong>spectral_step</strong> (<em>Float value &gt; 0, in nm</em>) &#8211; <p>Spectral step for the LSF pre-sampling.</p>
+<p>LSF should not be undersampled to prevent resampling errors.</p>
+<p>The default value is 0.125.</p>
+</li>
+<li><strong>origin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Origin of the sampling of the spectral axis used to obtain each LSF (in nm).</p>
+<p>If None, equal to the origin of the reconstruction/fusion space.</p>
+</li>
+<li><strong>delta</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Step between two consecutive samples on the spectral axis used to obtain each LSF (in nm).</p>
+<p>If None, equal to the delta of the reconstruction/fusion space.</p>
+</li>
+<li><strong>size</strong> (<em>integer</em>) &#8211; <p>Number of samples on the spectral axis used to obtain each LSF.</p>
+<p>If None, equal to the size of the reconstruction/fusion space.</p>
+</li>
+<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; <p>This type describes the model used to generate LSF associated to each model space location.</p>
+<p>The default &#8220;LSF_V1&#8221; type corresponds to the LSF model provided by the first fusion data package (17/03/11)</p>
+</li>
+<li><strong>file</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; <p>Path of the fits file describing the parameterization of the LSF according to IFU and slice indexes (for the &#8220;LSF_V1&#8221; model)).</p>
+<p>Format: table fits file (columns: IFU, SLICE,b0 b1 c0 c1 c2 c3 c4 c5).</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -339,14 +392,30 @@ This computation must only be used for debugging purposes as its computation is 
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>percentage</strong> (<em>float value in ]0,1]</em>) &#8211; Percentage of the maximum FSF value from which coefficients are ignored. The default value is 0.01.</li>
-<li><strong>spatial_step</strong> (<em>float value &gt; 0, in arcsec</em>) &#8211; Spatial step for the FSF pre-sampling. FSF should not be undersampled to prevent resampling errors. The default value is 0.2.</li>
-<li><strong>origin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Origin of the sampling of the spectral axis used to obtain each FSF (in nm).If None, initializes with the minimum lambda value of the corresponding pixtable.</li>
-<li><strong>delta</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Step between two consecutive samples on the spectral axis used to obtain each FSF. Default value is 0.125.</li>
-<li><strong>size</strong> (<em>integer</em>) &#8211; Number of samples on the spectral axis used to obtain each FSF. If None, initializes to cover the wavelength range of the corresponding pixtable.</li>
-<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; This type describes the model used to generate FSF associated to each model space location. The default &#8220;FSF_V1&#8221; type corresponds to the FSF model provided by the first fusion data package (17/03/11).</li>
-<li><strong>seeing</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Seeing (in arcsec). If None, initializes with the HIERARCH FSF SEEING keyword value of the corresponding pixtable.</li>
-<li><strong>airmass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Airmass. If None, initializes with the HIERARCH FSF AIRMASS keyword value of the corresponding pixtable.</li>
+<li><strong>percentage</strong> (<em>float value in ]0,1]</em>) &#8211; <p>Percentage of the maximum FSF value from which coefficients are ignored.</p>
+<p>The default value is 0.01.</p>
+</li>
+<li><strong>spatial_step</strong> (<em>float value &gt; 0, in arcsec</em>) &#8211; <p>Spatial step for the FSF pre-sampling.</p>
+<p>FSF should not be undersampled to prevent resampling errors.</p>
+<p>The default value is 0.2.</p>
+</li>
+<li><strong>origin</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Origin of the sampling of the spectral axis used to obtain each FSF (in nm).</p>
+<p>If None, initializes with the minimum lambda value of the corresponding pixtable.</p>
+</li>
+<li><strong>delta</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Step between two consecutive samples on the spectral axis used to obtain each FSF.</p>
+<p>Default value is 0.125.</p>
+</li>
+<li><strong>size</strong> (<em>integer</em>) &#8211; Number of samples on the spectral axis used to obtain each FSF.
+If None, initializes to cover the wavelength range of the corresponding pixtable.</li>
+<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; <p>This type describes the model used to generate FSF associated to each model space location.</p>
+<p>The default &#8220;FSF_V1&#8221; type corresponds to the FSF model provided by the first fusion data package (17/03/11).</p>
+</li>
+<li><strong>seeing</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Seeing (in arcsec).</p>
+<p>If None, initializes with the HIERARCH FSF SEEING keyword value of the corresponding pixtable.</p>
+</li>
+<li><strong>airmass</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; <p>Airmass.</p>
+<p>If None, initializes with the HIERARCH FSF AIRMASS keyword value of the corresponding pixtable.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -403,23 +472,20 @@ This computation must only be used for debugging purposes as its computation is 
 </table>
 </div>
 </div>
-<div class="section" id="observation-class">
-<h2>Observation class<a class="headerlink" href="#observation-class" title="Permalink to this headline">¶</a></h2>
-<p>This class stores all parameter about an observation.</p>
+<div class="section" id="variance-class">
+<h2>Variance class<a class="headerlink" href="#variance-class" title="Permalink to this headline">¶</a></h2>
+<p>This class stores all parameters related to the variance estimation.</p>
 <dl class="class">
-<dt id="fusion.Observation">
-<em class="property">class </em><tt class="descclassname">fusion.</tt><tt class="descname">Observation</tt><big>(</big><em>pixtable</em><span class="optional">[</span>, <em>type = &quot;MUSE_V1&quot;</em>, <em>to_arcsec = 3600.</em>, <em>to_nm = 0.1</em>, <em>dq_threshold = 0</em>, <em>FSF = None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#fusion.Observation" title="Permalink to this definition">¶</a></dt>
+<dt id="fusion.Variance">
+<em class="property">class </em><tt class="descclassname">fusion.</tt><tt class="descname">Variance</tt><big>(</big><span class="optional">[</span><em>V_x=7</em>, <em>V_y=7</em>, <em>V_lambda=3</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#fusion.Variance" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>pixtable</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Pixtable filename associated to the observation.</li>
-<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; The type of an observation is used to make the difference between different formats, instruments... The default &#8220;MUSE_V1&#8221; type corresponds to a MUSE raw observation as provided by the first fusion data package (17/03/11).</li>
-<li><strong>to_arcsec</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Conversion factor between spatial unit in the pixtable and arcsec.</li>
-<li><strong>to_nm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Conversion factor between spectral unit in the pixtable and nm.</li>
-<li><strong>dq_threshold</strong> (<em>integer</em>) &#8211; Data quality flag binary mask to determine whether a pixel must be taken into account in the pixtable or not (4-byte unsigned integer value &gt; 0). For instance, if the pixel must be taken into account even if it is an uncorrected cosmic ray (32) or a hot pixel (256),the mask must be set to (32 + 256). Thus, setting the mask to 0 is equivalent to accept the pixel only if its quality flag is 0 and setting it to (2^32-1) will accept it no matter its flag value.</li>
-<li><strong>FSF</strong> (<em>FSFModel</em>) &#8211; Object containing the FSF model.</li>
+<li><strong>V_x</strong> (<em>odd integer in [1,255]</em>) &#8211; Define the size along the x-axis of the 3D window in which inverse covariance values are taken into account.</li>
+<li><strong>V_y</strong> (<em>odd integer in [1,255]</em>) &#8211; Define the size along the y-axis of the 3D window in which inverse covariance values are taken into account.</li>
+<li><strong>V_lambda</strong> (<em>odd integer in [1,255]</em>) &#8211; Define the size along the lambda-axis of the 3D window in which inverse covariance values are taken into account.</li>
 </ul>
 </td>
 </tr>
@@ -429,6 +495,59 @@ This computation must only be used for debugging purposes as its computation is 
 
 <div class="section" id="id5">
 <h3>Attributes<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="8%" />
+<col width="6%" />
+<col width="87%" />
+</colgroup>
+<tbody valign="top">
+<tr><td>local_neighborhood</td>
+<td>integer array</td>
+<td>3D local neighborhood [V_x, V_y, V_lambda] taken into account for variance estimation . These values define the size of the 3D window, centered on each model space pixel, in which inverse covariance values are taken into account.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="observation-class">
+<h2>Observation class<a class="headerlink" href="#observation-class" title="Permalink to this headline">¶</a></h2>
+<p>This class stores all parameter about an observation.</p>
+<dl class="class">
+<dt id="fusion.Observation">
+<em class="property">class </em><tt class="descclassname">fusion.</tt><tt class="descname">Observation</tt><big>(</big><em>pixtable</em><span class="optional">[</span>, <em>type = &quot;MUSE_V1&quot;</em>, <em>to_arcsec = 3600.</em>, <em>to_nm = 0.1</em>, <em>dq_mask = 0</em>, <em>FSF = None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#fusion.Observation" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pixtable</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Pixtable filename associated to the observation.</li>
+<li><strong>type</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; <p>The type of an observation is used to make the difference between different formats, instruments...</p>
+<p>The default &#8220;MUSE_V1&#8221; type corresponds to a MUSE raw observation as provided by the first fusion data package (17/03/11).</p>
+</li>
+<li><strong>to_arcsec</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Conversion factor between spatial unit in the pixtable and arcsec.</li>
+<li><strong>to_nm</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Conversion factor between spectral unit in the pixtable and nm.</li>
+<li><strong>dq_mask</strong> (<em>4-byte unsigned integer value &gt; 0</em>) &#8211; <p>Data quality flag binary mask to determine whether a pixel must be taken into account in the pixtable or not.</p>
+<p>Euro3D convention is used. euro3D.DQ-PIXEL dictionary can be used (<a class="reference external" href="http://urania1.univ-lyon1.fr/mpdaf/chrome/site/DocCoreLib/euro3D/euro3D.html">euro3D package</a>)</p>
+<p>Default value is 0 (only good pixels (no flaw detected) are taken into account).</p>
+</li>
+<li><strong>FSF</strong> (<em>FSFModel</em>) &#8211; Object containing the FSF model.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf</span> <span class="kn">import</span> <span class="n">fusion</span>
+<span class="kn">from</span> <span class="nn">mpdaf</span> <span class="kn">import</span> <span class="n">euro3D</span>
+<span class="c"># new observation that take into account low QE pixels.</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">fusion</span><span class="o">.</span><span class="n">Observation</span><span class="p">(</span><span class="s">&#39;pixtable.fits&#39;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s">&quot;MUSE_V1&quot;</span><span class="p">,</span> <span class="n">dq_mask</span> <span class="o">=</span> <span class="n">euro3D</span><span class="o">.</span><span class="n">DQ_PIXEL</span><span class="p">[</span><span class="s">&#39;LowQE&#39;</span> <span class="p">])</span>
+</pre></div>
+</div>
+<div class="section" id="id6">
+<h3>Attributes<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
 <table border="1" class="docutils">
 <colgroup>
 <col width="10%" />
@@ -452,7 +571,7 @@ This computation must only be used for debugging purposes as its computation is 
 <td>float</td>
 <td>Conversion factor between spectral unit in the pixtable and nm.</td>
 </tr>
-<tr><td>dq_threshold</td>
+<tr><td>dq_mask</td>
 <td>integer</td>
 <td>Data quality flag binary mask to determine whether a pixel must be taken into account in the pixtable or not.</td>
 </tr>
@@ -469,19 +588,26 @@ This computation must only be used for debugging purposes as its computation is 
 <p>This class interfaces the fusion software.</p>
 <dl class="class">
 <dt id="fusion.Fusion">
-<em class="property">class </em><tt class="descclassname">fusion.</tt><tt class="descname">Fusion</tt><big>(</big><span class="optional">[</span><em>obs = None</em>, <em>pixtables=None</em>, <em>output='./output_fusion'</em>, <em>sampling = None</em>, <em>algo = None</em>, <em>prior = None</em>, <em>LSF = None)</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#fusion.Fusion" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">fusion.</tt><tt class="descname">Fusion</tt><big>(</big><span class="optional">[</span><em>obs = None</em>, <em>pixtables=None</em>, <em>output='./output_fusion'</em>, <em>sampling = None</em>, <em>algo = None</em>, <em>prior = None</em>, <em>LSF = None</em>, <em>variance = None)</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#fusion.Fusion" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>obs</strong> (<em>list of Observation objects</em>) &#8211; List of Observation objects associated to the observations. If None, pixtables parameter is used.</li>
-<li><strong>pixtables</strong> (<em>list of strings</em>) &#8211; List of pixtable filenames corresponding to the observations. Used to create a list of observations with default parameters.</li>
-<li><strong>output</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Output path where the fusion outputs are stored. If the provided path does not exist, it is automatically created and the directory is overwritten if already existing.</li>
+<li><strong>obs</strong> (<em>list of Observation objects</em>) &#8211; <p>List of Observation objects associated to the observations.</p>
+<p>If None, pixtables parameter is used.</p>
+</li>
+<li><strong>pixtables</strong> (<em>list of strings</em>) &#8211; <p>List of pixtable filenames corresponding to the observations.</p>
+<p>Used to create a list of observations with default parameters.</p>
+</li>
+<li><strong>output</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; <p>Output path where the fusion outputs are stored.</p>
+<p>If the provided path does not exist, it is automatically created and the directory is overwritten if already existing.</p>
+</li>
 <li><strong>sampling</strong> (<em>HyperFSampling</em>) &#8211; Object containing the keywords related to the fusion model sampling (i.e. the sampling of the reconstruction/fusion space).</li>
 <li><strong>algo</strong> (<em>HyperFAlgo</em>) &#8211; Object containing the keywords related to the fusion algorithm.</li>
 <li><strong>prior</strong> (<em>HyperFPrior</em>) &#8211; Object containing the keywords related to the quadratic prior model used during fusion estimation algorithms.</li>
 <li><strong>LSF</strong> (<em>LSFModel</em>) &#8211; Object containing the keywords related to the LSF model.</li>
+<li><strong>variance</strong> (<em>Variance</em>) &#8211; Object containing parameters used to estimate variance.</li>
 </ul>
 </td>
 </tr>
@@ -489,8 +615,8 @@ This computation must only be used for debugging purposes as its computation is 
 </table>
 </dd></dl>
 
-<div class="section" id="id6">
-<h3>Attributes<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id7">
+<h3>Attributes<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <table border="1" class="docutils">
 <colgroup>
 <col width="8%" />
@@ -522,6 +648,10 @@ This computation must only be used for debugging purposes as its computation is 
 <td>LSFModel</td>
 <td>Object containing the LSF model.</td>
 </tr>
+<tr><td>variance</td>
+<td>Variance</td>
+<td>Object containing parameters used to estimate variance.</td>
+</tr>
 <tr><td>save</td>
 <td>string</td>
 <td>Path of the file that stores all session parameters.</td>
@@ -552,8 +682,12 @@ This computation must only be used for debugging purposes as its computation is 
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>thread_number</strong> (<em>integer</em>) &#8211; Number of threads used during the fusion. If the value is 0, the number of threads is equal to the number of CPUs.</li>
-<li><strong>debug</strong> (<em>boolean</em>) &#8211; If True, fusion will produce lots of console outputs (for debugging purposes), False will generate less outputs.</li>
+<li><strong>thread_number</strong> (<em>integer</em>) &#8211; <p>Number of threads used during the fusion.</p>
+<p>If the value is 0, the number of threads is equal to the number of CPUs.</p>
+</li>
+<li><strong>debug</strong> (<em>boolean</em>) &#8211; <p>If True, fusion will produce lots of console outputs (for debugging purposes)</p>
+<p>If False, fusion will generate less outputs.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -634,10 +768,13 @@ This computation must only be used for debugging purposes as its computation is 
 <h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <p>Example of fusion of MUSE observations using all default parameters:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">mpdaf</span> <span class="kn">import</span> <span class="n">fusion</span>
+<span class="kn">from</span> <span class="nn">mpdaf</span> <span class="kn">import</span> <span class="n">euro3D</span>
 <span class="c"># lists of observations</span>
 <span class="n">pixtabs</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;pixtable1.fits&quot;</span><span class="p">,</span> <span class="s">&quot;pixtable2.fits&quot;</span><span class="p">,</span> <span class="s">&quot;pixtable3.fits&quot;</span><span class="p">,</span> <span class="s">&quot;pixtable4.fits&quot;</span><span class="p">,</span> <span class="s">&quot;pixtable5.fits&quot;</span><span class="p">]</span>
 <span class="c"># creation of the Fusion object</span>
 <span class="n">fus</span> <span class="o">=</span> <span class="n">fusion</span><span class="o">.</span><span class="n">Fusion</span><span class="p">(</span><span class="n">pixtables</span><span class="o">=</span><span class="n">pixtabs</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s">&quot;test&quot;</span><span class="p">)</span>
+<span class="c"># change data quality mask of the first observation</span>
+<span class="n">fus</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dq_mask</span> <span class="o">=</span> <span class="n">euro3D</span><span class="o">.</span><span class="n">DQ_PIXEL</span><span class="p">[</span><span class="s">&#39;CosmicUnCorrected&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">euro3D</span><span class="o">.</span><span class="n">DQ_PIXEL</span><span class="p">[</span><span class="s">&#39;HotPixel&#39;</span><span class="p">]</span>
 <span class="c"># fusion configuration file (test/fusion.cfg)</span>
 <span class="n">fus</span><span class="o">.</span><span class="n">create_config_file</span><span class="p">()</span>
 <span class="c"># launch fusion code</span>
@@ -682,12 +819,16 @@ This computation must only be used for debugging purposes as its computation is 
 <li><a class="reference internal" href="#id4">Attributes</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#observation-class">Observation class</a><ul>
+<li><a class="reference internal" href="#variance-class">Variance class</a><ul>
 <li><a class="reference internal" href="#id5">Attributes</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#fusion-class">Fusion class</a><ul>
+<li><a class="reference internal" href="#observation-class">Observation class</a><ul>
 <li><a class="reference internal" href="#id6">Attributes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#fusion-class">Fusion class</a><ul>
+<li><a class="reference internal" href="#id7">Attributes</a></li>
 <li><a class="reference internal" href="#methods">Methods</a></li>
 </ul>
 </li>
@@ -730,7 +871,7 @@ This computation must only be used for debugging purposes as its computation is 
         <li class="right" >
           <a href="index.html" title="Welcome to mpdaf.fusion documentation!"
              >previous</a> |</li>
-        <li><a href="index.html">mpdaf.drs v1.0.1-dev documentation</a> &raquo;</li> 
+        <li><a href="index.html">mpdaf.fusion v1.0.1-dev documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

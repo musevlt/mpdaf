@@ -24,23 +24,41 @@ This class configures the model sampling, i.e. the sampling of the reconstructio
 
 .. class:: fusion.HyperFSampling([origin_x = None, delta_x = -0.2, size_x = None, origin_y = None, delta_y = 0.2, size_y = None, origin_l = None, delta_l = 0.125, size_l = None)
 
-  :param origin_x: Origin of the x-axis sampling grid (in arcsec). If None, initializes with the maximum xpos value of all pixtables.
+  :param origin_x: Origin of the x-axis sampling grid (in arcsec).
+  
+		   If None, initializes with the maximum xpos value of all pixtables.
   :type origin_x: float
-  :param delta_x: Step between two consecutive samples of the x-axis (in arcsec). Default value is -0.2.
+  :param delta_x: Step between two consecutive samples of the x-axis (in arcsec).
+		  
+		  Default value is -0.2.
   :type delta_x: float
-  :param size_x: Number of samples on the x-axis grid. If None, initializes to cover xpos range of all pixtables.
+  :param size_x: Number of samples on the x-axis grid.
+  
+		 If None, initializes to cover xpos range of all pixtables.
   :type size_x: integer
-  :param origin_y: Origin of the y-axis sampling grid (in arcsec). If None, initializes with the minimum ypos value of all pixtables.
+  :param origin_y: Origin of the y-axis sampling grid (in arcsec).
+  
+		   If None, initializes with the minimum ypos value of all pixtables.
   :type origin_y: float
-  :param delta_y: Step between two consecutive samples of the y-axis (in arcsec). Default value is 0.2.
+  :param delta_y: Step between two consecutive samples of the y-axis (in arcsec).
+  
+		  Default value is 0.2.
   :type delta_y: float
-  :param size_y: Number of samples on the y-axis grid. If None, initializes to cover ypos range of all pixtables.
+  :param size_y: Number of samples on the y-axis grid.
+  
+		 If None, initializes to cover ypos range of all pixtables.
   :type size_y: integer
-  :param origin_l: Origin of the lambda-axis sampling grid (in nm). If None, initializes with the minimum lambda value of all pixtables.
+  :param origin_l: Origin of the lambda-axis sampling grid (in nm).
+  
+		   If None, initializes with the minimum lambda value of all pixtables.
   :type origin_l: float
-  :param delta_l: Step between two consecutive samples of the lambda-axis (in nm). Default value is 0.125.
+  :param delta_l: Step between two consecutive samples of the lambda-axis (in nm).
+  
+		  Default value is 0.125.
   :type delta_l: float
-  :param size_l: Number of samples on the lambda-axis grid. If None, initializes to cover lambda range of all pixtables.
+  :param size_l: Number of samples on the lambda-axis grid.
+  
+		 If None, initializes to cover lambda range of all pixtables.
   :type size_l: integer
 
 Attributes
@@ -72,19 +90,38 @@ This class configures the fusion algorithm.
 
 .. class:: fusion.HyperFAlgo([compute_initialization = True, L_init = "", epsilon = 0.01, max_gradient_iteration = 50, save_L_iteration = True, save_X_iteration = True, compute_criterion = False])
 
-  :param compute_initialization: If true, the initialization image is computed (and overwritten if already existing) and saved before fusing observations. Otherwise, the image specified by the keyword "L_init" is loaded and used as an initialization image. WARNING: THE INITIALIZATION IMAGE SHOULD BE RE-COMPUTED WHENEVER THE MODEL SAMPLING CHANGES
+  :param compute_initialization: If true, the initialization image is computed (and overwritten if already existing) and saved before fusing observations.
+				 
+				 Otherwise, the image specified by the keyword "L_init" is loaded and used as an initialization image.
+				 
+				 WARNING: THE INITIALIZATION IMAGE SHOULD BE RE-COMPUTED WHENEVER THE MODEL SAMPLING CHANGES
   :type compute_initialization: boolean
-  :param L_init: Output B-spline coefficients image used to initialize the fusion pipeline. If the provided path does not exist, it is automatically created. If "compute_initialization = TRUE" the initialization image is computed and saved (overwritten if already existing) before fusing observations. If "compute_initialization = FALSE" the specified image is loaded and acts as an initialization image. If undefined values are present within the initialization image (either loaded or computed), they are automatically filled with the mean of the cube. In addition, if compute_initialization was TRUE, the saved image will be the updated one.
+  :param L_init: Output B-spline coefficients image used to initialize the fusion pipeline.
+  
+		 If the provided path does not exist, it is automatically created.
+		 
+		 If "compute_initialization = TRUE" the initialization image is computed and saved (overwritten if already existing) before fusing observations.
+		 
+		 If "compute_initialization = FALSE" the specified image is loaded and acts as an initialization image.
+		 
+		 If undefined values are present within the initialization image (either loaded or computed), they are automatically filled with the mean of the cube.
+		 
+		 In addition, if compute_initialization was TRUE, the saved image will be the updated one.
   :type L_init: string 
   :param epsilon: Stop criterion for the conjugate gradient algorithm.
   :type epsilon: float
   :param max_gradient_iteration: Maximum number of iterations for the conjugate gradient algorithm.
   :type max_gradient_iteration: integer
-  :param save_L_iteration: If true, the B-spline coefficient image L is saved for each iteration of the conjugate gradient algorithm in the directory specified by the keyword "temp_results". Output filenames are built as follows: "L_x.fits" where x is the iteration index.
+  :param save_L_iteration: If true, the B-spline coefficient image L is saved for each iteration of the conjugate gradient algorithm in the directory specified by the keyword "temp_results".
+			   Output filenames are built as follows: "L_x.fits" where x is the iteration index.
   :type save_L_iteration: boolean
-  :param save_X_iteration: If true, the fused image X is saved for each iteration of the conjugate gradient algorithm in the directory specified by the keyword "temp_results". Output filenames are built as follows: "X_x.fits" where x is the iteration index.
+  :param save_X_iteration: If true, the fused image X is saved for each iteration of the conjugate gradient algorithm in the directory specified by the keyword "temp_results".
+  
+			   Output filenames are built as follows: "X_x.fits" where x is the iteration index.
   :type save_X_iteration: boolean
-  :param compute_criterion: If true, the minimized criterion is computed (in a single thread) and displayed at each iteration (optional parameter). This computation must only be used for debugging purposes as its computation is slow and requires only MUSE observations as well as a smoothness prior.
+  :param compute_criterion: If true, the minimized criterion is computed (in a single thread) and displayed at each iteration (optional parameter).
+  
+			    This computation must only be used for debugging purposes as its computation is slow and requires only MUSE observations as well as a smoothness prior.
   :type compute_criterion: boolean
   
 Attributes
@@ -126,11 +163,17 @@ This class configures the quadratic prior model used during fusion estimation al
 
 .. class:: fusion.HyperFPrior( [type = "PRIOR_V1", omega_xy = 5.5e-004, omega_lambda = 5.5e-004])
     
-  :param type: This type describes the prior model used during the conjugate gradient algorithm. The default value "PRIOR_V1" type corresponds to the prior model defined in the STAMET paper (smoothness quadratic prior).
+  :param type: This type describes the prior model used during the conjugate gradient algorithm.
+  
+	       The default value "PRIOR_V1" type corresponds to the prior model defined in the STAMET paper (smoothness quadratic prior).
   :type type: string
-  :param omega_xy: Hyper-parameter weighting the spatial part of the quadratic prior. The default value is 5.5e-004.
+  :param omega_xy: Hyper-parameter weighting the spatial part of the quadratic prior.
+  
+		   The default value is 5.5e-004.
   :type omega_xy: float
-  :param omega_lambda: Hyper-parameter weighting the spectral part of the quadratic prior. The default value is 5.5e-004.
+  :param omega_lambda: Hyper-parameter weighting the spectral part of the quadratic prior.
+  
+		       The default value is 5.5e-004.
   :type omega_lambda: float
   
 Attributes
@@ -151,19 +194,35 @@ This class configures LSF model used by fusion.
 
 .. class:: fusion.LSFModel([percentage = 0.01, spectral_step = 0.125, origin = None, delta = None, size = None, type = "LSF_V1", file = None])
 
-  :param percentage: Percentage of the maximum LSF value from which coefficients are ignored. The default value is 0.01.
+  :param percentage: Percentage of the maximum LSF value from which coefficients are ignored.
+  
+		     The default value is 0.01.
   :type percentage: float value in ]0,1]
-  :param spectral_step: Spectral step for the LSF pre-sampling. LSF should not be undersampled to prevent resampling errors. The default value is 0.125.
+  :param spectral_step: Spectral step for the LSF pre-sampling.
+  
+			LSF should not be undersampled to prevent resampling errors.
+			
+			The default value is 0.125.
   :type spectral_step: Float value > 0, in nm
-  :param origin: Origin of the sampling of the spectral axis used to obtain each LSF (in nm). If None, equal to the origin of the reconstruction/fusion space.
+  :param origin: Origin of the sampling of the spectral axis used to obtain each LSF (in nm).
+  
+		 If None, equal to the origin of the reconstruction/fusion space.
   :type origin: float
-  :param delta: Step between two consecutive samples on the spectral axis used to obtain each LSF (in nm). If None, equal to the delta of the reconstruction/fusion space.
+  :param delta: Step between two consecutive samples on the spectral axis used to obtain each LSF (in nm).
+  
+		If None, equal to the delta of the reconstruction/fusion space.
   :type delta: float
-  :param size: Number of samples on the spectral axis used to obtain each LSF. If None, equal to the size of the reconstruction/fusion space.
+  :param size: Number of samples on the spectral axis used to obtain each LSF.
+  
+		If None, equal to the size of the reconstruction/fusion space.
   :type size: integer
-  :param type: This type describes the model used to generate LSF associated to each model space location. The default "LSF_V1" type corresponds to the LSF model provided by the first fusion data package (17/03/11)
+  :param type: This type describes the model used to generate LSF associated to each model space location.
+  
+	       The default "LSF_V1" type corresponds to the LSF model provided by the first fusion data package (17/03/11)
   :type type: string
-  :param file: Path of the fits file describing the parameterization of the LSF according to IFU and slice indexes (for the "LSF_V1" model)). Format: table fits file (columns: IFU, SLICE,b0 b1 c0 c1 c2 c3 c4 c5).
+  :param file: Path of the fits file describing the parameterization of the LSF according to IFU and slice indexes (for the "LSF_V1" model)).
+    
+	       Format: table fits file (columns: IFU, SLICE,b0 b1 c0 c1 c2 c3 c4 c5).
   :type file: string
   
 Attributes
@@ -193,21 +252,38 @@ This class configures the FSF model for one observation. For each observation an
 
 .. class:: fusion.FSFModel([percentage = 0.01, spatial_step = 0.2, origin = None, delta = 0.125, size = None, type = "FSF_V1", seeing = None, airmass = None])
 
-  :param percentage: Percentage of the maximum FSF value from which coefficients are ignored. The default value is 0.01.
+  :param percentage: Percentage of the maximum FSF value from which coefficients are ignored.
+  
+		     The default value is 0.01.
   :type percentage: float value in ]0,1]
-  :param spatial_step: Spatial step for the FSF pre-sampling. FSF should not be undersampled to prevent resampling errors. The default value is 0.2.
+  :param spatial_step: Spatial step for the FSF pre-sampling.
+		       
+		       FSF should not be undersampled to prevent resampling errors.
+		       
+		       The default value is 0.2.
   :type spatial_step: float value > 0, in arcsec
-  :param origin: Origin of the sampling of the spectral axis used to obtain each FSF (in nm).If None, initializes with the minimum lambda value of the corresponding pixtable.
+  :param origin: Origin of the sampling of the spectral axis used to obtain each FSF (in nm).
+  
+		 If None, initializes with the minimum lambda value of the corresponding pixtable.
   :type origin: float
-  :param delta: Step between two consecutive samples on the spectral axis used to obtain each FSF. Default value is 0.125.
+  :param delta: Step between two consecutive samples on the spectral axis used to obtain each FSF.
+  
+		Default value is 0.125.
   :type delta: float
-  :param size: Number of samples on the spectral axis used to obtain each FSF. If None, initializes to cover the wavelength range of the corresponding pixtable.
+  :param size: Number of samples on the spectral axis used to obtain each FSF.
+	       If None, initializes to cover the wavelength range of the corresponding pixtable.
   :type size: integer
-  :param type: This type describes the model used to generate FSF associated to each model space location. The default "FSF_V1" type corresponds to the FSF model provided by the first fusion data package (17/03/11).
+  :param type: This type describes the model used to generate FSF associated to each model space location.
+  
+	       The default "FSF_V1" type corresponds to the FSF model provided by the first fusion data package (17/03/11).
   :type type: string
-  :param seeing: Seeing (in arcsec). If None, initializes with the HIERARCH FSF SEEING keyword value of the corresponding pixtable.
+  :param seeing: Seeing (in arcsec).
+		 
+		 If None, initializes with the HIERARCH FSF SEEING keyword value of the corresponding pixtable.
   :type seeing: float
-  :param airmass: Airmass. If None, initializes with the HIERARCH FSF AIRMASS keyword value of the corresponding pixtable.
+  :param airmass: Airmass.
+                  
+                  If None, initializes with the HIERARCH FSF AIRMASS keyword value of the corresponding pixtable.
   :type airmass: float
   
 Attributes
@@ -233,25 +309,61 @@ Attributes
 | offset       | array(2) | Offsets associated to the observation. Equal 0 (absolute positions in pixtable).            |
 +--------------+----------+---------------------------------------------------------------------------------------------+
 
+Variance class
+==============
+
+This class stores all parameters related to the variance estimation.
+
+.. class:: fusion.Variance([V_x=7, V_y=7, V_lambda=3])
+
+  :param V_x: Define the size along the x-axis of the 3D window in which inverse covariance values are taken into account.
+  :type V_x: odd integer in [1,255]
+  :param V_y: Define the size along the y-axis of the 3D window in which inverse covariance values are taken into account.
+  :type V_y: odd integer in [1,255]
+  :param V_lambda: Define the size along the lambda-axis of the 3D window in which inverse covariance values are taken into account.
+  :type V_lambda: odd integer in [1,255]
+  
+Attributes
+----------
+
++--------------------+---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| local_neighborhood | integer array | 3D local neighborhood [V_x, V_y, V_lambda] taken into account for variance estimation . These values define the size of the 3D window, centered on each model space pixel, in which inverse covariance values are taken into account.|
++--------------------+---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+    
+  
+
 Observation class
 =================
 
 This class stores all parameter about an observation.
 
-.. class:: fusion.Observation(pixtable[, type = "MUSE_V1", to_arcsec = 3600., to_nm = 0.1, dq_threshold = 0, FSF = None])
+.. class:: fusion.Observation(pixtable[, type = "MUSE_V1", to_arcsec = 3600., to_nm = 0.1, dq_mask = 0, FSF = None])
 
   :param pixtable: Pixtable filename associated to the observation.
   :type pixtable: string
-  :param type: The type of an observation is used to make the difference between different formats, instruments... The default "MUSE_V1" type corresponds to a MUSE raw observation as provided by the first fusion data package (17/03/11).
+  :param type: The type of an observation is used to make the difference between different formats, instruments...
+  
+               The default "MUSE_V1" type corresponds to a MUSE raw observation as provided by the first fusion data package (17/03/11).
   :type type: string
   :param to_arcsec: Conversion factor between spatial unit in the pixtable and arcsec.
   :type to_arcsec: float
   :param to_nm: Conversion factor between spectral unit in the pixtable and nm.
   :type to_nm: float
-  :param dq_threshold: Data quality flag binary mask to determine whether a pixel must be taken into account in the pixtable or not (4-byte unsigned integer value > 0). For instance, if the pixel must be taken into account even if it is an uncorrected cosmic ray (32) or a hot pixel (256),the mask must be set to (32 + 256). Thus, setting the mask to 0 is equivalent to accept the pixel only if its quality flag is 0 and setting it to (2^32-1) will accept it no matter its flag value.
-  :type dq_threshold: integer
+  :param dq_mask: Data quality flag binary mask to determine whether a pixel must be taken into account in the pixtable or not.
+  
+		  Euro3D convention is used. euro3D.DQ-PIXEL dictionary can be used (`euro3D package <http://urania1.univ-lyon1.fr/mpdaf/chrome/site/DocCoreLib/euro3D/euro3D.html>`_)
+		  
+		  Default value is 0 (only good pixels (no flaw detected) are taken into account).
+  :type dq_mask: 4-byte unsigned integer value > 0
   :param FSF: Object containing the FSF model.
   :type FSF: FSFModel
+  
+Example::
+
+  from mpdaf import fusion
+  from mpdaf import euro3D
+  # new observation that take into account low QE pixels.
+  obs = fusion.Observation('pixtable.fits', type = "MUSE_V1", dq_mask = euro3D.DQ_PIXEL['LowQE' ])
+  
   
 Attributes
 ----------
@@ -265,7 +377,7 @@ Attributes
 +--------------+----------+---------------------------------------------------------------------------------------------------------------+    
 | to_nm        | float    | Conversion factor between spectral unit in the pixtable and nm.                                               |
 +--------------+----------+---------------------------------------------------------------------------------------------------------------+    
-| dq_threshold | integer  | Data quality flag binary mask to determine whether a pixel must be taken into account in the pixtable or not. |
+| dq_mask      | integer  | Data quality flag binary mask to determine whether a pixel must be taken into account in the pixtable or not. |
 +--------------+----------+---------------------------------------------------------------------------------------------------------------+    
 | FSF          | FSFModel | Object containing the FSF model.                                                                              |
 +--------------+----------+---------------------------------------------------------------------------------------------------------------+ 
@@ -277,13 +389,19 @@ Fusion class
 This class interfaces the fusion software.
 
 
-.. class:: fusion.Fusion([obs = None, pixtables=None, output='./output_fusion', sampling = None, algo = None, prior = None, LSF = None)])
+.. class:: fusion.Fusion([obs = None, pixtables=None, output='./output_fusion', sampling = None, algo = None, prior = None, LSF = None, variance = None)])
   
-  :param obs: List of Observation objects associated to the observations. If None, pixtables parameter is used.
+  :param obs: List of Observation objects associated to the observations.
+  
+	      If None, pixtables parameter is used.
   :type obs: list of Observation objects
-  :param pixtables: List of pixtable filenames corresponding to the observations. Used to create a list of observations with default parameters.
+  :param pixtables: List of pixtable filenames corresponding to the observations.
+  
+		    Used to create a list of observations with default parameters.
   :type pixtables: list of strings
-  :param output: Output path where the fusion outputs are stored. If the provided path does not exist, it is automatically created and the directory is overwritten if already existing.
+  :param output: Output path where the fusion outputs are stored.
+  
+		 If the provided path does not exist, it is automatically created and the directory is overwritten if already existing.
   :type output: string
   :param sampling: Object containing the keywords related to the fusion model sampling (i.e. the sampling of the reconstruction/fusion space).
   :type sampling: HyperFSampling
@@ -293,6 +411,8 @@ This class interfaces the fusion software.
   :type prior: HyperFPrior
   :param LSF: Object containing the keywords related to the LSF model.
   :type LSF: LSFModel
+  :param variance: Object containing parameters used to estimate variance.
+  :type variance: Variance
 
 
 Attributes
@@ -310,6 +430,8 @@ Attributes
 | prior      | HyperFPrior                 | Object containing the keywords related to the quadratic prior model used during fusion estimation algorithms. |
 +------------+-----------------------------+---------------------------------------------------------------------------------------------------------------+    
 | LSF        | LSFModel                    | Object containing the LSF model.                                                                              |
++------------+-----------------------------+---------------------------------------------------------------------------------------------------------------+    
+| variance   | Variance                    | Object containing parameters used to estimate variance.                                                       |
 +------------+-----------------------------+---------------------------------------------------------------------------------------------------------------+    
 | save       | string                      | Path of the file that stores all session parameters.                                                          |
 +------------+-----------------------------+---------------------------------------------------------------------------------------------------------------+    
@@ -331,9 +453,13 @@ Methods
 
   Creates the Fusion configuration file.
   
-  :param thread_number: Number of threads used during the fusion. If the value is 0, the number of threads is equal to the number of CPUs.
+  :param thread_number: Number of threads used during the fusion.
+  
+			If the value is 0, the number of threads is equal to the number of CPUs.
   :type thread_number: integer
-  :param debug: If True, fusion will produce lots of console outputs (for debugging purposes), False will generate less outputs.
+  :param debug: If True, fusion will produce lots of console outputs (for debugging purposes)
+  
+		If False, fusion will generate less outputs.
   :type debug: boolean
  
  
@@ -394,10 +520,13 @@ Examples
 Example of fusion of MUSE observations using all default parameters::
 
   from mpdaf import fusion
+  from mpdaf import euro3D
   # lists of observations
   pixtabs = ["pixtable1.fits", "pixtable2.fits", "pixtable3.fits", "pixtable4.fits", "pixtable5.fits"]
   # creation of the Fusion object
   fus = fusion.Fusion(pixtables=pixtabs, output="test")
+  # change data quality mask of the first observation
+  fus.obs[0].dq_mask = euro3D.DQ_PIXEL['CosmicUnCorrected'] + euro3D.DQ_PIXEL['HotPixel']
   # fusion configuration file (test/fusion.cfg)
   fus.create_config_file()
   # launch fusion code

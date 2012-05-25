@@ -64,6 +64,8 @@ class MakeFusion(Command):
         os.remove('lib/mpdaf/fusion/fusion_residual')
         shutil.copy('lib/mpdaf/fusion/fusion_resampling','/usr/local/bin/fusion_resampling')
         os.remove('lib/mpdaf/fusion/fusion_resampling')
+        shutil.copy('lib/mpdaf/fusion/fusion_variance','/usr/local/bin/fusion_variance')
+        os.remove('lib/mpdaf/fusion/fusion_variance')
         errno = subprocess.call(['make', 'clean', '-C', 'lib/mpdaf/fusion/'])
         path = os.path.abspath(os.path.dirname(mpdaf.fusion.__file__))
         shutil.copy('lib/mpdaf/fusion/examples/LSF_V1.fits',path + '/LSF_V1.fits')
