@@ -529,7 +529,8 @@ class WaveCoord(object):
         """prints information
         """
         if self.shape is None:
-            print 'wavelength: min:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.cdelt,self.cunit)
+            min = (1 - self.crpix) * self.cdelt + self.crval
+            print 'wavelength: min:%0.2f step:%0.2f %s' %(min,self.cdelt,self.cunit)
         else:
             print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' %(self.__getitem__(0),self.__getitem__(self.shape-1),self.cdelt,self.cunit)
 
@@ -585,7 +586,7 @@ class WaveCoord(object):
         returns the corresponding WaveCoord object if item is a slice
         """
         if self.shape is None:
-            print "error : wavelength coordinates without dimension"
+            raise ValueError, 'wavelength coordinates without dimension'
         else:
             lbda = (np.arange(self.shape,dtype=np.float) - self.crpix + 1) * self.cdelt + self.crval
         if isinstance(item, int):

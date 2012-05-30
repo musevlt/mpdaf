@@ -284,6 +284,7 @@ class TestObj(unittest.TestCase):
         self.assertEqual(ima.get_start()[1],1)
         self.assertEqual(ima.get_end()[0],1)
         self.assertEqual(ima.get_end()[1],3)
+        del ima
         
     def test_resize_Image(self):
         """test Image.resize()"""
@@ -292,14 +293,15 @@ class TestObj(unittest.TestCase):
         data[2:4,1:4] = 8
         mask[2:4,1:4] = 0
         self.image1.data = np.ma.MaskedArray(data, mask=mask)
-        self.image1.resize()
-        self.assertEqual(self.image1.shape[0],2)
-        self.assertEqual(self.image1.shape[1],3)
-        self.assertEqual(self.image1.sum(),2*3*8)
-        self.assertEqual(self.image1.get_start()[0],2)
-        self.assertEqual(self.image1.get_start()[1],1)
-        self.assertEqual(self.image1.get_end()[0],3)
-        self.assertEqual(self.image1.get_end()[1],3)
+        ima2 = self.image1.resize()
+        self.assertEqual(ima2.shape[0],2)
+        self.assertEqual(ima2.shape[1],3)
+        self.assertEqual(ima2.sum(),2*3*8)
+        self.assertEqual(ima2.get_start()[0],2)
+        self.assertEqual(ima2.get_start()[1],1)
+        self.assertEqual(ima2.get_end()[0],3)
+        self.assertEqual(ima2.get_end()[1],3)
+        del ima2
         
     def test_truncate_Image(self):
         """test Image.truncate()"""
@@ -310,6 +312,7 @@ class TestObj(unittest.TestCase):
         self.assertEqual(ima.get_start()[1],1)
         self.assertEqual(ima.get_end()[0],1)
         self.assertEqual(ima.get_end()[1],3)
+        del ima
         
     def test_sum_Image(self):
         """test Image.sum()"""

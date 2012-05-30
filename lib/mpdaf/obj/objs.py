@@ -385,12 +385,13 @@ class Spectrum(object):
             self.fscale = np.float(fscale)
             try:
                 self.wave = wave
-                if wave.shape is not None and wave.shape != self.shape:
-                    print "warning: wavelength coordinates and data have not the same dimensions."
-                    self.wave = None
-                self.wave.shape = self.shape
+                if wave is not None:
+                    if wave.shape is not None and wave.shape != self.shape:
+                        print "warning: wavelength coordinates and data have not the same dimensions."
+                    self.wave.shape = self.shape
             except :
                 self.wave = None
+                print "error: wavelength solution not copied."
         #Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
             self.data = np.ma.masked_invalid(self.data)
@@ -544,7 +545,7 @@ class Spectrum(object):
             unit = self.unit
         print '%s (%s) fscale=%g, %s' %(data,unit,self.fscale,noise)
         if self.wave is None:
-            print 'no coordinates'
+            print 'No wavelength solution'
         else:
             self.wave.info()
 
@@ -591,14 +592,20 @@ class Spectrum(object):
             ksel = np.where(self.data.mask==False)
             try:
                 item = slice (ksel[0][0],ksel[0][-1]+1,None)
-                self.data = self.data[item]
-                self.shape = self.data.shape[0]
+                data = self.data[item]
+                shape = data.shape[0]
                 if self.var is not None:
-                    self.var = self.var[item]
+                    var = self.var[item]
                     try:
-                        self.wave = self.wave[item]
+                        wave = self.wave[item]
                     except:
-                        self.wave = None
+                        wave = None
+                        print "error: wavelength solution not copied."
+                res = Spectrum(shape=shape, wave = wave, unit=self.unit, fscale=self.fscale)
+                res.data = data
+                if self.var is not None:
+                    res.var = var
+                return res 
             except:
                 pass
 
@@ -957,13 +964,13 @@ class Spectrum(object):
         maximum wavelength
         """
         if lmax is None:
-            lmax = lbda_min
+            lmax = lmin
         if self.wave is None:
             raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
         else:
-            pix_min = int(self.wave.pixel(lmin))
-            pix_max = int(self.wave.pixel(lmax)) + 1
-            if pix_min==pix_max:
+            pix_min = max(0,int(self.wave.pixel(lmin)))
+            pix_max = min(self.shape,int(self.wave.pixel(lmax)) + 1)
+            if (pix_min+1)==pix_max:
                 return self.data[pix_min]
             else:
                 return self[pix_min:pix_max]
@@ -1015,10 +1022,8 @@ class Spectrum(object):
         """
         if wave.shape is not None and wave.shape != self.shape:
             print "warning: wavelength coordinates and data have not the same dimensions."
-            self.wave = None
-        else:
-            self.wave = wave
-            self.wave.shape = self.shape
+        self.wave = wave
+        self.wave.shape = self.shape
             
     def set_var(self,var=None):
         """sets the variance array
@@ -1058,7 +1063,7 @@ class Spectrum(object):
                 pix_max = self.shape
             else:
                 pix_max = self.wave.pixel(lmax,nearest=True)
-            self.data[pix_min:pix_max] = np.ma.masked  
+            self.data[pix_min:pix_max+1] = np.ma.masked  
             
     def unmask(self):
         """unmasks the spectrum
@@ -1191,7 +1196,7 @@ class Spectrum(object):
                 n_right = self.shape - n + n_left
                 spe = self[n_left:n_right]._rebin_factor(factor)
                 newshape = spe.shape + 2
-                data = np.ones(newshape)
+                data = np.ma.empty(newshape)
                 data[1:-1] = spe.data
                 data[0] = self.data[0:n_left].sum() / factor
                 data[-1] = self.data[n_right:].sum() / factor
@@ -1207,13 +1212,13 @@ class Spectrum(object):
                 except:
                     wave = None
                 res = Spectrum(shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale)
-                res.data = np.ma.masked_invalid(data)
+                res.data = data
                 res.var = var
                 return res
             elif margin == 'right':
                 spe = self[0:self.shape-n]._rebin_factor(factor)
                 newshape = spe.shape + 1
-                data = np.ones(newshape)
+                data = np.ma.empty(newshape)
                 data[:-1] = spe.data
                 data[-1] = self.data[self.shape-n:].sum() / factor
                 var = None
@@ -1226,13 +1231,13 @@ class Spectrum(object):
                 except:
                     wave = None
                 res = Spectrum(shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale)
-                res.data = np.ma.masked_invalid(data)
+                res.data = data
                 res.var = var
                 return res
             elif margin == 'left':
                 spe = self[n:]._rebin_factor(factor)
                 newshape = spe.shape + 1
-                data = np.ones(newshape)
+                data = np.ma.empty(newshape)
                 data[0] = self.data[0:n].sum() / factor
                 data[1:] = spe.data
                 var = None
@@ -1246,7 +1251,7 @@ class Spectrum(object):
                 except:
                     wave = None
                 res = Spectrum(shape=newshape, wave = wave, unit=self.unit, fscale=self.fscale)
-                res.data = np.ma.masked_invalid(data)
+                res.data = data
                 res.var = var
                 return res
             else:
@@ -1498,11 +1503,12 @@ class Spectrum(object):
         1: the magnitude is returned
         2: the magnitude, mean flux and mean lbda are returned
 
-        spline : boolean
+        spline : booleanself.wave.pixel(lbda+dlbda/2,nearest=True)]
         linear/spline interpolation to interpolate masked values
         """
         data = self._interp_data(spline)
         vflux = data[self.wave.pixel(lbda-dlbda/2,nearest=True):self.wave.pixel(lbda+dlbda/2,nearest=True)].mean()*self.fscale
+        print vflux
         mag = flux2mag(vflux, lbda)
         if out == 1:
             return mag
@@ -1525,17 +1531,17 @@ class Spectrum(object):
         linear/spline interpolation to interpolate masked values
         """
         if name == 'U':
-            return abmag_band(366.3, 65, out)
+            return self.abmag_band(3663, 650, out)
         elif name == 'B':
-            return abmag_band(436.1, 89, out)
+            return self.abmag_band(4361, 890, out)
         elif name == 'V':
-            return abmag_band(544.8, 84, out)
+            return self.abmag_band(5448, 840, out)
         elif name == 'Rc':
-            return abmag_band(641.0, 160., out)
+            return self.abmag_band(6410, 1600., out)
         elif name == 'Ic':
-            return abmag_band(798.0, 150., out)
+            return self.abmag_band(7980, 1500., out)
         elif name == 'z':
-            return abmag_band(893.0, 147., out)
+            return self.abmag_band(8930, 1470., out)
         elif name == 'R-Johnson':
             (l0,lmin,lmax,tck) = ABmag_filters.mag_RJohnson()
             return self._filter(l0, lmin, lmax, tck, out, spline)
@@ -1605,7 +1611,7 @@ class Spectrum(object):
                 raise ValueError, 'Spectrum outside Filter band'
             else:
                 raise ValueError, 'filter band smaller than spectrum step'
-        lb = (numpy.arange(imin,imax) - self.wave.crpix + 1) * self.wave.cdelt + self.wave.crval
+        lb = (np.arange(imin,imax) - self.wave.crpix + 1) * self.wave.cdelt + self.wave.crval
         w = interpolate.splev(lb,tck,der=0)
         data = self._interp_data(spline)
         vflux = np.average(data[imin:imax], weights=w)*self.fscale
@@ -2558,7 +2564,7 @@ class Image(object):
                 try:
                     self.wcs = WCS(hdr) # WCS object from data header
                 except:
-                    print "Invalid wcs self.wcs=None"
+                    print "Error: Invalid wcs. World coordonates are not copied."
                     self.wcs = None
             else:
                 if ext is None:
@@ -2582,7 +2588,7 @@ class Image(object):
                 try:
                     self.wcs = WCS(h) # WCS object from data header
                 except:
-                    print "Invalid wcs self.wcs=None"
+                    print "Error: Invalid wcs. World coordonates are not copied."
                     self.wcs = None
                 self.var = None
                 if not notnoise:
@@ -2631,19 +2637,15 @@ class Image(object):
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                if wcs.wcs.naxis1 == 0. and wcs.wcs.naxis2 == 0.:
-                    self.wcs = wcs
+                self.wcs = wcs
+                if wcs is not None:
                     self.wcs.wcs.naxis1 = self.shape[1]
                     self.wcs.wcs.naxis2 = self.shape[0]
-                elif wcs.wcs.naxis1 != self.shape[1] or wcs.wcs.naxis2 != self.shape[0]:
-                    print 'shape', shape
-                    print 'wcs.wcs.naxis1',wcs.wcs.naxis1,'wcs.wcs.naxis2',wcs.wcs.naxis2
-                    print "warning: world coordinates and data have not the same dimensions."
-                    self.wcs =  None
-                else:
-                    self.wcs = wcs
+                    if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
+                        print "warning: world coordinates and data have not the same dimensions."
             except :
                 self.wcs = None
+                print "error: wcs not copied."
         #Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
             self.data = np.ma.masked_invalid(self.data)
@@ -2831,20 +2833,25 @@ class Image(object):
             ksel = np.where(self.data.mask==False)
             try:
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None))
-                self.data = self.data[item]
+                data = self.data[item]
                 if is_int(item[0]):
-                    self.shape = (1,self.data.shape[0])
+                    shape = (1,data.shape[0])
                 elif is_int(item[1]):
-                    self.shape = (self.data.shape[0],1)
+                    shape = (data.shape[0],1)
                 else:
-                    self.shape = (self.data.shape[0],self.data.shape[1])
+                    shape = (data.shape[0],data.shape[1])
                 if self.var is not None:
-                    self.var = self.var[item]
+                    var = self.var[item]
                 try:
-                    self.wcs = self.wcs[item[0],item[1]]
-                    #self.wcs = self.wcs[item]
+                    wcs = self.wcs[item[0],item[1]]
                 except:
-                    self.wcs = None
+                    wcs = None
+                    print "error: wcs not copied."
+                res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
+                res.data = data
+                if self.var is not None:
+                    res.var = var
+                return res
             except:
                 pass
 
@@ -3247,15 +3254,11 @@ class Image(object):
         wcs : WCS
         World coordinates
         """
-        if wcs.wcs.naxis1 == 0. and wcs.wcs.naxis2 == 0.:
-            self.wcs = wcs
-            self.wcs.wcs.naxis1 = self.shape[1]
-            self.wcs.wcs.naxis2 = self.shape[0]
-        elif wcs.wcs.naxis1 != self.shape[1] or wcs.wcs.naxis2 != self.shape[0]:
+        self.wcs = wcs
+        self.wcs.wcs.naxis1 = self.shape[1]
+        self.wcs.wcs.naxis2 = self.shape[0]
+        if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and (wcs.wcs.naxis1 != self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
             print "warning: world coordinates and data have not the same dimensions."
-            self.wcs =  None
-        else:
-            self.wcs = wcs
             
     def set_var(self, var):
         """sets the variance array
@@ -3942,7 +3945,7 @@ class Image(object):
         """Returns [width_dec, width_ra] first moments of the 2D gaussian
         """
         total = np.abs(self.data).sum()
-        Y, X = np.indices(self.data.shape) # python convention: reverse x,y numpy.indices
+        Y, X = np.indices(self.data.shape) # python convention: reverse x,y np.indices
         y = np.argmax((X*np.abs(self.data)).sum(axis=1)/total)
         x = np.argmax((Y*np.abs(self.data)).sum(axis=0)/total)
         col = self.data[int(y),:]
@@ -5577,7 +5580,7 @@ class Cube(object):
                 try:
                     self.wcs = WCS(hdr)
                 except:
-                    print "Invalid wcs self.wcs=None"
+                    print "error: wcs not copied."
                     self.wcs = None
                 #Wavelength coordinates
                 if hdr.has_key('CDELT3'):
@@ -5611,7 +5614,7 @@ class Cube(object):
                 try:
                     self.wcs = WCS(h) # WCS object from data header
                 except:
-                    print "Invalid wcs self.wcs=None"
+                    print "error: wcs not copied."
                     self.wcs = None
                 #Wavelength coordinates
                 if h.has_key('CDELT3'):
@@ -5676,26 +5679,24 @@ class Cube(object):
                 self.var = np.array(var, dtype = float)
             self.fscale = np.float(fscale)
             try:
-                if wcs.wcs.naxis1 == 0. and wcs.wcs.naxis2 == 0.:
-                    self.wcs = wcs
+                self.wcs = wcs
+                if wcs is not None:
                     self.wcs.wcs.naxis1 = self.shape[2]
                     self.wcs.wcs.naxis2 = self.shape[1]
-                elif wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]:
-                    print "warning: world coordinates and data have not the same dimensions."
-                    self.wcs =  None
-                else:
-                    self.wcs = wcs
+                    if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
+                        print "warning: world coordinates and data have not the same dimensions."
             except :
                 self.wcs = None
+                print "error: world coordinates not copied."
             try:
-                if wave.shape is not None and wave.shape != self.shape[0]:
-                    print "warning: wavelength coordinates and data have not the same dimensions."
-                    self.wave = None
-                else:
-                    self.wave = wave
+                self.wave = wave
+                if wave is not None:
+                    if wave.shape is not None and wave.shape != self.shape[0]:
+                        print "warning: wavelength coordinates and data have not the same dimensions."
                     self.wave.shape = self.shape[0]
             except :
                 self.wave = None
+                print "error: wavelength solution not copied."
         #Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
             self.data = np.ma.masked_invalid(self.data)
@@ -5879,33 +5880,40 @@ class Cube(object):
             ksel = np.where(self.data.mask==False)
             try:
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None),slice(ksel[2][0], ksel[2][-1]+1, None))
-                self.data = self.data[item]
+                data = self.data[item]
                 if is_int(item[0]):
                     if is_int(item[1]):
-                        self.shape = (1,1,self.data.shape[0])
+                        shape = (1,1,data.shape[0])
                     elif is_int(item[2]):
-                        self.shape = (1,self.data.shape[0],1)
+                        shape = (1,data.shape[0],1)
                     else:
-                        self.shape = (1,self.data.shape[0],self.data.shape[1])
+                        shape = (1,data.shape[0],data.shape[1])
                 elif is_int(item[1]):
                     if is_int(item[2]):
-                        self.shape = (self.data.shape[0],1,1)
+                        shape = (data.shape[0],1,1)
                     else:
-                        self.shape = (self.data.shape[0],1,self.data.shape[1])
+                        shape = (data.shape[0],1,data.shape[1])
                 elif is_int(item[2]):
-                        self.shape = (self.data.shape[0],self.data.shape[1],1)
+                        shape = (data.shape[0],data.shape[1],1)
                 else:
-                    self.shape = self.data.shape
+                    shape = data.shape
                 if self.var is not None:
-                    self.var = self.var[item]
+                    var = self.var[item]
                 try:
-                    self.wcs = self.wcs[item[1],item[2]]
+                    wcs = self.wcs[item[1],item[2]]
                 except:
-                    self.wcs = None
+                    wcs = None
+                    print "error: wcs not copied."
                 try:
-                    self.wave = self.wave[item[0]]
+                    wave = self.wave[item[0]]
                 except:
-                    self.wave = None
+                    wave = None
+                    print "error: wavelength solution not copied."
+                res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit, data=None, var=None,fscale=self.fscale)
+                res.data = data
+                if self.var is not None:
+                    res.var = var
+                return res
             except:
                 pass
 
@@ -6495,9 +6503,9 @@ class Cube(object):
         if self.wave is None:
             raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
         else:
-            pix_min = int(self.wave.pixel(lbda_min))
-            pix_max = int(self.wave.pixel(lbda_max)) + 1
-            if pix_min==pix_max:
+            pix_min = max(0,int(self.wave.pixel(lbda_min)))
+            pix_max = min(self.shape[0],int(self.wave.pixel(lbda_max)) + 1)
+            if (pix_min+1)==pix_max:
                 return self.data[pix_min,:,:]
             else:
                 return self[pix_min:pix_max,:,:]
@@ -6556,21 +6564,16 @@ class Cube(object):
         wave : WaveCoord
         Wavelength coordinates
         """
-        if wcs.wcs.naxis1 == 0. and wcs.wcs.naxis2 == 0.:
-            self.wcs = wcs
-            self.wcs.wcs.naxis1 = self.shape[2]
-            self.wcs.wcs.naxis2 = self.shape[1]
-        elif wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]:
+        self.wcs = wcs
+        self.wcs.wcs.naxis1 = self.shape[2]
+        self.wcs.wcs.naxis2 = self.shape[1]
+        if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and (wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
             print "warning: world coordinates and data have not the same dimensions."
-            self.wcs =  None
-        else:
-            self.wcs = wcs
         
         if wave.shape is not None and wave.shape != self.shape[0]:
             print "warning: wavelength coordinates and data have not the same dimensions."
-            self.wave = None
-        else:
-            self.wave = wave
+        self.wave = wave
+        self.wave.shape = self.shape[0]
             
     def set_var(self,var):
         """sets the variance array

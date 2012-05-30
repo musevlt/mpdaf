@@ -198,14 +198,14 @@
 <dl class="function">
 <dt id="obj.Cube.__le__">
 <tt class="descclassname">obj.Cube.</tt><tt class="descname">__le__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Cube.__le__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Masks data array where greater than a given value.</p>
+<dd><p>Masks data array where greater than a given value (operator &lt;=).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; minimum value.</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object containing a masked array.</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object.</td>
 </tr>
 </tbody>
 </table>
@@ -214,14 +214,14 @@
 <dl class="function">
 <dt id="obj.Cube.__lt__">
 <tt class="descclassname">obj.Cube.</tt><tt class="descname">__lt__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Cube.__lt__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Masks data array where greater or equal than a given value.</p>
+<dd><p>Masks data array where greater or equal than a given value (operator &lt;).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; minimum value.</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object containing a masked array.</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object.</td>
 </tr>
 </tbody>
 </table>
@@ -230,14 +230,14 @@
 <dl class="function">
 <dt id="obj.Cube.__ge__">
 <tt class="descclassname">obj.Cube.</tt><tt class="descname">__ge__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Cube.__ge__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Masks data array where less than a given value.</p>
+<dd><p>Masks data array where less than a given value (operator &gt;=).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; maximum value.</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object containing a masked array.</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object.</td>
 </tr>
 </tbody>
 </table>
@@ -246,14 +246,14 @@
 <dl class="function">
 <dt id="obj.Cube.__gt__">
 <tt class="descclassname">obj.Cube.</tt><tt class="descname">__gt__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Cube.__gt__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Masks data array where less or equal than a given value.</p>
+<dd><p>Masks data array where less or equal than a given value (operator &gt;).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; maximum value.</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object containing a masked array.</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object.</td>
 </tr>
 </tbody>
 </table>
@@ -263,6 +263,14 @@
 <dt id="obj.Cube.resize">
 <tt class="descclassname">obj.Cube.</tt><tt class="descname">resize</tt><big>(</big><big>)</big><a class="headerlink" href="#obj.Cube.resize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resizes the cube to have a minimum number of masked values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Cube object.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -388,7 +396,7 @@ World coordinates in spatial/spectral directions must be the same.</dd>
 <dl class="function">
 <dt id="obj.Cube.__pow__">
 <tt class="descclassname">obj.Cube.</tt><tt class="descname">__pow__</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#obj.Cube.__pow__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the power exponent of data extensions.</p>
+<dd><p>Computes the power exponent of data extensions (operator **).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

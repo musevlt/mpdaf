@@ -127,43 +127,45 @@ Methods
  
 .. function:: __le__ (x)
 
-  Masks data array where greater than a given value.
+  Masks data array where greater than a given value (operator <=).
   
   :param x: minimum value.
   :type x: float
-  :rtype: Cube object containing a masked array.
+  :rtype: Cube object.
 
 
 .. function:: __lt__ (x)
 
-  Masks data array where greater or equal than a given value.
+  Masks data array where greater or equal than a given value (operator <).
   
   :param x: minimum value.
   :type x: float
-  :rtype: Cube object containing a masked array.
+  :rtype: Cube object.
 
 
 .. function:: __ge__ (x)
 
-  Masks data array where less than a given value.
+  Masks data array where less than a given value (operator >=).
   
   :param x: maximum value.
   :type x: float
-  :rtype: Cube object containing a masked array.
+  :rtype: Cube object.
 
 
 .. function:: __gt__ (x)
 
-  Masks data array where less or equal than a given value.
+  Masks data array where less or equal than a given value (operator >).
   
   :param x: maximum value.
   :type x: float
-  :rtype: Cube object containing a masked array.
+  :rtype: Cube object.
 
 
 .. function:: resize()
 
   Resizes the cube to have a minimum number of masked values.
+  
+  :rtype: Cube object.
 
 
 .. function:: __add__(x)
@@ -272,7 +274,7 @@ Methods
 
 .. function:: __pow__(x)
 
-  Computes the power exponent of data extensions.
+  Computes the power exponent of data extensions (operator \*\*).
   
   :param x:
   :type x: number

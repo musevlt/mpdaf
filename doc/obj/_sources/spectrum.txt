@@ -112,43 +112,45 @@ Methods
  
 .. function:: __le__ (x)
 
-  Masks data array where greater than a given value.
+  Masks data array where greater than a given value (operator <=).
   
   :param x: minimum value.
   :type x: float
-  :rtype: Spectrum object containing a masked array.
+  :rtype: Spectrum object.
 
 
 .. function:: __lt__ (x)
 
-  Masks data array where greater or equal than a given value.
+  Masks data array where greater or equal than a given value (operator <).
   
   :param x: minimum value.
   :type x: float
-  :rtype: Spectrum object containing a masked array.
+  :rtype: Spectrum object.
 
 
 .. function:: __ge__ (x)
 
-  Masks data array where less than a given value.
+  Masks data array where less than a given value (operator >=).
   
   :param x: maximum value.
   :type x: float
-  :rtype: Spectrum object containing a masked array.
+  :rtype: Spectrum object.
 
 
 .. function:: __gt__ (x)
 
-  Masks data array where less or equal than a given value.
+  Masks data array where less or equal than a given value (operator >).
   
   :param x: maximum value.
   :type x: float
-  :rtype: Spectrum object containing a masked array.
+  :rtype: Spectrum object.
 
 
 .. function:: resize()
 
   Resizes the spectrum to have a minimum number of masked values.
+  
+  rtype: Spectrum object.
 
 
 .. function:: __add__(x)
@@ -233,7 +235,7 @@ Methods
 
 .. function:: __pow__(x)
 
-  Computes the power exponent of data extensions.
+  Computes the power exponent of data extensions (operator \*\*).
   
   :param x:
   :type x: number
@@ -274,14 +276,14 @@ Methods
 
 .. function:: get_start()
 
-  Returns the value of the first pixel.
+  Returns the wavelength value of the first pixel.
   
   :rtype: float
 
 
 .. function:: get_end()
 
-  Returns the value of the last pixel.
+  Returns the wavelength value of the last pixel.
   
   :rtype: float
 
