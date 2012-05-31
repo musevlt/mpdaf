@@ -193,7 +193,7 @@ class WCS(object):
                 self.wcs.wcs.cd = np.array([[-cdelt[1], 0], [0, cdelt[0]]])
             else:   #in pixel or arcsec
                 self.wcs.wcs.ctype = ['LINEAR','LINEAR']
-                self.wcs.wcs.cunit = ['UNITLESS','UNITLESS']
+                self.wcs.wcs.cunit = ['','']
                 self.wcs.wcs.cd = np.array([[cdelt[1], 0], [0, cdelt[0]]])
             # rotation
             self.wcs.rotateCD(-rot)
