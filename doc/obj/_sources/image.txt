@@ -708,12 +708,24 @@ Filter
 Plotting
 --------
  
-.. function:: plot([title=None])
+.. function:: plot([title=None, scale='linear', vmin=None, vmax=None, zscale = False])
 
   Plots the image.
   
   :param title: Figure title (None by default).
   :type title: string
+  :param scale: The stretch function to use for the scaling (default is 'linear').
+  :type scale: linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+  :param vmin: Minimum pixel value to use for the scaling.
+  
+	       If None, vmin is set to min of data.
+  :type vmin: float
+  :param vmax: Maximum pixel value to use for the scaling.
+        
+	       If None, vmax is set to max of data.
+  :type vmax: float
+  :param zscale: If true, vmin and vmax are computed using the IRAF zscale algorithm.
+  :type zscale: boolean
   
   
 .. function:: ipos([filename='None'])

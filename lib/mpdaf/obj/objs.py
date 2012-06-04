@@ -15,8 +15,12 @@ from scipy import special
 
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
+import matplotlib.colors
 
 import ABmag_filters
+import plt_norm
+import plt_zscale
+
 
 def is_float(x):
     if type(x) is float or type(x) is np.float32 or type(x) is np.float64:
@@ -4835,7 +4839,7 @@ class Image(object):
         ima.norm(type='sum')
         return self.fftconvolve(ima)
     
-    def plot(self, title=None): 
+    def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale = False): 
         """ plots the image.
         
         Parameter
@@ -4843,6 +4847,19 @@ class Image(object):
         title : string
         Figure title (None by default).
         
+        scale : linear' | 'log' | 'sqrt' | 'arcsinh' | 'power' 
+        The stretch function to use for the scaling (default is 'linear').
+        
+        vmin: float
+        Minimum pixel value to use for the scaling.
+        If None, vmin is set to min of data.
+ 
+        vmax: float
+        Maximum pixel value to use for the scaling.
+        If None, vmax is set to max of data.
+        
+        zscale : boolean
+        If true, compute vmin and vmax using the IRAF zscale algorithm.
         """
         plt.ion()
         
@@ -4863,7 +4880,21 @@ class Image(object):
             plt.xlabel('ra (%s)' %xunit)
             plt.ylabel(self.unit)
         else:
-            cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]))
+            if zscale:
+                vmin,vmax = plt_zscale.zscale(self.data.filled(0))
+            if scale=='log':
+                from matplotlib.colors import LogNorm
+                norm = LogNorm(vmin=vmin, vmax=vmax)
+            elif scale=='arcsinh':
+                norm = plt_norm.ArcsinhNorm(vmin=vmin, vmax=vmax)
+            elif scale=='power':
+                norm = plt_norm.PowerNorm(vmin=vmin, vmax=vmax)
+            elif scale=='sqrt':
+                norm = plt_norm.SqrtNorm(vmin=vmin, vmax=vmax)
+            else:
+                norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+
+            cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]),norm=norm)
             plt.colorbar(cax)
             plt.xlabel('ra (%s)' %xunit)
             plt.ylabel('dec (%s)' %yunit)
