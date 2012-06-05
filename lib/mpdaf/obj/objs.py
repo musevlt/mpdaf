@@ -302,7 +302,7 @@ class Spectrum(object):
                 if hdr['NAXIS'] != 1:
                     raise IOError, 'Wrong dimension number: not a spectrum'
                 self.unit = hdr.get('BUNIT', None)
-                self.cards = hdr.ascardlist()
+                self.cards = hdr.ascard
                 self.shape =hdr['NAXIS1']
                 self.data = np.array(f[0].data,dtype=float)
                 self.var = None
@@ -332,7 +332,7 @@ class Spectrum(object):
                 if h['NAXIS'] != 1:
                     raise IOError, 'Wrong dimension number: not a spectrum'
                 self.unit = h.get('BUNIT', None)
-                self.cards = h.ascardlist()
+                self.cards = h.ascard
                 self.shape = h['NAXIS1']
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
@@ -2560,7 +2560,7 @@ class Image(object):
                 if hdr['NAXIS'] != 2:
                     raise IOError, '  not an image'
                 self.unit = hdr.get('BUNIT', None)
-                self.cards = hdr.ascardlist()
+                self.cards = hdr.ascard
                 self.shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
                 self.data = np.array(f[0].data, dtype=float)
                 self.var = None
@@ -2585,7 +2585,7 @@ class Image(object):
                 if h['NAXIS'] != 2:
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('BUNIT', None)
-                self.cards = h.ascardlist()
+                self.cards = h.ascard
                 self.shape = np.array([h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
@@ -2688,7 +2688,7 @@ class Image(object):
         prihdu = pyfits.PrimaryHDU()
 
         #world coordinates
-        wcs_cards = self.wcs.to_header().ascardlist()
+        wcs_cards = self.wcs.to_header().ascard
 
         if np.ma.count_masked(self.data) != 0:
             hdulist = [prihdu]
@@ -5602,7 +5602,7 @@ class Cube(object):
                 if hdr['NAXIS'] != 3:
                     raise IOError, 'Wrong dimension number: not a cube'
                 self.unit = hdr.get('BUNIT', None)
-                self.cards = hdr.ascardlist()
+                self.cards = hdr.ascard
                 self.shape = np.array([hdr['NAXIS3'],hdr['NAXIS2'],hdr['NAXIS1']])
                 self.data = np.array(f[0].data, dtype=float)
                 self.var = None
@@ -5638,7 +5638,7 @@ class Cube(object):
                 if h['NAXIS'] != 3:
                     raise IOError, 'Wrong dimension number in DATA extension'
                 self.unit = h.get('BUNIT', None)
-                self.cards = h.ascardlist()
+                self.cards = h.ascard
                 self.shape= np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
@@ -5773,7 +5773,7 @@ class Cube(object):
         prihdu = pyfits.PrimaryHDU()
 
         #world coordinates
-        wcs_cards = self.wcs.to_header().ascardlist()
+        wcs_cards = self.wcs.to_header().ascard
 
         if self.var is None: # write simple fits file without extension
             prihdu.data = self.data.data

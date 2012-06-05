@@ -56,7 +56,7 @@ class Channel(object):
         self.extname = extname
         if filename!=None:
             hdulist = pyfits.open(filename,memmap=1)
-            self.header = hdulist[extname].header.ascardlist()
+            self.header = hdulist[extname].header.ascard
             self.nx = hdulist[extname].header["NAXIS1"]
             self.ny = hdulist[extname].header["NAXIS2"]
             data = hdulist[extname].data
@@ -401,7 +401,7 @@ class RawFile(object):
         if filename!=None:
             try:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                self.primary_header = hdulist[0].header.ascardlist()
+                self.primary_header = hdulist[0].header.ascard
                 n = 1
                 while True:
                     try:
@@ -744,4 +744,3 @@ def _process_operator3(arglist):
         sys.stdout.write(".")
         sys.stdout.flush()
     return (k,out)
-

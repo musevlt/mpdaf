@@ -76,7 +76,7 @@ class CalibFile(object):
         if filename!=None:
             try:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                self.primary_header = hdulist[0].header.ascardlist()
+                self.primary_header = hdulist[0].header.ascard
                 try:
                     self.nx = hdulist["DATA"].header["NAXIS1"]
                     self.ny = hdulist["DATA"].header["NAXIS2"]

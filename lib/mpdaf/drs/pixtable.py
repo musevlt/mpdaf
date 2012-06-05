@@ -90,7 +90,7 @@ class PixTable(object):
         if filename!=None:
             try:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                self.primary_header = hdulist[0].header.ascardlist()
+                self.primary_header = hdulist[0].header.ascard
                 self.nrows = hdulist[1].header["NAXIS2"]
                 self.ncols = hdulist[1].header["TFIELDS"]
                 hdulist.close()
