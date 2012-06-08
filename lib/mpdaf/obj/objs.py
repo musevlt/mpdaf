@@ -38,9 +38,12 @@ def flux2mag(flux, wave):
     """ convert flux from erg.s-1.cm-2.A-1 to AB mag
     wave is the wavelength in A
     """
-    c = 2.998e18 # speed of light in A/s
-    mag = -48.60 - 2.5*np.log10(wave**2*flux/c)
-    return mag
+    if flux > 0:
+        c = 2.998e18 # speed of light in A/s
+        mag = -48.60 - 2.5*np.log10(wave**2*flux/c)
+        return mag
+    else:
+        return 99
 
 def mag2flux(mag, wave):
     """ convert flux from AB mag to erg.s-1.cm-2.A-1
@@ -307,9 +310,9 @@ class Spectrum(object):
                 self.data = np.array(f[0].data,dtype=float)
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
-                if hdr.has_key('CDELT1'):
+                if 'CDELT1' in hdr:
                     cdelt = hdr.get('CDELT1')
-                elif hdr.has_key('CD1_1'):
+                elif 'CD1_1' in hdr:
                     cdelt = hdr.get('CD1_1')
                 else:
                     cdelt = 1.0
@@ -336,9 +339,9 @@ class Spectrum(object):
                 self.shape = h['NAXIS1']
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
-                if h.has_key('CDELT1'):
+                if 'CDELT1' in h:
                     cdelt = h.get('CDELT1')
-                elif h.has_key('CD1_1'):
+                elif 'CD1_1' in h:
                     cdelt = h.get('CD1_1')
                 else:
                     cdelt = 1.0
@@ -919,7 +922,7 @@ class Spectrum(object):
         if self.data is None:
             raise ValueError, 'empty data array'
         res = self.copy()
-        res.data = np.sqrt(self.data)
+        res.data = np.ma.sqrt(self.data)
         res.fscale = np.sqrt(self.fscale)
         res.var = None
         return res
@@ -929,7 +932,7 @@ class Spectrum(object):
         if self.data is None:
             raise ValueError, 'empty data array'
         res = self.copy()
-        res.data = np.abs(self.data)
+        res.data = np.ma.abs(self.data)
         res.fscale = np.abs(self.fscale)
         res.var = None
         return res
@@ -1512,7 +1515,6 @@ class Spectrum(object):
         """
         data = self._interp_data(spline)
         vflux = data[self.wave.pixel(lbda-dlbda/2,nearest=True):self.wave.pixel(lbda+dlbda/2,nearest=True)].mean()*self.fscale
-        print vflux
         mag = flux2mag(vflux, lbda)
         if out == 1:
             return mag
@@ -1575,11 +1577,18 @@ class Spectrum(object):
         
         if you want to use a txt file :
         lbda,eff = np.loadtxt(name, unpack=True)
-        """            
+        """          
+        lbda = np.array(lbda)  
+        eff = np.array(eff)
+        if np.shape(lbda) != np.shape(eff):
+            raise TypeError, 'lbda and eff inputs have not the same size.'
         l0 = np.average(lbda, weights=eff)
         lmin = lbda[0]
         lmax = lbda[-1]
-        tck = interpolate.splrep(lbda,eff)           
+        if np.shape(lbda)[0] > 3:
+            tck = interpolate.splrep(lbda,eff, k=min(np.shape(lbda)[0],3))     
+        else:
+            tck = interpolate.splrep(lbda,eff,k=1) 
         return self._filter(l0, lmin, lmax, tck, out, spline)
 
         
@@ -1620,14 +1629,11 @@ class Spectrum(object):
         data = self._interp_data(spline)
         vflux = np.average(data[imin:imax], weights=w)*self.fscale
         mag = flux2mag(vflux, l0)
-#        if vflux > 0:
-#            mag = flux2mag(vflux, l0*10)
-#        else:
-#            mag = 99
         if out == 1:
             return mag
         if out == 2:
             return mag,vflux,l0
+
 
     def truncate(self, lmin=None, lmax=None):
         """truncates a spectrum
@@ -1666,15 +1672,27 @@ class Spectrum(object):
         spline : boolean
         linear/spline interpolation to interpolate masked values
         """
-        k0 = self.wave.pixel(l0, nearest=True)
-        d = self._interp_data(spline)*self.fscale - cont
-        f2 = d[k0]/2
-        k2 = np.argwhere(d[k0:]<f2)[0][0] + k0
-        i2 = np.interp(f2, d[k2:k2-2:-1], [k2,k2-1])
-        k1 = k0 - np.argwhere(d[k0::-1]<f2)[0][0]
-        i1 = np.interp(f2, d[k1:k1+2], [k1,k1+1])
-        fwhm = (i2 - i1)*self.wave.cdelt
-        return fwhm
+        try:
+            k0 = self.wave.pixel(l0, nearest=True)
+            d = self._interp_data(spline)*self.fscale - cont
+            f2 = d[k0]/2
+            k2 = np.argwhere(d[k0:-1]<f2)[0][0] + k0
+            i2 = np.interp(f2, d[k2:k2-2:-1], [k2,k2-1])
+            k1 = k0 - np.argwhere(d[k0:-1]<f2)[0][0]
+            i1 = np.interp(f2, d[k1:k1+2], [k1,k1+1])
+            fwhm = (i2 - i1)*self.wave.cdelt
+            return fwhm
+        except:
+            k0 = self.wave.pixel(l0, nearest=True)
+            d = self._interp_data(spline)*self.fscale - cont
+            f2 = d[k0]/2
+            k2 = np.argwhere(d[k0:-1]>f2)[0][0] + k0
+            i2 = np.interp(f2, d[k2:k2-2:-1], [k2,k2-1])
+            k1 = k0 - np.argwhere(d[k0:-1]>f2)[0][0]
+            i1 = np.interp(f2, d[k1:k1+2], [k1,k1+1])
+            fwhm = (i2 - i1)*self.wave.cdelt
+            return fwhm
+            #raise ValueError, 'Error in fwhm estimation'
 
     def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None, cont=None, peak=False, spline=False, plot=False):
         """performs polynomial fit on spectrum.
@@ -1849,7 +1867,7 @@ class Spectrum(object):
 
         return res
     
-    def median_filter(self, kernel_size=None, pixel=True):
+    def median_filter(self, kernel_size=1., pixel=True, spline=False):
         """performs a median filter on the spectrum
         
         Parameters
@@ -1862,12 +1880,16 @@ class Spectrum(object):
         If True, kernel_size is in pixels.
         If False, kernel_size is in spectrum coordinate unit.
 
+        spline : boolean
+        linear/spline interpolation to interpolate masked values
         """
+        data = self._interp_data(spline)*self.fscale  
         if pixel is False:
             kernel_size = kernel_size / self.get_step()
         ks = int(kernel_size/2)*2 +1
-        data = signal.medfilt(self.data, ks)
-        res = Spectrum(shape=self.shape, wave = self.wave, unit=self.unit, data=data, fscale=1.0)
+        data = signal.medfilt(data, ks)/self.fscale
+        res = self.copy()
+        res.data = np.ma.array(data,mask=res.data.mask)
         return res
     
     def convolve(self, other):
@@ -3527,7 +3549,7 @@ class Image(object):
         res.wcs.rotate(theta)
         return res
     
-    def rotate(self, theta):
+    def rotate(self, theta, interp='no'):
         """rotates the image using spline interpolation
         
         Parameter
@@ -3535,11 +3557,24 @@ class Image(object):
         
         theta : float
         Rotation in degrees.
+        
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         res = self.copy()
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+        
         mask = np.array(1 - self.data.mask,dtype=bool)
         mask_rot = ndimage.rotate(mask, theta, reshape=False, order=0)
-        data_rot = ndimage.rotate(self.data.filled(0), theta, reshape=False)
+        data_rot = ndimage.rotate(data, theta, reshape=False)
         mask_ma = np.ma.make_mask(1-mask_rot)
         res.data = np.ma.array(data_rot, mask=mask_ma)
         return res         
@@ -3952,6 +3987,23 @@ class Image(object):
 #            for i in range(n):
 #                res[i] = interpolate.griddata(points, data, (grid[i,0],grid[i,1]), method='linear')
             return res
+        
+    def _interp_data(self, spline=False):
+        """ returns data array with interpolated values for masked pixels
+        
+        Parameter
+        ----------
+        spline : boolean
+        False: linear interpolation, True: spline interpolation 
+        """
+        if np.ma.count_masked(self.data) == 0:
+            return self.data.data
+        else:
+            ksel = np.where(self.data.mask==True)
+            data = self.data.data
+            data[ksel] = self._interp(ksel,spline)
+            return data
+    
         
     def moments(self):
         """Returns [width_dec, width_ra] first moments of the 2D gaussian
@@ -4519,7 +4571,7 @@ class Image(object):
         res.var = var
         return res
     
-    def rebin(self, newdim, newstart, newstep, flux=False, order=3):
+    def rebin(self, newdim, newstart, newstep, flux=False, order=3, interp='no'):
         """rebins the image to a new coordinate system.
         
         Parameters
@@ -4538,6 +4590,11 @@ class Image(object):
         
         order : integer
         The order of the spline interpolation, default is 3. The order has to be in the range 0-5.   
+        
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         if is_int(newdim):
             newdim = (newdim,newdim)
@@ -4556,7 +4613,15 @@ class Image(object):
         wcs =WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
         pstep = newstep/self.wcs.get_step()   
         poffset = (newstart-self.wcs.get_start())/newstep
-        data = ndimage.affine_transform(self.data.filled(0), pstep, poffset,output_shape=newdim, order=order)
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+            
+        data = ndimage.affine_transform(data, pstep, poffset,output_shape=newdim, order=order)
         mask = np.array(1 - self.data.mask,dtype=bool)
         newmask = ndimage.affine_transform(mask, pstep, poffset,output_shape=newdim, order=0)
         mask = np.ma.make_mask(1-newmask)
@@ -4568,65 +4633,119 @@ class Image(object):
         res.data = np.ma.array(data, mask=mask)
         return res 
 
-    def gaussian_filter(self, sigma=3):
+    def gaussian_filter(self, sigma=3, interp='no'):
         """Applies gaussian filter to the image.
         
-        Parameter
-        ---------
+        Parameters
+        ----------
         sigma : float
         Standard deviation for Gaussian kernel.
+        
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         res = self.copy()
-        res.data = np.ma.array(ndimage.gaussian_filter(res.data.filled(0), sigma),mask=res.data.mask)
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+        
+        res.data = np.ma.array(ndimage.gaussian_filter(data*self.fscale, sigma),mask=res.data.mask)/self.fscale
         return res
             
-    def median_filter(self, size=3):
+    def median_filter(self, size=3, interp='no'):
         """Applies median filter to the image.
         
-        Parameter
-        ---------
+        Parameters
+        ----------
         size : float
         Shape that is taken from the input array, at every element position, to define the input to the filter function.
 
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         res = self.copy()
-        res.data = np.ma.array(ndimage.median_filter(res.data.filled(0), size),mask=res.data.mask)
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+        
+        res.data = np.ma.array(ndimage.median_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
         return res
     
-    def maximum_filter(self, size=3):
+    def maximum_filter(self, size=3, interp='no'):
         """Applies maximum filter to the image.
         
-        Parameter
-        ---------
+        Parameters
+        ----------
         size : float
         Shape that is taken from the input array, at every element position, to define the input to the filter function.
 
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         res = self.copy()
-        res.data = np.ma.array(ndimage.maximum_filter(res.data.filled(0), size),mask=res.data.mask)
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+        
+        res.data = np.ma.array(ndimage.maximum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
         return res     
     
-    def minimum_filter(self, size=3):
+    def minimum_filter(self, size=3, interp='no'):
         """Applies minimum filter to the image.
         
-        Parameter
-        ---------
+        Parameters
+        ----------
         size : float
         Shape that is taken from the input array, at every element position, to define the input to the filter function.
 
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         res = self.copy()
-        res.data = np.ma.array(ndimage.minimum_filter(res.data.filled(0), size),mask=res.data.mask)
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+        
+        res.data = np.ma.array(ndimage.minimum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
         return res   
     
-    def add(self, other):
+    def add(self, other, interp='no'):
         """ Adds the image other to the current image.
         The coordinate are taken into account.
         
-        Parameter
-        ---------
+        Parameters
+        ----------
         other : Image
         Second image to add.
+        
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         try:
             if other.image:
@@ -4676,9 +4795,18 @@ class Image(object):
                 else:
                     nl2 = ima.shape[1]
         
-                data = self.data.filled(0)  
+                if interp=='linear':
+                    data = self._interp_data(spline=False)
+                    data[k1:k2,l1:l2] += (ima._interp_data(spline=False)[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
+                elif interp=='spline':
+                    data = self._interp_data(spline=True)
+                    data[k1:k2,l1:l2] += (ima._interp_data(spline=True)[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
+                else:
+                    data = self.data.filled(np.ma.median(self.data))
+                    data[k1:k2,l1:l2] += (ima.data.filled(np.ma.median(ima.data))[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
+               
+                data = self.data.filled(np.ma.median(self.data))
                 
-                data[k1:k2,l1:l2] += (ima.data.filled(0)[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
                 res = Image(notnoise=True, shape=self.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
                 res.data = np.ma.array(data, mask=self.data.mask)
                 return res 
@@ -4686,7 +4814,7 @@ class Image(object):
             print 'Operation forbidden'
             return None
         
-    def segment(self, shape=(2,2), minsize=20, background = 20):
+    def segment(self, shape=(2,2), minsize=20, background = 20, interp='no'):
         """ Segments the image in a number of smaller images.
         Returns a list of images.
         
@@ -4701,9 +4829,21 @@ class Image(object):
         
         background : float
         Under this value, flux is considered as background.
+        
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+        
         structure = ndimage.morphology.generate_binary_structure(shape[0], shape[1])
-        expanded = ndimage.morphology.grey_dilation(self.data.filled(0), (minsize,minsize))
+        expanded = ndimage.morphology.grey_dilation(data, (minsize,minsize))
         ksel = np.where(expanded<background)
         expanded[ksel] = 0
         
@@ -4718,24 +4858,53 @@ class Image(object):
             imalist.append(res)
         return imalist
     
-    def add_gaussian_noise(self, sigma):
+    def add_gaussian_noise(self, sigma, interp='no'):
         """ Adds gaussian noise to image
+        
+        Parameters
+        ----------
+        
+        sigma : float
+        Standard deviation.
+        
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
+        """
+        res = self.copy()
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+            
+        res.data = np.ma.array(np.random.normal(data, sigma),mask=res.data.mask)
+        return res
+    
+    def add_poisson_noise(self, interp='no'):
+        """ Adds poisson noise to image
         
         Parameter
         ---------
         
-        sigma : float
-        Standard deviation.
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         res = self.copy()
-        res.data = np.ma.array(np.random.normal(res.data.filled(0), sigma),mask=res.data.mask)
-        return res
-    
-    def add_poisson_noise(self):
-        """ Adds poisson noise to image
-        """
-        res = self.copy()
-        res.data = np.ma.array(np.random.poisson(res.data.filled(0)),mask=res.data.mask)
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+        
+        res.data = np.ma.array(np.random.poisson(data),mask=res.data.mask)
         return res
     
     def inside(self, coord):
@@ -4757,29 +4926,55 @@ class Image(object):
         else:
             return False
         
-    def fftconvolve(self, other):
+    def fftconvolve(self, other, interp='no'):
         """convolves self and other using fft.
         
-        Parameter
-        ---------
+        Parameters
+        ----------
         
         other : 2d-array or Image
         Second Image or 2d-array
+        
+        interp : 'no' | 'linear' | 'spline'
+        'no' : data median value replaced masked values.
+        'linear' : linear interpolation of the masked values.
+        'spline' : spline interpolation of the masked values.
         """
         if self.data is None:
             raise ValueError, 'empty data array'
+        
         if type(other) is np.array:
             res = self.copy()
-            res.data = np.ma.array(signal.fftconvolve(self.data.filled(0) ,other ,mode='same'), mask=self.data.mask)
+            
+            if interp=='linear':
+                data = self._interp_data(spline=False)
+            elif interp=='spline':
+                data = self._interp_data(spline=True)
+            else:
+                data = self.data.filled(np.ma.median(self.data))
+            
+            res.data = np.ma.array(signal.fftconvolve(data ,other ,mode='same'), mask=self.data.mask)
             return res
         try:
             if other.image:
+
+                if interp=='linear':
+                    data = self._interp_data(spline=False)
+                    other_data = other._interp_data(spline=False)
+                elif interp=='spline':
+                    data = self._interp_data(spline=True)
+                    other_data = other._interp_data(spline=True)
+                else:
+                    data = self.data.filled(np.ma.median(self.data))
+                    other_data = other.data.filled(np.ma.median(other.data))
+                
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
                     res = self.copy()
-                    res.data = np.ma.array(signal.fftconvolve(self.data.filled(0) ,other.data.filled(0) ,mode='same'), mask=self.data.mask)
+                    
+                    res.data = np.ma.array(signal.fftconvolve(data ,other_data ,mode='same'), mask=self.data.mask)
                     res.fscale = self.fscale * other.fscale
                     return res
         except:
@@ -5047,10 +5242,10 @@ class Image(object):
                 i1 = int(min(eclick.ydata,erelease.ydata))
                 i2 = int(max(eclick.ydata,erelease.ydata))
                 d = self.data[i1:i2, j1:j2]
-                mean = self.fscale*np.mean(d)
-                median = self.fscale*np.median(np.ravel(d))
+                mean = self.fscale*np.ma.mean(d)
+                median = self.fscale*np.ma.median(np.ma.ravel(d))
                 vsum = self.fscale*d.sum()
-                std = self.fscale*np.std(d)
+                std = self.fscale*np.ma.std(d)
                 npts = d.shape[0]*d.shape[1]
                 peak = self.fscale*d.max()
                 print 'mean=%g\tmedian=%g\tstd=%g\tsum=%g\tpeak=%g\tnpts=%d' % (mean, median, std, vsum, peak, npts)
@@ -5421,7 +5616,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smo
     
     return Image(data=data, wcs=wcs)
 
-def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False):
+def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False, interp='no'):
     """ builds composite image from a list of image and colors. 
     Returns a PIL RGB image (or 2 PIL images if bar is True).
     
@@ -5439,6 +5634,11 @@ def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False):
     bar : boolean
     If bar is True a color bar image is created.
     
+    interp : 'no' | 'linear' | 'spline'
+    'no' : data median value replaced masked values.
+    'linear' : linear interpolation of the masked values.
+    'spline' : spline interpolation of the masked values.
+    
     Example
     -------
     
@@ -5455,10 +5655,18 @@ def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False):
     first = True
     for ImaCol in ImaColList:
         ima,col,sat = ImaCol
+        
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))
+        
         if mode == 'lin':
-            f = ima.data.filled(0)
+            f = data
         elif mode == 'sqrt':
-            f = np.sqrt(np.clip(ima.data.filled(0), 0, 1.e99))
+            f = np.sqrt(np.clip(data, 0, 1.e99))
         else:
             raise ValueError, 'Wrong cut mode'
         if first:
@@ -5474,10 +5682,16 @@ def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False):
     # first image
     ima,col,sat = ImaColList[0]
     p1 = PILima.new('RGB', (ima.shape[0],ima.shape[1]))
-    if mode == 'lin':
-        f = ima.data.filled(0)
+    if interp=='linear':
+        data = self._interp_data(spline=False)
+    elif interp=='spline':
+        data = self._interp_data(spline=True)
+    else:
+        data = self.data.filled(np.ma.median(self.data))
+    if mode == 'lin':      
+        f = data
     elif mode == 'sqrt':
-        f = np.sqrt(np.clip(ima.data.filled(0), 0, 1.e99))
+        f = np.sqrt(np.clip(data, 0, 1.e99))
     lum = np.clip((f-d1)*100/(d2 - d1), 0, 100)
     for i in range(ima.shape[0]):
         for j in range(ima.shape[1]):
@@ -5485,11 +5699,17 @@ def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False):
             
     for ImaCol in ImaColList[1:]:
         ima,col,sat = ImaCol
-        p2 = PILima.new('RGB', (ima.shape[0],ima.shape[1]))
+        p2 = PILima.new('RGB', (ima.shape[0],ima.shape[1]))     
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = self.data.filled(np.ma.median(self.data))   
         if mode == 'lin':
-            f = ima.data.filled(0)
+            f = data
         elif mode == 'sqrt':
-            f = np.sqrt(np.clip(ima.data.filled(0), 0, 1.e99))
+            f = np.sqrt(np.clip(data, 0, 1.e99))
         lum = np.clip((f-d1)*100/(d2 - d1), 0, 100)
         for i in range(ima.shape[0]):
             for j in range(ima.shape[1]):
@@ -5622,9 +5842,9 @@ class Cube(object):
                     print "error: wcs not copied."
                     self.wcs = None
                 #Wavelength coordinates
-                if hdr.has_key('CDELT3'):
+                if 'CDELT3' in hdr:
                     cdelt = hdr.get('CDELT3')
-                elif hdr.has_key('CD3_3'):
+                elif 'CD3_3' in hdr:
                     cdelt = hdr.get('CD3_3')
                 else:
                     cdelt = 1.0
@@ -5656,9 +5876,9 @@ class Cube(object):
                     print "error: wcs not copied."
                     self.wcs = None
                 #Wavelength coordinates
-                if h.has_key('CDELT3'):
+                if 'CDELT3' in h:
                     cdelt = h.get('CDELT3')
-                elif h.has_key('CD3_3'):
+                elif 'CD3_3' in h:
                     cdelt = h.get('CD3_3')
                 else:
                     cdelt = 1.0

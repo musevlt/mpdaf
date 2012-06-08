@@ -477,15 +477,21 @@ Methods
   :type frac: float in ]0,1]
   :rtype: (float,float)
   
-.. function:: add(other)
+.. function:: add(other [,interp='no'])
 
   Adds the image other to the current image. The coordinate are taken into account.
   
   :param other: Second image to add.
   :type other: Image
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: Image
   
-.. function:: segment([shape=(2,2), minsize=20, background = 20])
+.. function:: segment([shape=(2,2), minsize=20, background = 20, interp='no'])
 
   Segments the image in a number of smaller images. Returns a list of images.
   
@@ -495,6 +501,12 @@ Methods
   :type minsize: integer
   :param background: Under this value, flux is considered as background.
   :type background: float
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: List of Image objects.
         
 .. function:: moments()
@@ -531,18 +543,30 @@ Methods
   :type plot: boolean
   :rtype: objs.Gauss2D object (`Gauss2D class`_) 
   
-.. function:: add_gaussian_noise(sigma)
+.. function:: add_gaussian_noise(sigma [,interp='no'])
 
   Adds Gaussian noise to image.
   
   :param sigma: Standard deviation.
   :type sigma: float
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: obj.Image
   
-.. function:: add_poisson_noise()
+.. function:: add_poisson_noise([interp='no'])
 
   Adds Poisson noise to image.
   
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: obj.Image
   
 .. function:: inside(coord)
@@ -553,12 +577,18 @@ Methods
   :type coord: (float,float)
   :rtype: boolean
   
-.. function:: fftconvolve(other)
+.. function:: fftconvolve(other [,interp='no'])
 
   Convolves image with other using fft.
   
   :param other: Second Image or 2d-array.
   :type other: 2d-array or Image
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: obj.Image
   
 .. function:: fftconvolve_gauss([center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1])
@@ -631,12 +661,18 @@ Transformation
   :type theta: float
   :rtype: Image
   
-.. function:: rotate(theta)
+.. function:: rotate(theta [, interp='no'])
 
   Rotates the image using spline interpolation.
   
   :param theta: Rotation in degree.
   :type theta: float
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: Image
   
 .. function:: rebin_factor(factor [, margin='center'])
@@ -653,7 +689,7 @@ Transformation
   :type margin: 'center' or 'origin'
   :rtype: Image
         
-.. function:: rebin(newdim, newstart, newstep [, flux=False, order=3])
+.. function:: rebin(newdim, newstart, newstep [, flux=False, order=3, interp='no'])
 
   Rebins the image to a new coordinate system.
   
@@ -667,42 +703,72 @@ Transformation
   :type flux: boolean
   :param order: The order of the spline interpolation, default is 3. The order has to be in the range 0-5.
   :type order: integer
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: Image
   
   
 Filter
 ------
   
-.. function:: gaussian_filter([sigma=3])
+.. function:: gaussian_filter([sigma=3, interp='no'])
 
   Applies gaussian filter to the image.
         
   :param sigma: Standard deviation for Gaussian kernel
   :type sigma: float
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: Image        
             
-.. function:: median_filter([size=3])
+.. function:: median_filter([size=3, interp='no'])
 
   Applies median filter to the image.
         
   :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
   :type size: float
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: Image          
     
-.. function:: maximum_filter([size=3])
+.. function:: maximum_filter([size=3, interp='no'])
   
   Applies maximum filter to the image.
         
   :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
   :type size: float
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: Image       
     
-.. function:: minimum_filter([size=3])
+.. function:: minimum_filter([size=3, interp='no'])
 
   Applies minimum filter to the image.
         
   :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
   :type size: float
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: Image       
 
 Plotting
@@ -879,7 +945,7 @@ Examples::
   :type smooth: float
   :rtype: obj.Image object (`Image class`_) 
   
-.. function:: composite_image(ImaColList [, mode='lin', cuts=(10,90), bar=False])
+.. function:: composite_image(ImaColList [, mode='lin', cuts=(10,90), bar=False, interp='no'])
 
   Builds composite image from a list of image and colors.
   
@@ -891,6 +957,12 @@ Examples::
   :type cuts: (float,float)
   :param bar: If bar is True a color bar image is created.
   :type bar: boolean
+  :param interp: if 'no', data median value replaced masked values.
+  
+		if 'linear', linear interpolation of the masked values.
+		
+		if 'spline', spline interpolation of the masked values.
+  :type interp: 'no' | 'linear' | 'spline'
   :rtype: Returns a PIL RGB image (or 2 PIL images if bar is True).
   
 Examples::

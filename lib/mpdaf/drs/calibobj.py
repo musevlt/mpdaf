@@ -661,7 +661,7 @@ class CalibDir(object):
         Ifu id
         """
         extname = "CHAN%02d" %key
-        if self.files.has_key(key):
+        if key in self.files:
             return self.files[key]
         else:
             print 'invalid key'
