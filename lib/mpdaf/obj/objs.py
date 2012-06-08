@@ -3636,8 +3636,12 @@ class Image(object):
                 radius = (radius,radius)
             if pix:
                 imin = center[0] - radius[0]
+                if imin<0:
+                    imin = 0
                 imax = center[0] + radius[0] + 1
                 jmin = center[1] - radius[1]
+                if jmin<0:
+                    jmin = 0
                 jmax = center[1] + radius[1] + 1
             else:
                 dec_min = center[0] - radius[0]/3600.0
@@ -3663,8 +3667,12 @@ class Image(object):
             di = 0
             dj = 0
         else:
-            if ic-dpix<0 or ic+dpix>self.shape[0] or jc-dpix<0 or jc+dpix>self.shape[1]:
-                raise ValueError, 'Cannot compute center of mass, peak at the edges of the image'
+#            if ic-dpix<0 or ic+dpix>d.shape[0] or jc-dpix<0 or jc+dpix>d.shape[1]:
+#                raise ValueError, 'Cannot compute center of mass, peak at the edges of the image'
+            if ic-dpix<0:
+                ic = dpix
+            if jc-dpix<0:
+                jc = dpix
             di,dj = ndimage.measurements.center_of_mass(d[ic-dpix:ic+dpix+1,jc-dpix:jc+dpix+1])
         ic = imin+ic-dpix+di
         jc = jmin+jc-dpix+dj

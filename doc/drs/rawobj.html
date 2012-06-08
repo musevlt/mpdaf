@@ -483,10 +483,45 @@ Method get_channel(extname) returns the corresponding channel</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="drs.Channel.trimmed_image">
-<tt class="descclassname">drs.Channel.</tt><tt class="descname">trimmed_image</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.Channel.trimmed_image" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes over scanned pixels from data.</p>
-<p>:rtype:: data float array.</p>
+<dt id="drs.Channel.get_image_mask_overscan">
+<tt class="descclassname">drs.Channel.</tt><tt class="descname">get_image_mask_overscan</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.Channel.get_image_mask_overscan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an Image object in which overscanned pixels are masked.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">mpdaf.obj.Image object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.Channel.get_image_just_overscan">
+<tt class="descclassname">drs.Channel.</tt><tt class="descname">get_image_just_overscan</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.Channel.get_image_just_overscan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an Image object in which only overscanned pixels are not masked.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">mpdaf.obj.Image object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="drs.Channel.get_trimmed_image">
+<tt class="descclassname">drs.Channel.</tt><tt class="descname">get_trimmed_image</tt><big>(</big><big>)</big><a class="headerlink" href="#drs.Channel.get_trimmed_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an Image object without over scanned pixels</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">mpdaf.obj.Image object</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>

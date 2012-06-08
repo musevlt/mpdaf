@@ -85,7 +85,7 @@ def deg2rad(deg):
     return (deg * np.pi / 180.)
   
 def rad2deg(rad):
-    return (rad * 180. / np.pi)
+    return (rad * 180. / np.pi)%180
 
 
 class WCS(object):
@@ -214,7 +214,7 @@ class WCS(object):
         """prints information
         """
         #self.wcs.printwcs()
-        if self.wcs.wcs.ctype[0] == 'LINEAR':
+        if not self.is_deg():
             pixcrd = [[0,0],[self.wcs.naxis2 -1,self.wcs.naxis1 -1]]
             pixsky = self.pix2sky(pixcrd)
             cdelt = self.get_step()
@@ -397,10 +397,10 @@ class WCS(object):
         """returns the rotation angle
         """
         try:
-            return deg2rad( np.arctan2(self.wcs.wcs.cd[1,0],self.wcs.wcs.cd[1,1]) )
+            return rad2deg( np.arctan2(self.wcs.wcs.cd[1,0],self.wcs.wcs.cd[1,1]) )
         except:
             try:
-                return deg2rad( np.arctan2(self.wcs.wcs.pc[1,0],self.wcs.wcs.pc[1,1]) )
+                return rad2deg( np.arctan2(self.wcs.wcs.pc[1,0],self.wcs.wcs.pc[1,1]) )
             except:
                 raise IOError, 'No standard WCS'
     
@@ -430,10 +430,6 @@ class WCS(object):
     def rebin(self, step, start):
         """rebins to a new coordinate system.
         """
-        if self.wcs.wcs.ctype[0] == 'LINEAR':
-            deg = False
-        else:
-            deg = True
         if start == None:
             xc = 0
             yc = 0
@@ -441,13 +437,13 @@ class WCS(object):
             cdelt = self.get_step()
             start = (pixsky[0][0] -0.5*cdelt[0] + 0.5*step[0],pixsky[0][1] -0.5*cdelt[1] + 0.5*step[1])
         
-        res = WCS(crpix=1.0,crval=start,cdelt=step,deg=deg,rot=self.get_rot())
+        res = WCS(crpix=1.0,crval=start,cdelt=step,deg=self.is_deg(),rot=self.get_rot())
         return res
     
     def is_deg(self):
         """Returns True if world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg)
         """
-        if self.wcs.wcs.ctype[0] == 'LINEAR':
+        if self.wcs.wcs.ctype[0] == 'LINEAR' or self.wcs.wcs.ctype[0] == 'PIXEL':
             return False
         else:
             return True

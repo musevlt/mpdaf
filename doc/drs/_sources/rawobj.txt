@@ -232,11 +232,23 @@ Methods
   
   :rtype: Channel object.
   
-.. function:: trimmed_image()
+.. function:: get_image_mask_overscan()
 
-  Removes over scanned pixels from data.
+  Returns an Image object in which overscanned pixels are masked.
   
-  :rtype:: data float array.
+  :rtype: mpdaf.obj.Image object 
+
+.. function:: get_image_just_overscan()
+
+  Returns an Image object in which only overscanned pixels are not masked.
+  
+  :rtype: mpdaf.obj.Image object 
+  
+.. function:: get_trimmed_image()
+
+  Returns an Image object without over scanned pixels
+  
+  :rtype: mpdaf.obj.Image object 
   
   
 Examples

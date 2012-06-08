@@ -6,6 +6,7 @@ import datetime
 import sys
 #import matplotlib as mpl
 #import matplotlib.pyplot as plt
+from mpdaf import obj
 
 
 class Channel(object):
@@ -59,9 +60,12 @@ class Channel(object):
             self.header = hdulist[extname].header.ascard
             self.nx = hdulist[extname].header["NAXIS1"]
             self.ny = hdulist[extname].header["NAXIS2"]
-            data = hdulist[extname].data
-            self.data = np.ndarray(np.shape(data))
-            self.data [:] = data[:]
+            try:
+                data = hdulist[extname].data
+                self.data = np.ndarray(np.shape(data))
+                self.data [:] = data[:]
+            except:
+                self.data = None
             hdulist.close()
         else:
             self.header = pyfits.CardList()
@@ -282,9 +286,6 @@ class Channel(object):
 
     def trimmed(self):
         """returns a Channel object containing only reference to the valid pixels"""
-        #x = np.ma.MaskedArray(self.data, mask=self.mask)
-        #return x
-
         result = Channel(self.extname)
         result.header = self.header
         result.nx = self.nx
@@ -292,7 +293,6 @@ class Channel(object):
         result.mask = self.mask
         result.data = np.ma.MaskedArray(self.data, mask=self.mask, copy=True)
         return result
-
 
     def overscan(self):
         """returns a Channel object containing only reference to the overscanned pixels"""
@@ -308,8 +308,8 @@ class Channel(object):
         return result
 
 
-    def trimmed_image(self):
-        """removes over scanned pixels from data"""
+    def get_trimmed_image(self):
+        """returns an Image object without over scanned pixels"""
         nx_data = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
         ny_data = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
         if isinstance(self.data,np.ma.core.MaskedArray):
@@ -318,7 +318,24 @@ class Channel(object):
             x = np.ma.MaskedArray(self.data, mask=self.mask)
         data = np.ma.compressed(x)
         data = np.reshape(data,(ny_data,nx_data))
-        return data
+        wcs = obj.WCS(shape=(ny_data,nx_data))
+        ima = obj.Image(wcs=wcs, data=data)
+        return ima
+    
+    def get_image_mask_overscan(self):
+        """returns an Image object in which overscanned pixels are masked"""
+        wcs = obj.WCS(pyfits.Header(self.header))
+        ima = obj.Image(wcs=wcs, data=self.data)
+        ima.data = np.ma.MaskedArray(self.data, mask=self.mask, copy=True)
+        return ima
+    
+    def get_image_just_overscan(self):
+        """returns an Image object in which only overscanned pixels are not masked"""
+        wcs = obj.WCS(pyfits.Header(self.header))
+        ima = obj.Image(wcs=wcs, data=self.data)
+        ima.data = np.ma.MaskedArray(self.data, mask=np.logical_not(self.mask), copy=True)
+        return ima
+    
 
 
 STR_FUNCTIONS = { 'Channel.__mul__' : Channel.__mul__,
