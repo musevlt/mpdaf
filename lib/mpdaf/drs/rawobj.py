@@ -473,6 +473,9 @@ class RawFile(object):
         print 'Nb extensions:\t%i (loaded:%i %s)'% (self.next,len(self.channels),self.channels.keys())
         print 'format:\t(%i,%i)'% (self.nx,self.ny)
         
+    def get_keywords(self,key):
+        return self.primary_header[key].value
+        
     def get_channels_extname_list(self):
         """returns the list of existing channels names"""
         return self.channels.keys()
