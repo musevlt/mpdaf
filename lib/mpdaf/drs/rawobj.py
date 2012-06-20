@@ -424,7 +424,7 @@ class RawFile(object):
                     try:
                         extname = hdulist[n].header["EXTNAME"]
                         exttype = hdulist[n].header["XTENSION"]
-                        if exttype=='IMAGE':
+                        if exttype=='IMAGE' and hdulist[n].header["NAXIS"]!=0:
                             nx = hdulist[n].header["NAXIS1"]
                             ny = hdulist[n].header["NAXIS2"]
                             if self.nx == 0:
@@ -470,8 +470,12 @@ class RawFile(object):
             print self.filename
         else:
             print 'NoName'
-        print 'Nb extensions:\t%i (loaded:%i)'% (self.next,len(self.channels))
+        print 'Nb extensions:\t%i (loaded:%i %s)'% (self.next,len(self.channels),self.channels.keys())
         print 'format:\t(%i,%i)'% (self.nx,self.ny)
+        
+    def get_channels_extname_list(self):
+        """returns the list of existing channels names"""
+        return self.channels.keys()
 
     def get_channel(self,extname):
         """returns a Channel object
