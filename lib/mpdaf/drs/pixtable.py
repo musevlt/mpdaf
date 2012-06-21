@@ -25,27 +25,6 @@ class PixTable(object):
     ncols: integer
     Number of columns
 
-    xpos: string
-    name of memory-mapped files used for accessing pixel position on the x-axis (in deg)
-
-    ypos: string
-    name of memory-mapped files used for accessing pixel position on the y-axis (in deg)
-
-    lbda: string
-    name of memory-mapped files used for accessing wavelength value (in Angstrom)
-
-    data: string
-    name of memory-mapped files used for accessing pixel values (in e-)
-
-    dq: string
-    name of memory-mapped files used for accessing bad pixel status as defined by Euro3D
-
-    stat: string
-    name of memory-mapped files used for accessing variance
-
-    origin: string
-    name of memory-mapped files used for accessing an encoded value of IFU and slice number
-
     Public methods
     --------------
     Creation: init, copy
@@ -79,13 +58,15 @@ class PixTable(object):
         self.filename = filename
         self.nrows = 0
         self.ncols = 0
-        self.xpos = None
-        self.ypos = None
-        self.lbda = None
-        self.data = None
-        self.dq = None
-        self.stat = None
-        self.origin = None
+
+	# name of memory-mapped files
+        self.__xpos = None
+        self.__ypos = None
+        self.__lbda = None
+        self.__data = None
+        self.__dq = None
+        self.__stat = None
+        self.__origin = None
 
         if filename!=None:
             try:
@@ -105,20 +86,20 @@ class PixTable(object):
     def __del__(self):
         """removes temporary files used for memory mapping"""
         try:
-            if self.xpos != None:
-                os.remove(self.xpos)
-            if self.ypos != None:
-                os.remove(self.ypos)
-            if self.lbda != None:
-                os.remove(self.lbda)
-            if self.data != None:
-                os.remove(self.data)
-            if self.dq != None:
-                os.remove(self.dq)
-            if self.stat != None:
-                os.remove(self.stat)
-            if self.origin != None:
-                os.remove(self.origin)
+            if self.__xpos != None:
+                os.remove(self.__xpos)
+            if self.__ypos != None:
+                os.remove(self.__ypos)
+            if self.__lbda != None:
+                os.remove(self.__lbda)
+            if self.__data != None:
+                os.remove(self.__data)
+            if self.__dq != None:
+                os.remove(self.__dq)
+            if self.__stat != None:
+                os.remove(self.__stat)
+            if self.__origin != None:
+                os.remove(self.__origin)
         except:
             pass
 
@@ -194,8 +175,8 @@ class PixTable(object):
 
     def get_xpos(self):
         """loads the xpos column and returns it"""
-        if self.xpos != None:
-            xpos = np.memmap(self.xpos,dtype="float32",shape=(self.nrows))
+        if self.__xpos != None:
+            xpos = np.memmap(self.__xpos,dtype="float32",shape=(self.nrows))
             return xpos
         else:
             if self.filename == None:
@@ -204,9 +185,9 @@ class PixTable(object):
                 return None
             else:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.xpos) = tempfile.mkstemp(prefix='mpdaf')
+                (fd,self.__xpos) = tempfile.mkstemp(prefix='mpdaf')
                 data_xpos = hdulist[1].data.field('xpos')
-                xpos = np.memmap(self.xpos,dtype="float32",shape=(self.nrows))
+                xpos = np.memmap(self.__xpos,dtype="float32",shape=(self.nrows))
                 xpos[:] = data_xpos[:]
                 hdulist.close()
                 os.close(fd)
@@ -214,8 +195,8 @@ class PixTable(object):
 
     def get_ypos(self):
         """loads the ypos column and returns it"""
-        if self.ypos != None:
-            ypos = np.memmap(self.ypos,dtype="float32",shape=(self.nrows))
+        if self.__ypos != None:
+            ypos = np.memmap(self.__ypos,dtype="float32",shape=(self.nrows))
             return ypos
         else:
             if self.filename == None:
@@ -224,9 +205,9 @@ class PixTable(object):
                 return None
             else:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.ypos) = tempfile.mkstemp(prefix='mpdaf')
+                (fd,self.__ypos) = tempfile.mkstemp(prefix='mpdaf')
                 data_ypos = hdulist[1].data.field('ypos')
-                ypos = np.memmap(self.ypos,dtype="float32",shape=(self.nrows))
+                ypos = np.memmap(self.__ypos,dtype="float32",shape=(self.nrows))
                 ypos[:] = data_ypos[:]
                 hdulist.close()
                 os.close(fd)
@@ -234,8 +215,8 @@ class PixTable(object):
 
     def get_lambda(self):
         """loads the lambda column and returns it"""
-        if self.lbda != None:
-            lbda = np.memmap(self.lbda,dtype="float32",shape=(self.nrows))
+        if self.__lbda != None:
+            lbda = np.memmap(self.__lbda,dtype="float32",shape=(self.nrows))
             return lbda
         else:
             if self.filename == None:
@@ -244,9 +225,9 @@ class PixTable(object):
                 return None
             else:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.lbda) = tempfile.mkstemp(prefix='mpdaf')
+                (fd,self.__lbda) = tempfile.mkstemp(prefix='mpdaf')
                 data_lbda = hdulist[1].data.field('lambda')
-                lbda = np.memmap(self.lbda,dtype="float32",shape=(self.nrows))
+                lbda = np.memmap(self.__lbda,dtype="float32",shape=(self.nrows))
                 lbda[:] = data_lbda[:]
                 hdulist.close()
                 os.close(fd)
@@ -254,8 +235,8 @@ class PixTable(object):
 
     def get_data(self):
         """loads the data column and returns it"""
-        if self.data != None:
-            data = np.memmap(self.data,dtype="float32",shape=(self.nrows))
+        if self.__data != None:
+            data = np.memmap(self.__data,dtype="float32",shape=(self.nrows))
             return data
         else:
             if self.filename == None:
@@ -264,9 +245,9 @@ class PixTable(object):
                 return None
             else:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.data) = tempfile.mkstemp(prefix='mpdaf')
+                (fd,self.__data) = tempfile.mkstemp(prefix='mpdaf')
                 data_data = hdulist[1].data.field('data')
-                data = np.memmap(self.data,dtype="float32",shape=(self.nrows))
+                data = np.memmap(self.__data,dtype="float32",shape=(self.nrows))
                 data[:] = data_data[:]
                 hdulist.close()
                 os.close(fd)
@@ -274,8 +255,8 @@ class PixTable(object):
 
     def get_stat(self):
         """loads the stat column and returns it"""
-        if self.stat != None:
-            stat = np.memmap(self.stat,dtype="float32",shape=(self.nrows))
+        if self.__stat != None:
+            stat = np.memmap(self.__stat,dtype="float32",shape=(self.nrows))
             return stat
         else:
             if self.filename == None:
@@ -284,9 +265,9 @@ class PixTable(object):
                 return None
             else:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.stat) = tempfile.mkstemp(prefix='mpdaf')
+                (fd,self.__stat) = tempfile.mkstemp(prefix='mpdaf')
                 data_stat = hdulist[1].data.field('stat')
-                stat = np.memmap(self.stat,dtype="float32",shape=(self.nrows))
+                stat = np.memmap(self.__stat,dtype="float32",shape=(self.nrows))
                 stat[:] = data_stat[:]
                 hdulist.close()
                 os.close(fd)
@@ -294,8 +275,8 @@ class PixTable(object):
 
     def get_dq(self):
         """loads the dq column and returns it"""
-        if self.dq != None:
-            dq = np.memmap(self.dq,dtype="uint32",shape=(self.nrows))
+        if self.__dq != None:
+            dq = np.memmap(self.__dq,dtype="uint32",shape=(self.nrows))
             return dq
         else:
             if self.filename == None:
@@ -304,9 +285,9 @@ class PixTable(object):
                 return None
             else:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.dq) = tempfile.mkstemp(prefix='mpdaf')
+                (fd,self.__dq) = tempfile.mkstemp(prefix='mpdaf')
                 data_dq = hdulist[1].data.field('dq')
-                dq = np.memmap(self.dq,dtype="uint32",shape=(self.nrows))
+                dq = np.memmap(self.__dq,dtype="uint32",shape=(self.nrows))
                 dq[:] = data_dq[:]
                 hdulist.close()
                 os.close(fd)
@@ -314,8 +295,8 @@ class PixTable(object):
 
     def get_origin(self):
         """loads the origin column and returns it"""
-        if self.origin != None:
-            origin = np.memmap(self.origin,dtype="uint32",shape=(self.nrows))
+        if self.__origin != None:
+            origin = np.memmap(self.__origin,dtype="uint32",shape=(self.nrows))
             return origin
         else:
             if self.filename == None:
@@ -324,9 +305,9 @@ class PixTable(object):
                 return None
             else:
                 hdulist = pyfits.open(self.filename,memmap=1)
-                (fd,self.origin) = tempfile.mkstemp(prefix='mpdaf')
+                (fd,self.__origin) = tempfile.mkstemp(prefix='mpdaf')
                 data_origin = hdulist[1].data.field('origin')
-                origin = np.memmap(self.origin,dtype="uint32",shape=(self.nrows))
+                origin = np.memmap(self.__origin,dtype="uint32",shape=(self.nrows))
                 origin[:] = data_origin[:]
                 hdulist.close()
                 os.close(fd)
@@ -612,7 +593,7 @@ class PixTable(object):
         origin: integer
         origin value
         """
-        return self.origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1
+        return self.__origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1
 
     def origin2coords(self, origin):
         """ converts the origin value and returns (ifu, slice, ypix, xpix)
