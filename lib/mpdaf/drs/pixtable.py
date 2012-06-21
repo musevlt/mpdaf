@@ -370,109 +370,190 @@ class PixTable(object):
         # update attributes
         self.filename = filename
 
-    def extract(self, center, size=None, lbda=None, shape='C'):
-        """ extracts a spatial aperture and a wavelength range from a PixTable,
-        aperture is define as center,size [if size=None the full field is used]
-        size = radius (for circular aperture) or half side length (for square aperture)
-        wavelength range = (l1,l2) if None the full wavelength range is used
+    def extract(self, sky=None, lbda=None, ifu=None, slice=None, xpix=None, ypix=None):
+        """ extracts a subset of a pixtable using the following criteria:
+        - aperture on the sky (center, size and shape)
+        - wavelength range
+        - IFU number
+        - slice number
+        - detector pixels
+        The arguments can be either single value or a list of values to select
+        multiple regions.
 
         Parameters
         ----------
-        center: (float,float)
-        (x,y) center coordinate in deg
+        sky: (float, float, float, char)
+        (y, x, size, shape) extract an aperture on the sky, defined by a center
+        (y, x), a shape ('C' for circular, 'S' for square) and size (radius or
+        half side length).
 
-        size: float
-        size in deg
-
-        lbda: (float,float)
+        lbda: (float, float)
         (min, max) wavelength range in Angstrom
 
-        shape: char
-        'C' for circular aperture, 'S' for square aperture
+        ifu: int
+        IFU number
+
+        slice: int
+        Slice number on the CCD
+
+        xpix: (int, int)
+        (min, max) pixel range along the X axis
+
+        ypix: (int, int)
+        (min, max) pixel range along the Y axis
         """
-        x0,y0 = center
+
+        # First create an empty pixtable
         ptab = PixTable()
         ptab.primary_header = pyfits.CardList(self.primary_header)
         ptab.ncols = self.ncols
-        if self.nrows != 0:
+        if self.nrows == 0:
+            return ptab
+
+        # To start select the whole pixtable
+        kmask = np.ones(self.nrows).astype('bool')
+
+        # Do the selection on the sky
+        if sky is not None:
             col_xpos = self.get_xpos()
             col_ypos = self.get_ypos()
-
-            if lbda is None:
-                if size is None:
-                    return self
-                elif shape == 'C':
-                    ksel = np.where(((col_xpos-x0)**2 + (col_ypos-y0)**2)<size**2)
+            if (isinstance(sky, tuple)):
+                y0,x0,size,shape = sky
+                if shape == 'C':
+                    kmask &= ((col_xpos-x0)**2 + (col_ypos-y0)**2) < size**2
                 elif shape == 'S':
-                    ksel = np.where((np.abs(col_xpos-x0)<size) & (np.abs(col_ypos-y0)<size))
-                else:
-                    raise ValueError, 'Unknown shape parameter'
+                    kmask &= (np.abs(col_xpos-x0) < size) & (np.abs(col_ypos-y0) < size)
             else:
-                l1,l2 = lbda
-                col_lambda = self.get_lambda()
-                if size is None:
-                    ksel = np.where((col_lambda>l1) & (col_lambda<l2))
-                else:
+                mask = np.zeros(self.nrows).astype('bool')
+                for x0,y0,size,shape in sky:
                     if shape == 'C':
-                        ksel = np.where((((col_xpos-x0)**2 + (col_ypos-y0)**2)<size**2) &
-                                        (col_lambda>l1) & (col_lambda<l2))
+                        mask |= ((col_xpos-x0)**2 + (col_ypos-y0)**2) < size**2
                     elif shape == 'S':
-                        ksel = np.where((np.abs(col_xpos-x0)<size) & (np.abs(col_ypos-y0)<size) &
-                                        (col_lambda>l1) & (col_lambda<l2))
+                        mask |= (np.abs(col_xpos-x0) < size) & (np.abs(col_ypos-y0) < size)
                     else:
                         raise ValueError, 'Unknown shape parameter'
-                del col_lambda
-            npts = len(ksel[0])
-            if npts == 0:
-                raise ValueError, 'Empty selection'
-            ptab.nrows = npts
-            #xpos
-            (fd,ptab.xpos) = tempfile.mkstemp(prefix='mpdaf')
-            xpos = np.memmap(ptab.xpos,dtype="float32",shape=(npts))
-            xpos[:] = col_xpos[ksel]
-            del xpos,col_xpos
-            os.close(fd)
-            #ypos
-            (fd,ptab.ypos) = tempfile.mkstemp(prefix='mpdaf')
-            ypos = np.memmap(ptab.ypos,dtype="float32",shape=(npts))
-            ypos[:] = col_ypos[ksel]
-            del ypos,col_ypos
-            os.close(fd)
-            #lambda
-            (fd,ptab.lbda) = tempfile.mkstemp(prefix='mpdaf')
-            lbda = np.memmap(ptab.lbda,dtype="float32",shape=(npts))
-            selflbda=self.get_lambda()
-            lbda[:] = selflbda[ksel]
-            del lbda,selflbda
-            os.close(fd)
-            #data
-            (fd,ptab.data) = tempfile.mkstemp(prefix='mpdaf')
-            selfdata=self.get_data()
-            data = np.memmap(ptab.data,dtype="float32",shape=(npts))
-            data[:] = selfdata[ksel]
-            del data,selfdata
-            os.close(fd)
-            #variance
-            (fd,ptab.stat) = tempfile.mkstemp(prefix='mpdaf')
-            selfstat=self.get_stat()
-            stat = np.memmap(ptab.stat,dtype="float32",shape=(npts))
-            stat[:] = selfstat[ksel]
-            del stat,selfstat
-            os.close(fd)
-            # pixel quality
-            (fd,ptab.dq) = tempfile.mkstemp(prefix='mpdaf')
-            selfdq = self.get_dq()
-            dq = np.memmap(ptab.dq,dtype="uint32",shape=(npts))
-            dq[:] = selfdq[ksel]
-            del dq,selfdq
-            os.close(fd)
-            # origin
-            (fd,ptab.origin) = tempfile.mkstemp(prefix='mpdaf')
-            selforigin = self.get_origin()
-            origin = np.memmap(ptab.origin,dtype="uint32",shape=(npts))
-            origin[:] = selforigin[ksel]
-            del origin,selforigin
-            os.close(fd)
+                kmask &= mask
+                del mask
+            del col_xpos
+            del col_ypos
+
+        # Do the selection on wavelengths
+        if lbda is not None:
+            col_lambda = self.get_lambda()
+            if (isinstance(lbda, tuple)):
+                l1,l2 = lbda
+                kmask &= (col_lambda>=l1) & (col_lambda<l2)
+            else:
+                mask = np.zeros(self.nrows).astype('bool')
+                for l1,l2 in lbda:
+                    mask |= (col_lambda>=l1) & (col_lambda<l2)
+                kmask &= mask
+                del mask
+            del col_lambda
+
+        # Do the selection on the origin column
+        if (ifu is not None) or (slice is not None) or (xpix is not None) or (ypix is not None):
+            col_origin = self.get_origin()
+            if slice is not None:
+                if (isinstance(slice, int)):
+                    kmask &= (self.origin2slice(col_origin) == slice)
+                else:
+                    mask = np.zeros(self.nrows).astype('bool')
+                    for s in slice:
+                        mask |= (self.origin2slice(col_origin) == s)
+                    kmask &= mask
+                    del mask
+            if ifu is not None:
+                if (isinstance(ifu, int)):
+                    kmask &= (self.origin2ifu(col_origin) == ifu)
+                else:
+                    mask = np.zeros(self.nrows).astype('bool')
+                    for i in ifu:
+                        mask |= (self.origin2ifu(col_origin) == i)
+                    kmask &= mask
+                    del mask
+            if xpix is not None:
+                col_xpix = self.origin2xpix(col_origin)
+                if (isinstance(xpix, tuple)):
+                    x1,x2 = xpix
+                    kmask &= (col_xpix>=x1) & (col_xpix<x2)
+                else:
+                    mask = np.zeros(self.nrows).astype('bool')
+                    for x1,x2 in xpix:
+                         mask |= (col_xpix>=x1) & (col_xpix<x2)
+                    kmask &= mask
+                    del mask
+                del col_xpix
+            if ypix is not None:
+                col_ypix = self.origin2ypix(col_origin)
+                if (isinstance(ypix, tuple)):
+                    y1,y2 = ypix
+                    kmask &= (col_ypix>=y1) & (col_ypix<y2)
+                else:
+                    mask = np.zeros(self.nrows).astype('bool')
+                    for y1,y2 in ypix:
+                         mask |= (col_ypix>=y1) & (col_ypix<y2)
+                    kmask &= mask
+                    del mask
+                del col_ypix
+            del col_origin
+
+        # Compute the new pixtable
+        ksel = np.where(kmask)
+        del kmask
+        ptab.nrows = len(ksel[0])
+        if ptab.nrows == 0:
+            return ptab
+        #xpos
+        (fd,ptab.xpos) = tempfile.mkstemp(prefix='mpdaf')
+        xpos = np.memmap(ptab.xpos,dtype="float32",shape=(ptab.nrows))
+        selfxpos=self.get_xpos()
+        xpos[:] = selfxpos[ksel]
+        del xpos,selfxpos
+        os.close(fd)
+        #ypos
+        (fd,ptab.ypos) = tempfile.mkstemp(prefix='mpdaf')
+        ypos = np.memmap(ptab.ypos,dtype="float32",shape=(ptab.nrows))
+        selfypos=self.get_ypos()
+        ypos[:] = selfypos[ksel]
+        del ypos,selfypos
+        os.close(fd)
+        #lambda
+        (fd,ptab.lbda) = tempfile.mkstemp(prefix='mpdaf')
+        lbda = np.memmap(ptab.lbda,dtype="float32",shape=(ptab.nrows))
+        selflbda=self.get_lambda()
+        lbda[:] = selflbda[ksel]
+        del lbda,selflbda
+        os.close(fd)
+        #data
+        (fd,ptab.data) = tempfile.mkstemp(prefix='mpdaf')
+        selfdata = self.get_data()
+        data = np.memmap(ptab.data,dtype="float32",shape=(ptab.nrows))
+        data[:] = selfdata[ksel]
+        del data,selfdata
+        os.close(fd)
+        #variance
+        (fd,ptab.stat) = tempfile.mkstemp(prefix='mpdaf')
+        selfstat=self.get_stat()
+        stat = np.memmap(ptab.stat,dtype="float32",shape=(ptab.nrows))
+        stat[:] = selfstat[ksel]
+        del stat,selfstat
+        os.close(fd)
+        # pixel quality
+        (fd,ptab.dq) = tempfile.mkstemp(prefix='mpdaf')
+        selfdq = self.get_dq()
+        dq = np.memmap(ptab.dq,dtype="uint32",shape=(ptab.nrows))
+        dq[:] = selfdq[ksel]
+        del dq,selfdq
+        os.close(fd)
+        # origin
+        (fd,ptab.origin) = tempfile.mkstemp(prefix='mpdaf')
+        selforigin = self.get_origin()
+        origin = np.memmap(ptab.origin,dtype="uint32",shape=(ptab.nrows))
+        origin[:] = selforigin[ksel]
+        del origin,selforigin
+        os.close(fd)
+
         return ptab
 
     def origin2ifu(self, origin):
