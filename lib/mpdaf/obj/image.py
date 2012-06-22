@@ -1842,7 +1842,7 @@ class Image(object):
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
-        err = np.array([np.sqrt(covar[i, i]) * np.sqrt(chisq / dof) for i in range(len(v))])
+        err = np.array([np.sqrt(covar[i, i]) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
         
         # plot
         if plot:
@@ -1873,12 +1873,12 @@ class Image(object):
         err_flux = err[0]
         ra_peak = v[1]
         err_ra_peak = err[1]
-        ra_width = v[2]
-        err_ra_width = err[2]
+        ra_width = np.abs(v[2])
+        err_ra_width = np.abs(err[2])
         dec_peak = v[3]
         err_dec_peak = err[3]
-        dec_width = v[4]
-        err_dec_width = err[4]
+        dec_width = np.abs(v[4])
+        err_dec_width = np.abs(err[4])
         rot = (v[5] * 180.0 / np.pi)%180
         err_rot = err[5] * 180.0 / np.pi
         peak = flux / np.sqrt(2*np.pi*(ra_width**2)) / np.sqrt(2*np.pi*(dec_width**2))
