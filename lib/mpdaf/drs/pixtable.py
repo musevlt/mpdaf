@@ -593,7 +593,7 @@ class PixTable(object):
         origin: integer
         origin value
         """
-        return self.__origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1
+        return self.origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1
 
     def origin2coords(self, origin):
         """ converts the origin value and returns (ifu, slice, ypix, xpix)
