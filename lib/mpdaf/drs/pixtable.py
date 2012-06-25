@@ -59,7 +59,7 @@ class PixTable(object):
         self.nrows = 0
         self.ncols = 0
 
-	# name of memory-mapped files
+        # name of memory-mapped files
         self.__xpos = None
         self.__ypos = None
         self.__lbda = None
@@ -112,51 +112,51 @@ class PixTable(object):
         result.ncols = self.ncols
         result.primary_header = pyfits.CardList(self.primary_header)
         #xpos
-        (fd,result.xpos) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,result.__xpos) = tempfile.mkstemp(prefix='mpdaf')
         selfxpos=self.get_xpos()
-        xpos = np.memmap(result.xpos,dtype="float32",shape=(self.nrows))
+        xpos = np.memmap(result.__xpos,dtype="float32",shape=(self.nrows))
         xpos[:] = selfxpos[:]
         del xpos, selfxpos
         os.close(fd)
         #ypos
-        (fd,result.ypos) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,result.__ypos) = tempfile.mkstemp(prefix='mpdaf')
         selfypos=self.get_ypos()
-        ypos = np.memmap(result.ypos,dtype="float32",shape=(self.nrows))
+        ypos = np.memmap(result.__ypos,dtype="float32",shape=(self.nrows))
         ypos[:] = selfypos[:]
         del ypos, selfypos
         os.close(fd)
         #lambda
-        (fd,result.lbda) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,result.__lbda) = tempfile.mkstemp(prefix='mpdaf')
         selflbda=self.get_lambda()
-        lbda = np.memmap(result.lbda,dtype="float32",shape=(self.nrows))
+        lbda = np.memmap(result.__lbda,dtype="float32",shape=(self.nrows))
         lbda[:] = selflbda[:]
         del lbda, selflbda
         os.close(fd)
         #data
-        (fd,result.data) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,result.__data) = tempfile.mkstemp(prefix='mpdaf')
         selfdata=self.get_data()
-        data = np.memmap(result.data,dtype="float32",shape=(self.nrows))
+        data = np.memmap(result.__data,dtype="float32",shape=(self.nrows))
         data[:] = selfdata[:]
         del data, selfdata
         os.close(fd)
         #variance
-        (fd,result.stat) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,result.__stat) = tempfile.mkstemp(prefix='mpdaf')
         selfstat=self.get_stat()
-        stat = np.memmap(result.stat,dtype="float32",shape=(self.nrows))
+        stat = np.memmap(result.__stat,dtype="float32",shape=(self.nrows))
         stat[:] = selfstat[:]
         del stat, selfstat
         os.close(fd)
         # pixel quality
-        (fd,result.dq) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,result.__dq) = tempfile.mkstemp(prefix='mpdaf')
         selfdq = self.get_dq()
-        dq = np.memmap(result.dq,dtype="uint32",shape=(self.nrows))
+        dq = np.memmap(result.__dq,dtype="uint32",shape=(self.nrows))
         dq[:] = selfdq[:]
         del dq, selfdq
         os.close(fd)
         # origin
-        (fd,result.origin) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,result.__origin) = tempfile.mkstemp(prefix='mpdaf')
         selforigin = self.get_origin()
-        origin = np.memmap(result.origin,dtype="uint32",shape=(self.nrows))
+        origin = np.memmap(result.__origin,dtype="uint32",shape=(self.nrows))
         origin[:] = selforigin[:]
         del origin, selforigin
         os.close(fd)
@@ -486,51 +486,51 @@ class PixTable(object):
         if ptab.nrows == 0:
             return ptab
         #xpos
-        (fd,ptab.xpos) = tempfile.mkstemp(prefix='mpdaf')
-        xpos = np.memmap(ptab.xpos,dtype="float32",shape=(ptab.nrows))
+        (fd,ptab.__xpos) = tempfile.mkstemp(prefix='mpdaf')
+        xpos = np.memmap(ptab.__xpos,dtype="float32",shape=(ptab.nrows))
         selfxpos=self.get_xpos()
         xpos[:] = selfxpos[ksel]
         del xpos,selfxpos
         os.close(fd)
         #ypos
-        (fd,ptab.ypos) = tempfile.mkstemp(prefix='mpdaf')
-        ypos = np.memmap(ptab.ypos,dtype="float32",shape=(ptab.nrows))
+        (fd,ptab.__ypos) = tempfile.mkstemp(prefix='mpdaf')
+        ypos = np.memmap(ptab.__ypos,dtype="float32",shape=(ptab.nrows))
         selfypos=self.get_ypos()
         ypos[:] = selfypos[ksel]
         del ypos,selfypos
         os.close(fd)
         #lambda
-        (fd,ptab.lbda) = tempfile.mkstemp(prefix='mpdaf')
-        lbda = np.memmap(ptab.lbda,dtype="float32",shape=(ptab.nrows))
+        (fd,ptab.__lbda) = tempfile.mkstemp(prefix='mpdaf')
+        lbda = np.memmap(ptab.__lbda,dtype="float32",shape=(ptab.nrows))
         selflbda=self.get_lambda()
         lbda[:] = selflbda[ksel]
         del lbda,selflbda
         os.close(fd)
         #data
-        (fd,ptab.data) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,ptab.__data) = tempfile.mkstemp(prefix='mpdaf')
         selfdata = self.get_data()
-        data = np.memmap(ptab.data,dtype="float32",shape=(ptab.nrows))
+        data = np.memmap(ptab.__data,dtype="float32",shape=(ptab.nrows))
         data[:] = selfdata[ksel]
         del data,selfdata
         os.close(fd)
         #variance
-        (fd,ptab.stat) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,ptab.__stat) = tempfile.mkstemp(prefix='mpdaf')
         selfstat=self.get_stat()
-        stat = np.memmap(ptab.stat,dtype="float32",shape=(ptab.nrows))
+        stat = np.memmap(ptab.__stat,dtype="float32",shape=(ptab.nrows))
         stat[:] = selfstat[ksel]
         del stat,selfstat
         os.close(fd)
         # pixel quality
-        (fd,ptab.dq) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,ptab.__dq) = tempfile.mkstemp(prefix='mpdaf')
         selfdq = self.get_dq()
-        dq = np.memmap(ptab.dq,dtype="uint32",shape=(ptab.nrows))
+        dq = np.memmap(ptab.__dq,dtype="uint32",shape=(ptab.nrows))
         dq[:] = selfdq[ksel]
         del dq,selfdq
         os.close(fd)
         # origin
-        (fd,ptab.origin) = tempfile.mkstemp(prefix='mpdaf')
+        (fd,ptab.__origin) = tempfile.mkstemp(prefix='mpdaf')
         selforigin = self.get_origin()
-        origin = np.memmap(ptab.origin,dtype="uint32",shape=(ptab.nrows))
+        origin = np.memmap(ptab.__origin,dtype="uint32",shape=(ptab.nrows))
         origin[:] = selforigin[ksel]
         del origin,selforigin
         os.close(fd)
