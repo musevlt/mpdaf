@@ -1,5 +1,7 @@
 """ pixtable.py Manages MUSE pixel table files
 """
+from mpdaf.obj import Image
+from mpdaf.obj import WCS
 import numpy as np
 import pyfits
 import datetime
@@ -638,3 +640,32 @@ class PixTable(object):
 
     def get_keywords(self,key):
         return self.primary_header[key].value
+
+    def reconstruct_det_image(self):
+        """ reconstruct the image on the detector from the pixtable.
+	The pixtable must concerns only one IFU, otherwise an exception
+	is raised.
+        """
+        if self.nrows == 0:
+             return None
+
+        col_data = self.get_data()
+        col_origin = self.get_origin()
+
+        ifu = np.zeros(self.nrows, dtype='int')
+        slice = np.zeros(self.nrows, dtype='int')
+        xpix = np.zeros(self.nrows, dtype='int')
+        ypix = np.zeros(self.nrows, dtype='int')
+
+        ifu,slice,ypix,xpix = self.origin2coords(col_origin)
+        if len(np.unique(ifu)) != 1:
+	    raise ValueError, 'Pixtable contains multiple IFU'
+
+        xstart, xstop = xpix.min(), xpix.max()
+        ystart, ystop = ypix.min(), ypix.max()
+        image = np.zeros((ystop - ystart + 1, xstop - xstart + 1), dtype='float')
+        image[ypix - ystart, xpix - xstart] = col_data
+
+        wcs = WCS(crval=(ystart, xstart))
+
+        return Image(shape=(image.shape), data=image, wcs=wcs)
