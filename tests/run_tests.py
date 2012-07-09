@@ -9,7 +9,9 @@ from test_calibobj import TestCalibObj
 from test_rawobj import TestRawObj
 from test_coords import TestWCS
 from test_coords import TestWaveCoord
-from test_objs import TestObj
+from test_spectrum import TestSpectrum
+from test_image import TestImage
+from test_cube import TestCube
 
 if __name__=='__main__':
 
@@ -25,7 +27,9 @@ if __name__=='__main__':
         suite.addTests(loader.loadTestsFromTestCase(TestRawObj))
         suite.addTests(loader.loadTestsFromTestCase(TestWCS))
         suite.addTests(loader.loadTestsFromTestCase(TestWaveCoord))
-        suite.addTests(loader.loadTestsFromTestCase(TestObj))
+        suite.addTests(loader.loadTestsFromTestCase(TestSpectrum))
+        suite.addTests(loader.loadTestsFromTestCase(TestImage))
+        suite.addTests(loader.loadTestsFromTestCase(TestCube))
 
         runner = unittest.TextTestRunner(verbosity=2)
         result = runner.run(suite)

@@ -57,6 +57,7 @@ from coords import dms2deg
 from coords import deg2rad
 from coords import rad2deg
 from spectrum import Spectrum
+from spectrum import Gauss1D
 from image import Image
 from cube import Cube
 from astropysics_coords import AstropysicsAngularCoordinate
