@@ -652,10 +652,10 @@ class PixTable(object):
         col_data = self.get_data()
         col_origin = self.get_origin()
 
-        ifu = np.zeros(self.nrows, dtype='int')
-        slice = np.zeros(self.nrows, dtype='int')
-        xpix = np.zeros(self.nrows, dtype='int')
-        ypix = np.zeros(self.nrows, dtype='int')
+        ifu = np.empty(self.nrows, dtype='uint16')
+        slice = np.empty(self.nrows, dtype='uint16')
+        xpix = np.empty(self.nrows, dtype='uint16')
+        ypix = np.empty(self.nrows, dtype='uint16')
 
         ifu,slice,ypix,xpix = self.origin2coords(col_origin)
         if len(np.unique(ifu)) != 1:
