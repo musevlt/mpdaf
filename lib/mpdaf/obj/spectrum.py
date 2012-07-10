@@ -121,8 +121,7 @@ class Gauss1D:
         self.err_flux = err_flux
         
     def copy(self):
-        """       
-        Copies Gauss1D object in a new one and returns it.
+        """Copies Gauss1D object in a new one and returns it.
         """
         res = Gauss1D(self.lpeak, self.peak, self.flux, self.fwhm, self.cont, self.err_lpeak, self.err_peak, self.err_flux,self.err_fwhm)
         return res
