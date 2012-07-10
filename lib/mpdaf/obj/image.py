@@ -21,48 +21,19 @@ from objs import is_float
 from objs import is_int
 
 
-class ImageClicks:
-    """Object used to save click on image plot.
-    
-    Attributes
-    ---------- 
-    filename : string
-    Name of the table fits file where are saved the clicks values.
-    
-    binding_id : integer
-    Connection id.
-    
-    i : list of integer
-    Nearest pixel of the cursor position along the y-axis.
-    
-    j : list of integer
-    Nearest pixel of the cursor position along the x-axis.
-    
-    ra : list of float
-    Corresponding nearest position along the x-axis (world coordinates)
-    
-    dec : list of float
-    Corresponding nearest position along the y-axis (world coordinates)
-    
-    data : list of float
-    Corresponding image data value.
-    
-    id_lines : list of integer
-    Plot id (cross for cursor positions).
-    """
+class ImageClicks: #Object used to save click on image plot.
     def __init__(self, binding_id, filename=None):
-        self.filename = filename
-        self.binding_id = binding_id
-        self.i = []
-        self.j = []
-        self.ra = []
-        self.dec = []
-        self.data = []
-        self.id_lines = []
+        self.filename = filename # Name of the table fits file where are saved the clicks values.
+        self.binding_id = binding_id # Connection id.
+        self.i = [] # Nearest pixel of the cursor position along the y-axis.
+        self.j = [] # Nearest pixel of the cursor position along the x-axis.
+        self.ra = [] # Corresponding nearest position along the x-axis (world coordinates)
+        self.dec = [] # Corresponding nearest position along the y-axis (world coordinates)
+        self.data = [] # Corresponding image data value.
+        self.id_lines = [] # Plot id (cross for cursor positions).
         
     def remove(self,ic,jc):
-        """removes a cursor position
-        """
+        # removes a cursor position
         d2 = (self.i-ic)*(self.i-ic) + (self.j-jc)*(self.j-jc)
         i = np.argmin(d2)
         line = self.id_lines[i]
@@ -87,16 +58,14 @@ class ImageClicks:
         self.id_lines.append(len(plt.gca().lines)-1)
         
     def iprint(self,i,fscale):
-        """prints a cursor positions
-        """
+        # prints a cursor positions
         if fscale == 1:
             print 'dec=%g\tra=%g\ti=%d\tj=%d\tdata=%g'%(self.dec[i],self.ra[i],self.i[i],self.j[i],self.data[i])
         else:
             print 'dec=%g\tra=%g\ti=%d\tj=%d\tdata=%g\t[scaled=%g]'%(self.dec[i],self.ra[i],self.i[i],self.j[i],self.data[i],self.data[i]/fscale)
            
     def write_fits(self): 
-        """prints coordinates in fits table.
-        """
+        # prints coordinates in fits table.
         if self.filename != 'None':
             c1 = pyfits.Column(name='I', format='I', array=self.i)
             c2 = pyfits.Column(name='J', format='I', array=self.j)
@@ -108,8 +77,7 @@ class ImageClicks:
             print 'printing coordinates in fits table %s'%self.filename     
           
     def clear(self):
-        """disconnects and clears
-        """
+        # disconnects and clears
         print "disconnecting console coordinate printout..."
         plt.disconnect(self.binding_id)
         nlines =  len(self.id_lines)
@@ -119,43 +87,32 @@ class ImageClicks:
         plt.draw()                
                     
 class Gauss2D:
-    """ Object used to saved 2d gaussian parameters
-    
+    """ This class stores 2D gaussian parameters.
+       
     Attributes
     ---------- 
     
-    center : (float,float)
-    Gaussian center (dec,ra).
+    center (float,float) : Gaussian center (dec,ra).
     
-    flux : float
-    Gaussian integrated flux.
+    flux (float) : Gaussian integrated flux.
     
-    width : (float,float)
-    Spreads of the Gaussian blob (dec_width,ra_width).
+    width (float,float) : Spreads of the Gaussian blob (dec_width,ra_width).
     
-    cont : float
-    Continuum value.
+    cont (float) : Continuum value.
     
-    rot : float
-    Rotation in degrees.
+    rot (float) : Rotation in degrees.
     
-    peak : float
-    Gaussian peak value.
+    peak (float) : Gaussian peak value.
     
-    err_center : (float,float)
-    Estimated error on Gaussian center.
+    err_center (float,float) : Estimated error on Gaussian center.
         
-    err_flux : float
-    Estimated error on Gaussian integrated flux.
+    err_flux (float) : Estimated error on Gaussian integrated flux.
     
-    err_width : (float,float)
-    Estimated error on Gaussian width.
+    err_width (float,float) : Estimated error on Gaussian width.
     
-    err_rot : float
-    Estimated error on rotation.
+    err_rot (float) : Estimated error on rotation.
     
-    err_peak : float
-    Estimated error on Gaussian peak value.  
+    err_peak (float) : Estimated error on Gaussian peak value.  
     """
     def __init__(self, center, flux, width, cont, rot, peak, err_center, err_flux, err_width, err_rot, err_peak):
         self.center = center
@@ -171,10 +128,14 @@ class Gauss2D:
         self.err_peak = err_peak
         
     def copy(self):
+        """Copies Gauss1D object in a new one and returns it.
+        """
         res = Gauss2D(self.center, self.flux, self.width, self.cont, self.rot, self.peak, self.err_center, self.err_flux, self.err_width, self.err_rot, self.err_peak)
         return res
         
     def print_param(self):
+        """Prints Gaussian parameters.
+        """
         print 'Gaussian center = (%g,%g) (error:(%g,%g))' %(self.center[0],self.center[1],self.err_center[0],self.err_center[1])   
         print 'Gaussian integrated flux = %g (error:%g)' %(self.flux,self.err_flux)
         print 'Gaussian peak value = %g (error:%g)' %(self.peak,self.err_peak)
@@ -185,43 +146,25 @@ class Gauss2D:
         
         
 class Image(object):
-    """Image class
+    """Image class manages image, optionally including a variance and a bad pixel mask.
 
     Attributes
     ----------
-    filename : string
-    Possible FITS filename
+    filename (string) : Possible FITS filename.
 
-    unit : string
-    Possible data unit type
+    unit (string) : Possible data unit type.
 
-    cards : pyfits.CardList
-    Possible FITS header instance
+    cards (pyfits.CardList) : Possible FITS header instance.
 
-    data : array or masked array
-    Array containing the pixel values of the image
+    data (array or masked array) : Array containing the pixel values of the image.
 
-    shape : array of 2 integers
-    Lengths of data in Y and X (python notation: (ny,nx))
+    shape (array of 2 integers) : Lengths of data in Y and X (python notation: (ny,nx)).
 
-    var : array
-    Array containing the variance
+    var (array) : Array containing the variance.
 
-    fscale : float
-    Flux scaling factor (1 by default)
+    fscale (float) : Flux scaling factor (1 by default).
 
-    wcs : WCS
-    World coordinates
-
-    Public methods
-    --------------
-    Creation: init, copy
-
-    Arithmetic: + - * / pow
-
-    Selection: <, >, <=, >=
-
-    Info: info, []
+    wcs (WCS) : World coordinates.
     """
 
     def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0):
@@ -377,7 +320,9 @@ class Image(object):
             self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
-        """copies Image object in a new one and returns it
+        """Copies Image object in a new one and returns it.
+  
+          :rtype: Image object
         """
         ima = Image()
         ima.filename = self.filename
@@ -400,11 +345,10 @@ class Image(object):
         return ima
 
     def write(self,filename):
-        """ saves the object in a FITS file
-        Parameters
-        ----------
-        filename : string
-        The FITS filename
+        """Saves the object in a FITS file.
+  
+          :param filename: the FITS filename
+          :type filename: string
         """
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -494,7 +438,7 @@ class Image(object):
         self.filename = filename
 
     def info(self):
-        """prints information
+        """Prints information.
         """
         if self.filename is None:
             print '%i X %i image (no name)' %(self.shape[1],self.shape[0])
@@ -517,8 +461,11 @@ class Image(object):
             self.wcs.info()
 
     def __le__ (self, item):
-        """masks data array where greater than a given value.
-        Returns an Image object containing a masked array
+        """Masks data array where greater than a given value (operator <=).
+  
+          :param x: minimum value.
+          :type x: float
+          :rtype: Image object.
         """
         result = self.copy()
         if self.data is not None:
@@ -526,8 +473,11 @@ class Image(object):
         return result
 
     def __lt__ (self, item):
-        """masks data array where greater or equal than a given value.
-        Returns an Image object containing a masked array
+        """Masks data array where greater or equal than a given value (operator <).
+  
+          :param x: minimum value.
+          :type x: float
+          :rtype: Image object.
         """
         result = self.copy()
         if self.data is not None:
@@ -535,8 +485,11 @@ class Image(object):
         return result
 
     def __ge__ (self, item):
-        """masks data array where less than a given value.
-        Returns an Image object containing a masked array
+        """Masks data array where less than a given value (operator >=).
+  
+          :param x: maximum value.
+          :type x: float
+          :rtype: Image object.
         """
         result = self.copy()
         if self.data is not None:
@@ -544,8 +497,11 @@ class Image(object):
         return result
 
     def __gt__ (self, item):
-        """masks data array where less or equal than a given value.
-        Returns an Image object containing a masked array
+        """Masks data array where less or equal than a given value (operator >).
+  
+          :param x: maximum value.
+          :type x: float
+          :rtype: Image object.
         """
         result = self.copy()
         if self.data is not None:
@@ -553,46 +509,46 @@ class Image(object):
         return result
 
     def resize(self):
-        """resize the image to have a minimum number of masked values
+        """Resizes the image to have a minimum number of masked values.
         """
         if self.data is not None:
             ksel = np.where(self.data.mask==False)
             try:
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None))
-                data = self.data[item]
+                self.data = self.data[item]
                 if is_int(item[0]):
-                    shape = (1,data.shape[0])
+                    self.shape = (1,self.data.shape[0])
                 elif is_int(item[1]):
-                    shape = (data.shape[0],1)
+                    self.shape = (self.data.shape[0],1)
                 else:
-                    shape = (data.shape[0],data.shape[1])
+                    self.shape = (self.data.shape[0],self.data.shape[1])
                 if self.var is not None:
-                    var = self.var[item]
+                    self.var = self.var[item]
                 try:
-                    wcs = self.wcs[item[0],item[1]]
+                    self.wcs = self.wcs[item[0],item[1]]
                 except:
-                    wcs = None
+                    self.wcs = None
                     print "error: wcs not copied."
-                res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
-                res.data = data
-                if self.var is not None:
-                    res.var = var
-                return res
             except:
                 pass
 
     def __add__(self, other):
-        """ adds other
-
-        image1 + number = image2 (image2[j,i]=image1[j,i]+number)
-
-        image1 + image2 = image3 (image3[j,i]=image1[j,i]+image2[j,i])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
-
-        image + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
-        The last two dimensions of cube1 must be equal to the image dimensions.
-        If not equal to None, world coordinates in spatial directions must be the same.
+        """Operator +.
+  
+            :param x: x is Image : 
+            Dimensions and world coordinates must be the same.
+  
+            x is Cube : 
+            The last two dimensions of the cube must be equal to the image dimensions.
+            World coordinates in spatial directions must be the same.
+          :type x: number or Image or Cube object.
+          :rtype: Image or Cube object.
+  
+          image1 + number = image2 (image2[j,i] = image1[j,i] + number)
+      
+          image1 + image2 = image3 (image3[j,i] = image1[j,i] + image2[j,i])
+      
+          image + cube1 = cube2 (cube2[k,j,i] = cube1[k,j,i] + image[j,i])
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -638,17 +594,22 @@ class Image(object):
         return self.__add__(other)
 
     def __sub__(self, other):
-        """ subtracts other
+        """Operator -.
+  
+          :param x: x is Image : 
+            Dimensions and world coordinates must be the same.
+  
+            x is Cube : 
+            The last two dimensions of the cube must be equal to the image dimensions.
+            World coordinates in spatial directions must be the same.
+          :type x: number or Image or Cube object.
+          :rtype: Image or Cube object.
+      
+          image1 - number = image2 (image2[j,i] = image1[j,i] - number)
+      
+          image1 - image2 = image3 (image3[j,i] = image1[j,i] - image2[j,i])
 
-        image1 - number = image2 (image2[j,i]=image1[j,i]-number)
-
-        image1 - image2 = image3 (image3[j,i]=image1[j,i]-image2[j,i])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
-
-        image - cube1 = cube2 (cube2[k,j,i]=image[j,i] - cube1[k,j,i])
-        The last two dimensions of cube1 must be equal to the image dimensions.
-        If not equal to None, world coordinates in spatial directions must be the same.
+          image - cube1 = cube2 (cube2[k,j,i] = image[j,i] - cube1[k,j,i])
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -724,19 +685,24 @@ class Image(object):
                 return None
 
     def __mul__(self, other):
-        """ multiplies by other
+        """Operator \*.
+  
+          :param x: x is Image : 
+            Dimensions and world coordinates must be the same.
+  
+            x is Cube : 
+            The last two dimensions of the cube must be equal to the image dimensions.
+            World coordinates in spatial directions must be the same.
+          :type x: number or Spectrum or Image or Cube object.
+          :rtype: Spectrum or Image or Cube object.
+  
+          image1 \* number = image2 (image2[j,i] = image1[j,i] \* number)
 
-        image1 * number = image2 (image2[j,i]=image1[j,i]*number)
+          image1 \* image2 = image3 (image3[j,i] = image1[j,i] \* image2[j,i])
 
-        image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
+          image \* cube1 = cube2 (cube2[k,j,i] = image[j,i] \* cube1[k,j,i])
 
-        image * cube1 = cube2 (cube2[k,j,i]=image[j,i] * cube1[k,j,i])
-        The last two dimensions of cube1 must be equal to the image dimensions.
-        If not equal to None, world coordinates in spatial directions must be the same.
-
-        image * spectrum = cube (cube[k,j,i]=image[j,i]*spectrum[k]
+          image \* spectrum = cube (cube[k,j,i] = image[j,i] \* spectrum[k]
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -799,17 +765,22 @@ class Image(object):
         return self.__mul__(other)
 
     def __div__(self, other):
-        """ divides by other
+        """Operator /.
+  
+          :param x: x is Image : 
+            Dimensions and world coordinates must be the same.
+  
+            x is Cube : 
+            The last two dimensions of the cube must be equal to the image dimensions.
+            World coordinates in spatial directions must be the same.
+          :type x: number or Image or Cube object.
+          :rtype: Image or Cube object.
+  
+          image1 / number = image2 (image2[j,i] = image1[j,i] / number)
 
-        image1 / number = image2 (image2[j,i]=image1[j,i]/number)
+          image1 / image2 = image3 (image3[j,i] = image1[j,i] / image2[j,i])
 
-        image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
-
-        image / cube1 = cube2 (cube2[k,j,i]=image[j,i] / cube1[k,j,i])
-        The last two dimensions of cube1 must be equal to the image dimensions.
-        If not equal to None, world coordinates in spatial directions must be the same.
+          image / cube1 = cube2 (cube2[k,j,i] = image[j,i] / cube1[k,j,i])
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -888,7 +859,8 @@ class Image(object):
                 return None
 
     def __pow__(self, other):
-        """computes the power exponent"""
+        """Computes the power exponent of data extensions (operator \*\*).
+        """
         if self.data is None:
             raise ValueError, 'empty data array'
         res = self.copy()
@@ -901,27 +873,24 @@ class Image(object):
         return res
 
     def sqrt(self):
-        """computes the power exponent"""
+        """Computes the positive square-root of data extension.
+        """
         if self.data is None:
             raise ValueError, 'empty data array'
-        res = self.copy()
-        res.data = np.sqrt(self.data)
-        res.fscale = np.sqrt(self.fscale)
-        res.var = None
-        return res
+        self.data = np.sqrt(self.data)
+        self.fscale = np.sqrt(self.fscale)
+        self.var = None
 
     def abs(self):
-        """computes the absolute value"""
+        """Computes the absolute value of data extension."""
         if self.data is None:
             raise ValueError, 'empty data array'
-        res = self.copy()
-        res.data = np.abs(self.data)
-        res.fscale = np.abs(self.fscale)
-        res.var = None
-        return res
+        self.data = np.abs(self.data)
+        self.fscale = np.abs(self.fscale)
+        self.var = None
 
     def __getitem__(self,item):
-        """ returns the corresponding value or sub-image
+        """Returns the corresponding value or sub-image.
         """
         if isinstance(item, tuple) and len(item)==2:
                 data = self.data[item]
@@ -946,42 +915,50 @@ class Image(object):
             raise ValueError, 'Operation forbidden'
         
     def get_step(self):
-        """ returns the image steps [dDec,dRa]
+        """Returns the image steps [dDec, dRa].
+  
+          :rtype: float array
         """
         return self.wcs.get_step()
     
     def get_range(self):
-        """returns [ [dec_min,ra_min], [dec_max,ra_max] ]
+        """Returns [ [dec_min,ra_min], [dec_max,ra_max] ]
+  
+          :rtype: float array
         """
         return self.wcs.get_range()
     
     def get_start(self):
-        """returns [dec,ra] corresponding to pixel (0,0)
+        """Returns [dec,ra] corresponding to pixel (0,0).
+  
+          :rtype: float array
         """
         return self.wcs.get_start()
     
     def get_end(self):
-        """returns [dec,ra] corresponding to pixel (-1,-1)
+        """Returns [dec,ra] corresponding to pixel (-1,-1).
+  
+          :rtype: float array
         """
         return self.wcs.get_end()
     
     def get_rot(self):
-        """returns the rotation angle
+        """Returns the angle of rotation.
+   
+           :rtype: float
         """
         return self.wcs.get_rot()
 
     def __setitem__(self,key,value):
-        """ sets the corresponding part of data
+        """ Sets the corresponding part of data.
         """
         self.data[key] = value
         
     def set_wcs(self, wcs):
-        """sets the world coordinates
-
-        Parameter
-        ---------
-        wcs : WCS
-        World coordinates
+        """Sets the world coordinates.
+  
+          :param wcs: World coordinates.
+          :type wcs: WCS
         """
         self.wcs = wcs
         self.wcs.wcs.naxis1 = self.shape[1]
@@ -990,12 +967,10 @@ class Image(object):
             print "warning: world coordinates and data have not the same dimensions."
             
     def set_var(self, var):
-        """sets the variance array
-        
-        Parameter
-        ---------
-        var : float array
-        Input variance array. If None, variance is set with zeros
+        """Sets the variance array.
+  
+          :param var: Input variance array. If None, variance is set with zeros.
+          :type var: float array
         """
         if var is None:
             self.var = np.zeros((self.shape[0],self.shape[1]))
@@ -1007,29 +982,31 @@ class Image(object):
             
     def mask(self, center, radius, pix=False, inside=False):
         """Masks values inside/outside the described region.
+  
+          :param center: Center of the explored region.
+  
+            If pix is False, center = (dec, ra) is in degrees.
         
-        Parameters
-        ----------
+            If pix is True, center = (i,j) is in pixels.
+          :type center: (float,float)
+          :param radius: Radius defined the explored region.
+  
+            If radius is float, it defined a circular region.
         
-        center : (float,float)
-        Center of the explored region.
-        If pix is False, center = (dec, ra) is in degrees.
-        If pix is True, center = (i,j) is in pixels.
+            If radius is (float,float), it defined a rectangular region.
         
-        radius : float or (float,float)
-        Radius defined the explored region.
-        If radius is float, it defined a circular region.
-        If radius is (float,float), it defined a rectangular region.
-        If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
-        If pix is True, radius = (di,dj) is in pixels.
+            If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
         
-        pix : boolean
-        If pix is False, center and radius are in degrees and arcsecs.
-        If pix is True, center and radius are in pixels.
-        
-        inside : boolean
-        If inside is True, pixels inside the described region are masked.
-        If inside is False, pixels outside the described region are masked.
+            If pix is True, radius = (di,dj) is in pixels.
+          :type radius: float or (float,float)       
+          :param pix: If pix is False, center and radius are in degrees and arcsecs.
+  
+              If pix is True, center and radius are in pixels.
+          :type pix: boolean
+          :param inside: If inside is True, pixels inside the described region are masked.
+  
+             If inside is False, pixels outside the described region are masked.
+          :type inside: boolean
         """
         if is_int(radius) or is_float(radius):
             circular = True
@@ -1181,26 +1158,26 @@ class Image(object):
                     self.data.mask[imin:imax,jmin:jmax] = m
                 except:
                     pass
+                
+    def unmask(self):
+        """Unmasks the image (just invalid data (nan,inf) are masked).
+        """
+        self.data.mask = False
+        self.data = np.ma.masked_invalid(self.data)
         
     def truncate(self, dec_min, dec_max, ra_min, ra_max, mask=True):
-        """ returns the corresponding sub-image
+        """ Truncates the image.
 
-        Parameters
-        ----------
-        dec_min : float
-        minimum declination in degrees
-
-        dec_max : float
-        maximum declination in degrees 
-        
-        ra_min : float
-        minimum right ascension in degrees
-
-        ra_max : float
-        maximum right ascension in degrees
-
-        mask : boolean
-        if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked
+          :param dec_min: Minimum declination in degrees.
+          :type dec_min: float
+          :param dec_max: Maximum declination in degrees.
+          :type dec_max: float
+          :param ra_min: Minimum right ascension in degrees.
+          :type ra_min: float
+          :param ra_max: Maximum right ascension in degrees.
+          :type ra_max: float
+          :param mask: if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.
+          :type mask: boolean
         """
         skycrd = [[dec_min,ra_min],[dec_min,ra_max],[dec_max,ra_min],[dec_max,ra_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
@@ -1217,15 +1194,22 @@ class Image(object):
         jmax = int(np.max(pixcrd[:,1]))+1
         if jmax>self.shape[1]:
             jmax=self.shape[1]
-        
-        res = self[imin:imax,jmin:jmax]
+         
+        #res = self[imin:imax,jmin:jmax]
+        self.data = self.data[imin:imax,jmin:jmax]
+        self.shape = (self.data.shape[0],self.data.shape[1])
+        if self.var is not None:
+            self.var = self.var[imin:imax,jmin:jmax]
+        try:
+            self.wcs = self.wcs[imin:imax,jmin:jmax]
+        except:
+            self.wcs = None
         
         if mask:
             #mask outside pixels
-            m = np.ma.make_mask_none(res.data.shape)
-            for j in range(res.shape[0]):
-                #pixcrd = np.array([np.arange(res.shape[1]),np.ones(res.shape[1])*j]).T
-                pixcrd = np.array([np.ones(res.shape[1])*j,np.arange(res.shape[1])]).T
+            m = np.ma.make_mask_none(self.data.shape)
+            for j in range(self.shape[0]):
+                pixcrd = np.array([np.ones(self.shape[1])*j,np.arange(self.shape[1])]).T
                 skycrd = self.wcs.pix2sky(pixcrd)
                 test_ra_min = np.array(skycrd[:,1]) < ra_min
                 test_ra_max = np.array(skycrd[:,1]) > ra_max
@@ -1233,40 +1217,31 @@ class Image(object):
                 test_dec_max = np.array(skycrd[:,0]) > dec_max
                 m[j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
             try:
-                m = np.ma.mask_or(m,np.ma.getmask(res.data))
+                m = np.ma.mask_or(m,np.ma.getmask(self.data))
+                self.data = np.ma.MaskedArray(self.data, mask=m)
             except:
                 pass
-            res.data = np.ma.MaskedArray(res.data, mask=m)
-        return res
     
     def rotate_wcs(self, theta):
-        """rotates WCS coordinates to new orientation given by theta
-        
-        Parameter
-        ---------
-        
-        theta : float
-        Rotation in degrees.
+        """Rotates WCS coordinates to new orientation given by theta.
+  
+          :param theta: Rotation in degree.
+          :type theta: float
         """
-        res = self.copy()
-        res.wcs.rotate(theta)
-        return res
+        self.wcs.rotate(theta)
     
     def rotate(self, theta, interp='no'):
-        """rotates the image using spline interpolation
+        """ Rotates the image using spline interpolation.
+  
+          :param theta: Rotation in degree.
+          :type theta: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+            if 'linear', linear interpolation of the masked values.
         
-        Parameter
-        ---------
-        
-        theta : float
-        Rotation in degrees.
-        
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
+            if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
         """
-        res = self.copy()
         
         if interp=='linear':
             data = self._interp_data(spline=False)
@@ -1280,17 +1255,14 @@ class Image(object):
         mask_rot = ndimage.rotate(mask, theta, reshape=False, order=0)
         data_rot = ndimage.rotate(data, theta, reshape=False)
         mask_ma = np.ma.make_mask(1-mask_rot)
-        res.data = np.ma.array(data_rot, mask=mask_ma)
-        return res         
+        self.data = np.ma.array(data_rot, mask=mask_ma)
     
     def sum(self,axis=None):
-        """ Returns the sum over the given axis.
-        
-        Parameter
-        ---------
-        axis = None returns a float
-        axis = 0  or 1 returns a line or a column
-        Other cases return None.
+        """Returns the sum over the given axis.
+  
+          :param axis: axis = None returns a float, axis=0 or 1 returns a line or a column, other cases return None.
+          :type axis: None, 0 or 1
+          :rtype: float or Image
         """
         if axis is None:
             return self.data.sum()    
@@ -1315,17 +1287,16 @@ class Image(object):
             return None
         
     def norm(self, type='flux', value=1.0):
-        """ Normalizes total flux to value (default 1).
-            
-        Parameters
-        ----------
-        type : 'flux' or 'sum' or 'max'
-        If 'flux',the flux is normalized and the pixel area is taken into account.
-        If 'sum', the flux is normalized to the sum of flux independantly of pixel size.
-        If 'max', the flux is normalized so that the maximum of intensity will be 'value'.    
-        
-        value : float
-        Normalized value.    
+        """Normalizes total flux to value (default 1).
+  
+          :param type: If 'flux',the flux is normalized and the pixel area is taken into account.
+  
+          If 'sum', the flux is normalized to the sum of flux independantly of pixel size.
+          
+          If 'max', the flux is normalized so that the maximum of intensity will be 'value'.  
+          :type type: 'flux' | 'sum' | 'max'
+          :param value: Normalized value (default 1).   
+          :type value: float
         """
         if type == 'flux':
             norm = value/(self.get_step().prod()*self.fscale*self.data.sum())
@@ -1335,37 +1306,36 @@ class Image(object):
             norm = value/(self.fscale*self.data.max())
         else:
             raise ValueError, 'Error in type: only flux,sum,max permitted'
-        res = self.copy()
-        res *= norm
-        return res
+        self.fscale *= norm
+        if self.var is not None:
+            self.var *= norm*norm
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, plot=False):
-        """ Finds image peak location.
-        Returns a dictionary {'ra', 'dec', 'j', 'i', 'data'} containing the peak position and the peak intensity.
+        """Finds image peak location.
+  
+          :param center: Center of the explored region.
+  
+            If pix is False, center = (dec, ra) is in degrees.
         
-        Parameters
-        ----------
+            If pix is True, center = (i,j) is in pixels.
         
-        center : (float,float)
-        Center of the explored region.
-        If pix is False, center = (dec, ra) is in degrees.
-        If pix is True, center = (i,j) is in pixels.
-        If center is None, the full image is explored.
+            If center is None, the full image is explored.
+          :type center: (float,float)
+          :param radius: Radius defined the explored region.
         
-        radius : (float,float)
-        Radius defined the explored region.
-        If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
-        If pix is True, radius = (di,dj) is in pixels.
+            If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
         
-        pix : boolean
-        If pix is False, center and radius are in degrees and arcsecs.
-        If pix is True, center and radius are in pixels.
-        
-        dpix : integer
-        Half size of the window to compute the center of gravity.
-        
-        plot : boolean
-        If True, the peak center is overplotted on the image.
+            If pix is True, radius = (di,dj) is in pixels.
+          :type radius: float or (float,float)
+          :param pix: If pix is False, center and radius are in degrees and arcsecs.
+  
+              If pix is True, center and radius are in pixels.
+          :type pix: boolean
+          :param dpix: Half size of the window to compute the center of gravity.
+          :type dpix: integer
+          :param plot: If True, the peak center is overplotted on the image.
+          :type plot: boolean
+          :rtype: Returns a dictionary {'dec', 'ra', 'i', 'j', 'data'} containing the peak position and the peak intensity.
         """
         if center is None or radius==0:
             d = self.data
@@ -1423,22 +1393,27 @@ class Image(object):
         return {'ra':ra, 'dec':dec, 'j':jc, 'i':ic, 'data': maxv}
     
     def fwhm(self, center=None, radius=0, pix = False):
-        """ Computes the fwhm center. Returns [fwhm_dec,fwhm_ra].
+        """Computes the fwhm center. 
+  
+          :param center: Center of the explored region.
+  
+            If pix is False, center = (dec, ra) is in degrees.
         
-        center : (float,float)
-        Center of the explored region.
-        If pix is False, center = (dec, ra) is in degrees.
-        If pix is True, center = (i,j) is in pixels.
-        If center is None, the full image is explored.
+            If pix is True, center = (i,j) is in pixels.
         
-        radius : (float,float)
-        Radius defined the explored region.
-        If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
-        If pix is True, radius = (di,dj) is in pixels.
+            If center is None, the full image is explored.
+          :type center: (float,float)
+          :param radius: Radius defined the explored region.
         
-        pix : boolean
-        If pix is False, center and radius are in degrees and arcsecs.
-        If pix is True, center and radius are in pixels.
+            If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
+        
+            If pix is True, radius = (di,dj) is in pixels.
+          :type radius: float or (float,float)
+          :param pix: If pix is False, center and radius are in degrees and arcsecs.
+  
+              If pix is True, center and radius are in pixels.
+          :type pix: boolean
+          :rtype: Returns [fwhm_dec,fwhm_ra].
         """
         if center is None or radius==0:
             sigma = self.moments()
@@ -1471,27 +1446,35 @@ class Image(object):
         return [fwhmx,fwhmy]
     
     def ee(self, center=None, radius=0, pix = False, frac = False):
-        """ Computes ensquared energy.
+        """Computes ensquared energy.
         
-        center : (float,float)
-        Center of the explored region.
-        If pix is False, center = (dec, ra) is in degrees.
-        If pix is True, center = (i,j) is in pixels.
-        If center is None, the full image is explored.
+          :param center: Center of the explored region.
+  
+            If pix is False, center = (dec, ra) is in degrees.
         
-        radius : float or (float,float)
-        Radius defined the explored region.
-        If radius is float, it defined a circular region.
-        If radius is (float,float), it defined a rectangular region.
-        If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
-        If pix is True, radius = (di,dj) is in pixels.
+            If pix is True, center = (i,j) is in pixels.
         
-        pix : boolean
-        If pix is False, center and radius are in degrees and arcsecs.
-        If pix is True, center and radius are in pixels.
+            If center is None, the full image is explored.
+          :type center: (float,float)
+          :param radius: Radius defined the explored region.
+  
+            If radius is float, it defined a circular region.
         
-        frac : boolean
-        If frac is True, result is given relative to the total energy.
+            If radius is (float,float), it defined a rectangular region.
+        
+            If pix is False, radius = (ddec/2, dra/2) is in arcsecs.
+        
+            If pix is True, radius = (di,dj) is in pixels.
+          :type radius: float or (float,float)
+        
+          :param pix: If pix is False, center and radius are in degrees and arcsecs.
+  
+              If pix is True, center and radius are in pixels.
+          :type pix: boolean
+        
+          :param frac: If frac is True, result is given relative to the total energy.
+          :type frac: boolean
+          :rtype: float
         """
         if center is None or radius==0:
             if frac:
@@ -1555,20 +1538,22 @@ class Image(object):
 
     def ee_curve(self, center=None, pix = False, etot = None):
         """Returns Spectrum object containing enclosed energy as function of radius.
+  
+          :param center: Center of the explored region.
+  
+            If pix is False, center = (dec, ra) is in degrees.
         
-        center : (float,float)
-        Center of the explored region.
-        If pix is False, center = (dec, ra) is in degrees.
-        If pix is True, center = (i,j) is in pixels.
-        If center is None, the full image is explored.
+            If pix is True, center = (i,j) is in pixels.
         
-        pix : boolean
-        If pix is False, center is in degrees.
-        If pix is True, center is in pixels.
-        
-        etot : float
-        Total energy.
-        If etot is not set it is computed from the full image.
+            If center is None, center of the image is used.
+          :type center: (float,float)  
+          :param pix: If pix is False, center is in degrees.
+  
+              If pix is True, center is in pixels.
+          :type pix: boolean
+          :param etot: Total energy. If etot is not set it is computed from the full image.
+          :type etot: float
+          :rtype: obj.Spectrum
         """
         from spectrum import Spectrum
         if center is None:
@@ -1597,23 +1582,24 @@ class Image(object):
         
     def ee_size(self, center=None, pix = False, ee = None, frac = 0.90):
         """Computes the size of the square center on (dec,ra) containing the fraction of the energy.
+  
+          :param center: Center of the explored region.
+  
+            If pix is False, center = (dec, ra) is in degrees.
         
-        center : (float,float)
-        Center of the explored region.
-        If pix is False, center = (dec, ra) is in degrees.
-        If pix is True, center = (i,j) is in pixels.
-        If center is None, the full image is explored.
+            If pix is True, center = (i,j) is in pixels.
         
-        pix : boolean
-        If pix is False, center is in degrees.
-        If pix is True, center is in pixels.
-        
-        ee : float
-        Enclosed energy.
-        If ee is not set it is computed from the full image that contain the fraction (frac) of the total energy
-        
-        frac : float
-        Fraction of energy.
+            If center is None, center of the image is used.
+          :type center: (float,float)  
+          :param pix: If pix is False, center is in degrees.
+  
+              If pix is True, center is in pixels.
+          :type pix: boolean
+          :param ee: Enclosed energy. If ee is not set it is computed from the full image that contain the fraction (frac) of the total energy.
+          :type ee: float
+          :param frac: Fraction of energy.
+          :type frac: float in ]0,1]
+          :rtype: (float,float)
         """
         if center is None:
             i = self.shape[0]/2
@@ -1642,10 +1628,7 @@ class Image(object):
         d += (frac-ee1)/(ee2-ee1) # interpolate
         dx = d*step[0]*2
         dy = d*step[1]*2
-        return [dx,dy]
-                
-    
-       
+        return [dx,dy]   
             
     def _interp(self, grid, spline=False):
         """ returns the interpolated values corresponding to the grid points
@@ -1712,7 +1695,9 @@ class Image(object):
     
         
     def moments(self):
-        """Returns [width_dec, width_ra] first moments of the 2D gaussian
+        """Returns [width_dec, width_ra] first moments of the 2D gaussian.
+  
+          :rtype: float array
         """
         total = np.abs(self.data).sum()
         Y, X = np.indices(self.data.shape) # python convention: reverse x,y np.indices
@@ -1727,49 +1712,38 @@ class Image(object):
         return [width_y,width_x]
         
     def gauss_fit(self, pos_min, pos_max, center=None, flux=None, width=None, cont=None, rot = 0, peak = False, factor = 1, plot = False):
-        """performs gaussian fit on image.
-        Returns Gauss2D object
-
-        Parameters
-        ----------
+        """Performs Gaussian fit on image.
+  
+          :param pos_min: Minimum declination and right ascension in degrees (dec_min, ra_min).
+          :type pos_min: (float,float)
+          :param pos_max: Maximum declination and right ascension in degrees (dec_max, ra_max)
+          :type pos_max: (float,float)
+          :param center: Initial gaussian center (dec_peak, ra_peak). If None it is estimated.
+          :type center: (float,float)
+          :param flux: Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.
+          :type flux: float
+          :param width: Initial spreads of the Gaussian blob (dec_width, ra_width). If None, they are estimated.
+          :type width: (float,float)
+          :param cont: Initial continuum value, if None it is estimated.
+          :type cont: float
+          :param rot: Initial rotation in degree.
+          :type rot: float
+          :param peak: If true, flux contains a gaussian peak value. 
+          :type peak: boolean
+          :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
         
-        pos_min : (float,float)
-        Minimum declination and right ascension in degrees (dec_min, ra_min)
-
-        pos_max : (float,float)
-        Maximum declination and right ascension in degrees (dec_max,ra_max)
-        
-        center : (float,float)
-        Initial gaussian center (dec_peak, ra_peak). If None they are estimated.
-        
-        flux : float
-        Initial integrated gaussian flux or gaussian peak value if peak is True.
-        If None peak value is estimated.
-
-        width : (float,float)
-        Initial spreads of the Gaussian blob (dec_width, ra_width). If None, they are estimated.
-
-        cont : float
-        Initial continuum value, if None it is estimated.
-        
-        rot : float
-        Initial rotation in degree.
-        
-        peak : boolean
-        If true, flux contains a gaussian peak value.
-        
-        factor : integer
-        If factor<=1, gaussian is computed in the center of each pixel.
-        If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
-        
-        plot : boolean
-        If True, the gaussian is plotted.
+              If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+          :type factor: integer
+          :param plot: If True, the gaussian is plotted.
+          :type plot: boolean
+          :rtype: objs.Gauss2D object (`Gauss2D class`_) 
         """
         ra_min = pos_min[1]
         dec_min = pos_min[0]
         ra_max = pos_max[1]
         dec_max = pos_max[0]
-        ima = self.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
+        ima = self.copy()
+        ima.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
         
         ksel = np.where(ima.data.mask==False)
         pixcrd = np.zeros((np.shape(ksel[0])[0],2))
@@ -1886,51 +1860,49 @@ class Image(object):
         return Gauss2D((dec_peak,ra_peak), flux, (dec_width,ra_width), cont, rot, peak, (err_dec_peak,err_ra_peak), err_flux, (err_dec_width,err_ra_width), err_rot, err_peak)
     
     def moffat_fit(self, pos_min, pos_max,  center=None, I=None, a=None , q=1, n=2.0, cont=None, rot=0, factor = 1, plot = False):
-        """performs moffat fit on image.
-        Returns Gauss2D object
-
-        Parameters
-        ----------
+        """Performs moffat fit on image.
         
-        pos_min : (float,float)
-        Minimum declination and right ascension in degrees (dec_min, ra_min)
+        :param pos_min: Minimum declination and right ascension in degrees (dec_min, ra_min).
+        :type pos_min: (float,float)
 
-        pos_max : (float,float)
-        Maximum declination and right ascension in degrees (dec_max,ra_max)
+        :param pos_max: Maximum declination and right ascension in degrees (dec_max,ra_max)
+        :type pos_max: (float,float)
         
-        center : (float,float)
-        Initial Moffat center (dec_peak, ra_peak). If None they are estimated.
+        :param center: Initial Moffat center (dec_peak, ra_peak). If None they are estimated.
+        :type center: (float,float)
             
-        I : float
-        Initial intensity at image center. 
+        :param I : Initial intensity at image center. 
+        :type I : float
     
-        a : float
-        Initial half width at half maximum of the image in the absence of atmospheric scattering.
+        :param a: Initial half width at half maximum of the image in the absence of atmospheric scattering.
+        :type a: float
         
-        q : float
-        Initial axis ratio.
+        :param q: Initial axis ratio.
+        :type q: float
         
-        n : integer
-        Initial atmospheric scattering coefficient.
+        :param n: Initial atmospheric scattering coefficient.
+        :type n: integer
         
-        cont : float
-        Initial continuum value, if None it is estimated.
+        :param cont: Initial continuum value, if None it is estimated.
+        :type cont: float
         
-        rot : float
-        Initial angle position in degree.
+        :param rot: Initial angle position in degree.
+        :type rot: float
         
-        factor : integer
-        If factor<=1, gaussian is computed in the center of each pixel.
-        If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+        :param factor: If factor<=1, gaussian is computed in the center of each pixel.
         
-        plot : boolean
-        If True, the gaussian is plotted.
+                       If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+        :type factor: integer
+        
+        :param plot: If True, the gaussian is plotted.
+        :type plot: boolean
         """
         ra_min = pos_min[1]
         dec_min = pos_min[0]
         ra_max = pos_max[1]
         dec_max = pos_max[0]
-        ima = self.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
+        ima = self.copy()
+        ima.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
         
         ksel = np.where(ima.data.mask==False)
         pixcrd = np.zeros((np.shape(ksel[0])[0],2))
@@ -2038,7 +2010,7 @@ class Image(object):
         print 'rot',rot,err_rot
     
     def _rebin_factor(self, factor):
-        '''shrinks the size of the image by factor.
+        '''Shrinks the size of the image by factor.
         New size is an integer multiple of the original size.
         
         Parameter
@@ -2050,34 +2022,25 @@ class Image(object):
         assert not np.sometrue(np.mod( self.shape[0], factor[0] ))
         assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
         # new size is an integer multiple of the original size
-        newshape = (self.shape[0]/factor[0],self.shape[1]/factor[1])
-        #data = self.data.reshape(newshape[0],factor[0],newshape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
-        data = np.ma.reshape(self.data,newshape[0],factor[0],newshape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
-        var = None
+        self.shape = (self.shape[0]/factor[0],self.shape[1]/factor[1])
+        self.data = np.ma.reshape(self.data,self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
         if self.var is not None:
-            var = np.reshape(self.var,newshape[0],factor[0],newshape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]/factor[0]/factor[1]
-            #var = self.var.reshape(newshape[0],factor[0],newshape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]/factor[0]/factor[1]
+            self.var = np.reshape(self.var,self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]/factor[0]/factor[1]
         cdelt = self.wcs.get_step()
-        wcs = self.wcs.rebin(step=(cdelt[0]*factor[0],cdelt[1]*factor[1]),start=None)
-        res = Image(shape=newshape, wcs = wcs, unit=self.unit, fscale=self.fscale)
-        res.data = np.ma.masked_invalid(data)
-        res.var = var
-        return res
+        self.wcs = self.wcs.rebin(step=(cdelt[0]*factor[0],cdelt[1]*factor[1]),start=None)
 
         
     def rebin_factor(self, factor, margin='center'):
-        '''shrinks the size of the image by factor.
+        '''Shrinks the size of the image by factor.
+  
+          :param factor: Factor in X and Y. Python notation: (ny,nx).
+          :type factor: integer or (integer,integer)
+          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
+  
+            In 'center' case, pixels will be added on the left and on the right, on the bottom and of the top of the image. 
         
-        Parameters
-        ----------
-        factor : integer or (integer,integer)
-        Factor in X and Y.
-        Python notation: (ny,nx)
-        
-        margin : 'center' or 'origin'
-        This parameters is used if new size is not an integer multiple of the original size.
-        'center' : pixels added, on the left and on the right, on the bottom and of the top of the image.
-        'origin': pixels added on (n+1) line/column.
+            In 'origin'case, pixels will be added on (n+1) line/column.
+          :type margin: 'center' or 'origin'
         '''
         if is_int(factor):
             factor = (factor,factor)
@@ -2085,12 +2048,13 @@ class Image(object):
             raise ValueError, 'factor must be in ]1,shape['
         if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )):
             # new size is an integer multiple of the original size
-            return self._rebin_factor(factor)
+            self._rebin_factor(factor)
         elif not np.sometrue(np.mod( self.shape[0], factor[0] )):
             newshape1 = self.shape[1]/factor[1]
             n1 = self.shape[1] - newshape1*factor[1]
             if margin == 'origin' or n1==1:
-                ima = self[:,:-n1]._rebin_factor(factor)
+                ima = self[:,:-n1]
+                ima._rebin_factor(factor)
                 newshape = (ima.shape[0], ima.shape[1] + 1)
                 data = np.ones(newshape)
                 mask = np.zeros(newshape,dtype=bool)
@@ -2108,7 +2072,8 @@ class Image(object):
             else:
                 n_left = n1/2
                 n_right = self.shape[1] - n1 + n_left
-                ima = self[:,n_left:n_right]._rebin_factor(factor)
+                ima = self[:,n_left:n_right]
+                ima._rebin_factor(factor)
                 newshape = (ima.shape[0], ima.shape[1] + 2)
                 data = np.ones(newshape)
                 mask = np.zeros(newshape,dtype=bool)
@@ -2131,7 +2096,8 @@ class Image(object):
             newshape0 = self.shape[0]/factor[0]
             n0 = self.shape[0] - newshape0*factor[0]
             if margin == 'origin' or n0==1:
-                ima = self[:-n0,:]._rebin_factor(factor)
+                ima = self[:-n0,:]
+                ima._rebin_factor(factor)
                 newshape = (ima.shape[0] + 1, ima.shape[1])
                 data = np.ones(newshape)
                 mask = np.zeros(newshape,dtype=bool)
@@ -2149,7 +2115,8 @@ class Image(object):
             else:
                 n_left = n0/2
                 n_right = self.shape[0] - n0 + n_left
-                ima = self[n_left:n_right,:]._rebin_factor(factor)
+                ima = self[n_left:n_right,:]
+                ima._rebin_factor(factor)
                 newshape = (ima.shape[0] + 2, ima.shape[1])
                 data = np.ones(newshape)
                 mask = np.zeros(newshape,dtype=bool)
@@ -2177,7 +2144,8 @@ class Image(object):
             if margin == 'center':
                 n_left = n/2
                 n_right = self.shape - n + n_left
-                ima = self[n_left[0]:n_right[0],n_left[1]:n_right[1]]._rebin_factor(factor)
+                ima = self[n_left[0]:n_right[0],n_left[1]:n_right[1]]
+                ima._rebin_factor(factor)
                 if n_left[0]!=0 and n_left[1]!=0:
                     newshape = ima.shape + 2
                     data = np.ones(newshape)
@@ -2253,7 +2221,8 @@ class Image(object):
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
             elif margin=='origin':
                 n_right = self.shape - n
-                ima = self[0:n_right[0],0:n_right[1]]._rebin_factor(factor)
+                ima = self[0:n_right[0],0:n_right[1]]
+                ima._rebin_factor(factor)
                 newshape = ima.shape + 1
                 data = np.ones(newshape)
                 mask = np.zeros(newshape,dtype=bool)
@@ -2274,35 +2243,31 @@ class Image(object):
                 wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
             else:
                 raise ValueError, 'margin must be center|origin'
-        res = Image(shape=newshape, wcs = wcs, unit=self.unit, fscale=self.fscale)
-        res.data = np.ma.array(data, mask=mask)
-        res.var = var
+        self.shape = newshape
+        self.wcs = wcs
+        self.data = np.ma.array(data, mask=mask)
+        self.var = var
         return res
     
     def rebin(self, newdim, newstart, newstep, flux=False, order=3, interp='no'):
-        """rebins the image to a new coordinate system.
+        """Rebins the image to a new coordinate system.
+  
+          :param newdim: New dimensions. Python notation: (ny,nx)
+          :type newdim: integer or (integer,integer)
+          :param newstart: New positions (dec,ra) for the pixel (0,0). If None, old position is used.
+          :type newstart: float or (float, float)
+          :param newstep: New step (ddec,dra).
+          :type newstep: float or (float, float)
+          :param flux: if flux is True, the flux is conserved.
+          :type flux: boolean
+          :param order: The order of the spline interpolation, default is 3. The order has to be in the range 0-5.
+          :type order: integer
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
-        Parameters
-        ----------
-        newdim : integer or (integer,integer)
-        New dimensions. Python notation: (ny,nx)
-        
-        newstart : float or (float, float)
-        New positions (dec,ra) for the pixel (0,0). If None, old position is used.
-        
-        newstep : float or (float, float)
-        New step (ddec,dra).
-        
-        flux : boolean
-        if flux is True, the flux is conserved.
-        
-        order : integer
-        The order of the spline interpolation, default is 3. The order has to be in the range 0-5.   
-        
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
         """
         if is_int(newdim):
             newdim = (newdim,newdim)
@@ -2318,7 +2283,7 @@ class Image(object):
         newstart = np.array(newstart)
         newstep = np.array(newstep)
                    
-        wcs =WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
+        wcs = WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
         pstep = newstep/self.wcs.get_step()   
         poffset = (newstart-self.wcs.get_start())/newstep
         
@@ -2337,25 +2302,24 @@ class Image(object):
         if flux:
             rflux = self.wcs.get_step().prod()/newstep.prod()
             data *= rflux
-        res = Image(notnoise=True, shape=newdim, wcs = wcs, unit=self.unit, fscale=self.fscale)
-        res.data = np.ma.array(data, mask=mask)
-        return res 
+        
+        self.shape = newdim
+        self.wcs = wcs
+        self.data = np.ma.array(data, mask=mask)
+        self.var = None
 
     def gaussian_filter(self, sigma=3, interp='no'):
         """Applies gaussian filter to the image.
         
-        Parameters
-        ----------
-        sigma : float
-        Standard deviation for Gaussian kernel.
+          :param sigma: Standard deviation for Gaussian kernel
+          :type sigma: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
         """
-        res = self.copy()
-        
         if interp=='linear':
             data = self._interp_data(spline=False)
         elif interp=='spline':
@@ -2363,24 +2327,21 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        res.data = np.ma.array(ndimage.gaussian_filter(data*self.fscale, sigma),mask=res.data.mask)/self.fscale
-        return res
+        self.data = np.ma.array(ndimage.gaussian_filter(data*self.fscale, sigma),mask=res.data.mask)/self.fscale
             
     def median_filter(self, size=3, interp='no'):
         """Applies median filter to the image.
         
-        Parameters
-        ----------
-        size : float
-        Shape that is taken from the input array, at every element position, to define the input to the filter function.
-
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
-        """
-        res = self.copy()
+          :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+          :type size: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+          :rtype: Image      
+        """
         if interp=='linear':
             data = self._interp_data(spline=False)
         elif interp=='spline':
@@ -2388,24 +2349,20 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        res.data = np.ma.array(ndimage.median_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
-        return res
+        self.data = np.ma.array(ndimage.median_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
     
     def maximum_filter(self, size=3, interp='no'):
         """Applies maximum filter to the image.
         
-        Parameters
-        ----------
-        size : float
-        Shape that is taken from the input array, at every element position, to define the input to the filter function.
-
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
-        """
-        res = self.copy()
+          :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+          :type size: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+        """
         if interp=='linear':
             data = self._interp_data(spline=False)
         elif interp=='spline':
@@ -2413,24 +2370,20 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        res.data = np.ma.array(ndimage.maximum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
-        return res     
+        self.data = np.ma.array(ndimage.maximum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
     
     def minimum_filter(self, size=3, interp='no'):
         """Applies minimum filter to the image.
         
-        Parameters
-        ----------
-        size : float
-        Shape that is taken from the input array, at every element position, to define the input to the filter function.
-
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
-        """
-        res = self.copy()
+          :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+          :type size: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+        """
         if interp=='linear':
             data = self._interp_data(spline=False)
         elif interp=='spline':
@@ -2438,22 +2391,19 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        res.data = np.ma.array(ndimage.minimum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
-        return res   
+        self.data = np.ma.array(ndimage.minimum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
     
     def add(self, other, interp='no'):
-        """ Adds the image other to the current image.
-        The coordinate are taken into account.
+        """Adds the image other to the current image. The coordinate are taken into account.
+  
+          :param other: Second image to add.
+          :type other: Image
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
-        Parameters
-        ----------
-        other : Image
-        Second image to add.
-        
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
         """
         try:
             if other.image:
@@ -2461,7 +2411,7 @@ class Image(object):
                 self_rot = self.wcs.get_rot()
                 ima_rot = ima.wcs.get_rot()
                 if self_rot != ima_rot:
-                    ima = ima.rotate(self_rot-ima_rot)
+                    ima.rotate(self_rot-ima_rot)
                 self_cdelt = self.wcs.get_step()
                 ima_cdelt = ima.wcs.get_step()
                 if (self_cdelt != ima_cdelt).all():
@@ -2469,12 +2419,12 @@ class Image(object):
                         factor = self_cdelt/ima_cdelt
                         if not np.sometrue(np.mod( self_cdelt[0],  ima_cdelt[0])) and not np.sometrue(np.mod( self_cdelt[1],  ima_cdelt[1] )):
                             # ima.step is an integer multiple of the self.step
-                            ima = ima.rebin_factor(factor)
+                            ima.rebin_factor(factor)
                         else:
                             raise ValueError, 'steps are not integer multiple'
                     except:
                         newdim = ima.shape/factor
-                        ima = ima.rebin(newdim, None, self_cdelt, flux=True)
+                        ima.rebin(newdim, None, self_cdelt, flux=True)
                 # here ima and self have the same step
                 [[k1,l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
                 l1 = int(l1 + 0.5)
@@ -2514,34 +2464,28 @@ class Image(object):
                     data[k1:k2,l1:l2] += (ima.data.filled(np.ma.median(ima.data))[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
                
                 #data = self.data.filled(np.ma.median(self.data))
-                
-                res = Image(notnoise=True, shape=self.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
-                res.data = np.ma.array(data, mask=self.data.mask)
-                return res 
+                self.data = np.ma.array(data, mask=self.data.mask)
+                self.var = None
         except:
             print 'Operation forbidden'
             return None
         
     def segment(self, shape=(2,2), minsize=20, background = 20, interp='no'):
-        """ Segments the image in a number of smaller images.
-        Returns a list of images.
+        """Segments the image in a number of smaller images. Returns a list of images.
+  
+          :param shape: Shape used for connectivity.
+          :type shape: (integer,integer)
+          :param minsize: Minimmum size of the images.
+          :type minsize: integer
+          :param background: Under this value, flux is considered as background.
+          :type background: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
-        Parameters
-        ----------
-        
-        shape : (integer,integer)
-        Shape used for connectivity.
-        
-        minsize : integer
-        Minimmum size of the images.
-        
-        background : float
-        Under this value, flux is considered as background.
-        
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+          :rtype: List of Image objects.
         """
         if interp=='linear':
             data = self._interp_data(spline=False)
@@ -2567,21 +2511,17 @@ class Image(object):
         return imalist
     
     def add_gaussian_noise(self, sigma, interp='no'):
-        """ Adds gaussian noise to image
+        """Adds Gaussian noise to image.
+  
+          :param sigma: Standard deviation.
+          :type sigma: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
-        Parameters
-        ----------
-        
-        sigma : float
-        Standard deviation.
-        
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
         """
-        res = self.copy()
-        
         if interp=='linear':
             data = self._interp_data(spline=False)
         elif interp=='spline':
@@ -2589,22 +2529,18 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
             
-        res.data = np.ma.array(np.random.normal(data, sigma),mask=res.data.mask)
-        return res
+        self.data = np.ma.array(np.random.normal(data, sigma),mask=self.data.mask)
     
     def add_poisson_noise(self, interp='no'):
-        """ Adds poisson noise to image
+        """Adds Poisson noise to image.
+  
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
-        Parameter
-        ---------
-        
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
         """
-        res = self.copy()
-        
         if interp=='linear':
             data = self._interp_data(spline=False)
         elif interp=='spline':
@@ -2612,11 +2548,14 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        res.data = np.ma.array(np.random.poisson(data),mask=res.data.mask)
-        return res
+        self.data = np.ma.array(np.random.poisson(data),mask=self.data.mask)
     
     def inside(self, coord):
-        """ Returns True if coord is inside image
+        """Returns True if coord is inside image.
+  
+          :param coord: declination and right ascension in degrees (dec, ra).
+          :type coord: (float,float)
+          :rtype: boolean
         """
         pixcrd = [ [0,0], [self.shape[0]-1,0], [ self.shape[0]-1,self.shape[1]-1], [0,self.shape[1]-1]]
         pixsky = self.wcs.pix2sky(pixcrd)
@@ -2635,25 +2574,21 @@ class Image(object):
             return False
         
     def fftconvolve(self, other, interp='no'):
-        """convolves self and other using fft.
+        """Convolves image with other using fft.
+  
+          :param other: Second Image or 2d-array.
+          :type other: 2d-array or Image
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
-        Parameters
-        ----------
-        
-        other : 2d-array or Image
-        Second Image or 2d-array
-        
-        interp : 'no' | 'linear' | 'spline'
-        'no' : data median value replaced masked values.
-        'linear' : linear interpolation of the masked values.
-        'spline' : spline interpolation of the masked values.
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
         """
         if self.data is None:
             raise ValueError, 'empty data array'
         
-        if type(other) is np.array:
-            res = self.copy()
-            
+        if type(other) is np.array:  
             if interp=='linear':
                 data = self._interp_data(spline=False)
             elif interp=='spline':
@@ -2661,11 +2596,9 @@ class Image(object):
             else:
                 data = np.ma.filled(self.data, np.ma.median(self.data))
             
-            res.data = np.ma.array(signal.fftconvolve(data ,other ,mode='same'), mask=self.data.mask)
-            return res
+            self.data = np.ma.array(signal.fftconvolve(data ,other ,mode='same'), mask=self.data.mask)
         try:
             if other.image:
-
                 if interp=='linear':
                     data = self._interp_data(spline=False)
                     other_data = other._interp_data(spline=False)
@@ -2680,97 +2613,75 @@ class Image(object):
                     print 'Operation forbidden for images with different sizes'
                     return None
                 else:
-                    res = self.copy()
-                    
-                    res.data = np.ma.array(signal.fftconvolve(data ,other_data ,mode='same'), mask=self.data.mask)
-                    res.fscale = self.fscale * other.fscale
-                    return res
+                    self.data = np.ma.array(signal.fftconvolve(data ,other_data ,mode='same'), mask=self.data.mask)
+                    self.fscale = self.fscale * other.fscale
         except:
             print 'Operation forbidden'
             return None
         
     def fftconvolve_gauss(self,center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1):
         """Convolves image with a 2D gaussian.
+  
+          :param center: Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
+          :type center: (float,float)
+          :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
+          :type flux: float
+          :param width: Spreads of the Gaussian blob (dec_width,ra_width).
+          :type width: (float,float)
+          :param peak: If true, flux contains a gaussian peak value.
+          :type peak: boolean
+          :param rot: Angle position in degree.
+          :type rot: float
+          :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
         
-        Parameters
-        ----------
-        
-        center : (float,float)
-        Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
-        
-        flux : float
-        Integrated gaussian flux or gaussian peak value if peak is True.
-
-        width : (float,float)
-        Spreads of the Gaussian blob (dec_width,ra_width).
-        
-        peak : boolean
-        If true, flux contains a gaussian peak value.
-    
-        rot : float
-        Angle position in degree.
-      
-        factor : integer
-        If factor<=1, gaussian is computed in the center of each pixel.
-        If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+                          If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+          :type factor: integer
         """
         ima = gauss_image(self.shape, self.wcs, center, flux, width, peak, rot, factor)
         ima.norm(type='sum')
-        return self.fftconvolve(ima)
+        self.fftconvolve(ima)
     
     def fftconvolve_moffat(self, center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=1):
         """Convolves image with a 2D moffat.
-        
-        Parameters
-        ----------
-        
-        center : (float,float)
-        Moffat center (dec_peak, ra_peak). If None the center of the image is used.
-            
-        I : float
-        Intensity at image center. 1 by default.
-    
-        a : float
-        Half width at half maximum of the image in the absence of atmospheric scattering. 1 by default.
-        
-        q : float
-        axis ratio, 1 by default.
-        
-        n : integer
-        Atmospheric scattering coefficient. 2 by default.
-        
-        rot : float
-        Angle position in degree.
-          
-        factor : integer
-        If factor<=1, moffat value is computed in the center of each pixel.
-        If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
+  
+          :param center: Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
+          :type center: (float,float)
+          :param I: Intensity at image center. 1 by default.
+          :type I: float
+          :param a: Half width at half maximum of the image in the absence of atmospheric scattering. 1 by default.
+          :type a: float
+          :param q: Axis ratio, 1 by default.
+          :type q: float
+          :param n: Atmospheric scattering coefficient. 2 by default.
+          :type n: integer
+          :param rot: Angle position in degree.
+          :type rot: float
+          :param factor: If factor<=1, moffat value is computed in the center of each pixel.
+  
+            If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
+          :type factor: integer
         """
         ima = moffat_image(self.shape, self.wcs, center, I, a, q, n, rot, factor)
         ima.norm(type='sum')
-        return self.fftconvolve(ima)
+        self.fftconvolve(ima)
     
     def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale = False): 
-        """ plots the image.
+        """Plots the image.
+  
+          :param title: Figure title (None by default).
+          :type title: string
+          :param scale: The stretch function to use for the scaling (default is 'linear').
+          :type scale: linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+          :param vmin: Minimum pixel value to use for the scaling.
+  
+           If None, vmin is set to min of data.
+          :type vmin: float
+          :param vmax: Maximum pixel value to use for the scaling.
         
-        Parameter
-        ---------     
-        title : string
-        Figure title (None by default).
-        
-        scale : linear' | 'log' | 'sqrt' | 'arcsinh' | 'power' 
-        The stretch function to use for the scaling (default is 'linear').
-        
-        vmin: float
-        Minimum pixel value to use for the scaling.
-        If None, vmin is set to min of data.
- 
-        vmax: float
-        Maximum pixel value to use for the scaling.
-        If None, vmax is set to max of data.
-        
-        zscale : boolean
-        If true, compute vmin and vmax using the IRAF zscale algorithm.
+           If None, vmax is set to max of data.
+          :type vmax: float
+          :param zscale: If true, vmin and vmax are computed using the IRAF zscale algorithm.
+          :type zscale: boolean
         """
         plt.ion()
         
@@ -2833,18 +2744,19 @@ class Image(object):
                 pass    
             
     def ipos(self, filename='None'):
-        """Interactive mode.
-        Prints cursor position.   
-        To read cursor position, click on the left mouse button
-        To remove a cursor position, click on the left mouse button + <r>
-        To quit the interactive mode, click on the right mouse button.
-        At the end, clicks are saved in self.clicks as dictionary {'ra','dec','i','j','data'}.
-        
-        Parameter
-        ---------
-        
-        filename : string
-        If filename is not None, the cursor values are saved as a fits table.
+        """Prints cursor position in interactive mode (i and j define the nearest pixel, ra and dec are the position, data contains the image data value (data[i,j]) ).
+  
+          To read cursor position, click on the left mouse button.
+  
+          To remove a cursor position, click on the left mouse button + <d>
+  
+          To quit the interactive mode, click on the right mouse button. 
+  
+          At the end, clicks are saved in self.clicks as dictionary {'dec','ra','i','j','data'}.
+  
+  
+          :param filename: If filename is not None, the cursor values are saved as a fits table with columns labeled 'I'|'J'|'RA'|'DEC'|'DATA'.
+          :type filename: string
         """
         print 'To read cursor position, click on the left mouse button'
         print 'To remove a cursor position, click on the left mouse button + <d>'
@@ -2897,8 +2809,9 @@ class Image(object):
                 
             
     def idist(self):
-        """Interactive mode.
-        Gets distance and center from 2 cursor positions.
+        """Gets distance and center from 2 cursor positions (interactive mode).
+  
+          To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the line.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -2928,11 +2841,9 @@ class Image(object):
 
             
     def istat(self):
-        """Interactive mode.
-        Computes image statistics from windows defined by 2 cursor positions.
-        mean is the mean value, median the median value
-        std is the rms standard deviation, sum the sum, peak the peak value
-        npts is the total number of points.
+        """Computes image statistics from windows defined with left mouse button (mean is the mean value, median the median value, std is the rms standard deviation, sum the sum, peak the peak value, npts is the total number of points).
+  
+          To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -2965,8 +2876,9 @@ class Image(object):
             self._selector = None
             
     def ipeak(self):
-        """Interactive mode.
-        Prints peak location in windows defined by 2 cursor positions.
+        """Finds peak location in windows defined with left mouse button.
+  
+          To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -2995,8 +2907,9 @@ class Image(object):
             self._selector = None
             
     def ifwhm(self):
-        """Interactive mode.
-        Computes fwhm in windows defined by 2 cursor positions.
+        """Computes fwhm in windows defined with left mouse button.
+  
+          To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -3025,8 +2938,9 @@ class Image(object):
             self._selector = None
             
     def iee(self):
-        """Interactive mode.
-        Computes encloded energy in windows defined by 2 cursor positions.
+        """Computes enclosed energy in windows defined with left mouse button.
+  
+          To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -3055,8 +2969,7 @@ class Image(object):
             self._selector = None
             
     def imask(self):
-        """Interactive mode.
-        Plots masked values.
+        """Over-plots masked values (interactive mode).
         """
         try:
             try:
@@ -3082,38 +2995,40 @@ class Image(object):
             
             
 def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1):
-    """creates a new image from a 2D gaussian.
-    Returns Image object
-
-    Parameters
-    ----------
+    """Creates a new image from a 2D gaussian.
+  
+      :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.
+  
+            If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
+      :type shape: integer or (integer,integer)
+      :param wcs: World coordinates.
+      :type wcs: WCS
+      :param center: Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
+      :type center: (float,float)
+      :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
+      :type flux: float
+      :param width: Spreads of the Gaussian blob (dec_width,ra_width).
+      :type width: (float,float)
+      :param peak: If true, flux contains a gaussian peak value.
+      :type peak: boolean
+      :param rot: Angle position in degree.
+      :type rot: float
+      :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
         
-    shape : integer or (integer,integer)
-    Lengths of the image in Y and X. (101,101) by default.
-    python notation: (ny,nx)
-    if wcs object contains dimensions, theses dimensions are used.
-
-    wcs : WCS
-    World coordinates 
-    
-    center : (float,float)
-    Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
-        
-    flux : float
-    Integrated gaussian flux or gaussian peak value if peak is True.
-
-    width : (float,float)
-    Spreads of the Gaussian blob (dec_width,ra_width).
-        
-    peak : boolean
-    If true, flux contains a gaussian peak value.
-    
-    rot : float
-    Angle position in degree.
+          If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+      :type factor: integer
+      :rtype: obj.Image object (`Image class`_) 
       
-    factor : integer
-    If factor<=1, gaussian is computed in the center of each pixel.
-    If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+      Examples::
+ 
+      import numpy as np
+      from mpdaf.obj import gauss_image
+      from mpdaf.obj import WCS
+      wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
+      ima = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
+      ima.plot()
+      gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0, plot=True)
+      gauss.print_param()
     """
     if is_int(shape):
         shape = (shape,shape)
@@ -3182,41 +3097,31 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
     return Image(data=data, wcs=wcs)
 
 def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=1):
-    """creates a new image from a 2D Moffat function.
-    Returns Image object
-
-    Parameters
-    ----------
-        
-    shape : integer or (integer,integer)
-    Lengths of the image in Y and X. (101,101) by default.
-    python notation: (ny,nx)
-    if wcs object contains dimensions, theses dimensions are used.
-
-    wcs : WCS
-    World coordinates 
-    
-    center : (float,float)
-    Moffat center (dec_peak, ra_peak). If None the center of the image is used.
-        
-    I : float
-    Intensity at image center. 1 by default.
-
-    a : float
-    Half width at half maximum of the image in the absence of atmospheric scattering. 1 by default.
-    
-    q : float
-    axis ratio, 1 by default.
-    
-    n : integer
-    Atmospheric scattering coefficient. 2 by default.
-    
-    rot : float
-    Angle position in degree.
-      
-    factor : integer
-    If factor<=1, moffat value is computed in the center of each pixel.
-    If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
+    """Creates a new image from a 2D Moffat function.
+  
+      :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.
+  
+            If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
+      :type shape: integer or (integer,integer)
+      :param wcs: World coordinates.
+      :type wcs: WCS
+      :param center: Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
+      :type center: (float,float)
+      :param I: Intensity at image center. 1 by default.
+      :type I: float
+      :param a: Half width at half maximum of the image in the absence of atmospheric scattering. 1 by default.
+      :type a: float
+      :param q: Axis ratio, 1 by default.
+      :type q: float
+      :param n: Atmospheric scattering coefficient. 2 by default.
+      :type n: integer
+      :param rot: Angle position in degree.
+      :type rot: float
+      :param factor: If factor<=1, moffat value is computed in the center of each pixel.
+  
+            If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
+      :type factor: integer
+      :rtype: obj.Image object (`Image class`_) 
     """
     if is_int(shape):
         shape = (shape,shape)
@@ -3260,38 +3165,31 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
     return Image(data=data, wcs=wcs)
 
 def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smooth=0):
-    """ interpolates z(x,y) and returns an image.
-    
-    Parameters
-    ----------
-    
-    x : float array
-    Coordinate array corresponding to the declinaison.
-    
-    y : float arry
-    Coordinate array corresponding to the right ascension.
-    
-    z : float array
-    Input data.
-    
-    steps : (float,float)
-    Steps of the output image (dDec,dRa).
-    
-    deg : boolean
-    If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg')
-    If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR')
-    
-    limits : (float,float,float,float)
-    (dec_min,ra_min,dec_max,ra_max). If None, minum and maximum values of x,y arrays are used.
-    
-    spline : boolean
-    False: bilinear interpolation, True: spline interpolation 
-    
-    order : integer
-    Polynomial order for spline interpolation (default 3)
-    
-    smooth : float
-    Smoothing parameter for spline interpolation (default 0: no smoothing)
+    """Interpolates z(x,y) and returns an image.
+  
+      :param x: Coordinate array corresponding to the declinaison.
+      :type x: float array
+      :param y: Coordinate array corresponding to the right ascension.
+      :type y: float array
+      :param z: Input data.
+      :type z: float array
+      :param steps: Steps of the output image (dDec,dRa).
+      :type steps: (float,float)
+      :param deg: If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg')
+  
+          If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR')
+      :type deg: boolean
+      :param limits: Limits of the image (dec_min,ra_min,dec_max,ra_max).
+        
+         If None, minum and maximum values of x,y arrays are used.
+      :type limits: (float,float,float,float)
+      :param spline: False: bilinear interpolation, True: spline interpolation 
+      :type spline: boolean
+      :param order: Polynomial order for spline interpolation (default 3)
+      :type order: integer
+      :param smooth: Smoothing parameter for spline interpolation (default 0: no smoothing)
+      :type smooth: float
+      :rtype: obj.Image object (`Image class`_) 
     """
     if limits == None:
         x1 = x.min()
@@ -3325,36 +3223,38 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smo
     return Image(data=data, wcs=wcs)
 
 def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False, interp='no'):
-    """ builds composite image from a list of image and colors. 
-    Returns a PIL RGB image (or 2 PIL images if bar is True).
-    
-    Parameters
-    ----------
-    ImaColList : list of tuple (Image,float,float)
-    List of images and colors [(Ima, hue, saturation)] 
-    
-    mode : 'lin' or 'sqrt'
-    Intensity mode. Use 'lin' for linear and 'sqrt' for root square.
-    
-    cut : (float,float)
-    Minimum and maximum in percent.
-    
-    bar : boolean
-    If bar is True a color bar image is created.
-    
-    interp : 'no' | 'linear' | 'spline'
-    'no' : data median value replaced masked values.
-    'linear' : linear interpolation of the masked values.
-    'spline' : spline interpolation of the masked values.
-    
-    Example
-    -------
-    
-    imalist = [stars, lowz, highz]
-    tab = zip(imalist,linspace(250,0,3),ones(3)*100)
-    p1 = composite_image(tab,cuts=(0,99.5),mode='sqrt')
-    p1.show()
-    p1.save('test_composite.jpg')
+    """Builds composite image from a list of image and colors.
+  
+      :param ImaColList: List of images and colors [(Image, hue, saturation)] 
+      :type ImaColList: list of tuple (Image,float,float)
+      :param mode: Intensity mode. Use 'lin' for linear and 'sqrt' for root square.
+      :type mode: 'lin' or 'sqrt'
+      :param cuts: Minimum and maximum in percent.
+      :type cuts: (float,float)
+      :param bar: If bar is True a color bar image is created.
+      :type bar: boolean
+      :param interp: if 'no', data median value replaced masked values.
+  
+        if 'linear', linear interpolation of the masked values.
+        
+        if 'spline', spline interpolation of the masked values.
+      :type interp: 'no' | 'linear' | 'spline'
+      :rtype: Returns a PIL RGB image (or 2 PIL images if bar is True).
+  
+Examples::
+ 
+  import numpy as np
+  from mpdaf.obj import Image
+  from mpdaf.obj import composite_image
+  
+  stars = Image(filename="stars.fits")
+  lowz = Image(filename="lowz.fits")
+  highz = Image(filename="highz.fits")
+  imalist = [stars, lowz, highz]
+  tab = zip(imalist,linspace(250,0,3),ones(3)*100)
+  p1 = composite_image(tab,cuts=(0,99.5),mode='sqrt')
+  p1.show()
+  p1.save('test_composite.jpg')
     """
     from PIL import Image as PILima
     from PIL import Image, ImageColor, ImageChops
