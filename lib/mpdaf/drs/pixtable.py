@@ -438,46 +438,46 @@ class PixTable(object):
         if (ifu is not None) or (slice is not None) or (xpix is not None) or (ypix is not None):
             col_origin = self.get_origin()
             if slice is not None:
-                if (isinstance(slice, int)):
-                    kmask &= (self.origin2slice(col_origin) == slice)
-                else:
+                if hasattr(slice, '__iter__'):
                     mask = np.zeros(self.nrows).astype('bool')
                     for s in slice:
                         mask |= (self.origin2slice(col_origin) == s)
                     kmask &= mask
                     del mask
-            if ifu is not None:
-                if (isinstance(ifu, int)):
-                    kmask &= (self.origin2ifu(col_origin) == ifu)
                 else:
+                    kmask &= (self.origin2slice(col_origin) == slice)
+            if ifu is not None:
+                if hasattr(ifu, '__iter__'):
                     mask = np.zeros(self.nrows).astype('bool')
                     for i in ifu:
                         mask |= (self.origin2ifu(col_origin) == i)
                     kmask &= mask
                     del mask
+                else:
+                    kmask &= (self.origin2ifu(col_origin) == ifu)
             if xpix is not None:
                 col_xpix = self.origin2xpix(col_origin)
-                if (isinstance(xpix, tuple)):
-                    x1,x2 = xpix
-                    kmask &= (col_xpix>=x1) & (col_xpix<x2)
-                else:
+                if hasattr(xpix, '__iter__'):
                     mask = np.zeros(self.nrows).astype('bool')
                     for x1,x2 in xpix:
                          mask |= (col_xpix>=x1) & (col_xpix<x2)
                     kmask &= mask
                     del mask
+                else:
+                    x1,x2 = xpix
+                    kmask &= (col_xpix>=x1) & (col_xpix<x2)
                 del col_xpix
             if ypix is not None:
                 col_ypix = self.origin2ypix(col_origin)
-                if (isinstance(ypix, tuple)):
-                    y1,y2 = ypix
-                    kmask &= (col_ypix>=y1) & (col_ypix<y2)
-                else:
+                if hasattr(ypix, '__iter__'):
                     mask = np.zeros(self.nrows).astype('bool')
                     for y1,y2 in ypix:
                          mask |= (col_ypix>=y1) & (col_ypix<y2)
                     kmask &= mask
                     del mask
+                else:
+                    y1,y2 = ypix
+                    kmask &= (col_ypix>=y1) & (col_ypix<y2)
                 del col_ypix
             del col_origin
 
