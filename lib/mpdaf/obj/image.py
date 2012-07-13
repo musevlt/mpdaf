@@ -216,72 +216,85 @@ class Image(object):
         #possible FITS filename
         self.filename = filename
         if filename is not None:
-            f = pyfits.open(filename)
-            # primary header
-            hdr = f[0].header
-            if len(f) == 1:
-                # if the number of extension is 1, we just read the data from the primary header
-                # test if image
-                if hdr['NAXIS'] != 2:
-                    raise IOError, '  not an image'
-                self.unit = hdr.get('BUNIT', None)
-                self.cards = hdr.ascard
-                self.shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
-                self.data = np.array(f[0].data, dtype=float)
-                self.var = None
-                self.fscale = hdr.get('FSCALE', 1.0)
-                try:
-                    self.wcs = WCS(hdr) # WCS object from data header
-                except:
-                    print "Error: Invalid wcs. World coordonates are not copied."
-                    self.wcs = None
-            else:
-                if ext is None:
-                    h = f['DATA'].header
-                    d = np.array(f['DATA'].data, dtype=float)
-                else:
-                    if is_int(ext) or isinstance(ext,str):
-                        n = ext
-                    else:
-                        n = ext[0]
-                    h = f[n].header
-                    d = np.array(f[n].data, dtype=float)
-                        
-                if h['NAXIS'] != 2:
-                    raise IOError, 'Wrong dimension number in DATA extension'
-                self.unit = h.get('BUNIT', None)
-                self.cards = h.ascard
-                self.shape = np.array([h['NAXIS2'],h['NAXIS1']])
-                self.data = d
-                self.fscale = h.get('FSCALE', 1.0)
-                try:
-                    self.wcs = WCS(h) # WCS object from data header
-                except:
-                    print "Error: Invalid wcs. World coordonates are not copied."
-                    self.wcs = None
-                self.var = None
-                if not notnoise:
+            if filename[-4:]=="fits":
+                f = pyfits.open(filename)
+                # primary header
+                hdr = f[0].header
+                if len(f) == 1:
+                    # if the number of extension is 1, we just read the data from the primary header
+                    # test if image
+                    if hdr['NAXIS'] != 2:
+                        raise IOError, '  not an image'
+                    self.unit = hdr.get('BUNIT', None)
+                    self.cards = hdr.ascard
+                    self.shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
+                    self.data = np.array(f[0].data, dtype=float)
+                    self.var = None
+                    self.fscale = hdr.get('FSCALE', 1.0)
                     try:
-                        if ext is None:
-                            fstat = f['STAT']
-                        else:
-                            n = ext[1]
-                            fstat = f[n]
-                            
-                        if fstat.header['NAXIS'] != 2:
-                            raise IOError, 'Wrong dimension number in STAT extension'
-                        if fstat.header['NAXIS1'] != self.shape[1] and fstat.header['NAXIS2'] != self.shape[0]:
-                            raise IOError, 'Number of points in STAT not equal to DATA'
-                        self.var = np.array(fstat.data, dtype=float)
+                        self.wcs = WCS(hdr) # WCS object from data header
                     except:
-                        self.var = None
-                # DQ extension
-                try:
-                    mask = np.ma.make_mask(f['DQ'].data)
-                    self.data = np.ma.array(self.data, mask=mask)
-                except:
-                    pass
-            f.close()
+                        print "Error: Invalid wcs. World coordonates are not copied."
+                        self.wcs = None
+                else:
+                    if ext is None:
+                        h = f['DATA'].header
+                        d = np.array(f['DATA'].data, dtype=float)
+                    else:
+                        if is_int(ext) or isinstance(ext,str):
+                            n = ext
+                        else:
+                            n = ext[0]
+                        h = f[n].header
+                        d = np.array(f[n].data, dtype=float)
+                            
+                    if h['NAXIS'] != 2:
+                        raise IOError, 'Wrong dimension number in DATA extension'
+                    self.unit = h.get('BUNIT', None)
+                    self.cards = h.ascard
+                    self.shape = np.array([h['NAXIS2'],h['NAXIS1']])
+                    self.data = d
+                    self.fscale = h.get('FSCALE', 1.0)
+                    try:
+                        self.wcs = WCS(h) # WCS object from data header
+                    except:
+                        print "Error: Invalid wcs. World coordonates are not copied."
+                        self.wcs = None
+                    self.var = None
+                    if not notnoise:
+                        try:
+                            if ext is None:
+                                fstat = f['STAT']
+                            else:
+                                n = ext[1]
+                                fstat = f[n]
+                                
+                            if fstat.header['NAXIS'] != 2:
+                                raise IOError, 'Wrong dimension number in STAT extension'
+                            if fstat.header['NAXIS1'] != self.shape[1] and fstat.header['NAXIS2'] != self.shape[0]:
+                                raise IOError, 'Number of points in STAT not equal to DATA'
+                            self.var = np.array(fstat.data, dtype=float)
+                        except:
+                            self.var = None
+                    # DQ extension
+                    try:
+                        mask = np.ma.make_mask(f['DQ'].data)
+                        self.data = np.ma.array(self.data, mask=mask)
+                    except:
+                        pass
+                f.close()
+            else:
+                from PIL import Image as PILima
+                im = PILima.open(filename)
+                self.data = np.array(im.getdata(), dtype=float).reshape(im.size[1], im.size[0])
+                self.var = None
+                self.shape = np.array(self.data.shape)
+                self.fscale = np.float(fscale)
+                self.unit = unit
+                self.cards = pyfits.CardList()
+                self.wcs = WCS()
+                self.wcs.wcs.naxis1 = self.shape[1]
+                self.wcs.wcs.naxis2 = self.shape[0]
         else:
             #possible data unit type
             self.unit = unit
@@ -1309,6 +1322,17 @@ class Image(object):
         self.fscale *= norm
         if self.var is not None:
             self.var *= norm*norm
+            
+    def background(self, niter=10):
+        ksel = np.where(self.data>0)
+        tab1 = self.data[ksel]
+        ksel = np.where(tab1 < (np.ma.median(tab1) + 3 * np.ma.std(tab1)))
+        tab2 = tab1[ksel]
+        for n in range(niter):
+            ksel = np.where(tab2 < (np.ma.median(tab2) + 3 * np.ma.std(tab2)))
+            tab3 = tab2[ksel]
+            tab2=tab3
+        return np.ma.median(tab2)
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, plot=False):
         """Finds image peak location.
@@ -1339,6 +1363,7 @@ class Image(object):
         """
         if center is None or radius==0:
             d = self.data
+            ima = self.copy()
             imin = 0
             jmin = 0
         else:
@@ -1369,27 +1394,75 @@ class Image(object):
                     imin = 0
                 imax = int(np.max(pixcrd[:,0]))+1
             d = self.data[imin:imax,jmin:jmax]
+            ima = self[imin:imax,jmin:jmax]
+            #plt.broken_barh([(jmin,jmax-jmin)], (imin,imax-imin), alpha=0.5, facecolors = 'black')
             if np.shape(d)[0]==0 or np.shape(d)[1]==0:
                 raise ValueError, 'Coord area outside image limits'
             
-        ic,jc = ndimage.measurements.maximum_position(d)
-        if dpix == 0:
-            di = 0
-            dj = 0
-        else:
-#            if ic-dpix<0 or ic+dpix>d.shape[0] or jc-dpix<0 or jc+dpix>d.shape[1]:
-#                raise ValueError, 'Cannot compute center of mass, peak at the edges of the image'
-            if ic-dpix<0:
-                ic = dpix
-            if jc-dpix<0:
-                jc = dpix
-            di,dj = ndimage.measurements.center_of_mass(d[ic-dpix:ic+dpix+1,jc-dpix:jc+dpix+1])
-        ic = imin+ic-dpix+di
-        jc = jmin+jc-dpix+dj
+#        ic,jc = ndimage.measurements.maximum_position(d)
+#        print 'center', ic,jc
+#        if dpix == 0:
+#            di = 0
+#            dj = 0
+#        else:
+#            print 'di', max(0,ic-dpix),ic+dpix+1,max(0,jc-dpix),jc+dpix+1
+#            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background())
+#        ic = imin+max(0,ic-dpix)+di
+#        jc = jmin+max(0,jc-dpix)+dj
+#        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
+#        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
+#        if plot:
+#            plt.plot(jc,ic,'r+')
+#            str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
+#            plt.title(str)
+
+#        mean = np.ma.mean(ima.data)
+#        ima = ima>mean 
+#        ic,jc = ndimage.measurements.maximum_position(ima.data)
+#        for k in range(3):
+#            if dpix > 0:
+#                di,dj = ndimage.measurements.center_of_mass(ima.data[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()   )
+#                ic = max(0,ic-dpix)+di
+#                jc = max(0,jc-dpix)+dj
+#            
+#        if dpix == 0:
+#            di = 0
+#            dj = 0
+#        else:
+#            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()   )               
+#        ic = imin+max(0,ic-dpix)+di
+#        jc = jmin+max(0,jc-dpix)+dj
+#        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
+#        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
+#        if plot:
+#            plt.plot(jc,ic,'r+')
+#            str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
+#            plt.title(str)
+
+        di,dj = ndimage.measurements.center_of_mass(d - self.background()   )
+#        print 'center of mass (d) = ', imin + di, jmin + dj
+        ic = di
+        jc = dj
+#        plt.plot(jc,ic,'r+')
+
+#        ic,jc = ndimage.measurements.maximum_position(d)
+#        ic = np.shape(d)[0]/2
+#        jc = np.shape(d)[1]/2
+        for k in range(3):
+            if dpix > 0:
+                di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()   )
+                ic = max(0,ic-dpix)+di
+                jc = max(0,jc-dpix)+dj
+        ic = imin+ic
+        jc = jmin+jc
+        #plt.broken_barh([(jc-dpix,2*dpix)], (ic-dpix,2*dpix), alpha=0.2, facecolors = 'red')
         [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
         maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
         if plot:
-            plt.plot(jc,ic,'r+')
+            plt.plot(jc,ic,'g+')
+            #str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
+            #plt.title(str)
+            
         return {'ra':ra, 'dec':dec, 'j':jc, 'i':ic, 'data': maxv}
     
     def fwhm(self, center=None, radius=0, pix = False):
@@ -2905,6 +2978,7 @@ class Image(object):
             print 'ipeak deactivated.'
             self._selector.set_active(False)
             self._selector = None
+        
             
     def ifwhm(self):
         """Computes fwhm in windows defined with left mouse button.
