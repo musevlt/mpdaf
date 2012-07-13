@@ -86,7 +86,8 @@ class PixTable(object):
             self.primary_header = pyfits.CardList()
 
     def __del__(self):
-        """removes temporary files used for memory mapping"""
+        """removes temporary files used for memory mapping
+        """
         try:
             if self.__xpos != None:
                 os.remove(self.__xpos)
@@ -106,7 +107,8 @@ class PixTable(object):
             pass
 
     def copy(self):
-        """copies PixTable object in a new one and returns it"""
+        """Copies PixTable object in a new one and returns it.
+        """
         result = PixTable()
         result.filename = self.filename
 
@@ -165,7 +167,8 @@ class PixTable(object):
         return result
 
     def info(self):
-        """prints information"""
+        """Prints information.
+        """
         if self.filename != None:
             hdulist = pyfits.open(self.filename,memmap=1)
             print hdulist.info()
@@ -176,7 +179,10 @@ class PixTable(object):
             print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
 
     def get_xpos(self):
-        """loads the xpos column and returns it"""
+        """Loads the xpos column and returns it.
+        
+        :rtype: numpy.memmap
+        """
         if self.__xpos != None:
             xpos = np.memmap(self.__xpos,dtype="float32",shape=(self.nrows))
             return xpos
@@ -196,7 +202,10 @@ class PixTable(object):
                 return xpos
 
     def get_ypos(self):
-        """loads the ypos column and returns it"""
+        """Loads the ypos column and returns it.
+        
+        :rtype: numpy.memmap
+        """
         if self.__ypos != None:
             ypos = np.memmap(self.__ypos,dtype="float32",shape=(self.nrows))
             return ypos
@@ -216,7 +225,10 @@ class PixTable(object):
                 return ypos
 
     def get_lambda(self):
-        """loads the lambda column and returns it"""
+        """Loads the lambda column and returns it.
+        
+        :rtype: numpy.memmap
+        """
         if self.__lbda != None:
             lbda = np.memmap(self.__lbda,dtype="float32",shape=(self.nrows))
             return lbda
@@ -236,7 +248,10 @@ class PixTable(object):
                 return lbda
 
     def get_data(self):
-        """loads the data column and returns it"""
+        """Loads the data column and returns it.
+        
+        :rtype: numpy.memmap
+        """
         if self.__data != None:
             data = np.memmap(self.__data,dtype="float32",shape=(self.nrows))
             return data
@@ -256,7 +271,10 @@ class PixTable(object):
                 return data
 
     def get_stat(self):
-        """loads the stat column and returns it"""
+        """Loads the stat column and returns it.
+        
+        :rtype: numpy.memmap
+        """
         if self.__stat != None:
             stat = np.memmap(self.__stat,dtype="float32",shape=(self.nrows))
             return stat
@@ -276,7 +294,10 @@ class PixTable(object):
                 return stat
 
     def get_dq(self):
-        """loads the dq column and returns it"""
+        """Loads the dq column and returns it.
+        
+        :rtype: numpy.memmap
+        """
         if self.__dq != None:
             dq = np.memmap(self.__dq,dtype="uint32",shape=(self.nrows))
             return dq
@@ -296,7 +317,10 @@ class PixTable(object):
                 return dq
 
     def get_origin(self):
-        """loads the origin column and returns it"""
+        """Loads the origin column and returns it.
+        
+        :rtype: numpy.memmap
+        """
         if self.__origin != None:
             origin = np.memmap(self.__origin,dtype="uint32",shape=(self.nrows))
             return origin
@@ -316,11 +340,10 @@ class PixTable(object):
                 return origin
 
     def write(self,filename):
-        """ saves the object in a FITS file
-        Parameters
-        ----------
-        filename : string
-        The FITS filename
+        """Saves the object in a FITS file.
+        
+        :param filename: The FITS filename.
+        :type filename: string
         """
         prihdu = pyfits.PrimaryHDU()
         if self.primary_header is not None:
@@ -354,36 +377,41 @@ class PixTable(object):
         self.filename = filename
 
     def extract(self, sky=None, lbda=None, ifu=None, slice=None, xpix=None, ypix=None):
-        """ extracts a subset of a pixtable using the following criteria:
+        """Extracts a subset of a pixtable using the following criteria:
+        
         - aperture on the sky (center, size and shape)
+        
         - wavelength range
+        
         - IFU number
+        
         - slice number
+        
         - detector pixels
+        
         The arguments can be either single value or a list of values to select
         multiple regions.
 
-        Parameters
-        ----------
-        sky: (float, float, float, char)
-        (y, x, size, shape) extract an aperture on the sky, defined by a center
-        (y, x), a shape ('C' for circular, 'S' for square) and size (radius or
-        half side length).
+        
+        :param sky: (y, x, size, shape) extract an aperture on the sky, defined by a center (y, x), a shape ('C' for circular, 'S' for square) and size (radius or half side length).
+        :type sky: (float, float, float, char)
 
-        lbda: (float, float)
-        (min, max) wavelength range in Angstrom
+        :param lbda: (min, max) wavelength range in Angstrom.
+        :type lbda: (float, float)
 
-        ifu: int
-        IFU number
+        :param ifu: IFU number.
+        :type ifu: int
 
-        slice: int
-        Slice number on the CCD
+        :param slice: Slice number on the CCD.
+        :type slice: int
 
-        xpix: (int, int)
-        (min, max) pixel range along the X axis
+        :param xpix: (min, max) pixel range along the X axis
+        :type xpix: (int, int)
 
-        ypix: (int, int)
-        (min, max) pixel range along the Y axis
+        :param ypix: (min, max) pixel range along the Y axis
+        :type ypix: (int, int)
+        
+        :rtype: PixTable
         """
 
         # First create an empty pixtable
@@ -540,41 +568,42 @@ class PixTable(object):
         return ptab
 
     def origin2ifu(self, origin):
-        """ converts the origin value and returns the ifu number
+        """Converts the origin value and returns the ifu number.
 
-        Parameters
-        ----------
-        origin: integer
-        origin value
+        :param origin: Origin value.
+        :type origin: integer
+        
+        :rtype: int
         """
         return (origin >> 6) & 0x1f
 
     def origin2slice(self, origin):
-        """ converts the origin value and returns the slice number
+        """Converts the origin value and returns the slice number.
 
-        Parameters
-        ----------
-        origin: integer
-        origin value
+        :param origin: Origin value.
+        :type origin: integer
+        
+        :rtype: int
         """
         return origin & 0x3f
 
     def origin2ypix(self, origin):
-        """ converts the origin value and returns the y coordinates
+        """converts the origin value and returns the y coordinates.
 
-        Parameters
-        ----------
-        origin: integer
-        origin value
+        :param origin: Origin value.
+        :type origin: integer
+        
+        :rtype: float
         """
         return ((origin >> 11) & 0x1fff) - 1
 
     def origin2xoffset(self, origin):
-        """ converts the origin value and returns the x coordinates offset
-        Parameters
-        ----------
-        origin: integer
-        origin value
+        """Converts the origin value and returns the x coordinates offset.
+        
+        :param origin: Origin value.
+        :type origin: integer
+        
+        :rtype: float
         """
         col_ifu = self.origin2ifu(origin)
         col_slice = self.origin2slice(origin)
@@ -589,27 +618,31 @@ class PixTable(object):
         return xoffset
 
     def origin2xpix(self, origin):
-        """ converts the origin value and returns the x coordinates offset
-        Parameters
-        ----------
-        origin: integer
-        origin value
+        """Converts the origin value and returns the x coordinates offset.
+       
+        :param origin: Origin value.
+        :type origin: integer
+        
+        :rtype: float
         """
         return self.origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1
 
     def origin2coords(self, origin):
-        """ converts the origin value and returns (ifu, slice, ypix, xpix)
+        """Converts the origin value and returns (ifu, slice, ypix, xpix).
 
-        Parameters
-        ----------
-        origin: integer
-        origin value
+        :param origin: Origin value.
+        :type origin: integer
+        
+        :rtype: (integer, integer, float, float)
         """
         return (self.origin2ifu(origin), self.origin2slice(origin),
                 self.origin2ypix(origin), self.origin2xpix(origin))
 
     def get_slices(self):
-        '''returns slices dictionary'''
+        """Returns slices dictionary.
+        
+        :rtype: dict
+        """
         col_origin = self.get_origin()
         col_xpos = self.get_xpos()
         col_ypos = self.get_ypos()
@@ -639,12 +672,20 @@ class PixTable(object):
         return slices
 
     def get_keywords(self,key):
+        """Returns the keyword value corresponding to key.
+        
+        :param key: Keyword.
+        :type key: string
+        
+        :rtype: float
+        """
         return self.primary_header[key].value
 
     def reconstruct_det_image(self):
-        """ reconstruct the image on the detector from the pixtable.
-	The pixtable must concerns only one IFU, otherwise an exception
-	is raised.
+        """Reconstruct the image on the detector from the pixtable.
+        The pixtable must concerns only one IFU, otherwise an exception is raised.
+        
+        :rtype: :class:`mpdaf.obj.Image`
         """
         if self.nrows == 0:
              return None
