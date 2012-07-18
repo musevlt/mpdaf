@@ -86,7 +86,7 @@ class PixTable(object):
             self.primary_header = pyfits.CardList()
 
     def __del__(self):
-        """removes temporary files used for memory mapping
+        """Removes temporary files used for memory mapping.
         """
         try:
             if self.__xpos != None:
@@ -588,7 +588,7 @@ class PixTable(object):
         return origin & 0x3f
 
     def origin2ypix(self, origin):
-        """converts the origin value and returns the y coordinates.
+        """Converts the origin value and returns the y coordinates.
 
         :param origin: Origin value.
         :type origin: integer
@@ -618,7 +618,7 @@ class PixTable(object):
         return xoffset
 
     def origin2xpix(self, origin):
-        """Converts the origin value and returns the x coordinates offset.
+        """Converts the origin value and returns the x coordinates.
        
         :param origin: Origin value.
         :type origin: integer
@@ -682,7 +682,7 @@ class PixTable(object):
         return self.primary_header[key].value
 
     def reconstruct_det_image(self):
-        """Reconstruct the image on the detector from the pixtable.
+        """Reconstructs the image on the detector from the pixtable.
         The pixtable must concerns only one IFU, otherwise an exception is raised.
         
         :rtype: :class:`mpdaf.obj.Image`
