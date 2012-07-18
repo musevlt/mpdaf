@@ -65,3 +65,4 @@ from image import gauss_image
 from image import moffat_image
 from image import make_image
 from image import composite_image
+from image import Gauss2D

@@ -128,7 +128,7 @@ class Gauss2D:
         self.err_peak = err_peak
         
     def copy(self):
-        """Copies Gauss1D object in a new one and returns it.
+        """Copies Gauss2D object in a new one and returns it.
         """
         res = Gauss2D(self.center, self.flux, self.width, self.cont, self.rot, self.peak, self.err_center, self.err_flux, self.err_width, self.err_rot, self.err_peak)
         return res
@@ -335,7 +335,7 @@ class Image(object):
     def copy(self):
         """Copies Image object in a new one and returns it.
   
-          :rtype: Image object
+          :rtype: Image
         """
         ima = Image()
         ima.filename = self.filename
@@ -1304,9 +1304,9 @@ class Image(object):
   
           :param type: If 'flux',the flux is normalized and the pixel area is taken into account.
   
-          If 'sum', the flux is normalized to the sum of flux independantly of pixel size.
+                      If 'sum', the flux is normalized to the sum of flux independantly of pixel size.
           
-          If 'max', the flux is normalized so that the maximum of intensity will be 'value'.  
+                      If 'max', the flux is normalized so that the maximum of intensity will be 'value'.  
           :type type: 'flux' | 'sum' | 'max'
           :param value: Normalized value (default 1).   
           :type value: float
@@ -1324,6 +1324,12 @@ class Image(object):
             self.var *= norm*norm
             
     def background(self, niter=10):
+        """Computes the image background.
+        
+        :param niter: Number of iterations.
+        :type niter: integer
+        :rtype: float
+        """
         ksel = np.where(self.data>0)
         tab1 = self.data[ksel]
         ksel = np.where(tab1 < (np.ma.median(tab1) + 3 * np.ma.std(tab1)))
@@ -1626,7 +1632,7 @@ class Image(object):
           :type pix: boolean
           :param etot: Total energy. If etot is not set it is computed from the full image.
           :type etot: float
-          :rtype: obj.Spectrum
+          :rtype: :class:`mpdaf.obj.Spectrum`
         """
         from spectrum import Spectrum
         if center is None:
@@ -1653,7 +1659,7 @@ class Image(object):
         wave = WaveCoord(cdelt=np.sqrt(step[0]**2+step[1]**2), crval=0.0, cunit = '')
         return Spectrum(wave=wave, data = ee)
         
-    def ee_size(self, center=None, pix = False, ee = None, frac = 0.90):
+    def ee_size(self, center=None, pix = False, ee = None, frac = 0.9):
         """Computes the size of the square center on (dec,ra) containing the fraction of the energy.
   
           :param center: Center of the explored region.
@@ -1809,7 +1815,7 @@ class Image(object):
           :type factor: integer
           :param plot: If True, the gaussian is plotted.
           :type plot: boolean
-          :rtype: objs.Gauss2D object (`Gauss2D class`_) 
+          :rtype: :class:`mpdaf.obj.Gauss2D`
         """
         ra_min = pos_min[1]
         dec_min = pos_min[0]
@@ -1944,8 +1950,8 @@ class Image(object):
         :param center: Initial Moffat center (dec_peak, ra_peak). If None they are estimated.
         :type center: (float,float)
             
-        :param I : Initial intensity at image center. 
-        :type I : float
+        :param I: Initial intensity at image center. 
+        :type I: float
     
         :param a: Initial half width at half maximum of the image in the absence of atmospheric scattering.
         :type a: float
@@ -2382,7 +2388,7 @@ class Image(object):
         self.var = None
 
     def gaussian_filter(self, sigma=3, interp='no'):
-        """Applies gaussian filter to the image.
+        """Applies Gaussian filter to the image.
         
           :param sigma: Standard deviation for Gaussian kernel
           :type sigma: float
@@ -3092,17 +3098,6 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
           If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
       :type factor: integer
       :rtype: obj.Image object (`Image class`_) 
-      
-      Examples::
- 
-      import numpy as np
-      from mpdaf.obj import gauss_image
-      from mpdaf.obj import WCS
-      wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
-      ima = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
-      ima.plot()
-      gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0, plot=True)
-      gauss.print_param()
     """
     if is_int(shape):
         shape = (shape,shape)
@@ -3299,7 +3294,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smo
 def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False, interp='no'):
     """Builds composite image from a list of image and colors.
   
-      :param ImaColList: List of images and colors [(Image, hue, saturation)] 
+      :param ImaColList: List of images and colors [(Image, hue, saturation)].
       :type ImaColList: list of tuple (Image,float,float)
       :param mode: Intensity mode. Use 'lin' for linear and 'sqrt' for root square.
       :type mode: 'lin' or 'sqrt'
@@ -3314,21 +3309,6 @@ def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False, interp='no'
         if 'spline', spline interpolation of the masked values.
       :type interp: 'no' | 'linear' | 'spline'
       :rtype: Returns a PIL RGB image (or 2 PIL images if bar is True).
-  
-Examples::
- 
-  import numpy as np
-  from mpdaf.obj import Image
-  from mpdaf.obj import composite_image
-  
-  stars = Image(filename="stars.fits")
-  lowz = Image(filename="lowz.fits")
-  highz = Image(filename="highz.fits")
-  imalist = [stars, lowz, highz]
-  tab = zip(imalist,linspace(250,0,3),ones(3)*100)
-  p1 = composite_image(tab,cuts=(0,99.5),mode='sqrt')
-  p1.show()
-  p1.save('test_composite.jpg')
     """
     from PIL import Image as PILima
     from PIL import Image, ImageColor, ImageChops
