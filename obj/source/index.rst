@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
    
-elcome to mpdaf.obj documentation!
+Welcome to mpdaf.obj documentation!
 ===================================
 
 :Release: |version|
@@ -17,6 +17,7 @@ Contents:
    :maxdepth: 2
    
    user_manual_spectrum
+   user_manual_image
 
 Indices and tables
 ==================

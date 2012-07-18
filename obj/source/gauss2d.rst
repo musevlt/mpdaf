@@ -1,8 +1,8 @@
-Gauss1D class
+Gauss2D class
 =============
 
 .. toctree::
 	:maxdepth: 2
 
-.. autoclass:: mpdaf.obj.Gauss1D
+.. autoclass:: mpdaf.obj.Gauss2D
 	:members:
