@@ -1,72 +1,7 @@
-Spectrum class
-**************
+Spectrum object
+***************
 
-This class manages spectrum, optionally including a variance and a bad pixel mask.
-
-.. class:: obj.Spectrum([filename=None, ext = None, notnoise=False, shape=101, wave = None, unit=None, data=None, var=None,fscale=1.0])
-
-  :param filename: Possible FITS filename.
-  :type filename: string
-  :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
-  :type ext: integer or (integer,integer) or string or (string,string)
-  :param notnoise: True if the noise Variance spectrum is not read (if it exists).
-  
-		   Use notnoise=True to create spectrum without variance extension.
-  :type notnoise: boolean
-  :param shape: size of the spectrum. 101 by default.
-  :type shape: integer
-  :param wave: Wavelength coordinates.
-  :type wave: WaveCoord
-  :param unit: Possible data unit type. None by default.
-  :type unit: string
-  :param data: Array containing the pixel values of the spectrum. None by default.
-  :type data: float array
-  :param var: Array containing the variance. None by default.
-  :type var: float array
-  :param fscale: Flux scaling factor (1 by default).
-  :type fscale: float
-  
-Examples::
- 
-  import numpy as np
-  from mpdaf.obj import Spectrum
-  from mpdaf.obj import WaveCoord
-  
-  spe = Spectrum(filename="spectrum.fits",ext=1) # spectrum from file (extension number is 1)
-  
-  wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom')
-  wave2 = WaveCoord(cdelt=1.25, crval=4000.0, cunit='Angstrom', shape=3000)
-  MyData = np.ones(4000)
-  
-  spe = Spectrum(shape=4000, wave=wave1) # spectrum filled with zeros
-  spe = Spectrum(wave=wave1, data=MyData) # spectrum filled with MyData
-  spe = Spectrum(shape=4000, wave=wave2) # warning: wavelength coordinates and spectrum have not the same dimensions
-					 # spe.wave = None
-  spe = Spectrum(wave=wave2, data=MyData) # warning: wavelength coordinates and data have not the same dimensions
-					    # spe.wave = None
-  
-
-
-Attributes
-==========
-
-+---------+-----------------------+----------------------------------------------------+
-|filename | string                | Possible FITS filename.                            |
-+---------+-----------------------+----------------------------------------------------+
-| unit    | string                | Possible data unit type.                           |
-+---------+-----------------------+----------------------------------------------------+
-| cards   | pyfits.CardList       | Possible FITS header instance.                     |
-+---------+-----------------------+----------------------------------------------------+
-| data    | masked array          | Pixel values and masked pixels of the spectrum.    |
-+---------+-----------------------+----------------------------------------------------+
-| shape   | integer               | Size of spectrum.                                  |
-+---------+-----------------------+----------------------------------------------------+
-| var     | array                 | Array containing the variance.                     |
-+---------+-----------------------+----------------------------------------------------+
-| fscale  | float                 | Flux scaling factor (1 by default).                |
-+---------+-----------------------+----------------------------------------------------+
-| wave    | WaveCoord             | Wavelength coordinates.                            |
-+---------+-----------------------+----------------------------------------------------+
+Spectrum, optionally including a variance and a bad pixel mask.
 
 
 Tutorial

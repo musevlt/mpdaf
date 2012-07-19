@@ -4,20 +4,6 @@ PixTable class
 This class manages input/output for MUSE pixel table files.
 
 
-Attributes
-==========
-
-+----------------+----------------+--------------------------------+
-|filename        | string         | Possible FITS filename.        |
-+----------------+----------------+--------------------------------+
-| primary_header | pyfits.CardList| Possible FITS header instance. |
-+----------------+----------------+--------------------------------+
-| nrows          | integer        |  Number of rows.               |
-+----------------+----------------+--------------------------------+
-| ncols          | integer        |  Number of columns.            |
-+----------------+----------------+--------------------------------+
-
-
 Tutorial
 ========
 

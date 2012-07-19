@@ -52,40 +52,6 @@ World coordinates in spatial direction
 
 WCS class manages spatial world coordinates.
 
-.. class:: obj.WCS([hdr=None,crpix=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0,shape = None])
-  
-  :param hdr: A FITS header. If hdr is not equal to None, WCS object is created from data header and other parameters are not used.
-  :type hdr: pyfits.CardList
-  :param crpix: Reference pixel coordinates. 
-		If crpix is None and shape is None crpix = 1.0 and the reference point is the first pixel of the image.
-		If crpix is None and shape is not None crpix = (shape + 1.0)/2.0 and the reference point is the center of the image.
-  :type crpix: float or (float,float)
-  :param crval: Coordinates of the reference pixel (ref_dec,ref_ra). (0.0,0.0) by default.
-  :type crval: float or (float,float)
-  :param cdelt: Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
-  :type cdelt: float or (float,float)
-  :param deg: If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg). If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR').
-  :type deg: boolean
-  :param rot: Rotation angle in degree.
-  :type rot: float
-  :param shape: Dimensions. No mandatory.
-  :type shape: integer or (integer,integer)
-  
-Examples::
-
-  from mpdaf.obj import WCS
-  wcs = WCS(hdr) # creates a WCS object from data header
-  wcs = WCS(shape=(300,300)) # the reference point is the center of the image
-  wcs = WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(300,300)) # the reference point is in decimal degree
-
-
-Attributes
-----------
-
-+-------+-------------+------------------------------------+
-| wcs   | pywcs.WCS   | World coordinates object.          |
-+-------+-------------+------------------------------------+
-
 
 References
 ----------
@@ -123,36 +89,6 @@ World coordinates in spectral direction
 =======================================
 
 WaveCoord class manages world coordinates in spectral direction.
-
-
-.. class:: obj.WaveCoord([crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom', shape = None])
-
-  :param crpix: Reference pixel coordinates. 1.0 by default. Note that for crpix definition, the first pixel in the spectrum has pixel coordinates.
-  :type crpix: float
-  :param cdelt: Step in wavelength (1.0 by default).
-  :type cdelt: float
-  :param crval: Coordinates of the reference pixel (0.0 by default).
-  :type crval: float
-  :param cunit: Wavelength unit (Angstrom by default).
-  :type cunit: string
-  :param shape: Size of spectrum (no mandatory).
-  :type shape: integer or None
-
-
-Attributes
-----------
-
-+-------+---------+-------------------------------------+
-| shape | integer | Size of spectrum.                   |
-+-------+---------+-------------------------------------+
-| crpix | float   | Reference pixel coordinates.        |
-+-------+---------+-------------------------------------+
-| crval | float   | Coordinates of the reference pixel. |
-+-------+---------+-------------------------------------+
-| cdelt | float   | Step in wavelength.                 |
-+-------+---------+-------------------------------------+
-| cunit | string  | Wavelength unit.                    |
-+-------+---------+-------------------------------------+
 
 
 References
