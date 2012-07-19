@@ -9,46 +9,28 @@ from objs import is_float
 from objs import is_int
 
 class Cube(object):
-    """cube class
+    """This class manages Cube objects.
 
     Attributes
     ----------
-    filename : string
-    Possible FITS filename
+    
+    filename (string) : Possible FITS filename.
 
-    unit : string
-    Possible data unit type
+    unit (string) : Possible data unit type
 
-    cards : pyfits.CardList
-    Possible FITS header instance
+    cards (pyfits.CardList) : Possible FITS header instance.
 
-    data : array or masked array
-    Array containing the pixel values of the cube
+    data (masked array numpy.ma) : Array containing the pixel values of the cube.
 
-    shape : array of 3 integers
-    Lengths of data in X and Y and Z (python notation (nz,ny,nx)
+    shape (array of 3 integers) : Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
 
-    var : array
-    Array containing the variance
+    var (array) : Array containing the variance.
 
-    fscale : float
-    Flux scaling factor (1 by default)
+    fscale (float) : Flux scaling factor (1 by default).
 
-    wcs : WCS
-    World coordinates
+    wcs (WCS) : World coordinates.
 
-    wave : WaveCoord
-    Wavelength coordinates
-
-    Public methods
-    --------------
-    Creation: init, copy
-
-    Arithmetic: + - * / pow
-
-    Selection: <, >, <=, >=
-
-    Info: info, []
+    wave (WaveCoord) : Wavelength coordinates
     """
     
     def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0):
@@ -235,7 +217,7 @@ class Cube(object):
             self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
-        """copies Cube object in a new one and returns it
+        """Copies Cube object in a new one and returns it.
         """
         cub = Cube()
         cub.filename = self.filename
@@ -262,11 +244,10 @@ class Cube(object):
         return cub
 
     def write(self,filename):
-        """ saves the object in a FITS file
-        Parameters
-        ----------
-        filename : string
-        The FITS filename
+        """ Saves the cube in a FITS file.
+        
+        :param filename: The FITS filename.
+        :type filename: string
         """
 
         #ToDo: pb with mask !!!!!!!!!!!!!!!!!
@@ -343,7 +324,7 @@ class Cube(object):
         self.filename = filename
 
     def info(self):
-        """prints information
+        """Prints information.
         """
         if self.filename is None:
             print '%i X %i X %i cube (no name)' %(self.shape[2],self.shape[1],self.shape[0])
@@ -371,7 +352,7 @@ class Cube(object):
 
 
     def __le__ (self, item):
-        """masks data array where greater than a given value.
+        """Masks data array where greater than a given value.
         Returns a cube object containing a masked array
         """
         result = self.copy()
@@ -380,7 +361,7 @@ class Cube(object):
         return result
 
     def __lt__ (self, item):
-        """masks data array where greater or equal than a given value.
+        """Masks data array where greater or equal than a given value.
         Returns a cube object containing a masked array
         """
         result = self.copy()
@@ -389,7 +370,7 @@ class Cube(object):
         return result
 
     def __ge__ (self, item):
-        """masks data array where less than a given value.
+        """Masks data array where less than a given value.
         Returns a Cube object containing a masked array
         """
         result = self.copy()
@@ -398,7 +379,7 @@ class Cube(object):
         return result
 
     def __gt__ (self, item):
-        """masks data array where less or equal than a given value.
+        """Masks data array where less or equal than a given value.
         Returns a Cube object containing a masked array
         """
         result = self.copy()
@@ -407,51 +388,46 @@ class Cube(object):
         return result
 
     def resize(self):
-        """resize the cube to have a minimum number of masked values
+        """Resizes the cube to have a minimum number of masked values.
         """
         if self.data is not None:
             ksel = np.where(self.data.mask==False)
             try:
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None),slice(ksel[2][0], ksel[2][-1]+1, None))
-                data = self.data[item]
+                self.data = self.data[item]
                 if is_int(item[0]):
                     if is_int(item[1]):
-                        shape = (1,1,data.shape[0])
+                        self.shape = (1,1,data.shape[0])
                     elif is_int(item[2]):
-                        shape = (1,data.shape[0],1)
+                        self.shape = (1,data.shape[0],1)
                     else:
-                        shape = (1,data.shape[0],data.shape[1])
+                        self.shape = (1,data.shape[0],data.shape[1])
                 elif is_int(item[1]):
                     if is_int(item[2]):
-                        shape = (data.shape[0],1,1)
+                        self.shape = (data.shape[0],1,1)
                     else:
-                        shape = (data.shape[0],1,data.shape[1])
+                        self.shape = (data.shape[0],1,data.shape[1])
                 elif is_int(item[2]):
-                        shape = (data.shape[0],data.shape[1],1)
+                        self.shape = (data.shape[0],data.shape[1],1)
                 else:
-                    shape = data.shape
+                    self.shape = data.shape
                 if self.var is not None:
-                    var = self.var[item]
+                    self.var = self.var[item]
                 try:
-                    wcs = self.wcs[item[1],item[2]]
+                    self.wcs = self.wcs[item[1],item[2]]
                 except:
-                    wcs = None
+                    self.wcs = None
                     print "error: wcs not copied."
                 try:
-                    wave = self.wave[item[0]]
+                    self.wave = self.wave[item[0]]
                 except:
-                    wave = None
+                    self.wave = None
                     print "error: wavelength solution not copied."
-                res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit, data=None, var=None,fscale=self.fscale)
-                res.data = data
-                if self.var is not None:
-                    res.var = var
-                return res
             except:
                 pass
 
     def __add__(self, other):
-        """ adds other
+        """Adds other
 
         cube1 + number = cube2 (cube2[k,j,i]=cube1[k,j,i]+number)
 
@@ -555,7 +531,7 @@ class Cube(object):
         return self.__add__(other)
 
     def __sub__(self, other):
-        """  subtracts other
+        """Subtracts other
 
         cube1 - number = cube2 (cube2[k,j,i]=cube1[k,j,i]-number)
 
@@ -678,7 +654,7 @@ class Cube(object):
                     return None
 
     def __mul__(self, other):
-        """  multiplies by other
+        """Multiplies by other
 
         cube1 * number = cube2 (cube2[k,j,i]=cube1[k,j,i]*number)
 
@@ -784,7 +760,7 @@ class Cube(object):
         return self.__mul__(other)
 
     def __div__(self, other):
-        """  divides by other
+        """Divides by other
 
         cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
 
@@ -916,7 +892,8 @@ class Cube(object):
                     return None
 
     def __pow__(self, other):
-        """computes the power exponent"""
+        """Computes the power exponent.
+        """
         if self.data is None:
             raise ValueError, 'empty data array'
         res = self.copy()
@@ -929,27 +906,25 @@ class Cube(object):
         return res
 
     def sqrt(self):
-        """computes the power exponent"""
+        """Computes the positive square-root of data extension.
+        """
         if self.data is None:
             raise ValueError, 'empty data array'
-        res = self.copy()
-        res.data = np.sqrt(self.data)
-        res.fscale = np.sqrt(self.fscale)
-        res.var = None
-        return res
+        self.data = np.sqrt(self.data)
+        self.fscale = np.sqrt(self.fscale)
+        self.var = None
 
     def abs(self):
-        """computes the absolute value"""
+        """Computes the absolute value of data extension.
+        """
         if self.data is None:
             raise ValueError, 'empty data array'
-        res = self.copy()
-        res.data = np.abs(self.data)
-        res.fscale = np.abs(self.fscale)
-        res.var = None
-        return res
+        self.data = np.abs(self.data)
+        self.fscale = np.abs(self.fscale)
+        self.var = None
 
     def __getitem__(self,item):
-        """returns the corresponding object:
+        """Returns the corresponding object:
         cube[k,j,i] = value
         cube[k,:,:] = spectrum
         cube[:,j,i] = image
@@ -1023,15 +998,13 @@ class Cube(object):
             raise ValueError, 'Operation forbidden'
 
     def get_lambda(self,lbda_min,lbda_max=None):
-        """ returns the corresponding sub-cube
+        """Returns the sub-cube corresponding to a wavelength range.
 
-        Parameters
-        ----------
-        lbda_min : float
-        minimum wavelength
+        :param lbda_min: Minimum wavelength.
+        :type lbda_min: float
 
-        lbda_max : float
-        maximum wavelength
+        :param lbda_max: Maximum wavelength.
+        :type lbda_max: float
         """
         if lbda_max is None:
             lbda_max = lbda_min
@@ -1046,7 +1019,7 @@ class Cube(object):
                 return self[pix_min:pix_max,:,:]
             
     def get_step(self):
-        """ returns the cube steps [dLambda,dDec,dRa]
+        """Returns the cube steps [dLambda,dDec,dRa].
         """
         step = np.empty(3)
         step[0] = self.wave.cdelt
@@ -1054,7 +1027,7 @@ class Cube(object):
         return step
     
     def get_range(self):
-        """returns [ [lambda_min,dec_min,ra_min], [lambda_max,dec_max,ra_max] ]
+        """Returns [ [lambda_min,dec_min,ra_min], [lambda_max,dec_max,ra_max] ].
         """
         range = np.empty((2,3))
         range[:,0] = self.wave.get_range()
@@ -1062,7 +1035,7 @@ class Cube(object):
         return range
     
     def get_start(self):
-        """returns [lambda,dec,ra] corresponding to pixel (0,0,0)
+        """Returns [lambda,dec,ra] corresponding to pixel (0,0,0).
         """
         start = np.empty(3)
         start[0] = self.wave.get_start()
@@ -1070,7 +1043,7 @@ class Cube(object):
         return start
     
     def get_end(self):
-        """returns [lambda,dec,ra] corresponding to pixel (-1,-1,-1)
+        """Returns [lambda,dec,ra] corresponding to pixel (-1,-1,-1).
         """
         end = np.empty(3)
         end[0] = self.wave.get_end()
@@ -1078,26 +1051,24 @@ class Cube(object):
         return end
     
     def get_rot(self):
-        """returns the rotation angle
+        """Returns the rotation angle.
         """
         return self.wcs.get_rot()
         
             
     def __setitem__(self,key,value):
-        """ sets the corresponding part of data
+        """Sets the corresponding part of data.
         """
         self.data[key] = value
             
     def set_wcs(self, wcs, wave):
-        """sets the world coordinates
+        """Sets the world coordinates.
 
-        Parameters
-        ----------
-        wcs : WCS
-        World coordinates
+        :param wcs: World coordinates.
+        :type wcs: WCS
 
-        wave : WaveCoord
-        Wavelength coordinates
+        :param wave: Wavelength coordinates.
+        :type wave: WaveCoord
         """
         self.wcs = wcs
         self.wcs.wcs.naxis1 = self.shape[2]
@@ -1111,12 +1082,10 @@ class Cube(object):
         self.wave.shape = self.shape[0]
             
     def set_var(self,var):
-        """sets the variance array
+        """Sets the variance array.
         
-        Parameter
-        ---------
-        var : float array
-        Input variance array. If None, variance is set with zeros
+        :param var: Input variance array. If None, variance is set with zeros.
+        :type var: float array
         """
         if var is None:
             self.var = np.zeros((self.shape[0],self.shape[1], self.shape[2]))
@@ -1127,11 +1096,18 @@ class Cube(object):
                 raise ValueError, 'var and data have not the same dimensions.'
             
     def sum(self,axis=None):
-        """ Returns the sum over the given axis.
-        axis = None returns a float
-        axis = 0 returns an image
-        axis = (1,2) returns a spectrum
-        Other cases return None.
+        """Returns the sum over the given axis.
+        
+        :param axis: Axis or axes along which a sum is performed. 
+        
+                    The default (axis = None) is perform a sum over all the dimensions of the cube and returns a float.
+                    
+                    axis = 0  is perform a sum over the wavelength dimension and returns an image.
+                    
+                    axis = (1,2) is perform a sum over the (X,Y) axes and returns a spectrum.
+                    
+                    Other cases return None.
+        :type axis: None or int or tuple of ints
         """
         if axis is None:
             return self.data.sum()    
@@ -1154,10 +1130,17 @@ class Cube(object):
         
     def mean(self,axis=None):
         """ Returns the mean over the given axis.
-        axis = None returns a float
-        axis = 0 returns an image
-        axis = (1,2) returns a spectrum
-        Other cases return None.
+        
+        :param axis: Axis or axes along which a mean is performed. 
+        
+                    The default (axis = None) is perform a mean over all the dimensions of the cube and returns a float.
+                    
+                    axis = 0  is perform a mean over the wavelength dimension and returns an image.
+                    
+                    axis = (1,2) is perform a mean over the (X,Y) axes and returns a spectrum.
+                    
+                    Other cases return None.
+        :type axis: None or int or tuple of ints
         """
         if axis is None:
             return self.data.mean()    
