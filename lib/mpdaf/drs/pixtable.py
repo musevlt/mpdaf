@@ -12,6 +12,9 @@ class PixTable(object):
     """PixTable class
 
     This class manages input/output for MUSE pixel table files
+    
+    :param filename: The FITS file name. None by default.
+    :type filename: string.
 
     Attributes
     ----------
@@ -27,17 +30,6 @@ class PixTable(object):
     ncols: integer
     Number of columns
 
-    Public methods
-    --------------
-    Creation: init, copy
-
-    Info: info
-
-    Save: write
-
-    Get: get_xpos, get_ypos, get_lambda, get_data, get_dq, get_stat, get_origin
-
-    Other: extract, origin2ifu, origin2slice, origin2ypix, origin2xoffset, origin2xpix, origin2coords, get_slices
     """
 
     def __init__(self, filename=None):
