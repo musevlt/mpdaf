@@ -1,13 +1,16 @@
-PixTable class
-**************
+PixTable object
+***************
 
-This class manages input/output for MUSE pixel table files.
+MUSE pixel table files.
 
 
 Tutorial
 ========
 
+.. literalinclude:: example.py
 
+
+:download:`[source code] <example.py>`
 
 
 Reference
