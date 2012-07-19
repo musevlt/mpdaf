@@ -1048,7 +1048,7 @@ class Cube(object):
     def get_step(self):
         """ returns the cube steps [dLambda,dDec,dRa]
         """
-        step = np.zeros(3)
+        step = np.empty(3)
         step[0] = self.wave.cdelt
         step[1:] = self.wcs.get_step()
         return step
@@ -1056,7 +1056,7 @@ class Cube(object):
     def get_range(self):
         """returns [ [lambda_min,dec_min,ra_min], [lambda_max,dec_max,ra_max] ]
         """
-        range = np.zeros((2,3))
+        range = np.empty((2,3))
         range[:,0] = self.wave.get_range()
         range[:,1:] = self.wcs.get_range()
         return range
@@ -1064,7 +1064,7 @@ class Cube(object):
     def get_start(self):
         """returns [lambda,dec,ra] corresponding to pixel (0,0,0)
         """
-        start = np.zeros(3)
+        start = np.empty(3)
         start[0] = self.wave.get_start()
         start[1:] = self.wcs.get_start()
         return start
@@ -1072,7 +1072,7 @@ class Cube(object):
     def get_end(self):
         """returns [lambda,dec,ra] corresponding to pixel (-1,-1,-1)
         """
-        end = np.zeros(3)
+        end = np.empty(3)
         end[0] = self.wave.get_end()
         end[1:] = self.wcs.get_end()
         return end

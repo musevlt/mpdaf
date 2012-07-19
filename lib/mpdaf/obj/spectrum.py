@@ -1028,16 +1028,16 @@ class Spectrum(object):
         """
         lbda = self.wave.coord()
         ksel = np.where(self.data.mask==False)            
-        d = np.zeros(np.shape(ksel)[1]+2, dtype= float)
+        d = np.empty(np.shape(ksel)[1]+2, dtype= float)
         d[1:-1] = self.data.data[ksel]
-        w = np.zeros(np.shape(ksel)[1]+2)      
+        w = np.empty(np.shape(ksel)[1]+2)      
         w[1:-1] = lbda[ksel]
         d[0] = d[1]
         d[-1] = d[-2]
         w[0] = (-self.wave.crpix + 1) * self.wave.cdelt + self.wave.crval - 0.5 * self.wave.cdelt
         w[-1] = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
         if self.var is not None:
-            weight = np.zeros(np.shape(ksel)[1]+2)
+            weight = np.empty(np.shape(ksel)[1]+2)
             weight[1:-1] = 1./self.var[ksel]
             weight[0] = self.var[1]
             weight[-1] = self.var[-2]
@@ -1135,7 +1135,7 @@ class Spectrum(object):
                 data[-1] = self.data[n_right:].sum() / factor
                 var = None
                 if self.var is not None:
-                    var = np.ones(newshape)
+                    var = np.empty(newshape)
                     var[1:-1] = spe.var
                     var[0] = self.var[0:n_left].sum() / factor / factor
                     var[-1] = self.var[n_right:].sum() / factor / factor
@@ -1157,7 +1157,7 @@ class Spectrum(object):
                 data[-1] = self.data[self.shape-n:].sum() / factor
                 var = None
                 if self.var is not None:
-                    var = np.ones(newshape)
+                    var = np.empty(newshape)
                     var[:-1] = spe.var
                     var[-1] = self.var[self.shape-n:].sum() / factor / factor
                 try:
@@ -1177,7 +1177,7 @@ class Spectrum(object):
                 data[1:] = spe.data
                 var = None
                 if self.var is not None:
-                    var = np.ones(newshape)
+                    var = np.empty(newshape)
                     var[0] = self.var[0:n].sum() / factor / factor
                     var[1:] = spe.var
                 try:
@@ -1218,7 +1218,7 @@ class Spectrum(object):
             newshape = min(shape, newwave.shape)
             newwave.shape = newshape
             
-        self.data = np.zeros(newshape,dtype=np.float)        
+        self.data = np.empty(newshape,dtype=np.float)        
         pix = np.arange(newshape+1,dtype=np.float)
         x = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval - 0.5 * newwave.cdelt
         lbdamax = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
@@ -1230,7 +1230,7 @@ class Spectrum(object):
             
         if self.var is not None and not notnoise:
             f = lambda x: self.var[int(self.wave.pixel(x)+0.5)]
-            var = np.zeros(newshape,dtype=np.float)
+            var = np.empty(newshape,dtype=np.float)
             for i in range(newshape):
                 var[i] = integrate.quad(f,x[i],x[i+1],full_output=1)[0] / newwave.cdelt
             self.var = var
@@ -1756,7 +1756,7 @@ class Spectrum(object):
             kernel_size = kernel_size / self.get_step()
         ks = int(kernel_size/2)*2 +1
         
-        data = np.zeros(self.shape + 2*ks)
+        data = np.empty(self.shape + 2*ks)
         data[ks:-ks] = self._interp_data(spline)*self.fscale  
         data[:ks] = data[ks:2*ks][::-1]
         data[-ks:] = data[-2*ks:-ks][::-1]

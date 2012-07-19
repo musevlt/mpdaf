@@ -1597,8 +1597,8 @@ class Image(object):
                     step = self.get_step()
                     xaxis = (np.arange(ima.shape[0], dtype=np.float) - ima.shape[0]/2.) * step[0] * 3600.0
                     yaxis = (np.arange(ima.shape[1], dtype=np.float) - ima.shape[1]/2.) * step[1] * 3600.0
-                gridx = np.zeros(ima.shape, dtype=np.float)
-                gridy = np.zeros(ima.shape, dtype=np.float)
+                gridx = np.empty(ima.shape, dtype=np.float)
+                gridy = np.empty(ima.shape, dtype=np.float)
                 for j in range(ima.shape[1]):
                     gridx[:,j] = xaxis
                 for i in range(ima.shape[0]):
@@ -1652,7 +1652,7 @@ class Image(object):
         step = self.get_step()
         if nmax <= 1:
             raise ValueError, 'Coord area outside image limits'
-        ee = np.zeros(nmax)
+        ee = np.empty(nmax)
         for d in range(0, nmax):
             ee[d] = self.fscale*self.data[i-d:i+d+1, j-d:j+d+1].sum()/etot
         plt.plot(rad,ee)
@@ -1731,7 +1731,7 @@ class Image(object):
         
         if spline:
             if self.var is not None:    
-                weight = np.zeros(n,dtype=float)
+                weight = np.empty(n,dtype=float)
                 for i in range(npoints):
                     weight[i] = 1./self.var[x[i],y[i]]
             else:
@@ -1747,7 +1747,7 @@ class Image(object):
             #scipy 0.9 griddata
             #interpolate.interp2d segfaults when there are too many data points
             #f = interpolate.interp2d(x, y, data)
-            points = np.zeros((npoints,2),dtype=float)
+            points = np.empty((npoints,2),dtype=float)
             points[:,0] = ksel[0]
             points[:,1] = ksel[1]
             res = interpolate.griddata(points, data, (grid[:,0],grid[:,1]), method='linear')
@@ -1825,7 +1825,7 @@ class Image(object):
         ima.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
         
         ksel = np.where(ima.data.mask==False)
-        pixcrd = np.zeros((np.shape(ksel[0])[0],2))
+        pixcrd = np.empty((np.shape(ksel[0])[0],2))
         pixcrd[:,1] = ksel[1] #ra
         pixcrd[:,0] = ksel[0] #dec
         pixsky = ima.wcs.pix2sky(pixcrd)
@@ -1909,9 +1909,9 @@ class Image(object):
             ymax = np.max(y)
             yy = np.arange(ymin,ymax,(ymax-ymin)/100)
             
-            ff = np.zeros((np.shape(yy)[0],np.shape(xx)[0]))
+            ff = np.empty((np.shape(yy)[0],np.shape(xx)[0]))
             for i in range(np.shape(xx)[0]):
-                xxx = np.zeros(np.shape(yy)[0])
+                xxx = np.empty(np.shape(yy)[0])
                 xxx[:] = xx[i]
                 ff[:,i] = gaussfit(v,xxx,yy)
             
@@ -1984,7 +1984,7 @@ class Image(object):
         ima.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
         
         ksel = np.where(ima.data.mask==False)
-        pixcrd = np.zeros((np.shape(ksel[0])[0],2))
+        pixcrd = np.empty((np.shape(ksel[0])[0],2))
         pixcrd[:,1] = ksel[1] #ra
         pixcrd[:,0] = ksel[0] #dec
         pixsky = ima.wcs.pix2sky(pixcrd)
@@ -2054,9 +2054,9 @@ class Image(object):
             ymax = np.max(y)
             yy = np.arange(ymin,ymax,(ymax-ymin)/100)
             
-            ff = np.zeros((np.shape(yy)[0],np.shape(xx)[0]))
+            ff = np.empty((np.shape(yy)[0],np.shape(xx)[0]))
             for i in range(np.shape(xx)[0]):
-                xxx = np.zeros(np.shape(yy)[0])
+                xxx = np.empty(np.shape(yy)[0])
                 xxx[:] = xx[i]
                 ff[:,i] = moffatfit(v,xxx,yy)
             
@@ -2135,15 +2135,15 @@ class Image(object):
                 ima = self[:,:-n1]
                 ima._rebin_factor(factor)
                 newshape = (ima.shape[0], ima.shape[1] + 1)
-                data = np.ones(newshape)
-                mask = np.zeros(newshape,dtype=bool)
+                data = np.empty(newshape)
+                mask = np.empty(newshape,dtype=bool)
                 data[:,0:-1] = ima.data
                 mask[:,0:-1] = ima.data.mask
                 data[:,-1] = self.data[:,-n1:].sum() / factor[1]
                 mask[:,-1] = self.data.mask[:,-n1:].any()
                 var = None
                 if self.var is not None:
-                    var = np.ones(newshape)
+                    var = np.empty(newshape)
                     var[:,0:-1] = ima.var
                     var[:,-1] = self.var[:,-n1:].sum() / factor[1] / factor[1]
                 wcs = ima.wcs
@@ -2154,8 +2154,8 @@ class Image(object):
                 ima = self[:,n_left:n_right]
                 ima._rebin_factor(factor)
                 newshape = (ima.shape[0], ima.shape[1] + 2)
-                data = np.ones(newshape)
-                mask = np.zeros(newshape,dtype=bool)
+                data = np.empty(newshape)
+                mask = np.empty(newshape,dtype=bool)
                 data[:,1:-1] = ima.data
                 mask[:,1:-1] = ima.data.mask
                 data[:,0] = self.data[:,0:n_left].sum() / factor[1]
@@ -2164,7 +2164,7 @@ class Image(object):
                 mask[:,-1] = self.data.mask[:,n_right:].any()
                 var = None
                 if self.var is not None:
-                    var = np.ones(newshape)
+                    var = np.empty(newshape)
                     var[:,1:-1] = ima.var
                     var[:,0] = self.var[:,0:n_left].sum() / factor[1] / factor[1]
                     var[:,-1] = self.var[:,n_right:].sum() / factor[1] / factor[1]
@@ -2178,15 +2178,15 @@ class Image(object):
                 ima = self[:-n0,:]
                 ima._rebin_factor(factor)
                 newshape = (ima.shape[0] + 1, ima.shape[1])
-                data = np.ones(newshape)
-                mask = np.zeros(newshape,dtype=bool)
+                data = np.empty(newshape)
+                mask = np.empty(newshape,dtype=bool)
                 data[0:-1,:] = ima.data
                 mask[0:-1,:] = ima.data.mask
                 data[-1,:] = self.data[-n0:,:].sum() / factor[0]
                 mask[-1,:] = self.data.mask[-n0:,:].any()
                 var = None
                 if self.var is not None:
-                    var = np.ones(newshape)
+                    var = np.empty(newshape)
                     var[0:-1,:] = ima.var
                     var[-1,:] = self.var[-n0:,:].sum() / factor[0] / factor[0]
                 wcs = ima.wcs
@@ -2197,8 +2197,8 @@ class Image(object):
                 ima = self[n_left:n_right,:]
                 ima._rebin_factor(factor)
                 newshape = (ima.shape[0] + 2, ima.shape[1])
-                data = np.ones(newshape)
-                mask = np.zeros(newshape,dtype=bool)
+                data = np.empty(newshape)
+                mask = np.empty(newshape,dtype=bool)
                 data[1:-1,:] = ima.data
                 mask[1:-1,:] = ima.data.mask
                 data[0,:] = self.data[0:n_left,:].sum() / factor[0]
@@ -2207,7 +2207,7 @@ class Image(object):
                 mask[-1,:] = self.data.mask[n_right:,:].any()
                 var = None
                 if self.var is not None:
-                    var = np.ones(newshape)
+                    var = np.empty(newshape)
                     var[1:-1,:] = ima.var
                     var[0,:] = self.var[0:n_left,:].sum() / factor[0] / factor[0]
                     var[-1,:] = self.var[n_right:,:].sum() / factor[0] / factor[0]
@@ -2227,8 +2227,8 @@ class Image(object):
                 ima._rebin_factor(factor)
                 if n_left[0]!=0 and n_left[1]!=0:
                     newshape = ima.shape + 2
-                    data = np.ones(newshape)
-                    mask = np.zeros(newshape,dtype=bool)
+                    data = np.empty(newshape)
+                    mask = np.empty(newshape,dtype=bool)
                     data[1:-1,1:-1] = ima.data
                     mask[1:-1,1:-1] = ima.data.mask
                     data[0,:] = self.data[0:n_left[0],:].sum() / factor[0]
@@ -2241,7 +2241,7 @@ class Image(object):
                     mask[:,-1] = self.data.mask[:,n_right[1]:].any()
                     var = None
                     if self.var is not None:
-                        var = np.ones(newshape)
+                        var = np.empty(newshape)
                         var[1:-1,1:-1] = var.data
                         var[0,:] = self.var[0:n_left[0],:].sum() / factor[0] / factor[0]
                         var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
@@ -2254,8 +2254,8 @@ class Image(object):
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
                 elif n_left[0]==0:
                     newshape = (ima.shape[0] + 1, ima.shape[1] + 2)
-                    data = np.ones(newshape)
-                    mask = np.zeros(newshape,dtype=bool)
+                    data = np.empty(newshape)
+                    mask = np.empty(newshape,dtype=bool)
                     data[0:-1,1:-1] = ima.data
                     mask[0:-1,1:-1] = ima.data.mask
                     data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
@@ -2266,7 +2266,7 @@ class Image(object):
                     mask[:,-1] = self.data.mask[:,n_right[1]:].any()
                     var = None
                     if self.var is not None:
-                        var = np.ones(newshape)
+                        var = np.empty(newshape)
                         var[0:-1,1:-1] = var.data
                         var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
                         var[:,0] = self.var[:,0:n_left[1]].sum() / factor[1] / factor[1]
@@ -2277,8 +2277,8 @@ class Image(object):
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
                 else:
                     newshape = (ima.shape[0] + 2, ima.shape[1] + 1)
-                    data = np.ones(newshape)
-                    mask = np.zeros(newshape,dtype=bool)
+                    data = np.empty(newshape)
+                    mask = np.empty(newshape,dtype=bool)
                     data[1:-1,0:-1] = ima.data
                     mask[1:-1,0:-1] = ima.data.mask
                     data[0,:] = self.data[0:n_left[0],:].sum() / factor[0]
@@ -2289,7 +2289,7 @@ class Image(object):
                     mask[:,-1] = self.data.mask[:,n_right[1]:].any()
                     var = None
                     if self.var is not None:
-                        var = np.ones(newshape)
+                        var = np.empty(newshape)
                         var[1:-1,0:-1] = var.data
                         var[0,:] = self.var[0:n_left[0],:].sum() / factor[0] / factor[0]
                         var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
@@ -2303,8 +2303,8 @@ class Image(object):
                 ima = self[0:n_right[0],0:n_right[1]]
                 ima._rebin_factor(factor)
                 newshape = ima.shape + 1
-                data = np.ones(newshape)
-                mask = np.zeros(newshape,dtype=bool)
+                data = np.empty(newshape)
+                mask = np.empty(newshape,dtype=bool)
                 data[0:-1,0:-1] = ima.data
                 mask[0:-1,0:-1] = ima.data.mask
                 data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
@@ -2313,7 +2313,7 @@ class Image(object):
                 mask[:,-1] = self.data.mask[:,n_right[1]:].any()
                 var = None
                 if self.var is not None:
-                    var = np.ones(newshape)
+                    var = np.empty(newshape)
                     var[0:-1,0:-1] = ima.var
                     var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
                     var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
@@ -3116,7 +3116,7 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
     else:
         center = [center[0],center[1]]
     
-    data = np.zeros(shape=shape, dtype = float)
+    data = np.empty(shape=shape, dtype = float)
     
     ra_width = width[1]
     dec_width = width[0]
@@ -3209,7 +3209,7 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
     else:
         center = [center[0],center[1]]
     
-    data = np.zeros(shape=shape, dtype = float)
+    data = np.empty(shape=shape, dtype = float)
     
     #rotation angle in rad
     theta = np.pi * rot / 180.0
@@ -3283,7 +3283,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smo
         data = interpolate.bisplev(xi, yi, tck)
     else:
         n = np.shape(x)[0]*np.shape(y)[0]
-        points = np.zeros((n,2),dtype=float)
+        points = np.empty((n,2),dtype=float)
         points[:,0] = X.ravel()[:]
         points[:,1] = Y.ravel()[:]
         Yi,Xi = np.meshgrid(yi,xi)
