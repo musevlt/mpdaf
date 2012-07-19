@@ -18,6 +18,7 @@ Contents:
    
    user_manual_spectrum
    user_manual_image
+   user_manual_cube
 
 Indices and tables
 ==================
