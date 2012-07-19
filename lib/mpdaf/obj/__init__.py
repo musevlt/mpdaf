@@ -49,7 +49,7 @@ Import the different submodules
 from coords import WCS
 from coords import WaveCoord
 from coords import sexa2deg
-from coords import sexa2deg
+from coords import deg2sexa
 from coords import deg2hms
 from coords import hms2deg
 from coords import deg2dms

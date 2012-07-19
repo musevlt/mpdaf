@@ -147,6 +147,27 @@ class Gauss2D:
         
 class Image(object):
     """Image class manages image, optionally including a variance and a bad pixel mask.
+    
+    :param filename: Possible filename (.fits, .png or .bmp).
+    :type filename: string
+    :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+    :type ext: integer or (integer,integer) or string or (string,string)
+    :param notnoise: True if the noise Variance image is not read (if it exists).
+  
+           Use notnoise=True to create image without variance extension.
+    :type notnoise: boolean
+    :param shape: Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.
+    :type shape: integer or (integer,integer)
+    :param wcs: World coordinates.
+    :type wcs: :class:`mpdaf.obj.WCS`
+    :param unit: Possible data unit type. None by default.
+    :type unit: string
+    :param data: Array containing the pixel values of the image. None by default.
+    :type data: float array
+    :param var: Array containing the variance. None by default.
+    :type var: float array
+    :param fscale: Flux scaling factor (1 by default).
+    :type fscale: float
 
     Attributes
     ----------
@@ -164,50 +185,32 @@ class Image(object):
 
     fscale (float) : Flux scaling factor (1 by default).
 
-    wcs (WCS) : World coordinates.
+    wcs (:class:`mpdaf.obj.WCS`) : World coordinates.
     """
 
     def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101), wcs = None, unit=None, data=None, var=None,fscale=1.0):
-        """creates a Image object
+        """Creates a Image object
 
-        Parameters
-        ----------
-        filename : string
-        Possible FITS filename
-
-        ext : integer or (integer,integer) or string or (string,string)
-        Number/name of the data extension or numbers/names of the data and variance extensions.
-
-        notnoise: boolean
-        True if the noise Variance image is not read (if it exists)
-        Use notnoise=True to create image without variance extension
-
-        shape : integer or (integer,integer)
-        Lengths of data in Y and X. (101,101) by default.
-        python notation: (ny,nx)
-
-        wcs : WCS
-        World coordinates
-
-        unit : string
-        Possible data unit type. None by default.
-
-        data : array
-        Array containing the pixel values of the image. None by default.
-
-        var : array
-        Array containing the variance. None by default.
-
-        fscale : float
-        Flux scaling factor (1 by default)
-
-        Examples
-        --------
-        Image(filename="toto.fits",ext=1): image from file (extension number is 1).
-
-        wcs = WCS(crval=0,cdelt=0.2)
-        Image(shape=300, wcs=wcs) : image 300x300 filled with zeros
-        Image(wcs=wcs, data = MyData) : image 300x300 filled with MyData
+        :param filename: Possible FITS filename.
+        :type filename: string
+        :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+        :type ext: integer or (integer,integer) or string or (string,string)
+        :param notnoise: True if the noise Variance image is not read (if it exists).
+  
+           Use notnoise=True to create image without variance extension.
+        :type notnoise: boolean
+        :param shape: Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.
+        :type shape: integer or (integer,integer)
+        :param wcs: World coordinates.
+        :type wcs: :class:`mpdaf.obj.WCS`
+        :param unit: Possible data unit type. None by default.
+        :type unit: string
+        :param data: Array containing the pixel values of the image. None by default.
+        :type data: float array
+        :param var: Array containing the variance. None by default.
+        :type var: float array
+        :param fscale: Flux scaling factor (1 by default).
+        :type fscale: float
         """
 
         self.image = True
@@ -971,7 +974,7 @@ class Image(object):
         """Sets the world coordinates.
   
           :param wcs: World coordinates.
-          :type wcs: WCS
+          :type wcs: :class:`mpdaf.obj.WCS`
         """
         self.wcs = wcs
         self.wcs.wcs.naxis1 = self.shape[1]
@@ -3082,7 +3085,7 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
             If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
       :type shape: integer or (integer,integer)
       :param wcs: World coordinates.
-      :type wcs: WCS
+      :type wcs: :class:`mpdaf.obj.WCS`
       :param center: Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
       :type center: (float,float)
       :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
@@ -3173,7 +3176,7 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
             If wcs object contains dimensions, shape is ignored and wcs dimensions are used.
       :type shape: integer or (integer,integer)
       :param wcs: World coordinates.
-      :type wcs: WCS
+      :type wcs: :class:`mpdaf.obj.WCS`
       :param center: Gaussian center (dec_peak, ra_peak). If None the center of the image is used.
       :type center: (float,float)
       :param I: Intensity at image center. 1 by default.

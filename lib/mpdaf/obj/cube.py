@@ -10,6 +10,29 @@ from objs import is_int
 
 class Cube(object):
     """This class manages Cube objects.
+    
+    :param filename: Possible FITS filename.
+    :type filename: string
+    :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+    :type ext: integer or (integer,integer) or string or (string,string)
+    :param notnoise: True if the noise Variance cube is not read (if it exists).
+  
+           Use notnoise=True to create cube without variance extension.
+    :type notnoise: boolean
+    :param shape: Lengths of data in Z, Y and X. Python notation is used (nz,ny,nx). (101,101,101) by default.
+    :type shape: integer or (integer,integer,integer)
+    :param wcs: World coordinates.
+    :type wcs: :class:`mpdaf.obj.WCS`
+    :param wave: Wavelength coordinates.
+    :type wave: :class:`mpdaf.obj.WaveCoord`
+    :param unit: Possible data unit type. None by default.
+    :type unit: string
+    :param data: Array containing the pixel values of the cube. None by default.
+    :type data: float array
+    :param var: Array containing the variance. None by default.
+    :type var: float array
+    :param fscale: Flux scaling factor (1 by default).
+    :type fscale: float
 
     Attributes
     ----------
@@ -28,50 +51,36 @@ class Cube(object):
 
     fscale (float) : Flux scaling factor (1 by default).
 
-    wcs (WCS) : World coordinates.
+    wcs (:class:`mpdaf.obj.WCS`) : World coordinates.
 
-    wave (WaveCoord) : Wavelength coordinates
+    wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates
     """
     
     def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0):
-        """creates a Cube object
-
-        Parameters
-        ----------
-        filename : string
-        Possible FITS filename
-
-        ext : integer or (integer,integer) or string or (string,sting)
-        Number/name of the data extension or numbers/names of the data and variance extensions.
-
-        notnoise: boolean
-        True if the noise Variance image is not read (if it exists)
-        Use notnoise=True to create image without variance extension
-
-        shape : integer or (integer,integer,integer)
-        Lengths of data in Z, Y and X. (101,101,101) by default.
-
-        wcs : WCS
-        World coordinates
-
-        wave : WaveCoord
-        Wavelength coordinates
-
-        unit : string
-        Possible data unit type. None by default.
-
-        data : array
-        Array containing the pixel values of the image. None by default.
-
-        var : array
-        Array containing the variance. None by default.
-
-        fscale : float
-        Flux scaling factor (1 by default)
-
-        Examples
-        --------
-
+        """Creates a Cube object.
+        
+        :param filename: Possible FITS filename.
+        :type filename: string
+        :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+        :type ext: integer or (integer,integer) or string or (string,string)
+        :param notnoise: True if the noise Variance cube is not read (if it exists).
+  
+           Use notnoise=True to create cube without variance extension.
+        :type notnoise: boolean
+        :param shape: Lengths of data in Z, Y and X. Python notation is used (nz,ny,nx). (101,101,101) by default.
+        :type shape: integer or (integer,integer,integer)
+        :param wcs: World coordinates.
+        :type wcs: :class:`mpdaf.obj.WCS`
+        :param wave: Wavelength coordinates.
+        :type wave: :class:`mpdaf.obj.WaveCoord`
+        :param unit: Possible data unit type. None by default.
+        :type unit: string
+        :param data: Array containing the pixel values of the cube. None by default.
+        :type data: float array
+        :param var: Array containing the variance. None by default.
+        :type var: float array
+        :param fscale: Flux scaling factor (1 by default).
+        :type fscale: float
         """
         #possible FITS filename
         self.cube = True
@@ -1065,10 +1074,10 @@ class Cube(object):
         """Sets the world coordinates.
 
         :param wcs: World coordinates.
-        :type wcs: WCS
+        :type wcs: :class:`mpdaf.obj.WCS`
 
         :param wave: Wavelength coordinates.
-        :type wave: WaveCoord
+        :type wave: :class:`mpdaf.obj.WaveCoord`
         """
         self.wcs = wcs
         self.wcs.wcs.naxis1 = self.shape[2]

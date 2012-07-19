@@ -139,9 +139,31 @@ class Gauss1D:
 
 class Spectrum(object):
     """Spectrum class manages spectrum, optionally including a variance and a bad pixel mask.
+    
+    :param filename: Possible FITS filename.
+    :type filename: string
+    :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+    :type ext: integer or (integer,integer) or string or (string,string)
+    :param notnoise: True if the noise Variance spectrum is not read (if it exists).
+  
+           Use notnoise=True to create spectrum without variance extension.
+    :type notnoise: boolean
+    :param shape: size of the spectrum. 101 by default.
+    :type shape: integer
+    :param wave: Wavelength coordinates.
+    :type wave: :class:`mpdaf.obj.WaveCoord`
+    :param unit: Possible data unit type. None by default.
+    :type unit: string
+    :param data: Array containing the pixel values of the spectrum. None by default.
+    :type data: float array
+    :param var: Array containing the variance. None by default.
+    :type var: float array
+    :param fscale: Flux scaling factor (1 by default).
+    :type fscale: float
 
     Attributes
     ----------
+    
     filename (string) : Possible FITS filename.
 
     unit (string) : Possible data unit type.
@@ -156,52 +178,32 @@ class Spectrum(object):
 
     fscale (float) : Flux scaling factor (1 by default).
 
-    wave (WaveCoord) : Wavelength coordinates.
+    wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates.
     """
 
     def __init__(self, filename=None, ext = None, notnoise=False, shape=101, wave = None, unit=None, data=None, var=None,fscale=1.0):
-        """creates a Spectrum object
-
-        Parameters
-        ----------
-        filename : string
-        Possible FITS filename
-
-        ext : integer or (integer,integer) or string or (string,string)
-        Number/name of the data extension or numbers/names of the data and variance extensions.
-
-        notnoise: boolean
-        True if the noise Variance spectrum is not read (if it exists)
-        Use notnoise=True to create spectrum without variance extension
-
-        shape : integer
-        size of the spectrum. 101 by default.
-
-        wave : WaveCoord
-        Wavelength coordinates
-
-        unit : string
-        Possible data unit type. None by default.
-
-        data : array
-        Array containing the pixel values of the spectrum. None by default.
-
-        var : array
-        Array containing the variance. None by default.
-
-        dq : array
-        Array containing bad pixel
-
-        fscale : float
-        Flux scaling factor (1 by default)
-
-        Examples
-        --------
-        Spectrum(filename="toto.fits",ext=1,nonoise=False): spectrum from file (extension number is 1).
-
-        wave = WaveCoord(cdelt=1.25, crval=4000.0, cunit = 'Angstrom')
-        Spectrum(shape=4000, wave=wave) : spectrum filled with zeros
-        Spectrum(wave=wave, data = MyData) : spectrum filled with MyData
+        """Creates a Spectrum object.
+        
+        :param filename: Possible FITS filename.
+        :type filename: string
+        :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+        :type ext: integer or (integer,integer) or string or (string,string)
+        :param notnoise: True if the noise Variance spectrum is not read (if it exists).
+  
+           Use notnoise=True to create spectrum without variance extension.
+        :type notnoise: boolean
+        :param shape: size of the spectrum. 101 by default.
+        :type shape: integer
+        :param wave: Wavelength coordinates.
+        :type wave: :class:`mpdaf.obj.WaveCoord`
+        :param unit: Possible data unit type. None by default.
+        :type unit: string
+        :param data: Array containing the pixel values of the spectrum. None by default.
+        :type data: float array
+        :param var: Array containing the variance. None by default.
+        :type var: float array
+        :param fscale: Flux scaling factor (1 by default).
+        :type fscale: float
         """
         self._clicks = None
         self.spectrum = True
@@ -957,7 +959,7 @@ class Spectrum(object):
         """Sets the world coordinates.
   
           :param wave: Wavelength coordinates.
-          :type wave: WaveCoord
+          :type wave: :class:`mpdaf.obj.WaveCoord`
         """
         if wave.shape is not None and wave.shape != self.shape:
             print "warning: wavelength coordinates and data have not the same dimensions."
