@@ -1333,10 +1333,8 @@ class Image(object):
         :type niter: integer
         :rtype: float
         """
-        ksel = np.where(self.data>0)
-        tab1 = self.data[ksel]
-        ksel = np.where(tab1 < (np.ma.median(tab1) + 3 * np.ma.std(tab1)))
-        tab2 = tab1[ksel]
+        ksel = np.where(tab1 < (np.ma.median(self.data) + 3 * np.ma.std(self.data)))
+        tab2 = self.data[ksel]
         for n in range(niter):
             ksel = np.where(tab2 < (np.ma.median(tab2) + 3 * np.ma.std(tab2)))
             tab3 = tab2[ksel]
@@ -1372,7 +1370,7 @@ class Image(object):
         """
         if center is None or radius==0:
             d = self.data
-            ima = self.copy()
+            #ima = self.copy()
             imin = 0
             jmin = 0
         else:
@@ -1403,27 +1401,25 @@ class Image(object):
                     imin = 0
                 imax = int(np.max(pixcrd[:,0]))+1
             d = self.data[imin:imax,jmin:jmax]
-            ima = self[imin:imax,jmin:jmax]
+            #ima = self[imin:imax,jmin:jmax]
             #plt.broken_barh([(jmin,jmax-jmin)], (imin,imax-imin), alpha=0.5, facecolors = 'black')
             if np.shape(d)[0]==0 or np.shape(d)[1]==0:
                 raise ValueError, 'Coord area outside image limits'
             
-#        ic,jc = ndimage.measurements.maximum_position(d)
-#        print 'center', ic,jc
-#        if dpix == 0:
-#            di = 0
-#            dj = 0
-#        else:
-#            print 'di', max(0,ic-dpix),ic+dpix+1,max(0,jc-dpix),jc+dpix+1
-#            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background())
-#        ic = imin+max(0,ic-dpix)+di
-#        jc = jmin+max(0,jc-dpix)+dj
-#        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
-#        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
-#        if plot:
-#            plt.plot(jc,ic,'r+')
-#            str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
-#            plt.title(str)
+        ic,jc = ndimage.measurements.maximum_position(d)
+        if dpix == 0:
+            di = 0
+            dj = 0
+        else:
+            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background())
+        ic = imin+max(0,ic-dpix)+di
+        jc = jmin+max(0,jc-dpix)+dj
+        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
+        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
+        if plot:
+            plt.plot(jc,ic,'r+')
+            str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
+            plt.title(str)
 
 #        mean = np.ma.mean(ima.data)
 #        ima = ima>mean 
@@ -1448,29 +1444,24 @@ class Image(object):
 #            str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
 #            plt.title(str)
 
-        di,dj = ndimage.measurements.center_of_mass(d - self.background()   )
-#        print 'center of mass (d) = ', imin + di, jmin + dj
-        ic = di
-        jc = dj
-#        plt.plot(jc,ic,'r+')
-
-#        ic,jc = ndimage.measurements.maximum_position(d)
-#        ic = np.shape(d)[0]/2
-#        jc = np.shape(d)[1]/2
-        for k in range(3):
-            if dpix > 0:
-                di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()   )
-                ic = max(0,ic-dpix)+di
-                jc = max(0,jc-dpix)+dj
-        ic = imin+ic
-        jc = jmin+jc
-        #plt.broken_barh([(jc-dpix,2*dpix)], (ic-dpix,2*dpix), alpha=0.2, facecolors = 'red')
-        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
-        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
-        if plot:
-            plt.plot(jc,ic,'g+')
-            #str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
-            #plt.title(str)
+#        di,dj = ndimage.measurements.center_of_mass(d - self.background()   )
+#        ic = di
+#        jc = dj
+#
+#        for k in range(3):
+#            if dpix > 0:
+#                di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()   )
+#                ic = max(0,ic-dpix)+di
+#                jc = max(0,jc-dpix)+dj
+#        ic = imin+ic
+#        jc = jmin+jc
+#        #plt.broken_barh([(jc-dpix,2*dpix)], (ic-dpix,2*dpix), alpha=0.2, facecolors = 'red')
+#        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
+#        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
+#        if plot:
+#            plt.plot(jc,ic,'g+')
+#            #str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
+#            #plt.title(str)
             
         return {'ra':ra, 'dec':dec, 'j':jc, 'i':ic, 'data': maxv}
     
