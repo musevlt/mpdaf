@@ -10,17 +10,44 @@ some of the pixel values.
 Tutorial
 ========
 
+Mandatory imports::
+
+  import numpy as np
+  from mpdaf.obj import Spectrum
+  from mpdaf.obj import WaveCoord
+
+A Spectrum object is created: 
+
+- either from one or two numpy data arrays (containing flux values and variance), 
+using the following command::
+
+  MyData=np.ones(4000) # numpy data array
+  MyVariance=np.ones(4000) # numpy variance array
+  spe = Spectrum(data=MyData) # spectrum filled with MyData 
+  spe = Spectrum(data=MyData,variance=MyVariance) # spectrum filled with MyData and MyVariance
+
+
+- or from a FITS file (in which case the flux and variance data are read from specific 
+extensions), using the following commands::
+
+  spe = Spectrum(filename="spectrum.fits",ext=1) # data array read from file (extension number 1)
+  spe = Spectrum(filename="spectrum.fits",ext=[1,2]) # data and variance arrays read from file (extension numbers 1 and 2)
+
+The WaveCoord object is created using a linear scale, copied from another Spectrum, or 
+using the information from the FITS header:
+
+
 
 Indexing
 --------
 
-``Spectrum[i]`` returns the corresponding value.
+``Spectrum[i]`` returns the corresponding value of pixel i.
 
-``Spectrum[i1:i2]`` returns the sub-spectrum.
+``Spectrum[i1:i2]`` returns the sub-spectrum between pixels i1 and i2
 
-``Spectrum[i] = value`` sets value in Spectrum.data[i]
+``Spectrum[i] = value`` sets the value of Spectrum.data[i]
 
-``Spectrum[i1:i2] = array`` sets the corresponding part of Spectrum.data.
+``Spectrum[i1:i2] = array`` sets the values in the corresponding part of Spectrum.data.
 
 
 Operators
