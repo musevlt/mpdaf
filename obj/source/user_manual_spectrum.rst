@@ -19,18 +19,16 @@ Preliminary imports::
 A Spectrum object is created: 
 
 - either from one or two numpy data arrays (containing flux values and variance), 
-using the following command:
+using the following command::
 
-::
   MyData=np.ones(4000) # numpy data array
   MyVariance=np.ones(4000) # numpy variance array
   spe = Spectrum(data=MyData) # spectrum filled with MyData 
   spe = Spectrum(data=MyData,variance=MyVariance) # spectrum filled with MyData and MyVariance
 
+- or from a FITS file (in which case the flux and variance data are read from specific extensions), 
+using the following commands::
 
-- or from a FITS file (in which case the flux and variance data are read from specific extensions), using the following commands:
-
-::
   spe = Spectrum(filename="spectrum.fits",ext=1) # data array read from file (extension number 1)
   spe = Spectrum(filename="spectrum.fits",ext=[1,2]) # data and variance arrays read from file (extension numbers 1 and 2)
 
