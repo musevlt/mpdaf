@@ -1,7 +1,10 @@
 Spectrum object
 ***************
 
-Spectrum, optionally including a variance and a bad pixel mask.
+The Spectrum object handles a 1D data array containing flux values, associated with a WCS 
+object (WaveCoord) containing the wavelength information. Optionally, a variance data array 
+can be attached and used for weighting the flux values. A bad pixel mask is used to ignore 
+some of the pixel values.
 
 
 Tutorial
@@ -61,15 +64,15 @@ Reference
 =========
 
 
-:func:`mpdaf.obj.Spectrum.copy` copies Spectrum object in a new one and returns it.
+:func:`mpdaf.obj.Spectrum.copy` copies the Spectrum object in a new one and returns it.
 
 :func:`mpdaf.obj.Spectrum.info` prints information.
 
-:func:`mpdaf.obj.Spectrum.write` saves the object in a FITS file.
+:func:`mpdaf.obj.Spectrum.write` saves the Spectrum object in a FITS file.
 
-:func:`mpdaf.obj.Spectrum.mean` computes the mean value on a wavelength range.
+:func:`mpdaf.obj.Spectrum.mean` computes the mean flux value over a wavelength range.
 
-:func:`mpdaf.obj.Spectrum.sum` computes the flux value on a wavelength range.
+:func:`mpdaf.obj.Spectrum.sum` computes the total flux value over a wavelength range.
 
 
 
