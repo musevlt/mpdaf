@@ -10,7 +10,7 @@ some of the pixel values.
 Tutorial
 ========
 
-Mandatory imports::
+Preliminary imports::
 
   import numpy as np
   from mpdaf.obj import Spectrum
