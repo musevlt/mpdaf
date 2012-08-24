@@ -19,10 +19,8 @@ Examples::
   ima = Image(shape=300, wcs=wcs1) # image 300x300 filled with zeros
   ima = Image(wcs=wcs1, data=MyData) # image 300x300 filled with MyData
   ima = Image(shape=300, wcs=wcs2) # warning: world coordinates and data have not the same dimensions.
-                                   # Shape of WCS object is modified.
 				   # ima.wcs.shape = (300,300)
   ima = Image(wcs=wcs2, data=MyData) # warning: world coordinates and data have not the same dimensions.
-                                     # Shape of WCS object is modified.
 				     # ima.wcs.shape = (300,300)
 
 .. autoclass:: mpdaf.obj.Image

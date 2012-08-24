@@ -21,14 +21,18 @@ Examples::
   cub = Cube(filename="cube.fits",ext=(1,2)) # cube from file with vaiance (extension numbers are 1 and 2)
   cub = Cube(shape=(4000,300,300), wcs=wcs1, wave=wave1) # cube 4000x300x300 filled with zeros
   cub = Cube(wcs=wcs1, wave=wave1, data=MyData) # cube filled with MyData
-  cub = Cube(shape=(4000,300,300), wcs=wcs1, wave=wave2) # warning: dimensions of wavelength coordinates and data are incompatible
-							 # cub.wave = None
-  cub = Cube(wcs=wcs1, wave=wave2, data=MyData) # warning: dimensions of wavelength coordinates and data are incompatible
-					          # cub.wave = None
-  cub = Cube(shape=(4000,300,300), wcs=wcs2, wave=wave1) # warning: dimensions of world coordinates and data are incompatible
-							 # cub.wcs = None
-  cub = Cube(wcs=wcs2, wave=wave1, data=MyData) # warning: dimensions of world coordinates and data are incompatible
-					          # cub.wcs = None	
+  cub = Cube(shape=(4000,300,300), wcs=wcs1, wave=wave2) # warning: wavelength coordinates and data have not the same dimensions.
+                                                         # Shape of WaveCoord object is modified.
+							 # cub.wave.shape = 4000
+  cub = Cube(wcs=wcs1, wave=wave2, data=MyData) # warning: wavelength coordinates and data have not the same dimensions.
+                                                # Shape of WaveCoord object is modified.
+					        # cub.wave.shape = 4000
+  cub = Cube(shape=(4000,300,300), wcs=wcs2, wave=wave1) # warning: world coordinates and data have not the same dimensions.
+                                                         # Shape of WCS object is modified.
+							 # cub.wcs = (300,300)
+  cub = Cube(wcs=wcs2, wave=wave1, data=MyData) # warning: world coordinates and data have not the same dimensions.
+                                                # Shape of WCS object is modified.
+					        # cub.wcs = (300,300)	
 
 .. autoclass:: mpdaf.obj.Cube
 	:members:
