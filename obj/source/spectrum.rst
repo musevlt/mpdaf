@@ -18,10 +18,12 @@ Examples::
   
   spe = Spectrum(shape=4000, wave=wave1) # spectrum filled with zeros
   spe = Spectrum(wave=wave1, data=MyData) # spectrum filled with MyData
-  spe = Spectrum(shape=4000, wave=wave2) # warning: wavelength coordinates and spectrum have not the same dimensions
-					 # spe.wave = None
-  spe = Spectrum(wave=wave2, data=MyData) # warning: wavelength coordinates and data have not the same dimensions
-					    # spe.wave = None
+  spe = Spectrum(shape=4000, wave=wave2) # warning: wavelength coordinates and data have not the same dimensions.
+					 # Shape of WaveCoord object is modified.
+					 # spe.wave.shape = 4000
+  spe = Spectrum(wave=wave2, data=MyData) # warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified.
+					  # Shape of WaveCoord object is modified.  
+					  # spe.wave = 4000
 
 .. autoclass:: mpdaf.obj.Spectrum
 	:members:

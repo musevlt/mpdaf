@@ -18,10 +18,12 @@ Examples::
   ima = Image(filename="image.fits",ext=(1,2)) # image from file with variance (extension numbers are 1 and 2)
   ima = Image(shape=300, wcs=wcs1) # image 300x300 filled with zeros
   ima = Image(wcs=wcs1, data=MyData) # image 300x300 filled with MyData
-  ima = Image(shape=300, wcs=wcs2) # warning: world coordinates and image have not the same dimensions
-				   # ima.wcs = None
-  ima = Image(wcs=wcs2, data=MyData) # warning: world coordinates and data have not the same dimensions
-				       # ima.wcs = None
+  ima = Image(shape=300, wcs=wcs2) # warning: world coordinates and data have not the same dimensions.
+                                   # Shape of WCS object is modified.
+				   # ima.wcs.shape = (300,300)
+  ima = Image(wcs=wcs2, data=MyData) # warning: world coordinates and data have not the same dimensions.
+                                     # Shape of WCS object is modified.
+				     # ima.wcs.shape = (300,300)
 
 .. autoclass:: mpdaf.obj.Image
 	:members:
