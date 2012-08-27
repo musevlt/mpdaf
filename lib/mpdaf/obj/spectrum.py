@@ -9,6 +9,7 @@ from scipy import interpolate
 from scipy.optimize import leastsq
 from scipy import signal
 from scipy import ndimage
+from scipy import special
 
 import matplotlib.pyplot as plt
 
@@ -308,7 +309,7 @@ class Spectrum(object):
                 self.wave = wave
                 if wave is not None:
                     if wave.shape is not None and wave.shape != self.shape:
-                        print "warning: wavelength coordinates and data have not the same dimensions."
+                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
                     self.wave.shape = self.shape
             except :
                 self.wave = None
@@ -903,8 +904,8 @@ class Spectrum(object):
         if self.wave is None:
             raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
         else:
-            pix_min = max(0,int(self.wave.pixel(lmin)))
-            pix_max = min(self.shape,int(self.wave.pixel(lmax)) + 1)
+            pix_min = max(0,self.wave.pixel(lmin,nearest=True))
+            pix_max = min(self.shape,self.wave.pixel(lmax,nearest=True) + 1)
             if (pix_min+1)==pix_max:
                 return self.data[pix_min]
             else:
@@ -994,12 +995,13 @@ class Spectrum(object):
             if lmin is None:
                 pix_min = 0
             else:
-                pix_min = self.wave.pixel(lmin,nearest=True)
+                pix_min = max(0,self.wave.pixel(lmin,nearest=True))
             if lmax is None:
                 pix_max = self.shape
             else:
-                pix_max = self.wave.pixel(lmax,nearest=True)
-            self.data[pix_min:pix_max+1] = np.ma.masked  
+                pix_max = min(self.shape,self.wave.pixel(lmax,nearest=True) + 1)
+            
+            self.data[pix_min:pix_max] = np.ma.masked  
             
     def unmask(self):
         """Unmasks the spectrum (just invalid data (nan,inf) are masked).
@@ -1088,12 +1090,9 @@ class Spectrum(object):
         # new size is an integer multiple of the original size
         self.shape = self.shape/factor
         self.data = np.ma.array(self.data.reshape(self.shape,factor).sum(1) / factor,mask=self.data.mask.reshape(self.shape,factor).sum(1))
-        #self.data = np.ma.reshape(self.data,self.shape,factor).sum(1) / factor
         if self.var is not None:
-            #var = self.var.reshape(newshape,factor).sum(1) / factor / factor
-            self.var = np.reshape(self.var,self.shape,factor).sum(1) / factor / factor
+            self.var = self.var.reshape(self.shape,factor).sum(1) / factor / factor
         try:
-            #crval = self.wave.coord()[slice(0,factor,1)].sum()/factor
             crval = self.wave.coord()[0:factor].sum()/factor
             self.wave = WaveCoord(1, self.wave.cdelt*factor, crval, self.wave.cunit,self.shape)
         except:
@@ -1262,11 +1261,11 @@ class Spectrum(object):
         if lmin is None:
             i1 = 0
         else:
-            i1 = self.wave.pixel(lmin, nearest=True)
+            i1 = max(0,self.wave.pixel(lmin, nearest=True))
         if lmax is None:
             i2 = self.shape
         else:
-            i2 = self.wave.pixel(lmax, nearest=True)
+            i2 = min(self.shape,self.wave.pixel(lmax,nearest=True) + 1)
 
         #replace masked values by interpolated values
         data = self._interp_data(spline)
@@ -1295,11 +1294,11 @@ class Spectrum(object):
         if lmin is None:
             i1 = 0
         else:
-            i1 = self.wave.pixel(lmin, True)
+            i1 = max(0,self.wave.pixel(lmin,True))
         if lmax is None:
             i2 = self.shape
         else:
-            i2 = self.wave.pixel(lmax, True)
+            i2 = min(self.shape,self.wave.pixel(lmax,True) + 1)
             
         #replace masked values by interpolated values
         data = self._interp_data(spline)
@@ -1416,12 +1415,17 @@ class Spectrum(object):
           :rtype: magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).
         """
         data = self._interp_data(spline)
-        vflux = data[self.wave.pixel(lbda-dlbda/2,nearest=True):self.wave.pixel(lbda+dlbda/2,nearest=True)].mean()*self.fscale
-        mag = flux2mag(vflux, lbda)
-        if out == 1:
-            return mag
-        if out == 2:
-            return mag,vflux,lbda
+        i1 = max(0,self.wave.pixel(lbda-dlbda/2, nearest=True))
+        i2 = min(self.shape,self.wave.pixel(lbda+dlbda/2,nearest=True))
+        if i1==i2:
+            return 99
+        else:
+            vflux = data[i1:i2+1].mean()*self.fscale
+            mag = flux2mag(vflux, lbda)
+            if out == 1:
+                return mag
+            if out == 2:
+                return mag,vflux,lbda
 
     def abmag_filter_name(self, name, out=1, spline=False):
         """Computes AB magnitude using the filter name.
@@ -1535,11 +1539,13 @@ class Spectrum(object):
         if lmin is None:
             i1 = 0
         else:
-            i1 = self.wave.pixel(lmin, True)
+            #i1 = self.wave.pixel(lmin, True)
+            i1 = max(0,self.wave.pixel(lmin,nearest=True))
         if lmax is None:
             i2 = self.shape
         else:
-            i2 = self.wave.pixel(lmax, True)
+            #i2 = self.wave.pixel(lmax, True)
+            i2 = min(self.shape,self.wave.pixel(lmax,nearest=True) + 1)
         if i1==i2:
             raise ValueError, 'Minimum and maximum wavelengths are equal'
         

@@ -327,7 +327,7 @@ class Image(object):
                     self.wcs.wcs.naxis1 = self.shape[1]
                     self.wcs.wcs.naxis2 = self.shape[0]
                     if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
-                        print "warning: world coordinates and data have not the same dimensions."
+                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
             except :
                 self.wcs = None
                 print "error: wcs not copied."

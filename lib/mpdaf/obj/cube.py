@@ -208,7 +208,7 @@ class Cube(object):
                     self.wcs.wcs.naxis1 = self.shape[2]
                     self.wcs.wcs.naxis2 = self.shape[1]
                     if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
-                        print "warning: world coordinates and data have not the same dimensions."
+                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
             except :
                 self.wcs = None
                 print "error: world coordinates not copied."
@@ -216,7 +216,7 @@ class Cube(object):
                 self.wave = wave
                 if wave is not None:
                     if wave.shape is not None and wave.shape != self.shape[0]:
-                        print "warning: wavelength coordinates and data have not the same dimensions."
+                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
                     self.wave.shape = self.shape[0]
             except :
                 self.wave = None
