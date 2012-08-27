@@ -1,4 +1,4 @@
-"""Test on Spectrumobjects."""
+"""Test on Spectrum objects."""
 
 import nose.tools
 from nose.plugins.attrib import attr
@@ -6,7 +6,6 @@ from nose.plugins.attrib import attr
 import os
 import sys
 import numpy as np
-#import unittest
 import pyfits
 
 from mpdaf.obj import Spectrum

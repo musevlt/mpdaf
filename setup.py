@@ -41,8 +41,8 @@ class UnitTest(Command):
         pass
     def run(self):
         import sys,subprocess
-        #errno = subprocess.call([sys.executable, 'python', 'tests/run_tests.py'])
-        errno = subprocess.call(['python', 'tests/run_tests.py'])
+        #errno = subprocess.call(['python', 'tests/run_tests.py'])
+        errno = subprocess.call(['nosetests', '-v','-a speed=fast'])
         raise SystemExit(errno)
 
 class MakeFusion(Command):

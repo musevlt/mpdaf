@@ -1,9 +1,10 @@
 """Test on Cube objects."""
+import nose.tools
+from nose.plugins.attrib import attr
 
 import os
 import sys
 import numpy as np
-import unittest
 
 from mpdaf.obj import Spectrum
 from mpdaf.obj import Image
@@ -12,7 +13,7 @@ from mpdaf.obj import WCS
 from mpdaf.obj import WaveCoord
 from mpdaf.obj import gauss_image
 
-class TestCube(unittest.TestCase):
+class TestCube():
 
     def setUp(self):
         wcs = WCS()
@@ -27,98 +28,97 @@ class TestCube(unittest.TestCase):
         del self.image1
         del self.spectrum1
 
+    @attr(speed='fast')
     def test_arithmetricOperator_Cube(self):
-        """tests arithmetic functions on Cube object"""
+        """Cube class: tests arithmetic functions"""
         cube2 = self.image1 + self.cube1
         # +
         cube3 = self.cube1 + cube2
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube3.data[k,j,i]*cube3.fscale,self.cube1.data[k,j,i]*self.cube1.fscale + (cube2.data[k,j,i]*cube2.fscale))
+                    nose.tools.assert_almost_equal(cube3.data[k,j,i]*cube3.fscale,self.cube1.data[k,j,i]*self.cube1.fscale + (cube2.data[k,j,i]*cube2.fscale))
         # -
         cube3 = self.cube1 - cube2
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube3.data[k,j,i]*cube3.fscale,self.cube1.data[k,j,i]*self.cube1.fscale - (cube2.data[k,j,i]*cube2.fscale))
+                    nose.tools.assert_almost_equal(cube3.data[k,j,i]*cube3.fscale,self.cube1.data[k,j,i]*self.cube1.fscale - (cube2.data[k,j,i]*cube2.fscale))
         # *
         cube3 = self.cube1 * cube2
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube3.data[k,j,i]*cube3.fscale,self.cube1.data[k,j,i]*self.cube1.fscale * (cube2.data[k,j,i]*cube2.fscale))
+                    nose.tools.assert_almost_equal(cube3.data[k,j,i]*cube3.fscale,self.cube1.data[k,j,i]*self.cube1.fscale * (cube2.data[k,j,i]*cube2.fscale))
         # /
         cube3 = self.cube1 / cube2
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube3.data[k,j,i]*cube3.fscale,self.cube1.data[k,j,i]*self.cube1.fscale / (cube2.data[k,j,i]*cube2.fscale))
+                    nose.tools.assert_almost_equal(cube3.data[k,j,i]*cube3.fscale,self.cube1.data[k,j,i]*self.cube1.fscale / (cube2.data[k,j,i]*cube2.fscale))
         # with spectrum
         cube2 = self.cube1 + self.spectrum1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,self.spectrum1.data[k]*self.spectrum1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.spectrum1.data[k]*self.spectrum1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
         cube2 = self.cube1 - self.spectrum1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,-self.spectrum1.data[k]*self.spectrum1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,-self.spectrum1.data[k]*self.spectrum1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
         cube2 = self.cube1 * self.spectrum1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,self.spectrum1.data[k]*self.spectrum1.fscale * self.cube1.data[k,j,i]*self.cube1.fscale)
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.spectrum1.data[k]*self.spectrum1.fscale * self.cube1.data[k,j,i]*self.cube1.fscale)
         cube2 = self.cube1 / self.spectrum1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,(self.cube1.data[k,j,i]*self.cube1.fscale)/(self.spectrum1.data[k]*self.spectrum1.fscale))
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,(self.cube1.data[k,j,i]*self.cube1.fscale)/(self.spectrum1.data[k]*self.spectrum1.fscale))
         # with image
         cube2 = self.cube1 + self.image1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
         cube2 = self.cube1 - self.image1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,-self.image1.data[j,i]*self.image1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,-self.image1.data[j,i]*self.image1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
         cube2 = self.cube1 * self.image1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale * self.cube1.data[k,j,i]*self.cube1.fscale)
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale * self.cube1.data[k,j,i]*self.cube1.fscale)
         cube2 = self.cube1 / self.image1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    self.assertAlmostEqual(cube2.data[k,j,i]*cube2.fscale,(self.cube1.data[k,j,i]*self.cube1.fscale) / (self.image1.data[j,i]*self.image1.fscale))
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,(self.cube1.data[k,j,i]*self.cube1.fscale) / (self.image1.data[j,i]*self.image1.fscale))
 
+    @attr(speed='fast')
     def test_get_Cube(self):
-        """tests Cube[]"""
+        """Cube class: tests getters"""
         a = self.cube1[2,:,:]
-        self.assertEqual(a.shape[0],6)
-        self.assertEqual(a.shape[1],5)
+        nose.tools.assert_equal(a.shape[0],6)
+        nose.tools.assert_equal(a.shape[1],5)
         a = self.cube1[:,2,3]
-        self.assertEqual(a.shape,10)
+        nose.tools.assert_equal(a.shape,10)
         a = self.cube1[1:7,0:2,0:3]
-        self.assertEqual(a.shape[0],6)
-        self.assertEqual(a.shape[1],2)
-        self.assertEqual(a.shape[2],3)
+        nose.tools.assert_equal(a.shape[0],6)
+        nose.tools.assert_equal(a.shape[1],2)
+        nose.tools.assert_equal(a.shape[2],3)
         a = self.cube1.get_lambda(1.2,15.6)
-        self.assertEqual(a.shape[0],6)
-        self.assertEqual(a.shape[1],6)
-        self.assertEqual(a.shape[2],5)
+        nose.tools.assert_equal(a.shape[0],6)
+        nose.tools.assert_equal(a.shape[1],6)
+        nose.tools.assert_equal(a.shape[2],5)
         a = self.cube1[2:4,0:2,1:4]
-        self.assertEqual(a.get_start()[0],3.5)
-        self.assertEqual(a.get_start()[1],0)
-        self.assertEqual(a.get_start()[2],1)
-        self.assertEqual(a.get_end()[0],6.5)
-        self.assertEqual(a.get_end()[1],1)
-        self.assertEqual(a.get_end()[2],3)
-
-if __name__=='__main__':
-    unittest.main()
+        nose.tools.assert_equal(a.get_start()[0],3.5)
+        nose.tools.assert_equal(a.get_start()[1],0)
+        nose.tools.assert_equal(a.get_start()[2],1)
+        nose.tools.assert_equal(a.get_end()[0],6.5)
+        nose.tools.assert_equal(a.get_end()[1],1)
+        nose.tools.assert_equal(a.get_end()[2],3)

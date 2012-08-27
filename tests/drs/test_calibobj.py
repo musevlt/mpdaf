@@ -1,14 +1,15 @@
 """Test on CalibFile objects to be used with py.test."""
+import nose.tools
+from nose.plugins.attrib import attr
 
 import os
 import sys
 import numpy
-import unittest
 
 from mpdaf.drs import CalibDir
 from mpdaf.drs import CalibFile
 
-class TestCalibObj(unittest.TestCase):
+class TestCalibObj():
     
     def setUp(self):
         self.flat = CalibDir("MASTER_FLAT","data/drs/masterflat")
@@ -17,14 +18,16 @@ class TestCalibObj(unittest.TestCase):
     def tearDown(self):
         del self.flat
 
+    @attr(speed='slow')
     def test_init(self):
-        """tests CalibDir initialization"""
+        """Calib objects: tests initialization"""
         data = self.flat[1].get_data()
         shape = numpy.shape(data)
-        self.assertEqual(shape, (self.flat[1].ny, self.flat[1].nx))
+        nose.tools.assert_equal(shape, (self.flat[1].ny, self.flat[1].nx))
 
+    @attr(speed='slow')
     def test_copy(self):
-        """tests copy of CalibDir objects"""
+        """Calib objects: tests copy"""
         flat2 = self.flat.copy()
         value_data1 = self.flat[2].get_data()[32,28]
         value_dq1 = self.flat[2].get_dq()[32,28]
@@ -32,9 +35,9 @@ class TestCalibObj(unittest.TestCase):
         value_data2 = flat2[2].get_data()[32,28]
         value_dq2 = flat2[2].get_dq()[32,28]
         value_stat2 = flat2[2].get_stat()[32,28]
-        self.assertEqual(value_data1,value_data2)
-        self.assertEqual(value_dq1,value_dq2)
-        self.assertEqual(value_stat1,value_stat2)
+        nose.tools.assert_equal(value_data1,value_data2)
+        nose.tools.assert_equal(value_dq1,value_dq2)
+        nose.tools.assert_equal(value_stat1,value_stat2)
         del flat2
     
     #def test_write(self):
@@ -47,19 +50,20 @@ class TestCalibObj(unittest.TestCase):
     #    value_data2 = flat2.get_data()[32,28]
     #    value_dq2 = flat2.get_dq()[32,28]
     #    value_stat2 = flat2.get_stat()[32,28]
-    #    self.assertEqual(value_data1,value_data2)
-    #    self.assertEqual(value_dq1,value_dq2)
-    #    self.assertEqual(value_stat1,value_stat2)
+    #    nose.tools.assert_equal(value_data1,value_data2)
+    #    nose.tools.assert_equal(value_dq1,value_dq2)
+    #    nose.tools.assert_equal(value_stat1,value_stat2)
     #    del flat2
     #    cmd_rm= "rm -f tmp.fits"
     #    os.system(cmd_rm)
         
+    @attr(speed='slow')
     def test_operator(self):
 #Error using memmap objects shared among processes created by the multprocessing module.
 #This error only happen with new version of numpy.
 #See http://mail.scipy.org/pipermail/numpy-discussion/2011-April/056134.html
 #and http://projects.scipy.org/numpy/ticket/1809
-        """tests arithmetic functions on CalibDir and CalibFile objects"""
+        """Calib objects: tests arithmetic functions"""
         flat2 = self.flat.copy()
         sum = self.flat + flat2
         value_data1 = self.flat[2].get_data()[32,28]
@@ -68,34 +72,34 @@ class TestCalibObj(unittest.TestCase):
         value_data2 = sum[2].get_data()[32,28]
         value_dq2 = sum[2].get_dq()[32,28]
         value_stat2 = sum[2].get_stat()[32,28]
-        self.assertEqual(value_data1*2,value_data2)
-        self.assertEqual(value_dq1,value_dq2)
-        self.assertEqual(value_stat1*2,value_stat2)
+        nose.tools.assert_equal(value_data1*2,value_data2)
+        nose.tools.assert_equal(value_dq1,value_dq2)
+        nose.tools.assert_equal(value_stat1*2,value_stat2)
         del sum
         sub = self.flat - flat2
         value_data2 = sub[2].get_data()[32,28]
         value_dq2 = sub[2].get_dq()[32,28]
         value_stat2 = sub[2].get_stat()[32,28]
-        self.assertEqual(0,value_data2)
-        self.assertEqual(value_dq1,value_dq2)
-        self.assertEqual(value_stat1*2,value_stat2)
+        nose.tools.assert_equal(0,value_data2)
+        nose.tools.assert_equal(value_dq1,value_dq2)
+        nose.tools.assert_equal(value_stat1*2,value_stat2)
         del sub
         mul = self.flat * 2
         value_data2 = mul[2].get_data()[32,28]
         value_dq2 = mul[2].get_dq()[32,28]
         value_stat2 = mul[2].get_stat()[32,28]
-        self.assertEqual(value_data1*2,value_data2)
-        self.assertEqual(value_dq1,value_dq2)
-        self.assertEqual(value_stat1*4,value_stat2)
+        nose.tools.assert_equal(value_data1*2,value_data2)
+        nose.tools.assert_equal(value_dq1,value_dq2)
+        nose.tools.assert_equal(value_stat1*4,value_stat2)
         del mul
         del flat2
         
-if __name__=='__main__':
-    if not os.path.exists("data/drs/masterflat/MASTER_FLAT_01.fits"):
-        print 'IOError: file data/drs/masterflat/*.fits not found.'
-        print 'Test files are not stored on the git repository to limit its memory size.'
-        print 'Please download it from http://urania1.univ-lyon1.fr/mpdaf/login'
-        print ''
-    else:
-        unittest.main()
+#if __name__=='__main__':
+#    if not os.path.exists("data/drs/masterflat/MASTER_FLAT_01.fits"):
+#        print 'IOError: file data/drs/masterflat/*.fits not found.'
+#        print 'Test files are not stored on the git repository to limit its memory size.'
+#        print 'Please download it from http://urania1.univ-lyon1.fr/mpdaf/login'
+#        print ''
+#    else:
+#        unittest.main()
     
