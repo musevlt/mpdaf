@@ -131,10 +131,9 @@ class TestSpectrum():
         del spectrum1, spectrum2
         spnovar=Spectrum('data/obj/Spectrum_Novariance.fits')
         spvar=Spectrum('data/obj/Spectrum_Variance.fits',ext=[0,1])
-        spvar2=spvar.copy()
-        spvar2.abs()
+        spvar2=spvar.abs()
         nose.tools.assert_equal(spvar2[23],np.abs(spvar[23]))
-        spvar2.sqrt()
+        spvar2=spvar.abs().sqrt()
         nose.tools.assert_equal(spvar2[8],np.sqrt(np.abs(spvar[8])))
         nose.tools.assert_almost_equal(spvar.mean(),11.526547845374727)
         nose.tools.assert_almost_equal(spnovar.mean(),11.101086376675089)
@@ -180,10 +179,10 @@ class TestSpectrum():
         wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit = 'Angstrom')
         spectrum1 = Spectrum(shape=10, data=np.array([0.5,1,2,3,4,5,6,7,8,9]),wave=wave,fscale= 2.3)
         flux1 = spectrum1.sum()*spectrum1.wave.cdelt
-        spectrum1.rebin(0.3) 
-        flux2 = spectrum1.sum()*spectrum1.wave.cdelt
+        spectrum2 = spectrum1.rebin(0.3) 
+        flux2 = spectrum2.sum()*spectrum2.wave.cdelt
         nose.tools.assert_almost_equal(flux1,flux2)
-        del spectrum1
+        del spectrum1,spectrum2
         
     @attr(speed='slow')
     def test_rebin_slow(self):
@@ -193,22 +192,22 @@ class TestSpectrum():
         f.close()
         spe = Spectrum("data/obj/g9-124Tspec.fits",var=sig*sig)
         flux1 = spe.sum(weight=False)*spe.wave.cdelt
-        spe.rebin(0.3) 
-        flux2 = spe.sum(weight=False)*spe.wave.cdelt
+        spe2 = spe.rebin(0.3) 
+        flux2 = spe2.sum(weight=False)*spe2.wave.cdelt
         nose.tools.assert_almost_equal(flux1,flux2,1)
-        del spe
+        del spe,spe2
         
         spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
         flux1 = spnovar.sum()*spnovar.wave.cdelt
-        spnovar.rebin(4)
-        flux2 = spnovar.sum()*spnovar.wave.cdelt
+        spnovar2 = spnovar.rebin(4)
+        flux2 = spnovar2.sum()*spnovar2.wave.cdelt
         nose.tools.assert_almost_equal(flux1,flux2,0)        
         spvar = Spectrum('data/obj/Spectrum_Variance.fits',ext=[0,1])
         flux1 = spvar.sum(weight=False)*spvar.wave.cdelt
-        spvar.rebin(4)
-        flux2 = spvar.sum(weight=False)*spvar.wave.cdelt
+        spvar2 = spvar.rebin(4)
+        flux2 = spvar2.sum(weight=False)*spvar2.wave.cdelt
         nose.tools.assert_almost_equal(flux1,flux2,0)     
-        del spnovar,spvar
+        del spnovar,spvar,spnovar2,spvar2
         
     
     @attr(speed='fast')    
@@ -217,34 +216,34 @@ class TestSpectrum():
         wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit = 'Angstrom')
         spectrum1 = Spectrum(shape=10, data=np.array([0.5,1,2,3,4,5,6,7,8,9]),wave=wave,fscale= 2.3)
         flux1 = spectrum1.sum()*spectrum1.wave.cdelt
-        spectrum1.rebin_factor(3) 
-        flux2 = spectrum1.sum()*spectrum1.wave.cdelt
+        spectrum2 = spectrum1.rebin_factor(3) 
+        flux2 = spectrum2.sum()*spectrum2.wave.cdelt
         nose.tools.assert_almost_equal(flux1,flux2)
-        del spectrum1
+        del spectrum1,spectrum2
         
         f= pyfits.open("data/obj/g9-124Tsigspec.fits")
         sig = f[0].data
         f.close()
         spe = Spectrum("data/obj/g9-124Tspec.fits",var=sig*sig)
         flux1 = spe.sum()*spe.wave.cdelt
-        spe.rebin_factor(3) 
-        flux2 = spe.sum()*spe.wave.cdelt
+        spe2 = spe.rebin_factor(3) 
+        flux2 = spe2.sum()*spe2.wave.cdelt
         nose.tools.assert_almost_equal(flux1,flux2)
-        del spe
+        del spe, spe2
         
         spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
         flux1 = spnovar.sum()*spnovar.wave.cdelt
-        spnovar.rebin_factor(4)
-        flux2 = spnovar.sum()*spnovar.wave.cdelt
+        spnovar2 = spnovar.rebin_factor(4)
+        flux2 = spnovar2.sum()*spnovar2.wave.cdelt
         nose.tools.assert_almost_equal(flux1,flux2)        
         spvar = Spectrum('data/obj/Spectrum_Variance.fits',ext=[0,1])
         flux1 = spvar.sum(weight=False)*spvar.wave.cdelt
         #flux1 = spvar.sum()*spvar.wave.cdelt
-        spvar.rebin_factor(4)
-        flux2 = spvar.sum(weight=False)*spvar.wave.cdelt
+        spvar2 = spvar.rebin_factor(4)
+        flux2 = spvar2.sum(weight=False)*spvar2.wave.cdelt
         #flux2 = spvar.sum()*spvar.wave.cdelt
         nose.tools.assert_almost_equal(flux1,flux2)     
-        del spnovar,spvar
+        del spnovar,spvar,spnovar2,spvar2
     
     @attr(speed='fast')    
     def test_truncate(self):
@@ -298,10 +297,8 @@ class TestSpectrum():
         polyfit1=spvar.poly_fit(35)
         spfit1=spvar.copy()
         spfit1.poly_val(polyfit1)
-        spfit2=spvar.copy()
-        spfit2.poly_spec(10)
-        spfit3=spvar.copy()
-        spfit3.poly_spec(10,weight=False)
+        spfit2=spvar.poly_spec(10)
+        spfit3=spvar.poly_spec(10,weight=False)
         nose.tools.assert_almost_equal(spfit1.mean(),11.5,1)
         nose.tools.assert_almost_equal(spfit2.mean(),11.5,1)
         nose.tools.assert_almost_equal(spfit3.mean(),11.5,1)

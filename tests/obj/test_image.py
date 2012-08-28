@@ -111,7 +111,7 @@ class TestImage():
     @attr(speed='fast')  
     def test_truncate_Image(self):
         """Image class: tests truncation"""
-        self.image1.truncate(0,1,1,3)
+        self.image1 = self.image1.truncate(0,1,1,3)
         nose.tools.assert_equal(self.image1.shape[0],2)
         nose.tools.assert_equal(self.image1.shape[1],3)
         nose.tools.assert_equal(self.image1.get_start()[0],0)

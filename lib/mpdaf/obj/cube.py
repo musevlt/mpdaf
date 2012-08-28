@@ -914,7 +914,7 @@ class Cube(object):
             raise ValueError, 'Operation forbidden'
         return res
 
-    def sqrt(self):
+    def _sqrt(self):
         """Computes the positive square-root of data extension.
         """
         if self.data is None:
@@ -922,8 +922,15 @@ class Cube(object):
         self.data = np.sqrt(self.data)
         self.fscale = np.sqrt(self.fscale)
         self.var = None
+        
+    def sqrt(self):
+        """Returns a cube containing the positive square-root of data extension.
+        """
+        res = self.copy()
+        res._sqrt()
+        return res
 
-    def abs(self):
+    def _abs(self):
         """Computes the absolute value of data extension.
         """
         if self.data is None:
@@ -931,6 +938,13 @@ class Cube(object):
         self.data = np.abs(self.data)
         self.fscale = np.abs(self.fscale)
         self.var = None
+
+    def abs(self):
+        """Returns a cube containing the absolute value of data extension.
+        """
+        res = self.copy()
+        res._abs()
+        return res
 
     def __getitem__(self,item):
         """Returns the corresponding object:

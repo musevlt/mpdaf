@@ -888,7 +888,7 @@ class Image(object):
             raise ValueError, 'Operation forbidden'
         return res
 
-    def sqrt(self):
+    def _sqrt(self):
         """Computes the positive square-root of data extension.
         """
         if self.data is None:
@@ -896,14 +896,32 @@ class Image(object):
         self.data = np.sqrt(self.data)
         self.fscale = np.sqrt(self.fscale)
         self.var = None
+        
+    def sqrt(self):
+        """Returns an image containing the positive square-root of data extension.
+            
+            :rtype: Image
+        """
+        res = self.copy()
+        res._sqrt()
+        return res
 
-    def abs(self):
+    def _abs(self):
         """Computes the absolute value of data extension."""
         if self.data is None:
             raise ValueError, 'empty data array'
         self.data = np.abs(self.data)
         self.fscale = np.abs(self.fscale)
         self.var = None
+        
+    def abs(self):
+        """Returns an image containing the absolute value of data extension.
+        
+            :rtype: Image
+        """
+        res = self.copy()
+        res._abs()
+        return res
 
     def __getitem__(self,item):
         """Returns the corresponding value or sub-image.
@@ -1181,7 +1199,7 @@ class Image(object):
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
         
-    def truncate(self, y_min, y_max, x_min, x_max, mask=True):
+    def _truncate(self, y_min, y_max, x_min, x_max, mask=True):
         """ Truncates the image.
 
           :param y_min: Minimum value of y in degrees.
@@ -1238,15 +1256,34 @@ class Image(object):
             except:
                 pass
     
+    def truncate(self, y_min, y_max, x_min, x_max, mask=True):
+        """ Returns truncated image.
+
+          :param y_min: Minimum value of y in degrees.
+          :type y_min: float
+          :param y_max: Maximum value of y in degrees.
+          :type y_max: float
+          :param x_min: Minimum value of x in degrees.
+          :type x_min: float
+          :param x_max: Maximum value of x in degrees.
+          :type x_max: float
+          :param mask: if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.
+          :type mask: boolean
+          :rtype: Image
+        """
+        res = self.copy()
+        res._truncate(y_min, y_max, x_min, x_max, mask)
+        return res
+    
     def rotate_wcs(self, theta):
-        """Rotates WCS coordinates to new orientation given by theta.
+        """Rotates WCS coordinates to new orientation given by theta (in place).
   
           :param theta: Rotation in degree.
           :type theta: float
         """
         self.wcs.rotate(theta)
     
-    def rotate(self, theta, interp='no'):
+    def _rotate(self, theta, interp='no'):
         """ Rotates the image using spline interpolation.
   
           :param theta: Rotation in degree.
@@ -1273,6 +1310,23 @@ class Image(object):
         mask_ma = np.ma.make_mask(1-mask_rot)
         self.data = np.ma.array(data_rot, mask=mask_ma)
     
+    def rotate(self, theta, interp='no'):
+        """ Returns rotated image.
+  
+          :param theta: Rotation in degree.
+          :type theta: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+            if 'linear', linear interpolation of the masked values.
+        
+            if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+          :rtype: Image
+        """
+        res =self.copy()
+        res._rotate(theta, interp)
+        return res
+        
     def sum(self,axis=None):
         """Returns the sum over the given axis.
   
@@ -1303,7 +1357,7 @@ class Image(object):
             return None
         
     def norm(self, type='flux', value=1.0):
-        """Normalizes total flux to value (default 1).
+        """Normalizes in place total flux to value (default 1).
   
           :param type: If 'flux',the flux is normalized and the pixel area is taken into account.
   
@@ -1654,7 +1708,7 @@ class Image(object):
         return Spectrum(wave=wave, data = ee)
         
     def ee_size(self, center=None, pix = False, ee = None, frac = 0.9):
-        """Computes the size of the square center on (y,x) containing the fraction of the energy.
+        """Computes the size of the square centered on (y,x) containing the fraction of the energy.
   
           :param center: Center of the explored region.
   
@@ -1815,8 +1869,7 @@ class Image(object):
         dec_min = pos_min[0]
         ra_max = pos_max[1]
         dec_max = pos_max[0]
-        ima = self.copy()
-        ima.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
+        ima = self.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
         
         ksel = np.where(ima.data.mask==False)
         pixcrd = np.empty((np.shape(ksel[0])[0],2))
@@ -1974,8 +2027,7 @@ class Image(object):
         dec_min = pos_min[0]
         ra_max = pos_max[1]
         dec_max = pos_max[0]
-        ima = self.copy()
-        ima.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
+        ima = self.truncate(dec_min, dec_max, ra_min, ra_max, mask = False)
         
         ksel = np.where(ima.data.mask==False)
         pixcrd = np.empty((np.shape(ksel[0])[0],2))
@@ -2082,7 +2134,7 @@ class Image(object):
         print 'q',q,err_q
         print 'rot',rot,err_rot
     
-    def _rebin_factor(self, factor):
+    def _rebin_factor_(self, factor):
         '''Shrinks the size of the image by factor.
         New size is an integer multiple of the original size.
         
@@ -2103,7 +2155,7 @@ class Image(object):
         self.wcs = self.wcs.rebin(step=(cdelt[0]*factor[0],cdelt[1]*factor[1]),start=None)
 
         
-    def rebin_factor(self, factor, margin='center'):
+    def _rebin_factor(self, factor, margin='center'):
         '''Shrinks the size of the image by factor.
   
           :param factor: Factor in y and x. Python notation: (ny,nx).
@@ -2121,13 +2173,13 @@ class Image(object):
             raise ValueError, 'factor must be in ]1,shape['
         if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )):
             # new size is an integer multiple of the original size
-            self._rebin_factor(factor)
+            self._rebin_factor_(factor)
         elif not np.sometrue(np.mod( self.shape[0], factor[0] )):
             newshape1 = self.shape[1]/factor[1]
             n1 = self.shape[1] - newshape1*factor[1]
             if margin == 'origin' or n1==1:
                 ima = self[:,:-n1]
-                ima._rebin_factor(factor)
+                ima._rebin_factor_(factor)
                 newshape = (ima.shape[0], ima.shape[1] + 1)
                 data = np.empty(newshape)
                 mask = np.empty(newshape,dtype=bool)
@@ -2146,7 +2198,7 @@ class Image(object):
                 n_left = n1/2
                 n_right = self.shape[1] - n1 + n_left
                 ima = self[:,n_left:n_right]
-                ima._rebin_factor(factor)
+                ima._rebin_factor_(factor)
                 newshape = (ima.shape[0], ima.shape[1] + 2)
                 data = np.empty(newshape)
                 mask = np.empty(newshape,dtype=bool)
@@ -2170,7 +2222,7 @@ class Image(object):
             n0 = self.shape[0] - newshape0*factor[0]
             if margin == 'origin' or n0==1:
                 ima = self[:-n0,:]
-                ima._rebin_factor(factor)
+                ima._rebin_factor_(factor)
                 newshape = (ima.shape[0] + 1, ima.shape[1])
                 data = np.empty(newshape)
                 mask = np.empty(newshape,dtype=bool)
@@ -2189,7 +2241,7 @@ class Image(object):
                 n_left = n0/2
                 n_right = self.shape[0] - n0 + n_left
                 ima = self[n_left:n_right,:]
-                ima._rebin_factor(factor)
+                ima._rebin_factor_(factor)
                 newshape = (ima.shape[0] + 2, ima.shape[1])
                 data = np.empty(newshape)
                 mask = np.empty(newshape,dtype=bool)
@@ -2218,7 +2270,7 @@ class Image(object):
                 n_left = n/2
                 n_right = self.shape - n + n_left
                 ima = self[n_left[0]:n_right[0],n_left[1]:n_right[1]]
-                ima._rebin_factor(factor)
+                ima._rebin_factor_(factor)
                 if n_left[0]!=0 and n_left[1]!=0:
                     newshape = ima.shape + 2
                     data = np.empty(newshape)
@@ -2295,7 +2347,7 @@ class Image(object):
             elif margin=='origin':
                 n_right = self.shape - n
                 ima = self[0:n_right[0],0:n_right[1]]
-                ima._rebin_factor(factor)
+                ima._rebin_factor_(factor)
                 newshape = ima.shape + 1
                 data = np.empty(newshape)
                 mask = np.empty(newshape,dtype=bool)
@@ -2322,7 +2374,24 @@ class Image(object):
         self.var = var
         return res
     
-    def rebin(self, newdim, newstart, newstep, flux=False, order=3, interp='no'):
+    def rebin_factor(self, factor, margin='center'):
+        '''Returns an image that shrinks the size of the current image by factor.
+  
+          :param factor: Factor in y and x. Python notation: (ny,nx).
+          :type factor: integer or (integer,integer)
+          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
+  
+            In 'center' case, pixels will be added on the left and on the right, on the bottom and of the top of the image. 
+        
+            In 'origin'case, pixels will be added on (n+1) line/column.
+          :type margin: 'center' or 'origin'
+          :rtype: Image
+        '''
+        res = self.copy()
+        res._rebin_factor(factor, margin)
+        return res
+    
+    def _rebin(self, newdim, newstart, newstep, flux=False, order=3, interp='no'):
         """Rebins the image to a new coordinate system.
   
           :param newdim: New dimensions. Python notation: (ny,nx)
@@ -2381,7 +2450,32 @@ class Image(object):
         self.data = np.ma.array(data, mask=mask)
         self.var = None
 
-    def gaussian_filter(self, sigma=3, interp='no'):
+    def rebin(self, newdim, newstart, newstep, flux=False, order=3, interp='no'):
+        """Returns rebinned image to a new coordinate system.
+  
+          :param newdim: New dimensions. Python notation: (ny,nx)
+          :type newdim: integer or (integer,integer)
+          :param newstart: New positions (y,x) for the pixel (0,0). If None, old position is used.
+          :type newstart: float or (float, float)
+          :param newstep: New step (dy,dx).
+          :type newstep: float or (float, float)
+          :param flux: if flux is True, the flux is conserved.
+          :type flux: boolean
+          :param order: The order of the spline interpolation, default is 3. The order has to be in the range 0-5.
+          :type order: integer
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
+        
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+          :rtype: Image
+        """
+        res = self.copy()
+        res._rebin(newdim, newstart, newstep, flux, order, interp)
+        return res
+
+    def _gaussian_filter(self, sigma=3, interp='no'):
         """Applies Gaussian filter to the image.
         
           :param sigma: Standard deviation for Gaussian kernel
@@ -2401,9 +2495,47 @@ class Image(object):
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
         self.data = np.ma.array(ndimage.gaussian_filter(data*self.fscale, sigma),mask=res.data.mask)/self.fscale
+    
+    def gaussian_filter(self, sigma=3, interp='no'):
+        """Returns an image containing Gaussian filter applied to the current image.
+        
+          :param sigma: Standard deviation for Gaussian kernel
+          :type sigma: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
+        
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+          :rtype: Image
+        """
+        res = self.copy()
+        res._gaussian_filter(sigma, interp)
+        return res
             
-    def median_filter(self, size=3, interp='no'):
+    def _median_filter(self, size=3, interp='no'):
         """Applies median filter to the image.
+        
+          :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+          :type size: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
+        
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+        """
+        if interp=='linear':
+            data = self._interp_data(spline=False)
+        elif interp=='spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = np.ma.filled(self.data, np.ma.median(self.data))
+        
+        self.data = np.ma.array(ndimage.median_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
+    
+    def median_filter(self, size=3, interp='no'):
+        """Returns an image containing median filter applied to the current image.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
           :type size: float
@@ -2415,16 +2547,11 @@ class Image(object):
           :type interp: 'no' | 'linear' | 'spline'
           :rtype: Image      
         """
-        if interp=='linear':
-            data = self._interp_data(spline=False)
-        elif interp=='spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
-        
-        self.data = np.ma.array(ndimage.median_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
+        res =self.copy()
+        res._median_filter(size, interp)
+        return res
     
-    def maximum_filter(self, size=3, interp='no'):
+    def _maximum_filter(self, size=3, interp='no'):
         """Applies maximum filter to the image.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
@@ -2445,7 +2572,23 @@ class Image(object):
         
         self.data = np.ma.array(ndimage.maximum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
     
-    def minimum_filter(self, size=3, interp='no'):
+    def maximum_filter(self, size=3, interp='no'):
+        """Returns an image containing maximum filter applied to the current image.
+        
+          :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+          :type size: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
+        
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+        """
+        res = self.copy()
+        res._maximum_filter(size, interp)
+        return res
+    
+    def _minimum_filter(self, size=3, interp='no'):
         """Applies minimum filter to the image.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
@@ -2466,8 +2609,25 @@ class Image(object):
         
         self.data = np.ma.array(ndimage.minimum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
     
+    def minimum_filter(self, size=3, interp='no'):
+        """Returns an image containing minimum filter applied to the current image.
+        
+          :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
+          :type size: float
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
+        
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+          :rtype: Image
+        """
+        res = self.copy()
+        res._minimum_filter(size, interp)
+        return res
+    
     def add(self, other, interp='no'):
-        """Adds the image other to the current image. The coordinate are taken into account.
+        """Adds the image other to the current image in place. The coordinate are taken into account.
   
           :param other: Second image to add.
           :type other: Image
@@ -2484,7 +2644,7 @@ class Image(object):
                 self_rot = self.wcs.get_rot()
                 ima_rot = ima.wcs.get_rot()
                 if self_rot != ima_rot:
-                    ima.rotate(self_rot-ima_rot)
+                    ima = ima.rotate(self_rot-ima_rot)
                 self_cdelt = self.wcs.get_step()
                 ima_cdelt = ima.wcs.get_step()
                 if (self_cdelt != ima_cdelt).all():
@@ -2492,12 +2652,12 @@ class Image(object):
                         factor = self_cdelt/ima_cdelt
                         if not np.sometrue(np.mod( self_cdelt[0],  ima_cdelt[0])) and not np.sometrue(np.mod( self_cdelt[1],  ima_cdelt[1] )):
                             # ima.step is an integer multiple of the self.step
-                            ima.rebin_factor(factor)
+                            ima = ima.rebin_factor(factor)
                         else:
                             raise ValueError, 'steps are not integer multiple'
                     except:
                         newdim = ima.shape/factor
-                        ima.rebin(newdim, None, self_cdelt, flux=True)
+                        ima = ima.rebin(newdim, None, self_cdelt, flux=True)
                 # here ima and self have the same step
                 [[k1,l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
                 l1 = int(l1 + 0.5)
@@ -2584,7 +2744,7 @@ class Image(object):
         return imalist
     
     def add_gaussian_noise(self, sigma, interp='no'):
-        """Adds Gaussian noise to image.
+        """Adds Gaussian noise to image in place.
   
           :param sigma: Standard deviation.
           :type sigma: float
@@ -2605,7 +2765,7 @@ class Image(object):
         self.data = np.ma.array(np.random.normal(data, sigma),mask=self.data.mask)
     
     def add_poisson_noise(self, interp='no'):
-        """Adds Poisson noise to image.
+        """Adds Poisson noise to image in place.
   
           :param interp: if 'no', data median value replaced masked values.
   
@@ -2646,7 +2806,7 @@ class Image(object):
         else:
             return False
         
-    def fftconvolve(self, other, interp='no'):
+    def _fftconvolve(self, other, interp='no'):
         """Convolves image with other using fft.
   
           :param other: Second Image or 2d-array.
@@ -2691,9 +2851,26 @@ class Image(object):
         except:
             print 'Operation forbidden'
             return None
+    
+    def fftconvolve(self, other, interp='no'):
+        """Returns the convolution of the image with other using fft.
+  
+          :param other: Second Image or 2d-array.
+          :type other: 2d-array or Image
+          :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
         
+                        if 'spline', spline interpolation of the masked values.
+          :type interp: 'no' | 'linear' | 'spline'
+          :rtype: Image
+        """
+        res =self.copy()
+        res._fftconvolve(other, interp)
+        return res
+    
     def fftconvolve_gauss(self,center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1):
-        """Convolves image with a 2D gaussian.
+        """Returns the convolution of the image with a 2D gaussian.
   
           :param center: Gaussian center (y_peak, x_peak). If None the center of the image is used.
           :type center: (float,float)
@@ -2709,13 +2886,15 @@ class Image(object):
         
                           If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
           :type factor: integer
+          :rtype: Image
         """
         ima = gauss_image(self.shape, self.wcs, center, flux, width, peak, rot, factor)
         ima.norm(type='sum')
-        self.fftconvolve(ima)
+        return self.fftconvolve(ima)
+    
     
     def fftconvolve_moffat(self, center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=1):
-        """Convolves image with a 2D moffat.
+        """Returns the convolution of the image with a 2D moffat.
   
           :param center: Gaussian center (y_peak, x_peak). If None the center of the image is used.
           :type center: (float,float)
@@ -2733,10 +2912,11 @@ class Image(object):
   
             If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
           :type factor: integer
+          :rtype: Image
         """
         ima = moffat_image(self.shape, self.wcs, center, I, a, q, n, rot, factor)
         ima.norm(type='sum')
-        self.fftconvolve(ima)
+        return self.fftconvolve(ima)
     
     def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale = False): 
         """Plots the image.

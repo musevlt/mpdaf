@@ -852,21 +852,39 @@ class Spectrum(object):
             raise ValueError, 'Operation forbidden'
         return res
 
-    def sqrt(self):
+    def _sqrt(self):
         """Computes the positive square-root of data extension.
         """
         if self.data is None:
             raise ValueError, 'empty data array'
         self.data = np.ma.sqrt(self.data)
         self.fscale = np.sqrt(self.fscale)
+        
+    def sqrt(self):
+        """Returns a spectrum containing the positive square-root of data extension.
+        
+        :rtype: Spectrum
+        """
+        res = self.copy()
+        res._sqrt()
+        return res
 
-    def abs(self):
+    def _abs(self):
         """Computes the absolute value of data extension.
         """
         if self.data is None:
             raise ValueError, 'empty data array'
         self.data = np.ma.abs(self.data)
         self.fscale = np.abs(self.fscale)
+        
+    def abs(self):
+        """Returns a spectrum containing the absolute value of data extension.
+        
+        :rtype: Spectrum
+        """
+        res = self.copy()
+        res._abs()
+        return res
 
     def __getitem__(self,item):
         """ Returns the corresponding value or sub-spectrum.
@@ -911,6 +929,7 @@ class Spectrum(object):
             else:
                 return self[pix_min:pix_max]
             
+            
     def get_step(self):
         """Returns the wavelength step.
   
@@ -952,7 +971,7 @@ class Spectrum(object):
             return None
             
     def __setitem__(self,key,value):
-        """ Sets the corresponding part of data
+        """Sets the corresponding part of data
         """
         self.data[key] = value
 
@@ -1079,7 +1098,7 @@ class Spectrum(object):
         """
         self.data = np.ma.masked_invalid(self._interp_data(spline))
             
-    def _rebin_factor(self, factor):
+    def _rebin_factor_(self, factor):
         '''Shrinks the size of the spectrum by factor.
         New size is an integer multiple of the original size.
         
@@ -1098,7 +1117,7 @@ class Spectrum(object):
         except:
             self.wave = None
            
-    def rebin_factor(self, factor, margin='center'):
+    def _rebin_factor(self, factor, margin='center'):
         '''Shrinks the size of the spectrum by factor.
   
           :param factor: factor
@@ -1118,7 +1137,7 @@ class Spectrum(object):
         #assert not np.sometrue(np.mod( self.shape, factor ))
         if not np.sometrue(np.mod( self.shape, factor )):
             # new size is an integer multiple of the original size
-            self._rebin_factor(factor)
+            self._rebin_factor_(factor)
         else:
             newshape = self.shape/factor
             n = self.shape - newshape*factor
@@ -1128,7 +1147,7 @@ class Spectrum(object):
                 n_left = n/2
                 n_right = self.shape - n + n_left
                 spe = self[n_left:n_right]
-                spe._rebin_factor(factor)
+                spe._rebin_factor_(factor)
                 newshape = spe.shape + 2
                 data = np.ma.empty(newshape)
                 data[1:-1] = spe.data
@@ -1151,7 +1170,7 @@ class Spectrum(object):
                 self.var = var
             elif margin == 'right':
                 spe = self[0:self.shape-n]
-                spe._rebin_factor(factor)
+                spe._rebin_factor_(factor)
                 newshape = spe.shape + 1
                 data = np.ma.empty(newshape)
                 data[:-1] = spe.data
@@ -1171,7 +1190,7 @@ class Spectrum(object):
                 self.var = var
             elif margin == 'left':
                 spe = self[n:]
-                spe._rebin_factor(factor)
+                spe._rebin_factor_(factor)
                 newshape = spe.shape + 1
                 data = np.ma.empty(newshape)
                 data[0] = self.data[0:n].sum() / factor
@@ -1194,7 +1213,27 @@ class Spectrum(object):
                 raise ValueError, 'margin must be center|right|left'
             pass
     
-    def rebin(self, step, start=None, shape= None, spline = False, notnoise=False):
+    def rebin_factor(self, factor, margin='center'):
+        '''Returns a spectrum that shrinks the size of the current spectrum by factor.
+  
+          :param factor: factor
+          :type factor: integer
+          :param margin: This parameters is used if new size is not an integer multiple of the original size.
+  
+            'center' : two pixels added, on the left and on the right of the spectrum.
+        
+            'right': one pixel added on the right of the spectrum.
+        
+            'left': one pixel added on the left of the spectrum.
+        
+          :type margin: string in 'center'|'right'|'left'
+          :rtype: Spectrum
+        '''
+        res = self.copy()
+        res._rebin_factor(factor, margin)
+        return res
+    
+    def _rebin(self, step, start=None, shape= None, spline = False, notnoise=False):
         """Rebins spectrum data to different wavelength step size.
   
           :param step: New pixel size in spectral direction.
@@ -1242,6 +1281,24 @@ class Spectrum(object):
         self.shape = newshape
         self.wave = newwave
         
+    def rebin(self, step, start=None, shape= None, spline = False, notnoise=False):
+        """Returns a spectrum with data rebin to different wavelength step size.
+  
+          :param step: New pixel size in spectral direction.
+          :type step: float
+          :param start: Spectral position of the first new pixel. It can be set or kept at the edge of the old first one.
+          :type start: float
+          :param shape: Size of the new spectrum.
+          :type shape: integer
+          :param spline: Linear/spline interpolation to interpolate masked values.
+          :type spline: boolean
+          :param notnoise: True if the noise Variance spectrum is not interpolated (if it exists).
+          :type notnoise: boolean
+          :rtype: Spectrum
+        """
+        res = self.copy()
+        res._rebin(step, start, shape, spline, notnoise)
+        return res
 
     def mean(self, lmin=None, lmax=None, weight=True, spline=False):
         """ Computes the mean value on a wavelength range.
@@ -1391,15 +1448,18 @@ class Spectrum(object):
         self.data = np.ma.masked_invalid(p(l))
     
     def poly_spec(self, deg, weight=True):
-        """Performs polynomial fit on spectrum and updates values in place.
+        """Returns a spectrum containing a polynomial fit.
   
           :param deg: Polynomial degree.
           :type deg: integer
           :param weight:  If weight is True, the weight is computed as the inverse of variance.
           :type weight: boolean
+          :rtype: Spectrum
         """
         z = self.poly_fit(deg, weight)
-        self.poly_val(z)
+        res = self.copy()
+        res.poly_val(z)
+        return res
         
     def abmag_band(self, lbda, dlbda, out=1, spline=False):
         """Computes AB magnitude corresponding to the wavelength band.
@@ -1529,7 +1589,7 @@ class Spectrum(object):
             return mag,vflux,l0
 
     def truncate(self, lmin=None, lmax=None):
-        """Truncates a spectrum.
+        """Truncates a spectrum in place.
   
           :param lmin: Minimum wavelength.
           :type lmin: float
@@ -1539,12 +1599,10 @@ class Spectrum(object):
         if lmin is None:
             i1 = 0
         else:
-            #i1 = self.wave.pixel(lmin, True)
             i1 = max(0,self.wave.pixel(lmin,nearest=True))
         if lmax is None:
             i2 = self.shape
         else:
-            #i2 = self.wave.pixel(lmax, True)
             i2 = min(self.shape,self.wave.pixel(lmax,nearest=True) + 1)
         if i1==i2:
             raise ValueError, 'Minimum and maximum wavelengths are equal'
@@ -1631,8 +1689,8 @@ class Spectrum(object):
             fmax = self.mean(lmax[0],lmax[1])
             lmax = lmax[0]
             
-        spec = self.copy()
-        spec.truncate(lmin, lmax)
+        #spec = self.truncate(lmin, lmax)
+        spec = self.get_lambda(lmin, lmax)
         data = spec._interp_data(spline)
         l = spec.wave.coord()
         d = data * self.fscale
@@ -1752,7 +1810,7 @@ class Spectrum(object):
         self.data[imin:imax] = self.data[imin:imax] + gauss(v,wave)/self.fscale
 
     
-    def median_filter(self, kernel_size=1., pixel=True, spline=False):
+    def _median_filter(self, kernel_size=1., pixel=True, spline=False):
         """Performs a median filter on the spectrum (:func:`scipy.signal.medfilt` used).
   
           :param kernel_size: Size of the median filter window.
@@ -1771,7 +1829,20 @@ class Spectrum(object):
         data = signal.medfilt(data, ks)/self.fscale
         self.data = np.ma.array(data[ks:-ks],mask=self.data.mask)
     
-    def convolve(self, other):
+    def median_filter(self, kernel_size=1., pixel=True, spline=False):
+        """Returns a spectrum resulted on a median filter on the current spectrum (:func:`scipy.signal.medfilt` used).
+  
+          :param kernel_size: Size of the median filter window.
+          :type kernel_size: float
+          :param pixel: True: kernel_size is in pixels, False: kernel_size is in spectrum coordinate unit.
+          :type pixel: boolean
+          :rtype: Spectrum
+        """
+        res = self.copy()
+        res._median_filter(kernel_size, pixel, spline)
+        return res
+        
+    def _convolve(self, other):
         """Convolves the spectrum with a other spectrum or an array (:func:`scipy.signal.convolve` used). self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
@@ -1798,8 +1869,19 @@ class Spectrum(object):
             except:
                 print 'Operation forbidden'
                 return None
-        
-    def fftconvolve(self, other):
+     
+    def convolve(self, other):
+        """Returns the convolution of the spectrum with a other spectrum or an array (:func:`scipy.signal.convolve` used). self and other must have the same size.
+  
+          :param other: Second spectrum or 1d-array.
+          :type other: 1d-array or Spectrum
+          :rtype: Spectrum
+        """
+        res = self.copy()
+        res._convolve(other)
+        return res
+           
+    def _fftconvolve(self, other):
         """Convolves the spectrum with a other spectrum or an array using fft (:func:`scipy.signal.fftconvolve` used). self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
@@ -1826,8 +1908,19 @@ class Spectrum(object):
             except:
                 print 'Operation forbidden'
                 return None
-        
-    def correlate(self, other):
+     
+    def fftconvolve(self, other):
+        """Returns the convolution of the spectrum with a other spectrum or an array using fft (:func:`scipy.signal.fftconvolve` used). self and other must have the same size.
+  
+          :param other: Second spectrum or 1d-array.
+          :type other: 1d-array or Spectrum
+          :rtype: Spectrum
+        """
+        res = self.copy()
+        res._fftconvolve(other)
+        return res
+          
+    def _correlate(self, other):
         """Cross-correlates the spectrum with a other spectrum or an array (:func:`scipy.signal.correlate` used). self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
@@ -1850,8 +1943,19 @@ class Spectrum(object):
             except:
                 print 'Operation forbidden'
                 return None
+            
+    def correlate(self, other):
+        """Retruns the cross-correlation of the spectrum with a other spectrum or an array (:func:`scipy.signal.correlate` used). self and other must have the same size.
+  
+          :param other: Second spectrum or 1d-array.
+          :type other: 1d-array or Spectrum
+          :rtype: Spectrum
+        """
+        res = self.copy()
+        res._correlate(other)
+        return res
                 
-    def fftconvolve_gauss(self, fwhm, nsig=5):
+    def _fftconvolve_gauss(self, fwhm, nsig=5):
         """Convolves the spectrum with a Gaussian using fft.
   
           :param fwhm: Gaussian fwhm.
@@ -1868,6 +1972,19 @@ class Spectrum(object):
         kernel /= kernel.sum()
     
         self.data = np.ma.array(signal.correlate(self.data ,kernel ,mode='same'),mask=self.data.mask)
+        
+    def fftconvolve_gauss(self, fwhm, nsig=5):
+        """Returns the convolution of the spectrum with a Gaussian using fft.
+  
+          :param fwhm: Gaussian fwhm.
+          :type fwhm: float
+          :param nsig: Number of standard deviations.
+          :type nsig: integer
+          :rtype: Spectrum
+        """
+        res = self.copy()
+        res._fftconvolve_gauss(fwhm, nsig)
+        return res
     
 #    def peak_detector(self, threshold, kernel_size=None):
 #        d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
@@ -1894,8 +2011,8 @@ class Spectrum(object):
         """
         plt.ion()
         
-        res = self.copy()
-        res.truncate(lmin,lmax)
+        #res = self.truncate(lmin,lmax)
+        res = self.get_lambda(lmin,lmax)
         x = res.wave.coord()
         f = res.data*res.fscale
         if max != None:
@@ -1934,8 +2051,8 @@ class Spectrum(object):
         """
         plt.ion()
         
-        res =self.copy()
-        res.truncate(lmin,lmax)
+        #res =self.truncate(lmin,lmax)
+        res =self.get_lambda(lmin,lmax)
         x = res.wave.coord()
         f = res.data*res.fscale
         if max != None:
@@ -2061,7 +2178,7 @@ class Spectrum(object):
                     self._clicks.add(xc,yc,i,x,val)
                     self._clicks.iprint(len(self._clicks.k)-1, self.fscale)
                     if np.sometrue(np.mod( len(self._clicks.k), 2 )) == False:
-                        dx = abs(self._clicks.xc[-1] - self._clicks.xc[-2])
+                        dx = np.abs(self._clicks.xc[-1] - self._clicks.xc[-2])
                         xc = (self._clicks.xc[-1] + self._clicks.xc[-2])/2
                         print 'Center: %f Distance: %f' % (xc,dx)
                 except:
