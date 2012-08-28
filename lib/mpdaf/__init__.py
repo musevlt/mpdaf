@@ -1,6 +1,5 @@
-__version__  = '1.0.0'
-__revision__ = '$Revision: 1.00 $'
-__date__     = '$Date: 2011/12/02 17:00 $'
+__version__  = '1.0.1-dev'
+__date__     = '2012/08/27 17:00'
 
 import euro3D
 import obj
@@ -9,3 +8,6 @@ try:
     import fusion
 except:
     pass
+
+import scipy, numpy, pyfits, pywcs, prettytable
+__info__   = 'numpy %s - scipy %s - pyfits %s - pywcs %s - prettytable %s' %(numpy.__version__,scipy.__version__,pyfits.__version__,pywcs.__version__,prettytable.__version__)
