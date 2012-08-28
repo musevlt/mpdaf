@@ -1,20 +1,38 @@
 Spectrum object
 ***************
 
-The Spectrum object handles a 1D data array containing flux values, associated with a WCS 
+The Spectrum object handles a 1D data array (basically a numpy masked array) containing flux values, associated with a WCS 
 object (WaveCoord) containing the wavelength information. Optionally, a variance data array 
-can be attached and used for weighting the flux values. A bad pixel mask is used to ignore 
-some of the pixel values.
+can be attached and used for weighting the flux values. Array masking is used to ignore 
+some of the pixel values in the calculation.
+
+Spectrum object format
+======================
+
+A Spectrum object O consists of:
+
++------------+---------------------------------------------------------+
+| Component  | Description                                             |
++============+=========================================================+
+| O.wave     | world coordinate spectral information (WaveCoord object)|
++------------+---------------------------------------------------------+
+| O.data     | masked numpy 1D array with data values                  |
++------------+---------------------------------------------------------+
+| O.var      | (optionally) masked numpy 1D array with variance values |
++------------+---------------------------------------------------------+
 
 
 Tutorial
 ========
 
-Preliminary imports::
+Preliminary imports for all tutorials::
 
   import numpy as np
   from mpdaf.obj import Spectrum
   from mpdaf.obj import WaveCoord
+
+Tutorial 1: Spectrum Creation
+-----------------------------
 
 A Spectrum object is created: 
 
@@ -32,8 +50,48 @@ using the following commands::
   spe = Spectrum(filename="spectrum.fits",ext=1) # data array read from file (extension number 1)
   spe = Spectrum(filename="spectrum.fits",ext=[1,2]) # data and variance arrays read from file (extension numbers 1 and 2)
 
-The WaveCoord object is created using a linear scale, copied from another Spectrum, or 
-using the information from the FITS header:
+The WaveCoord object is either created using a linear scale, copied from another Spectrum, or 
+using the information from the FITS header::
+
+  wave1 = WaveCoord(crval=4000.0, cdelt=1.25, cunit='Angstrom')
+  wave2 = spe.wave
+
+  spe2=Spectrum(data=MyData,wave=wave1)
+
+
+Tutorial 2: Spectrum masking and interpolating
+----------------------------------------------
+
+Here we describe how we can mask noisy parts in a spectrum, and do a polynomial 
+interpolation taking into account the variance.
+
+We start from the original spectrum and its variance::
+  spvar=Spectrum('Spectrum_Variance.fits',ext=[0,1])
+  
+We mask the residuals from the strong sky emission line arround 5577 Angstroms::
+
+  spvar.mask(5575,5580)
+
+We select (in wavelengths) the clean spectrum region we want to interpolate::
+
+  spvarcut=spvar.get_lambda(4000,6250)
+
+We can then choose to perform a linear interpolation of the masked values::
+
+  spvarcut.interp_mask()
+
+The other option is to perform an interpolation with a spline::
+
+  spvarcut.interp_mask(spline=True)
+  
+
+The results of the interpolations are shown below:
+
+.. insert image here::
+
+
+Tutorial 3: Gaussian Line fitting
+---------------------------------
 
 
 
