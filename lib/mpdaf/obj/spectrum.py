@@ -27,8 +27,8 @@ class SpectrumClicks: # Object used to save click on spectrum plot.
         self.binding_id = binding_id # Connection id.
         self.xc = [] # Cursor position in spectrum (world coordinates).
         self.yc = [] # Cursor position in spectrum (world coordinates).
-        self.i = [] # Nearest pixel in spectrum.
-        self.x = [] # Corresponding nearest position in spectrum (world coordinates)
+        self.k = [] # Nearest pixel in spectrum.
+        self.lbda = [] # Corresponding nearest position in spectrum (world coordinates)
         self.data = [] # Corresponding spectrum data value.
         self.id_lines = [] # Plot id (cross for cursor positions).
         
@@ -39,8 +39,8 @@ class SpectrumClicks: # Object used to save click on spectrum plot.
         del plt.gca().lines[line]
         self.xc.pop(i)
         self.yc.pop(i)
-        self.i.pop(i)
-        self.x.pop(i)
+        self.k.pop(i)
+        self.lbda.pop(i)
         self.data.pop(i)
         self.id_lines.pop(i)
         for j in range(i,len(self.id_lines)):
@@ -51,26 +51,26 @@ class SpectrumClicks: # Object used to save click on spectrum plot.
         plt.plot(xc,yc,'r+')
         self.xc.append(xc)
         self.yc.append(yc)
-        self.i.append(i)
-        self.x.append(x)
+        self.k.append(i)
+        self.lbda.append(x)
         self.data.append(data)        
         self.id_lines.append(len(plt.gca().lines)-1)
         
     def iprint(self,i,fscale):
         # prints a cursor positions
         if fscale == 1:
-            print 'xc=%g\tyc=%g\ti=%d\tx=%g\tdata=%g'%(self.xc[i],self.yc[i],self.i[i],self.x[i],self.data[i])
+            print 'xc=%g\tyc=%g\tk=%d\tlbda=%g\tdata=%g'%(self.xc[i],self.yc[i],self.k[i],self.lbda[i],self.data[i])
         else:
-            print 'xc=%g\tyc=%g\ti=%d\tx=%g\tdata=%g\t[scaled=%g]'%(self.xc[i],self.yc[i],self.i[i],self.x[i],self.data[i],self.data[i]/fscale) 
+            print 'xc=%g\tyc=%g\tk=%d\tlbda=%g\tdata=%g\t[scaled=%g]'%(self.xc[i],self.yc[i],self.k[i],self.lbda[i],self.data[i],self.data[i]/fscale) 
            
     def write_fits(self): 
         # prints coordinates in fits table.
         if self.filename != 'None':
-            c1 = pyfits.Column(name='XC', format='E', array=self.xc)
-            c2 = pyfits.Column(name='YC', format='E', array=self.yc)
-            c3 = pyfits.Column(name='I', format='I', array=self.i)
-            c4 = pyfits.Column(name='X', format='E', array=self.x)
-            c5 = pyfits.Column(name='DATA', format='E', array=self.data)
+            c1 = pyfits.Column(name='xc', format='E', array=self.xc)
+            c2 = pyfits.Column(name='yc', format='E', array=self.yc)
+            c3 = pyfits.Column(name='k', format='I', array=self.k)
+            c4 = pyfits.Column(name='lbda', format='E', array=self.lbda)
+            c5 = pyfits.Column(name='data', format='E', array=self.data)
             tbhdu=pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
             tbhdu.writeto(self.filename, clobber=True)
             print 'printing coordinates in fits table %s'%self.filename     
@@ -87,7 +87,7 @@ class SpectrumClicks: # Object used to save click on spectrum plot.
               
         
 class Gauss1D:
-    """ This class stores 1D gaussian parameters.
+    """ This class stores 1D Gaussian parameters.
        
     Attributes
     ---------- 
@@ -553,7 +553,7 @@ class Spectrum(object):
       
               spectrum1 + spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] + spectrum2[k])
       
-              spectrum + cube1 = cube2 (cube2[k,j,i] = cube1[k,j,i] + spectrum[k])
+              spectrum + cube1 = cube2 (cube2[k,p,q] = cube1[k,p,q] + spectrum[k])
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -611,7 +611,7 @@ class Spectrum(object):
       
             spectrum1 - spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] - spectrum2[k])
       
-            spectrum - cube1 = cube2 (cube2[k,j,i] = spectrum[k] - cube1[k,j,i])
+            spectrum - cube1 = cube2 (cube2[k,p,q] = spectrum[k] - cube1[k,p,q])
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -699,9 +699,9 @@ class Spectrum(object):
       
           spectrum1 \* spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] \* spectrum2[k])
       
-          spectrum \* cube1 = cube2 (cube2[k,j,i] = spectrum[k] \* cube1[k,j,i])
+          spectrum \* cube1 = cube2 (cube2[k,p,q] = spectrum[k] \* cube1[k,p,q])
       
-          spectrum \* image = cube (cube[k,j,i]=image[j,i] \* spectrum[k]
+          spectrum \* image = cube (cube[k,p,q]=image[p,q] \* spectrum[k]
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -759,7 +759,7 @@ class Spectrum(object):
       
           spectrum1 / spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] / spectrum2[k])
       
-          spectrum / cube1 = cube2 (cube2[k,j,i] = spectrum[k] / cube1[k,j,i])
+          spectrum / cube1 = cube2 (cube2[k,p,q] = spectrum[k] / cube1[k,p,q])
         """
         if self.data is None:
             raise ValueError, 'empty data array'
@@ -1958,7 +1958,7 @@ class Spectrum(object):
         self._plot_id = len(plt.gca().lines)-1
         
     def _on_move(self,event):
-        """ prints x,y,i,lbda and data in the figure toolbar.
+        """ prints xc,yc,k,lbda and data in the figure toolbar.
         """
         if event.inaxes is not None:
             xc, yc = event.xdata, event.ydata
@@ -1966,13 +1966,13 @@ class Spectrum(object):
                 i = self.wave.pixel(xc, True)
                 x = self.wave.coord(i)
                 val = self.data.data[i]*self.fscale
-                s = 'x= %g y=%g i=%d lbda=%g data=%g'%(xc,yc,i,x,val)
+                s = 'xc= %g yc=%g k=%d lbda=%g data=%g'%(xc,yc,i,x,val)
                 self._fig.toolbar.set_message(s)
             except:
                 pass
             
     def ipos(self, filename='None'):
-        """Prints cursor position in interactive mode (xc and yc correspond to the cursor position, i is the nearest pixel, x contains the wavelength value and data contains spectrum data value.)
+        """Prints cursor position in interactive mode (xc and yc correspond to the cursor position, k is the nearest pixel, lbda contains the wavelength value and data contains spectrum data value.)
   
           To read cursor position, click on the left mouse button.
   
@@ -1980,7 +1980,7 @@ class Spectrum(object):
   
           To quit the interactive mode, click on the right mouse button. 
   
-          At the end, clicks are saved in self.clicks as dictionary {'xc','yc','x','data'}.
+          At the end, clicks are saved in self.clicks as dictionary {'xc','yc','k','lbda','data'}.
   
   
           :param filename: If filename is not None, the cursor values are saved as a fits table with columns labeled 'XC'|'YC'|'I'|'X'|'DATA'
@@ -1989,7 +1989,7 @@ class Spectrum(object):
         print 'To read cursor position, click on the left mouse button'
         print 'To remove a cursor position, click on the left mouse button + <d>'
         print 'To quit the interactive mode, click on the right mouse button.'
-        print 'After quit, clicks are saved in self.clicks as dictionary {xc,yc,x,data}.'
+        print 'After quit, clicks are saved in self.clicks as dictionary {xc,yc,k,lbda,data}.'
         
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
@@ -1998,7 +1998,7 @@ class Spectrum(object):
             self._clicks.filename = filename
         
     def _on_click(self,event):
-        """ prints x,y,i,lbda and data corresponding to the cursor position.
+        """ prints xc,yc,k,lbda and data corresponding to the cursor position.
         """
         if event.key == 'd':
             if event.button == 1:
@@ -2019,16 +2019,16 @@ class Spectrum(object):
                         i = self.wave.pixel(xc, True)
                         x = self.wave.coord(i)
                         val = self.data[i]*self.fscale
-                        if len(self._clicks.x)==0:
+                        if len(self._clicks.k)==0:
                             print ''
                         self._clicks.add(xc,yc,i,x,val)
-                        self._clicks.iprint(len(self._clicks.x)-1, self.fscale)
+                        self._clicks.iprint(len(self._clicks.k)-1, self.fscale)
                     except:
                         pass
             else:
                 self._clicks.write_fits()
                 # save clicks in a dictionary {'xc','yc','x','data'}
-                d = {'xc':self._clicks.xc, 'yc':self._clicks.yc, 'x':self._clicks.x, 'data':self._clicks.data}
+                d = {'xc':self._clicks.xc, 'yc':self._clicks.yc, 'k':self._clicks.k, 'lbda':self._clicks.lbda, 'data':self._clicks.data}
                 self.clicks = d
                 #clear
                 self._clicks.clear()
@@ -2056,11 +2056,11 @@ class Spectrum(object):
                     i = self.wave.pixel(xc, True)
                     x = self.wave.coord(i)
                     val = self.data[i]*self.fscale
-                    if len(self._clicks.x)==0:
+                    if len(self._clicks.k)==0:
                         print ''
                     self._clicks.add(xc,yc,i,x,val)
-                    self._clicks.iprint(len(self._clicks.x)-1, self.fscale)
-                    if np.sometrue(np.mod( len(self._clicks.x), 2 )) == False:
+                    self._clicks.iprint(len(self._clicks.k)-1, self.fscale)
+                    if np.sometrue(np.mod( len(self._clicks.k), 2 )) == False:
                         dx = abs(self._clicks.xc[-1] - self._clicks.xc[-2])
                         xc = (self._clicks.xc[-1] + self._clicks.xc[-2])/2
                         print 'Center: %f Distance: %f' % (xc,dx)
@@ -2114,10 +2114,10 @@ class Spectrum(object):
                     i = self.wave.pixel(xc, True)
                     x = self.wave.coord(i)
                     val = self.data[i]*self.fscale
-                    if len(self._clicks.x)==0:
+                    if len(self._clicks.k)==0:
                         print ''
                     self._clicks.add(xc,yc,i,x,val)
-                    if np.sometrue(np.mod( len(self._clicks.x), 3 )) == False:
+                    if np.sometrue(np.mod( len(self._clicks.k), 3 )) == False:
                         lmin = self._clicks.xc[-3]
                         lpeak = self._clicks.xc[-2]
                         lmax = self._clicks.xc[-1]
@@ -2140,10 +2140,10 @@ class Spectrum(object):
                     i = self.wave.pixel(xc, True)
                     x = self.wave.coord(i)
                     val = self.data[i]*self.fscale
-                    if len(self._clicks.x)==0:
+                    if len(self._clicks.k)==0:
                         print ''
                     self._clicks.add(xc,yc,i,x,val)
-                    if np.sometrue(np.mod( len(self._clicks.x), 5 )) == False:
+                    if np.sometrue(np.mod( len(self._clicks.k), 5 )) == False:
                         lmin1 = self._clicks.xc[-5]
                         lmin2 = self._clicks.xc[-4]
                         lpeak = self._clicks.xc[-3]

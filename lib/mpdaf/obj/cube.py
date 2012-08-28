@@ -438,17 +438,17 @@ class Cube(object):
     def __add__(self, other):
         """Adds other
 
-        cube1 + number = cube2 (cube2[k,j,i]=cube1[k,j,i]+number)
+        cube1 + number = cube2 (cube2[k,p,q]=cube1[k,p,q]+number)
 
-        cube1 + cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]+cube2[k,j,i])
+        cube1 + cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]+cube2[k,p,q])
         Dimensions must be the same.
         If not equal to None, world coordinates must be the same.
 
-        cube1 + image = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
+        cube1 + image = cube2 (cube2[k,p,q]=cube1[k,p,q]+image[p,q])
         The first two dimensions of cube1 must be equal to the image dimensions.
         If not equal to None, world coordinates in spatial directions must be the same.
 
-        cube1 + spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]+spectrum[k])
+        cube1 + spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]+spectrum[k])
         The last dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
         """
@@ -542,17 +542,17 @@ class Cube(object):
     def __sub__(self, other):
         """Subtracts other
 
-        cube1 - number = cube2 (cube2[k,j,i]=cube1[k,j,i]-number)
+        cube1 - number = cube2 (cube2[k,p,q]=cube1[k,p,q]-number)
 
-        cube1 - cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]-cube2[k,j,i])
+        cube1 - cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]-cube2[k,p,q])
         Dimensions must be the same.
         If not equal to None, world coordinates must be the same.
 
-        cube1 - image = cube2 (cube2[k,j,i]=cube1[k,j,i]-image[j,i])
+        cube1 - image = cube2 (cube2[k,p,q]=cube1[k,p,q]-image[p,q])
         The first two dimensions of cube1 must be equal to the image dimensions.
         If not equal to None, world coordinates in spatial directions must be the same.
 
-        cube1 - spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]-spectrum[k])
+        cube1 - spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]-spectrum[k])
         The last dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
         """
@@ -665,17 +665,17 @@ class Cube(object):
     def __mul__(self, other):
         """Multiplies by other
 
-        cube1 * number = cube2 (cube2[k,j,i]=cube1[k,j,i]*number)
+        cube1 * number = cube2 (cube2[k,p,q]=cube1[k,p,q]*number)
 
-        cube1 * cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]*cube2[k,j,i])
+        cube1 * cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]*cube2[k,p,q])
         Dimensions must be the same.
         If not equal to None, world coordinates must be the same.
 
-        cube1 * image = cube2 (cube2[k,j,i]=cube1[k,j,i]*image[j,i])
+        cube1 * image = cube2 (cube2[k,p,q]=cube1[k,p,q]*image[p,q])
         The first two dimensions of cube1 must be equal to the image dimensions.
         If not equal to None, world coordinates in spatial directions must be the same.
 
-        cube1 * spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]*spectrum[k])
+        cube1 * spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]*spectrum[k])
         The last dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
         """
@@ -771,17 +771,17 @@ class Cube(object):
     def __div__(self, other):
         """Divides by other
 
-        cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
+        cube1 / number = cube2 (cube2[k,p,q]=cube1[k,p,q]/number)
 
-        cube1 / cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]/cube2[k,j,i])
+        cube1 / cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]/cube2[k,p,q])
         Dimensions must be the same.
         If not equal to None, world coordinates must be the same.
 
-        cube1 / image = cube2 (cube2[k,j,i]=cube1[k,j,i]/image[j,i])
+        cube1 / image = cube2 (cube2[k,p,q]=cube1[k,p,q]/image[p,q])
         The first two dimensions of cube1 must be equal to the image dimensions.
         If not equal to None, world coordinates in spatial directions must be the same.
 
-        cube1 / spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]/spectrum[k])
+        cube1 / spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]/spectrum[k])
         The last dimension of cube1 must be equal to the spectrum dimension.
         If not equal to None, world coordinates in spectral direction must be the same.
         """
@@ -934,9 +934,9 @@ class Cube(object):
 
     def __getitem__(self,item):
         """Returns the corresponding object:
-        cube[k,j,i] = value
+        cube[k,p,k] = value
         cube[k,:,:] = spectrum
-        cube[:,j,i] = image
+        cube[:,p,q] = image
         cube[:,:,:] = sub-cube
         """
         if isinstance(item, tuple) and len(item)==3:
@@ -1028,7 +1028,7 @@ class Cube(object):
                 return self[pix_min:pix_max,:,:]
             
     def get_step(self):
-        """Returns the cube steps [dLambda,dDec,dRa].
+        """Returns the cube steps [dlbda,dy,dx].
         """
         step = np.empty(3)
         step[0] = self.wave.cdelt
@@ -1036,7 +1036,7 @@ class Cube(object):
         return step
     
     def get_range(self):
-        """Returns [ [lambda_min,dec_min,ra_min], [lambda_max,dec_max,ra_max] ].
+        """Returns [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ].
         """
         range = np.empty((2,3))
         range[:,0] = self.wave.get_range()
@@ -1044,7 +1044,7 @@ class Cube(object):
         return range
     
     def get_start(self):
-        """Returns [lambda,dec,ra] corresponding to pixel (0,0,0).
+        """Returns [lbda,y,x] corresponding to pixel (0,0,0).
         """
         start = np.empty(3)
         start[0] = self.wave.get_start()
@@ -1052,7 +1052,7 @@ class Cube(object):
         return start
     
     def get_end(self):
-        """Returns [lambda,dec,ra] corresponding to pixel (-1,-1,-1).
+        """Returns [lbda,y,x] corresponding to pixel (-1,-1,-1).
         """
         end = np.empty(3)
         end[0] = self.wave.get_end()
