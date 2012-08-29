@@ -11,13 +11,13 @@ Tutorial
 Indexing
 --------
 
-``Image[i,j]`` returns the corresponding value.
+``Image[p,q]`` returns the corresponding value.
 
-``Image[i1:i2,j1:j2]`` returns the sub-image.
+``Image[p1:p2,q1:q2]`` returns the sub-image.
 
-``Image[i,j] = value`` sets value in Image.data[i,j]
+``Image[p,q] = value`` sets value in Image.data[p,q]
 
-``Image[i1:i2,j1:j2] = array`` sets the corresponding part of Image.data.
+``Image[p1:p2,q1:q2] = array`` sets the corresponding part of Image.data.
 
 
 Operators
@@ -33,25 +33,25 @@ Operators
 | >    | Masks data array where less or equal than a given value.               |
 +------+------------------------------------------------------------------------+
 | \+   | - addition                                                             |
-|      | - image1 + number = image2 (image2[i,i] = image1[j,i] + number)        |
-|      | - image1 + image2 = image3 (image3[j,i] = image1[j,i] + image2[j,i])   |
-|      | - image + cube1 = cube2 (cube2[k,j,i] = cube1[k,j,i] + image[j,i])     |
+|      | - image1 + number = image2 (image2[p,q] = image1[p,q] + number)        |
+|      | - image1 + image2 = image3 (image3[p,q] = image1[p,q] + image2[p,q])   |
+|      | - image + cube1 = cube2 (cube2[k,p,q] = cube1[k,p,q] + image[p,q])     |
 +------+------------------------------------------------------------------------+	  
 | \-   | - substraction                                                         |
-|      | - image1 - number = image2 (image2[j,i] = image1[j,i] - number)        |
-|      | - image1 - image2 = image3 (image3[j,i] = image1[j,i] - image2[j,i])   |
-|      | - image - cube1 = cube2 (cube2[k,j,i] = image[j,i] - cube1[k,j,i])     |
+|      | - image1 - number = image2 (image2[p,q] = image1[p,q] - number)        |
+|      | - image1 - image2 = image3 (image3[p,q] = image1[p,q] - image2[p,q])   |
+|      | - image - cube1 = cube2 (cube2[k,p,q] = image[p,q] - cube1[k,p,q])     |
 +------+------------------------------------------------------------------------+
 | \*   | - multiplication                                                       |
-|      | - image1 \* number = image2 (image2[j,i] = image1[j,i] \* number)      |
-|      | - image1 \* image2 = image3 (image3[j,i] = image1[j,i] \* image2[j,i]) |
-|      | - image \* cube1 = cube2 (cube2[k,j,i] = image[j,i] \* cube1[k,j,i])   |
-|      | - image \* spectrum = cube (cube[k,j,i] = image[j,i] \* spectrum[k]    |
+|      | - image1 \* number = image2 (image2[p,q] = image1[p,q] \* number)      |
+|      | - image1 \* image2 = image3 (image3[p,q] = image1[p,q] \* image2[p,q]) |
+|      | - image \* cube1 = cube2 (cube2[k,p,q] = image[p,q] \* cube1[k,p,q])   |
+|      | - image \* spectrum = cube (cube[k,p,q] = image[p,q] \* spectrum[k]    |
 +------+------------------------------------------------------------------------+
 | /    | - division                                                             |
-|      | - image1 / number = image2 (image2[j,i] = image1[j,i] / number)        |
-|      | - image1 / image2 = image3 (image3[j,i] = image1[j,i] / image2[j,i])   |
-|      | - image / cube1 = cube2 (cube2[k,j,i] = image[j,i] / cube1[k,j,i])     |
+|      | - image1 / number = image2 (image2[p,q] = image1[p,q] / number)        |
+|      | - image1 / image2 = image3 (image3[p,q] = image1[p,q] / image2[p,q])   |
+|      | - image / cube1 = cube2 (cube2[k,p,q] = image[p,q] / cube1[k,p,q])     |
 +------+------------------------------------------------------------------------+	  
 | \*\* | Computes the power exponent of data extensions                         |
 +------+------------------------------------------------------------------------+
@@ -66,19 +66,19 @@ Reference
 
 :func:`mpdaf.obj.Image.info` prints information.
 
-:func:`mpdaf.obj.Image.resize` resizes the image to have a minimum number of masked values.
+:func:`mpdaf.obj.Image.resize` resizes the image to have a minimum number of masked values (in place).
 
 :func:`mpdaf.obj.Image.sqrt` computes the positive square-root of data extension.
 
 :func:`mpdaf.obj.Image.abs` computes the absolute value of data extension.
         
-:func:`mpdaf.obj.Image.get_step` returns the image steps [dDec, dRa].
+:func:`mpdaf.obj.Image.get_step` returns the image steps [dy,dx].
 
-:func:`mpdaf.obj.Image.get_range` returns [ [dec_min,ra_min], [dec_max,ra_max] ]
+:func:`mpdaf.obj.Image.get_range` returns [ [y_min,x_min], [y_max,x_max] ]
 
-:func:`mpdaf.obj.Image.get_start` returns [dec,ra] corresponding to pixel (0,0).
+:func:`mpdaf.obj.Image.get_start` returns [y,x] corresponding to pixel (0,0).
 
-:func:`mpdaf.obj.Image.get_end` returns [dec,ra] corresponding to pixel (-1,-1).
+:func:`mpdaf.obj.Image.get_end` returns [y,x] corresponding to pixel (-1,-1).
 
 :func:`mpdaf.obj.Image.get_rot` returns the angle of rotation.
 
@@ -86,19 +86,19 @@ Reference
 
 :func:`mpdaf.obj.Image.set_var` sets the variance array.
 
-:func:`mpdaf.obj.Image.mask` masks values inside/outside the described region.
+:func:`mpdaf.obj.Image.mask` masks values inside/outside the described region (in place).
 
-:func:`mpdaf.obj.Image.unmask` unmasks the image (just invalid data (nan,inf) are masked).
+:func:`mpdaf.obj.Image.unmask` unmasks the image (just invalid data (nan,inf) are masked) (in place).
 
 :func:`mpdaf.obj.Image.truncate` truncates the image.
 
-:func:`mpdaf.obj.Image.rotate_wcs` rotates WCS coordinates to new orientation given by theta.
+:func:`mpdaf.obj.Image.rotate_wcs` rotates WCS coordinates to new orientation given by theta (in place).
 
 :func:`mpdaf.obj.Image.rotate` rotates the image using spline interpolation.
 
 :func:`mpdaf.obj.Image.sum` returns the sum over the given axis.
 
-:func:`mpdaf.obj.Image.norm` normalizes total flux to value (default 1).
+:func:`mpdaf.obj.Image.norm` normalizes total flux to value (default 1) (in place).
 
 :func:`mpdaf.obj.Image.background` computes the image background.
 
@@ -110,13 +110,13 @@ Reference
 
 :func:`mpdaf.obj.Image.ee_curve` returns Spectrum object containing enclosed energy as function of radius.
 
-:func:`mpdaf.obj.Image.ee_size` computes the size of the square center on (dec,ra) containing the fraction of the energy.
+:func:`mpdaf.obj.Image.ee_size` computes the size of the square centered on (y,x) containing the fraction of the energy.
 
-:func:`mpdaf.obj.Image.moments` returns [width_dec, width_ra] first moments of the 2D gaussian.
+:func:`mpdaf.obj.Image.moments` returns first moments of the 2D gaussian.
 
 :func:`mpdaf.obj.Image.gauss_fit` performs Gaussian fit on image.
 
-:func:`mpdaf.obj.Image.moffat_fit` performs moffat fit on image.
+:func:`mpdaf.obj.Image.moffat_fit` performs Moffat fit on image.
 
 :func:`mpdaf.obj.Image.rebin_factor` shrinks the size of the image by factor.
 
@@ -130,13 +130,13 @@ Reference
 
 :func:`mpdaf.obj.Image.minimum_filter` applies minimum filter to the image.
 
-:func:`mpdaf.obj.Image.add` adds an other image to the current image.
+:func:`mpdaf.obj.Image.add` adds an other image to the current image (in place).
 
 :func:`mpdaf.obj.Image.segment` segments the image in a number of smaller images.
 
-:func:`mpdaf.obj.Image.add_gaussian_noise` adds Gaussian noise to image.
+:func:`mpdaf.obj.Image.add_gaussian_noise` adds Gaussian noise to image (in place).
 
-:func:`mpdaf.obj.Image.add_poisson_noise` adds Poisson noise to image.
+:func:`mpdaf.obj.Image.add_poisson_noise` adds Poisson noise to image (in place).
 
 :func:`mpdaf.obj.Image.inside` returns True if coord is inside image.
 

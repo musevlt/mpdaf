@@ -98,13 +98,13 @@ Tutorial 3: Gaussian Line fitting
 Indexing
 --------
 
-``Spectrum[i]`` returns the corresponding value of pixel i.
+``Spectrum[k]`` returns the corresponding value of pixel k.
 
-``Spectrum[i1:i2]`` returns the sub-spectrum between pixels i1 and i2
+``Spectrum[k1:k2]`` returns the sub-spectrum between pixels k1 and k2
 
-``Spectrum[i] = value`` sets the value of Spectrum.data[i]
+``Spectrum[k] = value`` sets the value of Spectrum.data[k]
 
-``Spectrum[i1:i2] = array`` sets the values in the corresponding part of Spectrum.data.
+``Spectrum[k1:k2] = array`` sets the values in the corresponding part of Spectrum.data.
 
 
 Operators
@@ -122,23 +122,23 @@ Operators
 | \+   | - addition                                                                         |
 |      | - spectrum1 + number = spectrum2 (spectrum2[k] = spectrum1[k] + number)            |
 |      | - spectrum1 + spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] + spectrum2[k])   |
-|      | - spectrum + cube1 = cube2 (cube2[k,j,i] = cube1[k,j,i] + spectrum[k])             |
+|      | - spectrum + cube1 = cube2 (cube2[k,p,q] = cube1[k,p,q] + spectrum[k])             |
 +------+------------------------------------------------------------------------------------+	  
 | \-   | - substraction                                                                     |
 |      | - spectrum1 - number = spectrum2 (spectrum2[k] = spectrum1[k] - number)            |
 |      | - spectrum1 - spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] - spectrum2[k])   |
-|      | - spectrum - cube1 = cube2 (cube2[k,j,i] = spectrum[k] - cube1[k,j,i])             |
+|      | - spectrum - cube1 = cube2 (cube2[k,p,q] = spectrum[k] - cube1[k,p,q])             |
 +------+------------------------------------------------------------------------------------+
 | \*   | - multiplication                                                                   |
 |      | - spectrum1 \* number = spectrum2 (spectrum2[k] = spectrum1[k] \* number)          |
 |      | - spectrum1 \* spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] \* spectrum2[k]) |
-|      | - spectrum \* cube1 = cube2 (cube2[k,j,i] = spectrum[k] \* cube1[k,j,i])           |
-|      | - spectrum \* image = cube (cube[k,j,i]=image[j,i] \* spectrum[k]                  |
+|      | - spectrum \* cube1 = cube2 (cube2[k,p,q] = spectrum[k] \* cube1[k,p,q])           |
+|      | - spectrum \* image = cube (cube[k,p,q]=image[p,q] \* spectrum[k]                  |
 +------+------------------------------------------------------------------------------------+
 | /    | - division                                                                         |
 |      | - spectrum1 / number = spectrum2 (spectrum2[k] = spectrum1[k] / number)            |
 |      | - spectrum1 / spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] / spectrum2[k])   |
-|      | - spectrum / cube1 = cube2 (cube2[k,j,i] = spectrum[k] / cube1[k,j,i])             |
+|      | - spectrum / cube1 = cube2 (cube2[k,p,q] = spectrum[k] / cube1[k,p,q])             |
 +------+------------------------------------------------------------------------------------+	  
 | \*\* | Computes the power exponent of data extensions                                     |
 +------+------------------------------------------------------------------------------------+
@@ -181,20 +181,20 @@ Getters and setters
 Mask
 ----
 
-:func:`mpdaf.obj.Spectrum.mask` masks the spectrum.
+:func:`mpdaf.obj.Spectrum.mask` masks the spectrum (in place).
 
-:func:`mpdaf.obj.Spectrum.unmask` unmasks the spectrum.
+:func:`mpdaf.obj.Spectrum.unmask` unmasks the spectrum (in place).
 
-:func:`mpdaf.obj.Spectrum.mask_variance` masks pixels with a variance upper than threshold value.
+:func:`mpdaf.obj.Spectrum.mask_variance` masks pixels with a variance upper than threshold value (in place).
 
-:func:`mpdaf.obj.Spectrum.interp_mask` interpolates masked pixels.
+:func:`mpdaf.obj.Spectrum.interp_mask` interpolates masked pixels (in place).
 
 
 
 Transformation
 --------------
 
-:func:`mpdaf.obj.Spectrum.resize` resizes the spectrum to have a minimum number of masked values.
+:func:`mpdaf.obj.Spectrum.resize` resizes the spectrum to have a minimum number of masked values (in place).
 
 :func:`mpdaf.obj.Spectrum.sqrt` computes the positive square-root of data extension.
 
@@ -204,7 +204,7 @@ Transformation
 
 :func:`mpdaf.obj.Spectrum.rebin` rebins spectrum to different wavelength step size.
 
-:func:`mpdaf.obj.Spectrum.truncate` truncates a spectrum.
+:func:`mpdaf.obj.Spectrum.truncate` truncates a spectrum (in place).
 
 :func:`mpdaf.obj.Spectrum.median_filter` performs a median filter on the spectrum.
 
@@ -221,17 +221,17 @@ Transformation
 Fit
 ---
 
-:func:`mpdaf.obj.Spectrum.poly_fit` returns polynomial fit on spectrum.
+:func:`mpdaf.obj.Spectrum.poly_fit` returns coefficients of the polynomial fit on spectrum.
  
-:func:`mpdaf.obj.Spectrum.poly_val` performs polynomial fit on spectrum.
+:func:`mpdaf.obj.Spectrum.poly_val` updates in place the spectrum data from polynomial fit coefficients.
 
 :func:`mpdaf.obj.Spectrum.poly_spec` performs polynomial fit on spectrum.
 
 :func:`mpdaf.obj.Spectrum.fwhm` returns the fwhm of a peak.
 
-:func:`mpdaf.obj.Spectrum.gauss_fit` performs polynomial fit on spectrum.
+:func:`mpdaf.obj.Spectrum.gauss_fit` performs Gaussian fit on spectrum.
 
-:func:`mpdaf.obj.Spectrum.add_gaussian` adds a gaussian on spectrum.
+:func:`mpdaf.obj.Spectrum.add_gaussian` adds a Gaussian on spectrum (in place).
 
 
 Filter
@@ -257,7 +257,7 @@ Plotting
 
 :func:`mpdaf.obj.Spectrum.imask` over-plots masked values (interactive mode).
 
-:func:`mpdaf.obj.Spectrum.igauss_fit` performs an plots a polynomial fit on spectrum.
+:func:`mpdaf.obj.Spectrum.igauss_fit` performs and plots a Gaussian fit on spectrum.
   
         
   

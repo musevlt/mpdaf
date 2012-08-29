@@ -165,17 +165,17 @@ monochromatic images and we process each of them. For each monochromatic image w
 Indexing
 --------
 
-``Cube[k,i,j]`` returns the corresponding value.
+``Cube[k,p,q]`` returns the corresponding value.
 
-``Cube[k1:k2,i1:i2,j1:j2]`` returns the sub-cube.
+``Cube[k1:k2,p1:p2,q1:q2]`` returns the sub-cube.
 
 ``Cube[k,:,:]`` returns an Image.
 
-``Cube[:,i,j]`` returns a Spectrum.
+``Cube[:,p,q]`` returns a Spectrum.
 
-``Cube[k,i,j] = value`` sets value in Cube.data[k,i,j]
+``Cube[k,p,q] = value`` sets value in Cube.data[k,i,j]
 
-``Cube[k1:k2,i1:i2,j1:j2] = array`` sets the corresponding part of Cube.data.
+``Cube[k1:k2,p1:p2,q1:q2] = array`` sets the corresponding part of Cube.data.
 
 
 Operators
@@ -191,28 +191,28 @@ Operators
 | >    | Masks data array where less or equal than a given value.                 |
 +------+--------------------------------------------------------------------------+
 | \+   | - addition                                                               |
-|      | - cube1 + number = cube2 (cube2[k,j,i] = cube1[k,j,i] + number)          |
-|      | - cube1 + cube2 = cube3 (cube3[k,j,i] = cube1[k,j,i] + cube2[k,j,i])     |
-|      | - cube1 + image = cube2 (cube2[k,j,i] = cube1[k,j,i] + image[j,i])       |
-|      | - cube1 + spectrum = cube2 (cube2[k,j,i] = cube1[k,j,i] + spectrum[k])   |
+|      | - cube1 + number = cube2 (cube2[k,p,q] = cube1[k,p,q] + number)          |
+|      | - cube1 + cube2 = cube3 (cube3[k,p,q] = cube1[k,p,q] + cube2[k,p,q])     |
+|      | - cube1 + image = cube2 (cube2[k,p,q] = cube1[k,p,q] + image[p,q])       |
+|      | - cube1 + spectrum = cube2 (cube2[k,p,q] = cube1[k,p,q] + spectrum[k])   |
 +------+--------------------------------------------------------------------------+	  
 | \-   | - substraction                                                           |
-|      | - cube1 - number = cube2 (cube2[k,j,i] = cube1[k,j,i] - number)          |
-|      | - cube1 - cube2 = cube3 (cube3[k,j,i] = cube1[k,j,i] - cube2[k,j,i])     |
-|      | - cube1 - image = cube2 (cube2[k,j,i] = cube1[k,j,i] - image[j,i])       |
-|      | - cube1 - spectrum = cube2 (cube2[k,j,i] = cube1[k,j,i] - spectrum[k])   |
+|      | - cube1 - number = cube2 (cube2[k,p,q] = cube1[k,p,q] - number)          |
+|      | - cube1 - cube2 = cube3 (cube3[k,p,q] = cube1[k,p,q] - cube2[k,p,q])     |
+|      | - cube1 - image = cube2 (cube2[k,p,q] = cube1[k,p,q] - image[p,q])       |
+|      | - cube1 - spectrum = cube2 (cube2[k,p,q] = cube1[k,p,q] - spectrum[k])   |
 +------+--------------------------------------------------------------------------+
 | \*   | - multiplication                                                         |
-|      | - cube1 \* number = cube2 (cube2[k,j,i] = cube1[k,j,i] \* number)        |
-|      | - cube1 \* cube2 = cube3 (cube3[k,j,i] = cube1[k,j,i] \* cube2[k,j,i])   |
-|      | - cube1 \* image = cube2 (cube2[k,j,i] = cube1[k,j,i] \* image[j,i])     |
-|      | - cube1 \* spectrum = cube2 (cube2[k,j,i] = cube1[k,j,i] \* spectrum[k]) |
+|      | - cube1 \* number = cube2 (cube2[k,p,q] = cube1[k,p,q] \* number)        |
+|      | - cube1 \* cube2 = cube3 (cube3[k,p,q] = cube1[k,p,q] \* cube2[k,p,q])   |
+|      | - cube1 \* image = cube2 (cube2[k,p,q] = cube1[k,p,q] \* image[p,q])     |
+|      | - cube1 \* spectrum = cube2 (cube2[k,p,q] = cube1[k,p,q] \* spectrum[k]) |
 +------+--------------------------------------------------------------------------+
 | /    | - division                                                               |
-|      | - cube1 / number = cube2 (cube2[k,j,i] = cube1[k,j,i] / number)          |
-|      | - cube1 / cube2 = cube3 (cube3[k,j,i] = cube1[k,j,i] / cube2[k,j,i])     |
-|      | - cube1 / image = cube2 (cube2[k,j,i] = cube1[k,j,i] / image[j,i])       |
-|      | - cube1 / spectrum = cube2 (cube2[k,j,i] = cube1[k,j,i] / spectrum[k])   |
+|      | - cube1 / number = cube2 (cube2[k,p,q] = cube1[k,p,q] / number)          |
+|      | - cube1 / cube2 = cube3 (cube3[k,p,q] = cube1[k,p,q] / cube2[k,p,q])     |
+|      | - cube1 / image = cube2 (cube2[k,p,q] = cube1[k,p,q] / image[p,q])       |
+|      | - cube1 / spectrum = cube2 (cube2[k,p,q] = cube1[k,p,q] / spectrum[k])   |
 +------+--------------------------------------------------------------------------+	  
 | \*\* | Computes the power exponent of data extensions                           |
 +------+--------------------------------------------------------------------------+
@@ -228,7 +228,7 @@ Reference
 
 :func:`mpdaf.obj.Cube.write` saves the Cube in a FITS file.
 
-:func:`mpdaf.obj.Cube.resize` resizes the cube to have a minimum number of masked values.
+:func:`mpdaf.obj.Cube.resize` resizes the cube to have a minimum number of masked values (in place).
 
 :func:`mpdaf.obj.Cube.sqrt` computes the positive square-root of data extension.
 
