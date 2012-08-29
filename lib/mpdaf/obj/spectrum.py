@@ -1367,7 +1367,7 @@ class Spectrum(object):
         return flux
 
     def poly_fit(self, deg, weight=True):
-        """Performs polynomial fit on spectrum.
+        """Performs polynomial fit on spectrum and returns polynomial coefficients.
   
           :param deg: Polynomial degree.
           :type deg: integer
@@ -1438,7 +1438,7 @@ class Spectrum(object):
         return c
     
     def poly_val(self, z):
-        """Performs a polynomial fit in place (:func:`numpy.poly1d` used).       
+        """Updates in place the spectrum data from polynomial coefficients (:func:`numpy.poly1d` used).       
         
           :param z: The polynomial coefficients, in decreasing powers.
           :type z: array
