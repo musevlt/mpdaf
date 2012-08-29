@@ -3,3 +3,4 @@
 .directory
 drs/build/*
 obj/build/*
+sphinxext/*
