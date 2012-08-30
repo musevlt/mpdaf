@@ -37,6 +37,10 @@ The origin column is composed of the IFU and slice numbers and the x and y coord
 Tutorials
 =========
 
+We can load the tutorial files with the command::
+
+git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+
 Tutorial 1
 ----------
 

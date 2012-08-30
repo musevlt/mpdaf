@@ -34,6 +34,10 @@ Each numpy masked array has 3 dimensions: Array[k,l,m] with k the spectral axis,
 Tutorials
 =========
 
+We can load the tutorial files with the command::
+
+git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+
 Tutorial 1
 ----------
 
