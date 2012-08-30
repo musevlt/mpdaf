@@ -8,7 +8,7 @@ import numpy as np
 
 from mpdaf.obj import Spectrum
 from mpdaf.obj import Image
-from mpdaf.obj import Cube
+from mpdaf.obj import Cube, iter_spe, iter_ima
 from mpdaf.obj import WCS
 from mpdaf.obj import WaveCoord
 from mpdaf.obj import gauss_image
@@ -122,3 +122,29 @@ class TestCube():
         nose.tools.assert_equal(a.get_end()[0],6.5)
         nose.tools.assert_equal(a.get_end()[1],1)
         nose.tools.assert_equal(a.get_end()[2],3)
+        
+    @attr(speed='toto')
+    def test_iterator(self):
+        cube2 = self.cube1.copy()
+        for ima in iter_ima(self.cube1):
+            ima[:,:] = 3*np.ones(shape=(6,5))
+            #ima = 3*np.ones(shape=(6,5))
+        for k in range(10):
+            for j in range(6):
+                for i in range(5):
+                    nose.tools.assert_almost_equal(self.cube1.data[k,j,i]*self.cube1.fscale,3)
+#        for ima in iter_ima(self.cube1):
+#            ima[:,:] = ima + 3
+#        for k in range(10):
+#            for j in range(6):
+#                for i in range(5):
+#                    nose.tools.assert_almost_equal(self.cube1.data[k,j,i],1+3/2.3)
+        #for ima,ima2 in zip(iter_ima(self.cube1),iter_ima(cube2)):
+        #    ima2 = 5 * ima1
+        for spe in iter_spe(self.cube1):
+            spe.__eq__(spe + 5)
+        for k in range(10):
+            for j in range(6):
+                for i in range(5):
+                    nose.tools.assert_almost_equal(self.cube1.data[k,j,i]*self.cube1.fscale,3)
+        

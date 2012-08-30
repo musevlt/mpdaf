@@ -8,6 +8,44 @@ from coords import WaveCoord
 from objs import is_float
 from objs import is_int
 
+class iter_spe(object):
+    def __init__(self,cube):
+        self.cube = cube
+        self.p = cube.shape[1]
+        self.q = cube.shape[2]
+        
+    def next(self):
+        """Returns the next spectrum."""
+        if self.q == 0:
+            self.p -= 1
+            self.q = self.cube.shape[2]
+        self.q -= 1
+        if self.p == 0:
+            raise StopIteration
+        print self.p-1,self.q
+        return self.cube[:,self.p-1,self.q]
+    
+    def __iter__(self):
+        """Returns the iterator itself."""
+        return self
+        
+class iter_ima(object): 
+    
+    def __init__(self,cube):
+        self.cube = cube
+        self.k = cube.shape[0]
+        
+    def next(self):
+        """Returns the next image."""
+        if self.k == 0:
+            raise StopIteration
+        self.k -= 1
+        return self.cube[self.k,:,:]
+    
+    def __iter__(self):
+        """Returns the iterator itself."""
+        return self
+
 class Cube(object):
     """This class manages Cube objects.
     
@@ -1082,7 +1120,30 @@ class Cube(object):
     def __setitem__(self,key,value):
         """Sets the corresponding part of data.
         """
-        self.data[key] = value
+        #self.data[key] = value
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        try:
+            self.data[key] = other/np.double(self.fscale)
+        except:
+            try:
+                #other is an image
+                if other.image:
+                    if self.wcs is not None and other.wcs is not None and not self.wcs.isEqual(other.wcs):
+                        print 'Operation forbidden for images with different world coordinates'
+                        return None
+                    self.data[key] = other.data*np.double(other.fscale/self.fscale)
+            except:
+                try:
+                    #other is a spectrum
+                    if other.spectrum:
+                        if self.wave is not None and other.wave is not None and not self.wave.isEqual(other.wave):
+                            print 'Operation forbidden for spectra with different world coordinates'
+                            return None
+                        self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                except:
+                    print 'Operation forbidden'
+                    return None
             
     def set_wcs(self, wcs, wave):
         """Sets the world coordinates.

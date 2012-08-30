@@ -983,10 +983,25 @@ class Image(object):
         """
         return self.wcs.get_rot()
 
-    def __setitem__(self,key,value):
+    def __setitem__(self,key,other):
         """ Sets the corresponding part of data.
         """
-        self.data[key] = value
+#        self.data[key] = other
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        try:
+            self.data[key] = other/np.double(self.fscale)
+        except:
+            try:
+                #other is an image
+                if other.image:
+                    if self.wcs is not None and other.wcs is not None and not self.wcs.isEqual(other.wcs):
+                        print 'Operation forbidden for images with different world coordinates'
+                        return None
+                    self.data[key] = other.data*np.double(other.fscale/self.fscale)
+            except:
+                print 'Operation forbidden'
+                return None
         
     def set_wcs(self, wcs):
         """Sets the world coordinates.
@@ -2918,7 +2933,7 @@ class Image(object):
         ima.norm(type='sum')
         return self.fftconvolve(ima)
     
-    def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale = False): 
+    def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale=False, colorbar=True, **kargs): 
         """Plots the image.
   
           :param title: Figure title (None by default).
@@ -2935,6 +2950,10 @@ class Image(object):
           :type vmax: float
           :param zscale: If true, vmin and vmax are computed using the IRAF zscale algorithm.
           :type zscale: boolean
+          :param colorbar: If true, a colorbar is created.
+          :type colorbar: boolean
+          :param kargs: kargs can be used to set additional Artist properties.
+          :type kargs: matplotlib.artist.Artist
         """
         plt.ion()
         
@@ -2969,8 +2988,9 @@ class Image(object):
             else:
                 norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
 
-            cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]),norm=norm)
-            plt.colorbar(cax)
+            cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]),norm=norm,**kargs)
+            if colorbar:
+                plt.colorbar(cax)
             plt.xlabel('x (%s)' %xunit)
             plt.ylabel('y (%s)' %yunit)
             self._ax = cax

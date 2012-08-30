@@ -471,6 +471,28 @@ class Spectrum(object):
             print 'No wavelength solution'
         else:
             self.wave.info()
+            
+#    def __coerce__(self, other):
+#        print '__coerce__'
+#        if self.data is None:
+#            raise ValueError, 'empty data array'
+#        try:
+#            #spectrum1 + number = spectrum2 (spectrum2[k]=spectrum1[k]+number)
+#            self.data[:] = other/np.double(self.fscale)
+#        except:
+#            try:
+#                if other.spectrum:
+#                    self.filename = other.filename
+#                    self.unit = other.unit
+#                    self.cards = pyfits.CardList(other.cards)
+#                    self.shape = other.shape
+#                    self.data[:] = other.data[:]
+#                    self.var = other.var
+#                    self.fscale = other.fscale
+#                    self.wave = other.wave
+#            except:
+#                print 'Operation forbidden'
+#                return None
 
     def __le__ (self, item):
         """Masks data array where greater than a given value (operator <=).
@@ -970,10 +992,25 @@ class Spectrum(object):
         else:
             return None
             
-    def __setitem__(self,key,value):
+    def __setitem__(self,key,other):
         """Sets the corresponding part of data
         """
-        self.data[key] = value
+        #self.data[key] = value
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        try:
+            self.data[key] = other/np.double(self.fscale)
+        except:
+            try:
+                #other is a spectrum
+                if other.spectrum:
+                    if self.wave is not None and other.wave is not None and not self.wave.isEqual(other.wave):
+                        print 'Operation forbidden for spectra with different world coordinates'
+                        return None
+                    self.data[key] = other.data*np.double(other.fscale/self.fscale)
+            except:
+                print 'Operation forbidden'
+                return None
 
     def set_wcs(self, wave):
         """Sets the world coordinates.
@@ -1756,8 +1793,8 @@ class Spectrum(object):
         
         #plot
         if plot:
-            xxx = np.arange(v[1]-15*v[2],v[1]+15*v[2],l[1]-l[0])
-            #xxx = np.arange(l[0],l[-1],l[1]-l[0])
+            #xxx = np.arange(v[1]-15*v[2],v[1]+15*v[2],l[1]-l[0])
+            xxx = np.arange(l[0],l[-1],l[1]-l[0])
             ccc = gaussfit(v,xxx)
             plt.plot(xxx,ccc,'r--')
 
@@ -1993,8 +2030,8 @@ class Spectrum(object):
 #        return wave[ksel]
 #        
 #    
-    def plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
-        """Plots the spectrum.
+    def plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, **kargs): 
+        """Plots the spectrum. By default, drawstyle is 'steps-mid'.
         
           :param max: If max is True, the plot is normalized to peak at max value.
           :type max: boolean
@@ -2006,13 +2043,14 @@ class Spectrum(object):
           :type lmin: float
           :param lmax: Maximum wavelength.
           :type lmax: float
-          :param drawstyle: Drawstyle of the plot. 'steps-pre' by default.
-          :type drawstyle: [ 'default' | 'steps' | 'steps-pre' | 'steps-mid' | 'steps-post' ]
+          :param kargs: kargs can be used to set line properties: line label (for auto legends), linewidth, anitialising, marker face color, etc.
+          :type  kargs: matplotlib.lines.Line2D
         """
         plt.ion()
         
-        #res = self.truncate(lmin,lmax)
-        res = self.get_lambda(lmin,lmax)
+        res = self.copy()
+        res.truncate(lmin,lmax)
+        
         x = res.wave.coord()
         f = res.data*res.fscale
         if max != None:
@@ -2020,7 +2058,12 @@ class Spectrum(object):
         if res.var is  None:
             noise = False
             
-        plt.plot(x, f, drawstyle=drawstyle)
+        # default plot arguments
+        plotargs = dict(drawstyle='steps-mid')
+        plotargs.update(kargs)
+        
+        plt.plot(x, f,**plotargs)
+        
         if noise: 
             plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
@@ -2033,8 +2076,8 @@ class Spectrum(object):
         plt.connect('motion_notify_event', self._on_move)
         self._plot_id = len(plt.gca().lines)-1
         
-    def log_plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, drawstyle='steps-mid'): 
-        """Plots the spectrum with y logarithmic scale.
+    def log_plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, **kargs): 
+        """Plots the spectrum with y logarithmic scale. By default, drawstyle is 'steps-mid'.
         
           :param max: If max is True, the plot is normalized to peak at max value.
           :type max: boolean
@@ -2046,21 +2089,26 @@ class Spectrum(object):
           :type lmin: float
           :param lmax: Maximum wavelength.
           :type lmax: float
-          :param drawstyle: Drawstyle of the plot. 'steps-pre' by default.
-          :type drawstyle: [ 'default' | 'steps' | 'steps-pre' | 'steps-mid' | 'steps-post' ]    
+          :param kargs: kargs can be used to set additional line properties: line label (for auto legends), linewidth, anitialising, marker face color, etc.
+          :type  kargs: matplotlib.lines.Line2D
         """
         plt.ion()
         
-        #res =self.truncate(lmin,lmax)
-        res =self.get_lambda(lmin,lmax)
+        res =self.copy()
+        res.truncate(lmin,lmax)
+        
         x = res.wave.coord()
         f = res.data*res.fscale
         if max != None:
             f = f*max/f.max()
         if res.var is  None:
             noise = False
-            
-        plt.semilogy(x, f, drawstyle=drawstyle)
+         
+        # default plot arguments
+        plotargs = dict(drawstyle='steps-mid')
+        plotargs.update(kargs)
+        
+        plt.semilogy(x, f, **plotargs)
         if noise: 
             plt.fill_between(x, f + np.sqrt(res.var)*res.fscale, f -np.sqrt(res.var)*res.fscale, color='0.75', facecolor='0.75', alpha=0.5) 
         if title is not None:
