@@ -342,6 +342,22 @@ class Spectrum(object):
         except:
             spe.wave = None
         return spe
+    
+    def clone(self, var = False):
+        """Returns a new spectrum of the same shape and coordinates, filled with zeros.
+        
+        :param var: Presence of the variance extension.
+        :type var: boolean
+        """
+        try:
+            wave=self.wave.copy()
+        except:
+            wave=None
+        if var is False:
+            spe = Spectrum(wave=wave,data=np.zeros(shape=self.shape))
+        else:
+            spe = Spectrum(wave=wave,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape))
+        return spe
 
     def write(self,filename):
         """ Saves the object in a FITS file.

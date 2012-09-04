@@ -78,6 +78,9 @@ class TestImage():
             for j in range(6):
                 for i in range(5):
                     nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.spectrum1.data[k]*self.spectrum1.fscale * (self.image1.data[j,i]*self.image1.fscale))
+        #
+        image2 = (self.image1 *-2).abs()+(self.image1+4).sqrt()-2 
+        nose.tools.assert_almost_equal(image2.data[3,3]*image2.fscale,np.abs(self.image1.data[3,3]*self.image1.fscale *-2)+np.sqrt(self.image1.data[3,3]*self.image1.fscale+4)-2 )
 
     @attr(speed='fast')
     def test_get_Image(self):
@@ -89,6 +92,8 @@ class TestImage():
         nose.tools.assert_equal(ima.get_start()[1],1)
         nose.tools.assert_equal(ima.get_end()[0],1)
         nose.tools.assert_equal(ima.get_end()[1],3)
+        nose.tools.assert_equal(ima.get_step()[0],1)
+        nose.tools.assert_equal(ima.get_step()[1],1)
         del ima
       
     @attr(speed='fast')  
@@ -107,6 +112,11 @@ class TestImage():
         nose.tools.assert_equal(self.image1.get_start()[1],1)
         nose.tools.assert_equal(self.image1.get_end()[0],3)
         nose.tools.assert_equal(self.image1.get_end()[1],3)
+        nose.tools.assert_equal(self.image1.get_range()[0][0],self.image1.get_start()[0])
+        nose.tools.assert_equal(self.image1.get_range()[0][1],self.image1.get_start()[1])
+        nose.tools.assert_equal(self.image1.get_range()[1][0],self.image1.get_end()[0])
+        nose.tools.assert_equal(self.image1.get_range()[1][1],self.image1.get_end()[1])
+        nose.tools.assert_equal(self.image1.get_rot(),0)
      
     @attr(speed='fast')  
     def test_truncate_Image(self):
@@ -137,13 +147,49 @@ class TestImage():
         """Image class: tests Gaussian fit"""
         wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
         ima = gauss_image(wcs=wcs,width=(1,2),factor=1, rot = 60)
+        #ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
         gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0)
-        ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
-        gauss2 = ima.gauss_fit(pos_min=(5, 6), pos_max=(12,16), cont=0)
         nose.tools.assert_almost_equal(gauss.center[0], 8.5)
         nose.tools.assert_almost_equal(gauss.center[1], 12)
         nose.tools.assert_almost_equal(gauss.flux, 1)
+        gauss2 = ima.gauss_fit(pos_min=(5, 6), pos_max=(12,16), cont=0)
         nose.tools.assert_almost_equal(gauss2.center[0], 8.5)
         nose.tools.assert_almost_equal(gauss2.center[1], 12)
         nose.tools.assert_almost_equal(gauss2.flux, 1)
+        ima3 = gauss_image(wcs=wcs,width=(1,2))
+        #sigma = ima3.fwhm()/(2.*np.sqrt(2.*np.log(2.0)))
+        #nose.tools.assert_almost_equal(sigma[0], 1)
+        #nose.tools.assert_almost_equal(sigma[1], 2)
+        
+    @attr(speed='fast')   
+    def test_mask_Image(self):
+        """Image class: tests mask functionalities"""
+        self.image1.mask((2,2),(1,1),pix=True)
+        nose.tools.assert_equal(self.image1.sum(),2*9)
+        self.image1.unmask()
+        self.image1.mask((2,2),(3600,3600))
+        nose.tools.assert_equal(self.image1.sum(),2*9)
+        
+    @attr(speed='fast')   
+    def test_background_Image(self):
+        """Image class: tests background value"""
+        nose.tools.assert_equal(self.image1.background()[0],2)
+        nose.tools.assert_equal(self.image1.background()[1],0)
+        
+    @attr(speed='fast')   
+    def test_peak_Image(self):
+        """Image class: tests peak research"""
+        self.image1.data[2,2] = 8
+        p = self.image1.peak()
+        nose.tools.assert_equal(p['p'],2)
+        nose.tools.assert_equal(p['q'],2)
+        
+    @attr(speed='fast')
+    def test_clone(self):
+        """Image class: tests clone method."""
+        ima2 = self.image1.clone()
+        for j in range(6):
+            for i in range(5):
+                nose.tools.assert_almost_equal(ima2.data[j,i]*ima2.fscale,0)
+        
         

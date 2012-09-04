@@ -359,6 +359,22 @@ class Image(object):
         except:
             ima.wcs = None
         return ima
+    
+    def clone(self, var = False):
+        """Returns a new image of the same shape and coordinates, filled with zeros.
+        
+        :param var: Presence of the variance extension.
+        :type var: boolean
+        """
+        try:
+            wcs=self.wcs.copy()
+        except:
+            wcs=None
+        if var is False:
+            ima = Image(wcs=wcs,data=np.zeros(shape=self.shape))
+        else:
+            ima = Image(wcs=wcs,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape))
+        return ima
 
     def write(self,filename):
         """Saves the object in a FITS file.
@@ -1066,9 +1082,9 @@ class Image(object):
                 
         if pix:
             imin = center[0] - radius[0]
-            imax = center[0] + radius[0]
+            imax = center[0] + radius[0] +1
             jmin = center[1] - radius[1]
-            jmax = center[1] + radius[1]
+            jmax = center[1] + radius[1] +1
             if inside and not circular:
                 self.data.mask[imin:imax,jmin:jmax] = 1
             elif inside and circular:
@@ -1395,20 +1411,19 @@ class Image(object):
         if self.var is not None:
             self.var *= norm*norm
             
-    def background(self, niter=10):
+    def background(self, niter=3):
         """Computes the image background.
         
         :param niter: Number of iterations.
         :type niter: integer
         :rtype: float
         """
-        ksel = np.where(tab1 < (np.ma.median(self.data) + 3 * np.ma.std(self.data)))
-        tab2 = self.data[ksel]
+        ksel = np.where(self.data <= (np.ma.mean(self.data) + 3 * np.ma.std(self.data)))
+        tab = self.data[ksel]
         for n in range(niter):
-            ksel = np.where(tab2 < (np.ma.median(tab2) + 3 * np.ma.std(tab2)))
-            tab3 = tab2[ksel]
-            tab2=tab3
-        return np.ma.median(tab2)
+            ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
+            tab = tab[ksel]
+        return (np.ma.mean(tab),np.ma.std(tab))
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, plot=False):
         """Finds image peak location.
@@ -1480,7 +1495,7 @@ class Image(object):
             di = 0
             dj = 0
         else:
-            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background())
+            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0])
         ic = imin+max(0,ic-dpix)+di
         jc = jmin+max(0,jc-dpix)+dj
         [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
@@ -1495,7 +1510,7 @@ class Image(object):
 #        ic,jc = ndimage.measurements.maximum_position(ima.data)
 #        for k in range(3):
 #            if dpix > 0:
-#                di,dj = ndimage.measurements.center_of_mass(ima.data[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()   )
+#                di,dj = ndimage.measurements.center_of_mass(ima.data[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0]   )
 #                ic = max(0,ic-dpix)+di
 #                jc = max(0,jc-dpix)+dj
 #            
@@ -1503,7 +1518,7 @@ class Image(object):
 #            di = 0
 #            dj = 0
 #        else:
-#            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()   )               
+#            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0]   )               
 #        ic = imin+max(0,ic-dpix)+di
 #        jc = jmin+max(0,jc-dpix)+dj
 #        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
@@ -1513,13 +1528,13 @@ class Image(object):
 #            str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
 #            plt.title(str)
 
-#        di,dj = ndimage.measurements.center_of_mass(d - self.background()   )
+#        di,dj = ndimage.measurements.center_of_mass(d - self.background()[0]   )
 #        ic = di
 #        jc = dj
 #
 #        for k in range(3):
 #            if dpix > 0:
-#                di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()   )
+#                di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0]   )
 #                ic = max(0,ic-dpix)+di
 #                jc = max(0,jc-dpix)+dj
 #        ic = imin+ic
@@ -2932,6 +2947,56 @@ class Image(object):
         ima = moffat_image(self.shape, self.wcs, center, I, a, q, n, rot, factor)
         ima.norm(type='sum')
         return self.fftconvolve(ima)
+    
+    def correlate2d(self, other, interp='no'):
+        """Returns the cross-correlation of the image with an array/image.
+            
+            :param other: Second Image or 2d-array.
+            :type other: 2d-array or Image
+            :param interp: if 'no', data median value replaced masked values.
+  
+                        if 'linear', linear interpolation of the masked values.
+        
+                        if 'spline', spline interpolation of the masked values.
+            :type interp: 'no' | 'linear' | 'spline'
+        """
+        if self.data is None:
+            raise ValueError, 'empty data array'
+        
+        if type(other) is np.array:  
+            if interp=='linear':
+                data = self._interp_data(spline=False)
+            elif interp=='spline':
+                data = self._interp_data(spline=True)
+            else:
+                data = np.ma.filled(self.data, np.ma.median(self.data))
+            
+            res =self.copy()
+            res.data = np.ma.array(signal.correlate2d(data ,other ,mode='same'), mask=res.data.mask)
+            return res
+        try:
+            if other.image:
+                if interp=='linear':
+                    data = self._interp_data(spline=False)
+                    other_data = other._interp_data(spline=False)
+                elif interp=='spline':
+                    data = self._interp_data(spline=True)
+                    other_data = other._interp_data(spline=True)
+                else:
+                    data = np.ma.filled(self.data, np.ma.median(self.data))
+                    other_data = other.data.filled(np.ma.median(other.data))
+                
+                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
+                    print 'Operation forbidden for images with different sizes'
+                    return None
+                else:
+                    res =self.copy()
+                    res.data = np.ma.array(signal.correlate2d(data ,other_data ,mode='same'), mask=res.data.mask)
+                    res.fscale = self.fscale * other.fscale
+                    return res
+        except:
+            print 'Operation forbidden'
+            return None
     
     def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale=False, colorbar=True, **kargs): 
         """Plots the image.

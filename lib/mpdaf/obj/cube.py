@@ -243,10 +243,10 @@ class Cube(object):
             try:
                 self.wcs = wcs
                 if wcs is not None:
-                    self.wcs.wcs.naxis1 = self.shape[2]
-                    self.wcs.wcs.naxis2 = self.shape[1]
                     if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
                         print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                    self.wcs.wcs.naxis1 = self.shape[2]
+                    self.wcs.wcs.naxis2 = self.shape[1]
             except :
                 self.wcs = None
                 print "error: world coordinates not copied."
@@ -289,6 +289,27 @@ class Cube(object):
         except:
             cub.wave = None
         return cub
+    
+    def clone(self, var = False):
+        """Returns a new cube of the same shape and coordinates, filled with zeros.
+        
+        :param var: Presence of the variance extension.
+        :type var: boolean
+        """
+        try:
+            wcs=self.wcs.copy()
+        except:
+            wcs=None
+        try:
+            wave=self.wave.copy()
+        except:
+            wave=None
+        if var is False:
+            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape))
+        else:
+            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape))
+        return cube
+        
 
     def write(self,filename):
         """ Saves the cube in a FITS file.

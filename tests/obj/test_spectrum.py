@@ -313,7 +313,14 @@ class TestSpectrum():
         nose.tools.assert_almost_equal(spvar.abmag_filter_name('U'),99)
         nose.tools.assert_almost_equal(spvar.abmag_filter_name('B'),-22.278,2)
         del spvar
-
+        
+    @attr(speed='fast')
+    def test_clone(self):
+        """Cube class: tests clone method."""
+        spvar=Spectrum('data/obj/Spectrum_Variance.fits',ext=[0,1])
+        spe = spvar.clone()
+        nose.tools.assert_almost_equal(spe.mean(),0)
+        
 #    @attr(speed='fast')   
 #    def test_fft_convolve(self): 
 #        """Spectrum class: tests convolution"""   
