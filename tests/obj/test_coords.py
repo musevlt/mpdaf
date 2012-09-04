@@ -8,6 +8,7 @@ import numpy
 
 from mpdaf.obj import WCS
 from mpdaf.obj import WaveCoord
+from mpdaf.obj import deg2sexa,sexa2deg
 
 class TestWCS():
 
@@ -86,3 +87,18 @@ class TestWaveCoord():
         nose.tools.assert_equal(self.wave.get_step(),1.0)
         nose.tools.assert_equal(self.wave.get_start(),0.0)
         nose.tools.assert_equal(self.wave.get_end(),9.0)
+        
+class TestCoord():
+    
+    @attr(speed='fast')
+    def test_deg_sexa(self):
+        """tests degree/sexagesimal transformations"""
+        ra = '23:51:41.268'
+        dec = '-26:04:43.03'
+        deg = sexa2deg([dec,ra])
+        nose.tools.assert_almost_equal(deg[0],-26.07862,5)
+        nose.tools.assert_almost_equal(deg[1],357.92195,5)
+        sexa = deg2sexa(deg)
+        nose.tools.assert_equal(sexa[0],dec)
+        nose.tools.assert_equal(sexa[1],ra)
+        
