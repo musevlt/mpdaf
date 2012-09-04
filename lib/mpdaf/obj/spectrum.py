@@ -1499,6 +1499,7 @@ class Spectrum(object):
         l = self.wave.coord()
         p = np.poly1d(z)
         self.data = np.ma.masked_invalid(p(l))
+        self.fscale = 1.0
     
     def poly_spec(self, deg, weight=True):
         """Returns a spectrum containing a polynomial fit.
@@ -1509,9 +1510,14 @@ class Spectrum(object):
           :type weight: boolean
           :rtype: Spectrum
         """
+        fscale = self.fscale
+        self.fscale = 1.0
         z = self.poly_fit(deg, weight)
-        res = self.copy()
+        self.fscale = fscale
+        res = self.clone()
         res.poly_val(z)
+        res.fscale = fscale
+        res.var = self.var
         return res
         
     def abmag_band(self, lbda, dlbda, out=1, spline=False):

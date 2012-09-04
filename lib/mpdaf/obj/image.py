@@ -473,9 +473,9 @@ class Image(object):
         """Prints information.
         """
         if self.filename is None:
-            print '%i X %i image (no name)' %(self.shape[1],self.shape[0])
+            print '%i X %i image (no name)' %(self.shape[0],self.shape[1])
         else:
-            print '%i X %i image (%s)' %(self.shape[1],self.shape[0],self.filename)
+            print '%i X %i image (%s)' %(self.shape[0],self.shape[1],self.filename)
         data = '.data(%i,%i)' %(self.shape[0],self.shape[1])
         if self.data is None:
             data = 'no data'
@@ -943,6 +943,9 @@ class Image(object):
         """Returns the corresponding value or sub-image.
         """
         if isinstance(item, tuple) and len(item)==2:
+            if is_int(item[0]) and is_int(item[1]):
+                return self.data[item]
+            else:
                 data = self.data[item]
                 if is_int(item[0]):
                     shape = (1,data.shape[0])
@@ -3021,6 +3024,7 @@ class Image(object):
           :type kargs: matplotlib.artist.Artist
         """
         plt.ion()
+        plt.clf()
         
         f = self.data*self.fscale
         xaxis = np.arange(self.shape[1], dtype=np.float)
@@ -3031,12 +3035,12 @@ class Image(object):
         if np.shape(xaxis)[0] == 1:
             #plot a  column
             plt.plot(yaxis,f)
-            plt.xlabel('y (%s)' %yunit)
+            plt.xlabel('q (%s)' %yunit)
             plt.ylabel(self.unit)
         elif np.shape(yaxis)[0] == 1:
             #plot a line
             plt.plot(xaxis,f)
-            plt.xlabel('x (%s)' %xunit)
+            plt.xlabel('p (%s)' %xunit)
             plt.ylabel(self.unit)
         else:
             if zscale:
@@ -3056,8 +3060,8 @@ class Image(object):
             cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]),norm=norm,**kargs)
             if colorbar:
                 plt.colorbar(cax)
-            plt.xlabel('x (%s)' %xunit)
-            plt.ylabel('y (%s)' %yunit)
+            plt.xlabel('p (%s)' %xunit)
+            plt.ylabel('q (%s)' %yunit)
             self._ax = cax
             
         if title is not None:

@@ -251,8 +251,8 @@ class WCS(object):
             dec = sexa[0][0]
             # step in arcsec
             cdelt = self.get_step()
-            dy = cdelt[0]  * 3600
-            dx = cdelt[1]  * 3600
+            dx = cdelt[0]  * 3600
+            dy = cdelt[1]  * 3600
             sizex = self.wcs.naxis1 * dx
             sizey = self.wcs.naxis2 * dy
             print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) step in arcsec:(%0.3f,%0.3f) rot:%0.1f' %(dec,ra,sizey,sizex,dy,dx,self.get_rot())

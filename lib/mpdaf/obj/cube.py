@@ -395,9 +395,9 @@ class Cube(object):
         """Prints information.
         """
         if self.filename is None:
-            print '%i X %i X %i cube (no name)' %(self.shape[2],self.shape[1],self.shape[0])
+            print '%i X %i X %i cube (no name)' %(self.shape[0],self.shape[1],self.shape[2])
         else:
-            print '%i X %i X %i cube (%s)' %(self.shape[2],self.shape[1],self.shape[0],self.filename)
+            print '%i X %i X %i cube (%s)' %(self.shape[0],self.shape[1],self.shape[2],self.filename)
         data = '.data(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
         if self.data is None:
             data = 'no data'
