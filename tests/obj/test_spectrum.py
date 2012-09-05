@@ -316,11 +316,20 @@ class TestSpectrum():
         
     @attr(speed='fast')
     def test_clone(self):
-        """Cube class: tests clone method."""
+        """Spectrum class: tests clone method."""
         spvar=Spectrum('data/obj/Spectrum_Variance.fits',ext=[0,1])
         spe = spvar.clone()
         nose.tools.assert_almost_equal(spe.mean(),0)
         
+    @attr(speed='fast')
+    def test_mag(self):
+        """Spectrum class: tests magnitude computations."""
+        Vega=Spectrum('data/obj/Vega.fits')
+        nose.tools.assert_almost_equal(Vega.abmag_filter_name('V'),0,1)
+        mag = Vega.abmag_filter_name('Ic')
+        nose.tools.assert_true(mag>0.4 and mag<0.5)
+        mag = Vega.abmag_band(22500,2500)
+        nose.tools.assert_true(mag>1.9 and mag<2.0)
 #    @attr(speed='fast')   
 #    def test_fft_convolve(self): 
 #        """Spectrum class: tests convolution"""   
