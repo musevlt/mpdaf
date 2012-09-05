@@ -126,18 +126,18 @@ class TestCube():
     @attr(speed='fast')
     def test_iterator(self):
         """Cube class: tests iterators"""
-        for ima in iter_ima(self.cube1):
-            ima[:,:] = 3*np.ones(shape=(6,5))
+        for (ima,k) in iter_ima(self.cube1,True):
+            ima[:,:] = k*np.ones(shape=(6,5))
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    nose.tools.assert_almost_equal(self.cube1.data[k,j,i]*self.cube1.fscale,3)
-        for spe in iter_spe(self.cube1):
-            spe[:]= spe + 5
+                    nose.tools.assert_almost_equal(self.cube1.data[k,j,i]*self.cube1.fscale,k)
+        for (spe,(p,q)) in iter_spe(self.cube1,True):
+            spe[:]= spe + p + q
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    nose.tools.assert_almost_equal(self.cube1.data[k,j,i]*self.cube1.fscale,8)
+                    nose.tools.assert_almost_equal(self.cube1.data[k,j,i]*self.cube1.fscale,k+i+j)
                     
     @attr(speed='fast')
     def test_clone(self):

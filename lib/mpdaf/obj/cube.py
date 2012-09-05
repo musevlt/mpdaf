@@ -9,10 +9,11 @@ from objs import is_float
 from objs import is_int
 
 class iter_spe(object):
-    def __init__(self,cube):
+    def __init__(self, cube, index=False):
         self.cube = cube
         self.p = cube.shape[1]
         self.q = cube.shape[2]
+        self.index = index
         
     def next(self):
         """Returns the next spectrum."""
@@ -23,7 +24,10 @@ class iter_spe(object):
         if self.p == 0:
             raise StopIteration
         print self.p-1,self.q
-        return self.cube[:,self.p-1,self.q]
+        if self.index is False:
+            return self.cube[:,self.p-1,self.q]
+        else:
+            return (self.cube[:,self.p-1,self.q],(self.p-1,self.q))
     
     def __iter__(self):
         """Returns the iterator itself."""
@@ -31,16 +35,20 @@ class iter_spe(object):
         
 class iter_ima(object): 
     
-    def __init__(self,cube):
+    def __init__(self, cube, index=False):
         self.cube = cube
         self.k = cube.shape[0]
+        self.index = index
         
     def next(self):
         """Returns the next image."""
         if self.k == 0:
             raise StopIteration
         self.k -= 1
-        return self.cube[self.k,:,:]
+        if self.index is False:
+            return self.cube[self.k,:,:]
+        else:
+            return (self.cube[self.k,:,:],self.k)
     
     def __iter__(self):
         """Returns the iterator itself."""
