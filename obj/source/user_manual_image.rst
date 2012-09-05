@@ -60,7 +60,7 @@ Operators
 Reference
 =========
 
-:func:`mpdaf.obj.Image.copy` copies Image object in a new one and returns it.
+:func:`mpdaf.obj.Image.copy` returns a new copy of an Image object.
 
 :func:`mpdaf.obj.Image.write` saves Image object in a FITS file.
 
@@ -167,6 +167,8 @@ Plotting
 
 Functions to create a new image
 ===============================
+
+:func:`mpdaf.obj.Image` is the classic image constructor.
             
 :func:`mpdaf.obj.gauss_image` creates a new image from a 2D gaussian.
       

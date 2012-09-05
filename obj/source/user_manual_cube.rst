@@ -226,7 +226,7 @@ Reference
 =========
 
 
-:func:`mpdaf.obj.Cube.copy` copies Cube object in a new one and returns it.
+:func:`mpdaf.obj.Cube.copy` returns a new copy of a Cube object.
 
 :func:`mpdaf.obj.Cube.info` prints information.
 

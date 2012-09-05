@@ -148,7 +148,7 @@ Reference
 =========
 
 
-:func:`mpdaf.obj.Spectrum.copy` copies the Spectrum object in a new one and returns it.
+:func:`mpdaf.obj.Spectrum.copy` returns a new copy of a Spectrum object.
 
 :func:`mpdaf.obj.Spectrum.info` prints information.
 
