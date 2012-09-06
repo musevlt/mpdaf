@@ -29,7 +29,8 @@ A cube object O consist of:
 | O.var      | (optionally) masked numpy array with variance values   |
 +------------+--------------------------------------------------------+
 
-Each numpy masked array has 3 dimensions: Array[k,l,m] with k the spectral axis, l and m the spatail axes
+Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis, p and q the spatial axes
+
 
 Tutorials
 =========
@@ -58,7 +59,7 @@ The info directive gives us already some important informations:
 - The cube format 101 X 101 X 3601 has 101 x 101 spatial pixels and 3601 spectral pixels
 - In addition to the data extension (.data(3601,101,101) a variance extension is also present (.var(3601,101,101)
 - The flux data unit is erg/s/cm**2/Angstrom and the scale factor is 10**-20
-- The center of the field of view is at RA: -30° 0' 1.35" and DEC: 1°20'0.137" and its size is 20.2x20.2 arcsec**2. The spaxel dimension is 0.2x0.2 arcsec**2. The rotation angle is 0° with respect to the North.
+- The center of the field of view is at DEC: -30° 0' 1.35" and RA: 1°20'0.137" and its size is 20.2x20.2 arcsec**2. The spaxel dimension is 0.2x0.2 arcsec**2. The rotation angle is 0° with respect to the North.
 - The wavelength range is 4800-9300 Angstrom with a step of 1.25 Angstroem
 
 Let's compute the reconstructed white light image and display it::
@@ -91,7 +92,115 @@ Tutorial 2
 
 In this second tutorial we create the continuum subtracted datacube of the previously extracted object.
 
-We start by building a function which fit the continuum of a spectra::
+We start by fitting the continuum on sp1 (see tutorial 1)::
+
+ >>> cont1 = sp1.poly_spec(5)
+ >>> sp1.plot()
+ >>> cont1.plot(color='r')
+
+.. figure::  user_manual_cube_images/spec2.png
+   :align:   center
+
+Let's try also on a single spectrum at the edge of the galaxy::
+
+ >>> obj1[:,5,2].plot()
+ >>> obj1[:,5,2].poly_spec(5).plot(color='r')
+
+.. figure::  user_manual_cube_images/spec3.png
+   :align:   center
+
+Fine, now let's do this for all spectrum of the input datacube. We are going to use the spectra iterator
+to loop over all spectra.
+Let's see how the spectrum iterator works::
+
+ >>> from mpdaf.obj import iter_spe
+ >>> small = obj1[:,0:2,0:3]
+ >>> small.shape()
+ array([3601,    2,    3])
+ >>> for sp in iter_spe(small):
+ >>> 	print sp.data.max()
+ >>>
+ 2.06232500076
+ 1.98103439808
+ 1.90471208096
+ 1.92691171169
+ 1.94003844261
+ 1.57908594608
+
+In this example, we have extracted sucessively all six spectra of the small datacube and printed their peak value.
+
+Now let's use it to perform the computation of the continuum datacube.
+We start by creating an empty datacube with the same dimensions than the original one, but without variance
+information (using the clone function). Using two spectrum iterors we extract iteratively
+all input spectra (sp) and (still
+empty) continuum spectrum (co). For each extracted spectrum we just fit the continuum and save it to the
+continuum datacube.::
+
+ >>> cont1 = obj1.clone()
+ >>> for sp,co in zip(iter_spe(obj1), iter_spe(cont1)):
+ >>>   co[:] = sp.poly_spec(5)
+ >>>
+
+And that's it, we have now the continuum datacube. Note that we have used the co[:] = sp.poly_spec(5)
+assignment rather than the more intuitive co = sp.poly_spec(5) assignment. The use of co[:] is mandatory
+otherwise the continnum spectra co is created but not written into the cont1 datacube.
+
+Let's check the result and display the continuum reconstructed image::
+
+ >>> rec2 = cont1.sum(axis=0)
+ >>> rec2.plot(scale='arcsinh')
+
+.. figure::  user_manual_cube_images/recima4.png
+   :align:   center
+
+We can also compute the line emission datacube::
+
+ >>> line1 = obj1 - cont1
+ >>> line1.sum(axis=0).plot('arcsinh')
+
+.. figure::  user_manual_cube_images/recima5.png
+   :align:   center
+
+
+Tutorial 3
+----------
+
+In this tutorial we will compute the velocity field using line emission in the galaxy.
+First let's isolate the emission line by truncating the object datacubein wavelength.::
+
+ >>> sp1.plot()
+ >>> k1,k2 = sp1.wave.pixel([9000,9140], nearest=True)
+ >>> emi1 = obj1[k1:k2+1,:,:]
+ >>> emi1.info()
+ 113 X 11 X 21 cube (no name)
+ .data(113,11,21) (erg/s/cm**2/Angstrom) fscale=1e-20, .var(113,11,21)
+ center:(-30:00:00.55,01:20:00.414) size in arcsec:(2.200,4.200) step in arcsec:(0.200,0.200) rot:0.0
+ wavelength: min:9000.00 max:9140.00 step:1.25 Angstrom
+ >>> sp1 = emi1.sum(axis=(1,2))
+ >>> sp1.plot()
+
+We try to fit a gaussian to get the peak wavelength::
+
+ >>> fit1 = sp1.gauss_fit(9060,9080, plot=True)
+ >>> print fit1.lpeak, fit1.flux
+ 9069.67193453 3.58446407109e-16
+
+Now we repeat this for all datacube spectra, and we will save flux and peak wavelength in two images.
+We start creating two images with identical shape and wcs as the reconstructed image and then use
+the spectrum iterator.::
+
+ >>> ima_flux = ima1.clone()
+ >>> ima_vel = ima1.clone()
+ >>> for sp in iter_spe(obj1,):
+ >>>   co[:] = sp.poly_spec(5)
+
+Tutorial 4
+----------
+
+MPDAF is using numpy array and then all advanced scipy signal processing tools are available.
+In this tutorial we show how to use directly scipy functions to perform advanced computations.
+
+
 
  >>> from scipy import polyfit, polyval
  >>> def fitcont(spec, cont, deg):
@@ -159,7 +268,7 @@ We can also compute the line emission datacube::
    :align:   center
 
 
-Tutorial 3
+Tutorial 4
 ----------
 
 In this tutorial we are going to process our datacube in spatial direction. We consider the datacube as a collection of
