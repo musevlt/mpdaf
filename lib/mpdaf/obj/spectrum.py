@@ -487,28 +487,6 @@ class Spectrum(object):
             print 'No wavelength solution'
         else:
             self.wave.info()
-            
-#    def __coerce__(self, other):
-#        print '__coerce__'
-#        if self.data is None:
-#            raise ValueError, 'empty data array'
-#        try:
-#            #spectrum1 + number = spectrum2 (spectrum2[k]=spectrum1[k]+number)
-#            self.data[:] = other/np.double(self.fscale)
-#        except:
-#            try:
-#                if other.spectrum:
-#                    self.filename = other.filename
-#                    self.unit = other.unit
-#                    self.cards = pyfits.CardList(other.cards)
-#                    self.shape = other.shape
-#                    self.data[:] = other.data[:]
-#                    self.var = other.var
-#                    self.fscale = other.fscale
-#                    self.wave = other.wave
-#            except:
-#                print 'Operation forbidden'
-#                return None
 
     def __le__ (self, item):
         """Masks data array where greater than a given value (operator <=).
@@ -928,7 +906,7 @@ class Spectrum(object):
         """ Returns the corresponding value or sub-spectrum.
         """
         if is_int(item):
-            return self.data[item]
+            return self.data[item]*self.fscale
         elif isinstance(item, slice):
             data = self.data[item]
             shape = data.shape[0]
@@ -963,7 +941,7 @@ class Spectrum(object):
             pix_min = max(0,self.wave.pixel(lmin,nearest=True))
             pix_max = min(self.shape,self.wave.pixel(lmax,nearest=True) + 1)
             if (pix_min+1)==pix_max:
-                return self.data[pix_min]
+                return self.data[pix_min]*self.fscale
             else:
                 return self[pix_min:pix_max]
             
@@ -1011,7 +989,6 @@ class Spectrum(object):
     def __setitem__(self,key,other):
         """Sets the corresponding part of data
         """
-        #self.data[key] = value
         if self.data is None:
             raise ValueError, 'empty data array'
         try:
@@ -1440,7 +1417,8 @@ class Spectrum(object):
             vec_weight = None
 
         mask = np.array(1 - self.data.mask,dtype=bool)
-        d = self.data.compress(mask) * self.fscale
+        #d = self.data.compress(mask) * self.fscale
+        d = self.data.compress(mask)
         w = self.wave.coord().compress(mask)
         if weight:
             vec_weight = vec_weight.compress(mask)
@@ -1486,7 +1464,7 @@ class Spectrum(object):
         scale = np.sqrt((lhs*lhs).sum(axis=0))
         lhs /= scale
         c, resids, rank, s = np.linalg.lstsq(lhs, rhs, rcond)
-        c = (c.T/scale).T # broadcast scale coefficients
+        c = (c.T/scale).T * self.fscale # broadcast scale coefficients
 
         return c
     
@@ -1685,7 +1663,7 @@ class Spectrum(object):
         """
         try:
             k0 = self.wave.pixel(l0, nearest=True)
-            d = self._interp_data(spline)*self.fscale - cont
+            d = self._interp_data(spline) - cont/self.fscale
             f2 = d[k0]/2
             k2 = np.argwhere(d[k0:-1]<f2)[0][0] + k0
             i2 = np.interp(f2, d[k2:k2-2:-1], [k2,k2-1])
@@ -1696,7 +1674,7 @@ class Spectrum(object):
         except:
             try:
                 k0 = self.wave.pixel(l0, nearest=True)   
-                d = self._interp_data(spline)*self.fscale - cont
+                d = self._interp_data(spline) - cont/self.fscale
                 f2 = d[k0]/2
                 k2 = np.argwhere(d[k0:-1]>f2)[0][0] + k0
                 i2 = np.interp(f2, d[k2:k2-2:-1], [k2,k2-1])
@@ -1774,10 +1752,10 @@ class Spectrum(object):
         # initial sigma value    
         if fwhm is None:
             try:
-                fwhm = spec.fwhm(lpeak, cont0, spline)
+                fwhm = spec.fwhm(lpeak, cont0*self.fscale, spline)
             except:
                 lpeak = l[d.argmin()]
-                fwhm = spec.fwhm(lpeak, cont0, spline)
+                fwhm = spec.fwhm(lpeak, cont0*self.fscale, spline)
         sigma = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
             
         # initial gaussian integrated flux
@@ -1883,10 +1861,10 @@ class Spectrum(object):
         ks = int(kernel_size/2)*2 +1
         
         data = np.empty(self.shape + 2*ks)
-        data[ks:-ks] = self._interp_data(spline)*self.fscale  
+        data[ks:-ks] = self._interp_data(spline) 
         data[:ks] = data[ks:2*ks][::-1]
         data[-ks:] = data[-2*ks:-ks][::-1]
-        data = signal.medfilt(data, ks)/self.fscale
+        data = signal.medfilt(data, ks)
         self.data = np.ma.array(data[ks:-ks],mask=self.data.mask)
     
     def median_filter(self, kernel_size=1., pixel=True, spline=False):
@@ -1919,7 +1897,7 @@ class Spectrum(object):
                 else:
                     self.data = np.ma.array(signal.convolve(self.data ,other.data ,mode='same'),mask=self.data.mask)
                     if self.var is not None:
-                        self.var = signal.convolve(self.var ,other.data ,mode='same')
+                        self.var = signal.convolve(self.var ,other.data ,mode='same') *other.fscale*other.fscale
                     self.fscale = self.fscale * other.fscale
         except:
             try:
@@ -1958,7 +1936,7 @@ class Spectrum(object):
                 else:
                     self.data = np.ma.array(signal.fftconvolve(self.data ,other.data ,mode='same'),mask=self.data.mask)
                     if self.var is not None:
-                        self.var = signal.fftconvolve(self.var ,other.data ,mode='same')
+                        self.var = signal.fftconvolve(self.var ,other.data ,mode='same')* other.fscale*other.fscale
                     self.fscale = self.fscale * other.fscale
         except:
             try:
@@ -1996,10 +1974,14 @@ class Spectrum(object):
                     return None
                 else:
                     self.data = np.ma.array(signal.correlate(self.data ,other.data ,mode='same'),mask=self.data.mask)
+                    if self.var is not None:
+                        self.var = signal.correlate(self.var ,other.data ,mode='same')* other.fscale*other.fscale
                     self.fscale = self.fscale * other.fscale
         except:
             try:
                 self.data = np.ma.array(signal.correlate(self.data ,other ,mode='same'),mask=self.data.mask)
+                if self.var is not None:
+                    self.var = signal.correlate(self.var ,other ,mode='same')
             except:
                 print 'Operation forbidden'
                 return None
@@ -2032,6 +2014,8 @@ class Spectrum(object):
         kernel /= kernel.sum()
     
         self.data = np.ma.array(signal.correlate(self.data ,kernel ,mode='same'),mask=self.data.mask)
+        if self.var is not None:
+            self.var = signal.correlate(self.var ,kernel ,mode='same')
         
     def fftconvolve_gauss(self, fwhm, nsig=5):
         """Returns the convolution of the spectrum with a Gaussian using fft.

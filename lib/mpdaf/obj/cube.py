@@ -338,7 +338,8 @@ class Cube(object):
             if self.cards is not None:
                 for card in self.cards:
                     try:
-                        prihdu.header.update(card.key, card.value, card.comment)
+                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                            prihdu.header.update(card.key, card.value, card.comment)
                     except:
                         pass
             prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
@@ -362,7 +363,8 @@ class Cube(object):
             if self.cards is not None:
                 for card in self.cards:
                     try:
-                        tbhdu.header.update(card.key, card.value, card.comment)
+                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                            tbhdu.header.update(card.key, card.value, card.comment)
                     except:
                         pass
             tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
@@ -1024,7 +1026,7 @@ class Cube(object):
             if is_int(item[0]):
                 if is_int(item[1]) and is_int(item[2]):
                     #return a float
-                    return data
+                    return data*self.fscale
                 else:
                     #return an image
                     from image import Image
@@ -1103,7 +1105,7 @@ class Cube(object):
             pix_min = max(0,int(self.wave.pixel(lbda_min)))
             pix_max = min(self.shape[0],int(self.wave.pixel(lbda_max)) + 1)
             if (pix_min+1)==pix_max:
-                return self.data[pix_min,:,:]
+                return self.data[pix_min,:,:]*self.fscale
             else:
                 return self[pix_min:pix_max,:,:]
             
@@ -1222,7 +1224,7 @@ class Cube(object):
         :type axis: None or int or tuple of ints
         """
         if axis is None:
-            return self.data.sum()    
+            return self.data.sum()*self.fscale
         elif axis==0:
             #return an image
             from image import Image
@@ -1255,7 +1257,7 @@ class Cube(object):
         :type axis: None or int or tuple of ints
         """
         if axis is None:
-            return self.data.mean()    
+            return self.data.mean()*self.fscale
         elif axis==0:
             #return an image
             from image import Image

@@ -146,7 +146,7 @@ class TestImage():
     def test_gauss_Image(self):
         """Image class: tests Gaussian fit"""
         wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
-        ima = gauss_image(wcs=wcs,width=(1,2),factor=1, rot = 60)
+        ima = gauss_image(wcs=wcs,fwhm=(1,2),factor=1, rot = 60)
         #ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
         gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0)
         nose.tools.assert_almost_equal(gauss.center[0], 8.5)
@@ -156,7 +156,7 @@ class TestImage():
         nose.tools.assert_almost_equal(gauss2.center[0], 8.5)
         nose.tools.assert_almost_equal(gauss2.center[1], 12)
         nose.tools.assert_almost_equal(gauss2.flux, 1)
-        ima3 = gauss_image(wcs=wcs,width=(1,2))
+        ima3 = gauss_image(wcs=wcs,fwhm=(1,2))
         #sigma = ima3.fwhm()/(2.*np.sqrt(2.*np.log(2.0)))
         #nose.tools.assert_almost_equal(sigma[0], 1)
         #nose.tools.assert_almost_equal(sigma[1], 2)

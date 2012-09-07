@@ -954,7 +954,7 @@ class Image(object):
         """
         if isinstance(item, tuple) and len(item)==2:
             if is_int(item[0]) and is_int(item[1]):
-                return self.data[item]
+                return self.data[item]*self.shape
             else:
                 data = self.data[item]
                 if is_int(item[0]):
@@ -1408,7 +1408,7 @@ class Image(object):
           :rtype: float or Image
         """
         if axis is None:
-            return self.data.sum()    
+            return self.data.sum()*self.fscale    
         elif axis==0 or axis==1:
             #return an image
             #data = self.data.sum(axis)
@@ -1454,18 +1454,18 @@ class Image(object):
             self.var *= norm*norm
             
     def background(self, niter=3):
-        """Computes the image background.
+        """Computes the image background. Returns the background value and its standard deviation.
         
         :param niter: Number of iterations.
         :type niter: integer
-        :rtype: float
+        :rtype: (float,float)
         """
         ksel = np.where(self.data <= (np.ma.mean(self.data) + 3 * np.ma.std(self.data)))
         tab = self.data[ksel]
         for n in range(niter):
             ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
             tab = tab[ksel]
-        return (np.ma.mean(tab),np.ma.std(tab))
+        return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, plot=False):
         """Finds image peak location.
@@ -1537,7 +1537,7 @@ class Image(object):
             di = 0
             dj = 0
         else:
-            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0])
+            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0]/self.fscale)
         ic = imin+max(0,ic-dpix)+di
         jc = jmin+max(0,jc-dpix)+dj
         [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
@@ -1546,48 +1546,6 @@ class Image(object):
             plt.plot(jc,ic,'r+')
             str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
             plt.title(str)
-
-#        mean = np.ma.mean(ima.data)
-#        ima = ima>mean 
-#        ic,jc = ndimage.measurements.maximum_position(ima.data)
-#        for k in range(3):
-#            if dpix > 0:
-#                di,dj = ndimage.measurements.center_of_mass(ima.data[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0]   )
-#                ic = max(0,ic-dpix)+di
-#                jc = max(0,jc-dpix)+dj
-#            
-#        if dpix == 0:
-#            di = 0
-#            dj = 0
-#        else:
-#            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0]   )               
-#        ic = imin+max(0,ic-dpix)+di
-#        jc = jmin+max(0,jc-dpix)+dj
-#        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
-#        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
-#        if plot:
-#            plt.plot(jc,ic,'r+')
-#            str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
-#            plt.title(str)
-
-#        di,dj = ndimage.measurements.center_of_mass(d - self.background()[0]   )
-#        ic = di
-#        jc = dj
-#
-#        for k in range(3):
-#            if dpix > 0:
-#                di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0]   )
-#                ic = max(0,ic-dpix)+di
-#                jc = max(0,jc-dpix)+dj
-#        ic = imin+ic
-#        jc = jmin+jc
-#        #plt.broken_barh([(jc-dpix,2*dpix)], (ic-dpix,2*dpix), alpha=0.2, facecolors = 'red')
-#        [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
-#        maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
-#        if plot:
-#            plt.plot(jc,ic,'g+')
-#            #str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
-#            #plt.title(str)
             
         return {'x':ra, 'y':dec, 'q':jc, 'p':ic, 'data': maxv}
     
@@ -1903,7 +1861,6 @@ class Image(object):
         y = np.argmax((X*np.abs(self.data)).sum(axis=1)/total)
         x = np.argmax((Y*np.abs(self.data)).sum(axis=0)/total)
         col = self.data[int(y),:]
-        # FIRST moment, not second!
         cdelt = self.wcs.get_step()
         width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())*cdelt[1]
         row = self.data[:, int(x)]
@@ -2584,7 +2541,9 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        self.data = np.ma.array(ndimage.gaussian_filter(data*self.fscale, sigma),mask=res.data.mask)/self.fscale
+        self.data = np.ma.array(ndimage.gaussian_filter(data, sigma),mask=self.data.mask)
+        if self.var is not None:
+            self.var = ndimage.gaussian_filter(self.var, sigma)
     
     def gaussian_filter(self, sigma=3, interp='no'):
         """Returns an image containing Gaussian filter applied to the current image.
@@ -2622,7 +2581,10 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        self.data = np.ma.array(ndimage.median_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
+        self.data = np.ma.array(ndimage.median_filter(data, size),mask=self.data.mask)
+        if self.var is not None:
+            self.var = ndimage.median_filter(self.var, size)
+        
     
     def median_filter(self, size=3, interp='no'):
         """Returns an image containing median filter applied to the current image.
@@ -2660,7 +2622,7 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        self.data = np.ma.array(ndimage.maximum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
+        self.data = np.ma.array(ndimage.maximum_filter(data, size),mask=self.data.mask)
     
     def maximum_filter(self, size=3, interp='no'):
         """Returns an image containing maximum filter applied to the current image.
@@ -2697,7 +2659,7 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        self.data = np.ma.array(ndimage.minimum_filter(data*self.fscale, size),mask=res.data.mask)/self.fscale
+        self.data = np.ma.array(ndimage.minimum_filter(data,size),mask=self.data.mask)
     
     def minimum_filter(self, size=3, interp='no'):
         """Returns an image containing minimum filter applied to the current image.
@@ -2788,7 +2750,6 @@ class Image(object):
                
                 #data = self.data.filled(np.ma.median(self.data))
                 self.data = np.ma.array(data, mask=self.data.mask)
-                self.var = None
         except:
             print 'Operation forbidden'
             return None
@@ -2829,7 +2790,10 @@ class Image(object):
         for i in range(lab[1]):
             [[starty,startx]] = self.wcs.pix2sky(self.wcs.pix2sky([[slices[i][0].start,slices[i][1].start]]))
             wcs = WCS(crpix=(1.0,1.0),crval=(starty,startx),cdelt=self.wcs.get_step(),deg=self.wcs.is_deg(),rot=self.wcs.get_rot())
-            res = Image(data=self.data[slices[i]],wcs=wcs)
+            if self.var is not None:
+                res = Image(data=self.data[slices[i]],wcs=wcs, fscale=self.fscale, unit=self.unit, var = self.var[slices[i]])
+            else:
+                res = Image(data=self.data[slices[i]],wcs=wcs, fscale=self.fscale, unit=self.unit)
             imalist.append(res)
         return imalist
     
@@ -2853,6 +2817,11 @@ class Image(object):
             data = np.ma.filled(self.data, np.ma.median(self.data))
             
         self.data = np.ma.array(np.random.normal(data, sigma),mask=self.data.mask)
+        if self.var is None:
+            self.var = np.ones((self.shape))*sigma*sigma
+        else:
+            self.var *= (sigma*sigma)
+            
     
     def add_poisson_noise(self, interp='no'):
         """Adds Poisson noise to image in place.
@@ -2872,6 +2841,10 @@ class Image(object):
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
         self.data = np.ma.array(np.random.poisson(data),mask=self.data.mask)
+        if self.var is None:
+            self.var = self.data.data.__copy__()
+        else:
+            self.var += self.data.data
     
     def inside(self, coord):
         """Returns True if coord is inside image.
@@ -2920,6 +2893,8 @@ class Image(object):
                 data = np.ma.filled(self.data, np.ma.median(self.data))
             
             self.data = np.ma.array(signal.fftconvolve(data ,other ,mode='same'), mask=self.data.mask)
+            if self.var is not None:
+                self.var = signal.fftconvolve(self.var ,other ,mode='same')
         try:
             if other.image:
                 if interp=='linear':
@@ -2938,6 +2913,8 @@ class Image(object):
                 else:
                     self.data = np.ma.array(signal.fftconvolve(data ,other_data ,mode='same'), mask=self.data.mask)
                     self.fscale = self.fscale * other.fscale
+                    if self.var is not None:
+                        self.var = signal.fftconvolve(self.var ,other_data ,mode='same') *other.fscale*other.fscale
         except:
             print 'Operation forbidden'
             return None
@@ -2959,15 +2936,15 @@ class Image(object):
         res._fftconvolve(other, interp)
         return res
     
-    def fftconvolve_gauss(self,center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1):
+    def fftconvolve_gauss(self,center=None, flux=1., fwhm=(1.,1.), peak=False, rot = 0., factor=1):
         """Returns the convolution of the image with a 2D gaussian.
   
           :param center: Gaussian center (y_peak, x_peak). If None the center of the image is used.
           :type center: (float,float)
           :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
           :type flux: float
-          :param width: Spreads of the Gaussian blob (width_y,width_x).
-          :type width: (float,float)
+          :param fwhm: Gaussian fwhm (fwhm_y,fwhm_x).
+          :type fwhm: (float,float)
           :param peak: If true, flux contains a gaussian peak value.
           :type peak: boolean
           :param rot: Angle position in degree.
@@ -2978,7 +2955,7 @@ class Image(object):
           :type factor: integer
           :rtype: Image
         """
-        ima = gauss_image(self.shape, self.wcs, center, flux, width, peak, rot, factor)
+        ima = gauss_image(self.shape, self.wcs, center, flux, fwhm, peak, rot, factor)
         ima.norm(type='sum')
         return self.fftconvolve(ima)
     
@@ -3033,6 +3010,8 @@ class Image(object):
             
             res =self.copy()
             res.data = np.ma.array(signal.correlate2d(data ,other ,mode='same'), mask=res.data.mask)
+            if res.var is not None:
+                res.var = signal.correlate2d(res.var ,other ,mode='same')
             return res
         try:
             if other.image:
@@ -3053,6 +3032,8 @@ class Image(object):
                     res =self.copy()
                     res.data = np.ma.array(signal.correlate2d(data ,other_data ,mode='same'), mask=res.data.mask)
                     res.fscale = self.fscale * other.fscale
+                    if res.var is not None:
+                        res.var = signal.correlate2d(res.var ,other_data ,mode='same') *other.fscale*other.fscale
                     return res
         except:
             print 'Operation forbidden'
@@ -3394,7 +3375,7 @@ class Image(object):
             pass
             
             
-def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.), peak=False, rot = 0., factor=1):
+def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., fwhm=(1.,1.), peak=False, rot = 0., factor=1):
     """Creates a new image from a 2D gaussian.
   
       :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.
@@ -3407,8 +3388,8 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
       :type center: (float,float)
       :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
       :type flux: float
-      :param width: Spreads of the Gaussian blob (width_y,width_x).
-      :type width: (float,float)
+      :param fwhm: Gaussian fwhm (fwhm_y,fwhm_x).
+      :type fwhm: (float,float)
       :param peak: If true, flux contains a gaussian peak value.
       :type peak: boolean
       :param rot: Angle position in degree.
@@ -3438,8 +3419,9 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., width=(1.,1.),
     
     data = np.empty(shape=shape, dtype = float)
     
-    ra_width = width[1]
-    dec_width = width[0]
+    ra_width = fwhm[1]/2.0/np.sqrt(2*np.log(2))
+    dec_width = fwhm[0]/2.0/np.sqrt(2*np.log(2))
+    print ra_width,dec_width
     
     #rotation angle in rad
     theta = np.pi * rot / 180.0
