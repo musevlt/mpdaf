@@ -293,6 +293,8 @@ Reference
 
 :func:`mpdaf.obj.Cube.copy` copies Cube object in a new one and returns it.
 
+:func:`mpdaf.obj.Cube.clone <mpdaf.obj.Cube.clone>` returns a new cube of the same shape and coordinates, filled with zeros.
+
 :func:`mpdaf.obj.Cube.info` prints information.
 
 :func:`mpdaf.obj.Cube.write` saves the Cube in a FITS file.

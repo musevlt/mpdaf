@@ -27,4 +27,6 @@ Examples::
 
 .. autoclass:: mpdaf.obj.Spectrum
 	:members:
+	:special-members:
+	
 	

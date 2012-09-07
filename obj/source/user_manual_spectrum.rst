@@ -95,169 +95,156 @@ Tutorial 3: Gaussian Line fitting
 
 
 
-Indexing
---------
-
-``Spectrum[k]`` returns the corresponding value of pixel k.
-
-``Spectrum[k1:k2]`` returns the sub-spectrum between pixels k1 and k2
-
-``Spectrum[k] = value`` sets the value of Spectrum.data[k]
-
-``Spectrum[k1:k2] = array`` sets the values in the corresponding part of Spectrum.data.
-
-
-Operators
----------
-
-+------+------------------------------------------------------------------------------------+
-| <=   | Masks data array where greater than a given value.                                 |
-+------+------------------------------------------------------------------------------------+
-| <    | Masks data array where greater or equal than a given value.                        |
-+------+------------------------------------------------------------------------------------+
-| >=   | Masks data array where less than a given value.                                    |
-+------+------------------------------------------------------------------------------------+
-| >    | Masks data array where less or equal than a given value.                           |
-+------+------------------------------------------------------------------------------------+
-| \+   | - addition                                                                         |
-|      | - spectrum1 + number = spectrum2 (spectrum2[k] = spectrum1[k] + number)            |
-|      | - spectrum1 + spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] + spectrum2[k])   |
-|      | - spectrum + cube1 = cube2 (cube2[k,p,q] = cube1[k,p,q] + spectrum[k])             |
-+------+------------------------------------------------------------------------------------+	  
-| \-   | - substraction                                                                     |
-|      | - spectrum1 - number = spectrum2 (spectrum2[k] = spectrum1[k] - number)            |
-|      | - spectrum1 - spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] - spectrum2[k])   |
-|      | - spectrum - cube1 = cube2 (cube2[k,p,q] = spectrum[k] - cube1[k,p,q])             |
-+------+------------------------------------------------------------------------------------+
-| \*   | - multiplication                                                                   |
-|      | - spectrum1 \* number = spectrum2 (spectrum2[k] = spectrum1[k] \* number)          |
-|      | - spectrum1 \* spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] \* spectrum2[k]) |
-|      | - spectrum \* cube1 = cube2 (cube2[k,p,q] = spectrum[k] \* cube1[k,p,q])           |
-|      | - spectrum \* image = cube (cube[k,p,q]=image[p,q] \* spectrum[k]                  |
-+------+------------------------------------------------------------------------------------+
-| /    | - division                                                                         |
-|      | - spectrum1 / number = spectrum2 (spectrum2[k] = spectrum1[k] / number)            |
-|      | - spectrum1 / spectrum2 = spectrum3 (spectrum3[k] = spectrum1[k] / spectrum2[k])   |
-|      | - spectrum / cube1 = cube2 (cube2[k,p,q] = spectrum[k] / cube1[k,p,q])             |
-+------+------------------------------------------------------------------------------------+	  
-| \*\* | Computes the power exponent of data extensions                                     |
-+------+------------------------------------------------------------------------------------+
-
-
 Reference
 =========
 
+:func:`mpdaf.obj.Spectrum <mpdaf.obj.Spectrum>` is the Spectrum constructor.
 
-:func:`mpdaf.obj.Spectrum.copy` returns a new copy of a Spectrum object.
+:func:`mpdaf.obj.Spectrum.copy <mpdaf.obj.Spectrum.copy>` returns a new copy of a Spectrum object.
 
-:func:`mpdaf.obj.Spectrum.info` prints information.
+:func:`mpdaf.obj.Spectrum.clone <mpdaf.obj.Spectrum.clone>` returns a new spectrum of the same shape and coordinates, filled with zeros.
 
-:func:`mpdaf.obj.Spectrum.write` saves the Spectrum object in a FITS file.
+:func:`mpdaf.obj.Spectrum.info <mpdaf.obj.Spectrum.info>` prints information.
 
-:func:`mpdaf.obj.Spectrum.mean` computes the mean flux value over a wavelength range.
+:func:`mpdaf.obj.Spectrum.write <mpdaf.obj.Spectrum.write>` saves the Spectrum object in a FITS file.
 
-:func:`mpdaf.obj.Spectrum.sum` computes the total flux value over a wavelength range.
 
+Indexing
+--------
+
+:func:`Spectrum[k] <mpdaf.obj.Spectrum.__getitem__>` returns the corresponding value of pixel k.
+
+:func:`Spectrum[k1:k2] <mpdaf.obj.Spectrum.__getitem__>` returns the sub-spectrum between pixels k1 and k2
+
+:func:`Spectrum[k] = value <mpdaf.obj.Spectrum.__setitem__>` sets the value of Spectrum.data[k]
+
+:func:`Spectrum[k1:k2] = array <mpdaf.obj.Spectrum.__setitem__>` sets the values in the corresponding part of Spectrum.data.
 
 
 Getters and setters
 -------------------
 
-:func:`mpdaf.obj.Spectrum.get_lambda` returns the flux value corresponding to a wavelength, or returns the sub-spectrum corresponding to a wavelength range.
+:func:`mpdaf.obj.Spectrum.get_lambda <mpdaf.obj.Spectrum.get_lambda>` returns the flux value corresponding to a wavelength, or returns the sub-spectrum corresponding to a wavelength range.
  
-:func:`mpdaf.obj.Spectrum.get_step` returns the wavelength step.
+:func:`mpdaf.obj.Spectrum.get_step <mpdaf.obj.Spectrum.get_step>` returns the wavelength step.
  
-:func:`mpdaf.obj.Spectrum.get_start` returns the wavelength value of the first pixel.
+:func:`mpdaf.obj.Spectrum.get_start <mpdaf.obj.Spectrum.get_start>` returns the wavelength value of the first pixel.
 
-:func:`mpdaf.obj.Spectrum.get_end` returns the wavelength value of the last pixel.
+:func:`mpdaf.obj.Spectrum.get_end <mpdaf.obj.Spectrum.get_end>` returns the wavelength value of the last pixel.
 
-:func:`mpdaf.obj.Spectrum.get_range` returns the wavelength range [Lambda_min,Lambda_max]
+:func:`mpdaf.obj.Spectrum.get_range <mpdaf.obj.Spectrum.get_range>` returns the wavelength range [Lambda_min,Lambda_max]
 
-:func:`mpdaf.obj.Spectrum.set_wcs` sets the world coordinates.
+:func:`mpdaf.obj.Spectrum.set_wcs <mpdaf.obj.Spectrum.set_wcs>` sets the world coordinates.
 
-:func:`mpdaf.obj.Spectrum.set_var` sets the variance array.
+:func:`mpdaf.obj.Spectrum.set_var <mpdaf.obj.Spectrum.set_var>` sets the variance array.
 
 
 Mask
 ----
 
-:func:`mpdaf.obj.Spectrum.mask` masks the spectrum (in place).
+:func:`<= <mpdaf.obj.Spectrum.__le__>` masks data array where greater than a given value.                                 
 
-:func:`mpdaf.obj.Spectrum.unmask` unmasks the spectrum (in place).
+:func:`< <mpdaf.obj.Spectrum.__lt__>` masks data array where greater or equal than a given value. 
 
-:func:`mpdaf.obj.Spectrum.mask_variance` masks pixels with a variance upper than threshold value (in place).
+:func:`>= <mpdaf.obj.Spectrum.__ge__>` masks data array where less than a given value.
 
-:func:`mpdaf.obj.Spectrum.interp_mask` interpolates masked pixels (in place).
+:func:`> <mpdaf.obj.Spectrum.__gt__>` masks data array where less or equal than a given value.  
+
+:func:`mpdaf.obj.Spectrum.mask <mpdaf.obj.Spectrum.mask>` masks the spectrum (in place).
+
+:func:`mpdaf.obj.Spectrum.unmask <mpdaf.obj.Spectrum.unmask>` unmasks the spectrum (in place).
+
+:func:`mpdaf.obj.Spectrum.mask_variance <mpdaf.obj.Spectrum.mask_variance>` masks pixels with a variance upper than threshold value (in place).
+
+:func:`mpdaf.obj.Spectrum.interp_mask <mpdaf.obj.Spectrum.interp_mask>` interpolates masked pixels (in place).
+
+
+Arithmetic
+----------
+
+:func:`\+ <mpdaf.obj.Spectrum.__add__>` makes a addition.
+
+:func:`\- <mpdaf.obj.Spectrum.__sub__>` makes a substraction .
+
+:func:`\* <mpdaf.obj.Spectrum.__mul__>` makes a multiplication.
+
+:func:`/ <mpdaf.obj.Spectrum.__div__>` makes a division.
+
+:func:`\*\* <mpdaf.obj.Spectrum.__pow__>`  computes the power exponent of data extensions.
+
+:func:`mpdaf.obj.Spectrum.mean <mpdaf.obj.Spectrum.mean>` computes the mean flux value over a wavelength range.
+
+:func:`mpdaf.obj.Spectrum.sum <mpdaf.obj.Spectrum.sum>` computes the total flux value over a wavelength range.
+
+:func:`mpdaf.obj.Spectrum.sqrt <mpdaf.obj.Spectrum.sqrt>` computes the positive square-root of data extension.
+
+:func:`mpdaf.obj.Spectrum.abs <mpdaf.obj.Spectrum.abs>` computes the absolute value of data extension.
 
 
 
 Transformation
 --------------
 
-:func:`mpdaf.obj.Spectrum.resize` resizes the spectrum to have a minimum number of masked values (in place).
+:func:`mpdaf.obj.Spectrum.resize <mpdaf.obj.Spectrum.resize>` resizes the spectrum to have a minimum number of masked values (in place).
 
-:func:`mpdaf.obj.Spectrum.sqrt` computes the positive square-root of data extension.
+:func:`mpdaf.obj.Spectrum.rebin_factor <mpdaf.obj.Spectrum.rebin_factor>` shrinks the size of the spectrum by factor.
 
-:func:`mpdaf.obj.Spectrum.abs` computes the absolute value of data extension.
+:func:`mpdaf.obj.Spectrum.rebin <mpdaf.obj.Spectrum.rebin>` rebins spectrum to different wavelength step size.
 
-:func:`mpdaf.obj.Spectrum.rebin_factor` shrinks the size of the spectrum by factor.
+:func:`mpdaf.obj.Spectrum.truncate <mpdaf.obj.Spectrum.truncate>` truncates a spectrum (in place).
 
-:func:`mpdaf.obj.Spectrum.rebin` rebins spectrum to different wavelength step size.
+:func:`mpdaf.obj.Spectrum.median_filter <mpdaf.obj.Spectrum.median_filter>` performs a median filter on the spectrum.
 
-:func:`mpdaf.obj.Spectrum.truncate` truncates a spectrum (in place).
+:func:`mpdaf.obj.Spectrum.convolve <mpdaf.obj.Spectrum.convolve>` convolves the spectrum with a other spectrum or an array.
 
-:func:`mpdaf.obj.Spectrum.median_filter` performs a median filter on the spectrum.
+:func:`mpdaf.obj.Spectrum.fftconvolve <mpdaf.obj.Spectrum.fftconvolve>` convolves the spectrum with a other spectrum or an array using fft.
 
-:func:`mpdaf.obj.Spectrum.convolve` convolves the spectrum with a other spectrum or an array.
+:func:`mpdaf.obj.Spectrum.correlate <mpdaf.obj.Spectrum.correlate>` cross-correlates the spectrum with a other spectrum or an array.
 
-:func:`mpdaf.obj.Spectrum.fftconvolve` convolves the spectrum with a other spectrum or an array using fft.
-
-:func:`mpdaf.obj.Spectrum.correlate` cross-correlates the spectrum with a other spectrum or an array.
-
-:func:`mpdaf.obj.Spectrum.fftconvolve_gauss` convolves the spectrum with a Gaussian using fft.
+:func:`mpdaf.obj.Spectrum.fftconvolve_gauss <mpdaf.obj.Spectrum.fftconvolve_gauss>` convolves the spectrum with a Gaussian using fft.
 
 
 
 Fit
 ---
 
-:func:`mpdaf.obj.Spectrum.poly_fit` returns coefficients of the polynomial fit on spectrum.
+:func:`mpdaf.obj.Spectrum.poly_fit <mpdaf.obj.Spectrum.poly_fit>` returns coefficients of the polynomial fit on spectrum.
  
-:func:`mpdaf.obj.Spectrum.poly_val` updates in place the spectrum data from polynomial fit coefficients.
+:func:`mpdaf.obj.Spectrum.poly_val <mpdaf.obj.Spectrum.poly_val>` updates in place the spectrum data from polynomial fit coefficients.
 
-:func:`mpdaf.obj.Spectrum.poly_spec` performs polynomial fit on spectrum.
+:func:`mpdaf.obj.Spectrum.poly_spec <mpdaf.obj.Spectrum.poly_spec>` performs polynomial fit on spectrum.
 
-:func:`mpdaf.obj.Spectrum.fwhm` returns the fwhm of a peak.
+:func:`mpdaf.obj.Spectrum.fwhm <mpdaf.obj.Spectrum.fwhm>` returns the fwhm of a peak.
 
-:func:`mpdaf.obj.Spectrum.gauss_fit` performs Gaussian fit on spectrum.
+:func:`mpdaf.obj.Spectrum.gauss_fit <mpdaf.obj.Spectrum.gauss_fit>` performs Gaussian fit on spectrum.
 
-:func:`mpdaf.obj.Spectrum.add_gaussian` adds a Gaussian on spectrum (in place).
+:func:`mpdaf.obj.Spectrum.add_gaussian <mpdaf.obj.Spectrum.add_gaussian>` adds a Gaussian on spectrum (in place).
 
 
 Filter
 ------
 
-:func:`mpdaf.obj.Spectrum.abmag_band` computes AB magnitude corresponding to the wavelength band.
+:func:`mpdaf.obj.Spectrum.abmag_band <mpdaf.obj.Spectrum.abmag_band>` computes AB magnitude corresponding to the wavelength band.
 
-:func:`mpdaf.obj.Spectrum.abmag_filter_name` computes AB magnitude using the filter name.
+:func:`mpdaf.obj.Spectrum.abmag_filter_name <mpdaf.obj.Spectrum.abmag_filter_name>` computes AB magnitude using the filter name.
 
-:func:`mpdaf.obj.Spectrum.abmag_filter` computes AB magnitude using array filter.
+:func:`mpdaf.obj.Spectrum.abmag_filter <mpdaf.obj.Spectrum.abmag_filter>` computes AB magnitude using array filter.
 
 
 Plotting
 --------
 
-:func:`mpdaf.obj.Spectrum.plot` plots the spectrum.
+:func:`mpdaf.obj.Spectrum.plot <mpdaf.obj.Spectrum.plot>` plots the spectrum.
 
-:func:`mpdaf.obj.Spectrum.log_plot` plots the spectrum with y logarithmic scale.
+:func:`mpdaf.obj.Spectrum.log_plot <mpdaf.obj.Spectrum.log_plot>` plots the spectrum with y logarithmic scale.
 
-:func:`mpdaf.obj.Spectrum.ipos` prints cursor position in interactive mode.
+:func:`mpdaf.obj.Spectrum.ipos <mpdaf.obj.Spectrum.ipos>` prints cursor position in interactive mode.
 
-:func:`mpdaf.obj.Spectrum.idist` gets distance and center from 2 cursor positions (interactive mode).
+:func:`mpdaf.obj.Spectrum.idist <mpdaf.obj.Spectrum.idist>` gets distance and center from 2 cursor positions (interactive mode).
 
-:func:`mpdaf.obj.Spectrum.imask` over-plots masked values (interactive mode).
+:func:`mpdaf.obj.Spectrum.imask <mpdaf.obj.Spectrum.imask>` over-plots masked values (interactive mode).
 
-:func:`mpdaf.obj.Spectrum.igauss_fit` performs and plots a Gaussian fit on spectrum.
+:func:`mpdaf.obj.Spectrum.igauss_fit <mpdaf.obj.Spectrum.igauss_fit>` performs and plots a Gaussian fit on spectrum.
   
         
   

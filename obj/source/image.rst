@@ -27,6 +27,7 @@ Examples::
 
 .. autoclass:: mpdaf.obj.Image
 	:members:
+	:special-members:
 	
 	
 	
