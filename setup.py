@@ -75,7 +75,7 @@ setup(name = 'mpdaf',
       description = 'MUSE Python Data Analysis Framework is a python framework in view of '
                     'the analysis of MUSE data in the context of the GTO.',
       url = 'http://urania1.univ-lyon1.fr/mpdaf/login',
-      requires = ['numpy (>= 1.0)', 'scipy (>= 0.10)'],
+      requires = ['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib'],
       install_requires = ['pyfits','pywcs','prettytable','nose'],
       provides = ['mpdaf'],
       package_dir = {'': 'lib/'},
