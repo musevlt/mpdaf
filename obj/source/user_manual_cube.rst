@@ -165,108 +165,64 @@ We can also compute the line emission datacube::
 Tutorial 3
 ----------
 
-In this tutorial we will compute the velocity field using line emission in the galaxy.
+In this tutorial we will compute equivalent width of the Ha emission in the galaxy.
 First let's isolate the emission line by truncating the object datacubein wavelength.::
 
  >>> sp1.plot()
- >>> k1,k2 = sp1.wave.pixel([9000,9140], nearest=True)
+ >>> k1,k2 = sp1.wave.pixel([9000,9200], nearest=True)
  >>> emi1 = obj1[k1:k2+1,:,:]
  >>> emi1.info()
- 113 X 11 X 21 cube (no name)
- .data(113,11,21) (erg/s/cm**2/Angstrom) fscale=1e-20, .var(113,11,21)
+ 161 X 11 X 21 cube (no name)
+ .data(161,11,21) (erg/s/cm**2/Angstrom) fscale=1e-20, .var(161,11,21)
  center:(-30:00:00.55,01:20:00.414) size in arcsec:(2.200,4.200) step in arcsec:(0.200,0.200) rot:0.0
- wavelength: min:9000.00 max:9140.00 step:1.25 Angstrom
+ wavelength: min:9000.00 max:9200.00 step:1.25 Angstrom
  >>> sp1 = emi1.sum(axis=(1,2))
  >>> sp1.plot()
 
-We try to fit a gaussian to get the peak wavelength::
+We first fit and subtract the continuum. Before doing the polynomial fit we mask the region of
+the emission lines (sp1.mask) and then we perform the linear fit. Then the spectrum is unmasked
+and the continnum subtracted::
 
- >>> fit1 = sp1.gauss_fit(9060,9080, plot=True)
- >>> print fit1.lpeak, fit1.flux
- 9069.67193453 3.58446407109e-16
+ >>> sp1.mask(9050, 9125)
+ >>> cont1 = sp1.poly_spec(1)
+ >>> sp1.unmask()
+ >>> cont1.plot()
+ >>> line1 = sp1 - cont1
+ >>> line1.plot()
 
-Now we repeat this for all datacube spectra, and we will save flux and peak wavelength in two images.
+We then compute the Ha line total flux by simple integration (taking into account the pixel size in A)
+over the wavelength range centered around Halfa and the continuum mean flux at the same location::
+
+ >>> k = line1.data.argmax()
+ >>> line1[55-10:55+11].plot(color='r')
+ >>> fline = line1[55-10:55+11].sum()*line1.get_step()
+ >>> cline = cont1[55-10:55+11].mean()
+ >>> ew = fline/cline
+ >>> print fline, cline, ew
+ 2.96482805344e-16 1.95859587536e-17 15.1375181105
+
+Now we repeat this for all datacube spectra, and we  save Ha flux and equivalent width in two images.
 We start creating two images with identical shape and wcs as the reconstructed image and then use
 the spectrum iterator.::
 
- >>> ima_flux = ima1.clone()
- >>> ima_vel = ima1.clone()
- >>> for sp in iter_spe(obj1,):
- >>>   co[:] = sp.poly_spec(5)
-
-Tutorial 4
-----------
-
-MPDAF is using numpy array and then all advanced scipy signal processing tools are available.
-In this tutorial we show how to use directly scipy functions to perform advanced computations.
-
-
-
- >>> from scipy import polyfit, polyval
- >>> def fitcont(spec, cont, deg):
- >>>       """ fit the continuum with a polynome
- >>>       spec: input spectrum
- >>>       cont: output spectrum
- >>>       deg: polynomila degre
- >>>       """
- >>>       pol = polyfit(range(spec.shape), spec.data, deg)
- >>>       cont.data = polyval(pol, range(spec.shape))
- >>>       return
-
-Let's try it on the total spectrum sp1 computed in the previous tutorial::
-
- >>> cont1 = sp1.copy()
- >>> fitcont(sp1, cont1, 5)
- >>> sp1.plot()
- >>> cont1.plot()
-
-.. figure::  user_manual_cube_images/spec2.png
-   :align:   center
-
-Let's try also on a single spectrum at the edge of the galaxy::
-
- >>> sp1 = obj1[:,5,2]
- >>> cont1 = sp1.copy()
- >>> fitcont(sp1, cont1, 5)
- >>> sp1.plot()
- >>> cont1.plot()
-
-.. figure::  user_manual_cube_images/spec3.png
-   :align:   center
-
-Fine, now let's do this for all spectrum of the input datacube.
-We start by doing a copy of the input datacube (obj1). Note that we set the variance of the
-continuum datacube to None. We then loop over all spectra. At each spatial location
-we extract the corresponding spectra (sp), we create a copy (co) and use our function
-fitcont to get the polynomial approximation of the continuum. Then we save the continumm values
-(co.data) into the corresponding continuum datacube::
-
- >>> cont1 = obj1.copy()
- >>> cont1.var = None
- >>> m,n = obj1.shape[1:]
- >>> for i in range(m):
- >>>        for j in range(n):
- >>>                sp = obj1[:,i,j]
- >>>                co = sp.copy()
- >>>                fitcont(sp, co, 5)
- >>>                cont1[:,i,j] = co.data
-
-Let's check the result and display the continuum reconstructed image::
-
- >>> rec2 = cont1.sum(axis=0)
- >>> rec2.plot(scale='arcsinh')
-
-.. figure::  user_manual_cube_images/recima4.png
-   :align:   center
-
-We can also compute the line emission datacube::
-
- >>> line1 = obj1 - cont1
- >>> line1.sum(axis=0).plot('arcsinh')
-
-.. figure::  user_manual_cube_images/recima5.png
-   :align:   center
-
+ >>> ha_flux = ima1.clone()
+ >>> cont_flux = ima1.clone()
+ >>> ha_ew = ima1.clone()
+ >>> for sp,pos in iter_spe(emi1, index=True):
+ >>>   p,q = pos
+ >>>   sp.mask(9050, 9125)
+ >>>   cont = sp.poly_spec(1)
+ >>>   sp.unmask()
+ >>>   line = sp - cont
+ >>>   fline = line[55-10:55+11].sum()*line.get_step()
+ >>>   cline = cont[55-10:55+11].mean()
+ >>>   ew = fline/cline
+ >>>   cont_flux[p,q] = cline
+ >>>   ha_flux[p,q] = fline
+ >>>   ha_ew[p,q] = ew
+ >>> cont_flux.plot()
+ >>> ha_flux.plot()
+ >>> ha_ew.plot(vmin=-15,vmax=15)
 
 Tutorial 4
 ----------
@@ -335,7 +291,7 @@ Reference
 =========
 
 
-:func:`mpdaf.obj.Cube.copy` returns a new copy of a Cube object.
+:func:`mpdaf.obj.Cube.copy` copies Cube object in a new one and returns it.
 
 :func:`mpdaf.obj.Cube.info` prints information.
 
