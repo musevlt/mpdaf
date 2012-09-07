@@ -430,6 +430,7 @@ class WCS(object):
         :param theta: Rotation in degree.
         :type theta: float
         """
+        #rotation matrix of -theta
         _theta = deg2rad(theta)
         _mrot = np.zeros(shape=(2,2),dtype=np.double)
         _mrot[0] = (np.cos(_theta),-np.sin(_theta))
@@ -443,6 +444,7 @@ class WCS(object):
                 self.wcs.wcs.pc = new_pc
             except:
                 print "problem with rotation"
+       
                 
     def rebin(self, step, start):
         """Rebins to a new coordinate system.

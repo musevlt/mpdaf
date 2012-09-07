@@ -164,10 +164,10 @@ class TestImage():
     @attr(speed='fast')   
     def test_mask_Image(self):
         """Image class: tests mask functionalities"""
-        self.image1.mask((2,2),(1,1),pix=True)
+        self.image1.mask((2,2),(1,1),pix=True,inside=False)
         nose.tools.assert_equal(self.image1.sum(),2*9)
         self.image1.unmask()
-        self.image1.mask((2,2),(3600,3600))
+        self.image1.mask((2,2),(3600,3600),inside=False)
         nose.tools.assert_equal(self.image1.sum(),2*9)
         
     @attr(speed='fast')   
@@ -191,5 +191,26 @@ class TestImage():
         for j in range(6):
             for i in range(5):
                 nose.tools.assert_almost_equal(ima2.data[j,i]*ima2.fscale,0)
+                
+    @attr(speed='fast')
+    def test_rotate(self):
+        """Image class: tests clone method."""
+        ima = Image("data/obj/a370II.fits")
+        ima2 = ima.rotate(30)
+        
+        _theta = -30* np.pi / 180.
+        _mrot = np.zeros(shape=(2,2),dtype=np.double)
+        _mrot[0] = (np.cos(_theta),np.sin(_theta))
+        _mrot[1] = (-np.sin(_theta),np.cos(_theta))
+        
+        center= (np.array([ima.shape[0],ima.shape[1]])+1)/2. -1
+        pixel= np.array([910,1176])
+        r = np.dot(pixel - center, _mrot)
+        r[0] = r[0] + center[0]
+        r[1] = r[1] + center[1]
+        nose.tools.assert_almost_equal(ima.wcs.pix2sky(pixel)[0][0],ima2.wcs.pix2sky(r)[0][0])
+        nose.tools.assert_almost_equal(ima.wcs.pix2sky(pixel)[0][1],ima2.wcs.pix2sky(r)[0][1])
+        
+        
         
         

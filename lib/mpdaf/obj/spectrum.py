@@ -319,7 +319,7 @@ class Spectrum(object):
             self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
-        """Copies spectrum object in a new one and returns it
+        """Returns a new copy of a Spectrum object.
         
         :rtype: Spectrum object.
         """
@@ -1732,7 +1732,6 @@ class Spectrum(object):
           :type plot: boolean
           :returns: :class:`mpdaf.obj.Gauss1D`
         """
-
         # truncate the spectrum and compute right and left gaussian values
         if is_int(lmin) or is_float(lmin):
                 fmin = None
@@ -1752,7 +1751,7 @@ class Spectrum(object):
         spec = self.get_lambda(lmin, lmax)
         data = spec._interp_data(spline)
         l = spec.wave.coord()
-        d = data * self.fscale
+        d = data
         
         lmin = l[0]
         lmax = l[-1]
@@ -1769,6 +1768,7 @@ class Spectrum(object):
         if cont is None:
             cont0 = ((fmax-fmin)*lpeak +lmax*fmin-lmin*fmax)/(lmax-lmin)
         else:
+            cont /= self.fscale
             cont0 = cont
         
         # initial sigma value    
@@ -1786,7 +1786,7 @@ class Spectrum(object):
             peak = d[pixel] - cont0
             flux = peak * np.sqrt(2*np.pi*(sigma**2))
         elif peak is True:
-            peak = flux - cont0
+            peak = flux/self.fscale - cont0
             flux = peak * np.sqrt(2*np.pi*(sigma**2))
         else:
             pass
@@ -1800,7 +1800,7 @@ class Spectrum(object):
         if spec.var is not None and weight:
             wght = 1/spec.var
         else:
-            wght = 1.0
+            wght = np.ones(spec.shape)
         e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p,x) -y)
         
         # inital guesses for Gaussian Fit
@@ -1811,18 +1811,18 @@ class Spectrum(object):
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
-        err = np.array([np.sqrt(covar[i, i]) * np.sqrt(chisq / dof) for i in range(len(v))])
+        err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
         
         #plot
         if plot:
             #xxx = np.arange(v[1]-15*v[2],v[1]+15*v[2],l[1]-l[0])
             xxx = np.arange(l[0],l[-1],l[1]-l[0])
-            ccc = gaussfit(v,xxx)
+            ccc = gaussfit(v,xxx)* self.fscale
             plt.plot(xxx,ccc,'r--')
 
         # return a Gauss1D object
-        flux = v[0]
-        err_flux = err[0]
+        flux = v[0] * self.fscale
+        err_flux = err[0] * self.fscale
         lpeak = v[1]
         err_lpeak = err[1]
         sigma = np.abs(v[2])
@@ -1830,7 +1830,8 @@ class Spectrum(object):
         fwhm = sigma*2*np.sqrt(2*np.log(2))
         err_fwhm = err_sigma*2*np.sqrt(2*np.log(2))
         peak = flux/np.sqrt(2*np.pi*(sigma**2))
-        err_peak = np.abs(1./np.sqrt(2*np.pi)*(err_flux*sigma-flux*err_sigma)/sigma/sigma)            
+        err_peak = np.abs(1./np.sqrt(2*np.pi)*(err_flux*sigma-flux*err_sigma)/sigma/sigma)      
+        cont0 *= self.fscale
         return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak, err_peak, err_flux,err_fwhm)
 
     def add_gaussian(self, lpeak, flux, fwhm, cont=0, peak=False ):

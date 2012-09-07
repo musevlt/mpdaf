@@ -23,7 +23,6 @@ class iter_spe(object):
         self.q -= 1
         if self.p == 0:
             raise StopIteration
-        print self.p-1,self.q
         if self.index is False:
             return self.cube[:,self.p-1,self.q]
         else:
@@ -272,7 +271,7 @@ class Cube(object):
             self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
-        """Copies Cube object in a new one and returns it.
+        """Returns a new copy of a Cube object.
         """
         cub = Cube()
         cub.filename = self.filename

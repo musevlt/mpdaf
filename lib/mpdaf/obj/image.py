@@ -92,11 +92,11 @@ class Gauss2D:
     Attributes
     ---------- 
     
-    center (float,float) : Gaussian center (dec,ra).
+    center (float,float) : Gaussian center (y,x).
     
     flux (float) : Gaussian integrated flux.
     
-    width (float,float) : Spreads of the Gaussian blob (dec_width,ra_width).
+    fwhm (float,float) : Gaussian fwhm (fhwm_y,fwhm_x).
     
     cont (float) : Continuum value.
     
@@ -114,10 +114,10 @@ class Gauss2D:
     
     err_peak (float) : Estimated error on Gaussian peak value.  
     """
-    def __init__(self, center, flux, width, cont, rot, peak, err_center, err_flux, err_width, err_rot, err_peak):
+    def __init__(self, center, flux, fwhm, cont, rot, peak, err_center, err_flux, err_width, err_rot, err_peak):
         self.center = center
         self.flux = flux
-        self.width = width
+        self.fwhm = fwhm
         self.cont = cont
         self.rot = rot
         self.peak = peak
@@ -130,7 +130,7 @@ class Gauss2D:
     def copy(self):
         """Copies Gauss2D object in a new one and returns it.
         """
-        res = Gauss2D(self.center, self.flux, self.width, self.cont, self.rot, self.peak, self.err_center, self.err_flux, self.err_width, self.err_rot, self.err_peak)
+        res = Gauss2D(self.center, self.flux, self.fwhm, self.cont, self.rot, self.peak, self.err_center, self.err_flux, self.err_width, self.err_rot, self.err_peak)
         return res
         
     def print_param(self):
@@ -139,7 +139,7 @@ class Gauss2D:
         print 'Gaussian center = (%g,%g) (error:(%g,%g))' %(self.center[0],self.center[1],self.err_center[0],self.err_center[1])   
         print 'Gaussian integrated flux = %g (error:%g)' %(self.flux,self.err_flux)
         print 'Gaussian peak value = %g (error:%g)' %(self.peak,self.err_peak)
-        print 'Gaussian width = (%g,%g) (error:(%g,%g))' %(self.width[0],self.width[1],self.err_width[0],self.err_width[1])
+        print 'Gaussian fwhm = (%g,%g) (error:(%g,%g))' %(self.fwhm[0],self.fwhm[1],self.err_fwhm[0],self.err_fwhm[1])
         print 'Rotation in degree: %g (error:%g)' %(self.rot, self.err_rot)
         print 'Gaussian continuum = %g' %self.cont
         print ''
@@ -229,7 +229,14 @@ class Image(object):
                     if hdr['NAXIS'] != 2:
                         raise IOError, '  not an image'
                     self.unit = hdr.get('BUNIT', None)
+                    
+                    
+                    
                     self.cards = hdr.ascard
+                    #self.cards = pyfits.CardList()
+                    
+                    
+                    
                     self.shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
                     self.data = np.array(f[0].data, dtype=float)
                     self.var = None
@@ -336,7 +343,7 @@ class Image(object):
             self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
-        """Copies Image object in a new one and returns it.
+        """Returns a new copy of an Image object.
   
           :rtype: Image
         """
@@ -395,7 +402,8 @@ class Image(object):
             if self.cards is not None:
                 for card in self.cards:
                     try:
-                        tbhdu.header.update(card.key, card.value, card.comment)
+                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                            tbhdu.header.update(card.key, card.value, card.comment)
                     except:
                         pass
             tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
@@ -424,7 +432,8 @@ class Image(object):
                 if self.cards is not None:
                     for card in self.cards:
                         try:
-                            prihdu.header.update(card.key, card.value, card.comment)
+                            if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                                prihdu.header.update(card.key, card.value, card.comment)
                         except:
                             pass
                 prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
@@ -442,7 +451,8 @@ class Image(object):
                 if self.cards is not None:
                     for card in self.cards:
                         try:
-                            tbhdu.header.update(card.key, card.value, card.comment)
+                            if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                                tbhdu.header.update(card.key, card.value, card.comment)
                         except:
                             pass
                 tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
@@ -1048,7 +1058,7 @@ class Image(object):
             else:
                 raise ValueError, 'var and data have not the same dimensions.'
             
-    def mask(self, center, radius, pix=False, inside=False):
+    def mask(self, center, radius, pix=False, inside=True):
         """Masks values inside/outside the described region.
   
           :param center: Center of the explored region.
@@ -1317,10 +1327,10 @@ class Image(object):
         """
         self.wcs.rotate(theta)
     
-    def _rotate(self, theta, interp='no'):
+    def _rotate(self, theta, interp='no', reshape=False):
         """ Rotates the image using spline interpolation.
   
-          :param theta: Rotation in degree.
+          :param theta: Rotation in degrees.
           :type theta: float
           :param interp: if 'no', data median value replaced masked values.
   
@@ -1328,6 +1338,8 @@ class Image(object):
         
             if 'spline', spline interpolation of the masked values.
           :type interp: 'no' | 'linear' | 'spline'
+          :param reshape:  if reshape is true, the output image is adapted so that the input image is contained completely in the output. Default is False.
+          :type reshape: boolean
         """
         
         if interp=='linear':
@@ -1339,15 +1351,40 @@ class Image(object):
             #data = self.data.filled(np.ma.median(self.data))
         
         mask = np.array(1 - self.data.mask,dtype=bool)
-        mask_rot = ndimage.rotate(mask, theta, reshape=False, order=0)
-        data_rot = ndimage.rotate(data, theta, reshape=False)
+        mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
+        data_rot = ndimage.rotate(data, -theta, reshape=reshape)
         mask_ma = np.ma.make_mask(1-mask_rot)
         self.data = np.ma.array(data_rot, mask=mask_ma)
+        
+        try:
+            center_pix = (np.array([self.shape[0],self.shape[1]])+1)/2.
+            center_coord = self.wcs.pix2sky([center_pix-1])
+            old_crpix = self.wcs.wcs.wcs.crpix.copy()
+            self.wcs.wcs.wcs.crpix[0] = center_pix[1]
+            self.wcs.wcs.wcs.crpix[1] = center_pix[0]
+            self.wcs.wcs.wcs.crval[0] = center_coord[0][1]
+            self.wcs.wcs.wcs.crval[1] = center_coord[0][0]
+            # rotate the wcs
+            self.wcs.rotate(-theta)        
+            # translate the new wcs
+            self.shape = np.array(data_rot.shape)
+            self.wcs.wcs.naxis1 = self.shape[1]
+            self.wcs.wcs.naxis2 = self.shape[0]
+            self.wcs.wcs.wcs.crpix = (np.array([self.shape[1],self.shape[0]])+1)/2.
+            # compute the new value of the old crpix
+            new_crval = self.wcs.pix2sky([old_crpix[1]-1,old_crpix[0]-1])
+            self.wcs.wcs.wcs.crpix = old_crpix
+            self.wcs.wcs.wcs.crval[0] = new_crval[0][1]
+            self.wcs.wcs.wcs.crval[1] = new_crval[0][0]
+            
+        except:
+            self.shape = np.array(data_rot.shape)
+            self.wcs = None
     
-    def rotate(self, theta, interp='no'):
+    def rotate(self, theta, interp='no', reshape=False):
         """ Returns rotated image.
   
-          :param theta: Rotation in degree.
+          :param theta: Rotation in degrees.
           :type theta: float
           :param interp: if 'no', data median value replaced masked values.
   
@@ -1355,10 +1392,12 @@ class Image(object):
         
             if 'spline', spline interpolation of the masked values.
           :type interp: 'no' | 'linear' | 'spline'
+          :param reshape:  if reshape is true, the output image is adapted so that the input image is contained completely in the output. Default is False.
+          :type reshape: boolean
           :rtype: Image
         """
         res =self.copy()
-        res._rotate(theta, interp)
+        res._rotate(theta, interp, reshape)
         return res
         
     def sum(self,axis=None):
@@ -1871,7 +1910,7 @@ class Image(object):
         width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*cdelt[0]
         return [width_y,width_x]
         
-    def gauss_fit(self, pos_min, pos_max, center=None, flux=None, width=None, cont=None, rot = 0, peak = False, factor = 1, plot = False):
+    def gauss_fit(self, pos_min, pos_max, center=None, flux=None, fwhm=None, cont=None, rot = 0, peak = False, factor = 1, weight=True, plot = False):
         """Performs Gaussian fit on image.
   
           :param pos_min: Minimum y and x values in degrees (y_min,x_min).
@@ -1882,8 +1921,8 @@ class Image(object):
           :type center: (float,float)
           :param flux: Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.
           :type flux: float
-          :param width: Initial spreads of the Gaussian blob (width_y,width_x). If None, they are estimated.
-          :type width: (float,float)
+          :param fwhm: Initial gaussian fwhm (fwhm_y,fwhm_x). If None, they are estimated.
+          :type fwhm: (float,float)
           :param cont: Initial continuum value, if None it is estimated.
           :type cont: float
           :param rot: Initial rotation in degree.
@@ -1894,6 +1933,8 @@ class Image(object):
         
               If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
           :type factor: integer
+          :param weight:  If weight is True, the weight is computed as the inverse of variance.
+          :type weight: boolean
           :param plot: If True, the gaussian is plotted.
           :type plot: boolean
           :rtype: :class:`mpdaf.obj.Gauss2D`
@@ -1911,17 +1952,17 @@ class Image(object):
         pixsky = ima.wcs.pix2sky(pixcrd)
         x = pixsky[:,1] #ra
         y = pixsky[:,0] #dec  
-        data = ima.data.data[ksel]*self.fscale
+        data = ima.data.data[ksel]
         
         #weight
-        if ima.var is None:
-            dw = data
+        if ima.var is not None and weight:
+            wght = 1/ima.var[ksel]
         else:
-            dw = data / ima.var[ksel]
+            wght = np.ones(np.shape(ksel[0])[0])
         
         # initial gaussian peak position
         if center is None:
-            imax = dw.argmax()
+            imax = data.argmax()
             ra_peak = x[imax]
             dec_peak = y[imax]
         else:
@@ -1930,14 +1971,19 @@ class Image(object):
             
         # continuum value 
         if cont is None:
-            imin = dw.argmin()
+            imin = data.argmin()
             cont =  max(0,data[imin])
+        else:
+            cont = cont/self.fscale
             
-        # initial width value    
-        if width is None:
+        # initial moment value    
+        if fwhm is None:
             width= ima.moments()
-        ra_width = width[1]
-        dec_width = width[0]
+            ra_width = width[1]
+            dec_width = width[0]
+        else:
+           ra_width = fwhm[1]/(2.*np.sqrt(2.*np.log(2.0)))
+           dec_width = fwhm[0]/(2.*np.sqrt(2.*np.log(2.0)))
         
         # initial gaussian integrated flux
         if flux is None:
@@ -1946,10 +1992,11 @@ class Image(object):
             peak = ima.data.data[pixcrd[0,0],pixcrd[0,1]] - cont
             flux = peak * np.sqrt(2*np.pi*(ra_width**2)) * np.sqrt(2*np.pi*(dec_width**2))
         elif peak is True:
+            flux /= self.fscale
             peak = flux - cont
             flux = peak * np.sqrt(2*np.pi*(ra_width**2)) * np.sqrt(2*np.pi*(dec_width**2))
         else:
-            pass
+            flux /= self.fscale
         
         #rotation angle in rad
         theta = np.pi * rot / 180.0
@@ -1957,25 +2004,25 @@ class Image(object):
         
         if factor > 1:
             gaussfit = lambda p: gauss_image(ima.shape, ima.wcs, (p[3],p[1]), p[0], (p[4],p[2]), False, p[5], factor).data.data[ksel]*ima.fscale + cont
-            e_gauss_fit = lambda p, data: (gaussfit(p) - data)
+            e_gauss_fit = lambda p, data, w: w * (gaussfit(p) - data)
             v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
-            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data), maxfev=100000, full_output=1)           
+            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
         else:                                             
             # 2d gaussian functio
             gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
                                                   *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-((x-p[1])*np.sin(p[5])+(y-p[3])*np.cos(p[5]))**2/(2*p[4]**2)) 
             # 2d Gaussian fit  
-            e_gauss_fit = lambda p, x, y, data: (gaussfit(p,x,y) - data)
+            e_gauss_fit = lambda p, x, y, data,w : w * (gaussfit(p,x,y) - data)
                 
             # inital guesses for Gaussian Fit
             v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
             # Minimize the sum of squares
-            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1)
+            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(x,y,data,wght), maxfev=100000, full_output=1)
     
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
-        err = np.array([np.sqrt(covar[i, i]) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
         
         # plot
         if plot:
@@ -1993,7 +2040,7 @@ class Image(object):
             for i in range(np.shape(xx)[0]):
                 xxx = np.empty(np.shape(yy)[0])
                 xxx[:] = xx[i]
-                ff[:,i] = gaussfit(v,xxx,yy)
+                ff[:,i] = gaussfit(v,xxx,yy)*self.fscale
             
             pixsky = [[ymin,xmin],[ymax,xmax]]
             [[ymin,xmin],[ymax,xmax]] = self.wcs.sky2pix(pixsky)
@@ -2002,23 +2049,27 @@ class Image(object):
             plt.contour(xx, yy, ff, 5)
             
         # return a Gauss2D object
-        flux = v[0]
-        err_flux = err[0]
+        flux = v[0]*self.fscale
+        err_flux = err[0]*self.fscale
         ra_peak = v[1]
         err_ra_peak = err[1]
         ra_width = np.abs(v[2])
         err_ra_width = np.abs(err[2])
+        ra_fwhm = ra_width*2*np.sqrt(2*np.log(2))
+        err_ra_fwhm = err_ra_width*2*np.sqrt(2*np.log(2))
         dec_peak = v[3]
         err_dec_peak = err[3]
         dec_width = np.abs(v[4])
         err_dec_width = np.abs(err[4])
+        dec_fwhm = dec_width*2*np.sqrt(2*np.log(2))
+        err_dec_fwhm = err_dec_width*2*np.sqrt(2*np.log(2))
         rot = (v[5] * 180.0 / np.pi)%180
         err_rot = err[5] * 180.0 / np.pi
         peak = flux / np.sqrt(2*np.pi*(ra_width**2)) / np.sqrt(2*np.pi*(dec_width**2))
         err_peak = (err_flux*ra_width*dec_width - flux*(err_ra_width*dec_width+err_dec_width*ra_width)) / (2*np.pi*ra_width*ra_width*dec_width*dec_width)
-        return Gauss2D((dec_peak,ra_peak), flux, (dec_width,ra_width), cont, rot, peak, (err_dec_peak,err_ra_peak), err_flux, (err_dec_width,err_ra_width), err_rot, err_peak)
+        return Gauss2D((dec_peak,ra_peak), flux, (dec_fwhm,ra_fwhm), cont*self.fscale, rot, peak, (err_dec_peak,err_ra_peak), err_flux, (err_dec_fwhm,err_ra_fwhm), err_rot, err_peak)
     
-    def moffat_fit(self, pos_min, pos_max,  center=None, I=None, a=None , q=1, n=2.0, cont=None, rot=0, factor = 1, plot = False):
+    def moffat_fit(self, pos_min, pos_max,  center=None, I=None, a=None , q=1, n=2.0, cont=None, rot=0, factor = 1, weight=True, plot = False):
         """Performs moffat fit on image.
         
         :param pos_min: Minimum y and x values in degrees (y_min,x_min).
@@ -2052,7 +2103,8 @@ class Image(object):
         
                        If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
         :type factor: integer
-        
+        :param weight:  If weight is True, the weight is computed as the inverse of variance.
+        :type weight: boolean
         :param plot: If True, the gaussian is plotted.
         :type plot: boolean
         """
@@ -2069,17 +2121,17 @@ class Image(object):
         pixsky = ima.wcs.pix2sky(pixcrd)
         x = pixsky[:,1] #ra
         y = pixsky[:,0] #dec  
-        data = ima.data.data[ksel]*self.fscale
+        data = ima.data.data[ksel]
         
         #weight
-        if ima.var is None:
-            dw = data
+        if ima.var is not None and weight:
+            wght = 1/ima.var[ksel]
         else:
-            dw = data / ima.var[ksel]
+            wght = np.ones(np.shape(ksel[0])[0])
         
         # initial peak position
         if center is None:
-            imax = dw.argmax()
+            imax = data.argmax()
             ra_peak = x[imax]
             dec_peak = y[imax]
         else:
@@ -2088,8 +2140,10 @@ class Image(object):
             
         # continuum value 
         if cont is None:
-            imin = dw.argmin()
-            cont =  max(0,data[imin])
+            imin = data.argmin()
+            cont = max(0,data[imin])
+        else:
+            cont /= self.fscale
             
         # initial width value    
         if a is None:
@@ -2098,8 +2152,10 @@ class Image(object):
         
         # initial gaussian integrated flux
         if I is None:
-           imax = dw.argmax()
-           I = dw[imax]
+           imax = data.argmax()
+           I = data[imax]
+        else:
+            I /= self.fscale
         
         #rotation angle in rad
         theta = np.pi * rot / 180.0
@@ -2107,20 +2163,20 @@ class Image(object):
         
         if factor > 1:
             moffatfit = lambda p: moffat_image(ima.shape, ima.wcs, (p[2],p[1]), p[0], p[3], p[5], p[4], p[6],factor).data.data[ksel]*ima.fscale + cont
-            e_moffat_fit = lambda p, data: (moffatfit(p) - data)
+            e_moffat_fit = lambda p, data, w: w * (moffatfit(p) - data)
             v0 = [I,ra_peak, dec_peak, a, n, q, rot]
-            v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(data), maxfev=100000, full_output=1)           
+            v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
         else:                                             
             moffatfit = lambda p,x, y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
                               +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**p[4]
-            e_moffat_fit = lambda p, x, y, data: (moffatfit(p,x,y) - data)                
+            e_moffat_fit = lambda p, x, y, data, w: w * (moffatfit(p,x,y) - data)                
             v0 = [I,ra_peak, dec_peak, a, n, q, rot]
-            v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(x,y,data), maxfev=100000, full_output=1)
+            v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(x,y,data,wght), maxfev=100000, full_output=1)
     
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
-        err = np.array([np.sqrt(covar[i, i]) * np.sqrt(chisq / dof) for i in range(len(v))])
+        err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
         
         # plot
         if plot:
@@ -2137,7 +2193,7 @@ class Image(object):
             for i in range(np.shape(xx)[0]):
                 xxx = np.empty(np.shape(yy)[0])
                 xxx[:] = xx[i]
-                ff[:,i] = moffatfit(v,xxx,yy)
+                ff[:,i] = moffatfit(v,xxx,yy)*self.fscale
             
             pixsky = [[ymin,xmin],[ymax,xmax]]
             [[ymin,xmin],[ymax,xmax]] = self.wcs.sky2pix(pixsky)
@@ -2145,8 +2201,8 @@ class Image(object):
             yy = np.arange(ymin,ymax,(ymax-ymin)/np.shape(yy)[0])
             plt.contour(xx, yy, ff, 5)
 
-        I = v[0]
-        err_I = err[0]
+        I = v[0]*self.fscale
+        err_I = err[0]*self.fscale
         ra = v[1]
         err_ra = err[1]
         dec = v[2]
@@ -2166,6 +2222,7 @@ class Image(object):
         print 'n',n,err_n
         print 'q',q,err_q
         print 'rot',rot,err_rot
+        print 'cont', cont*self.fscale
     
     def _rebin_factor_(self, factor):
         '''Shrinks the size of the image by factor.
