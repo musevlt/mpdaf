@@ -378,9 +378,9 @@ class Image(object):
         except:
             wcs=None
         if var is False:
-            ima = Image(wcs=wcs,data=np.zeros(shape=self.shape))
+            ima = Image(wcs=wcs,data=np.zeros(shape=self.shape),unit=self.unit)
         else:
-            ima = Image(wcs=wcs,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape))
+            ima = Image(wcs=wcs,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape),unit=self.unit)
         return ima
 
     def write(self,filename):
@@ -1243,6 +1243,28 @@ class Image(object):
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
         
+        
+    def mask_variance(self, threshold):
+        """Masks pixels with a variance upper than threshold value.
+
+        :param threshold: Threshold value.
+        :type threshold: float
+        """
+        if self.var is None:
+            raise ValueError, 'Operation forbidden without variance extension.'
+        else:
+            ksel = np.where(self.var > threshold)
+            self.data[ksel] = np.ma.masked  
+            
+    def mask_selection(self, ksel):
+        """Masks pixels corresponding to a selection.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        """
+        self.data[ksel] = np.ma.masked
+        
+    
     def _truncate(self, y_min, y_max, x_min, x_max, mask=True):
         """ Truncates the image.
 

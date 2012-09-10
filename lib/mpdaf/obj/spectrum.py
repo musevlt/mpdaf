@@ -354,9 +354,9 @@ class Spectrum(object):
         except:
             wave=None
         if var is False:
-            spe = Spectrum(wave=wave,data=np.zeros(shape=self.shape))
+            spe = Spectrum(wave=wave,data=np.zeros(shape=self.shape),unit=self.unit)
         else:
-            spe = Spectrum(wave=wave,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape))
+            spe = Spectrum(wave=wave,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape),unit=self.unit)
         return spe
 
     def write(self,filename):
@@ -1059,7 +1059,7 @@ class Spectrum(object):
         self.data = np.ma.masked_invalid(self.data)
         
     def mask_variance(self, threshold):
-        """ Masks pixels with a variance upper than threshold value.
+        """Masks pixels with a variance upper than threshold value.
 
         :param threshold: Threshold value.
         :type threshold: float
@@ -1069,6 +1069,14 @@ class Spectrum(object):
         else:
             ksel = np.where(self.var > threshold)
             self.data[ksel] = np.ma.masked  
+            
+    def mask_selection(self, ksel):
+        """Masks pixels corresponding to the selection.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        """
+        self.data[ksel] = np.ma.masked
         
     def _interp(self, wavelengths, spline=False):
         """ returns the interpolated values corresponding to the wavelength array
@@ -1331,7 +1339,7 @@ class Spectrum(object):
         return res
 
     def mean(self, lmin=None, lmax=None, weight=True, spline=False):
-        """ Computes the mean value on a wavelength range.
+        """ Computes the mean flux value over a wavelength range.
   
           :param lmin: Minimum wavelength.
           :type lmin: float
@@ -1364,7 +1372,7 @@ class Spectrum(object):
         return flux
 
     def sum(self, lmin=None, lmax=None, weight=True, spline=False):
-        """ Computes the flux value on [lmin,lmax].
+        """ Computes the flux value over [lmin,lmax].
 
           :param lmin: Minimum wavelength.
           :type lmin: float

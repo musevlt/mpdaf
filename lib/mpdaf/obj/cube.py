@@ -312,9 +312,9 @@ class Cube(object):
         except:
             wave=None
         if var is False:
-            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape))
+            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape),unit=self.unit)
         else:
-            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape))
+            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape),unit=self.unit)
         return cube
         
 
@@ -502,6 +502,33 @@ class Cube(object):
                     print "error: wavelength solution not copied."
             except:
                 pass
+            
+    def unmask(self):
+        """Unmasks the cube (just invalid data (nan,inf) are masked).
+        """
+        self.data.mask = False
+        self.data = np.ma.masked_invalid(self.data)
+        
+        
+    def mask_variance(self, threshold):
+        """Masks pixels with a variance upper than threshold value.
+
+        :param threshold: Threshold value.
+        :type threshold: float
+        """
+        if self.var is None:
+            raise ValueError, 'Operation forbidden without variance extension.'
+        else:
+            ksel = np.where(self.var > threshold)
+            self.data[ksel] = np.ma.masked  
+            
+    def mask_selection(self, ksel):
+        """Masks pixels corresponding to the selection.
+        
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+        """
+        self.data[ksel] = np.ma.masked
 
     def __add__(self, other):
         """Adds other
@@ -1147,7 +1174,7 @@ class Cube(object):
         return self.wcs.get_rot()
         
             
-    def __setitem__(self,key,value):
+    def __setitem__(self,key,other):
         """Sets the corresponding part of data.
         """
         #self.data[key] = value
