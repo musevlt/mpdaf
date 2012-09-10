@@ -158,6 +158,8 @@ Mask
 
 :func:`mpdaf.obj.Spectrum.interp_mask <mpdaf.obj.Spectrum.interp_mask>` interpolates masked pixels (in place).
 
+:func:`mpdaf.obj.Spectrum.mask_selection <mpdaf.obj.Spectrum.mask_selection>` masks pixels corresponding to a selection.
+
 
 Arithmetic
 ----------

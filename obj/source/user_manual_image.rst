@@ -7,6 +7,12 @@ Image, optionally including a variance and a bad pixel mask.
 Tutorial
 ========
 
+We can load the tutorial files with the command::
+
+git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+
+
+
 
 
 Reference
@@ -74,6 +80,8 @@ Mask
 
 :func:`mpdaf.obj.Image.mask_variance <mpdaf.obj.Image.mask_variance>` masks pixels with a variance upper than threshold value.
 
+:func:`mpdaf.obj.Image.mask_selection <mpdaf.obj.Image.mask_selection>` masks pixels corresponding to a selection.
+
 
 Arithmetic
 ----------
@@ -126,6 +134,8 @@ Transformation
 
 :func:`mpdaf.obj.Image.fftconvolve_moffat <mpdaf.obj.Image.fftconvolve_moffat>` convolves the image with a 2D moffat.
 
+:func:`mpdaf.obj.Image.correlate2d <mpdaf.obj.Image.correlate2d>` cross-correlates the image with an array/image.
+
 
 Fit
 ---
@@ -177,6 +187,8 @@ Plotting
 :func:`mpdaf.obj.Image.ifwhm <mpdaf.obj.Image.ifwhm>` computes fwhm in windows defined on the plot.
 
 :func:`mpdaf.obj.Image.imask <mpdaf.obj.Image.imask>` over-plots masked values.
+
+:func:`mpdaf.obj.Image.iee <mpdaf.obj.Image.iee>` computes enclosed energy in windows defined on the plot.
  
 
 Functions to create a new image
