@@ -262,7 +262,7 @@ monochromatic images and we process each of them. For each monochromatic image w
 Reference
 =========
 
-:func:`mpdaf.obj.Cube <mpdaf.obj.Cube>` is the classic image constructor.
+:func:`mpdaf.obj.Cube <mpdaf.obj.Cube>` is the classic cube constructor.
 
 :func:`mpdaf.obj.Cube.copy <mpdaf.obj.Cube.copy>` copies Cube object in a new one and returns it.
 
