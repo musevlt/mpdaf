@@ -1,7 +1,7 @@
 __version__  = '1.0.1-dev'
 __date__     = '2012/08/27 17:00'
 
-import euro3D
+import tools
 import obj
 import drs
 try:
