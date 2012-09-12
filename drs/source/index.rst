@@ -17,6 +17,8 @@ Contents:
    :maxdepth: 2
    
    user_manual_pixtable
+   user_manual_calibfile
+   user_manual_rawfile
 
 Indices and tables
 ==================
