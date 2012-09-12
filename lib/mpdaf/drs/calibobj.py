@@ -11,9 +11,16 @@ import multiprocessing
 import sys
 
 class CalibFile(object):
-    """CalibFile class
+    """CalibFile class manages input/output for the calibration files.
     
-    This class manages input/output for the calibration files
+    :param filename: The FITS file name. None by default (in this case, an empty object is created).
+        
+            The FITS file is opened with memory mapping.
+            
+            Just the primary header and array dimensions are loaded.
+            
+            Methods get_data, get_dq and get_stat must be used to get array extensions.
+    :type filename: string
 
     Attributes
     ----------
@@ -37,35 +44,19 @@ class CalibFile(object):
     
     ny: integer
     Dimension of the data/dq/stat arrays along the y-axis
-
-    Public methods
-    --------------
-    Creation: init, copy
-    
-    Info: info
-    
-    Save: write
-    
-    Get: get_data, get_dq, get_stat
-    
-    Arithmetic: + - * /
     """    
     
     def __init__(self, filename=None):
         """creates a CalibFile object
         
-        Parameters
-        ----------   
-        filename : string
-        The FITS file name. None by default.
-
-        Notes
-        -----
-        filename=None creates an empty object
-
-        The FITS file is opened with memory mapping.
-        Just the primary header and array dimensions are loaded.
-        Methods get_data, get_dq and get_stat must be used to get array extensions.
+        :param filename: The FITS file name. None by default (in this case, an empty object is created).
+        
+            The FITS file is opened with memory mapping.
+            
+            Just the primary header and array dimensions are loaded.
+            
+            Methods get_data, get_dq and get_stat must be used to get array extensions.
+        :type filename: string
         """
         self.filename = filename
         self.data = None
@@ -123,7 +114,8 @@ class CalibFile(object):
             pass
             
     def copy(self):
-        """copies CalibFile object in a new one and returns it"""
+        """Returns a new copy of a CalibFile object.
+        """
         result = CalibFile()
         result.filename = self.filename
         result.primary_header = pyfits.CardList(self.primary_header)
@@ -150,7 +142,8 @@ class CalibFile(object):
         return result
     
     def info(self):
-        """prints information"""
+        """Prints information.
+        """
         if self.filename != None:
             hdulist = pyfits.open(self.filename,memmap=1)
             print hdulist.info()
@@ -163,7 +156,8 @@ class CalibFile(object):
             print "3\tSTAT\timage\t(%i,%i)" % (self.nx,self.ny)
     
     def get_data(self):
-        """opens the FITS file with memory mapping, loads the data array and returns it"""
+        """Opens the FITS file with memory mapping, loads the data array and returns it.
+        """
         if self.filename == None:
             if self.data == None:
                 print 'format error: empty DATA extension'
@@ -179,7 +173,8 @@ class CalibFile(object):
             return data
     
     def get_dq(self):
-        """opens the FITS file with memory mapping, loads the dq array and returns it"""
+        """Opens the FITS file with memory mapping, loads the dq array and returns it.
+        """
         if self.filename == None:
             if self.dq == None:
                 print 'format error: empty DQ extension'
@@ -195,7 +190,8 @@ class CalibFile(object):
             return data
         
     def get_stat(self):
-        """opens the FITS file with memory mapping, loads the stat array and returns it"""
+        """Opens the FITS file with memory mapping, loads the stat array and returns it.
+        """
         if self.filename == None:
             if self.stat == None:
                 print 'format error: empty STAT extension'
@@ -211,11 +207,10 @@ class CalibFile(object):
             return data
 
     def write(self,filename):
-        """ saves the object in a FITS file
-        Parameters
-        ----------
-        filename : string
-        The FITS filename
+        """Saves the object in a FITS file.
+        
+        :param filename: the FITS filename.
+        :type filename: string 
         """
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -253,7 +248,8 @@ class CalibFile(object):
       
       
     def __add__(self,other):
-        """adds either a number or a CalibFile object"""
+        """Adds either a number or a CalibFile object.
+        """
         result = CalibFile()             
         result.primary_header = self.primary_header
         result.nx = self.nx
@@ -293,7 +289,6 @@ class CalibFile(object):
         return result
         
     def __iadd__(self,other):
-        """adds either a number or a CalibFile object"""
         if self.data == None:
             return self.__add__(other)
         else:
@@ -318,7 +313,8 @@ class CalibFile(object):
             return self
             
     def __sub__(self,other):
-        """subtracts either a number or a CalibFile object"""
+        """Subtracts either a number or a CalibFile object.
+        """
         result = CalibFile()             
         result.primary_header = self.primary_header
         result.nx = self.nx
@@ -358,7 +354,6 @@ class CalibFile(object):
         return result
     
     def __isub__(self,other):
-        """subtracts either a number or a CalibFile object"""
         if self.data == None:
             return self.__sub__(other)
         else:
@@ -384,7 +379,8 @@ class CalibFile(object):
     
     
     def __mul__(self,other):
-        """multiplies by a number"""
+        """Multiplies by a number.
+        """
         if isinstance(other,CalibFile):
             print 'unsupported operand type * and / for CalibFile'
             print
@@ -416,7 +412,6 @@ class CalibFile(object):
         
     
     def __imul__(self,other):
-        """multiplies by a number"""
         if self.data == None:
             return self.__mul__(other)
         else:
@@ -437,12 +432,12 @@ class CalibFile(object):
     
     
     def __div__(self,other): 
-        """divides by a number"""
+        """Divides by a number.
+        """
         return self.__mul__(1./other)
     
     
-    def __idiv__(self,other): 
-        """divides by a number"""
+    def __idiv__(self,other):
         return self.__imul__(1./other)
  
 STR_FUNCTIONS = { 'CalibFile.__mul__' : CalibFile.__mul__,
@@ -456,9 +451,14 @@ STR_FUNCTIONS = { 'CalibFile.__mul__' : CalibFile.__mul__,
                   }       
         
 class CalibDir(object):
-    """CalibDir class
-    
-    This class manages input/output for a repository containing calibration files (one per ifu)
+    """CalibDir class manages input/output for a repository containing calibration files (one per ifu).
+
+    :param type: Type of calibration files that appears in filenames (<type>_<ifu id>.fits)
+    :type type: string  
+    :param dirname: The repository name.
+        
+            This repository must contain files labeled <type>_<ifu id>.fits
+    :type dirname: string
 
     Attributes
     ----------
@@ -474,31 +474,17 @@ class CalibDir(object):
     
     progress: boolean
     If True, progress of multiprocessing tasks are displayed. True by default.
-
-    Public methods
-    --------------
-    Creation: init, copy
-    
-    Info: info
-    
-    Save: write
-    
-    Get: get_data, get_dq, get_stat
-    
-    Arithmetic: + - * /
     """  
           
     def __init__(self, type, dirname = None):
-        """creates a CalibDir object
+        """Creates a CalibDir object.
         
-        Parameters
-        ---------- 
-        type : string
-        Type of calibration files that appears in filenames (<type>_<ifu id>.fits)
-          
-        dirname : string
-        The repository name. None if any.
-        This repository must contain files labeled <type>_<ifu id>.fits
+        :param type: Type of calibration files that appears in filenames (<type>_<ifu id>.fits)
+        :type type: string
+        :param dirname: The repository name.
+        
+            This repository must contain files labeled <type>_<ifu id>.fits
+        :type dirname: string
         """
         self.dirname = dirname
         self.progress = True
@@ -514,7 +500,8 @@ class CalibDir(object):
         
                 
     def copy(self):
-        """copies Calibdir object in a new one and returns it"""
+        """Returns a new copy of a CalibDir object.
+        """
         result = CalibDir(self.type,self.dirname)
         if self.dirname == None:
             for ifu,fileobj in self.files.items():
@@ -522,14 +509,16 @@ class CalibDir(object):
         return result
                 
     def info(self):
-        """prints information"""
+        """Prints information.
+        """
         print '%i %s files' %(len(self.files),self.type)
         for ifu,fileobj in self.files.items():
             print 'ifu %i' %ifu
             fileobj.info()
             
     def _check(self,other):
-        """checks that other CalibDir contains the same ifu that the current object"""
+        """Checks that other CalibDir contains the same ifu that the current object.
+        """
         if self.type != other.type:
             print 'error: objects with different types'
             print
@@ -542,15 +531,18 @@ class CalibDir(object):
             return True
 
     def __add__(self,other):
-        """adds either a number or a CalibFile object"""
+        """Adds either a number or a CalibFile object.
+        """
         return self._mp_operator(other,_add_calib_files,_add_calib)
     
     def __sub__(self,other):
-        """adds either a number or a CalibFile object"""
+        """Adds either a number or a CalibFile object.
+        """
         return self._mp_operator(other,_sub_calib_files,_sub_calib)
     
     def __mul__(self,other):
-        """multiplies by a number"""
+        """Multiplies by a number.
+        """
         if isinstance(other,CalibFile):
             print 'unsupported operand type * and / for CalibFile'
             print
@@ -559,7 +551,8 @@ class CalibDir(object):
              return self._mp_operator(other,None,_mul_calib)
          
     def __div__(self,other): 
-        """divides by a number"""
+        """Divides by a number.
+        """
         return self.__mul__(1./other)
         
     def _mp_operator(self,other,funcfile,funcnumber):
@@ -641,7 +634,8 @@ class CalibDir(object):
         return result
     
     def write(self,dirname):
-        """writes files in dirname"""
+        """Writes files in self.dirname.
+        """
         if self.dirname == None:
             for ifu,fileobj in self.files.items():
                 filename = "%s/%s_%02d.fits" %(dirname,self.type,ifu)
@@ -649,16 +643,15 @@ class CalibDir(object):
         self.dirname = dirname
         
     def __len__(self):
-        """returns the number of files"""
+        """Returns the number of files.
+        """
         return len(self.files)
 
     def __getitem__(self, key):
-        """returns the CalibFile object
+        """Returns the CalibFile object.
 
-        Parameters
-        ----------
-        key : integer
-        Ifu id
+        :param key: Ifu id.
+        :type key: integer
         """
         extname = "CHAN%02d" %key
         if key in self.files:
@@ -669,15 +662,12 @@ class CalibDir(object):
             return None
 
     def __setitem__(self,key,value):
-        """sets the corresponding CalibFile with value
+        """Sets the corresponding CalibFile with value.
 
-        Parameters
-        ----------
-        key : integer
-        Ifu id
-
-        value: CalibFile
-        CalibFile object
+        :param key: Ifu id.
+        :type key: integer
+        :param value: CalibFile object.
+        :type value: CalibFile
         """
         if isinstance(value,CalibFile):
             self.files[key] = value
