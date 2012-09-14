@@ -211,6 +211,12 @@ class TestImage():
         nose.tools.assert_almost_equal(ima.wcs.pix2sky(pixel)[0][0],ima2.wcs.pix2sky(r)[0][0])
         nose.tools.assert_almost_equal(ima.wcs.pix2sky(pixel)[0][1],ima2.wcs.pix2sky(r)[0][1])
         
+    @attr(speed='fast')
+    def test_inside(self):
+        """Image class: tests inside method."""
+        ima = Image("data/obj/a370II.fits")
+        nose.tools.assert_equal(ima.inside((39.951088,-1.4977398)),False)
+        
         
         
         

@@ -338,7 +338,7 @@ class Cube(object):
             if self.cards is not None:
                 for card in self.cards:
                     try:
-                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
                             prihdu.header.update(card.key, card.value, card.comment)
                     except:
                         pass
@@ -363,7 +363,7 @@ class Cube(object):
             if self.cards is not None:
                 for card in self.cards:
                     try:
-                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
                             tbhdu.header.update(card.key, card.value, card.comment)
                     except:
                         pass

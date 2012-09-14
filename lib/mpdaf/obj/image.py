@@ -402,7 +402,7 @@ class Image(object):
             if self.cards is not None:
                 for card in self.cards:
                     try:
-                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                        if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
                             tbhdu.header.update(card.key, card.value, card.comment)
                     except:
                         pass
@@ -415,7 +415,7 @@ class Image(object):
             tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
             hdulist.append(tbhdu)
             if self.var is not None:
-                # create spectrum STAT in second extension
+                # create image STAT in second extension
                 nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
                 for card in wcs_cards:
                     nbhdu.header.update(card.key, card.value, card.comment)
@@ -432,7 +432,7 @@ class Image(object):
                 if self.cards is not None:
                     for card in self.cards:
                         try:
-                            if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                            if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
                                 prihdu.header.update(card.key, card.value, card.comment)
                         except:
                             pass
@@ -451,7 +451,7 @@ class Image(object):
                 if self.cards is not None:
                     for card in self.cards:
                         try:
-                            if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2':
+                            if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
                                 tbhdu.header.update(card.key, card.value, card.comment)
                         except:
                             pass
@@ -463,7 +463,7 @@ class Image(object):
                     tbhdu.header.update('BUNIT', self.unit, 'data unit type')
                 tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
                 hdulist.append(tbhdu)
-                # create spectrum STAT in second extension
+                # create image STAT in second extension
                 nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
                 for card in wcs_cards:
                     nbhdu.header.update(card.key, card.value, card.comment)
@@ -2875,18 +2875,8 @@ class Image(object):
           :type coord: (float,float)
           :rtype: boolean
         """
-        pixcrd = [ [0,0], [self.shape[0]-1,0], [ self.shape[0]-1,self.shape[1]-1], [0,self.shape[1]-1]]
-        pixsky = self.wcs.pix2sky(pixcrd)
-        #Compute the cross product
-        if ((coord[0]-pixsky[0][0])*(pixsky[1][1]-pixsky[0][1])-(coord[1]-pixsky[0][1])*(pixsky[1][0]-pixsky[0][0]))<0 :
-            Normal1IsPositive = False
-        if ((coord[0]-pixsky[1][0])*(pixsky[2][1]-pixsky[1][1])-(coord[1]-pixsky[1][1])*(pixsky[2][0]-pixsky[1][0]))<0 :
-            Normal2IsPositive = False
-        if ((coord[0]-pixsky[2][0])*(pixsky[3][1]-pixsky[2][1])-(coord[1]-pixsky[2][1])*(pixsky[3][0]-pixsky[2][0]))<0 :
-            Normal3IsPositive = False
-        if ((coord[0]-pixsky[3][0])*(pixsky[0][1]-pixsky[3][1])-(coord[1]-pixsky[3][1])*(pixsky[0][0]-pixsky[3][0]))<0 :
-            Normal4IsPositive = False;
-        if (Normal1IsPositive==Normal2IsPositive) and (Normal2IsPositive==Normal3IsPositive) and (Normal3IsPositive==Normal4IsPositive) :
+        pixcrd = self.wcs.sky2pix([coord[0],coord[1]])
+        if pixcrd[0][0]>=0 and pixcrd[0][0]<self.shape[0] and pixcrd[0][1]>=0 and pixcrd[0][1]<self.shape[0]:
             return True
         else:
             return False
