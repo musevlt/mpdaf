@@ -423,6 +423,18 @@ class WCS(object):
                 return rad2deg( np.arctan2(self.wcs.wcs.pc[1,0],self.wcs.wcs.pc[1,1]) )
             except:
                 raise IOError, 'No standard WCS'
+            
+    def get_cd(self):
+        try:
+            return self.wcs.wcs.cd
+        except:
+            try:
+                cd = self.wcs.wcs.pc
+                cd[0,:] *= self.wcs.wcs.cdelt[0]
+                cd[1,:] *= self.wcs.wcs.cdelt[1]
+                return cd
+            except:
+                raise IOError, 'No standard WCS'
     
     def rotate(self, theta):
         """Rotates WCS coordinates to new orientation given by theta.

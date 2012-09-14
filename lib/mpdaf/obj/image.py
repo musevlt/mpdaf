@@ -408,8 +408,22 @@ class Image(object):
                         pass
             tbhdu.header.update('date', str(datetime.datetime.now()), 'creation date')
             tbhdu.header.update('author', 'MPDAF', 'origin of the file')
-            for card in wcs_cards:
-                tbhdu.header.update(card.key, card.value, card.comment)
+#            for card in wcs_cards:
+#                tbhdu.header.update(card.key, card.value, card.comment)
+            cd = self.wcs.get_cd()
+            tbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
+            tbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
+            tbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
+            tbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
+            tbhdu.header.update('CD1_1', cd[0,0], 'partial of first axis coordinate w.r.t. x ')
+            tbhdu.header.update('CD1_2', cd[0,1], 'partial of first axis coordinate w.r.t. y')
+            tbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
+            tbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
+            tbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
+            tbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
+            tbhdu.header.update('CD2_1', cd[1,0], 'partial of second axis coordinate w.r.t. x')
+            tbhdu.header.update('CD2_2', cd[1,1], 'partial of second axis coordinate w.r.t. y')
+
             if self.unit is not None:
                 tbhdu.header.update('BUNIT', self.unit, 'data unit type')
             tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
@@ -438,8 +452,21 @@ class Image(object):
                             pass
                 prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
                 prihdu.header.update('author', 'MPDAF', 'origin of the file')
-                for card in wcs_cards:
-                    prihdu.header.update(card.key, card.value, card.comment)
+#                for card in wcs_cards:
+#                    prihdu.header.update(card.key, card.value, card.comment)
+                cd = self.wcs.get_cd()
+                tbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
+                tbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
+                tbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
+                tbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
+                tbhdu.header.update('CD1_1', cd[0,0], 'partial of first axis coordinate w.r.t. x ')
+                tbhdu.header.update('CD1_2', cd[0,1], 'partial of first axis coordinate w.r.t. y')
+                tbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
+                tbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
+                tbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
+                tbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
+                tbhdu.header.update('CD2_1', cd[1,0], 'partial of second axis coordinate w.r.t. x')
+                tbhdu.header.update('CD2_2', cd[1,1], 'partial of second axis coordinate w.r.t. y')
                 if self.unit is not None:
                     prihdu.header.update('BUNIT', self.unit, 'data unit type')
                 prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
@@ -465,8 +492,21 @@ class Image(object):
                 hdulist.append(tbhdu)
                 # create image STAT in second extension
                 nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
-                for card in wcs_cards:
-                    nbhdu.header.update(card.key, card.value, card.comment)
+#                for card in wcs_cards:
+#                    nbhdu.header.update(card.key, card.value, card.comment)
+                cd = self.wcs.get_cd()
+                tbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
+                tbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
+                tbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
+                tbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
+                tbhdu.header.update('CD1_1', cd[0,0], 'partial of first axis coordinate w.r.t. x ')
+                tbhdu.header.update('CD1_2', cd[0,1], 'partial of first axis coordinate w.r.t. y')
+                tbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
+                tbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
+                tbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
+                tbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
+                tbhdu.header.update('CD2_1', cd[1,0], 'partial of second axis coordinate w.r.t. x')
+                tbhdu.header.update('CD2_2', cd[1,1], 'partial of second axis coordinate w.r.t. y')
     #            if self.unit is not None:
     #                nbhdu.header.update('UNIT', self.unit, 'data unit type')
     #            nbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
