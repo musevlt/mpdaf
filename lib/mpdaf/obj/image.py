@@ -248,8 +248,15 @@ class Image(object):
                         self.wcs = None
                 else:
                     if ext is None:
-                        h = f['DATA'].header
-                        d = np.array(f['DATA'].data, dtype=float)
+                        try:
+                            h = f['DATA'].header
+                            d = np.array(f['DATA'].data, dtype=float)
+                        except:
+                            try:
+                                h = f['SCI'].header
+                                d = np.array(f['SCI'].data, dtype=float)
+                            except:
+                                raise IOError, 'no DATA or SCI extension'
                     else:
                         if is_int(ext) or isinstance(ext,str):
                             n = ext
@@ -274,7 +281,13 @@ class Image(object):
                     if not notnoise:
                         try:
                             if ext is None:
-                                fstat = f['STAT']
+                                try:
+                                    fstat = f['STAT']
+                                except:
+                                    try:
+                                        fstat = f['WHT']
+                                    except:
+                                        raise IOError, 'no STAT or WHT extension'
                             else:
                                 n = ext[1]
                                 fstat = f[n]
