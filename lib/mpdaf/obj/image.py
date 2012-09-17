@@ -108,13 +108,13 @@ class Gauss2D:
         
     err_flux (float) : Estimated error on Gaussian integrated flux.
     
-    err_width (float,float) : Estimated error on Gaussian width.
+    err_fwhm (float,float) : Estimated error on Gaussian fwhm.
     
     err_rot (float) : Estimated error on rotation.
     
     err_peak (float) : Estimated error on Gaussian peak value.  
     """
-    def __init__(self, center, flux, fwhm, cont, rot, peak, err_center, err_flux, err_width, err_rot, err_peak):
+    def __init__(self, center, flux, fwhm, cont, rot, peak, err_center, err_flux, err_fwhm, err_rot, err_peak):
         self.center = center
         self.flux = flux
         self.fwhm = fwhm
@@ -123,14 +123,14 @@ class Gauss2D:
         self.peak = peak
         self.err_center = err_center
         self.err_flux = err_flux
-        self.err_width = err_width
+        self.err_fwhm = err_fwhm
         self.err_rot = err_rot
         self.err_peak = err_peak
         
     def copy(self):
         """Copies Gauss2D object in a new one and returns it.
         """
-        res = Gauss2D(self.center, self.flux, self.fwhm, self.cont, self.rot, self.peak, self.err_center, self.err_flux, self.err_width, self.err_rot, self.err_peak)
+        res = Gauss2D(self.center, self.flux, self.fwhm, self.cont, self.rot, self.peak, self.err_center, self.err_flux, self.err_fwhm, self.err_rot, self.err_peak)
         return res
         
     def print_param(self):
@@ -144,6 +144,71 @@ class Gauss2D:
         print 'Gaussian continuum = %g' %self.cont
         print ''
         
+
+class Moffat2D:
+    """ This class stores 2D moffat parameters.
+       
+    Attributes
+    ---------- 
+    
+    center (float,float) : Peak center (y,x).
+    
+    I (float) : Intensity at image center.
+    
+    a (float) : Half width at half maximum of the image in the absence of atmospheric scattering.
+    
+    q (float) : Axis ratio.
+      
+    n (integer) : Atmospheric scattering coefficient.
+    
+    rot (float) : Angle position in degree.
+    
+    err_center (float,float) : Estimated error on center.
+        
+    err_I (float) : Estimated error on intensity.
+    
+    err_a (float) : Estimated error on a parameter.
+    
+    err_q (float) : Estimated error on axis ratio.
+    
+    err_n (float) : Estimated error on n coefficient.
+    
+    err_rot (float) : Estimated error on rotation.
+    """
+    def __init__(self, center, I, a, q, n, rot, err_center, err_I, err_a, err_q, err_n, err_rot, cont):
+        self.center = center
+        self.I = I
+        self.a = a
+        self.q = q
+        self.n = n
+        self.rot = rot
+        self.err_center = err_center
+        self.err_I = err_I
+        self.err_a = err_a
+        self.err_q = err_q
+        self.err_n = err_n
+        self.err_rot = err_rot
+        self.cont = cont
+        
+    def copy(self):
+        """Returns a copy of a Moffat2D object.
+        """
+        res = Moffat2D(self.center, self.I, self.a, self.q, self.n, self.rot, self.err_center, self.err_I, self.err_a, self.err_q, self.err_n, self.err_rot, self.cont)
+        return res
+        
+    def print_param(self):
+        """Prints Moffat parameters.
+        """
+        print 'center = (%g,%g) (error:(%g,%g))' %(self.center[0],self.center[1],self.err_center[0],self.err_center[1])   
+        print 'I = %g (error:%g)' %(self.I,self.err_I)
+        print 'a = %g (error:%g)' %(self.a,self.err_a)
+        print 'q = %g (error:%g)' %(self.q,self.err_q)
+        print 'n = %g (error:%g)' %(self.n,self.err_n)
+        print 'rotation in degree: %g (error:%g)' %(self.rot, self.err_rot)
+        print 'continuum = %g' %self.cont
+        print ''
+
+   
         
 class Image(object):
     """Image class manages image, optionally including a variance and a bad pixel mask.
@@ -2063,22 +2128,24 @@ class Image(object):
             
             xmin = np.min(x)
             xmax = np.max(x)
-            xx = np.arange(xmin,xmax,(xmax-xmin)/100)
             ymin = np.min(y)
             ymax = np.max(y)
-            yy = np.arange(ymin,ymax,(ymax-ymin)/100)
-            
-            ff = np.empty((np.shape(yy)[0],np.shape(xx)[0]))
-            for i in range(np.shape(xx)[0]):
-                xxx = np.empty(np.shape(yy)[0])
-                xxx[:] = xx[i]
-                ff[:,i] = gaussfit(v,xxx,yy)*self.fscale
             
             pixsky = [[ymin,xmin],[ymax,xmax]]
             [[ymin,xmin],[ymax,xmax]] = self.wcs.sky2pix(pixsky)
-            xx = np.arange(xmin,xmax,(xmax-xmin)/np.shape(xx)[0])
-            yy = np.arange(ymin,ymax,(ymax-ymin)/np.shape(yy)[0])
+            
+            xx = np.arange(xmin,xmax,(xmax-xmin)/100)
+            yy = np.arange(ymin,ymax,(ymax-ymin)/100)
+            ff = np.empty((np.shape(yy)[0],np.shape(xx)[0]))
+            for i in range(np.shape(xx)[0]):
+                pixcrd = np.empty((np.shape(yy)[0],2))
+                pixcrd[:,0] = yy[:]
+                pixcrd[:,1] = xx[i]
+                pixsky = self.wcs.pix2sky(pixcrd)
+                ff[:,i] = gaussfit(v,pixsky[:,1],pixsky[:,0])*self.fscale
+            
             plt.contour(xx, yy, ff, 5)
+            
             
         # return a Gauss2D object
         flux = v[0]*self.fscale
@@ -2169,7 +2236,7 @@ class Image(object):
         else:
             ra_peak = center[1]
             dec_peak = center[0]
-            
+        
         # continuum value 
         if cont is None:
             imin = data.argmin()
@@ -2199,7 +2266,7 @@ class Image(object):
             v0 = [I,ra_peak, dec_peak, a, n, q, rot]
             v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
         else:                                             
-            moffatfit = lambda p,x, y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
+            moffatfit = lambda p,x,y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
                               +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**p[4]
             e_moffat_fit = lambda p, x, y, data, w: w * (moffatfit(p,x,y) - data)                
             v0 = [I,ra_peak, dec_peak, a, n, q, rot]
@@ -2212,25 +2279,27 @@ class Image(object):
         
         # plot
         if plot:
-            moffatfit = lambda p,x, y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
-                              +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**p[4]            
+            moffatfit = lambda p,x,y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
+                              +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**p[4] 
+                                                  
             xmin = np.min(x)
             xmax = np.max(x)
-            xx = np.arange(xmin,xmax,(xmax-xmin)/100)
             ymin = np.min(y)
             ymax = np.max(y)
-            yy = np.arange(ymin,ymax,(ymax-ymin)/100)
-            
-            ff = np.empty((np.shape(yy)[0],np.shape(xx)[0]))
-            for i in range(np.shape(xx)[0]):
-                xxx = np.empty(np.shape(yy)[0])
-                xxx[:] = xx[i]
-                ff[:,i] = moffatfit(v,xxx,yy)*self.fscale
             
             pixsky = [[ymin,xmin],[ymax,xmax]]
             [[ymin,xmin],[ymax,xmax]] = self.wcs.sky2pix(pixsky)
-            xx = np.arange(xmin,xmax,(xmax-xmin)/np.shape(xx)[0])
-            yy = np.arange(ymin,ymax,(ymax-ymin)/np.shape(yy)[0])
+            
+            xx = np.arange(xmin,xmax,(xmax-xmin)/100)
+            yy = np.arange(ymin,ymax,(ymax-ymin)/100)
+            ff = np.empty((np.shape(yy)[0],np.shape(xx)[0]))
+            for i in range(np.shape(xx)[0]):
+                pixcrd = np.empty((np.shape(yy)[0],2))
+                pixcrd[:,0] = yy[:]
+                pixcrd[:,1] = xx[i]
+                pixsky = self.wcs.pix2sky(pixcrd)
+                ff[:,i] = moffatfit(v,pixsky[:,1],pixsky[:,0])*self.fscale
+            
             plt.contour(xx, yy, ff, 5)
 
         I = v[0]*self.fscale
@@ -2247,14 +2316,7 @@ class Image(object):
         err_q = err[5]
         rot = (v[6] * 180.0 / np.pi)%180
         err_rot = err[6] * 180.0 / np.pi
-        print 'I',I,err_I
-        print 'x',ra,err_ra
-        print 'y',dec,err_dec
-        print 'a',a,err_a
-        print 'n',n,err_n
-        print 'q',q,err_q
-        print 'rot',rot,err_rot
-        print 'cont', cont*self.fscale
+        return Moffat2D((dec,ra), I, a, q, n, rot, (err_dec,err_ra), err_I, err_a, err_q, err_n, err_rot, cont)
     
     def _rebin_factor_(self, factor):
         '''Shrinks the size of the image by factor.
@@ -3440,7 +3502,7 @@ class Image(object):
             pass
             
             
-def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., fwhm=(1.,1.), peak=False, rot = 0., factor=1):
+def gauss_image(shape=(101,101), wcs=WCS(), factor=1, gauss=None, center=None, flux=1., fwhm=(1.,1.), peak=False, rot = 0.):
     """Creates a new image from a 2D gaussian.
   
       :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.
@@ -3449,6 +3511,12 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., fwhm=(1.,1.), 
       :type shape: integer or (integer,integer)
       :param wcs: World coordinates.
       :type wcs: :class:`mpdaf.obj.WCS`
+      :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
+        
+          If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+      :type factor: integer
+      :param gauss: object that contains all Gaussian parameters. If it is present, following parameters are not used.
+      :type gauss: :class:`mpdaf.obj.Gauss2D`
       :param center: Gaussian center (y_peak, x_peak). If None the center of the image is used.
       :type center: (float,float)
       :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
@@ -3459,10 +3527,7 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., fwhm=(1.,1.), 
       :type peak: boolean
       :param rot: Angle position in degree.
       :type rot: float
-      :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
-        
-          If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
-      :type factor: integer
+      
       :rtype: obj.Image object (`Image class`_) 
     """
     if is_int(shape):
@@ -3472,6 +3537,13 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., fwhm=(1.,1.), 
     if wcs.wcs.naxis1 != 0. or wcs.wcs.naxis2 != 0.:
         shape[1] = wcs.wcs.naxis1
         shape[0] = wcs.wcs.naxis2
+        
+    if gauss is not None:
+        center = gauss.center
+        flux = gauss.flux
+        fwhm = gauss.fwhm
+        peak = False
+        rot = gauss.rot
     
     if center is None:
         pixcrd = [[(shape[0]-1)/2.0,(shape[1]-1)/2.0]]
@@ -3486,7 +3558,6 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., fwhm=(1.,1.), 
     
     ra_width = fwhm[1]/2.0/np.sqrt(2*np.log(2))
     dec_width = fwhm[0]/2.0/np.sqrt(2*np.log(2))
-    print ra_width,dec_width
     
     #rotation angle in rad
     theta = np.pi * rot / 180.0
@@ -3532,7 +3603,7 @@ def gauss_image(shape=(101,101), wcs=WCS(), center=None, flux=1., fwhm=(1.,1.), 
             
     return Image(data=data, wcs=wcs)
 
-def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=2, rot = 0., factor=1):
+def moffat_image(shape=(101,101), wcs=WCS(), factor=1, moffat=None, center=None, I=1., a=1.0, q=1.0, n=2, rot = 0.):
     """Creates a new image from a 2D Moffat function.
   
       :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.
@@ -3541,7 +3612,13 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
       :type shape: integer or (integer,integer)
       :param wcs: World coordinates.
       :type wcs: :class:`mpdaf.obj.WCS`
-      :param center: Gaussian center (x_peak, y_peak). If None the center of the image is used.
+      :param factor: If factor<=1, moffat value is computed in the center of each pixel.
+  
+            If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
+      :type factor: integer
+      :param moffat: object that contains all moffat parameters. If it is present, following parameters are not used.
+      :type moffat: :class:`mpdaf.obj.Moffat2D`
+      :param center: Peak center (x_peak, y_peak). If None the center of the image is used.
       :type center: (float,float)
       :param I: Intensity at image center. 1 by default.
       :type I: float
@@ -3553,10 +3630,7 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
       :type n: integer
       :param rot: Angle position in degree.
       :type rot: float
-      :param factor: If factor<=1, moffat value is computed in the center of each pixel.
-  
-            If factor>1, for each pixel, moffat value is the sum of the moffat values on the factor*factor pixels divided by the pixel area.
-      :type factor: integer
+      
       :rtype: obj.Image object (`Image class`_) 
     """
     if is_int(shape):
@@ -3566,6 +3640,14 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
     if wcs.wcs.naxis1 != 0. or wcs.wcs.naxis2 != 0.:
         shape[1] = wcs.wcs.naxis1
         shape[0] = wcs.wcs.naxis2
+        
+    if moffat is not None:
+        center = moffat.center
+        I = moffat.I
+        a = moffat.a
+        q = moffat.q
+        n = moffat.n
+        rot = moffat.rot
     
     if center is None:
         pixcrd = [[(shape[0]-1)/2.0,(shape[1]-1)/2.0]]
@@ -3590,13 +3672,14 @@ def moffat_image(shape=(101,101), wcs=WCS(), center=None, I=1., a=1.0, q=1.0, n=
         pixcrd = zip(X.ravel()/factor,Y.ravel()/factor)
         pixsky = wcs.pix2sky(pixcrd)
         data = moffat(pixsky[:,1],pixsky[:,0])
-        data = (data.reshape(shape[0],factor,shape[1],factor).sum(1).sum(2)/factor/factor).T
+        data = (data.reshape(shape[1],factor,shape[0],factor).sum(1).sum(2)/factor/factor).T
     else:       
         X,Y = np.meshgrid(xrange(shape[0]),xrange(shape[1]))
         pixcrd = zip(X.ravel(),Y.ravel())
         pixsky = wcs.pix2sky(pixcrd)        
         data = moffat(pixsky[:,1],pixsky[:,0])
-        data = np.reshape(data,(shape[0],shape[1])).T
+        data = np.reshape(data,(shape[1],shape[0])).T
+        
             
     return Image(data=data, wcs=wcs)
 

@@ -65,5 +65,6 @@ from image import moffat_image
 from image import make_image
 from image import composite_image
 from image import Gauss2D
+from image import Moffat2D
 from cube import iter_spe
 from cube import iter_ima
