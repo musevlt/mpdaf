@@ -533,18 +533,18 @@ class Image(object):
 #                for card in wcs_cards:
 #                    prihdu.header.update(card.key, card.value, card.comment)
                 cd = self.wcs.get_cd()
-                tbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
-                tbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
-                tbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
-                tbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
-                tbhdu.header.update('CD1_1', cd[0,0], 'partial of first axis coordinate w.r.t. x ')
-                tbhdu.header.update('CD1_2', cd[0,1], 'partial of first axis coordinate w.r.t. y')
-                tbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
-                tbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
-                tbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
-                tbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
-                tbhdu.header.update('CD2_1', cd[1,0], 'partial of second axis coordinate w.r.t. x')
-                tbhdu.header.update('CD2_2', cd[1,1], 'partial of second axis coordinate w.r.t. y')
+                prihdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
+                prihdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
+                prihdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
+                prihdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
+                prihdu.header.update('CD1_1', cd[0,0], 'partial of first axis coordinate w.r.t. x ')
+                prihdu.header.update('CD1_2', cd[0,1], 'partial of first axis coordinate w.r.t. y')
+                prihdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
+                prihdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
+                prihdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
+                prihdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
+                prihdu.header.update('CD2_1', cd[1,0], 'partial of second axis coordinate w.r.t. x')
+                prihdu.header.update('CD2_2', cd[1,1], 'partial of second axis coordinate w.r.t. y')
                 if self.unit is not None:
                     prihdu.header.update('BUNIT', self.unit, 'data unit type')
                 prihdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
@@ -1072,7 +1072,7 @@ class Image(object):
         """
         if isinstance(item, tuple) and len(item)==2:
             if is_int(item[0]) and is_int(item[1]):
-                return self.data[item]*self.shape
+                return self.data[item]*self.fscale
             else:
                 data = self.data[item]
                 if is_int(item[0]):
@@ -1093,7 +1093,33 @@ class Image(object):
                 res.var = var
                 return res
         else:
-            raise ValueError, 'Operation forbidden'
+            if self.shape[0]==1 or self.shape[1]==1:
+                if isinstance(item, int):
+                    return self.data[item]*self.fscale
+                else:
+                    data = self.data[item]
+                    if self.shape[0]==1:
+                        shape = (1,data.shape[0])
+                        try:
+                            wcs = self.wcs[:,item]
+                        except:
+                            wcs = None
+                    else:
+                        shape = (data.shape[0],1)
+                        try:
+                            wcs = self.wcs[item,:]
+                        except:
+                            wcs = None
+                    var = None
+                    if self.var is not None:
+                        var = self.var[item]
+                    
+                    res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
+                    res.data = data
+                    res.var = var
+                    return res
+            else:
+                raise ValueError, 'Operation forbidden'
         
     def get_step(self):
         """Returns the image steps [dy, dx].
@@ -1413,7 +1439,6 @@ class Image(object):
         if jmax>self.shape[1]:
             jmax=self.shape[1]
          
-        #res = self[imin:imax,jmin:jmax]
         self.data = self.data[imin:imax,jmin:jmax]
         self.shape = (self.data.shape[0],self.data.shape[1])
         if self.var is not None:
@@ -1430,7 +1455,7 @@ class Image(object):
                 pixcrd = np.array([np.ones(self.shape[1])*j,np.arange(self.shape[1])]).T
                 skycrd = self.wcs.pix2sky(pixcrd)
                 test_ra_min = np.array(skycrd[:,1]) < x_min
-                test_ra_max = np.array(skycrd[:,1]) > y_max
+                test_ra_max = np.array(skycrd[:,1]) > x_max
                 test_dec_min = np.array(skycrd[:,0]) < y_min
                 test_dec_max = np.array(skycrd[:,0]) > y_max
                 m[j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
@@ -1684,10 +1709,13 @@ class Image(object):
         maxv = self.fscale*self.data[int(round(ic)), int(round(jc))]
         if plot:
             plt.plot(jc,ic,'r+')
-            str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,ic,jc)
+            try:
+                str= 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' %(center[0],center[1], radius[0], radius[1], dpix,jc,ic)
+            except:
+                str= 'dpix %i peak: %g %g' %(dpix,ic,jc)
             plt.title(str)
             
-        return {'x':ra, 'y':dec, 'q':jc, 'p':ic, 'data': maxv}
+        return {'x':ra, 'y':dec, 'q':ic, 'p':jc, 'data': maxv}
     
     def fwhm(self, center=None, radius=0, pix = False):
         """Computes the fwhm center. 
@@ -2332,11 +2360,12 @@ class Image(object):
         assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
         # new size is an integer multiple of the original size
         self.shape = (self.shape[0]/factor[0],self.shape[1]/factor[1])
-        self.data = np.ma.reshape(self.data,self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
+        self.data = self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
         if self.var is not None:
-            self.var = np.reshape(self.var,self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]/factor[0]/factor[1]
+            self.var = self.var.reshape(self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]/factor[0]/factor[1]
         cdelt = self.wcs.get_step()
-        self.wcs = self.wcs.rebin(step=(cdelt[0]*factor[0],cdelt[1]*factor[1]),start=None)
+        #self.wcs = self.wcs.rebin(step=(cdelt[0]*factor[0],cdelt[1]*factor[1]),start=None)
+        self.wcs = self.wcs.rebin_factor(factor)
 
         
     def _rebin_factor(self, factor, margin='center'):
@@ -2355,9 +2384,11 @@ class Image(object):
             factor = (factor,factor)
         if factor[0]<=1 or factor[0]>=self.shape[0] or factor[1]<=1 or factor[1]>=self.shape[1]:
             raise ValueError, 'factor must be in ]1,shape['
+            return None
         if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )):
             # new size is an integer multiple of the original size
             self._rebin_factor_(factor)
+            return None
         elif not np.sometrue(np.mod( self.shape[0], factor[0] )):
             newshape1 = self.shape[1]/factor[1]
             n1 = self.shape[1] - newshape1*factor[1]
@@ -2369,13 +2400,14 @@ class Image(object):
                 mask = np.empty(newshape,dtype=bool)
                 data[:,0:-1] = ima.data
                 mask[:,0:-1] = ima.data.mask
-                data[:,-1] = self.data[:,-n1:].sum() / factor[1]
-                mask[:,-1] = self.data.mask[:,-n1:].any()
+                d = self.data[:,-n1:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                data[:,-1] = d.data
+                mask[:,-1] = d.mask
                 var = None
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[:,0:-1] = ima.var
-                    var[:,-1] = self.var[:,-n1:].sum() / factor[1] / factor[1]
+                    var[:,-1] = self.var[:,-n1:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[0] / factor[1] / factor[1]
                 wcs = ima.wcs
                 wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
             else:
@@ -2388,16 +2420,18 @@ class Image(object):
                 mask = np.empty(newshape,dtype=bool)
                 data[:,1:-1] = ima.data
                 mask[:,1:-1] = ima.data.mask
-                data[:,0] = self.data[:,0:n_left].sum() / factor[1]
-                mask[:,0] = self.data.mask[:,0:n_left].any()
-                data[:,-1] = self.data[:,n_right:].sum() / factor[1]
-                mask[:,-1] = self.data.mask[:,n_right:].any()
+                d = self.data[:,0:n_left].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                data[:,0] = d.data
+                mask[:,0] = d.mask
+                d = self.data[:,n_right:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                data[:,-1] = d.data
+                mask[:,-1] = d.mask
                 var = None
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[:,1:-1] = ima.var
-                    var[:,0] = self.var[:,0:n_left].sum() / factor[1] / factor[1]
-                    var[:,-1] = self.var[:,n_right:].sum() / factor[1] / factor[1]
+                    var[:,0] = self.var[:,0:n_left].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
+                    var[:,-1] = self.var[:,n_right:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
                 wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
                 wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
@@ -2412,13 +2446,14 @@ class Image(object):
                 mask = np.empty(newshape,dtype=bool)
                 data[0:-1,:] = ima.data
                 mask[0:-1,:] = ima.data.mask
-                data[-1,:] = self.data[-n0:,:].sum() / factor[0]
-                mask[-1,:] = self.data.mask[-n0:,:].any()
+                d = self.data[-n0:,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                data[-1,:] = d.data
+                mask[-1,:] = d.mask
                 var = None
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[0:-1,:] = ima.var
-                    var[-1,:] = self.var[-n0:,:].sum() / factor[0] / factor[0]
+                    var[-1,:] = self.var[-n0:,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
                 wcs = ima.wcs
                 wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
             else:
@@ -2431,16 +2466,18 @@ class Image(object):
                 mask = np.empty(newshape,dtype=bool)
                 data[1:-1,:] = ima.data
                 mask[1:-1,:] = ima.data.mask
-                data[0,:] = self.data[0:n_left,:].sum() / factor[0]
-                mask[0,:] = self.data.mask[0:n_left,:].any()
-                data[-1,:] = self.data[n_right:,:].sum() / factor[0]
-                mask[-1,:] = self.data.mask[n_right:,:].any()
+                d = self.data[0:n_left,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                data[0,:] = d.data
+                mask[0,:] = d.mask
+                d = self.data[n_right:,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                data[-1,:] = d.data
+                mask[-1,:] = d.mask
                 var = None
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[1:-1,:] = ima.var
-                    var[0,:] = self.var[0:n_left,:].sum() / factor[0] / factor[0]
-                    var[-1,:] = self.var[n_right:,:].sum() / factor[0] / factor[0]
+                    var[0,:] = self.var[0:n_left,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
+                    var[-1,:] = self.var[n_right:,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
                 wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]]
                 wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
@@ -2456,27 +2493,43 @@ class Image(object):
                 ima = self[n_left[0]:n_right[0],n_left[1]:n_right[1]]
                 ima._rebin_factor_(factor)
                 if n_left[0]!=0 and n_left[1]!=0:
-                    newshape = ima.shape + 2
+                    newshape = (ima.shape[0] + 2, ima.shape[1] + 2)
                     data = np.empty(newshape)
                     mask = np.empty(newshape,dtype=bool)
                     data[1:-1,1:-1] = ima.data
                     mask[1:-1,1:-1] = ima.data.mask
-                    data[0,:] = self.data[0:n_left[0],:].sum() / factor[0]
-                    mask[0,:] = self.data.mask[0:n_left[0],:].any()
-                    data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
-                    mask[-1,:] = self.data.mask[n_right[0]:,:].any()
-                    data[:,0] = self.data[:,0:n_left[1]].sum() / factor[1]
-                    mask[:,0] = self.data.mask[:,0:n_left[1]].any()
-                    data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
-                    mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    data[0,0] = self.data[0:n_left[0],0:n_left[1]].sum()/factor[0] / factor[1]
+                    mask[0,0] = self.data.mask[0:n_left[0],0:n_left[1]].any()
+                    data[0,-1] = self.data[0:n_left[0],n_right[1]:].sum()/factor[0] / factor[1]
+                    mask[0,-1] = self.data.mask[0:n_left[0],n_right[1]:].any()
+                    data[-1,0] = self.data[n_right[0]:,0:n_left[1]].sum()/factor[0] / factor[1]
+                    mask[-1,0] = self.data.mask[n_right[0]:,0:n_left[1]].any()
+                    data[-1,-1] = self.data[n_right[0]:,n_right[1]:].sum()/factor[0] / factor[1]
+                    mask[-1,-1] = self.data.mask[n_right[0]:,n_right[1]:].any()
+                    d = self.data[0:n_left[0],n_left[1]:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                    data[0,1:-1] = d.data
+                    mask[0,1:-1] = d.mask
+                    d = self.data[n_right[0]:,n_left[1]:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                    data[-1,1:-1] = d.data
+                    mask[-1,1:-1] = d.mask
+                    d = self.data[n_left[0]:n_right[0],0:n_left[1]].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                    data[1:-1,0] = d.data
+                    mask[1:-1,0] = d.mask
+                    d = self.data[n_left[0]:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                    data[1:-1,-1] = d.data
+                    mask[1:-1,-1] = d.mask
                     var = None
                     if self.var is not None:
                         var = np.empty(newshape)
                         var[1:-1,1:-1] = var.data
-                        var[0,:] = self.var[0:n_left[0],:].sum() / factor[0] / factor[0]
-                        var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
-                        var[:,0] = self.var[:,0:n_left[1]].sum() / factor[1] / factor[1]
-                        var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
+                        var[0,0] = self.var[0:n_left[0],0:n_left[1]].sum()/factor[0] / factor[1]/factor[0] / factor[1]
+                        var[0,-1] = self.var[0:n_left[0],n_right[1]:].sum()/factor[0] / factor[1]/factor[0] / factor[1]
+                        var[-1,0] = self.var[n_right[0]:,0:n_left[1]].sum()/factor[0] / factor[1]/factor[0] / factor[1]
+                        var[-1,-1] = self.var[n_right[0]:,n_right[1]:].sum()/factor[0] / factor[1]/factor[0] / factor[1]
+                        var[0,1:-1] = self.var[0:n_left[0],n_left[1]:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
+                        var[-1,1:-1] = self.var[n_right[0]:,n_left[1]:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
+                        var[1:-1,0] = self.var[n_left[0]:n_right[0],0:n_left[1]].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
+                        var[1:-1,-1] = self.var[n_left[0]:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
                     wcs = ima.wcs
                     step = wcs.get_step()
                     wcs.wcs.wcs.crval = wcs.wcs.wcs.crval - np.array([step[1],step[0]])
@@ -2488,19 +2541,36 @@ class Image(object):
                     mask = np.empty(newshape,dtype=bool)
                     data[0:-1,1:-1] = ima.data
                     mask[0:-1,1:-1] = ima.data.mask
-                    data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
-                    mask[-1,:] = self.data.mask[n_right[0]:,:].any()
-                    data[:,0] = self.data[:,0:n_left[1]].sum() / factor[1]
-                    mask[:,0] = self.data.mask[:,0:n_left[1]].any()
-                    data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
-                    mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    
+                    data[0,0] = self.data[0,0:n_left[1]].sum()/factor[0] / factor[1]
+                    mask[0,0] = self.data.mask[0,0:n_left[1]].any()
+                    data[0,-1] = self.data[0,n_right[1]:].sum()/factor[0] / factor[1]
+                    mask[0,-1] = self.data.mask[0,n_right[1]:].any()
+                    data[-1,0] = self.data[n_right[0]:,0:n_left[1]].sum()/factor[0] / factor[1]
+                    mask[-1,0] = self.data.mask[n_right[0]:,0:n_left[1]].any()
+                    data[-1,-1] = self.data[n_right[0]:,n_right[1]:].sum()/factor[0] / factor[1]
+                    mask[-1,-1] = self.data.mask[n_right[0]:,n_right[1]:].any()
+                    d = self.data[n_right[0]:,n_left[1]:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                    data[-1,1:-1] = d.data
+                    mask[-1,1:-1] = d.mask
+                    d = self.data[0:n_right[0],0:n_left[1]].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                    data[0:-1,0] = d.data
+                    mask[0:-1,0] = d.mask
+                    d = self.data[0:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                    data[0:-1,-1] = d.data
+                    mask[0:-1,-1] = d.mask
                     var = None
                     if self.var is not None:
                         var = np.empty(newshape)
                         var[0:-1,1:-1] = var.data
-                        var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
-                        var[:,0] = self.var[:,0:n_left[1]].sum() / factor[1] / factor[1]
-                        var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
+                        var[0,0] = self.var[0,0:n_left[1]].sum()/factor[0] / factor[1]/factor[0] / factor[1]
+                        var[0,-1] = self.var[0,n_right[1]:].sum()/factor[0] / factor[1]/factor[0] / factor[1]
+                        var[-1,0] = self.var[n_right[0]:,0:n_left[1]].sum()/factor[0] / factor[1]/factor[0] / factor[1]
+                        var[-1,-1] = self.var[n_right[0]:,n_right[1]:].sum()/factor[0] / factor[1]/factor[0] / factor[1]
+                        var[-1,1:-1] = self.var[n_right[0]:,n_left[1]:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
+                        var[0:-1,0] = self.var[0:n_right[0],0:n_left[1]].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
+                        var[0:-1,-1] = self.var[0:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
+                
                     wcs = ima.wcs
                     wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
                     wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
@@ -2511,19 +2581,36 @@ class Image(object):
                     mask = np.empty(newshape,dtype=bool)
                     data[1:-1,0:-1] = ima.data
                     mask[1:-1,0:-1] = ima.data.mask
-                    data[0,:] = self.data[0:n_left[0],:].sum() / factor[0]
-                    mask[0,:] = self.data.mask[0:n_left[0],:].any()
-                    data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
-                    mask[-1,:] = self.data.mask[n_right[0]:,:].any()
-                    data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
-                    mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                    
+                    data[0,0] = self.data[0:n_left[0],0].sum()/factor[0] / factor[1]
+                    mask[0,0] = self.data.mask[0:n_left[0],0].any()
+                    data[0,-1] = self.data[0:n_left[0],n_right[1]:].sum()/factor[0] / factor[1]
+                    mask[0,-1] = self.data.mask[0:n_left[0],n_right[1]:].any()
+                    data[-1,0] = self.data[n_right[0]:,0].sum()/factor[0] / factor[1]
+                    mask[-1,0] = self.data.mask[n_right[0]:,0].any()
+                    data[-1,-1] = self.data[n_right[0]:,n_right[1]:].sum()/factor[0] / factor[1]
+                    mask[-1,-1] = self.data.mask[n_right[0]:,n_right[1]:].any()
+                    d = self.data[0:n_left[0],0:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                    data[0,0:-1] = d.data
+                    mask[0,0:-1] = d.mask
+                    d = self.data[n_right[0]:,0:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                    data[-1,0:-1] = d.data
+                    mask[-1,0:-1] = d.mask
+                    d = self.data[n_left[0]:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                    data[1:-1,-1] = d.data
+                    mask[1:-1,-1] = d.mask
+                    
                     var = None
                     if self.var is not None:
                         var = np.empty(newshape)
                         var[1:-1,0:-1] = var.data
-                        var[0,:] = self.var[0:n_left[0],:].sum() / factor[0] / factor[0]
-                        var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
-                        var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
+                        var[0,0] = self.var[0:n_left[0],0].sum()/factor[0] / factor[1]
+                        var[0,-1] = self.var[0:n_left[0],n_right[1]:].sum()/factor[0] / factor[1]
+                        var[-1,0] = self.var[n_right[0]:,0].sum()/factor[0] / factor[1]
+                        var[-1,-1] = self.var[n_right[0]:,n_right[1]:].sum()/factor[0] / factor[1]
+                        var[0,0:-1] = self.var[0:n_left[0],0:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1] 
+                        var[-1,0:-1] = self.var[n_right[0]:,0:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                        var[1:-1,-1] = self.var[n_left[0]:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
                     wcs = ima.wcs
                     wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]] 
                     wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
@@ -2532,21 +2619,26 @@ class Image(object):
                 n_right = self.shape - n
                 ima = self[0:n_right[0],0:n_right[1]]
                 ima._rebin_factor_(factor)
-                newshape = ima.shape + 1
+                newshape = (ima.shape[0] + 1,ima.shape[1] + 1)
                 data = np.empty(newshape)
                 mask = np.empty(newshape,dtype=bool)
                 data[0:-1,0:-1] = ima.data
                 mask[0:-1,0:-1] = ima.data.mask
-                data[-1,:] = self.data[n_right[0]:,:].sum() / factor[0]
-                mask[-1,:] = self.data.mask[n_right[0]:,:].any()
-                data[:,-1] = self.data[:,n_right[1]:].sum() / factor[1]
-                mask[:,-1] = self.data.mask[:,n_right[1]:].any()
+                d = self.data[n_right[0]:,0:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
+                data[-1,0:-1] = d.data
+                mask[-1,0:-1] = d.mask
+                d = self.data[0:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
+                data[0:-1,-1] = d.data
+                mask[0:-1,-1] = d.mask
+                data[-1,-1] = self.data[n_right[0]:,n_right[1]:].sum()/factor[0] / factor[1]
+                mask[-1,-1] = self.data.mask[n_right[0]:,n_right[1]:].any()
                 var = None
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[0:-1,0:-1] = ima.var
-                    var[-1,:] = self.var[n_right[0]:,:].sum() / factor[0] / factor[0]
-                    var[:,-1] = self.var[:,n_right[1]:].sum() / factor[1] / factor[1]
+                    var[-1,0:-1] = self.var[n_right[0]:,0:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
+                    var[0:-1,-1] = self.var[0:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
+                    var[-1,-1] = self.var[n_right[0]:,n_right[1]:].sum() /factor[0] / factor[1] /factor[0] / factor[1]
                 wcs = ima.wcs
                 wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
                 wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
@@ -2556,7 +2648,6 @@ class Image(object):
         self.wcs = wcs
         self.data = np.ma.array(data, mask=mask)
         self.var = var
-        return res
     
     def rebin_factor(self, factor, margin='center'):
         '''Returns an image that shrinks the size of the current image by factor.
@@ -2610,8 +2701,9 @@ class Image(object):
         newstep = np.array(newstep)
                    
         wcs = WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
-        pstep = newstep/self.wcs.get_step()   
-        poffset = (newstart-self.wcs.get_start())/newstep
+        pstep = newstep/self.wcs.get_step()
+        poffset = self.wcs.sky2pix(newstart)[0]*self.wcs.get_step()/newstep
+        #poffset = np.abs((newstart-self.wcs.get_start())/newstep)
         
         if interp=='linear':
             data = self._interp_data(spline=False)
@@ -2620,6 +2712,10 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
             
+#        print 'pstep',pstep
+#        print 'poffset',poffset
+#        print 'newdim',newdim
+#        print 'order',order
         data = ndimage.affine_transform(data, pstep, poffset,output_shape=newdim, order=order)
         mask = np.array(1 - self.data.mask,dtype=bool)
         newmask = ndimage.affine_transform(mask, pstep, poffset,output_shape=newdim, order=0)

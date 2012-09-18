@@ -210,7 +210,7 @@ class WCS(object):
             #value of reference pixel
             self.wcs.wcs.crval = np.array([crval[1],crval[0]])
             if deg: #in decimal degree
-                self.wcs.wcs.ctype = ['RA___TAN','DEC___TAN']
+                self.wcs.wcs.ctype = ['RA---TAN','DEC--TAN']
                 self.wcs.wcs.cunit = ['deg','deg']
                 self.wcs.wcs.cd = np.array([[-cdelt[1], 0], [0, cdelt[0]]])
             else:   #in pixel or arcsec
@@ -471,10 +471,30 @@ class WCS(object):
             xc = 0
             yc = 0
             pixsky = self.pix2sky([xc,yc])
+            print 'pixsky',pixsky
             cdelt = self.get_step()
             start = (pixsky[0][0] -0.5*cdelt[0] + 0.5*step[0],pixsky[0][1] -0.5*cdelt[1] + 0.5*step[1])
         
         res = WCS(crpix=1.0,crval=start,cdelt=step,deg=self.is_deg(),rot=self.get_rot())
+        return res
+    
+    def rebin_factor(self, factor):
+        """Rebins to a new coordinate system.
+        
+        :param start: New positions (dec,ra) for the pixel (0,0). If None, old position is used.
+        :type start: float or (float, float)
+        :param step: New step (ddec,dra).
+        :type step: float or (float, float)
+        :rtype: WCS
+        """
+        factor = np.array(factor)
+        crpix = [ self.wcs.wcs.crpix[1] / factor[0], self.wcs.wcs.crpix[0] / factor[1]]
+        step = self.get_step() * factor
+        crval = self.pix2sky(crpix)[0]
+        
+        res = WCS(crpix=crpix,crval=crval,cdelt=step,deg=self.is_deg(),rot=self.get_rot())
+        res.wcs.naxis1 = self.wcs.naxis1 / factor[1]
+        res.wcs.naxis2 = self.wcs.naxis2 / factor[0]
         return res
     
     def is_deg(self):
