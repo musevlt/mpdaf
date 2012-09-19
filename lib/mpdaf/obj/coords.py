@@ -478,23 +478,47 @@ class WCS(object):
         res = WCS(crpix=1.0,crval=start,cdelt=step,deg=self.is_deg(),rot=self.get_rot())
         return res
     
+    def new_step(self,factor):
+        try:
+            self.wcs.wcs.cd[0,:] *= factor[1]
+            self.wcs.wcs.cd[1,:] *= factor[0]
+        except:
+            try:
+                self.wcs.wcs.cdelt[0] *= factor[1]
+                self.wcs.wcs.cdelt[1] *= factor[0]
+            except:
+                print "problem in wcs to rebin"
+    
     def rebin_factor(self, factor):
         """Rebins to a new coordinate system.
         
-        :param start: New positions (dec,ra) for the pixel (0,0). If None, old position is used.
-        :type start: float or (float, float)
-        :param step: New step (ddec,dra).
-        :type step: float or (float, float)
+        :param factor: Factor in y and x.
+        :type factor: (integer,integer)
         :rtype: WCS
         """
+        res = self.copy()
         factor = np.array(factor)
-        crpix = [ self.wcs.wcs.crpix[1] / factor[0], self.wcs.wcs.crpix[0] / factor[1]]
-        step = self.get_step() * factor
-        crval = self.pix2sky(crpix)[0]
-        
-        res = WCS(crpix=crpix,crval=crval,cdelt=step,deg=self.is_deg(),rot=self.get_rot())
-        res.wcs.naxis1 = self.wcs.naxis1 / factor[1]
-        res.wcs.naxis2 = self.wcs.naxis2 / factor[0]
+        try:
+            cd = res.wcs.wcs.cd
+            cd[0,:] *= factor[1]
+            cd[1,:] *= factor[0]
+            res.wcs.wcs.cd = cd
+        except:
+            try:
+                cdelt = res.wcs.wcs.cdelt
+                cdelt[0] *= factor[1]
+                cdelt[1] *= factor[0]
+                res.wcs.wcs.cdelt = cdelt
+            except:
+                print "problem in wcs to rebin"
+        crpix = res.wcs.wcs.crpix
+        print crpix
+        crpix[0] /= factor[1]
+        crpix[1] /= factor[0]
+        print crpix
+        res.wcs.wcs.crpix = crpix
+        res.wcs.naxis1 = res.wcs.naxis1 / factor[1]
+        res.wcs.naxis2 = res.wcs.naxis2 / factor[0]
         return res
     
     def is_deg(self):

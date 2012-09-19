@@ -2447,7 +2447,8 @@ class Image(object):
                     var[:,0] = self.var[:,0:n_left].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                     var[:,-1] = self.var[:,n_right:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
-                wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
+                #wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
+                wcs.wcs.wcs.crpix[0] += 1
                 wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
         elif not np.sometrue(np.mod( self.shape[1], factor[1] )):
             newshape0 = self.shape[0]/factor[0]
@@ -2493,7 +2494,8 @@ class Image(object):
                     var[0,:] = self.var[0:n_left,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                     var[-1,:] = self.var[n_right:,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
-                wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]]
+                #wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]]
+                wcs.wcs.wcs.crpix[1] += 1 
                 wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
         else:
             factor = np.array(factor)
@@ -2546,7 +2548,9 @@ class Image(object):
                         var[1:-1,-1] = self.var[n_left[0]:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
                     wcs = ima.wcs
                     step = wcs.get_step()
-                    wcs.wcs.wcs.crval = wcs.wcs.wcs.crval - np.array([step[1],step[0]])
+                    #wcs.wcs.wcs.crval = wcs.wcs.wcs.crval - np.array([step[1],step[0]])
+                    wcs.wcs.wcs.crpix[0] +=1
+                    wcs.wcs.wcs.crpix[1] +=1
                     wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
                 elif n_left[0]==0:
@@ -2586,7 +2590,8 @@ class Image(object):
                         var[0:-1,-1] = self.var[0:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
                 
                     wcs = ima.wcs
-                    wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
+                    #wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
+                    wcs.wcs.wcs.crpix[0] += 1 
                     wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
                 else:
@@ -2626,7 +2631,8 @@ class Image(object):
                         var[-1,0:-1] = self.var[n_right[0]:,0:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
                         var[1:-1,-1] = self.var[n_left[0]:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
                     wcs = ima.wcs
-                    wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]] 
+                    #wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]] 
+                    wcs.wcs.wcs.crpix[1] += 1
                     wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
                     wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
             elif margin=='origin':
@@ -2714,8 +2720,17 @@ class Image(object):
         newstart = np.array(newstart)
         newstep = np.array(newstep)
                    
-        wcs = WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
+        #wcs = WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
+        wcs = self.wcs.copy()
+        wcs.wcs.wcs.crpix[0] = 1.0
+        wcs.wcs.wcs.crpix[1] = 1.0
+        wcs.wcs.wcs.crval[0] = newstart[1]
+        wcs.wcs.wcs.crval[1] = newstart[0]
+        
         pstep = newstep/self.wcs.get_step()
+        
+        wcs.new_step(pstep)
+        
         poffset = self.wcs.sky2pix(newstart)[0]*self.wcs.get_step()/newstep
         #poffset = np.abs((newstart-self.wcs.get_start())/newstep)
         
