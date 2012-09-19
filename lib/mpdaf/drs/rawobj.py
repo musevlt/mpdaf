@@ -321,7 +321,7 @@ class Channel(object):
             x = np.ma.MaskedArray(self.data, mask=self.mask)
         data = np.ma.compressed(x)
         data = np.reshape(data,(ny_data,nx_data))
-        wcs = obj.WCS(shape=(ny_data,nx_data))
+        wcs = obj.WCS(crpix=(1.0,1.0), shape=(ny_data,nx_data))
         ima = obj.Image(wcs=wcs, data=data)
         return ima
     

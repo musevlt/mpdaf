@@ -1568,15 +1568,14 @@ class Image(object):
     def sum(self,axis=None):
         """Returns the sum over the given axis.
   
-          :param axis: axis = None returns a float, axis=0 or 1 returns a line or a column, other cases return None.
+          :param axis: axis = None returns a float, axis=0 or 1 returns a Spectrum object corresponding to a line or a column, other cases return None.
           :type axis: None, 0 or 1
           :rtype: float or Image
         """
         if axis is None:
             return self.data.sum()*self.fscale    
         elif axis==0 or axis==1:
-            #return an image
-            #data = self.data.sum(axis)
+            #return a spectrum
             data = np.ma.sum(self.data,axis)
             var = None
             if self.var is not None:
@@ -1584,10 +1583,25 @@ class Image(object):
             if axis==0:
                 wcs = self.wcs[0,:]
                 shape = (1,data.shape[0])
+                step = self.wcs.get_step()[1]
+                start = self.wcs.get_start()[1]
             else:
                 wcs = self.wcs[:,0]
                 shape = (data.shape[0],1)
-            res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
+                step = self.wcs.get_step()[0]
+                start = self.wcs.get_start()[0]
+                
+            #res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
+            
+            from spectrum import Spectrum
+            from coords import WaveCoord
+            if self.wcs.is_deg():
+                cunit = 'deg'
+            else:
+                cunit='pixel'
+            wave = WaveCoord(crpix=1.0, cdelt=step, crval=start, cunit = cunit, shape = data.shape[0])
+            res = Spectrum(shape=data.shape[0], wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
+            
             res.data = data
             res.var =var
             return res
@@ -3296,12 +3310,12 @@ class Image(object):
         if np.shape(xaxis)[0] == 1:
             #plot a  column
             plt.plot(yaxis,f)
-            plt.xlabel('q (%s)' %yunit)
+            plt.xlabel('p (%s)' %yunit)
             plt.ylabel(self.unit)
         elif np.shape(yaxis)[0] == 1:
             #plot a line
             plt.plot(xaxis,f)
-            plt.xlabel('p (%s)' %xunit)
+            plt.xlabel('q (%s)' %xunit)
             plt.ylabel(self.unit)
         else:
             if zscale:
@@ -3321,8 +3335,8 @@ class Image(object):
             cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]),norm=norm,**kargs)
             if colorbar:
                 plt.colorbar(cax)
-            plt.xlabel('p (%s)' %xunit)
-            plt.ylabel('q (%s)' %yunit)
+            plt.xlabel('q (%s)' %xunit)
+            plt.ylabel('p (%s)' %yunit)
             self._ax = cax
             
         if title is not None:
