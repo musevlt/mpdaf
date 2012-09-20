@@ -14,78 +14,74 @@ from mpdaf.obj import WaveCoord
 from mpdaf.obj import gauss_image
 
 class TestImage():
-
-    def setUp(self):
-        wcs = WCS()
-        wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit = 'Angstrom')
-        self.cube1 = Cube(shape=(10,6,5),data=np.ones(shape=(10,6,5)),wave=wave,wcs=wcs,fscale= 2.3)
-        data = np.ones(shape=(6,5))*2
-        self.image1 = Image(shape=(6,5),data=data,wcs=wcs)
-        self.spectrum1 = Spectrum(shape=10, data=np.array([0.5,1,2,3,4,5,6,7,8,9]),wave=wave,fscale= 2.3)
-
-    def tearDown(self):
-        del self.cube1
-        del self.image1
-        del self.spectrum1
     
     @attr(speed='fast')
     def test_arithmetricOperator_Image(self):
         """Image class: tests arithmetic functions"""
+        wcs = WCS()
+        wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit = 'Angstrom')
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        cube1 = Cube(shape=(10,6,5),data=np.ones(shape=(10,6,5)),wave=wave,wcs=wcs,fscale= 2.3)
         # +
-        image3 = self.image1 + self.image1
-        nose.tools.assert_almost_equal(image3.data[3,3]*image3.fscale,4*self.image1.fscale)
-        self.image1 += 4.2
-        nose.tools.assert_almost_equal(self.image1.data[3,3]*self.image1.fscale,(2+4.2)*self.image1.fscale)
+        image3 = image1 + image1
+        nose.tools.assert_almost_equal(image3.data[3,3]*image3.fscale,4*image1.fscale)
+        image1 += 4.2
+        nose.tools.assert_almost_equal(image1.data[3,3]*image1.fscale,(2+4.2)*image1.fscale)
         # -
-        image3 = self.image1 - self.image1
+        image3 = image1 - image1
         nose.tools.assert_almost_equal(image3.data[3,3],0)
-        self.image1 -= 4.2
-        nose.tools.assert_almost_equal(self.image1.data[3,3]*self.image1.fscale,2)
+        image1 -= 4.2
+        nose.tools.assert_almost_equal(image1.data[3,3]*image1.fscale,2)
         # *
-        image3 = self.image1 * self.image1
+        image3 = image1 * image1
         nose.tools.assert_almost_equal(image3.data[3,3],4)
-        self.image1 *= 4.2
-        nose.tools.assert_almost_equal(self.image1.data[3,3]*self.image1.fscale,2*4.2)
+        image1 *= 4.2
+        nose.tools.assert_almost_equal(image1.data[3,3]*image1.fscale,2*4.2)
         # /
-        image3 = self.image1 / self.image1
+        image3 = image1 / image1
         nose.tools.assert_almost_equal(image3.data[3,3],1)
-        self.image1 /= 4.2
-        nose.tools.assert_almost_equal(self.image1.data[3,3]*self.image1.fscale,2)
+        image1 /= 4.2
+        nose.tools.assert_almost_equal(image1.data[3,3]*image1.fscale,2)
         # with cube
-        cube2 = self.image1 + self.cube1
+        cube2 = image1 + cube1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale + self.cube1.data[k,j,i]*self.cube1.fscale)
-        cube2 = self.image1 - self.cube1
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,image1.data[j,i]*image1.fscale + cube1.data[k,j,i]*cube1.fscale)
+        cube2 = image1 - cube1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale - self.cube1.data[k,j,i]*self.cube1.fscale)
-        cube2 = self.image1 * self.cube1
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,image1.data[j,i]*image1.fscale - cube1.data[k,j,i]*cube1.fscale)
+        cube2 = image1 * cube1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale * self.cube1.data[k,j,i]*self.cube1.fscale)
-        cube2 = self.image1 / self.cube1
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,image1.data[j,i]*image1.fscale * cube1.data[k,j,i]*cube1.fscale)
+        cube2 = image1 / cube1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale / (self.cube1.data[k,j,i]*self.cube1.fscale))
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,image1.data[j,i]*image1.fscale / (cube1.data[k,j,i]*cube1.fscale))
         # spectrum * image
-        cube2 = self.image1 * self.spectrum1
+        spectrum1 = Spectrum(shape=10, data=np.array([0.5,1,2,3,4,5,6,7,8,9]),wave=wave,fscale= 2.3)
+        cube2 = image1 * spectrum1
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.spectrum1.data[k]*self.spectrum1.fscale * (self.image1.data[j,i]*self.image1.fscale))
+                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,spectrum1.data[k]*spectrum1.fscale * (image1.data[j,i]*image1.fscale))
         #
-        image2 = (self.image1 *-2).abs()+(self.image1+4).sqrt()-2 
-        nose.tools.assert_almost_equal(image2.data[3,3]*image2.fscale,np.abs(self.image1.data[3,3]*self.image1.fscale *-2)+np.sqrt(self.image1.data[3,3]*self.image1.fscale+4)-2 )
+        image2 = (image1 *-2).abs()+(image1+4).sqrt()-2 
+        nose.tools.assert_almost_equal(image2.data[3,3]*image2.fscale,np.abs(image1.data[3,3]*image1.fscale *-2)+np.sqrt(image1.data[3,3]*image1.fscale+4)-2 )
 
     @attr(speed='fast')
     def test_get_Image(self):
         """Image class: tests getters"""
-        ima = self.image1[0:2,1:4]
+        wcs = WCS()
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        ima = image1[0:2,1:4]
         nose.tools.assert_equal(ima.shape[0],2)
         nose.tools.assert_equal(ima.shape[1],3)
         nose.tools.assert_equal(ima.get_start()[0],0)
@@ -94,47 +90,55 @@ class TestImage():
         nose.tools.assert_equal(ima.get_end()[1],3)
         nose.tools.assert_equal(ima.get_step()[0],1)
         nose.tools.assert_equal(ima.get_step()[1],1)
-        del ima
       
     @attr(speed='fast')  
     def test_resize_Image(self):
         """Image class: tests resize method"""
+        wcs = WCS()
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
         mask = np.ones((6,5),dtype=bool)
-        data = self.image1.data.data
+        data = image1.data.data
         data[2:4,1:4] = 8
         mask[2:4,1:4] = 0
-        self.image1.data = np.ma.MaskedArray(data, mask=mask)
-        self.image1.resize()
-        nose.tools.assert_equal(self.image1.shape[0],2)
-        nose.tools.assert_equal(self.image1.shape[1],3)
-        nose.tools.assert_equal(self.image1.sum(),2*3*8)
-        nose.tools.assert_equal(self.image1.get_start()[0],2)
-        nose.tools.assert_equal(self.image1.get_start()[1],1)
-        nose.tools.assert_equal(self.image1.get_end()[0],3)
-        nose.tools.assert_equal(self.image1.get_end()[1],3)
-        nose.tools.assert_equal(self.image1.get_range()[0][0],self.image1.get_start()[0])
-        nose.tools.assert_equal(self.image1.get_range()[0][1],self.image1.get_start()[1])
-        nose.tools.assert_equal(self.image1.get_range()[1][0],self.image1.get_end()[0])
-        nose.tools.assert_equal(self.image1.get_range()[1][1],self.image1.get_end()[1])
-        nose.tools.assert_equal(self.image1.get_rot(),0)
+        image1.data = np.ma.MaskedArray(data, mask=mask)
+        image1.resize()
+        nose.tools.assert_equal(image1.shape[0],2)
+        nose.tools.assert_equal(image1.shape[1],3)
+        nose.tools.assert_equal(image1.sum(),2*3*8)
+        nose.tools.assert_equal(image1.get_start()[0],2)
+        nose.tools.assert_equal(image1.get_start()[1],1)
+        nose.tools.assert_equal(image1.get_end()[0],3)
+        nose.tools.assert_equal(image1.get_end()[1],3)
+        nose.tools.assert_equal(image1.get_range()[0][0],image1.get_start()[0])
+        nose.tools.assert_equal(image1.get_range()[0][1],image1.get_start()[1])
+        nose.tools.assert_equal(image1.get_range()[1][0],image1.get_end()[0])
+        nose.tools.assert_equal(image1.get_range()[1][1],image1.get_end()[1])
+        nose.tools.assert_equal(image1.get_rot(),0)
      
     @attr(speed='fast')  
     def test_truncate_Image(self):
         """Image class: tests truncation"""
-        self.image1 = self.image1.truncate(0,1,1,3)
-        nose.tools.assert_equal(self.image1.shape[0],2)
-        nose.tools.assert_equal(self.image1.shape[1],3)
-        nose.tools.assert_equal(self.image1.get_start()[0],0)
-        nose.tools.assert_equal(self.image1.get_start()[1],1)
-        nose.tools.assert_equal(self.image1.get_end()[0],1)
-        nose.tools.assert_equal(self.image1.get_end()[1],3)
+        wcs = WCS()
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        image1 = image1.truncate(0,1,1,3)
+        nose.tools.assert_equal(image1.shape[0],2)
+        nose.tools.assert_equal(image1.shape[1],3)
+        nose.tools.assert_equal(image1.get_start()[0],0)
+        nose.tools.assert_equal(image1.get_start()[1],1)
+        nose.tools.assert_equal(image1.get_end()[0],1)
+        nose.tools.assert_equal(image1.get_end()[1],3)
     
     @attr(speed='fast')   
     def test_sum_Image(self):
         """Image class: tests sum"""
-        sum1 = self.image1.sum()
+        wcs = WCS()
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        sum1 = image1.sum()
         nose.tools.assert_equal(sum1,6*5*2)
-        sum2 = self.image1.sum(axis=0)
+        sum2 = image1.sum(axis=0)
         nose.tools.assert_equal(sum2.shape,5)
         nose.tools.assert_equal(sum2.get_start(),0)
         nose.tools.assert_equal(sum2.get_end(),4)
@@ -167,33 +171,58 @@ class TestImage():
     @attr(speed='fast')   
     def test_mask_Image(self):
         """Image class: tests mask functionalities"""
-        self.image1.mask((2,2),(1,1),pix=True,inside=False)
-        nose.tools.assert_equal(self.image1.sum(),2*9)
-        self.image1.unmask()
-        self.image1.mask((2,2),(3600,3600),inside=False)
-        nose.tools.assert_equal(self.image1.sum(),2*9)
+        wcs = WCS()
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        image1.mask((2,2),(1,1),pix=True,inside=False)
+        nose.tools.assert_equal(image1.sum(),2*9)
+        image1.unmask()
+        image1.mask((2,2),(3600,3600),inside=False)
+        nose.tools.assert_equal(image1.sum(),2*9)
         
     @attr(speed='fast')   
     def test_background_Image(self):
         """Image class: tests background value"""
-        nose.tools.assert_equal(self.image1.background()[0],2)
-        nose.tools.assert_equal(self.image1.background()[1],0)
+        wcs = WCS()
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        (background,std) = image1.background()
+        nose.tools.assert_equal(background,2)
+        nose.tools.assert_equal(std,0)
+        ima = Image("data/obj/a370II.fits")
+        (background,std) = ima[1647:1732,618:690].background()
+        #compare with IRAF results
+        nose.tools.assert_true((background-std<1989) & (background+std>1989))
         
     @attr(speed='fast')   
     def test_peak_Image(self):
         """Image class: tests peak research"""
-        self.image1.data[2,2] = 8
-        p = self.image1.peak()
+        wcs = WCS()
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        image1.data[2,3] = 8
+        p = image1.peak()
         nose.tools.assert_equal(p['p'],2)
-        nose.tools.assert_equal(p['q'],2)
+        nose.tools.assert_equal(p['q'],3)
+        ima = Image("data/obj/a370II.fits")
+        p = ima.peak(center=(790,875),radius=20,pix=True,plot=False)
+        nose.tools.assert_almost_equal(p['p'],793.3,0.1)
+        nose.tools.assert_almost_equal(p['q'],875.8,0.1)
         
     @attr(speed='fast')
     def test_clone(self):
         """Image class: tests clone method."""
-        ima2 = self.image1.clone()
+        wcs = WCS()
+        data = np.ones(shape=(6,5))*2
+        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        ima2 = image1.clone()
         for j in range(6):
             for i in range(5):
                 nose.tools.assert_almost_equal(ima2.data[j,i]*ima2.fscale,0)
+        ima = Image("data/obj/a370II.fits")
+        ima2 = ima.clone()+1000
+        nose.tools.assert_equal(ima2.sum(axis=0).data[1000],ima.shape[0]*1000)
+        nose.tools.assert_equal(ima2.sum(),ima.shape[0]*ima.shape[1]*1000)
                 
     @attr(speed='fast')
     def test_rotate(self):

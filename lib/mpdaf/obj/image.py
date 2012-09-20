@@ -381,8 +381,8 @@ class Image(object):
                 self.unit = unit
                 self.cards = pyfits.CardList()
                 self.wcs = WCS()
-                self.wcs.wcs.naxis1 = self.shape[1]
-                self.wcs.wcs.naxis2 = self.shape[0]
+                self.wcs.set_naxis1(self.shape[1])
+                self.wcs.set_naxis2(self.shape[0])
         else:
             #possible data unit type
             self.unit = unit
@@ -409,8 +409,8 @@ class Image(object):
             try:
                 self.wcs = wcs
                 if wcs is not None:
-                    self.wcs.wcs.naxis1 = self.shape[1]
-                    self.wcs.wcs.naxis2 = self.shape[0]
+                    self.wcs.set_naxis1(self.shape[1])
+                    self.wcs.set_naxis2(self.shape[0])
                     if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
                         print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
             except :
@@ -1183,8 +1183,8 @@ class Image(object):
           :type wcs: :class:`mpdaf.obj.WCS`
         """
         self.wcs = wcs
-        self.wcs.wcs.naxis1 = self.shape[1]
-        self.wcs.wcs.naxis2 = self.shape[0]
+        self.wcs.set_naxis1(self.shape[1])
+        self.wcs.set_naxis2(self.shape[0])
         if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and (wcs.wcs.naxis1 != self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
             print "warning: world coordinates and data have not the same dimensions."
             
@@ -1525,23 +1525,24 @@ class Image(object):
             center_pix = (np.array([self.shape[0],self.shape[1]])+1)/2.
             center_coord = self.wcs.pix2sky([center_pix-1])
             old_crpix = self.wcs.wcs.wcs.crpix.copy()
-            self.wcs.wcs.wcs.crpix[0] = center_pix[1]
-            self.wcs.wcs.wcs.crpix[1] = center_pix[0]
-            self.wcs.wcs.wcs.crval[0] = center_coord[0][1]
-            self.wcs.wcs.wcs.crval[1] = center_coord[0][0]
+            self.wcs.set_crpix1(center_pix[1])
+            self.wcs.set_crpix2(center_pix[0])
+            self.wcs.set_crval1(center_coord[0][1])
+            self.wcs.set_crval2(center_coord[0][0])
             # rotate the wcs
             self.wcs.rotate(-theta)        
             # translate the new wcs
             self.shape = np.array(data_rot.shape)
-            self.wcs.wcs.naxis1 = self.shape[1]
-            self.wcs.wcs.naxis2 = self.shape[0]
-            self.wcs.wcs.wcs.crpix = (np.array([self.shape[1],self.shape[0]])+1)/2.
+            self.wcs.set_naxis1(self.shape[1])
+            self.wcs.set_naxis2(self.shape[0])
+            self.wcs.set_crpix1((self.shape[1]+1)/2.)
+            self.wcs.set_crpix2((self.shape[0]+1)/2.)
             # compute the new value of the old crpix
             new_crval = self.wcs.pix2sky([old_crpix[1]-1,old_crpix[0]-1])
-            self.wcs.wcs.wcs.crpix = old_crpix
-            self.wcs.wcs.wcs.crval[0] = new_crval[0][1]
-            self.wcs.wcs.wcs.crval[1] = new_crval[0][0]
-            
+            self.wcs.set_crpix1(old_crpix[0])
+            self.wcs.set_crpix2(old_crpix[1])
+            self.wcs.set_crval1(new_crval[0][1])
+            self.wcs.set_crval2(new_crval[0][0])
         except:
             self.shape = np.array(data_rot.shape)
             self.wcs = None
@@ -1729,7 +1730,7 @@ class Image(object):
                 str= 'dpix %i peak: %g %g' %(dpix,ic,jc)
             plt.title(str)
             
-        return {'x':ra, 'y':dec, 'q':ic, 'p':jc, 'data': maxv}
+        return {'x':ra, 'y':dec, 'p':ic, 'q':jc, 'data': maxv}
     
     def fwhm(self, center=None, radius=0, pix = False):
         """Computes the fwhm center. 
@@ -2447,9 +2448,8 @@ class Image(object):
                     var[:,0] = self.var[:,0:n_left].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                     var[:,-1] = self.var[:,n_right:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
-                #wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
-                wcs.wcs.wcs.crpix[0] += 1
-                wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
+                wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
+                wcs.set_naxis1(wcs.wcs.naxis1 +2)
         elif not np.sometrue(np.mod( self.shape[1], factor[1] )):
             newshape0 = self.shape[0]/factor[0]
             n0 = self.shape[0] - newshape0*factor[0]
@@ -2494,9 +2494,8 @@ class Image(object):
                     var[0,:] = self.var[0:n_left,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                     var[-1,:] = self.var[n_right:,:].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
-                #wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]]
-                wcs.wcs.wcs.crpix[1] += 1 
-                wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
+                wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1) 
+                wcs.set_naxis2(wcs.wcs.naxis2 +2)
         else:
             factor = np.array(factor)
             newshape = self.shape/factor
@@ -2548,11 +2547,10 @@ class Image(object):
                         var[1:-1,-1] = self.var[n_left[0]:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
                     wcs = ima.wcs
                     step = wcs.get_step()
-                    #wcs.wcs.wcs.crval = wcs.wcs.wcs.crval - np.array([step[1],step[0]])
-                    wcs.wcs.wcs.crpix[0] +=1
-                    wcs.wcs.wcs.crpix[1] +=1
-                    wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
-                    wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
+                    wcs.set_crpix1(wcs.wcs.wcs.crpix[0] +1)
+                    wcs.set_crpix2(wcs.wcs.wcs.crpix[1] +1)
+                    wcs.set_naxis1(wcs.wcs.naxis1 +2)
+                    wcs.set_naxis2(wcs.wcs.naxis2 +2)
                 elif n_left[0]==0:
                     newshape = (ima.shape[0] + 1, ima.shape[1] + 2)
                     data = np.empty(newshape)
@@ -2590,10 +2588,9 @@ class Image(object):
                         var[0:-1,-1] = self.var[0:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]/factor[0] / factor[1]
                 
                     wcs = ima.wcs
-                    #wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] - wcs.get_step()[1] , wcs.wcs.wcs.crval[1]]
-                    wcs.wcs.wcs.crpix[0] += 1 
-                    wcs.wcs.naxis1 = wcs.wcs.naxis1 +2
-                    wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
+                    wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1) 
+                    wcs.set_naxis1(wcs.wcs.naxis1 +2)
+                    wcs.set_naxis2(wcs.wcs.naxis2 +1)
                 else:
                     newshape = (ima.shape[0] + 2, ima.shape[1] + 1)
                     data = np.empty(newshape)
@@ -2631,10 +2628,9 @@ class Image(object):
                         var[-1,0:-1] = self.var[n_right[0]:,0:n_right[1]].sum(axis=0).reshape(ima.shape[1],factor[1]).sum(1) / factor[0] / factor[1]
                         var[1:-1,-1] = self.var[n_left[0]:n_right[0],n_right[1]:].sum(axis=1).reshape(ima.shape[0],factor[0]).sum(1) / factor[0] / factor[1]
                     wcs = ima.wcs
-                    #wcs.wcs.wcs.crval = [wcs.wcs.wcs.crval[0] , wcs.wcs.wcs.crval[1] - wcs.get_step()[0]] 
-                    wcs.wcs.wcs.crpix[1] += 1
-                    wcs.wcs.naxis1 = wcs.wcs.naxis1 +1
-                    wcs.wcs.naxis2 = wcs.wcs.naxis2 +2
+                    wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
+                    wcs.set_naxis1(wcs.wcs.naxis1 +1)
+                    wcs.set_naxis2(wcs.wcs.naxis2 +2)
             elif margin=='origin':
                 n_right = self.shape - n
                 ima = self[0:n_right[0],0:n_right[1]]
@@ -2722,10 +2718,10 @@ class Image(object):
                    
         #wcs = WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
         wcs = self.wcs.copy()
-        wcs.wcs.wcs.crpix[0] = 1.0
-        wcs.wcs.wcs.crpix[1] = 1.0
-        wcs.wcs.wcs.crval[0] = newstart[1]
-        wcs.wcs.wcs.crval[1] = newstart[0]
+        wcs.set_crpix1(1.0)
+        wcs.set_crpix2(1.0)
+        wcs.set_crval1(newstart[1])
+        wcs.set_crval2(newstart[0])
         
         pstep = newstep/self.wcs.get_step()
         
@@ -2958,7 +2954,7 @@ class Image(object):
                 self_rot = self.wcs.get_rot()
                 ima_rot = ima.wcs.get_rot()
                 if self_rot != ima_rot:
-                    ima = ima.rotate(self_rot-ima_rot)
+                    ima = ima.rotate(-self_rot+ima_rot)
                 self_cdelt = self.wcs.get_step()
                 ima_cdelt = ima.wcs.get_step()
                 if (self_cdelt != ima_cdelt).all():
@@ -2972,33 +2968,36 @@ class Image(object):
                     except:
                         newdim = ima.shape/factor
                         ima = ima.rebin(newdim, None, self_cdelt, flux=True)
+                        
                 # here ima and self have the same step
                 [[k1,l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
                 l1 = int(l1 + 0.5)
                 k1 = int(k1 + 0.5)
+                k2 = k1 + ima.shape[0]
                 if k1 < 0:
                     nk1 = -k1
                     k1 = 0
                 else:
                     nk1 = 0
-                k2 = k1 + ima.shape[0] 
+                
                 if k2 > self.shape[0]:
                     nk2 = ima.shape[0] - (k2 - self.shape[0])
                     k2 = self.shape[0] 
                 else:
                     nk2 = ima.shape[0]
                 
+                l2 = l1 + ima.shape[1] 
                 if l1 < 0:
                     nl1 = -l1
                     l1 = 0
                 else:
-                    nl1 = 0                    
-                l2 = l1 + ima.shape[1] 
+                    nl1 = 0
+                
                 if l2 > self.shape[1]:
                     nl2 = ima.shape[1] - (l2 - self.shape[1])
                     l2 = self.shape[1] 
                 else:
-                    nl2 = ima.shape[1]
+                    nl2 = ima.shape[1] 
         
                 if interp=='linear':
                     data = self._interp_data(spline=False)
@@ -3010,7 +3009,6 @@ class Image(object):
                     data = np.ma.filled(self.data, np.ma.median(self.data))
                     data[k1:k2,l1:l2] += (ima.data.filled(np.ma.median(ima.data))[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
                
-                #data = self.data.filled(np.ma.median(self.data))
                 self.data = np.ma.array(data, mask=self.data.mask)
         except:
             print 'Operation forbidden'

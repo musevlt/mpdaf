@@ -223,6 +223,7 @@ class WCS(object):
             if shape!=None:
                 self.wcs.naxis1 = shape[1]
                 self.wcs.naxis2 = shape[0]
+            self.wcs.wcs.set()
 
 
     def copy(self):
@@ -369,6 +370,8 @@ class WCS(object):
             res.wcs.naxis1 = int(imax-imin)       
             res.wcs.naxis2 = int(jmax-jmin)
             
+            res.wcs.wcs.set()
+            
             return res
         else:
             raise ValueError, 'Operation forbidden'
@@ -425,6 +428,8 @@ class WCS(object):
                 raise IOError, 'No standard WCS'
             
     def get_cd(self):
+        """Returns the CD matrix.
+        """
         try:
             return self.wcs.wcs.cd
         except:
@@ -435,6 +440,40 @@ class WCS(object):
                 return cd
             except:
                 raise IOError, 'No standard WCS'
+            
+    def set_naxis1(self,n):
+        """NAXIS1 setter (first dimention of an image).
+        """
+        self.wcs.naxis1 = n
+        
+    def set_naxis2(self,n):
+        """NAXIS2 setter (second dimention of an image).
+        """
+        self.wcs.naxis2 = n
+        
+    def set_crpix1(self,x):
+        """CRPIX1 setter (reference pixel on the first axis).
+        """
+        self.wcs.wcs.crpix[0] = x
+        self.wcs.wcs.set()
+        
+    def set_crpix2(self,x):
+        """CRPIX2 setter (reference pixel on the second axis).
+        """
+        self.wcs.wcs.crpix[1] = x
+        self.wcs.wcs.set()
+        
+    def set_crval1(self,x):
+        """CRVAL1 setter (value of the reference pixel on the first axis).
+        """
+        self.wcs.wcs.crval[0] = x
+        self.wcs.wcs.set()
+        
+    def set_crval2(self,x):
+        """CRVAL2 setter (value of the reference pixel on the second axis).
+        """
+        self.wcs.wcs.crval[1] = x
+        self.wcs.wcs.set()
     
     def rotate(self, theta):
         """Rotates WCS coordinates to new orientation given by theta.
@@ -450,10 +489,12 @@ class WCS(object):
         try:
             new_cd = np.dot(self.wcs.wcs.cd, _mrot)
             self.wcs.wcs.cd = new_cd
+            self.wcs.wcs.set()
         except:
             try:
                 new_pc = np.dot(self.wcs.wcs.pc, _mrot)
                 self.wcs.wcs.pc = new_pc
+                self.wcs.wcs.set()
             except:
                 print "problem with rotation"
        
@@ -482,10 +523,12 @@ class WCS(object):
         try:
             self.wcs.wcs.cd[0,:] *= factor[1]
             self.wcs.wcs.cd[1,:] *= factor[0]
+            self.wcs.wcs.set()
         except:
             try:
                 self.wcs.wcs.cdelt[0] *= factor[1]
                 self.wcs.wcs.cdelt[1] *= factor[0]
+                self.wcs.wcs.set()
             except:
                 print "problem in wcs to rebin"
     
@@ -512,13 +555,12 @@ class WCS(object):
             except:
                 print "problem in wcs to rebin"
         crpix = res.wcs.wcs.crpix
-        print crpix
         crpix[0] /= factor[1]
         crpix[1] /= factor[0]
-        print crpix
         res.wcs.wcs.crpix = crpix
         res.wcs.naxis1 = res.wcs.naxis1 / factor[1]
         res.wcs.naxis2 = res.wcs.naxis2 / factor[0]
+        res.wcs.wcs.set()
         return res
     
     def is_deg(self):
