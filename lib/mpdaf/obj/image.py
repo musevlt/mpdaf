@@ -1647,7 +1647,66 @@ class Image(object):
             tab = tab[ksel]
         return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
     
-    def peak(self, center=None, radius=0, pix = False, dpix=2, plot=False):
+    def peak_detection(self, threshold=None, kernel_size=None):
+        """Returns a list of peak locations.
+        
+        :param threshold: threshold value. If None, it is initialized with background value
+        :type threshold: float
+        :param kernel_size: size of the median filter window along each axis.
+        :type kernel_size: (float,float)
+        
+        """
+        d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
+        # threshold value
+        (background,std) = self.background()
+        if threshold is None:
+            threshold = background
+        else:
+            threshold /= self.fscale
+        # select brightest pixels
+        ksel = np.where(d>threshold)
+        
+        # list of peaks in pixels
+        peak = []
+        # list of explored pixels
+        l = []
+        
+        #lopp on brightest pixels
+        for i in range(len(ksel[0])):
+            try:
+                l.index(i)
+            except:
+                p = ksel[0][i]
+                q = ksel[1][i]
+                loop = True
+                while loop:
+                    k = np.where((ksel[0]>p-2) & (ksel[0]<p+2) & (ksel[1]>q-2) & (ksel[1]<q+2))
+                    for index in range(len(k[0])):
+                        l.append(k[0][index])
+                        
+                    ksel2 = [ksel[0][k],ksel[1][k]]
+                    n = np.argmax(self.data[ksel2])
+                    
+                    if(p==ksel2[0][n] and q==ksel2[1][n]):
+                        try:
+                            peak.index([p,q])
+                        except:
+                            peak.append([p,q])
+                        loop = False
+                    else:
+                        p = ksel2[0][n]
+                        q = ksel2[1][n]
+        
+        # compute real position of peaks
+        newpeak = []
+        for p in peak:
+            real_peak = self.peak(center=(p[0],p[1]), radius = (10,10), pix=True, dpix=3, background=background,plot=False)
+            newpeak.append(real_peak)
+            
+        return newpeak
+        
+    
+    def peak(self, center=None, radius=0, pix = False, dpix=2, background=None, plot=False):
         """Finds image peak location.
   
           :param center: Center of the explored region.
@@ -1670,6 +1729,8 @@ class Image(object):
           :type pix: boolean
           :param dpix: Half size of the window to compute the center of gravity.
           :type dpix: integer
+          :param background: background value. If None, it is computed.
+          :type background: float
           :param plot: If True, the peak center is overplotted on the image.
           :type plot: boolean
           :rtype: Returns a dictionary {'y', 'x', 'p', 'q', 'data'} containing the peak position and the peak intensity.
@@ -1717,7 +1778,11 @@ class Image(object):
             di = 0
             dj = 0
         else:
-            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- self.background()[0]/self.fscale)
+            if background is None:
+                background = self.background()[0]/self.fscale
+            else:
+                background /=self.fscale
+            di,dj = ndimage.measurements.center_of_mass(d[max(0,ic-dpix):ic+dpix+1,max(0,jc-dpix):jc+dpix+1]- background)
         ic = imin+max(0,ic-dpix)+di
         jc = jmin+max(0,jc-dpix)+dj
         [[dec,ra]] = self.wcs.pix2sky([[ic,jc]])
