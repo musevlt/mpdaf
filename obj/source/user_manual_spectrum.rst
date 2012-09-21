@@ -108,6 +108,10 @@ Reference
 
 :func:`mpdaf.obj.Spectrum.write <mpdaf.obj.Spectrum.write>` saves the Spectrum object in a FITS file.
 
+:func:`mpdaf.obj.Spectrum.background <mpdaf.obj.Spectrum.background>` computes the background value.
+
+:func:`mpdaf.obj.Spectrum.peak_detection <mpdaf.obj.Spectrum.peak_detection>` returns a list of peak locations.
+
 
 Indexing
 --------

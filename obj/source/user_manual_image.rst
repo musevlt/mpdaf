@@ -30,7 +30,9 @@ Reference
 
 :func:`mpdaf.obj.Image.background <mpdaf.obj.Image.background>` computes the image background.
 
-:func:`mpdaf.obj.Image.peak <mpdaf.obj.Image.peak>` finds image peak location.
+:func:`mpdaf.obj.Image.peak <mpdaf.obj.Image.peak>` locates a peak in a sub-image.
+
+:func:`mpdaf.obj.Image.peak_detection <mpdaf.obj.Image.peak_detection>` returns a list of peak locations.
 
 
 Indexing
