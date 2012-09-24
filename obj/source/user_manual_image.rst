@@ -2,6 +2,27 @@ Image object
 ************
 
 Image, optionally including a variance and a bad pixel mask.
+The Image object handles a 2D data array (basically a numpy masked array) containing flux values, associated with a WCS 
+object containing the spatial coordinated information (alpha,delta). Optionally, a variance data array 
+can be attached and used for weighting the flux values. Array masking is used to ignore 
+some of the pixel values in the calculations.
+
+
+
+Image object format
+======================
+
+An Image object O consists of:
+
++------------+---------------------------------------------------------+
+| Component  | Description                                             |
++============+=========================================================+
+| O.wcs      | 2D world coordinate system information (WCS object)     |
++------------+---------------------------------------------------------+
+| O.data     | masked numpy 2D array with data values                  |
++------------+---------------------------------------------------------+
+| O.var      | (optionally) masked numpy 2D array with variance values |
++------------+---------------------------------------------------------+
 
 
 Tutorial
@@ -11,8 +32,46 @@ We can load the tutorial files with the command::
 
 git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
 
+Preliminary imports for all tutorials::
+
+  import numpy as np
+  from mpdaf.obj import Image
+  from mpdaf.obj.coords import WCS
+
+Tutorial 1: Image Creation
+--------------------------
+
+An Image object can be created:
+
+-either from one or two 2D numpy arrays containing the flux and variance values (optionally, the 
+data array can be a numpy masked array to deal with bad pixel values)::
+
+  MyData=np.ones([1000,1000]) #numpy data array
+  MyVariance=np.ones([1000,1000]) #numpy variance array
+  ima=Image(data=MyData) #image filled with MyData
+  ima=Image(data=MyData,variance=MyVariance) #image filled with MyData and MyVariance
+
+-or from a FITS file (in which case the flux and variance values are read from specific extensions),
+using the following commands::
+
+  ima=Image(filename='image.fits',ext=1) #data array is read from the file (extension number 1)
+  ima=Image(filename='image.fits,ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
+
+The WCS object can be copied from another image or taken from the FITS header::
+
+  wcs1=ima1.wcs #WCS copied from Image object ima1
+  wcs2=WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) #Spatial WCS created from a reference position in degrees, a pixel size and a rotation angle
+
+  ima2=Image(data=MyData,wcs=wcs2) #wcs created from known object
 
 
+Any Image object can be written as an output FITS file (containing 1 or 2 extensions)::
+
+  ima2.write('ima2.fits')
+
+
+Tutorial 2: Image Geometrical manipulation
+------------------------------------------
 
 
 Reference

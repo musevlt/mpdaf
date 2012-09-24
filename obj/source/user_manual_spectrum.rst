@@ -4,7 +4,7 @@ Spectrum object
 The Spectrum object handles a 1D data array (basically a numpy masked array) containing flux values, associated with a WCS 
 object (WaveCoord) containing the wavelength information. Optionally, a variance data array 
 can be attached and used for weighting the flux values. Array masking is used to ignore 
-some of the pixel values in the calculation.
+some of the pixel values in the calculations.
 
 Spectrum object format
 ======================
@@ -33,7 +33,7 @@ Preliminary imports for all tutorials::
 
   import numpy as np
   from mpdaf.obj import Spectrum
-  from mpdaf.obj import WaveCoord
+  from mpdaf.obj.coords import WaveCoord
 
 Tutorial 1: Spectrum Creation
 -----------------------------
@@ -48,11 +48,11 @@ using the following command::
   spe = Spectrum(data=MyData) # spectrum filled with MyData 
   spe = Spectrum(data=MyData,variance=MyVariance) # spectrum filled with MyData and MyVariance
 
-- or from a FITS file (in which case the flux and variance data are read from specific extensions), 
+- or from a FITS file (in which case the flux and variance values are read from specific extensions), 
 using the following commands::
 
-  spe = Spectrum(filename="spectrum.fits",ext=1) # data array read from file (extension number 1)
-  spe = Spectrum(filename="spectrum.fits",ext=[1,2]) # data and variance arrays read from file (extension numbers 1 and 2)
+  spe = Spectrum(filename="spectrum.fits",ext=1) # data array is read from the file (extension number 1)
+  spe = Spectrum(filename="spectrum.fits",ext=[1,2]) # data and variance arrays read from the file (extension numbers 1 and 2)
 
 The WaveCoord object is either created using a linear scale, copied from another Spectrum, or 
 using the information from the FITS header::
