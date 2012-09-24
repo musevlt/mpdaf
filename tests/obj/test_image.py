@@ -12,6 +12,7 @@ from mpdaf.obj import Cube
 from mpdaf.obj import WCS
 from mpdaf.obj import WaveCoord
 from mpdaf.obj import gauss_image
+from mpdaf.obj import moffat_image
 
 class TestImage():
     
@@ -167,6 +168,19 @@ class TestImage():
         #sigma = ima3.fwhm()/(2.*np.sqrt(2.*np.log(2.0)))
         #nose.tools.assert_almost_equal(sigma[0], 1)
         #nose.tools.assert_almost_equal(sigma[1], 2)
+        
+    @attr(speed='fast')   
+    def test_moffat_Image(self):
+        """Image class: tests Moffat fit"""
+        wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
+        ima = moffat_image(wcs=WCS(),I=12.3, a=1.8, q=1, n=1.6, rot = 0.)
+        moffat = ima.moffat_fit(pos_min=(0, 0), pos_max=(100,100), cont=0,plot=True)
+        nose.tools.assert_almost_equal(moffat.center[0], 50.)
+        nose.tools.assert_almost_equal(moffat.center[1], 50.)
+        nose.tools.assert_almost_equal(moffat.I, 12.3)
+        nose.tools.assert_almost_equal(moffat.a, 1.8)
+        nose.tools.assert_almost_equal(moffat.q, 1)
+        nose.tools.assert_almost_equal(moffat.n, 1.6)
         
     @attr(speed='fast')   
     def test_mask_Image(self):

@@ -2383,7 +2383,10 @@ class Image(object):
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
-        err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        if covar is not None:
+            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        else:
+            err = None
         
         # plot
         if plot:
@@ -2411,19 +2414,28 @@ class Image(object):
             plt.contour(xx, yy, ff, 5)
 
         I = v[0]*self.fscale
-        err_I = err[0]*self.fscale
         ra = v[1]
-        err_ra = err[1]
         dec = v[2]
-        err_dec = err[2]
         a = v[3]
-        err_a = err[3]
         n = v[4]
-        err_n = err[4]
         q = v[5]
-        err_q = err[5]
         rot = (v[6] * 180.0 / np.pi)%180
-        err_rot = err[6] * 180.0 / np.pi
+        if err is not None:
+            err_I = err[0]*self.fscale
+            err_ra = err[1]
+            err_dec = err[2]
+            err_a = err[3]
+            err_n = err[4]
+            err_q = err[5]
+            err_rot = err[6] * 180.0 / np.pi
+        else:
+            err_I = np.NAN
+            err_ra = np.NAN
+            err_dec = np.NAN
+            err_a = np.NAN
+            err_n = np.NAN
+            err_q = np.NAN
+            err_rot = np.NAN
         return Moffat2D((dec,ra), I, a, q, n, rot, (err_dec,err_ra), err_I, err_a, err_q, err_n, err_rot, cont)
     
     def _rebin_factor_(self, factor):
