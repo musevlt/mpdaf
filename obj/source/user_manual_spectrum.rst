@@ -25,6 +25,10 @@ A Spectrum object O consists of:
 Tutorial
 ========
 
+We can load the tutorial files with the command::
+
+git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+
 Preliminary imports for all tutorials::
 
   import numpy as np
@@ -66,6 +70,7 @@ Here we describe how we can mask noisy parts in a spectrum, and do a polynomial
 interpolation taking into account the variance.
 
 We start from the original spectrum and its variance::
+
   spvar=Spectrum('Spectrum_Variance.fits',ext=[0,1])
   
 We mask the residuals from the strong sky emission line arround 5577 Angstroms::
@@ -87,8 +92,20 @@ The other option is to perform an interpolation with a spline::
 
 The results of the interpolations are shown below:
 
-.. insert image here::
 
+
+.. figure:: user_manual_spectrum_images/Spectrum_before_interp_mask.png 
+  :align:   center
+
+  Spectrum before interpolation
+
+
+After interpolation:
+
+.. figure:: user_manual_spectrum_images/Spectrum_after_interp_mask.png
+  :align:   center
+  
+  Spectrum after interpolation
 
 Tutorial 3: Gaussian Line fitting
 ---------------------------------
