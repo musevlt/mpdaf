@@ -284,7 +284,7 @@ class Image(object):
         #possible FITS filename
         self.filename = filename
         if filename is not None:
-            if filename[-4:]=="fits":
+            if filename[-4:]=="fits" or filename[-7:]=="fits.gz":
                 f = pyfits.open(filename)
                 # primary header
                 hdr = f[0].header
@@ -3001,17 +3001,11 @@ class Image(object):
         res._minimum_filter(size, interp)
         return res
     
-    def add(self, other, interp='no'):
+    def add(self, other):
         """Adds the image other to the current image in place. The coordinate are taken into account.
   
           :param other: Second image to add.
           :type other: Image
-          :param interp: if 'no', data median value replaced masked values.
-  
-                        if 'linear', linear interpolation of the masked values.
-        
-                        if 'spline', spline interpolation of the masked values.
-          :type interp: 'no' | 'linear' | 'spline'
         """
         try:
             if other.image:
@@ -3019,7 +3013,12 @@ class Image(object):
                 self_rot = self.wcs.get_rot()
                 ima_rot = ima.wcs.get_rot()
                 if self_rot != ima_rot:
-                    ima = ima.rotate(-self_rot+ima_rot)
+                    ima2 = ima.rotate(-self_rot+ima_rot,reshape=True)
+                    if ima.wcs.get_cd()[0,0]*self.wcs.get_cd()[0,0] < 0:
+                        ima = ima.rotate(180-self_rot+ima_rot,reshape=True)
+                    else:
+                        ima = ima2
+                
                 self_cdelt = self.wcs.get_step()
                 ima_cdelt = ima.wcs.get_step()
                 if (self_cdelt != ima_cdelt).all():
@@ -3033,7 +3032,7 @@ class Image(object):
                     except:
                         newdim = ima.shape/factor
                         ima = ima.rebin(newdim, None, self_cdelt, flux=True)
-                        
+            
                 # here ima and self have the same step
                 [[k1,l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
                 l1 = int(l1 + 0.5)
@@ -3063,18 +3062,10 @@ class Image(object):
                     l2 = self.shape[1] 
                 else:
                     nl2 = ima.shape[1] 
-        
-                if interp=='linear':
-                    data = self._interp_data(spline=False)
-                    data[k1:k2,l1:l2] += (ima._interp_data(spline=False)[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
-                elif interp=='spline':
-                    data = self._interp_data(spline=True)
-                    data[k1:k2,l1:l2] += (ima._interp_data(spline=True)[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
-                else:
-                    data = np.ma.filled(self.data, np.ma.median(self.data))
-                    data[k1:k2,l1:l2] += (ima.data.filled(np.ma.median(ima.data))[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
-               
-                self.data = np.ma.array(data, mask=self.data.mask)
+    
+                mask = self.data.mask.__copy__()
+                self.data[k1:k2,l1:l2] += (ima.data[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
+                self.data.mask = mask           
         except:
             print 'Operation forbidden'
             return None
