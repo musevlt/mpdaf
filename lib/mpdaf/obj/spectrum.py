@@ -2038,19 +2038,19 @@ class Spectrum(object):
         res._fftconvolve_gauss(fwhm, nsig)
         return res
     
-    def background(self, niter=3):
-        """Computes the spectrum background. Returns the background value and its standard deviation.
-        
-        :param niter: Number of iterations.
-        :type niter: integer
-        :rtype: (float,float)
-        """
-        ksel = np.where(self.data <= (np.ma.mean(self.data) + 3 * np.ma.std(self.data)))
-        tab = self.data[ksel]
-        for n in range(niter):
-            ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
-            tab = tab[ksel]
-        return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
+#    def background(self, niter=3):
+#        """Computes the spectrum background. Returns the background value and its standard deviation.
+#        
+#        :param niter: Number of iterations.
+#        :type niter: integer
+#        :rtype: (float,float)
+#        """
+#        ksel = np.where(self.data <= (np.ma.mean(self.data) + 3 * np.ma.std(self.data)))
+#        tab = self.data[ksel]
+#        for n in range(niter):
+#            ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
+#            tab = tab[ksel]
+#        return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
     
     def peak_detection(self, threshold=None, kernel_size=None, pix=False):
         """Returns a list of peak locations.
