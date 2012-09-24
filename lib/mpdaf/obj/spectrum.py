@@ -8,7 +8,6 @@ from scipy import integrate
 from scipy import interpolate
 from scipy.optimize import leastsq
 from scipy import signal
-from scipy import ndimage
 from scipy import special
 
 import matplotlib.pyplot as plt
@@ -1131,7 +1130,7 @@ class Spectrum(object):
     def interp_mask(self, spline=False):
         """ Interpolates masked pixels.
         
-        :param spline: False: linear interpolation(:func:`scipy.interpolate.interp1d` used), True: spline interpolation (:func:`scipy.interpolate.splrep` and :func:`scipy.interpolate.splev` used).
+        :param spline: False: linear interpolation( it uses `scipy.interpolate.interp1d <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html>`), True: spline interpolation ( it uses `scipy.interpolate.splrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.splrep.html>`_ and `scipy.interpolate.splev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.splev.html>`_).
         :type spline: boolean
         """
         self.data = np.ma.masked_invalid(self._interp_data(spline))
@@ -1272,7 +1271,7 @@ class Spectrum(object):
         return res
     
     def _rebin(self, step, start=None, shape= None, spline = False, notnoise=False):
-        """Rebins spectrum data to different wavelength step size.
+        """Rebins spectrum data to different wavelength step size. Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
   
           :param step: New pixel size in spectral direction.
           :type step: float
@@ -1320,7 +1319,7 @@ class Spectrum(object):
         self.wave = newwave
         
     def rebin(self, step, start=None, shape= None, spline = False, notnoise=False):
-        """Returns a spectrum with data rebin to different wavelength step size.
+        """Returns a spectrum with data rebin to different wavelength step size. Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
   
           :param step: New pixel size in spectral direction.
           :type step: float
@@ -1477,7 +1476,7 @@ class Spectrum(object):
         return c
     
     def poly_val(self, z):
-        """Updates in place the spectrum data from polynomial coefficients (:func:`numpy.poly1d` used).       
+        """Updates in place the spectrum data from polynomial coefficients. Uses `numpy.poly1d <http://docs.scipy.org/doc/numpy/reference/generated/numpy.poly1d.html>`_.       
         
           :param z: The polynomial coefficients, in decreasing powers.
           :type z: array
@@ -1694,7 +1693,7 @@ class Spectrum(object):
                 raise ValueError, 'Error in fwhm estimation'
 
     def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None, cont=None, peak=False, spline=False, weight=True, plot=False):
-        """Performs Gaussian fit on spectrum.
+        """Performs Gaussian fit on spectrum. Uses `scipy.optimize.leastsq <http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html>`_ to minimize the sum of squares.
   
           :param lmin: Minimum wavelength value or wavelength range used to compute the gaussian left value.
           :type lmin: float or (float,float)
@@ -1857,7 +1856,7 @@ class Spectrum(object):
 
     
     def _median_filter(self, kernel_size=1., pixel=True, spline=False):
-        """Performs a median filter on the spectrum (:func:`scipy.signal.medfilt` used).
+        """Performs a median filter on the spectrum. Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
   
           :param kernel_size: Size of the median filter window.
           :type kernel_size: float
@@ -1876,7 +1875,7 @@ class Spectrum(object):
         self.data = np.ma.array(data[ks:-ks],mask=self.data.mask)
     
     def median_filter(self, kernel_size=1., pixel=True, spline=False):
-        """Returns a spectrum resulted on a median filter on the current spectrum (:func:`scipy.signal.medfilt` used).
+        """Returns a spectrum resulted on a median filter on the current spectrum. Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
   
           :param kernel_size: Size of the median filter window.
           :type kernel_size: float
@@ -1889,7 +1888,7 @@ class Spectrum(object):
         return res
         
     def _convolve(self, other):
-        """Convolves the spectrum with a other spectrum or an array (:func:`scipy.signal.convolve` used). self and other must have the same size.
+        """Convolves the spectrum with a other spectrum or an array. Uses `scipy.signal.convolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.convolve.html>`_. self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
           :type other: 1d-array or Spectrum
@@ -1917,7 +1916,7 @@ class Spectrum(object):
                 return None
      
     def convolve(self, other):
-        """Returns the convolution of the spectrum with a other spectrum or an array (:func:`scipy.signal.convolve` used). self and other must have the same size.
+        """Returns the convolution of the spectrum with a other spectrum or an array. Uses `scipy.signal.convolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.convolve.html>`_. self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
           :type other: 1d-array or Spectrum
@@ -1928,7 +1927,7 @@ class Spectrum(object):
         return res
            
     def _fftconvolve(self, other):
-        """Convolves the spectrum with a other spectrum or an array using fft (:func:`scipy.signal.fftconvolve` used). self and other must have the same size.
+        """Convolves the spectrum with a other spectrum or an array using fft. Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_. self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
           :type other: 1d-array or Spectrum
@@ -1956,7 +1955,7 @@ class Spectrum(object):
                 return None
      
     def fftconvolve(self, other):
-        """Returns the convolution of the spectrum with a other spectrum or an array using fft (:func:`scipy.signal.fftconvolve` used). self and other must have the same size.
+        """Returns the convolution of the spectrum with a other spectrum or an array using fft. Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_. self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
           :type other: 1d-array or Spectrum
@@ -1967,7 +1966,7 @@ class Spectrum(object):
         return res
           
     def _correlate(self, other):
-        """Cross-correlates the spectrum with a other spectrum or an array (:func:`scipy.signal.correlate` used). self and other must have the same size.
+        """Cross-correlates the spectrum with a other spectrum or an array. Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
           :type other: 1d-array or Spectrum
@@ -1995,7 +1994,7 @@ class Spectrum(object):
                 return None
             
     def correlate(self, other):
-        """Retruns the cross-correlation of the spectrum with a other spectrum or an array (:func:`scipy.signal.correlate` used). self and other must have the same size.
+        """Retruns the cross-correlation of the spectrum with a other spectrum or an array. Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
           :type other: 1d-array or Spectrum
@@ -2053,7 +2052,7 @@ class Spectrum(object):
 #        return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
     
     def peak_detection(self, threshold=None, kernel_size=None, pix=False):
-        """Returns a list of peak locations.
+        """Returns a list of peak locations. Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
         
         :param threshold: threshold value. If None, it is initialized with background value
         :type threshold: float

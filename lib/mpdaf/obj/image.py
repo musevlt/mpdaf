@@ -1493,7 +1493,7 @@ class Image(object):
         self.wcs.rotate(theta)
     
     def _rotate(self, theta, interp='no', reshape=False):
-        """ Rotates the image using spline interpolation.
+        """ Rotates the image using spline interpolation (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
   
           :param theta: Rotation in degrees.
           :type theta: float
@@ -1548,7 +1548,7 @@ class Image(object):
             self.wcs = None
     
     def rotate(self, theta, interp='no', reshape=False):
-        """ Returns rotated image.
+        """ Returns rotated image (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
   
           :param theta: Rotation in degrees.
           :type theta: float
@@ -1707,7 +1707,7 @@ class Image(object):
         
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, background=None, plot=False):
-        """Finds image peak location.
+        """Finds image peak location. Used `scipy.ndimage.measurements.maximum_position <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.maximum_position.html>`_ and `scipy.ndimage.measurements.center_of_mass <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.center_of_mass.html>`_.
   
           :param center: Center of the explored region.
   
@@ -2044,7 +2044,7 @@ class Image(object):
         pixel values
         
         spline : boolean
-        False: linear interpolation, True: spline interpolation 
+        False: linear interpolation (uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`_), True: spline interpolation (uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`_)
         """
         ksel = np.where(self.data.mask==False)
         x = ksel[0] 
@@ -2088,7 +2088,7 @@ class Image(object):
         Parameter
         ----------
         spline : boolean
-        False: linear interpolation, True: spline interpolation 
+        False: bilinear interpolation (it uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`_), True: spline interpolation (it uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`_)
         """
         if np.ma.count_masked(self.data) == 0:
             return self.data.data
@@ -2748,7 +2748,7 @@ class Image(object):
         return res
     
     def _rebin(self, newdim, newstart, newstep, flux=False, order=3, interp='no'):
-        """Rebins the image to a new coordinate system.
+        """Rebins the image to a new coordinate system. Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
   
           :param newdim: New dimensions. Python notation: (ny,nx)
           :type newdim: integer or (integer,integer)
@@ -2802,10 +2802,6 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
             
-#        print 'pstep',pstep
-#        print 'poffset',poffset
-#        print 'newdim',newdim
-#        print 'order',order
         data = ndimage.affine_transform(data, pstep, poffset,output_shape=newdim, order=order)
         mask = np.array(1 - self.data.mask,dtype=bool)
         newmask = ndimage.affine_transform(mask, pstep, poffset,output_shape=newdim, order=0)
@@ -2821,7 +2817,7 @@ class Image(object):
         self.var = None
 
     def rebin(self, newdim, newstart, newstep, flux=False, order=3, interp='no'):
-        """Returns rebinned image to a new coordinate system.
+        """Returns rebinned image to a new coordinate system. Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
   
           :param newdim: New dimensions. Python notation: (ny,nx)
           :type newdim: integer or (integer,integer)
@@ -2846,7 +2842,7 @@ class Image(object):
         return res
 
     def _gaussian_filter(self, sigma=3, interp='no'):
-        """Applies Gaussian filter to the image.
+        """Applies Gaussian filter to the image. Uses `scipy.ndimage.gaussian_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html>`_.
         
           :param sigma: Standard deviation for Gaussian kernel
           :type sigma: float
@@ -2869,7 +2865,7 @@ class Image(object):
             self.var = ndimage.gaussian_filter(self.var, sigma)
     
     def gaussian_filter(self, sigma=3, interp='no'):
-        """Returns an image containing Gaussian filter applied to the current image.
+        """Returns an image containing Gaussian filter applied to the current image. Uses `scipy.ndimage.gaussian_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html>`_.
         
           :param sigma: Standard deviation for Gaussian kernel
           :type sigma: float
@@ -2886,7 +2882,7 @@ class Image(object):
         return res
             
     def _median_filter(self, size=3, interp='no'):
-        """Applies median filter to the image.
+        """Applies median filter to the image. Uses `scipy.ndimage.median_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.median_filter.html>`_.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
           :type size: float
@@ -2910,7 +2906,7 @@ class Image(object):
         
     
     def median_filter(self, size=3, interp='no'):
-        """Returns an image containing median filter applied to the current image.
+        """Returns an image containing median filter applied to the current image. Uses `scipy.ndimage.median_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.median_filter.html>`_.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
           :type size: float
@@ -2927,7 +2923,7 @@ class Image(object):
         return res
     
     def _maximum_filter(self, size=3, interp='no'):
-        """Applies maximum filter to the image.
+        """Applies maximum filter to the image. Uses `scipy.ndimage.maximum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.maximum_filter.html>`_.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
           :type size: float
@@ -2948,7 +2944,7 @@ class Image(object):
         self.data = np.ma.array(ndimage.maximum_filter(data, size),mask=self.data.mask)
     
     def maximum_filter(self, size=3, interp='no'):
-        """Returns an image containing maximum filter applied to the current image.
+        """Returns an image containing maximum filter applied to the current image. Uses `scipy.ndimage.maximum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.maximum_filter.html>`_.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
           :type size: float
@@ -2964,7 +2960,7 @@ class Image(object):
         return res
     
     def _minimum_filter(self, size=3, interp='no'):
-        """Applies minimum filter to the image.
+        """Applies minimum filter to the image. Uses `scipy.ndimage.minimum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.minimum_filter.html>`_.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
           :type size: float
@@ -2985,7 +2981,7 @@ class Image(object):
         self.data = np.ma.array(ndimage.minimum_filter(data,size),mask=self.data.mask)
     
     def minimum_filter(self, size=3, interp='no'):
-        """Returns an image containing minimum filter applied to the current image.
+        """Returns an image containing minimum filter applied to the current image. Uses `scipy.ndimage.minimum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.minimum_filter.html>`_.
         
           :param size: Shape that is taken from the input array, at every element position, to define the input to the filter function. Default is 3.
           :type size: float
@@ -3072,6 +3068,7 @@ class Image(object):
         
     def segment(self, shape=(2,2), minsize=20, background = 20, interp='no'):
         """Segments the image in a number of smaller images. Returns a list of images.
+        Uses `scipy.ndimage.morphology.generate_binary_structure <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.generate_binary_structure.html>`_, `scipy.ndimage.morphology.grey_dilation <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.grey_dilation.html>`_, `scipy.ndimage.measurements.label <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.label.html>`_, and `scipy.ndimage.measurements.find_objects <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.find_objects.html>`_.
   
           :param shape: Shape used for connectivity.
           :type shape: (integer,integer)
@@ -3176,7 +3173,7 @@ class Image(object):
             return False
         
     def _fftconvolve(self, other, interp='no'):
-        """Convolves image with other using fft.
+        """Convolves image with other using fft. Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_.
   
           :param other: Second Image or 2d-array.
           :type other: 2d-array or Image
@@ -3226,7 +3223,7 @@ class Image(object):
             return None
     
     def fftconvolve(self, other, interp='no'):
-        """Returns the convolution of the image with other using fft.
+        """Returns the convolution of the image with other using fft. Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_.
   
           :param other: Second Image or 2d-array.
           :type other: 2d-array or Image
@@ -3292,7 +3289,7 @@ class Image(object):
         return self.fftconvolve(ima)
     
     def correlate2d(self, other, interp='no'):
-        """Returns the cross-correlation of the image with an array/image.
+        """Returns the cross-correlation of the image with an array/image. Uses `scipy.signal.correlate2d <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate2d.html>`_.
             
             :param other: Second Image or 2d-array.
             :type other: 2d-array or Image
@@ -3881,7 +3878,10 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smo
         
          If None, minum and maximum values of x,y arrays are used.
       :type limits: (float,float,float,float)
-      :param spline: False: bilinear interpolation, True: spline interpolation 
+      :param spline: 
+          False: bilinear interpolation (it uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`).
+          
+          True: spline interpolation (it uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`).
       :type spline: boolean
       :param order: Polynomial order for spline interpolation (default 3)
       :type order: integer
