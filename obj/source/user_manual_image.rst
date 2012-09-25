@@ -1,12 +1,17 @@
 Image object
 ************
 
+.. warning::
+
+   Draft version, still incomplete
+
 Image, optionally including a variance and a bad pixel mask.
 The Image object handles a 2D data array (basically a numpy masked array) containing flux values, associated with a WCS 
 object containing the spatial coordinated information (alpha,delta). Optionally, a variance data array 
 can be attached and used for weighting the flux values. Array masking is used to ignore 
 some of the pixel values in the calculations.
 
+Note that virtually all numpy and scipy functions are available.
 
 
 Image object format

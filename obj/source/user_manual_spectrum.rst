@@ -1,10 +1,16 @@
 Spectrum object
 ***************
 
+.. warning::
+
+   Draft version, still incomplete
+
 The Spectrum object handles a 1D data array (basically a numpy masked array) containing flux values, associated with a WCS 
 object (WaveCoord) containing the wavelength information. Optionally, a variance data array 
 can be attached and used for weighting the flux values. Array masking is used to ignore 
 some of the pixel values in the calculations.
+
+Note that virtually all numpy and scipy functions are available.
 
 Spectrum object format
 ======================
