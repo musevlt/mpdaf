@@ -81,7 +81,7 @@ We start from the original spectrum and its variance::
   
 We mask the residuals from the strong sky emission line arround 5577 Angstroms::
 
-  spvar.mask(5575,5580)
+  spvar.mask(5575,5590)
 
 We select (in wavelengths) the clean spectrum region we want to interpolate::
 
