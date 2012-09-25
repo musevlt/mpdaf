@@ -1,10 +1,6 @@
 Cube object
 ***********
 
-.. warning::
-
-   Draft version, still incomplete
-
 Cube python object can handle datacubes which have a regular grid format in both spatail and spectral axis.
 Variance information can also be taken into account as well as bad pixels. 
 Cube object can be read and written to disk as a multi-extension FITS file.
@@ -231,8 +227,7 @@ the spectrum iterator.::
  >>> cont_flux.plot(title="continuum mean flux")
  >>> ha_flux.plot(title="Ha line total flux")
  >>> import numpy as np
- >>> ha_ew.mask_selection(np.where(ima1.data<0.5))
- >>> # ha_ew.plot(vmin=-15,vmax=15)
+ >>> ha_ew.mask_selection(np.where((ima1.data*ima1.fscale)<0.4*1E-18))
  >>> ha_ew.plot(title="Ha line ew")
  
 .. image::  user_manual_cube_images/recima6.png
@@ -252,10 +247,12 @@ monochromatic images and we process each of them. For each monochromatic image w
  >>> cube2 = cube.clone()
  >>> for ima,k in iter_ima(cube, index=True):
  >>>   cube2[k,:,:] = ima.gaussian_filter()
- >>> cube2.sum(axis=0).plot()
+ >>> cube.sum(axis=0).plot(title='before Gaussian filter')
+ >>> cube2.sum(axis=0).plot(title='after Gaussian filter')
  
-.. figure::  user_manual_cube_images/recima9.png
-   :align:   center 
+.. image::  user_manual_cube_images/recima9.png
+
+.. image::  user_manual_cube_images/recima10.png
 
 
 
