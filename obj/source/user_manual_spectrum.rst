@@ -100,8 +100,6 @@ The results of the interpolations are shown below:
   Spectrum before interpolation
 
 
-After interpolation:
-
 .. figure:: user_manual_spectrum_images/Spectrum_after_interp_mask.png
   :align:   center
   

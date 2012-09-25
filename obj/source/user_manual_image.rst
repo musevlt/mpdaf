@@ -38,8 +38,8 @@ Preliminary imports for all tutorials::
   from mpdaf.obj import Image
   from mpdaf.obj.coords import WCS
 
-Tutorial 1: Image Creation
---------------------------
+Tutorial 1: Image Creation, i/o and display.
+--------------------------------------------
 
 An Image object can be created:
 
@@ -68,6 +68,19 @@ The WCS object can be copied from another image or taken from the FITS header::
 Any Image object can be written as an output FITS file (containing 1 or 2 extensions)::
 
   ima2.write('ima2.fits')
+
+Display an image with lower / upper scale values::
+
+  ima.plot(vmin=1950,vmax=2400)
+
+.. figure:: user_manual_image_images/Image_full.png
+  :align: center
+
+Zoom on an image section::
+
+  ima[600:1000,800:1200].plot(vmin=1950,vmax=2400)
+
+.. figure:: user_manual_image_images/Image_zoom.png
 
 
 Tutorial 2: Image Geometrical manipulation
