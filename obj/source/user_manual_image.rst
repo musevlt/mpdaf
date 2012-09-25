@@ -65,8 +65,8 @@ using the following commands::
 The WCS object can be copied from another image or taken from the FITS header::
 
   wcs1=ima1.wcs #WCS copied from Image object ima1
-  wcs2=WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) #Spatial WCS created from a reference position in degrees, a pixel size and a rotation angle
-
+  wcs2=WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) 
+  #Spatial WCS created from a reference position in degrees, a pixel size and a rotation angle
   ima2=Image(data=MyData,wcs=wcs2) #wcs created from known object
 
 
@@ -86,6 +86,7 @@ Zoom on an image section::
   ima[600:1000,800:1200].plot(vmin=1950,vmax=2400)
 
 .. figure:: user_manual_image_images/Image_zoom.png
+  :align: center
 
 
 Tutorial 2: Image Geometrical manipulation
