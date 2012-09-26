@@ -43,8 +43,8 @@ Preliminary imports for all tutorials::
   from mpdaf.obj import Image
   from mpdaf.obj.coords import WCS
 
-Tutorial 1: Image Creation, i/o and display.
---------------------------------------------
+Tutorial 1: Image Creation, i/o and display, masking.
+-----------------------------------------------------
 
 An Image object can be created:
 
@@ -59,8 +59,8 @@ data array can be a numpy masked array to deal with bad pixel values)::
 -or from a FITS file (in which case the flux and variance values are read from specific extensions),
 using the following commands::
 
-  ima=Image(filename='image.fits',ext=1) #data array is read from the file (extension number 1)
-  ima=Image(filename='image.fits,ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
+  ima=Image('image.fits',ext=1) #data array is read from the file (extension number 1)
+  ima=Image('image.fits,ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
 
 The WCS object can be copied from another image or taken from the FITS header::
 
@@ -80,6 +80,10 @@ Display an image with lower / upper scale values::
 
 .. figure:: user_manual_image_images/Image_full.png
   :align: center
+
+Masking a specific region::
+
+  ima.mask([800.,900.],200.,pix=True,inside=False)
 
 Zoom on an image section::
 
