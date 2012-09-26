@@ -147,9 +147,29 @@ We find the location of the peak interactively::
 
 We perform a 2D Gaussian fitting of the source, and plot the isocontours::
 
-  source.gauss_fit((-1.5164061,-1.5147602),(39.99103,39.992135),plot=True)
+  gfit=source.gauss_fit((-1.5164061,-1.5147602),(39.99103,39.992135),plot=True)
 
 .. figure:: user_manual_image_images/Image_source8_gaussfit.png
+
+Alternatively, we perform a 2D MOFFAT fitting of the same source::
+
+  mfit=source.gauss_fit((-1.5164061,-1.5147602),(39.99103,39.992135),plot=True)
+
+We can then subtract each modelled image from the original source and plot 
+the residuals::
+
+   from mpdaf.obj import gauss_image
+   from mpdaf.obj import moffat_image
+   gfitim=gauss_image(wcs=source.wcs,gauss=gfit)
+   mfitim=moffat_image(wcs=source.wcs,moffat=mfit)
+   gresiduals=source-gfitim
+   mresiduals=source-mfitim
+   gresiduals.plot()
+   mresiduals.plot()
+
+.. figure:: user_manual_image_images/residuals.png 
+   :align:
+   Residuals from 2D Moffat (left) and Gaussian (right) profile fittings.
 
 
 Reference
