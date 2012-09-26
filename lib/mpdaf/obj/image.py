@@ -1699,11 +1699,42 @@ class Image(object):
         
         # compute real position of peaks
         newpeak = []
+        center = []
+        
         for p in peak:
-            real_peak = self.peak(center=(p[0],p[1]), radius = (10,10), pix=True, dpix=3, background=background,plot=False)
-            newpeak.append(real_peak)
+            try:
+                real_peak = self.peak(center=(p[0],p[1]), radius = (10,10), pix=True, dpix=3, background=background,plot=False)
+                try:
+                    center.index([int(real_peak['p']),int(real_peak['q'])])
+                except:
+                    newpeak.append(real_peak)
+                    center.append([int(real_peak['p']),int(real_peak['q'])])
+            except:
+                pass
             
-        return newpeak
+        newpeak2 = []
+        center = []
+        
+        for p in newpeak:
+            try:
+                if self.inside([p['y'],p['x']]):
+                    pix_min = [[p['p']-4,p['q']-4]]
+                    pos_min = self.wcs.pix2sky(pix_min)
+                    pix_max = [[p['p']+5,p['q']+5]]
+                    pos_max = self.wcs.pix2sky(pix_max)
+                    gauss = self.gauss_fit(pos_min[0], pos_max[0], center=(p['y'],p['x']))
+                    try:
+                        center.index([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
+                    except:
+                        if self.inside(gauss.center):
+                            newpeak2.append(gauss)
+                            center.append([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
+                            #pix = self.wcs.sky2pix(gauss.center)
+                            #plt.plot(pix[0][1],pix[0][0],'r+')
+            except:
+                pass
+            
+        return newpeak2
         
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, background=None, plot=False):
@@ -3165,7 +3196,7 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        self.data = np.ma.array(np.random.poisson(data),mask=self.data.mask)
+        self.data = np.ma.array(np.random.poisson(data).astype(float),mask=self.data.mask)
         if self.var is None:
             self.var = self.data.data.__copy__()
         else:
@@ -3179,7 +3210,7 @@ class Image(object):
           :rtype: boolean
         """
         pixcrd = self.wcs.sky2pix([coord[0],coord[1]])
-        if pixcrd[0][0]>=0 and pixcrd[0][0]<self.shape[0] and pixcrd[0][1]>=0 and pixcrd[0][1]<self.shape[0]:
+        if pixcrd[0][0]>=0 and pixcrd[0][0]<self.shape[0] and pixcrd[0][1]>=0 and pixcrd[0][1]<self.shape[1]:
             return True
         else:
             return False
