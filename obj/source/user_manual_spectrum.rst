@@ -114,6 +114,38 @@ The results of the interpolations are shown below:
 Tutorial 3: Gaussian Line fitting
 ---------------------------------
 
+We want to fit the emission lines in a z=0.6758 galaxy (Hbeta and [OIII]).
+We open the spectrum and associated variance::
+
+  specline=Spectrum('Spectrum_lines.fits')
+
+We plot the spectrum around the [OIII] line::
+
+  specline.plot(lmin=8350,8420)
+
+We do an interactive line fitting on the plot, by selecting with the mouse the left and right 
+continuum (2 positions) and the peak of the line. Variance weighting is used in the fit::
+
+  specline.igauss_fit()
+
+The result of the fit is overploted in red:
+
+.. figure:: user_manual_spectrum_images/specline1.png
+  :align:   center
+
+  Interactive Gaussian line fitting result
+
+Now, we move to the fainter line (Hbeta) and we perform the same analysis, again using variance weighting::
+
+  specline.plot(lmin=8090,8210)
+  specline.igauss_fit()
+
+The result of the fit is given below:
+
+.. figure:: user_manual_spectrum_images/specline2.png
+  :align:   center
+
+  Interactive Gaussian line fitting on a faint line
 
 
 Reference
