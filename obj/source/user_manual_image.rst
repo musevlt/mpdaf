@@ -59,8 +59,8 @@ data array can be a numpy masked array to deal with bad pixel values)::
 -or from a FITS file (in which case the flux and variance values are read from specific extensions),
 using the following commands::
 
-  ima=Image('image.fits',ext=1) #data array is read from the file (extension number 1)
-  ima=Image('image.fits,ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
+  ima=Image('image_variance.fits',ext=1) #data array is read from the file (extension number 1)
+  ima=Image('image_variance.fits,ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
 
 The WCS object can be copied from another image or taken from the FITS header::
 
@@ -76,6 +76,7 @@ Any Image object can be written as an output FITS file (containing 1 or 2 extens
 
 Display an image with lower / upper scale values::
 
+  ima=Image('image.fits)
   ima.plot(vmin=1950,vmax=2400)
 
 .. figure:: user_manual_image_images/Image_full.png
@@ -95,6 +96,41 @@ Zoom on an image section::
 
 Tutorial 2: Image Geometrical manipulation
 ------------------------------------------
+
+In this tutorial we start from an image and performs some geometric transformations onto it::
+
+  im1=Image('image.fits')
+
+We rotate the image by 40 degrees and rebin it onto a 0.2"/pixel scale (conserving flux)::
+
+  im2=im1.rotate(40) #this rotation uses an interpolation of the pixels
+  im3=im2.rebin(newdim=(1000,1000),newstart=None,newstep=(0.4/3600.0,0.4/3600.0),flux=True)
+
+The new image would look like this::
+
+  im3.plot(vmin=525,vmax=700)
+
+.. figure:: user_manual_image_images/Image_rebin.png
+  :align: center
+
+Then, we load an external image of the same field (observed with a different instrument), aligned 
+to the previous image in WCS coordinates. We combine both datasets to produce a higher S/N image::
+
+  imhst=Image('image_variance.fits')
+  im1.add(imhst)
+
+.. warning::
+
+   Figure missing
+  
+
+Tutorial 3: Object analysis: image segmentation, peak measurement, profile fitting
+----------------------------------------------------------------------------------
+
+In this tutorial, we will analyse the 2D images of specific objects detected in the image.
+We start by segmenting the original image into several cutout images::
+
+
 
 
 Reference
@@ -212,17 +248,9 @@ Transformation
 
 :func:`mpdaf.obj.Image.add_poisson_noise <mpdaf.obj.Image.add_poisson_noise>` adds Poisson noise to image (in place).
 
-:func:`mpdaf.obj.Image.fftconvolve <mpdaf.obj.Image.fftconvolve>` convolves the image with an other image using fft.
 
-:func:`mpdaf.obj.Image.fftconvolve_gauss <mpdaf.obj.Image.fftconvolve_gauss>` convolves the image with a 2D gaussian.
-
-:func:`mpdaf.obj.Image.fftconvolve_moffat <mpdaf.obj.Image.fftconvolve_moffat>` convolves the image with a 2D moffat.
-
-:func:`mpdaf.obj.Image.correlate2d <mpdaf.obj.Image.correlate2d>` cross-correlates the image with an array/image.
-
-
-Fit
----
+2D profile fitting and Encircled Energy
+---------------------------------------
 
 :func:`mpdaf.obj.Image.gauss_fit <mpdaf.obj.Image.gauss_fit>` performs Gaussian fit on image.
 
@@ -231,6 +259,13 @@ Fit
 :func:`mpdaf.obj.Image.fwhm <mpdaf.obj.Image.fwhm>` computes the fwhm center. 
 
 :func:`mpdaf.obj.Image.moments <mpdaf.obj.Image.moments>` returns first moments of the 2D gaussian.
+
+:func:`mpdaf.obj.Image.ee <mpdaf.obj.Image.ee>` computes ensquared energy.
+
+:func:`mpdaf.obj.Image.ee_curve <mpdaf.obj.Image.ee_curve>` returns Spectrum object containing enclosed energy as function of radius.
+
+:func:`mpdaf.obj.Image.ee_size <mpdaf.obj.Image.ee_size>` computes the size of the square centered on (y,x) containing the fraction of the energy.
+
 
 
 Filter
@@ -244,15 +279,15 @@ Filter
 
 :func:`mpdaf.obj.Image.minimum_filter <mpdaf.obj.Image.minimum_filter>` applies minimum filter to the image.
 
+:func:`mpdaf.obj.Image.fftconvolve <mpdaf.obj.Image.fftconvolve>` convolves the image with an other image using fft.
 
-Energy
-------
+:func:`mpdaf.obj.Image.fftconvolve_gauss <mpdaf.obj.Image.fftconvolve_gauss>` convolves the image with a 2D gaussian.
 
-:func:`mpdaf.obj.Image.ee <mpdaf.obj.Image.ee>` computes ensquared energy.
+:func:`mpdaf.obj.Image.fftconvolve_moffat <mpdaf.obj.Image.fftconvolve_moffat>` convolves the image with a 2D moffat.
 
-:func:`mpdaf.obj.Image.ee_curve <mpdaf.obj.Image.ee_curve>` returns Spectrum object containing enclosed energy as function of radius.
+:func:`mpdaf.obj.Image.correlate2d <mpdaf.obj.Image.correlate2d>` cross-correlates the image with an array/image.
 
-:func:`mpdaf.obj.Image.ee_size <mpdaf.obj.Image.ee_size>` computes the size of the square centered on (y,x) containing the fraction of the energy.
+
 
 
 Plotting
