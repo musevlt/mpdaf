@@ -1648,8 +1648,12 @@ class Spectrum(object):
             i2 = self.shape
         else:
             i2 = min(self.shape,self.wave.pixel(lmax,nearest=True) + 1)
+        
         if i1==i2:
             raise ValueError, 'Minimum and maximum wavelengths are equal'
+        
+        if i2==i1+1:
+            raise ValueError, 'Minimum and maximum wavelengths are outside the spectrum range'
         
         res = self.__getitem__(slice(i1,i2,1))
         self.shape = res.shape
@@ -2091,6 +2095,7 @@ class Spectrum(object):
           :type  kargs: matplotlib.lines.Line2D
         """
         plt.ion()
+        
         
         res = self.copy()
         res.truncate(lmin,lmax)
