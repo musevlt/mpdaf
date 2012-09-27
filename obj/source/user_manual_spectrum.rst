@@ -60,6 +60,8 @@ using the following commands::
   spe = Spectrum(filename="spectrum.fits",ext=1) # data array is read from the file (extension number 1)
   spe = Spectrum(filename="spectrum.fits",ext=[1,2]) # data and variance arrays read from the file (extension numbers 1 and 2)
 
+If the FITS file contains a single extension (spectrum fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
+
 The WaveCoord object is either created using a linear scale, copied from another Spectrum, or 
 using the information from the FITS header::
 
@@ -67,6 +69,8 @@ using the information from the FITS header::
   wave2 = spe.wave
 
   spe2=Spectrum(data=MyData,wave=wave1)
+
+In the first case, the wavelength solution is linear with the array index k: the first array value (k=0) corresponds to a wavelength of 4000 Angstroms, and the next array values (k=1,2 ...) are spaced by 1.25 Angstroms.
 
 
 Tutorial 2: Spectrum masking and interpolating
