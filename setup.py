@@ -71,7 +71,7 @@ class MakeFusion(Command):
         shutil.copy('lib/mpdaf/fusion/examples/LSF_V1.fits',path + '/LSF_V1.fits')
 
 setup(name = 'mpdaf',
-      version = '1.0.1-dev',
+      version = '1.0.1',
       description = 'MUSE Python Data Analysis Framework is a python framework in view of '
                     'the analysis of MUSE data in the context of the GTO.',
       url = 'http://urania1.univ-lyon1.fr/mpdaf/login',
