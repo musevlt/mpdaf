@@ -1647,7 +1647,7 @@ class Image(object):
             tab = tab[ksel]
         return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
     
-    def peak_detection(self, threshold=None, kernel_size=None):
+    def peak_detection(self, threshold=None, kernel_size=None, flux_min=0):
         """Returns a list of peak locations.
         
         :param threshold: threshold value. If None, it is initialized with background value
@@ -1717,7 +1717,7 @@ class Image(object):
         
         for p in newpeak:
             try:
-                if self.inside([p['y'],p['x']]):
+                if self.inside([p['y'],p['x']]) and p['data']>flux_min:
                     pix_min = [[p['p']-4,p['q']-4]]
                     pos_min = self.wcs.pix2sky(pix_min)
                     pix_max = [[p['p']+5,p['q']+5]]
@@ -2824,7 +2824,6 @@ class Image(object):
         newstart = np.array(newstart)
         newstep = np.array(newstep)
                    
-        #wcs = WCS(crpix=(1.0,1.0),crval=newstart,cdelt=newstep,deg=self.wcs.is_deg(),rot=self.wcs.get_rot(), shape = newdim)
         wcs = self.wcs.copy()
         wcs.set_crpix1(1.0)
         wcs.set_crpix2(1.0)
@@ -2835,8 +2834,7 @@ class Image(object):
         
         wcs.new_step(pstep)
         
-        poffset = self.wcs.sky2pix(newstart)[0]*self.wcs.get_step()/newstep
-        #poffset = np.abs((newstart-self.wcs.get_start())/newstep)
+        poffset = (newstart-0.5*newstep - (self.wcs.get_start()-0.5*self.wcs.get_step()) ) / newstep
         
         if interp=='linear':
             data = self._interp_data(spline=False)
@@ -3070,8 +3068,13 @@ class Image(object):
                             raise ValueError, 'steps are not integer multiple'
                     except:
                         newdim = ima.shape/factor
-                        ima = ima.rebin(newdim, None, self_cdelt, flux=True)
+                        [[k1,l1]]  = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
+                        l1 = int(l1 + 0.5)
+                        k1 = int(k1 + 0.5)
+                        newstart = self.wcs.pix2sky([[k1,l1]])[0]
+                        ima = ima.rebin(newdim, newstart, self_cdelt, flux=True)
             
+                
                 # here ima and self have the same step
                 [[k1,l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0,0]]))
                 l1 = int(l1 + 0.5)
