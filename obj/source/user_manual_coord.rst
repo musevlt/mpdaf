@@ -108,8 +108,8 @@ References
 
 :func:`mpdaf.obj.WaveCoord.get_step` returns the step in wavelength.
 
-:func:`mpdaf.obj.WaveCoord.get_start` returns the value of the first pixel.
+:func:`mpdaf.obj.WaveCoord.get_start` returns the wavelength value of the first pixel.
 
-:func:`mpdaf.obj.WaveCoord.get_end` returns the value of the last pixel.
+:func:`mpdaf.obj.WaveCoord.get_end` returns the wavelength value of the last pixel.
 
 :func:`mpdaf.obj.WaveCoord.get_range` returns the wavelength range.
