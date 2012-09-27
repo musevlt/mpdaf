@@ -125,7 +125,7 @@ We open the spectrum and associated variance::
 
 We plot the spectrum around the [OIII] line::
 
-  specline.plot(lmin=8350,8420)
+  specline.plot(lmin=8350,lmax=8420)
 
 We do an interactive line fitting on the plot, by selecting with the mouse the left and right 
 continuum (2 positions) and the peak of the line. Variance weighting is used in the fit::
@@ -141,7 +141,7 @@ The result of the fit is overploted in red:
 
 Now, we move to the fainter line (Hbeta) and we perform the same analysis, again using variance weighting::
 
-  specline.plot(lmin=8090,8210)
+  specline.plot(lmin=8090,lmax=8210)
   specline.igauss_fit()
 
 The result of the fit is given below:
