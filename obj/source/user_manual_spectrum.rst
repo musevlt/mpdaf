@@ -139,6 +139,15 @@ The result of the fit is overploted in red:
 
   Interactive Gaussian line fitting result
 
+and the result is given on the console::
+
+  Gaussian center = 8390.53 (error:0.209096)
+  Gaussian integrated flux = 650.329 (error:68.2009)
+  Gaussian peak value = 150.279 (error:2.43122)
+  Gaussian fwhm = 4.06538 (error:0.492112)
+  Gaussian continuum = 3.27427
+
+
 Now, we move to the fainter line (Hbeta) and we perform the same analysis, again using variance weighting::
 
   specline.plot(lmin=8090,lmax=8210)
@@ -151,6 +160,12 @@ The result of the fit is given below:
 
   Interactive Gaussian line fitting on a faint line
 
+
+The results from the fit can be retrieved in the Gauss1D object associated 
+with the spectrum (self.gauss). For example we can measure the equivalent width of the line like this::
+
+  specline.gauss.flux/specline.gauss.cont
+  198.618
 
 Reference
 =========
