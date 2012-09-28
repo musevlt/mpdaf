@@ -149,7 +149,7 @@ Tutorial 3: Object analysis: image segmentation, peak measurement, profile fitti
 In this tutorial, we will analyse the 2D images of specific objects detected in the image.
 We start by segmenting the original image into several cutout images::
 
-  im=Image('image_variance.fits')
+  im=Image('image.fits')
   seg=im.segment(minsize=10,background=2100)
 
 We plot one of the sub-images to analyse the corresponding source::
@@ -163,6 +163,7 @@ We plot one of the sub-images to analyse the corresponding source::
 We find the location of the peak interactively::
 
   source.ipeak()
+  peak: y=-1.51549	x=39.9916	p=15	q=10	data=3201
 
 We perform a 2D Gaussian fitting of the source, and plot the isocontours::
 
