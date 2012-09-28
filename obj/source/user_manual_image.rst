@@ -29,6 +29,16 @@ An Image object O consists of:
 | O.var      | (optionally) masked numpy 2D array with variance values |
 +------------+---------------------------------------------------------+
 
+The format of each numpy array follows the indexing used by Python to 
+handle images. For an MPDAF image im, the pixel in the lower-left corner is 
+referenced as im[0,0] and the pixel im[p,q] refers to the horizontal position 
+q and the vertical position p, as follows:
+
+.. figure:: user_manual_image_images/grid.jpg
+  :align: center
+
+In total, this image im contains nq pixels in the horizontal direction and 
+np pixels in the vertical direction.
 
 Tutorial
 ========

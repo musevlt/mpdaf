@@ -27,6 +27,17 @@ A cube object O consist of:
 
 Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis, p and q the spatial axes
 
+The format of each numpy array follows the indexing used by Python to 
+handle 3D arrays. For an MPDAF cube C, the pixel in the bottom-lower-left corner is 
+referenced as C[0,0,0] and the pixel C[k,p,q] refers to the horizontal position 
+q, the vertical position p, and the spectral position k, as follows:
+
+.. figure:: user_manual_cube_images/gridcube.jpg
+  :align: center
+
+In total, this cube C contains nq pixels in the horizontal direction, 
+np pixels in the vertical direction and nk channels in the spectral direction.
+
 
 Tutorials
 =========
