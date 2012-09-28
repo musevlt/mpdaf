@@ -130,11 +130,14 @@ Then, we load an external image of the same field (observed with a different ins
 to the previous image in WCS coordinates. We combine both datasets to produce a higher S/N image::
 
   imhst=Image('image_variance.fits')
+  im1[700:900,850:1050].plot(vmin=1950,vmax=2500) #original image
   im1.add(imhst)
+  im1[700:900,850:1050].plot(vmin=1950,vmax=3000) #combined image
 
-.. warning::
+.. figure:: user_manual_image_images/before-after.png
+  :align: center
 
-   Figure missing
+(Left) original image (Right) combination of ground-based and high-resolution image
   
 
 Tutorial 3: Object analysis: image segmentation, peak measurement, profile fitting
