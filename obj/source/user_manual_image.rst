@@ -172,9 +172,30 @@ We perform a 2D Gaussian fitting of the source, and plot the isocontours::
 .. figure:: user_manual_image_images/Image_source8_gaussfit.png
   :align: center
 
+The best fit parameters can be printed on the console::
+
+  gfit.print_param()
+  Gaussian center = (-1.51552,39.9916) (error:(2.74688e-06,2.9471e-06))
+  Gaussian integrated flux = 0.000214634 (error:2.82398e-06)
+  Gaussian peak value = 899.569 (error:-11.8372)
+  Gaussian fwhm = (0.00032779,0.000642396) (error:(4.31341e-06,8.45197e-06))
+  Rotation in degree: 138.438 (error:0.736162)
+  Gaussian continuum = 1976
+
 Alternatively, we perform a 2D MOFFAT fitting of the same source::
 
-  mfit=source.gauss_fit((-1.5164061,-1.5147602),(39.99103,39.992135),plot=True)
+  mfit=source.moffat_fit((-1.5164061,-1.5147602),(39.99103,39.992135),plot=True)
+
+The best fit parameters can be printed on the console::
+
+  mfit.print_param()
+  center = (-1.51551,39.9916) (error:(1.18782e-06,1.26688e-06))
+  I = 1188.76 (error:11.5033)
+  a = 0.000260259 (error:5.99061e-06)
+  q = -0.533556 (error:0.00572401)
+  n = -1.2894 (error:0.0262561)
+  rotation in degree: 138.328 (error:0.45764)
+  continuum = 1976
 
 We can then subtract each modelled image from the original source and plot 
 the residuals::
