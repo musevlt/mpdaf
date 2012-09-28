@@ -116,6 +116,17 @@ The results of the interpolations are shown below:
   
   Spectrum after interpolation
 
+Last, we will rebin the extracted spectrum using the 2 dedicated functions 
+(rebin_factor and rebin). 
+The :func:`rebin_factor <mpdaf.obj.Spectrum.rebin_factor>` rebins the Spectrum using an integer number of pixels per bin. The corresponding variance is updated accordingly. We can overplot the rebinned Spectrum and show the corresponding 
+variance as follows::
+
+  sprebin1=spvarcut.rebin(5)
+  spvarcut.plot()
+  (sprebin1+10).plot(noise=True)
+
+.. figure:: user_manual_spectrum_images/Spectrum_rebin.png
+
 Tutorial 3: Gaussian Line fitting
 ---------------------------------
 
