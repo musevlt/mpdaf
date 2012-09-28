@@ -73,8 +73,8 @@ using the information from the FITS header::
 In the first case, the wavelength solution is linear with the array index k: the first array value (k=0) corresponds to a wavelength of 4000 Angstroms, and the next array values (k=1,2 ...) are spaced by 1.25 Angstroms.
 
 
-Tutorial 2: Spectrum masking and interpolating
-----------------------------------------------
+Tutorial 2: Spectrum manipulation: masking, interpolating, rebinning
+--------------------------------------------------------------------
 
 Here we describe how we can mask noisy parts in a spectrum, and do a polynomial 
 interpolation taking into account the variance.
@@ -297,8 +297,8 @@ Fit
 :func:`mpdaf.obj.Spectrum.add_gaussian <mpdaf.obj.Spectrum.add_gaussian>` adds a Gaussian on spectrum (in place).
 
 
-Filter
-------
+Photometry
+----------
 
 :func:`mpdaf.obj.Spectrum.abmag_band <mpdaf.obj.Spectrum.abmag_band>` computes AB magnitude corresponding to the wavelength band.
 
@@ -312,7 +312,7 @@ Plotting
 
 :func:`mpdaf.obj.Spectrum.plot <mpdaf.obj.Spectrum.plot>` plots the spectrum.
 
-:func:`mpdaf.obj.Spectrum.log_plot <mpdaf.obj.Spectrum.log_plot>` plots the spectrum with y logarithmic scale.
+:func:`mpdaf.obj.Spectrum.log_plot <mpdaf.obj.Spectrum.log_plot>` plots the spectrum with a logarithmic scale on the y-axis.
 
 :func:`mpdaf.obj.Spectrum.ipos <mpdaf.obj.Spectrum.ipos>` prints cursor position in interactive mode.
 

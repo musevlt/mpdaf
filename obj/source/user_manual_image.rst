@@ -48,7 +48,7 @@ Tutorial 1: Image Creation, i/o and display, masking.
 
 An Image object can be created:
 
--either from one or two 2D numpy arrays containing the flux and variance values (optionally, the 
+- either from one or two 2D numpy arrays containing the flux and variance values (optionally, the 
 data array can be a numpy masked array to deal with bad pixel values)::
 
   MyData=np.ones([1000,1000]) #numpy data array
@@ -56,11 +56,14 @@ data array can be a numpy masked array to deal with bad pixel values)::
   ima=Image(data=MyData) #image filled with MyData
   ima=Image(data=MyData,variance=MyVariance) #image filled with MyData and MyVariance
 
--or from a FITS file (in which case the flux and variance values are read from specific extensions),
+- or from a FITS file (in which case the flux and variance values are read from specific extensions),
 using the following commands::
 
   ima=Image('image_variance.fits',ext=1) #data array is read from the file (extension number 1)
   ima=Image('image_variance.fits,ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
+
+If the FITS file contains a single extension (image fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
+
 
 The WCS object can be copied from another image or taken from the FITS header::
 
@@ -150,6 +153,7 @@ We perform a 2D Gaussian fitting of the source, and plot the isocontours::
   gfit=source.gauss_fit((-1.5164061,-1.5147602),(39.99103,39.992135),plot=True)
 
 .. figure:: user_manual_image_images/Image_source8_gaussfit.png
+  :align: center
 
 Alternatively, we perform a 2D MOFFAT fitting of the same source::
 
@@ -168,7 +172,8 @@ the residuals::
    mresiduals.plot()
 
 .. figure:: user_manual_image_images/residuals.png 
-   :align:
+  :align: center
+
    Residuals from 2D Moffat (left) and Gaussian (right) profile fittings.
 
 
