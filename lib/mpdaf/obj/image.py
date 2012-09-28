@@ -2834,7 +2834,7 @@ class Image(object):
         
         wcs.new_step(pstep)
         
-        poffset = (newstart-0.5*newstep - (self.wcs.get_start()-0.5*self.wcs.get_step()) ) / newstep
+        poffset = self.wcs.sky2pix(newstart)[0]/pstep
         
         if interp=='linear':
             data = self._interp_data(spline=False)

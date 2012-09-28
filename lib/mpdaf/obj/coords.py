@@ -215,7 +215,7 @@ class WCS(object):
                 self.wcs.wcs.cd = np.array([[-cdelt[1], 0], [0, cdelt[0]]])
             else:   #in pixel or arcsec
                 self.wcs.wcs.ctype = ['LINEAR','LINEAR']
-                self.wcs.wcs.cunit = ['','']
+                self.wcs.wcs.cunit = ['pixel','pixel']
                 self.wcs.wcs.cd = np.array([[cdelt[1], 0], [0, cdelt[0]]])
             # rotation
             self.wcs.rotateCD(-rot)
@@ -252,8 +252,8 @@ class WCS(object):
             dec = sexa[0][0]
             # step in arcsec
             cdelt = self.get_step()
-            dx = cdelt[0]  * 3600
-            dy = cdelt[1]  * 3600
+            dy = cdelt[0]  * 3600
+            dx = cdelt[1]  * 3600
             sizex = self.wcs.naxis1 * dx
             sizey = self.wcs.naxis2 * dy
             print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) step in arcsec:(%0.3f,%0.3f) rot:%0.1f' %(dec,ra,sizey,sizex,dy,dx,self.get_rot())
@@ -521,8 +521,8 @@ class WCS(object):
     
     def new_step(self,factor):
         try:
-            self.wcs.wcs.cd[0,:] *= factor[1]
-            self.wcs.wcs.cd[1,:] *= factor[0]
+            self.wcs.wcs.cd[:,0] *= factor[1]
+            self.wcs.wcs.cd[:,1] *= factor[0]
             self.wcs.wcs.set()
         except:
             try:
