@@ -5,8 +5,7 @@ Spectrum object
 
    Draft version, still incomplete
 
-The Spectrum object handles a 1D data array (basically a numpy masked array) containing flux values, associated with a WCS 
-object (WaveCoord) containing the wavelength information. Optionally, a variance data array 
+The Spectrum object handles a 1D data array (basically a numpy masked array) containing flux values, associated with a :class:`WaveCoord <mpdaf.obj.WaveCoord>` object containing the wavelength information. Optionally, a variance data array 
 can be attached and used for weighting the flux values. Array masking is used to ignore 
 some of the pixel values in the calculations.
 
@@ -20,11 +19,13 @@ A Spectrum object O consists of:
 +------------+---------------------------------------------------------+
 | Component  | Description                                             |
 +============+=========================================================+
-| O.wave     | world coordinate spectral information (WaveCoord object)|
+| O.wave     | world coordinate spectral information (:class:`WaveCoord <mpdaf.obj.WaveCoord>` object)|
 +------------+---------------------------------------------------------+
 | O.data     | masked numpy 1D array with data values                  |
 +------------+---------------------------------------------------------+
 | O.var      | (optionally) masked numpy 1D array with variance values |
++------------+---------------------------------------------------------+
+| O.shape    | number of elements in O.data and O.var (int)            |
 +------------+---------------------------------------------------------+
 
 
@@ -62,7 +63,7 @@ using the following commands::
 
 If the FITS file contains a single extension (spectrum fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
 
-The WaveCoord object is either created using a linear scale, copied from another Spectrum, or 
+The :class:`WaveCoord <mpdaf.obj.WaveCoord>` object is either created using a linear scale, copied from another Spectrum, or 
 using the information from the FITS header::
 
   wave1 = WaveCoord(crval=4000.0, cdelt=1.25, cunit='Angstrom')
@@ -161,7 +162,7 @@ The result of the fit is given below:
   Interactive Gaussian line fitting on a faint line
 
 
-The results from the fit can be retrieved in the Gauss1D object associated 
+The results from the fit can be retrieved in the :class:`Gauss1D <mpdaf.obj.Gauss1D>` object associated 
 with the spectrum (self.gauss). For example we can measure the equivalent width of the line like this::
 
   specline.gauss.flux/specline.gauss.cont

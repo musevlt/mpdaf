@@ -6,7 +6,7 @@ Image object
    Draft version, still incomplete
 
 Image, optionally including a variance and a bad pixel mask.
-The Image object handles a 2D data array (basically a numpy masked array) containing flux values, associated with a WCS 
+The Image object handles a 2D data array (basically a numpy masked array) containing flux values, associated with a :class:`WCS <mpdaf.obj.WCS>`
 object containing the spatial coordinated information (alpha,delta). Optionally, a variance data array 
 can be attached and used for weighting the flux values. Array masking is used to ignore 
 some of the pixel values in the calculations.
@@ -22,12 +22,15 @@ An Image object O consists of:
 +------------+---------------------------------------------------------+
 | Component  | Description                                             |
 +============+=========================================================+
-| O.wcs      | 2D world coordinate system information (WCS object)     |
+| O.wcs      | 2D world coordinate system information (:class:`WCS <mpdaf.obj.WCS>` object)     |
 +------------+---------------------------------------------------------+
 | O.data     | masked numpy 2D array with data values                  |
 +------------+---------------------------------------------------------+
 | O.var      | (optionally) masked numpy 2D array with variance values |
 +------------+---------------------------------------------------------+
+| O.shape    | Array containing the 2 dimensions [np,np] of the image  |
++------------+---------------------------------------------------------+
+
 
 The format of each numpy array follows the indexing used by Python to 
 handle images. For an MPDAF image im, the pixel in the lower-left corner is 
@@ -38,7 +41,7 @@ q and the vertical position p, as follows:
   :align: center
 
 In total, this image im contains nq pixels in the horizontal direction and 
-np pixels in the vertical direction.
+np pixels in the vertical direction. 
 
 Tutorial
 ========
@@ -75,7 +78,7 @@ using the following commands::
 If the FITS file contains a single extension (image fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
 
 
-The WCS object can be copied from another image or taken from the FITS header::
+The :class:`WCS <mpdaf.obj.WCS>` object can be copied from another image or taken from the FITS header::
 
   wcs1=ima1.wcs #WCS copied from Image object ima1
   wcs2=WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) 

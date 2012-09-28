@@ -24,6 +24,9 @@ A cube object O consist of:
 +------------+--------------------------------------------------------+
 | O.var      | (optionally) masked numpy array with variance values   |
 +------------+--------------------------------------------------------+
+| O.shape    | Array containing the 3 dimensions [nk,np,nq] of the    |
+|            | cube: nk channels and np x nq spatial pixels           |
++------------+---------------------------------------------------------+
 
 Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis, p and q the spatial axes
 
