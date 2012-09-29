@@ -1,10 +1,6 @@
 Spectrum object
 ***************
 
-.. warning::
-
-   Draft version, still incomplete
-
 The Spectrum object handles a 1D data array (basically a numpy masked array) containing flux values, associated with a :class:`WaveCoord <mpdaf.obj.WaveCoord>` object containing the wavelength information. Optionally, a variance data array 
 can be attached and used for weighting the flux values. Array masking is used to ignore 
 some of the pixel values in the calculations.
@@ -16,17 +12,17 @@ Spectrum object format
 
 A Spectrum object O consists of:
 
-+------------+---------------------------------------------------------+
-| Component  | Description                                             |
-+============+=========================================================+
++------------+----------------------------------------------------------------------------------------+
+| Component  | Description                                                                            |
++============+========================================================================================+
 | O.wave     | world coordinate spectral information (:class:`WaveCoord <mpdaf.obj.WaveCoord>` object)|
-+------------+---------------------------------------------------------+
-| O.data     | masked numpy 1D array with data values                  |
-+------------+---------------------------------------------------------+
-| O.var      | (optionally) masked numpy 1D array with variance values |
-+------------+---------------------------------------------------------+
-| O.shape    | number of elements in O.data and O.var (int)            |
-+------------+---------------------------------------------------------+
++------------+----------------------------------------------------------------------------------------+
+| O.data     | masked numpy 1D array with data values                                                 |
++------------+----------------------------------------------------------------------------------------+
+| O.var      | (optionally) masked numpy 1D array with variance values                                |
++------------+----------------------------------------------------------------------------------------+
+| O.shape    | number of elements in O.data and O.var (int)                                           |
++------------+----------------------------------------------------------------------------------------+
 
 
 Tutorial
@@ -34,42 +30,40 @@ Tutorial
 
 We can load the tutorial files with the command::
 
-git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+ > git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
 
 Preliminary imports for all tutorials::
 
-  import numpy as np
-  from mpdaf.obj import Spectrum
-  from mpdaf.obj.coords import WaveCoord
+  >>> import numpy as np
+  >>> from mpdaf.obj import Spectrum
+  >>> from mpdaf.obj.coords import WaveCoord
 
 Tutorial 1: Spectrum Creation
 -----------------------------
 
 A Spectrum object is created: 
 
-- either from one or two numpy data arrays (containing flux values and variance), 
-using the following command::
+- either from one or two numpy data arrays (containing flux values and variance), using the following command::
 
-  MyData=np.ones(4000) # numpy data array
-  MyVariance=np.ones(4000) # numpy variance array
-  spe = Spectrum(data=MyData) # spectrum filled with MyData 
-  spe = Spectrum(data=MyData,variance=MyVariance) # spectrum filled with MyData and MyVariance
+  >>> MyData=np.ones(4000) # numpy data array
+  >>> MyVariance=np.ones(4000) # numpy variance array
+  >>> spe = Spectrum(data=MyData) # spectrum filled with MyData 
+  >>> spe = Spectrum(data=MyData,var=MyVariance) # spectrum filled with MyData and MyVariance
 
-- or from a FITS file (in which case the flux and variance values are read from specific extensions), 
-using the following commands::
+- or from a FITS file (in which case the flux and variance values are read from specific extensions), using the following commands::
 
-  spe = Spectrum(filename="spectrum.fits",ext=1) # data array is read from the file (extension number 1)
-  spe = Spectrum(filename="spectrum.fits",ext=[1,2]) # data and variance arrays read from the file (extension numbers 1 and 2)
+  >>> spe = Spectrum(filename="spectrum.fits",ext=1) # data array is read from the file (extension number 1)
+  >>> spe = Spectrum(filename="spectrum.fits",ext=[1,2]) # data and variance arrays read from the file (extension numbers 1 and 2)
 
 If the FITS file contains a single extension (spectrum fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
 
 The :class:`WaveCoord <mpdaf.obj.WaveCoord>` object is either created using a linear scale, copied from another Spectrum, or 
 using the information from the FITS header::
 
-  wave1 = WaveCoord(crval=4000.0, cdelt=1.25, cunit='Angstrom')
-  wave2 = spe.wave
+  >>> wave1 = WaveCoord(crval=4000.0, cdelt=1.25, cunit='Angstrom')
+  >>> wave2 = spe.wave
 
-  spe2=Spectrum(data=MyData,wave=wave1)
+  >>> spe2=Spectrum(data=MyData,wave=wave1)
 
 In the first case, the wavelength solution is linear with the array index k: the first array value (k=0) corresponds to a wavelength of 4000 Angstroms, and the next array values (k=1,2 ...) are spaced by 1.25 Angstroms.
 
@@ -82,61 +76,57 @@ interpolation taking into account the variance.
 
 We start from the original spectrum and its variance::
 
-  spvar=Spectrum('Spectrum_Variance.fits',ext=[0,1])
+  >>> spvar=Spectrum('Spectrum_Variance.fits',ext=[0,1])
   
 We mask the residuals from the strong sky emission line arround 5577 Angstroms::
 
-  spvar.mask(5575,5590)
+  >>> spvar.mask(5575,5590)
 
 We select (in wavelengths) the clean spectrum region we want to interpolate::
 
-  spvarcut=spvar.get_lambda(4000,6250)
+  >>> spvarcut=spvar.get_lambda(4000,6250)
 
 We can then choose to perform a linear interpolation of the masked values::
 
-  spvarcut.interp_mask()
+  >>> spvarcut.interp_mask()
 
 The other option is to perform an interpolation with a spline::
 
-  spvarcut.interp_mask(spline=True)
+  >>> spvarcut.interp_mask(spline=True)
   
 
-The results of the interpolations are shown below:
+The results of the interpolations are shown below::
 
-
-
-.. figure:: user_manual_spectrum_images/Spectrum_before_interp_mask.png 
-  :align:   center
-
-  Spectrum before interpolation
-
-
-.. figure:: user_manual_spectrum_images/Spectrum_after_interp_mask.png
-  :align:   center
+  >>> spvar.unmask()
+  >>> spvar.plot(lmin=4600, lmax=6200, title='Spectrum before interpolation')
+  >>> spvarcut.plot(lmin=4600, lmax=6200, title='Spectrum after interpolation')
   
-  Spectrum after interpolation
+  
+.. image:: user_manual_spectrum_images/Spectrum_before_interp_mask.png
 
-Last, we will rebin the extracted spectrum using the 2 dedicated functions 
-(rebin_factor and rebin). 
-The function:func:`rebin_factor <mpdaf.obj.Spectrum.rebin_factor>` rebins the Spectrum using an integer number of pixels per bin. The corresponding variance is updated accordingly. We can overplot the rebinned Spectrum and show the corresponding variance as follows::
+.. image:: user_manual_spectrum_images/Spectrum_after_interp_mask.png 
 
-  sprebin1=spvarcut.rebin_factor(5)
-  spvarcut.plot()
-  (sprebin1+10).plot(noise=True)
+
+Last, we will rebin the extracted spectrum using the 2 dedicated functions (rebin_factor and rebin). 
+The function :func:`rebin_factor <mpdaf.obj.Spectrum.rebin_factor>` rebins the Spectrum using an integer number of pixels per bin. The corresponding variance is updated accordingly. We can overplot the rebinned Spectrum and show the corresponding variance as follows::
+
+  >>> sprebin1=spvarcut.rebin_factor(5)
+  >>> spvarcut.plot()
+  >>> (sprebin1+10).plot(noise=True)
 
 .. figure:: user_manual_spectrum_images/Spectrum_rebin.png
-
+  :align:   center
 
 The function :func:`rebin <mpdaf.obj.Spectrum.rebin>` rebins the Spectrum 
 with a specific numbers of wavelength units per pixel. The Variance is not 
 updated::
 
-  sprebin2=spvarcut.rebin(4.2) # 4.2 Angstroms / pixel
-  spvarcut.plot()
-  (sprebin2+10).plot(noise=True)
+  >>> sprebin2=spvarcut.rebin(4.2) # 4.2 Angstroms / pixel
+  >>> spvarcut.plot()
+  >>> (sprebin2+10).plot(noise=True)
 
 .. figure:: user_manual_spectrum_images/Spectrum_rebin2.png
-
+  :align:   center
 
 Tutorial 3: Gaussian Line fitting
 ---------------------------------
@@ -144,16 +134,21 @@ Tutorial 3: Gaussian Line fitting
 We want to fit the emission lines in a z=0.6758 galaxy (Hbeta and [OIII]).
 We open the spectrum and associated variance::
 
-  specline=Spectrum('Spectrum_lines.fits')
+  >>> specline=Spectrum('Spectrum_lines.fits')
 
 We plot the spectrum around the [OIII] line::
 
-  specline.plot(lmin=8350,lmax=8420)
+  >>> specline.plot(lmin=8350,lmax=8420)
 
 We do an interactive line fitting on the plot, by selecting with the mouse the left and right 
 continuum (2 positions) and the peak of the line. Variance weighting is used in the fit::
 
-  specline.igauss_fit()
+  >>> specline.igauss_fit()
+  Use the 2 first mouse clicks to get the wavelength range to compute the gaussian left value.
+  Use the next click to get the peak wavelength.
+  Use the 2 last mouse clicks to get the wavelength range to compute the gaussian rigth value.
+  To quit the interactive mode, click on the right mouse button.
+  The parameters of the last gaussian are saved in self.gauss.
 
 The result of the fit is overploted in red:
 
@@ -173,8 +168,8 @@ and the result is given on the console::
 
 Now, we move to the fainter line (Hbeta) and we perform the same analysis, again using variance weighting::
 
-  specline.plot(lmin=8090,lmax=8210)
-  specline.igauss_fit()
+  >>> specline.plot(lmin=8090,lmax=8210)
+  >>> specline.igauss_fit()
 
 The result of the fit is given below:
 
@@ -187,7 +182,7 @@ The result of the fit is given below:
 The results from the fit can be retrieved in the :class:`Gauss1D <mpdaf.obj.Gauss1D>` object associated 
 with the spectrum (self.gauss). For example we can measure the equivalent width of the line like this::
 
-  specline.gauss.flux/specline.gauss.cont
+  >>> specline.gauss.flux/specline.gauss.cont
   198.618
 
 Reference

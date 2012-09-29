@@ -13,20 +13,19 @@ Cube object format
 
 A cube object O consist of:
 
-+------------+--------------------------------------------------------+
-| Component  | Description                                            |
-+============+========================================================+
-| O.wcs      | world coordinate spatail information                   |
-+------------+--------------------------------------------------------+
-| O.wave     | world coordinate spectral information                  |
-+------------+--------------------------------------------------------+
-| O.data     | masked numpy array with data values                    |
-+------------+--------------------------------------------------------+
-| O.var      | (optionally) masked numpy array with variance values   |
-+------------+--------------------------------------------------------+
-| O.shape    | Array containing the 3 dimensions [nk,np,nq] of the    |
-|            | cube: nk channels and np x nq spatial pixels           |
-+------------+---------------------------------------------------------+
++------------+--------------------------------------------------------------------------------------------------+
+| Component  | Description                                                                                      |
++============+==================================================================================================+
+| O.wcs      | world coordinate spatial information (:class:`WCS <mpdaf.obj.WCS>` object)                       |
++------------+--------------------------------------------------------------------------------------------------+
+| O.wave     | world coordinate spectral information  (:class:`WaveCoord <mpdaf.obj.WaveCoord>` object)         |
++------------+--------------------------------------------------------------------------------------------------+
+| O.data     | masked numpy array with data values                                                              |
++------------+--------------------------------------------------------------------------------------------------+
+| O.var      | (optionally) masked numpy array with variance values                                             |
++------------+--------------------------------------------------------------------------------------------------+
+| O.shape    | Array containing the 3 dimensions [nk,np,nq] of the cube: nk channels and np x nq spatial pixels |
++------------+--------------------------------------------------------------------------------------------------+
 
 Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis, p and q the spatial axes
 
@@ -47,7 +46,7 @@ Tutorials
 
 We can load the tutorial files with the command::
 
-git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+ > git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
 
 Tutorial 1
 ----------
@@ -148,7 +147,6 @@ continuum datacube.::
  >>> cont1 = obj1.clone()
  >>> for sp,co in zip(iter_spe(obj1), iter_spe(cont1)):
  >>>   co[:] = sp.poly_spec(5)
- >>>
 
 And that's it, we have now the continuum datacube. Note that we have used the co[:] = sp.poly_spec(5)
 assignment rather than the more intuitive co = sp.poly_spec(5) assignment. The use of co[:] is mandatory
