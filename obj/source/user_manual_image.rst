@@ -25,7 +25,9 @@ An Image object O consists of:
 +------------+----------------------------------------------------------------------------------+
 | O.var      | (optionally) masked numpy 2D array with variance values                          |
 +------------+----------------------------------------------------------------------------------+
-| O.shape    | Array containing the 2 dimensions [np,np] of the image                           |
+| O.shape    | Array containing the 2 dimensions [np,nq] of the image                           |
++------------+----------------------------------------------------------------------------------+
+| O.fscale   | Scaling factor for the flux and variance values                                  |
 +------------+----------------------------------------------------------------------------------+
 
 
