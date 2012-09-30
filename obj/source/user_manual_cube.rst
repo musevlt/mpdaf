@@ -67,10 +67,10 @@ We read the datacube from disk and display basic information::
 
 The info directive gives us already some important informations:
 
-- The cube format 3601 X 101 X 101 has 101 x 101 spatial pixels and 3601 spectral pixels
+- The cube format 3601 x 101 x 101 has 101 x 101 spatial pixels and 3601 spectral pixels
 - In addition to the data extension (.data(3601,101,101) a variance extension is also present (.var(3601,101,101))
-- The flux data unit is erg/s/cm**2/Angstrom and the scale factor is 10**-20
-- The center of the field of view is at DEC: -30° 0' 1.35" and RA: 1°20'0.137" and its size is 20.2x20.2 arcsec**2. The spaxel dimension is 0.2x0.2 arcsec**2. The rotation angle is 0° with respect to the North.
+- The flux data unit is erg/s/cm:sup:`2`/Angstrom and the scale factor is 10:sup:`-20`
+- The center of the field of view is at DEC: -30° 0' 1.35" and RA: 1°20'0.137" and its size is 20.2x20.2 arcsec:sup:`2`. The spaxel dimension is 0.2x0.2 arcsec:sup:`2`. The rotation angle is 0° with respect to the North.
 - The wavelength range is 4800-9300 Angstrom with a step of 1.25 Angstrom
 
 Let's compute the reconstructed white light image and display it::
