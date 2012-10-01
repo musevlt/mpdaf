@@ -2258,7 +2258,10 @@ class Image(object):
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
-        err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        if covar is not None:
+            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        else:
+            err = None
         
         # plot
         if plot:
@@ -2288,23 +2291,34 @@ class Image(object):
             
         # return a Gauss2D object
         flux = v[0]*self.fscale
-        err_flux = err[0]*self.fscale
         ra_peak = v[1]
-        err_ra_peak = err[1]
         ra_width = np.abs(v[2])
-        err_ra_width = np.abs(err[2])
         ra_fwhm = ra_width*2*np.sqrt(2*np.log(2))
-        err_ra_fwhm = err_ra_width*2*np.sqrt(2*np.log(2))
         dec_peak = v[3]
-        err_dec_peak = err[3]
         dec_width = np.abs(v[4])
-        err_dec_width = np.abs(err[4])
         dec_fwhm = dec_width*2*np.sqrt(2*np.log(2))
-        err_dec_fwhm = err_dec_width*2*np.sqrt(2*np.log(2))
         rot = (v[5] * 180.0 / np.pi)%180
-        err_rot = err[5] * 180.0 / np.pi
         peak = flux / np.sqrt(2*np.pi*(ra_width**2)) / np.sqrt(2*np.pi*(dec_width**2))
-        err_peak = (err_flux*ra_width*dec_width - flux*(err_ra_width*dec_width+err_dec_width*ra_width)) / (2*np.pi*ra_width*ra_width*dec_width*dec_width)
+        if err is not None:
+            err_flux = err[0]*self.fscale
+            err_ra_peak = err[1]
+            err_ra_width = np.abs(err[2])
+            err_ra_fwhm = err_ra_width*2*np.sqrt(2*np.log(2))
+            err_dec_peak = err[3]
+            err_dec_width = np.abs(err[4])
+            err_dec_fwhm = err_dec_width*2*np.sqrt(2*np.log(2))
+            err_rot = err[5] * 180.0 / np.pi
+            err_peak = (err_flux*ra_width*dec_width - flux*(err_ra_width*dec_width+err_dec_width*ra_width)) / (2*np.pi*ra_width*ra_width*dec_width*dec_width)
+        else:
+            err_flux = np.NAN
+            err_ra_peak = np.NAN
+            err_ra_width = np.NAN
+            err_ra_fwhm = np.NAN
+            err_dec_peak = np.NAN
+            err_dec_width = np.NAN
+            err_dec_fwhm = np.NAN
+            err_rot = np.NAN
+            err_peak = np.NAN
         return Gauss2D((dec_peak,ra_peak), flux, (dec_fwhm,ra_fwhm), cont*self.fscale, rot, peak, (err_dec_peak,err_ra_peak), err_flux, (err_dec_fwhm,err_ra_fwhm), err_rot, err_peak)
     
     def moffat_fit(self, pos_min, pos_max,  center=None, I=None, a=None , q=1, n=2.0, cont=None, rot=0, factor = 1, weight=True, plot = False):
