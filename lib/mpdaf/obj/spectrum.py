@@ -1800,7 +1800,10 @@ class Spectrum(object):
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
-        err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        if covar is not None:
+            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        else:
+            err = None
         
         #plot
         if plot:
@@ -1811,16 +1814,24 @@ class Spectrum(object):
 
         # return a Gauss1D object
         flux = v[0] * self.fscale
-        err_flux = err[0] * self.fscale
         lpeak = v[1]
-        err_lpeak = err[1]
         sigma = np.abs(v[2])
-        err_sigma = err[2]
         fwhm = sigma*2*np.sqrt(2*np.log(2))
-        err_fwhm = err_sigma*2*np.sqrt(2*np.log(2))
-        peak = flux/np.sqrt(2*np.pi*(sigma**2))
-        err_peak = np.abs(1./np.sqrt(2*np.pi)*(err_flux*sigma-flux*err_sigma)/sigma/sigma)      
+        peak = flux/np.sqrt(2*np.pi*(sigma**2))  
         cont0 *= self.fscale
+        if err is not None:
+            err_flux = err[0] * self.fscale
+            err_lpeak = err[1]
+            err_sigma = err[2]
+            err_fwhm = err_sigma*2*np.sqrt(2*np.log(2))
+            err_peak = np.abs(1./np.sqrt(2*np.pi)*(err_flux*sigma-flux*err_sigma)/sigma/sigma)     
+        else:
+            err_flux = np.NAN
+            err_lpeak = np.NAN
+            err_sigma = np.NAN
+            err_fwhm = np.NAN
+            err_peak = np.NAN
+            
         return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak, err_peak, err_flux,err_fwhm)
 
     def add_gaussian(self, lpeak, flux, fwhm, cont=0, peak=False ):
