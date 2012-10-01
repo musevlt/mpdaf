@@ -1654,7 +1654,8 @@ class Image(object):
         :type threshold: float
         :param kernel_size: size of the median filter window along each axis.
         :type kernel_size: (float,float)
-        
+        :param flux_min: minimum peak value
+        :type flux_min: float
         """
         d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
         # threshold value
