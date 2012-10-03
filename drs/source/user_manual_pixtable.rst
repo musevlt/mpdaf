@@ -39,7 +39,14 @@ Tutorials
 
 We can load the tutorial files with the command::
 
-git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+  git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+
+Preliminary imports for all tutorials::
+
+  >>> import numpy as np
+  >>> import matplotlib.pyplot as plt
+  >>> from mpdaf.drs import PixTable
+  
 
 Tutorial 1
 ----------
@@ -49,7 +56,6 @@ centrered around an object. We will also learn how to display the original detec
 
 We read the pixtable from the disk and check its basic informations and FITS header content::
 
- >>> from mpdaf.drs import PixTable
  >>> pix = PixTable('Central_PIXTABLE_REDUCED_11_positioned.fits')
  >>> pix.info()
  Filename: Central_PIXTABLE_REDUCED_11_positioned.fits
@@ -86,8 +92,8 @@ We are interested in the bright object at the bottom. Let's find its position::
  To read cursor position, click on the left mouse button
  To remove a cursor position, click on the left mouse button + <d>
  To quit the interactive mode, click on the right mouse button.
- After quit, clicks are saved in self.clicks as dictionary {ra,dec,i,j,data}.
- dec=-30.0023	ra=20.0015	i=13	j=34	data=100873
+ After quit, clicks are saved in self.clicks as dictionary {y,x,p,q,data}.
+ y=-30.0023      x=20.0016       p=14    q=33    data=93985.5
  disconnecting console coordinate printout...
 
 Now we will extract a circular region of the pixtable centered around the object and we will restrict
@@ -106,7 +112,7 @@ Let's investigate this pixtable. We start by plotting the sky positions::
 
  >>> x = objpix.get_xpos()
  >>> y = objpix.get_ypos()
- >>> plot(y, x, '.')
+ >>> plt.plot(y, x, '.')
 
 .. figure::  user_manual_pixtable_images/pixima1.png
    :align:   center
@@ -121,10 +127,10 @@ the same location on the sky for the various wavelength.
 Let's see if we have some bad pixel ifentified::
 
  >>> dq = objpix.get_dq()
- >>> k = where(dq > 0)
+ >>> k = np.where(dq > 0)
  >>> k
  (array([3591, 4791]),)
- >>> plot(y[k], x[k], 'or')
+ >>> plt.plot(y[k], x[k], 'or')
 
 .. figure::  user_manual_pixtable_images/pixima3.png
    :align:   center
@@ -135,12 +141,12 @@ decode it to get for example the ifu number::
 
  >>> origin = objpix.get_origin()
  >>> ifu = objpix.origin2ifu(origin)
- >>> unique(ifu)
+ >>> np.unique(ifu)
  memmap([ 9, 10], dtype=uint32)
- >>> k = where(ifu == 9)
- >>> plot(y[k],x[k],'ob')
- >>> k = where(ifu == 10)
- >>> plot(y[k],x[k],'or')
+ >>> k = np.where(ifu == 9)
+ >>> plt.plot(y[k],x[k],'ob')
+ >>> k = np.where(ifu == 10)
+ >>> plt.plot(y[k],x[k],'or')
 
 We can see that the star is split into two IFUs (9 and 10). We plot the sky location according to the IFU number.
 
@@ -173,14 +179,14 @@ We start to define a function that fit a 2D gaussian to a set of points (x, y, d
 
  >>> from scipy.optimize import leastsq
  >>> def fitgauss(x, y, data, peak, center, fwhm):
- >>>         p0 = array([peak, center[0], center[1], fwhm/2.355])
+ >>>         p0 = np.array([peak, center[0], center[1], fwhm/2.355])
  >>>         res = leastsq(gauss2D, p0, args=[x, y, data])
  >>>         return res
  >>> 
  >>> def gauss2D(p, arglist):
  >>>         x, y, data = arglist
  >>>         peak, x0, y0, sigma = p
- >>>         g = peak*exp(-((x-x0)**2 + (y-y0)**2)/(2*sigma**2))
+ >>>         g = peak*np.exp(-((x-x0)**2 + (y-y0)**2)/(2*sigma**2))
  >>>         residual = data - g
  >>>         return residual
 
@@ -189,20 +195,15 @@ Let's check if it works::
 
  >>> nx = 10
  >>> ny = 10
- >>> x = numpy.reshape(numpy.repeat(numpy.arange(nx),ny),(nx,ny))
- >>> y = numpy.transpose(numpy.reshape(numpy.repeat(numpy.arange(ny),nx),(ny,nx)))
- >>> g = 2.0*exp(-((x-5)**2+(y-5)**2)/(2*1.7**2))
- >>> gn = normal(g, 0.1*sqrt(g))
+ >>> x = np.reshape(np.repeat(np.arange(nx),ny),(nx,ny))
+ >>> y = np.transpose(np.reshape(np.repeat(np.arange(ny),nx),(ny,nx)))
+ >>> g = 2.0*np.exp(-((x-5)**2+(y-5)**2)/(2*1.7**2))
+ >>> gn = np.random.normal(g, 0.1*np.sqrt(g))
  >>> xp = x.ravel()
  >>> yp = y.ravel()
  >>> gnp = gn.ravel()
  >>> fitgauss(xp, yp, gnp, 1.0, (4.9,5.1), 2*2.355)
-     Optimization terminated successfully.
-         Current function value: 0.347803
-         Iterations: 115
-         Function evaluations: 197
-     (array([ 2.06251507,  4.96696534,  5.00938272,  1.67706983]),
-      0.34780309482080229, 115, 197, 0)
+ (array([ 1.94258391,  4.96738244,  5.05566252,  1.71287931]), 1)
 
 OK, so now we can test it on our object pixtable::
 
@@ -212,14 +213,9 @@ OK, so now we can test it on our object pixtable::
  >>> data = objpix.get_data()
  >>> center = (-30.0023, 20.0015)
  >>> res = fitgauss(y, x, data, data.max(), center, 0.7/3600.)
- Optimization terminated successfully.
-         Current function value: 1955042.875000
-         Iterations: 23
-         Function evaluations: 123
- >>> print 'Peak:',p[0], 'Center:',p[1:3], 'Fwhm:',p[3]*2.355*3600
- Peak: 1080.1060791 Center: [-31.502415  20.0015  ] Fwhm: 0.7
-
-
+ >>> print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
+ Peak: 1080.1060791 Center: [-30.0023  20.0015] Fwhm: 0.7
+ 
 
 Reference
 =========
