@@ -9,5 +9,5 @@ try:
 except:
     pass
 
-import scipy, numpy, pyfits, pywcs, prettytable
-__info__   = 'numpy %s - scipy %s - pyfits %s - pywcs %s - prettytable %s' %(numpy.__version__,scipy.__version__,pyfits.__version__,pywcs.__version__,prettytable.__version__)
+import scipy, numpy, pyfits, pywcs
+__info__   = 'numpy %s - scipy %s - pyfits %s - pywcs %s' %(numpy.__version__,scipy.__version__,pyfits.__version__,pywcs.__version__)

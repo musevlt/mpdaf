@@ -3505,7 +3505,7 @@ class Image(object):
         print 'To read cursor position, click on the left mouse button'
         print 'To remove a cursor position, click on the left mouse button + <d>'
         print 'To quit the interactive mode, click on the right mouse button.'
-        print 'After quit, clicks are saved in self.clicks as dictionary {ra,dec,i,j,data}.'
+        print 'After quit, clicks are saved in self.clicks as dictionary {y,x,p,q,data}.'
         
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
