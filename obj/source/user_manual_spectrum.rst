@@ -37,6 +37,7 @@ We can load the tutorial files with the command::
 Preliminary imports for all tutorials::
 
   >>> import numpy as np
+  >>> import matplotlib.pyplot as plt
   >>> from mpdaf.obj import Spectrum
   >>> from mpdaf.obj.coords import WaveCoord
 
@@ -101,6 +102,7 @@ The results of the interpolations are shown below::
 
   >>> spvar.unmask()
   >>> spvar.plot(lmin=4600, lmax=6200, title='Spectrum before interpolation')
+  >>> plt.figure()
   >>> spvarcut.plot(lmin=4600, lmax=6200, title='Spectrum after interpolation')
   
   
@@ -112,6 +114,7 @@ The results of the interpolations are shown below::
 Last, we will rebin the extracted spectrum using the 2 dedicated functions (rebin_factor and rebin). 
 The function :func:`rebin_factor <mpdaf.obj.Spectrum.rebin_factor>` rebins the Spectrum using an integer number of pixels per bin. The corresponding variance is updated accordingly. We can overplot the rebinned Spectrum and show the corresponding variance as follows::
 
+  >>> plt.figure()
   >>> sprebin1=spvarcut.rebin_factor(5)
   >>> spvarcut.plot()
   >>> (sprebin1+10).plot(noise=True)
@@ -123,6 +126,7 @@ The function :func:`rebin <mpdaf.obj.Spectrum.rebin>` rebins the Spectrum
 with a specific numbers of wavelength units per pixel. The Variance is not 
 updated::
 
+  >>> plt.figure()
   >>> sprebin2=spvarcut.rebin(4.2) # 4.2 Angstroms / pixel
   >>> spvarcut.plot()
   >>> (sprebin2+10).plot(noise=True)

@@ -92,6 +92,8 @@ We extract the cube corresponding to the object centered at x=31 y=55 spaxels::
 
 Let's now compute the total spectrum of the object::
 
+ >>> import matplotlib.pyplot as plt
+ >>> plt.figure()
  >>> sp1 = obj1.sum(axis=(1,2))
  >>> sp1.plot()
 
@@ -105,6 +107,7 @@ In this second tutorial we create the continuum subtracted datacube of the previ
 
 We start by fitting the continuum on sp1 (see tutorial 1)::
 
+ >>> plt.figure()
  >>> cont1 = sp1.poly_spec(5)
  >>> sp1.plot()
  >>> cont1.plot(color='r')
@@ -114,6 +117,7 @@ We start by fitting the continuum on sp1 (see tutorial 1)::
 
 Let's try also on a single spectrum at the edge of the galaxy::
 
+ >>> plt.figure()
  >>> obj1[:,5,2].plot()
  >>> obj1[:,5,2].poly_spec(5).plot(color='r')
 
@@ -177,6 +181,7 @@ Tutorial 3
 In this tutorial we will compute equivalent width of the Ha emission in the galaxy.
 First let's isolate the emission line by truncating the object datacube in wavelength.::
 
+ >>> plt.figure()
  >>> sp1.plot()
  >>> k1,k2 = sp1.wave.pixel([9000,9200], nearest=True)
  >>> emi1 = obj1[k1+1:k2+1,:,:]
@@ -195,6 +200,7 @@ We first fit and subtract the continuum. Before doing the polynomial fit we mask
 the emission lines (sp1.mask) and then we perform the linear fit. Then the spectrum is unmasked
 and the continnum subtracted::
 
+ >>> plt.figure()
  >>> sp1.mask(9050, 9125)
  >>> cont1 = sp1.poly_spec(1)
  >>> sp1.unmask()
@@ -208,6 +214,7 @@ and the continnum subtracted::
 We then compute the Ha line total flux by simple integration (taking into account the pixel size in A)
 over the wavelength range centered around Halfa and the continuum mean flux at the same location::
 
+ >>> plt.figure()
  >>> k = line1.data.argmax()
  >>> line1[55-10:55+11].plot(color='r')
  >>> fline = line1[55-10:55+11].sum()*line1.get_step()
