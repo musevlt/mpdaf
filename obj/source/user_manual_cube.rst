@@ -275,7 +275,44 @@ monochromatic images and we process each of them. For each monochromatic image w
 
 .. image::  user_manual_cube_images/recima10.png
 
+Tutorial 5
+----------
 
+In this tutorial, we will use the spectrum iterator (Tutorial 3) to compute the 
+emission line velocity field in one of the objects. We start by extracting the object 
+from Tutorial 1 and computing the total spectrum to retrieve the central peak of the 
+emission line::
+
+ >>> from mpdaf.obj import Cube
+ >>> from mpdaf.obj import iter_spe
+ >>> import numpy as np
+ >>> cube=Cube('Central_DATACUBE_FINAL_11to20_2012-05-16.fits')
+ >>> obj1=cube[:,55-5:55+5,31-10:31+10]
+ >>> sp1=obj1.sum(axis=(1,2))
+ >>> ltotal=sp1.gauss_fit(9000.0,9200.0).lpeak
+
+We then create three maps by cloning the continuum image and computing the 
+line fit parameters spectrum by spectrum on the datacube::
+
+ >>> im1=obj1.mean(axis=0)
+ >>> lfield=im1.clone()
+ >>> sfield=im1.clone()
+ >>> ffield=im1.clone()
+
+ >>> for sp,pos in iter_spe(obj1,index=True):
+ >>>     p,q=pos
+ >>>     g=sp.gaussfit(9000.0,9200.0)
+ >>>     lfield[p,q]=(g.lpeak-ltotal)*300000/ltotal    # velocity shift from the mean
+ >>>     sfield[p,q]=(g.fwhm/2.35)*300000/lfield[p,q]  # velocity dispersion
+ >>>     ffield[p,q]=g.flux                            # line flux
+
+We then plot the resulting velocity field, masking the outliers::
+
+ >>> lfield2=lfield>-200
+ >>> lfield3=lfield2<200 
+ >>> lfield3.plot()
+
+.. image::  user_manual_cube_images/vfield.png
 
 Reference
 =========
