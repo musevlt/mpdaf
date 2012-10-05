@@ -314,6 +314,52 @@ We then plot the resulting velocity field, masking the outliers::
 
 .. image::  user_manual_cube_images/vfield.png
 
+Tutorial 6
+----------
+
+In this tutorial, we will use the image iterator (Tutorial 4) to fit and remove a background 
+gradient from the simulated datacube Central_DATACUBE_bkg.fits. We start by loading this cube 
+and creating a copy for the background-subtracted cube we want to create::
+
+ >>> from mpdaf.obj import Cube
+ >>> from mpdaf.obj import iter_ima
+ >>> import numpy as np
+ >>> cube=Cube('Central_DATACUBE_bkg.fits')
+ >>> cube2=cube.copy()
+
+For each image of the cube, we fit a 2nd order polynomial to the background values 
+(selected here by simply applying a flux threshold to mask all bright objects). We 
+do so by doing a chi^2 minimization over the polynomial coefficients using the 
+numpy recipe np.linalg.lstsq()::
+
+ >>> for ima,k in iter_ima(cube, index=True):
+ >>>    print k
+ >>>    ksel = np.where(ima.data.data*ima.fscale<2.5e-20)
+ >>>    pval = ksel[0]
+ >>>    qval = ksel[1]
+ >>>    zval = ima.data.data[ksel]
+ >>>    degree=2
+ >>>    Ap=np.vander(pval,degree)
+ >>>    Aq=np.vander(qval,degree)
+ >>>    A=np.hstack((Ap,Aq))
+
+ >>>    (coeffs,residuals,rank,sing_vals)=np.linalg.lstsq(A,zval)
+   
+ >>>    fp=np.poly1d(coeffs[0:degree])
+ >>>    fq=np.poly1d(coeffs[degree:2*degree])
+   
+ >>>    X,Y = np.meshgrid(xrange(ima.shape[0]),xrange(ima.shape[1]))
+ >>>    cube2[k,:,:] = (cube[k,:,:].data-np.array(map(lambda q,p: fp(p)+fq(q),Y,X)))*cube.fscale
+
+We can then write the output datacube and compare the results for one of the slices::
+
+ >>> cube2.write('Central_DATACUBE_bkgsub.fits')
+ >>> cube[1000,:,:].plot(vmin=-1e-20,vmax=4e-20)
+ >>> cube2[1000,:,:].plot(vmin=-1e-20,vmax=4e-20)
+
+.. image::  user_manual_cube_images/cube1.png
+.. image::  user_manual_cube_images/cube2.png
+
 Reference
 =========
 
