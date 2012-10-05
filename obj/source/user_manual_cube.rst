@@ -303,7 +303,7 @@ line fit parameters spectrum by spectrum on the datacube::
  >>>     p,q=pos
  >>>     g=sp.gaussfit(9000.0,9200.0)
  >>>     lfield[p,q]=(g.lpeak-ltotal)*300000/ltotal    # velocity shift from the mean
- >>>     sfield[p,q]=(g.fwhm/2.35)*300000/lfield[p,q]  # velocity dispersion
+ >>>     sfield[p,q]=(g.fwhm/2.35)*300000/g.lpeak      # velocity dispersion
  >>>     ffield[p,q]=g.flux                            # line flux
 
 We then plot the resulting velocity field, masking the outliers::
