@@ -28,7 +28,8 @@ class TestSpectrum():
         spectrum2 = spectrum1 < 6*spectrum1.fscale
         nose.tools.assert_equal(spectrum2.data.sum()*spectrum2.fscale,15.5*spectrum1.fscale)
         spectrum2 = spectrum1 <= 6*spectrum1.fscale
-        nose.tools.assert_equal(spectrum2.data.sum()*spectrum2.fscale,21.5*spectrum1.fscale)
+        spectrum1[:] = spectrum2
+        nose.tools.assert_equal(spectrum1.data.sum()*spectrum1.fscale,21.5*spectrum1.fscale)
         del spectrum1, spectrum2
 
     @attr(speed='fast')

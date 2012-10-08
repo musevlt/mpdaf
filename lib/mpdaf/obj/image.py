@@ -1168,9 +1168,8 @@ class Image(object):
             try:
                 #other is an image
                 if other.image:
-                    if self.wcs is not None and other.wcs is not None and not self.wcs.isEqual(other.wcs):
-                        print 'Operation forbidden for images with different world coordinates'
-                        return None
+                    if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any():
+                        print 'Warning: images with different steps'
                     self.data[key] = other.data*np.double(other.fscale/self.fscale)
             except:
                 print 'Operation forbidden'

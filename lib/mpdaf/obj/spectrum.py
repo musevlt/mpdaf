@@ -996,9 +996,8 @@ class Spectrum(object):
             try:
                 #other is a spectrum
                 if other.spectrum:
-                    if self.wave is not None and other.wave is not None and not self.wave.isEqual(other.wave):
-                        print 'Operation forbidden for spectra with different world coordinates'
-                        return None
+                    if self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
+                        print 'Warning: spectra with different steps'
                     self.data[key] = other.data*np.double(other.fscale/self.fscale)
             except:
                 print 'Operation forbidden'

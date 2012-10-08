@@ -73,8 +73,10 @@ class TestImage():
                 for i in range(5):
                     nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,spectrum1.data[k]*spectrum1.fscale * (image1.data[j,i]*image1.fscale))
         #
-        image2 = (image1 *-2).abs()+(image1+4).sqrt()-2 
-        nose.tools.assert_almost_equal(image2.data[3,3]*image2.fscale,np.abs(image1.data[3,3]*image1.fscale *-2)+np.sqrt(image1.data[3,3]*image1.fscale+4)-2 )
+        image2 = (image1 *-2).abs()+(image1+4).sqrt()-2
+        image3 = image1.clone()
+        image3[:]=image2
+        nose.tools.assert_almost_equal(image3.data[3,3]*image3.fscale,np.abs(image1.data[3,3]*image1.fscale *-2)+np.sqrt(image1.data[3,3]*image1.fscale+4)-2 )
 
     @attr(speed='fast')
     def test_get_Image(self):

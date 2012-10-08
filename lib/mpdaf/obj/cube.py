@@ -2,6 +2,8 @@
 import numpy as np
 import pyfits
 import datetime
+#import multiprocessing
+
 
 from coords import WCS
 from coords import WaveCoord
@@ -31,6 +33,7 @@ class iter_spe(object):
     def __iter__(self):
         """Returns the iterator itself."""
         return self
+    
         
 class iter_ima(object): 
     
@@ -1223,22 +1226,14 @@ class Cube(object):
         except:
             try:
                 #other is an image
-                if other.image:
-                    if self.wcs is not None and other.wcs is not None and not self.wcs.isEqual(other.wcs):
-                        print 'Operation forbidden for images with different world coordinates'
-                        return None
+                if other.cube:
+                    if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any() \
+                    and self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
+                        print 'Warning: cubes with different steps'
                     self.data[key] = other.data*np.double(other.fscale/self.fscale)
             except:
-                try:
-                    #other is a spectrum
-                    if other.spectrum:
-                        if self.wave is not None and other.wave is not None and not self.wave.isEqual(other.wave):
-                            print 'Operation forbidden for spectra with different world coordinates'
-                            return None
-                        self.data[key] = other.data*np.double(other.fscale/self.fscale)
-                except:
-                    print 'Operation forbidden'
-                    return None
+                print 'Operation forbidden'
+                return None
             
     def set_wcs(self, wcs, wave):
         """Sets the world coordinates.
@@ -1339,3 +1334,29 @@ class Cube(object):
             return res
         else:
             return None
+        
+#    def loop_spe_multiprocessing(self,function, arglist=None):
+#        #f = STR_FUNCTIONS[function]
+#        cpu_count = multiprocessing.cpu_count()
+#        cube_result = self.clone()
+#        pool = multiprocessing.Pool(processes = cpu_count)
+#        processlist = list()
+#        for sp,pos in iter_spe(self, index=True):
+#            processlist.append([sp,pos,function,arglist])
+#        processresult = pool.map(_process_spe,processlist)
+#        for pos,out in processresult:
+#            p,q = pos
+#            cube_result[:,p,q] = out
+#        return cube_result
+#    
+#def _process_spe(arglist):
+#    print arglist
+#    sp = arglist[0]
+#    pos = arglist[1]
+#    f = arglist[2]
+#    args = arglist[3]
+#    if args is None:
+#        sp_result = f(sp)
+#    else:
+#        sp_result = f(sp,args)
+#    return (pos,sp_result)

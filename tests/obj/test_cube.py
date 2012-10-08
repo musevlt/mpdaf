@@ -94,10 +94,12 @@ class TestCube():
                 for i in range(5):
                     nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,self.image1.data[j,i]*self.image1.fscale * self.cube1.data[k,j,i]*self.cube1.fscale)
         cube2 = self.cube1 / self.image1
+        cube3 = self.cube1.clone()
+        cube3[:] = cube2
         for k in range(10):
             for j in range(6):
                 for i in range(5):
-                    nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,(self.cube1.data[k,j,i]*self.cube1.fscale) / (self.image1.data[j,i]*self.image1.fscale))
+                    nose.tools.assert_almost_equal(cube3.data[k,j,i]*cube3.fscale,(self.cube1.data[k,j,i]*self.cube1.fscale) / (self.image1.data[j,i]*self.image1.fscale))
 
     @attr(speed='fast')
     def test_get_Cube(self):
