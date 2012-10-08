@@ -1661,7 +1661,7 @@ class Image(object):
         # threshold value
         (background,std) = self.background()
         if threshold is None:
-            threshold = background
+            threshold = background+10*std
         else:
             threshold /= self.fscale
         # select brightest pixels
@@ -1672,71 +1672,39 @@ class Image(object):
         # list of explored pixels
         l = []
         
-        #lopp on brightest pixels
-        for i in range(len(ksel[0])):
-            try:
-                l.index(i)
-            except:
-                p = ksel[0][i]
-                q = ksel[1][i]
-                loop = True
-                while loop:
-                    k = np.where((ksel[0]>p-2) & (ksel[0]<p+2) & (ksel[1]>q-2) & (ksel[1]<q+2))
-                    for index in range(len(k[0])):
-                        l.append(k[0][index])
-                        
-                    ksel2 = [ksel[0][k],ksel[1][k]]
-                    n = np.argmax(self.data[ksel2])
-                    
-                    if(p==ksel2[0][n] and q==ksel2[1][n]):
-                        try:
-                            peak.index([p,q])
-                        except:
-                            peak.append([p,q])
-                        loop = False
-                    else:
-                        p = ksel2[0][n]
-                        q = ksel2[1][n]
+        
+        #gradient = ima.data != 0.0
+        selec = (d>threshold)
+        selec = ndimage.binary_fill_holes(selec)
+        structure = ndimage.morphology.generate_binary_structure(2, 2)
+        label = ndimage.measurements.label(selec, structure)
+        peak_pix = ndimage.measurements.center_of_mass(self.data, label[0], np.arange(label[1]) + 1)
         
         # compute real position of peaks
         newpeak = []
-        center = []
+        list_center = []
         
-        for p in peak:
+        for p in peak_pix:
             try:
-                real_peak = self.peak(center=(p[0],p[1]), radius = (10,10), pix=True, dpix=3, background=background,plot=False)
-                try:
-                    center.index([int(real_peak['p']),int(real_peak['q'])])
-                except:
-                    newpeak.append(real_peak)
-                    center.append([int(real_peak['p']),int(real_peak['q'])])
-            except:
-                pass
-            
-        newpeak2 = []
-        center = []
-        
-        for p in newpeak:
-            try:
-                if self.inside([p['y'],p['x']]) and p['data']>flux_min:
-                    pix_min = [[p['p']-4,p['q']-4]]
+                if self.data[p[0],p[1]]>flux_min:
+                    pix_min = [[max(0,p[0]-4),max(0,p[1]-4)]]
                     pos_min = self.wcs.pix2sky(pix_min)
-                    pix_max = [[p['p']+5,p['q']+5]]
+                    pix_max = [[p[0]+5,p[1]+5]]
                     pos_max = self.wcs.pix2sky(pix_max)
-                    gauss = self.gauss_fit(pos_min[0], pos_max[0], center=(p['y'],p['x']))
+                    center = self.wcs.pix2sky([p[0],p[1]])
+                    gauss = self.gauss_fit(pos_min[0], pos_max[0], center=center[0], rot=None)
                     try:
-                        center.index([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
+                        list_center.index([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
                     except:
                         if self.inside(gauss.center):
-                            newpeak2.append(gauss)
-                            center.append([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
-                            #pix = self.wcs.sky2pix(gauss.center)
-                            #plt.plot(pix[0][1],pix[0][0],'r+')
+                            newpeak.append(gauss)
+                            list_center.append([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
+#                            pix = self.wcs.sky2pix(gauss.center)
+#                            plt.plot(pix[0][1],pix[0][0],'m+')
             except:
                 pass
             
-        return newpeak2
-        
+        return newpeak  
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, background=None, plot=False):
         """Finds image peak location. Used `scipy.ndimage.measurements.maximum_position <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.maximum_position.html>`_ and `scipy.ndimage.measurements.center_of_mass <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.center_of_mass.html>`_.
@@ -2162,7 +2130,7 @@ class Image(object):
           :type fwhm: (float,float)
           :param cont: Initial continuum value, if None it is estimated.
           :type cont: float
-          :param rot: Initial rotation in degree.
+          :param rot: Initial rotation in degree. If None, rotation is fixed to 0.
           :type rot: float
           :param peak: If true, flux contains a gaussian peak value. 
           :type peak: boolean
@@ -2235,26 +2203,41 @@ class Image(object):
         else:
             flux /= self.fscale
         
-        #rotation angle in rad
-        theta = np.pi * rot / 180.0
+        if rot is None:
+            if factor > 1:
+                gaussfit = lambda p: gauss_image(ima.shape, ima.wcs, (p[3],p[1]), p[0], (p[4],p[2]), False, 0, factor).data.data[ksel]*ima.fscale + cont
+                e_gauss_fit = lambda p, data, w: w * (gaussfit(p) - data)
+                v0 = [flux,ra_peak, ra_width, dec_peak, dec_width]
+                v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
+            else:                                             
+                # 2d gaussian functio
+                gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) \
+                                                      *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-(y-p[3])**2/(2*p[4]**2)) 
+                # 2d Gaussian fit  
+                e_gauss_fit = lambda p, x, y, data,w : w * (gaussfit(p,x,y) - data)
+                    
+                # inital guesses for Gaussian Fit
+                v0 = [flux,ra_peak, ra_width, dec_peak, dec_width]
+                # Minimize the sum of squares
+                v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(x,y,data,wght), maxfev=100000, full_output=1)
+        else:
         
-        
-        if factor > 1:
-            gaussfit = lambda p: gauss_image(ima.shape, ima.wcs, (p[3],p[1]), p[0], (p[4],p[2]), False, p[5], factor).data.data[ksel]*ima.fscale + cont
-            e_gauss_fit = lambda p, data, w: w * (gaussfit(p) - data)
-            v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
-            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
-        else:                                             
-            # 2d gaussian functio
-            gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
-                                                  *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-((x-p[1])*np.sin(p[5])+(y-p[3])*np.cos(p[5]))**2/(2*p[4]**2)) 
-            # 2d Gaussian fit  
-            e_gauss_fit = lambda p, x, y, data,w : w * (gaussfit(p,x,y) - data)
-                
-            # inital guesses for Gaussian Fit
-            v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
-            # Minimize the sum of squares
-            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(x,y,data,wght), maxfev=100000, full_output=1)
+            if factor > 1:
+                gaussfit = lambda p: gauss_image(ima.shape, ima.wcs, (p[3],p[1]), p[0], (p[4],p[2]), False, p[5], factor).data.data[ksel]*ima.fscale + cont
+                e_gauss_fit = lambda p, data, w: w * (gaussfit(p) - data)
+                v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
+                v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
+            else:                                             
+                # 2d gaussian functio
+                gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
+                                                      *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-((x-p[1])*np.sin(p[5])+(y-p[3])*np.cos(p[5]))**2/(2*p[4]**2)) 
+                # 2d Gaussian fit  
+                e_gauss_fit = lambda p, x, y, data,w : w * (gaussfit(p,x,y) - data)
+                    
+                # inital guesses for Gaussian Fit
+                v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
+                # Minimize the sum of squares
+                v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(x,y,data,wght), maxfev=100000, full_output=1)
     
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
@@ -2266,7 +2249,11 @@ class Image(object):
         
         # plot
         if plot:
-            gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
+            if rot is None:
+                gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) \
+                                                  *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-(y-p[3])**2/(2*p[4]**2)) 
+            else:
+                gaussfit = lambda p, x, y: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-((x-p[1])*np.cos(p[5])-(y-p[3])*np.sin(p[5]))**2/(2*p[2]**2)) \
                                                   *(1/np.sqrt(2*np.pi*(p[4]**2)))*np.exp(-((x-p[1])*np.sin(p[5])+(y-p[3])*np.cos(p[5]))**2/(2*p[4]**2)) 
             
             xmin = np.min(x)
@@ -2298,7 +2285,10 @@ class Image(object):
         dec_peak = v[3]
         dec_width = np.abs(v[4])
         dec_fwhm = dec_width*2*np.sqrt(2*np.log(2))
-        rot = (v[5] * 180.0 / np.pi)%180
+        if rot is None:
+            rot = 0
+        else:
+            rot = (v[5] * 180.0 / np.pi)%180
         peak = flux / np.sqrt(2*np.pi*(ra_width**2)) / np.sqrt(2*np.pi*(dec_width**2))
         if err is not None:
             err_flux = err[0]*self.fscale
@@ -2308,7 +2298,10 @@ class Image(object):
             err_dec_peak = err[3]
             err_dec_width = np.abs(err[4])
             err_dec_fwhm = err_dec_width*2*np.sqrt(2*np.log(2))
-            err_rot = err[5] * 180.0 / np.pi
+            try:
+                err_rot = err[5] * 180.0 / np.pi
+            except:
+                err_rot = 0
             err_peak = (err_flux*ra_width*dec_width - flux*(err_ra_width*dec_width+err_dec_width*ra_width)) / (2*np.pi*ra_width*ra_width*dec_width*dec_width)
         else:
             err_flux = np.NAN
