@@ -672,6 +672,89 @@ class PixTable(object):
         :rtype: float
         """
         return self.primary_header[key].value
+    
+    def reconstruct_sky_image(self, lbda=None, step=None):
+        """Reconstructs the image on the sky from the pixtable.
+        
+        :param lbda: (min, max) wavelength range in Angstrom. If None, the image is reconstructed for all wavelengths.
+        :type lbda: (float,float)
+        :param step: pixel step of the final image in arcsec. If None, the value corresponding to the keyword "HIERARCH ESO INS PIXSCALE" is used.
+        :type step: (float,float)
+        
+        :rtype: :class:`mpdaf.obj.Image`
+        """
+        #step in arcsec
+        from scipy import interpolate
+        
+        if step is None:
+            step = self.get_keywords('HIERARCH ESO INS PIXSCALE')
+            if step <= 0 :
+                raise ValueError, 'INS PIXSCALE not valid'
+            xstep = step
+            ystep = step
+        else:
+            ystep,xstep = step    
+        xstep /= 3600.
+        ystep /= 3600.
+        
+        col_dq = self.get_dq()
+        if lbda is None:
+            ksel = np.where((col_dq==0))
+        else:
+            l1,l2 = lbda
+            col_lambda = self.get_lambda()
+            ksel = np.where((col_dq==0) & (col_lambda>l1) & (col_lambda<l2))
+            del col_lambda
+        del col_dq
+        
+        x = self.get_xpos()[ksel]
+        y = self.get_ypos()[ksel]
+        data = self.get_data()[ksel]
+        print np.shape(data)
+        
+        xmin = np.min(x)
+        xmax = np.max(x)
+        nx = 1 + int( (xmax - xmin) / xstep )
+        print xmin,xmax,xstep,nx
+        #xstep = (xmax - xmin) / (shape[1]-1)
+        grid_x = np.arange(nx) * xstep + xmin
+        ymin = np.min(y)
+        ymax = np.max(y)
+        ny = 1 + int( (ymax - ymin) / ystep )
+        print ymin,ymax,ystep,ny
+        #ystep = (ymax - ymin) / (shape[0]-1)
+        grid_y = np.arange(ny) * ystep + ymin
+        shape = (ny,nx)
+          
+        points = np.empty((len(ksel[0]),2),dtype=float)
+        points[:,0] = self.get_ypos()[ksel]
+        points[:,1] = self.get_xpos()[ksel]
+        data = self.get_data()[ksel]
+        
+#        if np.shape(data)[0]>(shape[0]*shape[1]):
+#        
+#            points_interp = np.empty((100*shape[0]*shape[1],2),dtype=float)
+#            grid_interp_y = np.arange(10*shape[0]) * ystep/10. + ymin + ystep/20.
+#            grid_interp_x = np.arange(10*shape[1]) * xstep/10. + xmin + xstep/20.
+#            Y,X = np.meshgrid(grid_interp_y,grid_interp_x)
+#            points_interp[:,0] = Y.ravel()
+#            points_interp[:,1] = X.ravel()
+#    
+#            
+#            #data_interp = interpolate.griddata(points, data, np.meshgrid(grid_interp_y,grid_interp_x), method='nearest')
+#            data_interp = interpolate.griddata(points, data, points_interp, method='nearest')
+#            print np.shape(points_interp),np.shape(data_interp)
+#            new_data= interpolate.griddata(points_interp, data_interp, np.meshgrid(grid_y,grid_x), method='linear').T
+#        
+#        else:
+#            new_data= interpolate.griddata(points, data, np.meshgrid(grid_y,grid_x), method='linear').T
+
+        new_data= interpolate.griddata(points, data, np.meshgrid(grid_y,grid_x), method='linear').T
+
+        from mpdaf.obj import Image,WCS
+        wcs = WCS(crpix=(1.0,1.0),crval=(ymin,xmin),cdelt=(ystep,xstep),shape=shape)
+        ima = Image(data=new_data,wcs=wcs)
+        return ima
 
     def reconstruct_det_image(self):
         """Reconstructs the image on the detector from the pixtable.
