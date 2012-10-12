@@ -363,6 +363,23 @@ STR_FUNCTIONS = { 'Channel.__mul__' : Channel.__mul__,
                   }    
 
 
+def Channel_median(channels):
+    result = Channel(channels[0].extname)
+    result.header = channels[0].header
+    result.nx = channels[0].nx
+    result.ny = channels[0].ny
+    result.mask = channels[0].mask
+    result.data = np.empty_like(channels[0].data)
+    arrays = []
+    for chan in channels:
+        arrays.append(chan.data)
+        result.mask += chan.mask
+    arrays = np.array(arrays, dtype=np.int16)
+    result.data = np.median(arrays,axis=0)
+    if isinstance(result.data,np.ma.core.MaskedArray):
+        result.data = result.data.data
+    return result
+
 class RawFile(object):
     """
     RawFile class manages input/output for raw FITS file.
@@ -728,7 +745,7 @@ class RawFile(object):
                     pass
         # save to disk 
         hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True)
+        hdu.writeto(filename, clobber=True, output_verify='fix')
         # update attributes
         self.filename = filename
         for name,chan in self.channels.items():
@@ -782,3 +799,32 @@ def _process_operator3(arglist):
         sys.stdout.write(".")
         sys.stdout.flush()
     return (k,out)
+
+
+def _process_median(arglist):
+    k = arglist[0]
+    list_chan = arglist[1]
+    out = Channel_median(list_chan)
+    return (k,out)
+    
+    
+def RawFile_median(RawList):
+    cpu_count = multiprocessing.cpu_count()
+    result = RawFile()
+    result.primary_header = RawList[0].primary_header
+    result.nx = RawList[0].nx
+    result.ny = RawList[0].ny
+    result.next = RawList[0].next
+    pool = multiprocessing.Pool(processes = cpu_count)
+    processlist = list()
+    if RawList[0].channels is not None:
+        for k in RawList[0].channels.keys():
+            ChanList = []
+            for raw in RawList:
+                ChanList.append(raw.get_channel(k))
+            #result.channels[k] = Channel_median(ChanList)
+            processlist.append([k,ChanList])
+        processresult = pool.map(_process_median,processlist)
+        for k,out in processresult:
+            result.channels[k] = out
+    return result
