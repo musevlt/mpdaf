@@ -694,7 +694,7 @@ class PixTable(object):
             ystep = step
         else:
             ystep,xstep = step    
-        xstep /= 3600.
+        xstep /= -3600.
         ystep /= 3600.
         
         col_dq = self.get_dq()
@@ -710,19 +710,14 @@ class PixTable(object):
         x = self.get_xpos()[ksel]
         y = self.get_ypos()[ksel]
         data = self.get_data()[ksel]
-        print np.shape(data)
         
         xmin = np.min(x)
         xmax = np.max(x)
-        nx = 1 + int( (xmax - xmin) / xstep )
-        print xmin,xmax,xstep,nx
-        #xstep = (xmax - xmin) / (shape[1]-1)
-        grid_x = np.arange(nx) * xstep + xmin
+        nx = 1 + int( (xmin - xmax) / xstep )
+        grid_x = np.arange(nx) * xstep + xmax
         ymin = np.min(y)
         ymax = np.max(y)
         ny = 1 + int( (ymax - ymin) / ystep )
-        print ymin,ymax,ystep,ny
-        #ystep = (ymax - ymin) / (shape[0]-1)
         grid_y = np.arange(ny) * ystep + ymin
         shape = (ny,nx)
           
@@ -752,7 +747,7 @@ class PixTable(object):
         new_data= interpolate.griddata(points, data, np.meshgrid(grid_y,grid_x), method='linear').T
 
         from mpdaf.obj import Image,WCS
-        wcs = WCS(crpix=(1.0,1.0),crval=(ymin,xmin),cdelt=(ystep,xstep),shape=shape)
+        wcs = WCS(crpix=(1.0,1.0),crval=(ymin,xmax),cdelt=(ystep,xstep),shape=shape)
         ima = Image(data=new_data,wcs=wcs)
         return ima
 
