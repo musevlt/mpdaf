@@ -1075,12 +1075,6 @@ class Image(object):
                 return self.data[item]*self.fscale
             else:
                 data = self.data[item]
-                if is_int(item[0]):
-                    shape = (1,data.shape[0])
-                elif is_int(item[1]):
-                    shape = (data.shape[0],1)
-                else:
-                    shape = (data.shape[0],data.shape[1])
                 var = None
                 if self.var is not None:
                     var = self.var[item]
@@ -1088,36 +1082,60 @@ class Image(object):
                     wcs = self.wcs[item]
                 except:
                     wcs = None
-                res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
-                res.data = data
-                res.var = var
-                return res
+                if is_int(item[0]):
+                    from spectrum import Spectrum
+                    from coords import WaveCoord
+                    if self.wcs.is_deg():
+                        cunit = 'deg'
+                    else:
+                        cunit='pixel'
+                    wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1], crval=self.get_start()[1], cunit = cunit, shape = data.shape[0])
+                    res = Spectrum(shape=data.shape[0], wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
+                    res.data = data
+                    res.var =var
+                    return res
+                elif is_int(item[1]):
+                    from spectrum import Spectrum
+                    from coords import WaveCoord
+                    if self.wcs.is_deg():
+                        cunit = 'deg'
+                    else:
+                        cunit='pixel'
+                    wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0], crval=self.get_start()[0], cunit = cunit, shape = data.shape[0])
+                    res = Spectrum(shape=data.shape[0], wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
+                    res.data = data
+                    res.var =var
+                    return res
+                else:
+                    res = Image(shape=data.shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
+                    res.data = data
+                    res.var = var
+                    return res
         else:
             if self.shape[0]==1 or self.shape[1]==1:
                 if isinstance(item, int):
                     return self.data[item]*self.fscale
                 else:
                     data = self.data[item]
-                    if self.shape[0]==1:
-                        shape = (1,data.shape[0])
-                        try:
-                            wcs = self.wcs[:,item]
-                        except:
-                            wcs = None
-                    else:
-                        shape = (data.shape[0],1)
-                        try:
-                            wcs = self.wcs[item,:]
-                        except:
-                            wcs = None
                     var = None
                     if self.var is not None:
                         var = self.var[item]
-                    
-                    res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
+                    from spectrum import Spectrum
+                    from coords import WaveCoord
+                    if self.wcs.is_deg():
+                        cunit = 'deg'
+                    else:
+                        cunit='pixel'
+                    if self.shape[0]==1:
+                        wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1], crval=self.get_start()[1], cunit = cunit, shape = data.shape[0])
+                    else:
+                        wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0], crval=self.get_start()[0], cunit = cunit, shape = data.shape[0])
+                    res = Spectrum(shape=data.shape[0], wave = wave, unit=self.unit, data=data, var=var,fscale=self.fscale)
                     res.data = data
-                    res.var = var
+                    res.var =var
                     return res
+                        
+                    
             else:
                 raise ValueError, 'Operation forbidden'
         
