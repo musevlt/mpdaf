@@ -2050,43 +2050,23 @@ class Spectrum(object):
         res = self.copy()
         res._fftconvolve_gauss(fwhm, nsig)
         return res
-    
-    def background(self, niter=3):
-        """Computes the spectrum background. Returns the background value and its standard deviation.
-        
-        :param niter: Number of iterations.
-        :type niter: integer
-        :rtype: (float,float)
-        """
-        ksel = np.where(self.data <= (np.ma.mean(self.data) + 3 * np.ma.std(self.data)))
-        tab = self.data[ksel]
-        for n in range(niter):
-            ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
-            tab = tab[ksel]
-        return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
-    
-    def peak_detection(self, threshold=None, kernel_size=None, pix=False):
+ 
+    def peak_detection(self, kernel_size=None, pix=False):
         """Returns a list of peak locations. Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
         
-        :param threshold: threshold value. If None, it is initialized with background value
-        :type threshold: float
         :param kernel_size: size of the median filter window
         :type kernel_size: float
         :param pix: If pix is True, returned positions are in pixels. If pix is False, it is wavelenths values.
         :type pix: boolean
         """
         d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
-        if threshold is None:
-            threshold = self.background()[0]
-        else:
-            threshold /= self.fscale
-        ksel = np.where(d>threshold)
+        cont = self.poly_spec(5)
+        ksel = np.where(d>cont.data)
         if pix:
             return ksel[0]
         else:
             wave  = self.wave.coord()
-            return wave[ksel]
-        
+            return wave[ksel]       
     
     def plot(self, max=None, title=None, noise=False, lmin=None, lmax=None, **kargs): 
         """Plots the spectrum. By default, drawstyle is 'steps-mid'.
