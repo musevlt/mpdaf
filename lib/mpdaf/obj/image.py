@@ -2223,8 +2223,7 @@ class Image(object):
         
         if rot is None:
             if factor > 1:
-            #if factor >= 1:
-                gaussfit = lambda p: gauss_image(shape=ima.shape, wcs=ima.wcs, center=(p[3],p[1]), flux=p[0], fwhm=(p[4],p[2]), peak=False, rot=0, factor=factor).data.data[ksel] + cont
+                gaussfit = lambda p: gauss_image(shape=ima.shape, wcs=ima.wcs, center=(p[3],p[1]), flux=p[0], fwhm=(p[4]*2*np.sqrt(2*np.log(2)),p[2]*2*np.sqrt(2*np.log(2))), peak=False, rot=0, factor=factor).data.data[ksel] + cont
                 e_gauss_fit = lambda p, data, w: w * (gaussfit(p) - data)
                 v0 = [flux,ra_peak, ra_width, dec_peak, dec_width]
                 v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
@@ -2242,7 +2241,7 @@ class Image(object):
         else:
         
             if factor > 1:
-                gaussfit = lambda p: gauss_image(shape=ima.shape, wcs=ima.wcs, center=(p[3],p[1]), flux=p[0], fwhm=(p[4],p[2]), peak=False, rot=p[5], factor=factor).data.data[ksel] + cont
+                gaussfit = lambda p: gauss_image(shape=ima.shape, wcs=ima.wcs, center=(p[3],p[1]), flux=p[0], fwhm=(p[4]*2*np.sqrt(2*np.log(2)),p[2]*2*np.sqrt(2*np.log(2))), peak=False, rot=p[5], factor=factor).data.data[ksel] + cont
                 e_gauss_fit = lambda p, data, w: w * (gaussfit(p) - data)
                 v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
                 v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
@@ -2294,7 +2293,6 @@ class Image(object):
                 ff[:,i] = gaussfit(v,pixsky[:,1],pixsky[:,0])*self.fscale
             
             plt.contour(xx, yy, ff, 5)
-            
             
         # return a Gauss2D object
         flux = v[0]*self.fscale
