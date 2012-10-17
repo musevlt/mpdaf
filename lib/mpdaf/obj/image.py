@@ -1704,12 +1704,13 @@ class Image(object):
         for p in peak_pix:
             try:
                 if self.data[p[0],p[1]]>flux_min:
+                    
                     pix_min = [[max(0,p[0]-4),max(0,p[1]-4)]]
                     pos_min = self.wcs.pix2sky(pix_min)
                     pix_max = [[p[0]+5,p[1]+5]]
                     pos_max = self.wcs.pix2sky(pix_max)
                     center = self.wcs.pix2sky([p[0],p[1]])
-                    gauss = self.gauss_fit(pos_min[0], pos_max[0], center=center[0], rot=None)
+                    gauss = self.gauss_fit(pos_min[0], pos_max[0], center=center[0], rot=None, factor=1)
                     try:
                         list_center.index([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
                     except:
@@ -2222,7 +2223,8 @@ class Image(object):
         
         if rot is None:
             if factor > 1:
-                gaussfit = lambda p: gauss_image(ima.shape, ima.wcs, (p[3],p[1]), p[0], (p[4],p[2]), False, 0, factor).data.data[ksel]*ima.fscale + cont
+            #if factor >= 1:
+                gaussfit = lambda p: gauss_image(shape=ima.shape, wcs=ima.wcs, center=(p[3],p[1]), flux=p[0], fwhm=(p[4],p[2]), peak=False, rot=0, factor=factor).data.data[ksel] + cont
                 e_gauss_fit = lambda p, data, w: w * (gaussfit(p) - data)
                 v0 = [flux,ra_peak, ra_width, dec_peak, dec_width]
                 v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
@@ -2240,7 +2242,7 @@ class Image(object):
         else:
         
             if factor > 1:
-                gaussfit = lambda p: gauss_image(ima.shape, ima.wcs, (p[3],p[1]), p[0], (p[4],p[2]), False, p[5], factor).data.data[ksel]*ima.fscale + cont
+                gaussfit = lambda p: gauss_image(shape=ima.shape, wcs=ima.wcs, center=(p[3],p[1]), flux=p[0], fwhm=(p[4],p[2]), peak=False, rot=p[5], factor=factor).data.data[ksel] + cont
                 e_gauss_fit = lambda p, data, w: w * (gaussfit(p) - data)
                 v0 = [flux,ra_peak, ra_width, dec_peak, dec_width,rot]
                 v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
@@ -2425,7 +2427,7 @@ class Image(object):
         
         
         if factor > 1:
-            moffatfit = lambda p: moffat_image(ima.shape, ima.wcs, (p[2],p[1]), p[0], p[3], p[5], p[4], p[6],factor).data.data[ksel]*ima.fscale + cont
+            moffatfit = lambda p: moffat_image(shape=ima.shape, wcs=ima.wcs, center=(p[2],p[1]), I=p[0], a=p[3], q=p[5], n=p[4], rot=p[6],factor=factor).data.data[ksel] + cont
             e_moffat_fit = lambda p, data, w: w * (moffatfit(p) - data)
             v0 = [I,ra_peak, dec_peak, a, n, q, rot]
             v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
@@ -3747,7 +3749,6 @@ class Image(object):
                 self._plot_mask_id = plt.imshow(data,interpolation='nearest',origin='lower',extent=(0,self.shape[1]-1,0,self.shape[0]-1),vmin=self.data.min(),vmax=self.data.max(), alpha=0.9)
         except:
             pass
-            
             
 def gauss_image(shape=(101,101), wcs=WCS(), factor=1, gauss=None, center=None, flux=1., fwhm=(1.,1.), peak=False, rot = 0.):
     """Creates a new image from a 2D gaussian.
