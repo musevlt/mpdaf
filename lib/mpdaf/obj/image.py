@@ -3415,7 +3415,7 @@ class Image(object):
             print 'Operation forbidden'
             return None
     
-    def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale=False, colorbar=True, **kargs): 
+    def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale=False, colorbar=None, **kargs): 
         """Plots the image.
   
           :param title: Figure title (None by default).
@@ -3432,13 +3432,13 @@ class Image(object):
           :type vmax: float
           :param zscale: If true, vmin and vmax are computed using the IRAF zscale algorithm.
           :type zscale: boolean
-          :param colorbar: If true, a colorbar is created.
+          :param colorbar: If 'h'/'v', a horizontal/vertical colorbar is added.
           :type colorbar: boolean
           :param kargs: kargs can be used to set additional Artist properties.
           :type kargs: matplotlib.artist.Artist
         """
         plt.ion()
-        plt.clf()
+        #plt.clf()
         
         f = self.data*self.fscale
         xaxis = np.arange(self.shape[1], dtype=np.float)
@@ -3471,9 +3471,14 @@ class Image(object):
             else:
                 norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
 
-            cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]),norm=norm,**kargs)
-            if colorbar:
-                plt.colorbar(cax)
+            #cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]),norm=norm,**kargs)
+            cax = plt.imshow(f,interpolation='nearest',origin='lower',norm=norm,**kargs)
+            if colorbar == "h":
+                plt.colorbar(cax,orientation='horizontal')
+            elif colorbar == "v":
+                plt.colorbar(cax,orientation='vertical')
+            else:
+                pass
             plt.xlabel('q (%s)' %xunit)
             plt.ylabel('p (%s)' %yunit)
             self._ax = cax
