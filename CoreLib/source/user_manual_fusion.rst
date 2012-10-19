@@ -72,7 +72,7 @@ Tutorials
 
 We can load the tutorial files with the command::
 
-git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+  git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
 
 
 Tutorial 1
@@ -102,7 +102,7 @@ Now, we change the data quality mask of the first observation (corresponding to 
   >>> from mpdaf.tools import euro3D
   >>> fus.obs[0].dq_mask = euro3D.DQ_PIXEL['CosmicUnCorrected'] + euro3D.DQ_PIXEL['HotPixel']
   
-Note that the `euro3D package <../../../tools/build/html/euro3D.html>`_ is used to define the data quality binary mask.
+Note that the `euro3D package <euro3D.html>`_  is used to define the data quality binary mask.
 
 It is also possible to remove and add observation::
 

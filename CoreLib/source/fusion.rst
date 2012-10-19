@@ -3,13 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
    
-Welcome to mpdaf.fusion documentation!
-======================================
+mpdaf.fusion package
+====================
 
 :Release: |version|
 :Date: |today|
 
 `mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
+
+mpdaf.fusion package contains python interface for the Bayesian C++ HyperFusion code.
 
 Contents:
 
@@ -18,10 +20,4 @@ Contents:
    
    user_manual_fusion
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

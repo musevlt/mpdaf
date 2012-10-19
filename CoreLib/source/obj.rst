@@ -3,27 +3,24 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
    
-Welcome to mpdaf.drs documentation!
-===================================
+mpdaf.obj package
+=================
 
 :Release: |version|
 :Date: |today|
 
 `mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
 
+mpdaf.obj package contains python interface for spectra, images and cubes.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
    
-   user_manual_pixtable
-   user_manual_calibfile
-   user_manual_rawfile
+   user_manual_spectrum
+   user_manual_image
+   user_manual_cube
+   user_manual_coord
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

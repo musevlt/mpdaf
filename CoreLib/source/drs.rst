@@ -3,25 +3,24 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
    
-Welcome to mpdaf.tools documentation!
-=====================================
+mpdaf.drs package
+=================
 
 :Release: |version|
 :Date: |today|
 
 `mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
 
+mpdaf.drs package contains python interface for the DRS objects.
+
+Memory mapping and multiprocessing is used.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
    
-   euro3D
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   user_manual_pixtable
+   user_manual_calibfile
+   user_manual_rawfile
 

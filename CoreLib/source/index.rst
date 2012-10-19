@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
    
-Welcome to mpdaf.obj documentation!
-===================================
+Welcome to mpdaf CoreLib documentation!
+=======================================
 
 :Release: |version|
 :Date: |today|
@@ -16,10 +16,12 @@ Contents:
 .. toctree::
    :maxdepth: 2
    
-   user_manual_spectrum
-   user_manual_image
-   user_manual_cube
-   user_manual_coord
+   installation
+   obj
+   drs
+   fusion
+   tools
+   
 
 Indices and tables
 ==================
