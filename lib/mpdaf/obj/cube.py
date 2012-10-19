@@ -66,7 +66,7 @@ class Cube(object):
     :param notnoise: True if the noise Variance cube is not read (if it exists).
   
            Use notnoise=True to create cube without variance extension.
-    :type notnoise: boolean
+    :type notnoise: bool
     :param shape: Lengths of data in Z, Y and X. Python notation is used (nz,ny,nx). (101,101,101) by default.
     :type shape: integer or (integer,integer,integer)
     :param wcs: World coordinates.
@@ -114,7 +114,7 @@ class Cube(object):
         :param notnoise: True if the noise Variance cube is not read (if it exists).
   
            Use notnoise=True to create cube without variance extension.
-        :type notnoise: boolean
+        :type notnoise: bool
         :param shape: Lengths of data in Z, Y and X. Python notation is used (nz,ny,nx). (101,101,101) by default.
         :type shape: integer or (integer,integer,integer)
         :param wcs: World coordinates.
@@ -304,7 +304,7 @@ class Cube(object):
         """Returns a new cube of the same shape and coordinates, filled with zeros.
         
         :param var: Presence of the variance extension.
-        :type var: boolean
+        :type var: bool
         """
         try:
             wcs=self.wcs.copy()

@@ -129,7 +129,7 @@ class WCS(object):
     :param cdelt: Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
     :type cdelt: float or (float,float)
     :param deg: If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg). If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR').
-    :type deg: boolean
+    :type deg: bool
     :param rot: Rotation angle in degree.
     :type rot: float
     :param shape: Dimensions. No mandatory.
@@ -159,7 +159,7 @@ class WCS(object):
         :param deg: If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
         
                     If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR').
-        :type deg: boolean
+        :type deg: bool
         :param rot: Rotation angle in degree.
         :type rot: float
         :param shape: Dimensions. No mandatory.
@@ -684,7 +684,7 @@ class WaveCoord(object):
         :param lbda: wavelength value.
         :type lbda: float
         :param nearest: If nearest is True returns the nearest integer pixel in place of the decimal pixel.
-        :type nearest: boolean
+        :type nearest: bool
         :rtype: float or integer
         """
         lbda = np.array(lbda)

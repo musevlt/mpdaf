@@ -472,7 +472,7 @@ class CalibDir(object):
     files : dict
     List of files (ifu id,CalibFile)
     
-    progress: boolean
+    progress: bool
     If True, progress of multiprocessing tasks are displayed. True by default.
     """  
           

@@ -220,7 +220,7 @@ class Image(object):
     :param notnoise: True if the noise Variance image is not read (if it exists).
   
            Use notnoise=True to create image without variance extension.
-    :type notnoise: boolean
+    :type notnoise: bool
     :param shape: Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.
     :type shape: integer or (integer,integer)
     :param wcs: World coordinates.
@@ -263,7 +263,7 @@ class Image(object):
         :param notnoise: True if the noise Variance image is not read (if it exists).
   
            Use notnoise=True to create image without variance extension.
-        :type notnoise: boolean
+        :type notnoise: bool
         :param shape: Lengths of data in Y and X. Python notation is used: (ny,nx). (101,101) by default.
         :type shape: integer or (integer,integer)
         :param wcs: World coordinates.
@@ -449,7 +449,7 @@ class Image(object):
         """Returns a new image of the same shape and coordinates, filled with zeros.
         
         :param var: Presence of the variance extension.
-        :type var: boolean
+        :type var: bool
         """
         try:
             wcs=self.wcs.copy()
@@ -1241,11 +1241,11 @@ class Image(object):
           :param pix: If pix is False, center and radius are in degrees and arcsecs.
   
               If pix is True, center and radius are in pixels.
-          :type pix: boolean
+          :type pix: bool
           :param inside: If inside is True, pixels inside the described region are masked.
   
              If inside is False, pixels outside the described region are masked.
-          :type inside: boolean
+          :type inside: bool
         """
         if is_int(radius) or is_float(radius):
             circular = True
@@ -1438,7 +1438,7 @@ class Image(object):
           :param x_max: Maximum value of x in degrees.
           :type x_max: float
           :param mask: if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.
-          :type mask: boolean
+          :type mask: bool
         """
         skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
@@ -1494,7 +1494,7 @@ class Image(object):
           :param x_max: Maximum value of x in degrees.
           :type x_max: float
           :param mask: if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.
-          :type mask: boolean
+          :type mask: bool
           :rtype: Image
         """
         res = self.copy()
@@ -1521,7 +1521,7 @@ class Image(object):
             if 'spline', spline interpolation of the masked values.
           :type interp: 'no' | 'linear' | 'spline'
           :param reshape:  if reshape is true, the output image is adapted so that the input image is contained completely in the output. Default is False.
-          :type reshape: boolean
+          :type reshape: bool
         """
         
         if interp=='linear':
@@ -1576,7 +1576,7 @@ class Image(object):
             if 'spline', spline interpolation of the masked values.
           :type interp: 'no' | 'linear' | 'spline'
           :param reshape:  if reshape is true, the output image is adapted so that the input image is contained completely in the output. Default is False.
-          :type reshape: boolean
+          :type reshape: bool
           :rtype: Image
         """
         res =self.copy()
@@ -1747,13 +1747,13 @@ class Image(object):
           :param pix: If pix is False, center and radius are in degrees and arcsecs.
   
               If pix is True, center and radius are in pixels.
-          :type pix: boolean
+          :type pix: bool
           :param dpix: Half size of the window to compute the center of gravity.
           :type dpix: integer
           :param background: background value. If None, it is computed.
           :type background: float
           :param plot: If True, the peak center is overplotted on the image.
-          :type plot: boolean
+          :type plot: bool
           :rtype: Returns a dictionary {'y', 'x', 'p', 'q', 'data'} containing the peak position and the peak intensity.
         """
         if center is None or radius==0:
@@ -1838,7 +1838,7 @@ class Image(object):
           :param pix: If pix is False, center and radius are in degrees and arcsecs.
   
               If pix is True, center and radius are in pixels.
-          :type pix: boolean
+          :type pix: bool
           :rtype: Returns [fwhm_y,fwhm_x].
         """
         if center is None or radius==0:
@@ -1896,10 +1896,10 @@ class Image(object):
           :param pix: If pix is False, center and radius are in degrees and arcsecs.
   
               If pix is True, center and radius are in pixels.
-          :type pix: boolean
+          :type pix: bool
         
           :param frac: If frac is True, result is given relative to the total energy.
-          :type frac: boolean
+          :type frac: bool
           :rtype: float
         """
         if center is None or radius==0:
@@ -1976,7 +1976,7 @@ class Image(object):
           :param pix: If pix is False, center is in degrees.
   
               If pix is True, center is in pixels.
-          :type pix: boolean
+          :type pix: bool
           :param etot: Total energy. If etot is not set it is computed from the full image.
           :type etot: float
           :rtype: :class:`mpdaf.obj.Spectrum`
@@ -2020,7 +2020,7 @@ class Image(object):
           :param pix: If pix is False, center is in degrees.
   
               If pix is True, center is in pixels.
-          :type pix: boolean
+          :type pix: bool
           :param ee: Enclosed energy. If ee is not set it is computed from the full image that contain the fraction (frac) of the total energy.
           :type ee: float
           :param frac: Fraction of energy.
@@ -2064,7 +2064,7 @@ class Image(object):
         grid : 
         pixel values
         
-        spline : boolean
+        spline : bool
         False: linear interpolation (uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`_), True: spline interpolation (uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`_)
         """
         ksel = np.where(self.data.mask==False)
@@ -2108,7 +2108,7 @@ class Image(object):
         
         Parameter
         ----------
-        spline : boolean
+        spline : bool
         False: bilinear interpolation (it uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`_), True: spline interpolation (it uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`_)
         """
         if np.ma.count_masked(self.data) == 0:
@@ -2154,15 +2154,15 @@ class Image(object):
           :param rot: Initial rotation in degree. If None, rotation is fixed to 0.
           :type rot: float
           :param peak: If true, flux contains a gaussian peak value. 
-          :type peak: boolean
+          :type peak: bool
           :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
         
               If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
           :type factor: integer
           :param weight:  If weight is True, the weight is computed as the inverse of variance.
-          :type weight: boolean
+          :type weight: bool
           :param plot: If True, the gaussian is plotted.
-          :type plot: boolean
+          :type plot: bool
           :rtype: :class:`mpdaf.obj.Gauss2D`
         """
         ra_min = pos_min[1]
@@ -2369,9 +2369,9 @@ class Image(object):
                        If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
         :type factor: integer
         :param weight:  If weight is True, the weight is computed as the inverse of variance.
-        :type weight: boolean
+        :type weight: bool
         :param plot: If True, the gaussian is plotted.
-        :type plot: boolean
+        :type plot: bool
         """
         ra_min = pos_min[1]
         dec_min = pos_min[0]
@@ -2827,7 +2827,7 @@ class Image(object):
           :param newstep: New step (dy,dx).
           :type newstep: float or (float, float)
           :param flux: if flux is True, the flux is conserved.
-          :type flux: boolean
+          :type flux: bool
           :param order: The order of the spline interpolation, default is 3. The order has to be in the range 0-5.
           :type order: integer
           :param interp: if 'no', data median value replaced masked values.
@@ -2894,7 +2894,7 @@ class Image(object):
           :param newstep: New step (dy,dx).
           :type newstep: float or (float, float)
           :param flux: if flux is True, the flux is conserved.
-          :type flux: boolean
+          :type flux: bool
           :param order: The order of the spline interpolation, default is 3. The order has to be in the range 0-5.
           :type order: integer
           :param interp: if 'no', data median value replaced masked values.
@@ -3237,7 +3237,7 @@ class Image(object):
   
           :param coord: coordinates (y,x) in degrees.
           :type coord: (float,float)
-          :rtype: boolean
+          :rtype: bool
         """
         pixcrd = self.wcs.sky2pix([coord[0],coord[1]])
         if pixcrd[0][0]>=0 and pixcrd[0][0]<self.shape[0] and pixcrd[0][1]>=0 and pixcrd[0][1]<self.shape[1]:
@@ -3322,7 +3322,7 @@ class Image(object):
           :param fwhm: Gaussian fwhm (fwhm_y,fwhm_x).
           :type fwhm: (float,float)
           :param peak: If true, flux contains a gaussian peak value.
-          :type peak: boolean
+          :type peak: bool
           :param rot: Angle position in degree.
           :type rot: float
           :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
@@ -3431,9 +3431,9 @@ class Image(object):
            If None, vmax is set to max of data.
           :type vmax: float
           :param zscale: If true, vmin and vmax are computed using the IRAF zscale algorithm.
-          :type zscale: boolean
+          :type zscale: bool
           :param colorbar: If 'h'/'v', a horizontal/vertical colorbar is added.
-          :type colorbar: boolean
+          :type colorbar: bool
           :param kargs: kargs can be used to set additional Artist properties.
           :type kargs: matplotlib.artist.Artist
         """
@@ -3837,7 +3837,7 @@ def gauss_image(shape=(101,101), wcs=WCS(), factor=1, gauss=None, center=None, f
       :param fwhm: Gaussian fwhm (fwhm_y,fwhm_x).
       :type fwhm: (float,float)
       :param peak: If true, flux contains a gaussian peak value.
-      :type peak: boolean
+      :type peak: bool
       :param rot: Angle position in degree.
       :type rot: float
       
@@ -4013,7 +4013,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smo
       :param deg: If True, world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg')
   
           If False (by default), world coordinates are linear (CTYPE1=CTYPE2='LINEAR')
-      :type deg: boolean
+      :type deg: bool
       :param limits: Limits of the image (y_min,x_min,y_max,x_max).
         
          If None, minum and maximum values of x,y arrays are used.
@@ -4022,7 +4022,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3, smo
           False: bilinear interpolation (it uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`).
           
           True: spline interpolation (it uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`).
-      :type spline: boolean
+      :type spline: bool
       :param order: Polynomial order for spline interpolation (default 3)
       :type order: integer
       :param smooth: Smoothing parameter for spline interpolation (default 0: no smoothing)
@@ -4070,7 +4070,7 @@ def composite_image(ImaColList, mode='lin', cuts=(10,90), bar=False, interp='no'
       :param cuts: Minimum and maximum in percent.
       :type cuts: (float,float)
       :param bar: If bar is True a color bar image is created.
-      :type bar: boolean
+      :type bar: bool
       :param interp: if 'no', data median value replaced masked values.
   
         if 'linear', linear interpolation of the masked values.

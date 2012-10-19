@@ -147,7 +147,7 @@ class Spectrum(object):
     :param notnoise: True if the noise Variance spectrum is not read (if it exists).
   
            Use notnoise=True to create spectrum without variance extension.
-    :type notnoise: boolean
+    :type notnoise: bool
     :param shape: size of the spectrum. 101 by default.
     :type shape: integer
     :param wave: Wavelength coordinates.
@@ -191,7 +191,7 @@ class Spectrum(object):
         :param notnoise: True if the noise Variance spectrum is not read (if it exists).
   
            Use notnoise=True to create spectrum without variance extension.
-        :type notnoise: boolean
+        :type notnoise: bool
         :param shape: size of the spectrum. 101 by default.
         :type shape: integer
         :param wave: Wavelength coordinates.
@@ -346,7 +346,7 @@ class Spectrum(object):
         """Returns a new spectrum of the same shape and coordinates, filled with zeros.
         
         :param var: Presence of the variance extension.
-        :type var: boolean
+        :type var: bool
         """
         try:
             wave=self.wave.copy()
@@ -1083,7 +1083,7 @@ class Spectrum(object):
         :type wavelengths : array of float
         
         :param spline: False: linear interpolation(scipy.interpolate.interp1d used), True: spline interpolation (scipy.interpolate.splrep/splev used).
-        :type spline : boolean
+        :type spline : bool
         """
         lbda = self.wave.coord()
         ksel = np.where(self.data.mask==False)            
@@ -1114,7 +1114,7 @@ class Spectrum(object):
         """ Returns data array with interpolated values for masked pixels.
         
         :param spline: False: linear interpolation(scipy.interpolate.interp1d used), True: spline interpolation (scipy.interpolate.splrep/splev used).
-        :type spline : boolean
+        :type spline : bool
         """
         if np.ma.count_masked(self.data) == 0:
             return self.data.data
@@ -1130,7 +1130,7 @@ class Spectrum(object):
         """ Interpolates masked pixels.
         
         :param spline: False: linear interpolation( it uses `scipy.interpolate.interp1d <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html>`), True: spline interpolation ( it uses `scipy.interpolate.splrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.splrep.html>`_ and `scipy.interpolate.splev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.splev.html>`_).
-        :type spline: boolean
+        :type spline: bool
         """
         self.data = np.ma.masked_invalid(self._interp_data(spline))
             
@@ -1279,9 +1279,9 @@ class Spectrum(object):
           :param shape: Size of the new spectrum.
           :type shape: integer
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :param notnoise: True if the noise Variance spectrum is not interpolated (if it exists).
-          :type notnoise: boolean
+          :type notnoise: bool
         """
         data = self._interp_data(spline)
 
@@ -1327,9 +1327,9 @@ class Spectrum(object):
           :param shape: Size of the new spectrum.
           :type shape: integer
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :param notnoise: True if the noise Variance spectrum is not interpolated (if it exists).
-          :type notnoise: boolean
+          :type notnoise: bool
           :rtype: Spectrum
         """
         res = self.copy()
@@ -1344,9 +1344,9 @@ class Spectrum(object):
           :param lmax: Maximum wavelength.
           :type lmax: float
           :param weight: If weight is True, compute the weighted average with the inverse of variance as weight.
-          :type weight: boolean
+          :type weight: bool
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :rtype: Returns mean value (float).
         """
         if self.var is None:
@@ -1377,9 +1377,9 @@ class Spectrum(object):
           :param lmax: Maximum wavelength.
           :type lmax: float
           :param weight: If weight is True, compute the weighted sum with the inverse of variance as weight.
-          :type weight: boolean
+          :type weight: bool
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :rtype: Returns flux value (float).
         """
         if self.var is None:
@@ -1408,7 +1408,7 @@ class Spectrum(object):
           :param deg: Polynomial degree.
           :type deg: integer
           :param weight:  If weight is True, the weight is computed as the inverse of variance.
-          :type weight: boolean
+          :type weight: bool
           :rtype: ndarray, shape. Polynomial coefficients, highest power first.
         """
         if self.shape <= deg+1:
@@ -1491,7 +1491,7 @@ class Spectrum(object):
           :param deg: Polynomial degree.
           :type deg: integer
           :param weight:  If weight is True, the weight is computed as the inverse of variance.
-          :type weight: boolean
+          :type weight: bool
           :rtype: Spectrum
         """
         fscale = self.fscale
@@ -1514,7 +1514,7 @@ class Spectrum(object):
           :param out: 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.
           :type out: 1 or 2
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :rtype: magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).
         """
         data = self._interp_data(spline)
@@ -1538,7 +1538,7 @@ class Spectrum(object):
           :param out: 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.
           :type out: 1 or 2
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :rtype: magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).
         """
         if name == 'U':
@@ -1572,7 +1572,7 @@ class Spectrum(object):
           :param out: 1: the magnitude is returned, 2: the magnitude, mean flux and mean wavelength are returned.
           :type out: 1 or 2
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :rtype: magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).
         """          
         lbda = np.array(lbda)  
@@ -1611,7 +1611,7 @@ class Spectrum(object):
         1: the magnitude is returned
         2: the magnitude, mean flux and mean lbda are returned
 
-        spline : boolean
+        spline : bool
         linear/spline interpolation to interpolate masked values
         """
         imin = self.wave.pixel(lmin,True)
@@ -1668,7 +1668,7 @@ class Spectrum(object):
           :param cont: The continuum [default 0].
           :type cont: integer
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :rtype: float
         """
         try:
@@ -1709,15 +1709,15 @@ class Spectrum(object):
           :param fwhm: Input gaussian fwhm, if None it is estimated.
           :type fwhm: float
           :param peak: If true, flux contains the gaussian peak value .
-          :type peak: boolean
+          :type peak: bool
           :param cont: Continuum value, if None it is estimated by the line through points (max(lmin),mean(data[lmin])) and (min(lmax),mean(data[lmax])).
           :type cont: float
           :param spline: Linear/spline interpolation to interpolate masked values.
-          :type spline: boolean
+          :type spline: bool
           :param weight:  If weight is True, the weight is computed as the inverse of variance.
-          :type weight: boolean
+          :type weight: bool
           :param plot: If True, the Gaussian is plotted.
-          :type plot: boolean
+          :type plot: bool
           :returns: :class:`mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
@@ -1845,7 +1845,7 @@ class Spectrum(object):
           :param cont: Continuum value.
           :type cont: float
           :param peak: If true, flux contains the gaussian peak value .
-          :type peak: boolean
+          :type peak: bool
         """
         gauss = lambda p, x: cont + p[0]*(1/np.sqrt(2*np.pi*(p[2]**2)))*np.exp(-(x-p[1])**2/(2*p[2]**2)) #1d Gaussian func
 
@@ -1875,7 +1875,7 @@ class Spectrum(object):
           :param kernel_size: Size of the median filter window.
           :type kernel_size: float
           :param pixel: True: kernel_size is in pixels, False: kernel_size is in spectrum coordinate unit.
-          :type pixel: boolean
+          :type pixel: bool
         """
         if pixel is False:
             kernel_size = kernel_size / self.get_step()
@@ -1894,7 +1894,7 @@ class Spectrum(object):
           :param kernel_size: Size of the median filter window.
           :type kernel_size: float
           :param pixel: True: kernel_size is in pixels, False: kernel_size is in spectrum coordinate unit.
-          :type pixel: boolean
+          :type pixel: bool
           :rtype: Spectrum
         """
         res = self.copy()
@@ -2057,7 +2057,7 @@ class Spectrum(object):
         :param kernel_size: size of the median filter window
         :type kernel_size: float
         :param pix: If pix is True, returned positions are in pixels. If pix is False, it is wavelenths values.
-        :type pix: boolean
+        :type pix: bool
         """
         d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
         cont = self.poly_spec(5)
@@ -2072,11 +2072,11 @@ class Spectrum(object):
         """Plots the spectrum. By default, drawstyle is 'steps-mid'.
         
           :param max: If max is True, the plot is normalized to peak at max value.
-          :type max: boolean
+          :type max: bool
           :param title: Figure tiltle (None by default).
           :type title: string
           :param noise: If noise is True, the +/- standard deviation is overplotted.
-          :type noise: boolean
+          :type noise: bool
           :param lmin: Minimum wavelength.
           :type lmin: float
           :param lmax: Maximum wavelength.
@@ -2119,11 +2119,11 @@ class Spectrum(object):
         """Plots the spectrum with y logarithmic scale. By default, drawstyle is 'steps-mid'.
         
           :param max: If max is True, the plot is normalized to peak at max value.
-          :type max: boolean
+          :type max: bool
           :param title: Figure tiltle (None by default).
           :type title: string
           :param noise: If noise is True, the +/- standard deviation is overplotted.
-          :type noise: boolean
+          :type noise: bool
           :param lmin: Minimum wavelength.
           :type lmin: float
           :param lmax: Maximum wavelength.
