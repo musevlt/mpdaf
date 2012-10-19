@@ -1664,7 +1664,7 @@ class Image(object):
             tab = tab[ksel]
         return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
     
-    def peak_detection(self, threshold=None, kernel_size=None, flux_min=0):
+    def peak_detection(self, threshold=None, kernel_size=None, flux_min=0, factor=1):
         """Returns a list of peak locations.
         
         :param threshold: threshold value. If None, it is initialized with background value
@@ -1673,6 +1673,9 @@ class Image(object):
         :type kernel_size: (float,float)
         :param flux_min: minimum peak value
         :type flux_min: float
+        :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
+        
+              If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.   
         """
         d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
         # threshold value
@@ -1710,7 +1713,7 @@ class Image(object):
                     pix_max = [[p[0]+5,p[1]+5]]
                     pos_max = self.wcs.pix2sky(pix_max)
                     center = self.wcs.pix2sky([p[0],p[1]])
-                    gauss = self.gauss_fit(pos_min[0], pos_max[0], center=center[0], rot=None, factor=1)
+                    gauss = self.gauss_fit(pos_min[0], pos_max[0], center=center[0], rot=None, factor=factor)
                     try:
                         list_center.index([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
                     except:
@@ -2122,17 +2125,17 @@ class Image(object):
   
           :rtype: float array
         """
-        total = np.abs(self.data).sum()
-        Y, X = np.indices(self.data.shape) # python convention: reverse x,y np.indices
-        y = np.argmax((X*np.abs(self.data)).sum(axis=1)/total)
-        x = np.argmax((Y*np.abs(self.data)).sum(axis=0)/total)
-        col = self.data[int(y),:]
         cdelt = self.wcs.get_step()
-        width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())*cdelt[1]
-        row = self.data[:, int(x)]
-        width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())*cdelt[0]
-        return [width_y,width_x]
-        
+        total = np.abs(self.data).sum()
+        P, Q = np.indices(self.data.shape) # python convention: reverse x,y numpy.indices
+        p = np.argmax((Q*np.abs(self.data)).sum(axis=1)/total)
+        q = np.argmax((P*np.abs(self.data)).sum(axis=0)/total)
+        col = self.data[int(p),:]
+        width_q = np.sqrt(np.abs((np.arange(col.size)-p)*col).sum()/np.abs(col).sum())*np.abs(cdelt[1])
+        row = self.data[:, int(q)]
+        width_p = np.sqrt(np.abs((np.arange(row.size)-q)*row).sum()/np.abs(row).sum())*np.abs(cdelt[0])
+        return [width_p,width_q]
+    
     def gauss_fit(self, pos_min, pos_max, center=None, flux=None, fwhm=None, cont=None, rot = 0, peak = False, factor = 1, weight=True, plot = False):
         """Performs Gaussian fit on image.
   
@@ -2278,7 +2281,6 @@ class Image(object):
             xmax = np.max(x)
             ymin = np.min(y)
             ymax = np.max(y)
-            
             pixsky = [[ymin,xmin],[ymax,xmax]]
             [[ymin,xmin],[ymax,xmax]] = self.wcs.sky2pix(pixsky)
             
@@ -3747,6 +3749,66 @@ class Image(object):
                 self._plot_mask_id = plt.imshow(data,interpolation='nearest',origin='lower',extent=(0,self.shape[1]-1,0,self.shape[0]-1),vmin=self.data.min(),vmax=self.data.max(), alpha=0.9)
         except:
             pass
+        
+    def igauss_fit(self):
+        """Performs Gaussian fit in windows defined with left mouse button.
+  
+          To quit the interactive mode, click on the right mouse button.
+        """
+        print 'Use left mouse button to define the box.'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        print 'The parameters of the last gaussian are saved in self.gauss.'
+        if self._clicks is None and self._selector is None:
+            ax = plt.subplot(111)
+            self._selector = RectangleSelector(ax, self._on_select_gauss_fit, drawtype='box')
+            
+    def _on_select_gauss_fit(self,eclick, erelease):
+        if eclick.button == 1:
+            try:
+                q1 = int(min(eclick.xdata,erelease.xdata))
+                q2 = int(max(eclick.xdata,erelease.xdata))
+                p1 = int(min(eclick.ydata,erelease.ydata))
+                p2 = int(max(eclick.ydata,erelease.ydata))
+                pos_min = self.wcs.pix2sky([p1,q1])[0]
+                pos_max = self.wcs.pix2sky([p2,q2])[0]
+                self.gauss = self.gauss_fit(pos_min,pos_max,plot=True)
+                self.gauss.print_param()
+            except:
+                pass
+        else: 
+            print 'igauss_fit deactivated.'
+            self._selector.set_active(False)
+            self._selector = None
+            
+    def imoffat_fit(self):
+        """Performs Moffat fit in windows defined with left mouse button.
+  
+          To quit the interactive mode, click on the right mouse button.
+        """
+        print 'Use left mouse button to define the box.'
+        print 'To quit the interactive mode, click on the right mouse button.'
+        print 'The parameters of the last moffat fit are saved in self.moffat.'
+        if self._clicks is None and self._selector is None:
+            ax = plt.subplot(111)
+            self._selector = RectangleSelector(ax, self._on_select_moffat_fit, drawtype='box')
+            
+    def _on_select_moffat_fit(self,eclick, erelease):
+        if eclick.button == 1:
+            try:
+                q1 = int(min(eclick.xdata,erelease.xdata))
+                q2 = int(max(eclick.xdata,erelease.xdata))
+                p1 = int(min(eclick.ydata,erelease.ydata))
+                p2 = int(max(eclick.ydata,erelease.ydata))
+                pos_min = self.wcs.pix2sky([p1,q1])[0]
+                pos_max = self.wcs.pix2sky([p2,q2])[0]
+                self.moffat = self.moffat_fit(pos_min,pos_max,plot=True)
+                self.moffat.print_param()
+            except:
+                pass
+        else: 
+            print 'imoffat_fit deactivated.'
+            self._selector.set_active(False)
+            self._selector = None       
             
 def gauss_image(shape=(101,101), wcs=WCS(), factor=1, gauss=None, center=None, flux=1., fwhm=(1.,1.), peak=False, rot = 0.):
     """Creates a new image from a 2D gaussian.
@@ -3802,6 +3864,8 @@ def gauss_image(shape=(101,101), wcs=WCS(), factor=1, gauss=None, center=None, f
     
     data = np.empty(shape=shape, dtype = float)
     
+    if fwhm[1] == 0 or fwhm[0]==0:
+        raise ValueError,'fwhm equal to 0'
     ra_width = fwhm[1]/2.0/np.sqrt(2*np.log(2))
     dec_width = fwhm[0]/2.0/np.sqrt(2*np.log(2))
     
@@ -3812,7 +3876,8 @@ def gauss_image(shape=(101,101), wcs=WCS(), factor=1, gauss=None, center=None, f
         I = flux * np.sqrt(2*np.pi*(ra_width**2)) * np.sqrt(2*np.pi*(dec_width**2))
     else:
         I = flux
-        
+    
+    
     gauss = lambda x, y: I*(1/np.sqrt(2*np.pi*(ra_width**2)))*np.exp(-((x-center[1])*np.cos(theta)-(y-center[0])*np.sin(theta))**2/(2*ra_width**2)) \
                           *(1/np.sqrt(2*np.pi*(dec_width**2)))*np.exp(-((x-center[1])*np.sin(theta)+(y-center[0])*np.cos(theta))**2/(2*dec_width**2))  
     
