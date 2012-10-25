@@ -2427,7 +2427,7 @@ class Image(object):
         dec = v[2]
         a = v[3]
         n = v[4]
-        q = v[5]
+        q = np.abs(v[5])
         rot = (v[6] * 180.0 / np.pi)%180
         if err is not None:
             err_I = err[0]*self.fscale
