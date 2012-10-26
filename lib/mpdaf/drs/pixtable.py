@@ -764,7 +764,7 @@ class PixTable(object):
         :rtype: :class:`mpdaf.obj.Image`
         """
         if self.nrows == 0:
-             return None
+            return None
 
         col_data = self.get_data()
         col_origin = self.get_origin()
@@ -776,7 +776,7 @@ class PixTable(object):
 
         ifu,slice,ypix,xpix = self.origin2coords(col_origin)
         if len(np.unique(ifu)) != 1:
-	    raise ValueError, 'Pixtable contains multiple IFU'
+            raise ValueError, 'Pixtable contains multiple IFU'
 
         xstart, xstop = xpix.min(), xpix.max()
         ystart, ystop = ypix.min(), ypix.max()
