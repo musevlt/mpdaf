@@ -603,16 +603,10 @@ class PixTable(object):
             xoffset = np.zeros_like(origin)
             for ifu in np.unique(col_ifu):
                 for slice in np.unique(col_slice):
-                    try:
-                        value = self.primary_header["ESO DRS MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
-                    except:
-                        value = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+                    value = self.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET' % (ifu, slice))
                     xoffset[np.where((col_ifu == ifu) & (col_slice == slice))] = value
         else:
-            try:
-                xoffset = self.primary_header["ESO DRS MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
-            except:
-                xoffset = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+            xoffset = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice))
         return xoffset
 
     def origin2xpix(self, origin):
@@ -677,7 +671,18 @@ class PixTable(object):
         
         :rtype: float
         """
-        return self.primary_header[key].value
+        # HIERARCH ESO PRO MUSE has been renamed into HIERARCH ESO DRS MUSE
+        # in recent versions of the DRS. Try with the
+        if key.startswith('HIERARCH ESO PRO MUSE'):
+            alternate_key = key.replace('HIERARCH ESO PRO MUSE', 'HIERARCH ESO DRS MUSE')
+        elif key.startswith('HIERARCH ESO DRS MUSE'):
+            alternate_key = key.replace('HIERARCH ESO DRS MUSE', 'HIERARCH ESO PRO MUSE')
+        else:
+            alternate_key = key
+        try:
+            return self.primary_header[key].value
+        except:
+            return self.primary_header[alternate_key].value
     
     def reconstruct_sky_image(self, lbda=None, step=None):
         """Reconstructs the image on the sky from the pixtable.
