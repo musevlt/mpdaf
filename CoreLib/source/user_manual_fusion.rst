@@ -122,7 +122,13 @@ It is also possible to remove and add observation::
    +----------------------+----------------------------+--------+---------+------+--------+---------+----------+
   
   
-Before running the fusion, we re-estimate the hyperparameter omega for smoothness quadratic prior from a cube having the same size, pixel size, content and resolution as in the expected Bayesian fusion result:
+Before running the fusion, we defined correctly the LSF model::
+
+  >>> from mpdaf.fusion import LSFModel
+  >>> LSF = LSFModel(file ='lsf_model_INM20120827.fits')
+  >>> fus.LSF = LSF
+
+It is also possible to re-estimate the hyperparameter omega for smoothness quadratic prior from a cube having the same size, pixel size, content and resolution as in the expected Bayesian fusion result:
 
   >>> fus.prior.compute_omega("cube.fits")
   >>> print fus.prior.omega_xy
@@ -230,6 +236,8 @@ Create a Fusion object
 Fusion method
 -------------
 
+:func:`mpdaf.fusion.Fusion.copy <mpdaf.fusion.Fusion.copy>` returns a new copy of the fusion session.
+
 :func:`mpdaf.fusion.Fusion.add_observation <mpdaf.fusion.Fusion.add_observation>` adds an observation.
 
 :func:`mpdaf.fusion.Fusion.create_config_file <mpdaf.fusion.Fusion.create_config_file>` creates the HyperFusion configuration file.
@@ -242,6 +250,8 @@ Fusion method
 
 :func:`mpdaf.fusion.Fusion.run_fit <mpdaf.fusion.Fusion.run_fit>` runs the Bayesian fusion of observations.
 
+:func:`mpdaf.fusion.Fusion.continue_fit <mpdaf.fusion.Fusion.continue_fit>` continues a fit that has been stopped.
+
 :func:`mpdaf.fusion.Fusion.run_residual <mpdaf.fusion.Fusion.run_residual>` runs the computation of fusion residuals.
 
 :func:`mpdaf.fusion.Fusion.run_variance <mpdaf.fusion.Fusion.run_variance>` runs the computation of fusion variance.
@@ -249,6 +259,8 @@ Fusion method
 :func:`mpdaf.fusion.Fusion.stop <mpdaf.fusion.Fusion.stop>` stops the fusion process.
 
 :func:`mpdaf.fusion.HyperFPrior.compute_omega <mpdaf.fusion.HyperFPrior.compute_omega>` estimates the hyperparameter omega for smoothness quadratic prior. 
+
+:func:`mpdaf.fusion.Fusion.clean <mpdaf.fusion.Fusion.clean>` cleans sockets of the current fusion session.
 
 
 Create a Observation object
