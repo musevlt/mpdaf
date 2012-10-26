@@ -603,10 +603,16 @@ class PixTable(object):
             xoffset = np.zeros_like(origin)
             for ifu in np.unique(col_ifu):
                 for slice in np.unique(col_slice):
-                    value = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+                    try:
+                        value = self.primary_header["ESO DRS MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+                    except:
+                        value = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
                     xoffset[np.where((col_ifu == ifu) & (col_slice == slice))] = value
         else:
-            xoffset = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+            try:
+                xoffset = self.primary_header["ESO DRS MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
+            except:
+                xoffset = self.primary_header["ESO PRO MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET" % (ifu, slice)].value
         return xoffset
 
     def origin2xpix(self, origin):
