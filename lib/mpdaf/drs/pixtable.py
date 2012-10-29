@@ -408,7 +408,7 @@ class PixTable(object):
 
         # First create an empty pixtable
         ptab = PixTable()
-        ptab.primary_header = pyfits.CardList(self.primary_header)
+        ptab.primary_header = self.primary_header.copy()
         ptab.ncols = self.ncols
         if self.nrows == 0:
             return ptab
@@ -421,22 +421,17 @@ class PixTable(object):
             col_xpos = self.get_xpos()
             col_ypos = self.get_ypos()
             if (isinstance(sky, tuple)):
-                y0,x0,size,shape = sky
+                sky = [sky]
+            mask = np.zeros(self.nrows).astype('bool')
+            for y0,x0,size,shape in sky:
                 if shape == 'C':
-                    kmask &= ((col_xpos-x0)**2 + (col_ypos-y0)**2) < size**2
+                    mask |= ((col_xpos-x0)**2 + (col_ypos-y0)**2) < size**2
                 elif shape == 'S':
-                    kmask &= (np.abs(col_xpos-x0) < size) & (np.abs(col_ypos-y0) < size)
-            else:
-                mask = np.zeros(self.nrows).astype('bool')
-                for x0,y0,size,shape in sky:
-                    if shape == 'C':
-                        mask |= ((col_xpos-x0)**2 + (col_ypos-y0)**2) < size**2
-                    elif shape == 'S':
-                        mask |= (np.abs(col_xpos-x0) < size) & (np.abs(col_ypos-y0) < size)
-                    else:
-                        raise ValueError, 'Unknown shape parameter'
-                kmask &= mask
-                del mask
+                    mask |= (np.abs(col_xpos-x0) < size) & (np.abs(col_ypos-y0) < size)
+                else:
+                    raise ValueError, 'Unknown shape parameter'
+            kmask &= mask
+            del mask
             del col_xpos
             del col_ypos
 
@@ -444,14 +439,12 @@ class PixTable(object):
         if lbda is not None:
             col_lambda = self.get_lambda()
             if (isinstance(lbda, tuple)):
-                l1,l2 = lbda
-                kmask &= (col_lambda>=l1) & (col_lambda<l2)
-            else:
-                mask = np.zeros(self.nrows).astype('bool')
-                for l1,l2 in lbda:
-                    mask |= (col_lambda>=l1) & (col_lambda<l2)
-                kmask &= mask
-                del mask
+                lbda = [lbda]
+            mask = np.zeros(self.nrows).astype('bool')
+            for l1,l2 in lbda:
+                mask |= (col_lambda>=l1) & (col_lambda<l2)
+            kmask &= mask
+            del mask
             del col_lambda
 
         # Do the selection on the origin column
@@ -512,6 +505,14 @@ class PixTable(object):
         xpos = np.memmap(ptab.__xpos,dtype="float32",shape=(ptab.nrows))
         selfxpos=self.get_xpos()
         xpos[:] = selfxpos[ksel]
+        try:
+            x_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW']
+            x_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH']
+        except:
+            x_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X LOW']
+            x_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X HIGH']
+        x_low.value = float(xpos.min())
+        x_high.value = float(xpos.max())
         del xpos,selfxpos
         os.close(fd)
         #ypos
@@ -519,6 +520,14 @@ class PixTable(object):
         ypos = np.memmap(ptab.__ypos,dtype="float32",shape=(ptab.nrows))
         selfypos=self.get_ypos()
         ypos[:] = selfypos[ksel]
+        try:
+            y_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW']
+            y_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH']
+        except:
+            y_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y LOW']
+            y_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y HIGH']
+        y_low.value = float(ypos.min())
+        y_high.value = float(ypos.max())
         del ypos,selfypos
         os.close(fd)
         #lambda
@@ -526,6 +535,14 @@ class PixTable(object):
         lbda = np.memmap(ptab.__lbda,dtype="float32",shape=(ptab.nrows))
         selflbda=self.get_lambda()
         lbda[:] = selflbda[ksel]
+        try:
+            lbda_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA LOW']
+            lbda_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA HIGH']
+        except:
+            lbda_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS LAMBDA LOW']
+            lbda_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS LAMBDA HIGH']
+        lbda_low.value = float(lbda.min())
+        lbda_high.value = float(lbda.max())
         del lbda,selflbda
         os.close(fd)
         #data
@@ -554,6 +571,20 @@ class PixTable(object):
         selforigin = self.get_origin()
         origin = np.memmap(ptab.__origin,dtype="uint32",shape=(ptab.nrows))
         origin[:] = selforigin[ksel]
+        try:
+            ifu_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW']
+            ifu_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH']
+            slice_low = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW']
+            slice_high = ptab.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH']
+        except:
+            ifu_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS IFU LOW']
+            ifu_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS IFU HIGH']
+            slice_low = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE LOW']
+            slice_high = ptab.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE HIGH']
+        ifu_low.value = int(self.origin2ifu(origin).min())
+        ifu_high.value = int(self.origin2ifu(origin).max())
+        slice_low.value = int(self.origin2slice(origin).min())
+        slice_high.value = int(self.origin2slice(origin).max())
         del origin,selforigin
         os.close(fd)
 
