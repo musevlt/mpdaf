@@ -1,15 +1,16 @@
 """ MUSE.py: Misc tools related to MUSE"""
 
 class Slicer:
-    """Tools to convert a the slice number between the various numbering
+    """Tools to convert a slice number between the various numbering
        schemes. The definition of the various numbering schemes and the
        conversion table can be found in the "Global Positioning System"
        document (VLT-TRE-MUSE-14670-0657).
 
        All the methods are static and thus there is no need to
-       instanciate an object before using them. E.g.:
+       instanciate an object to use this class. E.g.:
 
            print(Slicer.ccd2sky(4))
+
            print(Slicer.optical2sky((4, 2)))
        """
     __CCD2SKY__     = dict({ 1: 9, 2 : 8, 3 : 1,  4:10,  5: 7,  6: 2,
