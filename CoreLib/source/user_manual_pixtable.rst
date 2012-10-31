@@ -31,7 +31,8 @@ Format
 | origin     | int   | pixel location on detector, slice and channel number   |                                      |
 +------------+-------+--------------------------------------------------------+--------------------------------------+
 
-The origin column is composed of the IFU and slice numbers and the x and y coordinates on the originating CCD. Using bit shifting and information in the FITS headers these four numbers are encoded in a single 32bit integer
+The origin column is composed of the IFU and slice numbers and the x and y coordinates on the originating CCD. Using bit shifting and information in the FITS headers these four numbers are encoded in a single 32bit integer. Note that the `MUSE package <tools.html>`_  provides a `Slicer class <slicer.html>`_ to convert
+the slicer number between various numbering schemes.
 
 
 Tutorials

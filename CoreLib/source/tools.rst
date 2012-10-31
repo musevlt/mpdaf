@@ -17,4 +17,5 @@ Contents:
    :maxdepth: 2
    
    euro3D
+   muse
 
