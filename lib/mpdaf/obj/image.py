@@ -1252,10 +1252,11 @@ class Image(object):
                 self.data.mask[imin:imax,0:jmin] = 1
                 self.data.mask[imin:imax:,jmax:] = 1
         else:
+            cosdelta=np.cos(center[0]*np.pi/180.0)
             dec_min = center[0] - radius[0]/3600.0
             dec_max = center[0] + radius[0]/3600.0
-            ra_min = center[1] - radius[1]/3600.0
-            ra_max = center[1] + radius[1]/3600.0
+            ra_min = center[1] - radius[1]/(3600.0*cosdelta)
+            ra_max = center[1] + radius[1]/(3600.0*cosdelta)
             skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ] 
             pixcrd = self.wcs.sky2pix(skycrd) 
             
@@ -1300,6 +1301,7 @@ class Image(object):
                     pixsky = self.wcs.pix2sky(pixcrd)
                     pixsky[:,0] -= center[0]
                     pixsky[:,1] -= center[1]
+                    pixsky[:,1] *= cosdelta
                     m[i_in,:] = (np.array(pixsky[:,0])*np.array(pixsky[:,0]) + np.array(pixsky[:,1])*np.array(pixsky[:,1])) < radius2/3600.0/3600.0
                 try:
                     m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
@@ -1320,6 +1322,7 @@ class Image(object):
                     pixsky= self.wcs.pix2sky(pixcrd)
                     pixsky[:,0] -= center[0]
                     pixsky[:,1] -= center[1]
+                    pixsky[:,1] *= cosdelta
                     m[i_in,:] = (np.array(pixsky[:,0])*np.array(pixsky[:,0]) + np.array(pixsky[:,1])*np.array(pixsky[:,1])) > radius2/3600.0/3600.0
                 try:
                     m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
