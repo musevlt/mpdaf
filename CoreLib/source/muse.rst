@@ -6,7 +6,7 @@ Python interface for MUSE specific tools
 
 `mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
 
-tools.MUSE package contains python interface for the Bayesian C++ HyperFusion code.
+tools.MUSE package contains tools to manipulate MUSE specific data.
 
 Contents:
 
