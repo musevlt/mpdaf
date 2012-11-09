@@ -565,6 +565,7 @@ class Spectrum(object):
                     return None
                 else:
                     res = Spectrum(shape=self.shape,fscale=self.fscale)
+                    #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -572,9 +573,21 @@ class Spectrum(object):
                     else:
                         print 'Operation forbidden for spectra with different world coordinates'
                         return None
+                    #data
                     res.data = self.data + other.data*np.double(other.fscale/self.fscale)
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    elif other.var is None:
+                        res.var = self.var
+                    else:
+                        res.var = self.var + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
+                    #return
                     return res
         except:
             try:
@@ -623,6 +636,7 @@ class Spectrum(object):
                     return None
                 else:
                     res = Spectrum(shape=self.shape,fscale=self.fscale)
+                    #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -630,7 +644,18 @@ class Spectrum(object):
                     else:
                         print 'Operation forbidden for spectra with different world coordinates'
                         return None
+                    #data
                     res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    elif other.var is None:
+                        res.var = self.var
+                    else:
+                        res.var = self.var + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -646,6 +671,7 @@ class Spectrum(object):
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape , wcs= other.wcs, fscale=self.fscale)
+                        #coordinates
                         if self.wave is None or other.wave is None:
                             res.wave = None
                         elif self.wave.isEqual(other.wave):
@@ -653,7 +679,18 @@ class Spectrum(object):
                         else:
                             print 'Operation forbidden for spectra with different world coordinates'
                             return None
+                        #data
                         res.data = self.data[:,np.newaxis,np.newaxis] - (other.data*np.double(other.fscale/self.fscale))
+                        #variance
+                        if self.var is None and other.var is None:
+                            res.var = None
+                        elif self.var is None:
+                            res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        elif other.var is None:
+                            res.var = np.ones(res.shape)*self.var[:,np.newaxis,np.newaxis]
+                        else:
+                            res.var = self.var[:,np.newaxis,np.newaxis] + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
@@ -702,8 +739,6 @@ class Spectrum(object):
             #spectrum1 * number = spectrum2 (spectrum2[k]=spectrum1[k]*number)
             res = self.copy()
             res.fscale *= other
-            if res.var is not None:
-                res.var *= other*other
             return res
         try:
             #spectrum1 * spectrum2 = spectrum3 (spectrum3[k]=spectrum1[k]*spectrum2[k])
@@ -715,6 +750,7 @@ class Spectrum(object):
                     return None
                 else:
                     res = Spectrum(shape=self.shape,fscale=self.fscale*other.fscale)
+                    #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -722,9 +758,21 @@ class Spectrum(object):
                     else:
                         print 'Operation forbidden for spectra with different world coordinates'
                         return None
+                    #data
                     res.data = self.data * other.data
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*self.data*self.data
+                    elif other.var is None:
+                        res.var = self.var*other.data*other.data
+                    else:
+                        res.var = other.var*self.data*self.data + self.var*other.data*other.data
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
+                    #return
                     return res
         except:
             try:
@@ -760,8 +808,6 @@ class Spectrum(object):
             #spectrum1 / number = spectrum2 (spectrum2[k]=spectrum1[k]/number)
             res = self.copy()
             res.fscale /= other
-            if res.var is not None:
-                res.var /= other*other
             return res
         try:
             #spectrum1 / spectrum2 = spectrum3 (spectrum3[k]=spectrum1[k]/spectrum2[k])
@@ -773,6 +819,7 @@ class Spectrum(object):
                     return None
                 else:
                     res = Spectrum(shape=self.shape,fscale=self.fscale/other.fscale)
+                    #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -780,7 +827,18 @@ class Spectrum(object):
                     else:
                         print 'Operation forbidden for spectra with different world coordinates'
                         return None
+                    #data
                     res.data = self.data / other.data
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*self.data*self.data/(other.data**4)
+                    elif other.var is None:
+                        res.var = self.var*other.data*other.data/(other.data**4)
+                    else:
+                        res.var = (other.var*self.data*self.data + self.var*other.data*other.data)/(other.data**4)
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -796,6 +854,7 @@ class Spectrum(object):
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape , wcs= other.wcs, fscale=self.fscale/other.fscale)
+                        #coordinates
                         if self.wave is None or other.wave is None:
                             res.wave = None
                         elif self.wave.isEqual(other.wave):
@@ -803,7 +862,18 @@ class Spectrum(object):
                         else:
                             print 'Operation forbidden for spectra with different world coordinates'
                             return None
+                        #data
                         res.data = self.data[:,np.newaxis,np.newaxis] / other.data
+                        #variance
+                        if self.var is None and other.var is None:
+                            res.var = None
+                        elif self.var is None:
+                            res.var = other.var*self.data[:,np.newaxis,np.newaxis]*self.data[:,np.newaxis,np.newaxis]/(other.data**4)
+                        elif other.var is None:
+                            res.var = self.var[:,np.newaxis,np.newaxis]*other.data*other.data/(other.data**4)
+                        else:
+                            res.var = (other.var*self.data[:,np.newaxis,np.newaxis]*self.data[:,np.newaxis,np.newaxis] + self.var[:,np.newaxis,np.newaxis]*other.data*other.data)/(other.data**4)
+                        #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
@@ -817,8 +887,6 @@ class Spectrum(object):
         if is_float(other) or is_int(other):
             res = self.copy()
             res.fscale = other / res.fscale
-            if res.var is not None:
-                res.var = other*other /(res.var*res.var)
             return res
         try:
             if other.spectrum:
@@ -850,8 +918,10 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
-        self.data = np.ma.sqrt(self.data)
+        if self.var is not None:
+            self.var = 3*self.var*self.fscale**5/self.data**4
         self.fscale = np.sqrt(self.fscale)
+        self.data = np.ma.sqrt(self.data)
         
     def sqrt(self):
         """Returns a spectrum containing the positive square-root of data extension.
@@ -1462,6 +1532,7 @@ class Spectrum(object):
         p = np.poly1d(z)
         self.data = np.ma.masked_invalid(p(l))
         self.fscale = 1.0
+        self.var = None
     
     def poly_spec(self, deg, weight=True):
         """Returns a spectrum containing a polynomial fit.
@@ -1479,7 +1550,6 @@ class Spectrum(object):
         res = self.clone()
         res.poly_val(z)
         res.fscale = fscale
-        res.var = self.var
         return res
         
     def abmag_band(self, lbda, dlbda, out=1, spline=False):
