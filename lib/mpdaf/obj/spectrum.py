@@ -1563,7 +1563,7 @@ class Spectrum(object):
           :type out: 1 or 2
           :param spline: Linear/spline interpolation to interpolate masked values.
           :type spline: bool
-          :rtype: magnitude value (out=1) or magnitude, mean flux and mean wavelength (out=2).
+          :rtype: magnitude value (out=1) or float array containing magnitude, mean flux and mean wavelength (out=2).
         """
         data = self._interp_data(spline)
         i1 = max(0,self.wave.pixel(lbda-dlbda/2, nearest=True))
@@ -1576,7 +1576,7 @@ class Spectrum(object):
             if out == 1:
                 return mag
             if out == 2:
-                return mag,vflux,lbda
+                return np.array([mag,vflux,lbda])
 
     def abmag_filter_name(self, name, out=1, spline=False):
         """Computes AB magnitude using the filter name.
@@ -1677,7 +1677,7 @@ class Spectrum(object):
         if out == 1:
             return mag
         if out == 2:
-            return mag,vflux,l0
+            return np.array([mag,vflux,l0])
 
     def truncate(self, lmin=None, lmax=None):
         """Truncates a spectrum in place.

@@ -1513,14 +1513,14 @@ class Image(object):
         
         :param niter: Number of iterations.
         :type niter: integer
-        :rtype: (float,float)
+        :rtype: 2-dim float array
         """
         ksel = np.where(self.data <= (np.ma.mean(self.data) + 3 * np.ma.std(self.data)))
         tab = self.data[ksel]
         for n in range(niter):
             ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
             tab = tab[ksel]
-        return (np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale)
+        return np.array([np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale])
     
     def peak_detection(self, threshold=None, kernel_size=None, flux_min=0, factor=1):
         """Returns a list of peak locations.
@@ -1705,7 +1705,7 @@ class Image(object):
             
         fwhmx = sigma[0]*2.*np.sqrt(2.*np.log(2.0))
         fwhmy = sigma[1]*2.*np.sqrt(2.*np.log(2.0))
-        return [fwhmx,fwhmy]
+        return np.array([fwhmx,fwhmy])
     
     def ee(self, center=None, radius=0, pix = False, frac = False):
         """Computes ensquared energy.
@@ -1846,7 +1846,7 @@ class Image(object):
           :type ee: float
           :param frac: Fraction of energy.
           :type frac: float in ]0,1]
-          :rtype: (float,float)
+          :rtype: float array
         """
         if center is None:
             i = self.shape[0]/2
@@ -1865,7 +1865,7 @@ class Image(object):
         step = self.get_step()
         
         if nmax <= 1:
-            return step[0], step[1], 0, 0
+            return np.array([step[0], step[1], 0, 0])
         for d in range(1, nmax):
             ee2 = self.fscale*self.data[i-d:i+d+1, j-d:j+d+1].sum()/ee
             if ee2 > frac:
@@ -1875,7 +1875,7 @@ class Image(object):
         d += (frac-ee1)/(ee2-ee1) # interpolate
         dx = d*step[0]*2
         dy = d*step[1]*2
-        return [dx,dy]   
+        return np.array([dx,dy])
             
     def _interp(self, grid, spline=False):
         """ returns the interpolated values corresponding to the grid points
@@ -1955,7 +1955,7 @@ class Image(object):
         width_q = np.sqrt(np.abs((np.arange(col.size)-p)*col).sum()/np.abs(col).sum())*np.abs(cdelt[1])
         row = self.data[:, int(q)]
         width_p = np.sqrt(np.abs((np.arange(row.size)-q)*row).sum()/np.abs(row).sum())*np.abs(cdelt[0])
-        return [width_p,width_q]
+        return np.array([width_p,width_q])
     
     def gauss_fit(self, pos_min, pos_max, center=None, flux=None, fwhm=None, cont=None, rot = 0, peak = False, factor = 1, weight=True, plot = False):
         """Performs Gaussian fit on image.
