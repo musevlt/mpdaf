@@ -1204,154 +1204,60 @@ class Image(object):
             radius = (radius,radius)
         else:
             circular = False
-                
-        if pix:
-            imin = center[0] - radius[0]
-            imax = center[0] + radius[0] +1
-            jmin = center[1] - radius[1]
-            jmax = center[1] + radius[1] +1
-            if inside and not circular:
-                self.data.mask[imin:imax,jmin:jmax] = 1
-            elif inside and circular:
-                ni = int(imax-imin)
-                nj = int(jmax-jmin)
-                m = np.ma.make_mask_none((ni,nj))
-                for i_in in range(ni):
-                    i = i_in + imin                 
-                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
-                    pixcrd[:,0] -= center[0]
-                    pixcrd[:,1] -= center[1]
-                    m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) < radius2)
-                try:
-                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
-                    self.data.mask[imin:imax,jmin:jmax] = m
-                except:
-                    pass
-            elif not inside and circular:
-                self.data.mask[0:imin,:] = 1
-                self.data.mask[imax:,:] = 1
-                self.data.mask[imin:imax,0:jmin] = 1
-                self.data.mask[imin:imax:,jmax:] = 1
-                ni = int(imax-imin)
-                nj = int(jmax-jmin)
-                m = np.ma.make_mask_none((ni,nj))
-                for i_in in range(ni):
-                    i = i_in + imin                 
-                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
-                    pixcrd[:,0] -= center[0]
-                    pixcrd[:,1] -= center[1]
-                    m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) > radius2)
-                try:
-                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
-                    self.data.mask[imin:imax,jmin:jmax] = m
-                except:
-                    pass
-            else:
-                self.data.mask[0:imin,:] = 1
-                self.data.mask[imax:,:] = 1
-                self.data.mask[imin:imax,0:jmin] = 1
-                self.data.mask[imin:imax:,jmax:] = 1
-        else:
-            cosdelta=np.cos(center[0]*np.pi/180.0)
-            dec_min = center[0] - radius[0]/3600.0
-            dec_max = center[0] + radius[0]/3600.0
-            ra_min = center[1] - radius[1]/(3600.0*cosdelta)
-            ra_max = center[1] + radius[1]/(3600.0*cosdelta)
-            skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ] 
-            pixcrd = self.wcs.sky2pix(skycrd) 
             
-            jmin = int(np.min(pixcrd[:,1]))
-            if jmin<0:
-                jmin = 0
-            jmax = int(np.max(pixcrd[:,1]))+1
-            if jmax > self.shape[1]:
-                jmax = self.shape[1]
-            imin = int(np.min(pixcrd[:,0]))
-            if imin<0:
-                imin = 0
-            imax = int(np.max(pixcrd[:,0]))+1
-            if imax > self.shape[0]:
-                imax = self.shape[0]
+        if not pix:
+            center = self.wcs.sky2pix(center)[0]
+            radius = radius / self.wcs.get_step() / 3600.
+            radius2 = radius[0]*radius[1]
+            
                 
-            if inside and not circular:
-                ni = int(imax-imin)
-                nj = int(jmax-jmin)
-                m = np.ma.make_mask_none((ni,nj))
-                for i_in in range(ni):
-                    i = i_in + imin                 
-                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
-                    skycrd = self.wcs.pix2sky(pixcrd)
-                    test_ra_min = np.array(skycrd[:,1]) > ra_min
-                    test_ra_max = np.array(skycrd[:,1]) < ra_max
-                    test_dec_min = np.array(skycrd[:,0]) > dec_min
-                    test_dec_max = np.array(skycrd[:,0]) < dec_max
-                    m[i_in,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
-                try:
-                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
-                    self.data.mask[imin:imax,jmin:jmax] = m
-                except:
-                    pass
-            elif inside and circular:
-                ni = int(imax-imin)
-                nj = int(jmax-jmin)
-                m = np.ma.make_mask_none((ni,nj))
-                for i_in in range(ni):
-                    i = i_in + imin                 
-                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
-                    pixsky = self.wcs.pix2sky(pixcrd)
-                    pixsky[:,0] -= center[0]
-                    pixsky[:,1] -= center[1]
-                    pixsky[:,1] *= cosdelta
-                    m[i_in,:] = (np.array(pixsky[:,0])*np.array(pixsky[:,0]) + np.array(pixsky[:,1])*np.array(pixsky[:,1])) < radius2/3600.0/3600.0
-                try:
-                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
-                    self.data.mask[imin:imax,jmin:jmax] = m
-                except:
-                    pass
-            elif not inside and circular:
-                self.data.mask[0:imin,:] = 1
-                self.data.mask[imax:,:] = 1
-                self.data.mask[imin:imax,0:jmin] = 1
-                self.data.mask[imin:imax:,jmax:] = 1
-                ni = int(imax-imin)
-                nj = int(jmax-jmin)
-                m = np.ma.make_mask_none((ni,nj))
-                for i_in in range(ni):
-                    i = i_in + imin                 
-                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
-                    pixsky= self.wcs.pix2sky(pixcrd)
-                    pixsky[:,0] -= center[0]
-                    pixsky[:,1] -= center[1]
-                    pixsky[:,1] *= cosdelta
-                    m[i_in,:] = (np.array(pixsky[:,0])*np.array(pixsky[:,0]) + np.array(pixsky[:,1])*np.array(pixsky[:,1])) > radius2/3600.0/3600.0
-                try:
-                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
-                    self.data.mask[imin:imax,jmin:jmax] = m
-                except:
-                    pass
-            else:               
-                self.data.mask[0:imin,:] = 1
-                self.data.mask[imax:,:] = 1
-                self.data.mask[imin:imax,0:jmin] = 1
-                self.data.mask[imin:imax:,jmax:] = 1
-                ni = int(imax-imin)
-                nj = int(jmax-jmin)
-                m = np.ma.make_mask_none((ni,nj))
-                for i_in in range(ni):
-                    i = i_in + imin                 
-                    pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
-                    skycrd = self.wcs.pix2sky(pixcrd)
-                    test_ra_min = np.array(skycrd[:,1]) < ra_min
-                    test_ra_max = np.array(skycrd[:,1]) > ra_max
-                    test_dec_min = np.array(skycrd[:,0]) < dec_min
-                    test_dec_max = np.array(skycrd[:,0]) > dec_max
-                    m[i_in,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
-                try:
-                    m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
-                    self.data.mask[imin:imax,jmin:jmax] = m
-                except:
-                    pass
-                
+        imin = center[0] - radius[0]
+        imax = center[0] + radius[0] +1
+        jmin = center[1] - radius[1]
+        jmax = center[1] + radius[1] +1
+        if inside and not circular:
+            self.data.mask[imin:imax,jmin:jmax] = 1
+        elif inside and circular:
+            ni = int(imax-imin)
+            nj = int(jmax-jmin)
+            m = np.ma.make_mask_none((ni,nj))
+            for i_in in range(ni):
+                i = i_in + imin                 
+                pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
+                pixcrd[:,0] -= center[0]
+                pixcrd[:,1] -= center[1]
+                m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) < radius2)
+            try:
+                m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+                self.data.mask[imin:imax,jmin:jmax] = m
+            except:
+                pass
+        elif not inside and circular:
+            self.data.mask[0:imin,:] = 1
+            self.data.mask[imax:,:] = 1
+            self.data.mask[imin:imax,0:jmin] = 1
+            self.data.mask[imin:imax:,jmax:] = 1
+            ni = int(imax-imin)
+            nj = int(jmax-jmin)
+            m = np.ma.make_mask_none((ni,nj))
+            for i_in in range(ni):
+                i = i_in + imin                 
+                pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
+                pixcrd[:,0] -= center[0]
+                pixcrd[:,1] -= center[1]
+                m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) > radius2)
+            try:
+                m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+                self.data.mask[imin:imax,jmin:jmax] = m
+            except:
+                pass
+        else:
+            self.data.mask[0:imin,:] = 1
+            self.data.mask[imax:,:] = 1
+            self.data.mask[imin:imax,0:jmin] = 1
+            self.data.mask[imin:imax:,jmax:] = 1
+
+
     def unmask(self):
         """Unmasks the image (just invalid data (nan,inf) are masked).
         """
@@ -1562,8 +1468,6 @@ class Image(object):
                 shape = (data.shape[0],1)
                 step = self.wcs.get_step()[0]
                 start = self.wcs.get_start()[0]
-                
-            #res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
             
             from spectrum import Spectrum
             from coords import WaveCoord
@@ -1718,33 +1622,21 @@ class Image(object):
         else:
             if is_int(radius) or is_float(radius):
                 radius = (radius,radius)
-            if pix:
-                imin = center[0] - radius[0]
-                if imin<0:
-                    imin = 0
-                imax = center[0] + radius[0] + 1
-                jmin = center[1] - radius[1]
-                if jmin<0:
-                    jmin = 0
-                jmax = center[1] + radius[1] + 1
-            else:
-                dec_min = center[0] - radius[0]/3600.0
-                dec_max = center[0] + radius[0]/3600.0
-                ra_min = center[1] - radius[1]/3600.0
-                ra_max = center[1] + radius[1]/3600.0
-                skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ]
-                pixcrd = self.wcs.sky2pix(skycrd)
-                jmin = int(np.min(pixcrd[:,1]))
-                if jmin<0:
-                    jmin = 0
-                jmax = int(np.max(pixcrd[:,1]))+1
-                imin = int(np.min(pixcrd[:,0]))
-                if imin<0:
-                    imin = 0
-                imax = int(np.max(pixcrd[:,0]))+1
+                
+            if not pix:
+                center = self.wcs.sky2pix(center)[0]
+                radius = radius / self.wcs.get_step() / 3600.
+            
+            imin = center[0] - radius[0]
+            if imin<0:
+                imin = 0
+            imax = center[0] + radius[0] + 1
+            jmin = center[1] - radius[1]
+            if jmin<0:
+                jmin = 0
+            jmax = center[1] + radius[1] + 1
+            
             d = self.data[imin:imax,jmin:jmax]
-            #ima = self[imin:imax,jmin:jmax]
-            #plt.broken_barh([(jmin,jmax-jmin)], (imin,imax-imin), alpha=0.5, facecolors = 'black')
             if np.shape(d)[0]==0 or np.shape(d)[1]==0:
                 raise ValueError, 'Coord area outside image limits'
             
@@ -1800,27 +1692,17 @@ class Image(object):
         else:
             if is_int(radius) or is_float(radius):
                 radius = (radius,radius)
-            if pix:
-                imin = center[0] - radius[0]
-                imax = center[0] + radius[0] + 1
-                jmin = center[1] - radius[1]
-                jmax = center[1] + radius[1] + 1
-            else:
-                dec_min = center[0] - radius[0]/3600.0
-                dec_max = center[0] + radius[0]/3600.0
-                ra_min = center[1] - radius[1]/3600.0
-                ra_max = center[1] + radius[1]/3600.0
-                skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ]    
-                pixcrd = self.wcs.sky2pix(skycrd)
-                jmin = int(np.min(pixcrd[:,1]))
-                if jmin<0:
-                    jmin = 0
-                jmax = int(np.max(pixcrd[:,1]))+1
-                imin = int(np.min(pixcrd[:,0]))
-                if imin<0:
-                    imin = 0
-                imax = int(np.max(pixcrd[:,0]))+1
+                
+            if not pix:
+                center = self.wcs.sky2pix(center)[0]
+                radius = radius / self.wcs.get_step() / 3600.
+                
+            imin = center[0] - radius[0]
+            imax = center[0] + radius[0] + 1
+            jmin = center[1] - radius[1]
+            jmax = center[1] + radius[1] + 1
             sigma = self[imin:imax,jmin:jmax].moments()
+            
         fwhmx = sigma[0]*2.*np.sqrt(2.*np.log(2.0))
         fwhmy = sigma[1]*2.*np.sqrt(2.*np.log(2.0))
         return [fwhmx,fwhmy]
@@ -1869,35 +1751,20 @@ class Image(object):
             else:
                 circular = False
                 
-            if pix:
-                imin = center[0] - radius[0]
-                imax = center[0] + radius[0]
-                jmin = center[1] - radius[1]
-                jmax = center[1] + radius[1]
-            else:
-                dec_min = center[0] - radius[0]/3600.0
-                dec_max = center[0] + radius[0]/3600.0
-                ra_min = center[1] - radius[1]/3600.0
-                ra_max = center[1] + radius[1]/3600.0
-                skycrd = [ [dec_min,ra_min], [dec_min,ra_max], [dec_max,ra_min], [dec_max,ra_max] ] 
-                pixcrd = self.wcs.sky2pix(skycrd)
-                jmin = int(np.min(pixcrd[:,1]))
-                if jmin<0:
-                    jmin = 0
-                jmax = int(np.max(pixcrd[:,1]))+1
-                imin = int(np.min(pixcrd[:,0]))
-                if imin<0:
-                    imin = 0
-                imax = int(np.max(pixcrd[:,0]))+1
+            if not pix:
+                center = self.wcs.sky2pix(center)[0]
+                radius = radius / self.wcs.get_step() / 3600.
+                radius2 = radius[0]*radius[1]
+                
+            imin = center[0] - radius[0]
+            imax = center[0] + radius[0]
+            jmin = center[1] - radius[1]
+            jmax = center[1] + radius[1]
             ima = self[imin:imax,jmin:jmax]
+            
             if circular:
-                if pix:
-                    xaxis = np.arange(ima.shape[0], dtype=np.float) - ima.shape[0]/2.
-                    yaxis = np.arange(ima.shape[1], dtype=np.float) - ima.shape[1]/2.
-                else:
-                    step = self.get_step()
-                    xaxis = (np.arange(ima.shape[0], dtype=np.float) - ima.shape[0]/2.) * step[0] * 3600.0
-                    yaxis = (np.arange(ima.shape[1], dtype=np.float) - ima.shape[1]/2.) * step[1] * 3600.0
+                xaxis = np.arange(ima.shape[0], dtype=np.float) - ima.shape[0]/2.
+                yaxis = np.arange(ima.shape[1], dtype=np.float) - ima.shape[1]/2.
                 gridx = np.empty(ima.shape, dtype=np.float)
                 gridy = np.empty(ima.shape, dtype=np.float)
                 for j in range(ima.shape[1]):
