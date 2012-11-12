@@ -601,6 +601,7 @@ class Cube(object):
                     return None
                 else:
                     res = Cube(shape=self.shape , fscale=self.fscale)
+                    #coordinate
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -615,7 +616,18 @@ class Cube(object):
                     else:
                         print 'Operation forbidden for cubes with different world coordinates in spatial directions'
                         return None
+                    #data
                     res.data = self.data + (other.data*np.double(other.fscale/self.fscale))
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    elif other.var is None:
+                        res.var = self.var
+                    else:
+                        res.var = self.var + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -630,6 +642,7 @@ class Cube(object):
                         return None
                     else:
                         res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale)
+                        #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -637,7 +650,18 @@ class Cube(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
+                        #data
                         res.data = self.data + (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
+                        #variance
+                        if self.var is None and other.var is None:
+                            res.var = None
+                        elif self.var is None:
+                            res.var = np.ones(self.shape)*other.var[np.newaxis,:,:]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        elif other.var is None:
+                            res.var = self.var
+                        else:
+                            res.var = self.var + other.var[np.newaxis,:,:]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
@@ -652,6 +676,7 @@ class Cube(object):
                             return None
                         else:
                             res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale)
+                            #coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -659,7 +684,18 @@ class Cube(object):
                             else:
                                 print 'Operation forbidden for spectra with different world coordinates'
                                 return None
+                            #data
                             res.data = self.data + (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
+                            #variance
+                            if self.var is None and other.var is None:
+                                res.var = None
+                            elif self.var is None:
+                                res.var = np.ones(self.shape) * other.var[:,np.newaxis,np.newaxis]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                            elif other.var is None:
+                                res.var = self.var
+                            else:
+                                res.var = self.var + other.var[:,np.newaxis,np.newaxis]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                            #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
@@ -705,6 +741,7 @@ class Cube(object):
                     return None
                 else:
                     res = Cube(shape=self.shape , fscale=self.fscale)
+                    #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -719,7 +756,18 @@ class Cube(object):
                     else:
                         print 'Operation forbidden for cubes with different world coordinates in spatial directions'
                         return None
+                    #data
                     res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    elif other.var is None:
+                        res.var = self.var
+                    else:
+                        res.var = self.var + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -734,6 +782,7 @@ class Cube(object):
                         return None
                     else:
                         res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale)
+                        #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -741,7 +790,18 @@ class Cube(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
+                        #data
                         res.data = self.data - (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
+                        #variance
+                        if self.var is None and other.var is None:
+                            res.var = None
+                        elif self.var is None:
+                            res.var = np.ones(self.shape)*other.var[np.newaxis,:,:]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        elif other.var is None:
+                            res.var = self.var
+                        else:
+                            res.var = self.var + other.var[np.newaxis,:,:]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
@@ -756,6 +816,7 @@ class Cube(object):
                             return None
                         else:
                             res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale)
+                            #coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -763,7 +824,18 @@ class Cube(object):
                             else:
                                 print 'Operation forbidden for spectra with different world coordinates'
                                 return None
+                            #data
                             res.data = self.data - (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
+                            #variance
+                            if self.var is None and other.var is None:
+                                res.var = None
+                            elif self.var is None:
+                                res.var = np.ones(self.shape) * other.var[:,np.newaxis,np.newaxis]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                            elif other.var is None:
+                                res.var = self.var
+                            else:
+                                res.var = self.var + other.var[:,np.newaxis,np.newaxis]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                            #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
@@ -816,8 +888,6 @@ class Cube(object):
             #cube1 * number = cube2 (cube2[k,j,i]=cube1[k,j,i]*number)
             res = self.copy()
             res.fscale *= other
-            if res.var is not None:
-                res.var *= other*other
             return res
         try:
             #cube1 * cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]*cube2[k,j,i])
@@ -830,6 +900,7 @@ class Cube(object):
                     return None
                 else:
                     res = Cube(shape=self.shape , fscale=self.fscale*other.fscale)
+                    #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -844,7 +915,18 @@ class Cube(object):
                     else:
                         print 'Operation forbidden for cubes with different world coordinates in spatial directions'
                         return None
+                    #data
                     res.data = self.data * other.data
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*self.data*self.data
+                    elif other.var is None:
+                        res.var = self.var*other.data*other.data
+                    else:
+                        res.var = other.var*self.data*self.data + self.var*other.data*other.data
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -859,6 +941,7 @@ class Cube(object):
                         return None
                     else:
                         res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale * other.fscale)
+                        #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -866,7 +949,18 @@ class Cube(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
+                        #data
                         res.data = self.data * other.data[np.newaxis,:,:]
+                        #variance
+                        if self.var is None and other.var is None:
+                            res.var = None
+                        elif self.var is None:
+                            res.var = other.var[np.newaxis,:,:]*self.data*self.data
+                        elif other.var is None:
+                            res.var = self.var*other.data[np.newaxis,:,:]*other.data[np.newaxis,:,:]
+                        else:
+                            res.var = other.var[np.newaxis,:,:]*self.data*self.data + self.var*other.data[np.newaxis,:,:]*other.data[np.newaxis,:,:]
+                        #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
@@ -881,6 +975,7 @@ class Cube(object):
                             return None
                         else:
                             res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale*other.fscale)
+                            #coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -888,7 +983,18 @@ class Cube(object):
                             else:
                                 print 'Operation forbidden for spectra with different world coordinates'
                                 return None
+                            #data
                             res.data = self.data * other.data[:,np.newaxis,np.newaxis]
+                            #variance
+                            if self.var is None and other.var is None:
+                                res.var = None
+                            elif self.var is None:
+                                res.var = other.var[:,np.newaxis,np.newaxis]*self.data*self.data
+                            elif other.var is None:
+                                res.var = self.var*other.data[:,np.newaxis,np.newaxis]*other.data[:,np.newaxis,np.newaxis]
+                            else:
+                                res.var = other.var[:,np.newaxis,np.newaxis]*self.data*self.data + self.var*other.data[:,np.newaxis,np.newaxis]*other.data[:,np.newaxis,np.newaxis]
+                            #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
@@ -922,8 +1028,6 @@ class Cube(object):
             #cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
             res = self.copy()
             res.fscale /= other
-            if res.var is not None:
-                res.var /= other*other
             return res
         try:
             #cube1 / cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]/cube2[k,j,i])
@@ -936,6 +1040,7 @@ class Cube(object):
                     return None
                 else:
                     res = Cube(shape=self.shape , fscale=self.fscale/other.fscale)
+                    #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
@@ -949,7 +1054,18 @@ class Cube(object):
                         res.wcs = self.wcs
                     else:
                         raise ValueError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
+                    #data
                     res.data = self.data / other.data
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*self.data*self.data/(other.data**4)
+                    elif other.var is None:
+                        res.var = self.var*other.data*other.data/(other.data**4)
+                    else:
+                        res.var = (other.var*self.data*self.data + self.var*other.data*other.data)/(other.data**4)
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -964,6 +1080,7 @@ class Cube(object):
                         return None
                     else:
                         res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale / other.fscale)
+                        #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -971,7 +1088,18 @@ class Cube(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
+                        #data
                         res.data = self.data / other.data[np.newaxis,:,:]
+                        #variance
+                        if self.var is None and other.var is None:
+                            res.var = None
+                        elif self.var is None:
+                            res.var = other.var[np.newaxis,:,:]*self.data*self.data/(other.data[np.newaxis,:,:]**4)
+                        elif other.var is None:
+                            res.var = self.var*other.data[np.newaxis,:,:]*other.data[np.newaxis,:,:]/(other.data[np.newaxis,:,:]**4)
+                        else:
+                            res.var = (other.var[np.newaxis,:,:]*self.data*self.data + self.var*other.data[np.newaxis,:,:]*other.data[np.newaxis,:,:])/(other.data[np.newaxis,:,:]**4)
+                        #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
@@ -986,6 +1114,7 @@ class Cube(object):
                             return None
                         else:
                             res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale/other.fscale)
+                            #coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
@@ -993,7 +1122,18 @@ class Cube(object):
                             else:
                                 print 'Operation forbidden for spectra with different world coordinates'
                                 return None
+                            #data
                             res.data = self.data / other.data[:,np.newaxis,np.newaxis]
+                            #variance
+                            if self.var is None and other.var is None:
+                                res.var = None
+                            elif self.var is None:
+                                res.var = other.var[:,np.newaxis,np.newaxis]*self.data*self.data/(other.data[:,np.newaxis,np.newaxis]**4)
+                            elif other.var is None:
+                                res.var = self.var*other.data[:,np.newaxis,np.newaxis]*other.data[:,np.newaxis,np.newaxis]/(other.data[:,np.newaxis,np.newaxis]**4)
+                            else:
+                                res.var = (other.var[:,np.newaxis,np.newaxis]*self.data*self.data + self.var*other.data[:,np.newaxis,np.newaxis]*other.data[:,np.newaxis,np.newaxis])/(other.data[:,np.newaxis,np.newaxis]**4)
+                            #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
@@ -1008,8 +1148,6 @@ class Cube(object):
             #cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
             res = self.copy()
             res.fscale = other / res.fscale
-            if res.var is not None:
-                res.var = other*other / (res.var*res.var)
             return res
         try:
             if other.cube:
@@ -1050,9 +1188,10 @@ class Cube(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
+        if self.var is not None:
+            self.var = 3*self.var*self.fscale**5/self.data**4
         self.data = np.sqrt(self.data)
         self.fscale = np.sqrt(self.fscale)
-        self.var = None
         
     def sqrt(self):
         """Returns a cube containing the positive square-root of data extension.
@@ -1284,15 +1423,25 @@ class Cube(object):
             #return an image
             from image import Image
             data = np.ma.sum(self.data, axis)
-            res = Image(notnoise=True, shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
+            if self.var is not None:
+                var = np.sum(self.var,axis)
+            else:
+                var = None
+            res = Image(shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
             res.data = data
+            res.var = var
             return res
         elif axis==tuple([1,2]):
             #return a spectrum
             from spectrum import Spectrum
             data = np.ma.sum(self.data,axis=1).sum(axis=1)
-            res = Spectrum(notnoise=True, shape=data.shape[0], wave = self.wave, unit=self.unit, fscale=self.fscale)
+            if self.var is not None:
+                var = np.ma.sum(self.var,axis=1).sum(axis=1)
+            else:
+                var = None
+            res = Spectrum(shape=data.shape[0], wave = self.wave, unit=self.unit, fscale=self.fscale)
             res.data = data
+            res.var = var
             return res
         else:
             return None
@@ -1317,15 +1466,25 @@ class Cube(object):
             #return an image
             from image import Image
             data = np.ma.mean(self.data, axis)
-            res = Image(notnoise=True, shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
+            if self.var is not None:
+                var = np.ma.mean(self.var, axis)
+            else:
+                var = None
+            res = Image(shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
             res.data = data
+            res.var = var
             return res
         elif axis==tuple([1,2]):
             #return a spectrum
             from spectrum import Spectrum
             data = np.ma.mean(self.data, axis=1).mean(axis=1)
+            if self.var is not None:
+                var = np.ma.mean(self.var, axis=1).mean(axis=1)
+            else:
+                var = None
             res = Spectrum(notnoise=True, shape=data.shape[0], wave = self.wave, unit=self.unit, fscale=self.fscale)
             res.data = data
+            res.var = var
             return res
         else:
             return None
