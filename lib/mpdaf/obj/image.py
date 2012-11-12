@@ -678,6 +678,7 @@ class Image(object):
                     return None
                 else:
                     res = Image(shape=self.shape,fscale=self.fscale)
+                    #coordinates
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -685,7 +686,18 @@ class Image(object):
                     else:
                         print 'Operation forbidden for images with different world coordinates'
                         return None
+                    #var
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    elif other.var is None:
+                        res.var = self.var
+                    else:
+                        res.var = self.var + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    #data
                     res.data = self.data + (other.data*np.double(other.fscale/self.fscale))
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -739,6 +751,7 @@ class Image(object):
                     return None
                 else:
                     res = Image(shape=self.shape,fscale=self.fscale)
+                    #wcs
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -746,7 +759,18 @@ class Image(object):
                     else:
                         print 'Operation forbidden for images with different world coordinates'
                         return None
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    elif other.var is None:
+                        res.var = self.var
+                    else:
+                        res.var = self.var + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                    #data
                     res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -762,6 +786,7 @@ class Image(object):
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape , wave= other.wave, fscale=self.fscale)
+                        #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
@@ -769,7 +794,18 @@ class Image(object):
                         else:
                             print 'Operation forbidden for objects with different world coordinates'
                             return None
+                        #variance
+                        if self.var is None and other.var is None:
+                            res.var = None
+                        elif self.var is None:
+                            res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        elif other.var is None:
+                            res.var = np.ones(res.shape)*self.var[np.newaxis,:,:]
+                        else:
+                            res.var = self.var[np.newaxis,:,:] + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        #data
                         res.data = self.data[np.newaxis,:,:] - (other.data*np.double(other.fscale/self.fscale))
+                        #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
@@ -821,8 +857,6 @@ class Image(object):
             #image1 * number = image2 (image2[j,i]=image1[j,i]*number)
             res = self.copy()
             res.fscale *= other
-            if res.var is not None:
-                res.var *= other*other
             return res
         try:
             #image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
@@ -834,6 +868,7 @@ class Image(object):
                     return None
                 else:
                     res = Image(shape=self.shape,fscale=self.fscale * other.fscale)
+                    #coordinates
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -841,7 +876,18 @@ class Image(object):
                     else:
                         print 'Operation forbidden for images with different world coordinates'
                         return None
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*self.data*self.data
+                    elif other.var is None:
+                        res.var = self.var*other.data*other.data
+                    else:
+                        res.var = other.var*self.data*self.data + self.var*other.data*other.data
+                    #data
                     res.data = self.data * other.data
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -864,7 +910,18 @@ class Image(object):
                             from cube import Cube
                             shape = (other.shape,self.shape[0],self.shape[1])
                             res = Cube(shape=shape , wave= other.wave, wcs = self.wcs, fscale=self.fscale * other.fscale)
+                            #data
                             res.data = self.data[np.newaxis,:,:] * other.data[:,np.newaxis,np.newaxis]
+                            #variance
+                            if self.var is None and other.var is None:
+                                res.var = None
+                            elif self.var is None:
+                                res.var = np.ones(res.shape)*other.var[:,np.newaxis,np.newaxis]*self.data*self.data
+                            elif other.var is None:
+                                res.var = np.ones(res.shape)*self.var[np.newaxis,:,:]*other.data*other.data
+                            else:
+                                res.var = np.ones(res.shape)*other.var[:,np.newaxis,np.newaxis]*self.data*self.data + np.ones(res.shape)*self.var[np.newaxis,:,:]*other.data*other.data
+                            #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
@@ -899,8 +956,6 @@ class Image(object):
             #image1 / number = image2 (image2[j,i]=image1[j,i]/number
             res = self.copy()
             res.fscale /= other
-            if res.var is not None:
-                res.var /= other*other
             return res
         try:
             #image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
@@ -912,6 +967,7 @@ class Image(object):
                     return None
                 else:
                     res = Image(shape=self.shape,fscale=self.fscale / other.fscale)
+                    #coordinates
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -919,7 +975,18 @@ class Image(object):
                     else:
                         print 'Operation forbidden for images with different world coordinates'
                         return None
+                    #variance
+                    if self.var is None and other.var is None:
+                        res.var = None
+                    elif self.var is None:
+                        res.var = other.var*self.data*self.data/(other.data**4)
+                    elif other.var is None:
+                        res.var = self.var*other.data*other.data/(other.data**4)
+                    else:
+                        res.var = (other.var*self.data*self.data + self.var*other.data*other.data)/(other.data**4)
+                    #data
                     res.data = self.data / other.data
+                    #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -934,13 +1001,25 @@ class Image(object):
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape , wave= other.wave, fscale=self.fscale / other.fscale)
+                        #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
                             raise ValueError, 'Operation forbidden for objects with different world coordinates'
+                        #variance
+                        if self.var is None and other.var is None:
+                            res.var = None
+                        elif self.var is None:
+                            res.var = other.var*self.data[np.newaxis,:,:]*self.data[np.newaxis,:,:]/(other.data**4)
+                        elif other.var is None:
+                            res.var = self.var[np.newaxis,:,:]*other.data*other.data/(other.data**4)
+                        else:
+                            res.var = (other.var*self.data[np.newaxis,:,:]*self.data[np.newaxis,:,:] + self.var[np.newaxis,:,:]*other.data*other.data)/(other.data**4)
+                        #data
                         res.data = self.data[np.newaxis,:,:] / other.data
+                        #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
@@ -955,8 +1034,6 @@ class Image(object):
             #image1 / number = image2 (image2[j,i]=image1[j,i]/number
             res = self.copy()
             res.fscale = other / res.fscale
-            if res.var is not None:
-                res.var = other*other / (res.var*res.var)
             return res
         try:
             if other.image:
@@ -988,9 +1065,10 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError, 'empty data array'
+        if self.var is not None:
+            self.var = 3*self.var*self.fscale**5/self.data**4
         self.data = np.sqrt(self.data)
         self.fscale = np.sqrt(self.fscale)
-        self.var = None
         
     def sqrt(self):
         """Returns an image containing the positive square-root of data extension.
