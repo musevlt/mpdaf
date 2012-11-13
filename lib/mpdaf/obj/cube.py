@@ -1489,6 +1489,350 @@ class Cube(object):
         else:
             return None
         
+    def _rebin_factor_(self, factor):
+        '''Shrinks the size of the image by factor.
+        New size is an integer multiple of the original size.
+        
+        Parameter
+        ----------
+        factor : (integer,integer,integer)
+        Factor in z, y and x.
+        Python notation: (nz,ny,nx)
+        '''
+        # new size is an integer multiple of the original size
+        assert not np.sometrue(np.mod( self.shape[0], factor[0] ))
+        assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
+        assert not np.sometrue(np.mod( self.shape[2], factor[2] ))
+        #shape
+        self.shape = (self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2])
+        #data
+        self.data = self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]).sum(1).sum(2).sum(3)/factor[0]/factor[1]/factor[2]
+        #variance
+        if self.var is not None:
+            self.var = self.var.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]).sum(1).sum(2).sum(3)/factor[0]/factor[1]/factor[2]/factor[0]/factor[1]/factor[2]
+        #coordinates
+        cdelt = self.wcs.get_step()
+        self.wcs = self.wcs.rebin_factor(factor[1:])
+        crval = self.wave.coord()[0:factor[0]].sum()/factor[0]
+        self.wave = WaveCoord(1, self.wave.cdelt*factor[0], crval, self.wave.cunit,self.shape[0])
+        
+    def _rebin_factor(self, factor, margin='center', flux=False):
+        '''Shrinks the size of the cube by factor.
+  
+          :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
+          :type factor: integer or (integer,integer,integer)
+          :param flux: This parameters is used if new size is not an integer multiple of the original size.
+          
+              If Flux is False, the cube is truncated and the flux is not conserved.
+              
+              If Flux is True, margins are added to the cube to conserve the flux.
+          :type flux: bool
+          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
+  
+            In 'center' case, cube is truncated/pixels are added on the left and on the right, on the bottom and of the top of the cube. 
+        
+            In 'origin'case, cube is truncated/pixels are added at the end along each direction
+          :type margin: 'center' or 'origin'   
+        '''
+        if is_int(factor):
+            factor = (factor,factor,factor)
+        if factor[0]<=1 or factor[0]>=self.shape[0] or factor[1]<=1 or factor[1]>=self.shape[1] or factor[2]<=1 or factor[2]>=self.shape[2]:
+            raise ValueError, 'factor must be in ]1,shape['
+            return None
+        if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )) and not np.sometrue(np.mod( self.shape[2], factor[2] )):
+            # new size is an integer multiple of the original size
+            self._rebin_factor_(factor)
+            return None
+        else:
+            factor = np.array(factor)
+            newshape = self.shape/factor
+            n = self.shape - newshape*factor
+            
+            if n[0] == 0:
+                n0_left = 0
+                n0_right = self.shape[0]
+            else:
+                if margin == 'origin' or n[0]==1:
+                    n0_left = 0
+                    n0_right = -n[0]
+                else:
+                    n0_left = n[0]/2
+                    n0_right = self.shape[0] - n[0] + n0_left
+            if n[1] == 0:
+                n1_left = 0
+                n1_right = self.shape[1]
+            else:
+                if margin == 'origin' or n[1]==1:
+                    n1_left = 0
+                    n1_right = -n[1]
+                else:
+                    n1_left = n[1]/2
+                    n1_right = self.shape[1] - n[1] + n1_left
+            if n[2] == 0:
+                n2_left = 0
+                n2_right = self.shape[2]
+            else:
+                if margin == 'origin' or n[2]==1:
+                    n2_left = 0
+                    n2_right = -n[2]
+                else:
+                    n2_left = n[2]/2
+                    n2_right = self.shape[2] - n[2] + n2_left
+            
+            cub = self[n0_left:n0_right,n1_left:n1_right,n2_left:n2_right]
+            cub._rebin_factor_(factor)
+            
+            if flux is False:
+                self.shape = cub.shape
+                self.data = cub.data
+                self.var = cub.var
+                self.wave = cub.wave
+                self.wcs = cub.wcs
+                return None
+            else:
+                newshape = cub.shape
+                wave = cub.wave
+                wcs = cub.wcs
+                if n0_left != 0:
+                    newshape[0] += 1
+                    wave.crpix += 1
+                    wave.shape += 1
+                    l_left = 1
+                else:
+                    l_left = 0
+                if n0_right != self.shape[0]:
+                    newshape[0] += 1
+                    l_right = newshape[0]-1
+                else:
+                    l_right  = newshape[0]
+                    
+                if n1_left != 0:
+                    newshape[1] += 1
+                    wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
+                    wcs.set_naxis2(wcs.wcs.naxis2 +1)
+                    p_left = 1
+                else:
+                    p_left = 0
+                if n1_right != self.shape[1]:
+                    newshape[1] += 1
+                    wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
+                    p_right = newshape[1]-1
+                else:
+                    p_right  = newshape[1]
+                
+                if n2_left != 0:
+                    newshape[2] += 1
+                    wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
+                    wcs.set_naxis1(wcs.wcs.naxis1 +1)
+                    q_left = 1
+                else:
+                    q_left = 0
+                if n2_right != self.shape[2]:
+                    newshape[2] += 1
+                    wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
+                    q_right = newshape[2]-1
+                else:
+                    q_right  = newshape[2]
+                    
+                data = np.empty(newshape)
+                mask = np.empty(newshape,dtype=bool)
+                data[l_left:l_right,p_left:p_right,q_left:q_right] = cub.data
+                mask[l_left:l_right,p_left:p_right,q_left:q_right] = cub.data.mask
+                
+                if self.var is None:
+                    var = None
+                else:
+                    var = np.empty(newshape)
+                    var[l_left:l_right,p_left:p_right,q_left:q_right] = cub.var
+                    
+                F = factor[0] * factor[1] * factor[2]
+                F2 = F * F
+                
+                if cub.shape[0] != newshape[0]:
+                    d = self.data[n0_right:,n1_left:n1_right,n2_left:n2_rigth].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    data[-1,p_left:q_left,q_left:q_right] = d.data
+                    mask[-1,p_left:q_left,q_left:q_right] = d.mask
+                    if var is not None:
+                        var[-1,p_left:q_left,q_left:q_right] = self.var[n0_right:,n1_left:n1_right,n2_left:n2_rigth].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                if l_left==1:
+                    d = self.data[:n0_left,n1_left:n1_right,n2_left:n2_rigth].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    data[0,p_left:q_left,q_left:q_right] = d.data
+                    mask[0,p_left:q_left,q_left:q_right] = d.mask
+                    if var is not None:
+                       var[0,p_left:q_left,q_left:q_right] = self.var[:n0_left,n1_left:n1_right,n2_left:n2_rigth].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                if cub.shape[1] != newshape[1]:
+                    d = self.data[n0_left:n0_right,n1_right:,n2_left:n2_rigth].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    data[l_left:l_rigth,-1,q_left:q_right] = d.data
+                    mask[l_left:l_rigth,-1,q_left:q_right] = d.mask
+                    if var is not None:
+                        var[l_left:l_rigth,-1,q_left:q_right] = self.var[n0_left:n0_right,n1_right:,n2_left:n2_rigth].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                if p_left==1:
+                    d = self.data[n0_left:no_right,:n1_left,n2_left:n2_rigth].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    data[l_left:l_rigth,0,q_left:q_right] = d.data
+                    mask[l_left:l_rigth,0,q_left:q_right] = d.mask
+                    if var is not None:
+                        var[l_left:l_rigth,0,q_left:q_right] = self.var[n0_left:no_right,:n1_left,n2_left:n2_rigth].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                    
+                if cub.shape[2] != newshape[2]:
+                    d = self.data[n0_left:n0_right,n1_left:n1_right:,n2_rigth:].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F
+                    data[l_left:l_rigth,p_left:p_right,-1] = d.data
+                    mask[l_left:l_rigth,p_left:p_right,-1] = d.mask
+                    if var is not None:
+                        var[l_left:l_rigth,p_left:p_right,-1] = self.var[n0_left:n0_right,n1_left:n1_right:,n2_rigth:].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F2
+                if q_left==1:
+                    d = self.data[n0_left:n0_right,n1_left:n1_right:,:n2_left].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F
+                    data[l_left:l_rigth,p_left:p_right,0] = d.data
+                    mask[l_left:l_rigth,p_left:p_right,0] = d.mask
+                    if var is not None:
+                        var[l_left:l_rigth,p_left:p_right,0] = self.var[n0_left:n0_right,n1_left:n1_right:,:n2_left].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F2
+                    
+                if l_left==1 and p_left==1 and q_left==1:
+                    data[0,0,0] = self.data[:n0_left,:n1_left,:n2_left].sum()/ F
+                    mask[0,0,0] = self.mask[:n0_left,:n1_left,:n2_left].any()
+                    if var is not None:
+                        var[0,0,0] = self.var[:n0_left,:n1_left,:n2_left].sum()/ F2
+                if l_left==1 and p_right==(newshape[1]-1) and q_left==1:
+                    data[0,-1,0] = self.data[:n0_left,n1_right:,:n2_left].sum()/ F
+                    mask[0,-1,0] = self.mask[:n0_left,n1_right:,:n2_left].any()
+                    if var is not None:
+                        var[0,-1,0] = self.var[:n0_left,n1_right:,:n2_left].sum()/ F2
+                if l_left==1 and p_right==(newshape[1]-1) and q_right==(newshape[2]-1):
+                    data[0,-1,-1] = self.data[:n0_left,n1_right:,n2_right:].sum()/ F
+                    mask[0,-1,-1] = self.mask[:n0_left,n1_right:,n2_right:].any()
+                    if var is not None:
+                        var[0,-1,-1] = self.var[:n0_left,n1_right:,n2_right:].sum()/ F2
+                if l_left==1 and p_left==1 and q_right==(newshape[2]-1):
+                    data[0,0,-1] = self.data[:n0_left,:n1_left,n2_right:].sum()/ F
+                    mask[0,0,-1] = self.mask[:n0_left,:n1_left,n2_right:].any()
+                    if var is not None:
+                        var[0,0,-1] = self.var[:n0_left,:n1_left,n2_right:].sum()/ F2
+                if l_left==(newshape[0]-1) and p_left==1 and q_left==1:
+                    data[-1,0,0] = self.data[n0_right:,:n1_left,:n2_left].sum()/ F
+                    mask[-1,0,0] = self.mask[n0_right:,:n1_left,:n2_left].any()
+                    if var is not None:
+                        var[-1,0,0] = self.var[n0_right:,:n1_left,:n2_left].sum()/ F2
+                if l_left==(newshape[0]-1) and p_right==(newshape[1]-1) and q_left==1:
+                    data[-1,-1,0] = self.data[n0_right:,n1_right:,:n2_left].sum()/ F
+                    mask[-1,-1,0] = self.mask[n0_right:,n1_right:,:n2_left].any()
+                    if var is not None:
+                        var[-1,-1,0] = self.var[n0_right:,n1_right:,:n2_left].sum()/ F2
+                if l_left==(newshape[0]-1) and p_right==(newshape[1]-1) and q_right==(newshape[2]-1):
+                    data[-1,-1,-1] = self.data[n0_right:,n1_right:,n2_right:].sum()/ F
+                    mask[-1,-1,-1] = self.mask[n0_right:,n1_right:,n2_right:].any()
+                    if var is not None:
+                        var[-1,-1,-1] = self.var[n0_right:,n1_right:,n2_right:].sum()/ F2
+                if l_left==(newshape[0]-1) and p_left==1 and q_right==(newshape[2]-1):
+                    data[-1,0,-1] = self.data[n0_right:,:n1_left,n2_right:].sum()/ F
+                    mask[-1,0,-1] = self.mask[n0_right:,:n1_left,n2_right:].any()    
+                    if var is not None:
+                        var[-1,0,-1] = self.var[n0_right:,:n1_left,n2_right:].sum()/ F2
+                    
+                if p_left==1 and q_left==1:
+                    d = self.data[n0_left:n0_right,:n1_left,:n2_left].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F
+                    data[l_left:l_right,0,0] = d.data
+                    mask[l_left:l_right,0,0] = d.mask
+                    if var is not None:
+                        var[l_left:l_right,0,0] = self.var[n0_left:n0_right,:n1_left,:n2_left].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F2
+                if l_left==1 and p_left==1:
+                    d = self.data[:n0_left,:n1_left,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F
+                    data[0,0,q_left:q_right] = d.data
+                    mask[0,0,q_left:q_right] = d.mask
+                    if var is not None:
+                        var[0,0,q_left:q_right] = self.var[:n0_left,:n1_left,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F2
+                if l_left==1 and q_left==1:
+                    d = self.data[:n0_left,n1_left:n1_right,:n2_left].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
+                    data[0,p_left:p_right,0] = d.data
+                    mask[0,p_left:p_right,0] = d.mask
+                    if var is not None:
+                        var[0,p_left:p_right,0] = self.var[:n0_left,n1_left:n1_right,:n2_left].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
+                    
+                if p_left==1 and q_right==(newshape[2]-1):
+                    d = self.data[n0_left:n0_right,:n1_left,n2_right:].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F
+                    data[l_left:l_right,0,-1] = d.data
+                    mask[l_left:l_right,0,-1] = d.mask
+                    if var is not None:
+                        var[l_left:l_right,0,-1] = self.var[n0_left:n0_right,:n1_left,n2_right:].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F2
+                if l_left==1 and p_right==(newshape[1]-1):
+                    d = self.data[:n0_left,n1_right:,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F
+                    data[0,-1,q_left:q_right] = d.data
+                    mask[0,-1,q_left:q_right] = d.mask
+                    if var is not None:
+                        var[0,-1,q_left:q_right] = self.var[:n0_left,n1_right:,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F2
+                if l_left==1 and q_right==(newshape[2]-1):
+                    d = self.data[:n0_left,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
+                    data[0,p_left:p_right,-1] = d.data
+                    mask[0,p_left:p_right,-1] = d.mask
+                    if var is not None:
+                        var[0,p_left:p_right,-1] = self.var[:n0_left,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
+                    
+                if p_right==(newshape[1]-1) and q_left==1:
+                    d = self.data[n0_left:n0_right,n1_right:,:n2_left].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F
+                    data[l_left:l_right,-1,0] = d.data
+                    mask[l_left:l_right,-1,0] = d.mask
+                    if var is not None:
+                        var[l_left:l_right,-1,0] = self.var[n0_left:n0_right,n1_right:,:n2_left].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F2
+                if l_right==(newshape[0]-1) and p_left==1:
+                    d = self.data[n0_right:,:n1_left,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F
+                    data[-1,0,q_left:q_right] = d.data
+                    mask[-1,0,q_left:q_right] = d.mask
+                    if var is not None:
+                        var[-1,0,q_left:q_right] = self.var[n0_right:,:n1_left,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F2
+                if l_right==(newshape[0]-1) and q_left==1:
+                    d = self.data[n0_right:,n1_left:n1_right,:n2_left].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
+                    data[-1,p_left:p_right,0] = d.data
+                    mask[-1,p_left:p_right,0] = d.mask
+                    if var is not None:
+                        var[-1,p_left:p_right,0] = self.var[n0_right:,n1_left:n1_right,:n2_left].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
+                
+                if p_right==(newshape[1]-1) and q_right==(newshape[2]-1):
+                    d = self.data[n0_left:n0_right,n1_right:,n2_right:].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) /F
+                    data[l_left:l_right,-1,-1] = d.data
+                    mask[l_left:l_right,-1,-1] = d.mask
+                    if var is not None:
+                        var[l_left:l_right,-1,-1] = self.var[n0_left:n0_right,n1_right:,n2_right:].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) /F2
+                if l_right==(newshape[0]-1) and p_right==(newshape[1]-1):
+                    d = self.data[n0_right:,n1_right:,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F
+                    data[-1,-1,q_left:q_right] = d.data
+                    mask[-1,-1,q_left:q_right] = d.mask
+                    if var is not None:
+                        var[-1,-1,q_left:q_right] = self.var[n0_right:,n1_right:,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F2
+                if l_right==(newshape[0]-1) and q_right==(newshape[2]-1):
+                    d = self.data[n0_right:,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
+                    data[-1,p_left:p_right,-1] = d.data
+                    mask[-1,p_left:p_righ,-1] = d.mask
+                    if var is not None:
+                        var[-1,p_left:p_righ,-1] = self.var[n0_right:,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
+                
+                self.shape = newshape
+                self.wcs = wcs
+                self.wave = wave
+                self.data = np.ma.array(data, mask=mask)
+                self.var = var
+                return None
+                
+    def rebin_factor(self, factor, margin='center', flux=False):
+        '''Shrinks the size of the cube by factor.
+  
+          :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
+          :type factor: integer or (integer,integer,integer)
+          :param flux: This parameters is used if new size is not an integer multiple of the original size.
+          
+              If Flux is False, the cube is truncated and the flux is not conserved.
+              
+              If Flux is True, margins are added to the cube to conserve the flux.
+          :type flux: bool
+          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
+  
+            In 'center' case, cube is truncated/pixels are added on the left and on the right, on the bottom and of the top of the cube. 
+        
+            In 'origin'case, cube is truncated/pixels are added at the end along each direction
+          :type margin: 'center' or 'origin'   
+        '''
+        res = self.copy()
+        res._rebin_factor(factor, margin)
+        return res
+         
+        
 #    def loop_spe_multiprocessing(self,function, arglist=None):
 #        #f = STR_FUNCTIONS[function]
 #        cpu_count = multiprocessing.cpu_count()
