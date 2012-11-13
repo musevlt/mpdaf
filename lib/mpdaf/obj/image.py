@@ -2332,7 +2332,7 @@ class Image(object):
             v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(data,wght), maxfev=100000, full_output=1)           
         else:                                             
             moffatfit = lambda p,x,y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
-                              +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**p[4]
+                              +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**(-p[4])
             e_moffat_fit = lambda p, x, y, data, w: w * (moffatfit(p,x,y) - data)                
             v0 = [I,ra_peak, dec_peak, a, n, q, rot]
             v,covar,info, mesg, success  = leastsq(e_moffat_fit, v0[:], args=(x,y,data,wght), maxfev=100000, full_output=1)
@@ -2348,7 +2348,7 @@ class Image(object):
         # plot
         if plot:
             moffatfit = lambda p,x,y: cont + p[0]*(1+(((x-p[1])*np.cos(p[6])-(y-p[2])*np.sin(p[6]))/p[3])**2 \
-                              +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**p[4] 
+                              +(((x-p[1])*np.sin(p[6])+(y-p[2])*np.cos(p[6]))/p[3]/p[5])**2)**(-p[4])
                                                   
             xmin = np.min(x)
             xmax = np.max(x)
@@ -3879,7 +3879,7 @@ def moffat_image(shape=(101,101), wcs=WCS(), factor=1, moffat=None, center=None,
     theta = np.pi * rot / 180.0
         
     moffat = lambda x, y: I*(1+(((x-center[1])*np.cos(theta)-(y-center[0])*np.sin(theta))/a)**2 \
-                              +(((x-center[1])*np.sin(theta)+(y-center[0])*np.cos(theta))/a/q)**2)**n
+                              +(((x-center[1])*np.sin(theta)+(y-center[0])*np.cos(theta))/a/q)**2)**(-n)
     
     if factor>1:
         X,Y = np.meshgrid(xrange(shape[0]*factor),xrange(shape[1]*factor))
