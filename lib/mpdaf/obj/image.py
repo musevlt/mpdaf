@@ -2570,7 +2570,7 @@ class Image(object):
                     var = None
                     if self.var is not None:
                         var = np.empty(newshape)
-                        var[1:-1,1:-1] = var.data
+                        var[1:-1,1:-1] = ima.var
                         var[0,0] = self.var[0:n_left[0],0:n_left[1]].sum()/factor[0] / factor[1]/factor[0] / factor[1]
                         var[0,-1] = self.var[0:n_left[0],n_right[1]:].sum()/factor[0] / factor[1]/factor[0] / factor[1]
                         var[-1,0] = self.var[n_right[0]:,0:n_left[1]].sum()/factor[0] / factor[1]/factor[0] / factor[1]
@@ -2612,7 +2612,7 @@ class Image(object):
                     var = None
                     if self.var is not None:
                         var = np.empty(newshape)
-                        var[0:-1,1:-1] = var.data
+                        var[0:-1,1:-1] = ima.var
                         var[0,0] = self.var[0,0:n_left[1]].sum()/factor[0] / factor[1]/factor[0] / factor[1]
                         var[0,-1] = self.var[0,n_right[1]:].sum()/factor[0] / factor[1]/factor[0] / factor[1]
                         var[-1,0] = self.var[n_right[0]:,0:n_left[1]].sum()/factor[0] / factor[1]/factor[0] / factor[1]
@@ -2653,7 +2653,7 @@ class Image(object):
                     var = None
                     if self.var is not None:
                         var = np.empty(newshape)
-                        var[1:-1,0:-1] = var.data
+                        var[1:-1,0:-1] = ima.var
                         var[0,0] = self.var[0:n_left[0],0].sum()/factor[0] / factor[1]
                         var[0,-1] = self.var[0:n_left[0],n_right[1]:].sum()/factor[0] / factor[1]
                         var[-1,0] = self.var[n_right[0]:,0].sum()/factor[0] / factor[1]
