@@ -425,9 +425,9 @@ class PixTable(object):
             mask = np.zeros(self.nrows).astype('bool')
             for y0,x0,size,shape in sky:
                 if shape == 'C':
-                    mask |= (((col_xpos-x0)*np.cos(y0))**2 + (col_ypos-y0)**2) < size**2
+                    mask |= (((col_xpos-x0)*np.cos(y0*np.pi/180.))**2 + (col_ypos-y0)**2) < size**2
                 elif shape == 'S':
-                    mask |= (np.abs((col_xpos-x0)*np.cos(y0)) < size) & (np.abs(col_ypos-y0) < size)
+                    mask |= (np.abs((col_xpos-x0)*np.cos(y0*np.pi/180.)) < size) & (np.abs(col_ypos-y0) < size)
                 else:
                     raise ValueError, 'Unknown shape parameter'
             kmask &= mask
@@ -757,7 +757,7 @@ class PixTable(object):
         ymin = np.min(y)
         ymax = np.max(y)
         
-        xstep /= (-3600.*np.cos((ymin+ymax)/2.))
+        xstep /= (-3600.*np.cos((ymin+ymax)*np.pi/180./2.))
         ystep /= 3600.
         
         nx = 1 + int( (xmin - xmax) / xstep )
