@@ -2110,6 +2110,7 @@ class Image(object):
                 qmax = pixcrd[0][1]
           
         ima = self[pmin:pmax,qmin:qmax]
+        print '[',pmin,':',pmax,',',qmin,':',qmax,']'
        
         ksel = np.where(ima.data.mask==False)
         N = np.shape(ksel[0])[0]
@@ -2196,9 +2197,14 @@ class Image(object):
         else:
             err = None
             
+        print v[1],v[3]
         #center in pixel in the input image
-        v[1] += pmin
-        v[3] += qmin
+        v[1] += int(pmin)
+        v[3] += int(qmin)
+        print v[1],v[3]
+        
+        print 'center in pixel', v[1],v[3]
+        plt.plot(v[3],v[1],'r+')
         
         # plot
         if plot:
@@ -2432,8 +2438,8 @@ class Image(object):
             err[:] = np.abs(v[:]-v0[:])
             
         #center in pixel in the input image
-        v[1] += pmin
-        v[2] += qmin
+        v[1] += int(pmin)
+        v[2] += int(qmin)
         
         # plot
         if plot:
