@@ -455,3 +455,6 @@ Transformation
 
 :func:`mpdaf.obj.Cube.resize <mpdaf.obj.Cube.resize>` resizes the cube to have a minimum number of masked values (in place).
 
+:func:`mpdaf.obj.Cube.rebin_factor <mpdaf.obj.Cube.rebin_factor>` shrinks the size of the cube by factor.
+
+

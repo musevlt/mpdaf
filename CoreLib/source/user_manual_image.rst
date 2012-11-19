@@ -385,6 +385,10 @@ Plotting
 :func:`mpdaf.obj.Image.imask <mpdaf.obj.Image.imask>` over-plots masked values.
 
 :func:`mpdaf.obj.Image.iee <mpdaf.obj.Image.iee>` computes enclosed energy in windows defined on the plot.
+
+:func:`mpdaf.obj.Image.igauss_fit <mpdaf.obj.Image.igauss_fit>` performs Gaussian fit in windows defined with left mouse button.
+
+:func:`mpdaf.obj.Image.imoffat_fit <mpdaf.obj.Image.imoffat_fit>` performs Moffat fit in windows defined with left mouse button.
  
 
 Functions to create a new image

@@ -6,11 +6,6 @@
 mpdaf.tools package
 ===================
 
-:Release: |version|
-:Date: |today|
-
-`mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
-
 Contents:
 
 .. toctree::

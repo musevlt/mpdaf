@@ -9,13 +9,14 @@ Welcome to mpdaf CoreLib documentation!
 :Release: |version|
 :Date: |today|
 
-`mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
+`Back to the mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
    
+   overview
    installation
    obj
    drs

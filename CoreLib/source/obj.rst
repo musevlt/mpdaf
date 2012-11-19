@@ -6,11 +6,6 @@
 mpdaf.obj package
 =================
 
-:Release: |version|
-:Date: |today|
-
-`mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
-
 mpdaf.obj package contains python interface for spectra, images and cubes.
 
 Contents:

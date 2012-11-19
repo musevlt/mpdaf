@@ -1,11 +1,6 @@
 Download and install mpdaf
 **************************
 
-:Release: |version|
-:Date: |today|
-
-`mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
-
 
 Download the code
 =================

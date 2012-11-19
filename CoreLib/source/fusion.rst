@@ -6,11 +6,6 @@
 mpdaf.fusion package
 ====================
 
-:Release: |version|
-:Date: |today|
-
-`mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
-
 mpdaf.fusion package contains python interface for the Bayesian C++ HyperFusion code.
 
 Contents:

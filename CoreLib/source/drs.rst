@@ -6,11 +6,6 @@
 mpdaf.drs package
 =================
 
-:Release: |version|
-:Date: |today|
-
-`mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
-
 mpdaf.drs package contains python interface for the DRS objects.
 
 Memory mapping and multiprocessing is used.
