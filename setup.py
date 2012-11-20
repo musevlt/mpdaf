@@ -31,7 +31,7 @@
 # 
 
 from distutils.core import setup, Command
-import setuptools
+#import setuptools
 
 class UnitTest(Command):
     user_options = []
@@ -65,12 +65,12 @@ class MakeFusion(Command):
         shutil.copy('lib/mpdaf/fusion/examples/LSF_V1.fits',path + '/LSF_V1.fits')
 
 setup(name = 'mpdaf',
-      version = '1.0.1',
+      version = '1.0.2',
       description = 'MUSE Python Data Analysis Framework is a python framework in view of '
                     'the analysis of MUSE data in the context of the GTO.',
       url = 'http://urania1.univ-lyon1.fr/mpdaf/login',
-      requires = ['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib'],
-      install_requires = ['pyfits','pywcs','nose'],
+      requires = ['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib','pyfits','pywcs','nose'],
+      #install_requires = ['pyfits','pywcs','nose'],
       provides = ['mpdaf'],
       package_dir = {'': 'lib/'},
       packages = ['mpdaf','mpdaf.drs','mpdaf.obj','mpdaf.fusion','mpdaf.tools'],
