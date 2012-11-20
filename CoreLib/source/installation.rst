@@ -50,7 +50,6 @@ The various software required are:
 
  * Python (version 2.6 or 2.7)
  * IPython
- * setuptools
  * numpy (version 1.6.2 or above)
  * scipy (version 0.10.1 or above)
  * matplotlib (version 1.1.0 or above)
