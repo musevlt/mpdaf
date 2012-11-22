@@ -31,6 +31,7 @@
 # 
 
 from distutils.core import setup, Command
+import os
 #import setuptools
 
 class UnitTest(Command):
@@ -52,7 +53,7 @@ class MakeFusion(Command):
     def finalize_options(self):
         pass
     def run(self):
-        import os,subprocess,shutil,mpdaf.fusion
+        import subprocess,shutil,mpdaf.fusion
         errno = subprocess.call(['make', '-C', 'lib/mpdaf/fusion/'])
         shutil.copy('lib/mpdaf/fusion/fusion_fit','/usr/local/bin/fusion_fit')
         shutil.copy('lib/mpdaf/fusion/fusion_FSF','/usr/local/bin/fusion_FSF')
@@ -64,6 +65,14 @@ class MakeFusion(Command):
         path = os.path.abspath(os.path.dirname(mpdaf.fusion.__file__))
         shutil.copy('lib/mpdaf/fusion/examples/LSF_V1.fits',path + '/LSF_V1.fits')
 
+package_dir = {'mpdaf': 'lib/mpdaf/','mpdaf_user':'mpdaf_user/'}
+packages = ['mpdaf','mpdaf.tools','mpdaf.obj','mpdaf.fusion','mpdaf.drs','mpdaf_user']
+for path in os.listdir('mpdaf_user'):
+    if os.path.isdir('mpdaf_user/'+path):        
+        package_dir['mpdaf_user.'+path] = 'mpdaf_user/'+path+'/lib/'
+        packages.append('mpdaf_user.'+path)
+
+
 setup(name = 'mpdaf',
       version = '1.0.2',
       description = 'MUSE Python Data Analysis Framework is a python framework in view of '
@@ -71,9 +80,9 @@ setup(name = 'mpdaf',
       url = 'http://urania1.univ-lyon1.fr/mpdaf/login',
       requires = ['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib','pyfits','pywcs','nose'],
       #install_requires = ['pyfits','pywcs','nose'],
-      provides = ['mpdaf'],
-      package_dir = {'': 'lib/'},
-      packages = ['mpdaf','mpdaf.drs','mpdaf.obj','mpdaf.fusion','mpdaf.tools'],
+      #provides = ['mpdaf'],
+      package_dir = package_dir,
+      packages = packages,
       maintainer = 'Laure Piqueras',
       maintainer_email = 'laure.piqueras@univ-lyon1.fr',
       platforms = 'any', 
