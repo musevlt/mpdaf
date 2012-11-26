@@ -560,6 +560,9 @@ class RawFile(object):
                 chan.nx = self.nx
                 chan.ny = self.ny
                 self.channels[extname] = chan
+                
+                if chan.header is not None:
+                    chan.header.update(card.key, card.value, card.comment)
             else:
                 print 'format error: set an image extension with bad dimensions'
                 print
@@ -735,7 +738,8 @@ class RawFile(object):
                     if chan.header is not None:
                         for card in chan.header:
                             try:
-                                dhdu.header.update(card.key, card.value, card.comment)
+                                if card.key != "EXTNAME":
+                                    dhdu.header.update(card.key, card.value, card.comment)
                             except ValueError:
                                 dhdu.header.update('hierarch %s' %card.key, card.value, card.comment)
                             except:
