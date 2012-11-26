@@ -2133,6 +2133,10 @@ class Image(object):
         else:
             if not pix:
                 center = self.wcs.sky2pix(center)[0]
+            else:
+                center = np.array(center)
+                center[0] -= pmin
+                center[1] -= qmin
             
         # continuum value 
         if cont is None:
@@ -2363,6 +2367,10 @@ class Image(object):
         else:
             if not pix:
                 center = self.wcs.sky2pix(center)[0]
+            else:
+                center = np.array(center)
+                center[0] -= pmin
+                center[1] -= qmin
         
         # continuum value 
         if cont is None:
