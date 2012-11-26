@@ -37,7 +37,7 @@ class Channel(object):
     Arrays that contents TRUE for overscanned pixels, FALSE for the others
     """
 
-    def __init__(self, extname,filename=None ):
+    def __init__(self, extname=None,filename=None, data=None ):
         """Creates a Channel object.
         
         :param extname: The extension name.
@@ -58,6 +58,13 @@ class Channel(object):
             except:
                 self.data = None
             hdulist.close()
+        elif data is not None:
+            self.header = pyfits.CardList()
+            shape = np.shape(data)
+            self.data = np.ndarray(shape)
+            self.data [:] = data[:]
+            self.nx = shape[1]
+            self.ny = shape[0]
         else:
             self.header = pyfits.CardList()
             self.nx = 0
@@ -111,7 +118,7 @@ class Channel(object):
     def copy(self):
         """Returns a copy of the Channel object.
         """
-        result = Channel(self.extname,None)
+        result = Channel(self.extname)
         result.header = pyfits.CardList(self.header)
         try:
             result.data = self.data.__copy__()
