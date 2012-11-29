@@ -57,6 +57,7 @@ The various software required are:
  * pywcs (version 1.11-4.7 or above)
  * nose
 
+.. _installation-label:
 
 Installation
 ============

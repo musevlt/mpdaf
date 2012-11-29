@@ -22,6 +22,7 @@ Contents:
    drs
    fusion
    tools
+   dvper_manual
    
 
 Indices and tables
