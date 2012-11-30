@@ -26,7 +26,7 @@ To clone the current development branch, you simply run the *git clone [url]* co
 By default, Git will create a directory labelled mpdaf. If you want something different, you can just put it at the end of the command, after the URL. 
 
 
-mpdaf contains large packages (`fusion <user_manual_fusion.html>`_ and quickViz) and the user has the choice to download or not download them. *submodule* git option is used
+mpdaf contains large packages (`fusion <user_manual_fusion.html>`_ and quickViz) and user packages (in folder mpdaf_user) and the user has the choice to download or not download them. *submodule* git option is used
 
 After the *git clone* command, the submodules directories are there, but they're empty. Pulling down the submodules is a two-step process.
 
@@ -34,8 +34,8 @@ First select the submodules that you want used. Now use *git submodule update*::
 
   /mpdaf$ git submodule init lib/mpdaf/fusion
   /mpdaf$ git submodule init lib/mpdaf/quickViz
+  /mpdaf$ git submodule init mpdaf_user/a_package
   /mpdaf$ git submodule update
-
 
 Then, you use *git pull* command to bring your repository up to date::
 

@@ -7,12 +7,8 @@ This page gives some directives to develop an user package in the MPDAF environm
 Coding
 ======
 
-
-
-Coding convention
------------------
-
-  * MPDAF package should follow the Python coding conventions PEP8 (`<http://www.python.org/dev/peps/pep-0008>`_ )
+Requirements
+------------
   
   * MPDAF package should be compatible with Python 2.6 or later (including 3.x version)
   
@@ -31,6 +27,12 @@ Coding convention
     * Flux: erg/s/cm2/A
   
   * Basic and advanced operation for the MPDAF objects should be developed using numpy and scipy
+  
+
+Coding convention
+-----------------
+
+  * MPDAF package should follow the Python coding conventions PEP8 (`<http://www.python.org/dev/peps/pep-0008>`_ )
 
 
 Directory structure
@@ -52,12 +54,12 @@ In it, each new repository should correspond to a user package. It should be div
 	tests/
 	data/
 	doc/
-  mpdaf_user/
-	my_package/
-		lib/
-		tests/
-		data/
-		doc/
+	mpdaf_user/
+		my_package/
+			   lib/
+			   tests/
+			   data/
+			   doc/
 
 Python packages and modules
 ---------------------------
@@ -79,7 +81,7 @@ Python packages are organized in terms of a hierarchical file system. For exampl
 			image.py	     # Code about image
 			cube.py		     # Code about cube
 
-The *__init__.py* files is required to make Python treat the directory as containing packages. Such an *__init__.py* file is presented bellow::
+The *__init__.py* files is required to make Python treat the directory as containing packages. Such an *__init__.py* file is presented below::
 
   __version__  = '1.0.2'
   __date__     = '2012/11/19 16:47'
@@ -99,16 +101,16 @@ The package structure should be the same for an user package::
 
   mpdaf/
 	...
-  mpdaf_user/
-	__init__.py				# import my_package
-	my_package/
-		__init__.py			# empty file
-		lib/
-			__init__.py		# from code import Test
-			code.py
-		tests/
-		data/
-		doc/
+	mpdaf_user/
+		  __init__.py				# import my_package
+		  my_package/
+			    __init__.py			# empty file
+			    lib/
+				__init__.py		# from code import Test
+				code.py
+			    tests/
+			    data/
+			    doc/
 
 
 The module Test should be imported with the command::
@@ -124,8 +126,7 @@ Installation
 
 MPDAF is installed like a Python standard automatic package . *Python Distribution Utilities (Distutils)* is used.
 
-If the structure described in part `Python packages and modules`_ is followed, user packages will be automatically installed by the installation script of MPDAF (see :ref:`MPDAF installation <installation-label>`)
-  
+Note that the automated installation process (:ref:`MPDAF installation <installation-label>`)  will work only if the directory structures are build as described above.
 
 See `<http://docs.python.org/2/distutils/setupscript.html>`_ for more information on *Distutils*.
 
@@ -135,16 +136,32 @@ Git repository
 
 The Git version control system is used to handle the MPDAF project. MPDAF git server is located on urania1 machine at Lyon.
 
-Users do not need an urania1 account to download the MPDAF package from the server, and should use git through the http protocol::
+Users who want to make them code available within MPDAF should develop their packages separately but still in the MPDAF environment. We want to be able to treat the two projects as separate yet still be able to use one from within the other. Git addresses this issue using submodules. Submodules allow to keep a Git repository as a subdirectory of another Git repository. 
+As described in `Python packages and modules`_, *mpdaf_user* repository is dedicated to the MUSE consortium for adding new scripts. Then user packages should be stored as a Git submodule in the *mpdaf_user* repository. The user repository will be cloned into the MPDAF project and users will keep their commits separated.
+
+The following sections explain how to create and upgrade a git submodule in MPDAF.
+
+See `<http://www.kernel.org/pub/software/scm/git/docs/user-manual.html>`_ for more information on *Git*.
+
+Step 1: download the mpdaf package
+----------------------------------
+
+To download the MPDAF package from the server, user should use git through the http protocol::
 
   > git clone http://urania1.univ-lyon1.fr/git/mpdaf
   
   
-Users who want to contribute code to MPDAF should develop their packages separately but in the MPDAF environment. We want to be able to treat the two projects as separate yet still be able to use one from within the other. Git addresses this issue using submodules. Submodules allow to keep a Git repository as a subdirectory of another Git repository. 
-As described in `Python packages and modules`_, *mpdaf_user* repository is dedicated to the MUSE consortium to add new scripts. So, user packages should be stored as a Git submodule in the *mpdaf_user* repository. The user repository will be cloned into the MPDAF project and users will keep their commits separated.
-  
 
-Users who want to develop a user package and commit their own changes to the server need an urania1 account. In that case the current development branch of the user package should be cloned through the ssh protocol::
+Step 2: create git branch for the user package
+----------------------------------------------
+
+Users who want to develop a user package should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ for an urania1 account and for the initialization of the user package git repository.
+
+
+Step 3: develop the user package
+--------------------------------
+
+The current development branch of the user package should be cloned through the ssh protocol::
 
   > git clone urania1.univ-lyon1.fr:/git/mpdaf_mypackage
   
@@ -162,22 +179,19 @@ The git push command is used to send changes from the user local repository to t
   > mpdaf_mypackage$ git push origin
 
 
-Stable versions of the user package will be added on the UserLib library of MPDAF by CRAL.
+Step 4: add the user package on the UserLib library of MPDAF
+------------------------------------------------------------
 
-Note that after a Git clone of MPDAF, the submodule directories are there, but they are empty. Pulling down the submodules is a two-step process. 
+Developer should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ to make its package available for the consortium. After sanity checks, the user package will be added on the UserLib library of MPDAF.
 
-First select the submodules that you want to be used. Now use git submodule update:: 
-		
-  > mpdaf$ git submodule init mpdaf_user/my_package
-  > mpdaf$ git submodule update
-  
-Then, use the git pull command to bring your repository up to date::
 
-  > mpdaf$ git pull
-  > mpdaf$ git submodule update
-  
-  
-See `<http://www.kernel.org/pub/software/scm/git/docs/user-manual.html>`_ for more information on *Git*.
+Step 5: upgrade version of user package
+---------------------------------------
+
+When the user package is added as a git submodule, the most recent commit of the submodule is stored in the UserLib library of MPDAF. That means that as the code in the user package Git repository updates, the same code will still be pulled on the repositories relying on the submodule.
+
+For each new stable version of user package, developer should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ to update the user package in the UserLib library of MPDAF.
+
 
 
 Units tests
@@ -194,11 +208,11 @@ Python tests are structured as Python code. For example, the obj directory conta
 	test_cube.py		# Test about cube
 
 
-MPDAF tests are divided in two parts according to the computation time/memory use:
+MPDAF tests are divided in two parts according to the computing time/memory use:
 
-  * general unit tests that will be run each time. The corresponding data is stored in the data repository. The data directory is also structured by package.
+  * general unit tests that will be run on a regular basis. The corresponding data is stored in the data repository. The data directory is also structured by package.
   
-  * huge tests that will be only run by developers. The data are stored in an independent git repository (urania1.univ-lyon1.fr:/git/mpdaf_data)
+  * tests heavy on computing time and data volume. The data are stored in an independent git repository (urania1.univ-lyon1.fr:/git/mpdaf_data)
 
 A decorator is used (`<https://nose.readthedocs.org/en/latest/plugins/attrib.html>`_) to split the tests::
 
@@ -225,7 +239,7 @@ User manual with Sphinx
 
 MPDAF should be documented for the user. HTML documentation is available on the folder *mpdaf/doc*. MPDAF user manual is created using the *sphinx* tool which has excellent facilities for the documentation of Python projects.
 
-To update this documentation, clone the corresponding git repository with a ssh protocol::
+To update this documentation, clone the corresponding git repository::
 
   > git clone urania1.univ-lyon1.fr:/git/mpdaf_sphinx
   
@@ -262,3 +276,5 @@ MPDAF is available through a web interface for software distribution (limited to
 `<http://urania1.univ-lyon1.fr/mpdaf/login>`_
 
 UserLib wiki page should describe developed packages available to the consortium.
+
+At the same time the user package is added on the UserLib library of MPDAF, a corresponding component will be added on the MPDAF bug tracker system. For this, developer should give at the web site administrator (`CRAL <laure.piqueras@univ-lyon1.fr>`_) a person name and email adress. After that, all tickets on the user package will be by default assigned to this person who must resolve it. 
