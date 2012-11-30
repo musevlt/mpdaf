@@ -38,16 +38,16 @@ Coding convention
 Directory structure
 -------------------
 
-MPDAF is structured in 5 repositories. The first four repositories are dedicated to the CoreLib library:
+MPDAF is structured in 5 directories. The first four directories are dedicated to the CoreLib library:
 
   * *lib* contains code (Python/C++, Java)
   * *tests* contains unit tests
   * *data* contains tests files
   * *doc* contains HTML documentation
 
-The last repository, labeled *mpdaf_user*, is dedicated to the MUSE consortium to add new scripts.
+The last directory, labeled *mpdaf_user*, is dedicated to the MUSE consortium to add new scripts.
 
-In it, each new repository should correspond to a user package. It should be divided in 4 parts: *lib*, *tests*, *data* and *doc*::
+Each new sub-directory should correspond to a user package. It should be divided in 4 parts: *lib*, *tests*, *data* and *doc*::
 
   mpdaf/
 	lib/
@@ -81,7 +81,7 @@ Python packages are organized in terms of a hierarchical file system. For exampl
 			image.py	     # Code about image
 			cube.py		     # Code about cube
 
-The *__init__.py* files is required to make Python treat the directory as containing packages. Such an *__init__.py* file is presented below::
+The *__init__.py* files are required for Python to recognize the directory as containing packages. Such an *__init__.py* file is presented below::
 
   __version__  = '1.0.2'
   __date__     = '2012/11/19 16:47'
@@ -136,12 +136,13 @@ Git repository
 
 The Git version control system is used to handle the MPDAF project. MPDAF git server is located on urania1 machine at Lyon.
 
-Users who want to make them code available within MPDAF should develop their packages separately but still in the MPDAF environment. We want to be able to treat the two projects as separate yet still be able to use one from within the other. Git addresses this issue using submodules. Submodules allow to keep a Git repository as a subdirectory of another Git repository. 
+Users who want to make them code available within MPDAF should develop their packages separately but still in the MPDAF environment. We want to be able to handle the two projects as separate yet still be able to use one from within the other. Git addresses this issue using submodules. Submodules allow to keep a Git repository as a subdirectory of another Git repository. 
 As described in `Python packages and modules`_, *mpdaf_user* repository is dedicated to the MUSE consortium for adding new scripts. Then user packages should be stored as a Git submodule in the *mpdaf_user* repository. The user repository will be cloned into the MPDAF project and users will keep their commits separated.
 
 The following sections explain how to create and upgrade a git submodule in MPDAF.
 
 See `<http://www.kernel.org/pub/software/scm/git/docs/user-manual.html>`_ for more information on *Git*.
+
 
 Step 1: download the mpdaf package
 ----------------------------------
@@ -156,6 +157,7 @@ Step 2: create git branch for the user package
 ----------------------------------------------
 
 Users who want to develop a user package should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ for an urania1 account and for the initialization of the user package git repository.
+
 
 
 Step 3: develop the user package
@@ -179,16 +181,18 @@ The git push command is used to send changes from the user local repository to t
   > mpdaf_mypackage$ git push origin
 
 
+
 Step 4: add the user package on the UserLib library of MPDAF
 ------------------------------------------------------------
 
-Developer should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ to make its package available for the consortium. After sanity checks, the user package will be added on the UserLib library of MPDAF.
+Developers should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ to make their package available for the consortium. After sanity checks, the user package will be added on the UserLib library of MPDAF.
+
 
 
 Step 5: upgrade version of user package
 ---------------------------------------
 
-When the user package is added as a git submodule, the most recent commit of the submodule is stored in the UserLib library of MPDAF. That means that as the code in the user package Git repository updates, the same code will still be pulled on the repositories relying on the submodule.
+When the user package is added as a git submodule, the most recent commit of the submodule is stored in the UserLib library of MPDAF. That means when the code in the user package Git repository is updated, the same code will still be pulled on the repositories relying on the submodule.
 
 For each new stable version of user package, developer should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ to update the user package in the UserLib library of MPDAF.
 
@@ -210,9 +214,9 @@ Python tests are structured as Python code. For example, the obj directory conta
 
 MPDAF tests are divided in two parts according to the computing time/memory use:
 
-  * general unit tests that will be run on a regular basis. The corresponding data is stored in the data repository. The data directory is also structured by package.
+  * general unit tests that should be run on a regular basis. The corresponding data is stored in the data repository. The data directory is also structured by package.
   
-  * tests heavy on computing time and data volume. The data are stored in an independent git repository (urania1.univ-lyon1.fr:/git/mpdaf_data)
+  * heavy tests in term of computing time and data volume that should be only run by MPDAF CoreLib developers. The data are stored in an independent git repository (urania1.univ-lyon1.fr:/git/mpdaf_data)
 
 A decorator is used (`<https://nose.readthedocs.org/en/latest/plugins/attrib.html>`_) to split the tests::
 
@@ -277,4 +281,4 @@ MPDAF is available through a web interface for software distribution (limited to
 
 UserLib wiki page should describe developed packages available to the consortium.
 
-At the same time the user package is added on the UserLib library of MPDAF, a corresponding component will be added on the MPDAF bug tracker system. For this, developer should give at the web site administrator (`CRAL <laure.piqueras@univ-lyon1.fr>`_) a person name and email adress. After that, all tickets on the user package will be by default assigned to this person who must resolve it. 
+At the same time a user package is added on the UserLib library of MPDAF, a corresponding component will be added on the MPDAF bug tracker system. For this developers should give to the web site administrator (`CRAL <laure.piqueras@univ-lyon1.fr>`_) a person name and an email address. After that all tickets on the user package component will be by default assigned to this person who will resolve it. 
