@@ -9,6 +9,7 @@ import os
 import tempfile
 import multiprocessing
 import sys
+from mpdaf import obj
 
 class CalibFile(object):
     """CalibFile class manages input/output for the calibration files.
@@ -205,6 +206,15 @@ class CalibFile(object):
             data = hdulist["STAT"].data
             hdulist.close()
             return data
+        
+    def get_image(self):
+        """Returns an Image object.
+        
+        :rtype: :class:`mpdaf.obj.Image`
+        """
+        wcs = obj.WCS(pyfits.Header(self.primary_header))
+        ima = obj.Image(wcs=wcs, data=self.get_data())
+        return ima
 
     def write(self,filename):
         """Saves the object in a FITS file.
