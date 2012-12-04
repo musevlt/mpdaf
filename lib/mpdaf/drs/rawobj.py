@@ -313,10 +313,52 @@ class Channel(object):
         result.data = np.ma.MaskedArray(self.data, mask=np.logical_not(self.mask), copy=True)
         #result.data = np.ma.MaskedArray(self.data, mask=np.logical_not(self.mask))
         return result
+    
+    
+    def get_image(self, det_out = None):
+        """Returns an Image object.
+        
+        :param det_out: number of output detector. If None, all image is returned.
+        :type det_out: integer in [1,4]
+        
+        :rtype: :class:`mpdaf.obj.Image`
+        """
+        wcs = obj.WCS(pyfits.Header(self.header))
+        ima = obj.Image(wcs=wcs, data=self.data)
+        
+        if det_out is not None:
+            nx_data = self.header["NAXIS1"].value # length of data in X
+            ny_data = self.header["NAXIS2"].value # length of data in Y
+            nx_data2 = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
+            ny_data2 = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
+            key = "ESO DET OUT%i" % det_out
+            nx = self.header["%s NX" % key].value # Output data pixels in X
+            ny = self.header["%s NY" % key].value # Output data pixels in Y
+            prscx = self.header["%s PRSCX" % key].value # Output prescan pixels in X
+            prscy = self.header["%s PRSCY" % key].value # Output prescan pixels in Y
+            x = self.header["%s X" % key].value # X location of output
+            y = self.header["%s Y"% key].value # Y location of output
+            if x < nx_data2/2:
+                i1 = x - 1
+                i2 = i1 + nx  + 2*prscx
+            else:
+                i2 = nx_data
+                i1 = i2 - nx - 2*prscx
+            if y < ny_data2/2:
+                j1 = y -1
+                j2 = j1 + ny + 2*prscy
+            else:
+                j2 = ny_data
+                j1 = j2 - ny - 2*prscy
+            ima = ima[j1:j2,i1:i2]         
+        
+        return ima
 
-
-    def get_trimmed_image(self):
+    def get_trimmed_image(self, det_out = None):
         """Returns an Image object without over scanned pixels.
+        
+        :param det_out: number of output detector. If None, all image is returned.
+        :type det_out: integer in [1,4]
         
         :rtype: :class:`mpdaf.obj.Image`
         """
@@ -330,26 +372,113 @@ class Channel(object):
         data = np.reshape(data,(ny_data,nx_data))
         wcs = obj.WCS(crpix=(1.0,1.0), shape=(ny_data,nx_data))
         ima = obj.Image(wcs=wcs, data=data)
+        
+        if det_out is not None:
+            nx_data = self.header["NAXIS1"].value # length of data in X
+            ny_data = self.header["NAXIS2"].value # length of data in Y
+            nx_data2 = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
+            ny_data2 = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
+            key = "ESO DET OUT%i" % det_out
+            nx = self.header["%s NX" % key].value # Output data pixels in X
+            ny = self.header["%s NY" % key].value # Output data pixels in Y
+            prscx = self.header["%s PRSCX" % key].value # Output prescan pixels in X
+            prscy = self.header["%s PRSCY" % key].value # Output prescan pixels in Y
+            x = self.header["%s X" % key].value # X location of output
+            y = self.header["%s Y"% key].value # Y location of output
+            if x < nx_data2/2:
+                i1 = x - 1 + prscx
+                i2 = i1 + nx
+            else:
+                i2 = nx_data - prscx
+                i1 = i2 - nx
+            if y < ny_data2/2:
+                j1 = y -1 + prscy
+                j2 = j1 + ny
+            else:
+                j2 = ny_data - prscy
+                j1 = j2 - ny
+            ima = ima[j1:j2,i1:i2]  
+        
         return ima
     
-    def get_image_mask_overscan(self):
+    def get_image_mask_overscan(self, det_out = None):
         """Returns an Image object in which overscanned pixels are masked.
+        
+        :param det_out: number of output detector. If None, all image is returned.
+        :type det_out: integer in [1,4]
         
         :rtype: :class:`mpdaf.obj.Image`
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
         ima.data = np.ma.MaskedArray(self.data, mask=self.mask, copy=True)
+        
+        if det_out is not None:
+            nx_data = self.header["NAXIS1"].value # length of data in X
+            ny_data = self.header["NAXIS2"].value # length of data in Y
+            nx_data2 = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
+            ny_data2 = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
+            key = "ESO DET OUT%i" % det_out
+            nx = self.header["%s NX" % key].value # Output data pixels in X
+            ny = self.header["%s NY" % key].value # Output data pixels in Y
+            prscx = self.header["%s PRSCX" % key].value # Output prescan pixels in X
+            prscy = self.header["%s PRSCY" % key].value # Output prescan pixels in Y
+            x = self.header["%s X" % key].value # X location of output
+            y = self.header["%s Y"% key].value # Y location of output
+            if x < nx_data2/2:
+                i1 = x - 1
+                i2 = i1 + nx + 2*prscx
+            else:
+                i2 = nx_data
+                i1 = i2 - nx - 2*prscx
+            if y < ny_data2/2:
+                j1 = y -1
+                j2 = j1 + ny + 2*prscy
+            else:
+                j2 = ny_data
+                j1 = j2 - ny - 2*prscy
+            ima = ima[j1:j2,i1:i2] 
+        
         return ima
     
-    def get_image_just_overscan(self):
+    def get_image_just_overscan(self, det_out = None):
         """Returns an Image object in which only overscanned pixels are not masked.
+        
+        :param det_out: number of output detector. If None, all image is returned.
+        :type det_out: integer in [1,4]
         
         :rtype: :class:`mpdaf.obj.Image`
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
         ima.data = np.ma.MaskedArray(self.data, mask=np.logical_not(self.mask), copy=True)
+        
+        if det_out is not None:
+            nx_data = self.header["NAXIS1"].value # length of data in X
+            ny_data = self.header["NAXIS2"].value # length of data in Y
+            nx_data2 = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
+            ny_data2 = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
+            key = "ESO DET OUT%i" % det_out
+            nx = self.header["%s NX" % key].value # Output data pixels in X
+            ny = self.header["%s NY" % key].value # Output data pixels in Y
+            prscx = self.header["%s PRSCX" % key].value # Output prescan pixels in X
+            prscy = self.header["%s PRSCY" % key].value # Output prescan pixels in Y
+            x = self.header["%s X" % key].value # X location of output
+            y = self.header["%s Y"% key].value # Y location of output
+            if x < nx_data2/2:
+                i1 = x - 1
+                i2 = i1 + nx + 2*prscx
+            else:
+                i2 = nx_data
+                i1 = i2 - nx - 2*prscx
+            if y < ny_data2/2:
+                j1 = y -1
+                j2 = j1 + ny + 2*prscy
+            else:
+                j2 = ny_data
+                j1 = j2 - ny - 2*prscy
+            ima = ima[j1:j2,i1:i2] 
+        
         return ima
     
 
