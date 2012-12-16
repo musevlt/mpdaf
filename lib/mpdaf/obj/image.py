@@ -1289,15 +1289,16 @@ class Image(object):
             radius2 = radius[0]*radius[1]
             
                 
-        imin = center[0] - radius[0]
-        imax = center[0] + radius[0] +1
-        jmin = center[1] - radius[1]
-        jmax = center[1] + radius[1] +1
+        imin = max(0,center[0] - radius[0])
+        imax = min(center[0] + radius[0] +1,self.shape[0])
+        jmin = max(0,center[1] - radius[1])
+        jmax = min(center[1] + radius[1] +1,self.shape[1])
+        
         if inside and not circular:
             self.data.mask[imin:imax,jmin:jmax] = 1
         elif inside and circular:
-            ni = int(imax-imin)
-            nj = int(jmax-jmin)
+            ni = np.shape(self.data[imin:imax,jmin:jmax])[0]
+            nj = np.shape(self.data[imin:imax,jmin:jmax])[1]
             m = np.ma.make_mask_none((ni,nj))
             for i_in in range(ni):
                 i = i_in + imin                 
@@ -1315,8 +1316,8 @@ class Image(object):
             self.data.mask[imax:,:] = 1
             self.data.mask[imin:imax,0:jmin] = 1
             self.data.mask[imin:imax:,jmax:] = 1
-            ni = int(imax-imin)
-            nj = int(jmax-jmin)
+            ni = np.shape(self.data[imin:imax,jmin:jmax])[0]
+            nj = np.shape(self.data[imin:imax,jmin:jmax])[1]
             m = np.ma.make_mask_none((ni,nj))
             for i_in in range(ni):
                 i = i_in + imin                 
@@ -1324,11 +1325,9 @@ class Image(object):
                 pixcrd[:,0] -= center[0]
                 pixcrd[:,1] -= center[1]
                 m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) > radius2)
-            try:
+                
                 m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
                 self.data.mask[imin:imax,jmin:jmax] = m
-            except:
-                pass
         else:
             self.data.mask[0:imin,:] = 1
             self.data.mask[imax:,:] = 1
