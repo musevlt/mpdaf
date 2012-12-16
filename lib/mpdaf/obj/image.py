@@ -528,6 +528,8 @@ class Image(object):
         tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
         hdulist.append(tbhdu)
         
+        self.wcs = WCS(tbhdu.header)
+        
         # create image STAT extension
         if self.var is not None:
             nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)

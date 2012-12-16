@@ -252,8 +252,8 @@ class WCS(object):
             dec = sexa[0][0]
             # step in arcsec
             cdelt = self.get_step()
-            dy = cdelt[0]  * 3600
-            dx = cdelt[1]  * 3600
+            dy = np.abs(cdelt[0]  * 3600)
+            dx = np.abs(cdelt[1]  * 3600)
             sizex = self.wcs.naxis1 * dx
             sizey = self.wcs.naxis2 * dy
             print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) step in arcsec:(%0.3f,%0.3f) rot:%0.1f' %(dec,ra,sizey,sizex,dy,dx,self.get_rot())
@@ -512,7 +512,6 @@ class WCS(object):
             xc = 0
             yc = 0
             pixsky = self.pix2sky([xc,yc])
-            print 'pixsky',pixsky
             cdelt = self.get_step()
             start = (pixsky[0][0] -0.5*cdelt[0] + 0.5*step[0],pixsky[0][1] -0.5*cdelt[1] + 0.5*step[1])
         
