@@ -1783,7 +1783,7 @@ class Image(object):
             
         return sigma*2.*np.sqrt(2.*np.log(2.0))
     
-    def ee(self, center=None, radius=0, pix = False, frac = False):
+    def ee(self, center=None, radius=0, pix = False, frac = False, cont=0):
         """Computes ensquared energy.
         
           :param center: Center of the explored region.
@@ -1812,13 +1812,16 @@ class Image(object):
         
           :param frac: If frac is True, result is given relative to the total energy.
           :type frac: bool
+          :param cont: continuum value
+          :type cont: float
           :rtype: float
         """
+        cont /= self.fscale
         if center is None or radius==0:
             if frac:
                 return 1.
             else:
-                return self.data.sum()*self.fscale
+                return (self.data - cont).sum()*self.fscale
         else:
             if is_int(radius) or is_float(radius):
                 circular = True
@@ -1850,16 +1853,16 @@ class Image(object):
                 r2 = gridx * gridx + gridy * gridy
                 ksel = np.where(r2 < radius2)
                 if frac:
-                    return ima.data[ksel].sum()/self.data.sum()
+                    return (ima.data[ksel]-cont).sum()/(self.data-cont).sum()
                 else:
-                    return ima.data[ksel].sum()*self.fscale
+                    return (ima.data[ksel]-cont).sum()*self.fscale
             else:
                 if frac:
-                    return ima.data.sum()/self.data.sum()
+                    return (ima.data-cont).sum()/(self.data-cont).sum()
                 else:
-                    return ima.data.sum()*self.fscale
+                    return (ima.data - cont).sum()*self.fscale
 
-    def ee_curve(self, center=None, pix = False, etot = None):
+    def ee_curve(self, center=None, pix = False, etot = None, cont=0):
         """Returns Spectrum object containing enclosed energy as function of radius.
   
           :param center: Center of the explored region.
@@ -1876,8 +1879,11 @@ class Image(object):
           :type pix: bool
           :param etot: Total energy. If etot is not set it is computed from the full image.
           :type etot: float
+          :param cont: continuum value
+          :type cont: float
           :rtype: :class:`mpdaf.obj.Spectrum`
         """
+        cont /= self.fscale
         from spectrum import Spectrum
         if center is None:
             i = self.shape[0]/2
@@ -1892,18 +1898,18 @@ class Image(object):
                 j = int(pixcrd[0][1]+0.5)
         nmax = min(self.shape[0]-i,self.shape[1]-j,i,j)
         if etot is None:
-            etot = self.fscale*self.data.sum()
+            etot = self.fscale*(self.data-cont).sum()
         step = self.get_step()
         if nmax <= 1:
             raise ValueError, 'Coord area outside image limits'
         ee = np.empty(nmax)
         for d in range(0, nmax):
-            ee[d] = self.fscale*self.data[i-d:i+d+1, j-d:j+d+1].sum()/etot
+            ee[d] = self.fscale*(self.data[i-d:i+d+1, j-d:j+d+1]-cont).sum()/etot
         plt.plot(rad,ee)
         wave = WaveCoord(cdelt=np.sqrt(step[0]**2+step[1]**2), crval=0.0, cunit = '')
         return Spectrum(wave=wave, data = ee)
         
-    def ee_size(self, center=None, pix = False, ee = None, frac = 0.9):
+    def ee_size(self, center=None, pix = False, ee = None, frac = 0.9, cont=0):
         """Computes the size of the square centered on (y,x) containing the fraction of the energy.
   
           :param center: Center of the explored region.
@@ -1922,8 +1928,11 @@ class Image(object):
           :type ee: float
           :param frac: Fraction of energy.
           :type frac: float in ]0,1]
+          :param cont: continuum value
+          :type cont: float
           :rtype: float array
         """
+        cont /= self.fscale
         if center is None:
             i = self.shape[0]/2
             j = self.shape[1]/2
@@ -1937,17 +1946,17 @@ class Image(object):
                 j = int(pixcrd[0][1]+0.5)
         nmax = min(self.shape[0]-i,self.shape[1]-j,i,j)
         if ee is None:
-            ee = self.fscale*self.data.sum()
+            ee = self.fscale*(self.data-cont).sum()
         step = self.get_step()
         
         if nmax <= 1:
             return np.array([step[0], step[1], 0, 0])
         for d in range(1, nmax):
-            ee2 = self.fscale*self.data[i-d:i+d+1, j-d:j+d+1].sum()/ee
+            ee2 = self.fscale*(self.data[i-d:i+d+1, j-d:j+d+1]-cont).sum()/ee
             if ee2 > frac:
                 break;
         d -= 1
-        ee1 = self.fscale*self.data[i-d:i+d+1, i-d:i+d+1].sum()/ee
+        ee1 = self.fscale*(self.data[i-d:i+d+1, i-d:i+d+1]-cont).sum()/ee
         d += (frac-ee1)/(ee2-ee1) # interpolate
         dx = d*step[0]*2
         dy = d*step[1]*2
