@@ -1449,15 +1449,20 @@ class Spectrum(object):
         else:
             flux = data[i1:i2].sum()*self.fscale
         return flux
-
-    def poly_fit(self, deg, weight=True):
-        """Performs polynomial fit on spectrum and returns polynomial coefficients.
+    
+        
+    def poly_fit(self, deg, weight=True,maxiter=0, nsig=(-3.0,3.0), verbose=False):
+        """Performs polynomial fit on normalized spectrum and returns polynomial coefficients.
   
           :param deg: Polynomial degree.
           :type deg: integer
           :param weight:  If weight is True, the weight is computed as the inverse of variance.
           :type weight: bool
-          :rtype: ndarray, shape. Polynomial coefficients, highest power first.
+          :param maxiter: Maximum allowed iterations (0)
+          :type maxiter: int
+          :param nsig: the low and high rejection factor in std units (-3.0,3.0)
+          :type nsig: (float,float)
+          :rtype: ndarray, shape. Polynomial coefficients ordered from low to high.
         """
         if self.shape <= deg+1:
             raise ValueError, 'Too few points to perform polynomial fit'
@@ -1470,82 +1475,81 @@ class Spectrum(object):
         else:
             vec_weight = None
 
-        mask = np.array(1 - self.data.mask,dtype=bool)
-        #d = self.data.compress(mask) * self.fscale
+        mask = np.array(np.ones_like(self.data) - self.data.mask,dtype=bool)
         d = self.data.compress(mask)
         w = self.wave.coord().compress(mask)
         if weight:
             vec_weight = vec_weight.compress(mask)
-
-        #p = np.polyfit(w, d, deg, w=vec_weight) #numpy 1.7  
+         
+        #normalize w   
+        w0 = np.min(w)
+        dw = np.max(w)-w0
+        w = (w-w0)/dw
         
-        order = int(deg) + 1
-        x = np.asarray(w) + 0.0
-        y = np.asarray(d) + 0.0
+        p = np.polynomial.polynomial.polyfit(w, d, deg, w=vec_weight)
+        
+        if maxiter > 0:
+            err = d - np.polynomial.polynomial.polyval(w, p)
+            sig = np.std(err)
+            n_p = len(d)
+            for iter in range(maxiter):
+                ind = np.where((err >= nsig[0]*sig) & (np.abs(err) <= nsig[1]*sig))
+                if len(ind[0]) == n_p:
+                    break
+                if len(ind[0]) <= deg+1:
+                    raise ValueError, 'Too few points to perform polynomial fit'
+                if vec_weight is not None:
+                    vec_weight = vec_weight[ind]
+                p = np.polynomial.polynomial.polyfit(w[ind], d[ind], deg, w=vec_weight)
+                err = d[ind] - np.polynomial.polynomial.polyval(w[ind],p)
+                sig = np.std(err)
+                n_p = len(ind[0])
+                if verbose:
+                    print 'Number of iteration: %d Std: %10.4e Np: %d Frac: %4.2f'%(iter+1, sig, n_p, 100.*n_p/self.shape)
+        
+#        a = p   
+#        from scipy.misc import comb
+#        c = np.zeros((deg+1,deg+1))
+#        for i in range(deg+1):
+#            c[deg-i,deg-i:] = np.array(map(lambda p: comb(i,p) * (-w0)**p /dw**i * a[i],range(i+1)))
+#            
+#        return c.sum(axis=0)[::-1] * self.fscale
 
-        # check arguments.
-        if deg < 0 :
-            raise ValueError("expected deg >= 0")
-        if x.ndim != 1:
-            raise TypeError("expected 1D vector for x")
-        if x.size == 0:
-            raise TypeError("expected non-empty vector for x")
-        if y.ndim < 1 or y.ndim > 2 :
-            raise TypeError("expected 1D or 2D array for y")
-        if x.shape[0] != y.shape[0] :
-            raise TypeError("expected x and y to have same length")
-
-        rcond = len(x)*np.finfo(x.dtype).eps
-
-        # set up least squares equation for powers of x
-        lhs = np.vander(x, order)
-        rhs = y
-
-        # apply weighting
-        if vec_weight is not None:
-            w = np.asarray(vec_weight) + 0.0
-            if w.ndim != 1:
-                raise TypeError, "expected a 1-d array for weights"
-            if w.shape[0] != y.shape[0] :
-                raise TypeError, "expected w and y to have the same length"
-            lhs *= w[:, np.newaxis]
-            if rhs.ndim == 2:
-                rhs *= w[:, np.newaxis]
-            else:
-                rhs *= w
-
-        # scale lhs to improve condition number and solve
-        scale = np.sqrt((lhs*lhs).sum(axis=0))
-        lhs /= scale
-        c, resids, rank, s = np.linalg.lstsq(lhs, rhs, rcond)
-        c = (c.T/scale).T * self.fscale # broadcast scale coefficients
-
-        return c
+        return p * self.fscale
     
     def poly_val(self, z):
         """Updates in place the spectrum data from polynomial coefficients. Uses `numpy.poly1d <http://docs.scipy.org/doc/numpy/reference/generated/numpy.poly1d.html>`_.       
         
-          :param z: The polynomial coefficients, in decreasing powers.
+          :param z: The polynomial coefficients, in increasing powers. 
+          
+          data = z0 + z1(lbda-min(lbda))/(max(lbda)-min(lbda)) + ... + zn ((lbda-min(lbda))/(max(lbda)-min(lbda)))**n
           :type z: array
         """
         l = self.wave.coord()
-        p = np.poly1d(z)
-        self.data = np.ma.masked_invalid(p(l))
+        w0 = np.min(l)
+        dw = np.max(l)-w0
+        w = (l-w0)/dw
+        val = np.polynomial.polynomial.polyval(w,z)
+        self.data = np.ma.masked_invalid(val)
         self.fscale = 1.0
         self.var = None
     
-    def poly_spec(self, deg, weight=True):
+    def poly_spec(self, deg, weight=True, maxiter=0, nsig=(-3.0,3.0), verbose=False):
         """Returns a spectrum containing a polynomial fit.
   
           :param deg: Polynomial degree.
           :type deg: integer
           :param weight:  If weight is True, the weight is computed as the inverse of variance.
           :type weight: bool
+          :param maxiter: Maximum allowed iterations (0)
+          :type maxiter: int
+          :param nsig: the low and high rejection factor in std units (-3.0,3.0)
+          :type nsig: (float,float)
           :rtype: Spectrum
         """
         fscale = self.fscale
         self.fscale = 1.0
-        z = self.poly_fit(deg, weight)
+        z = self.poly_fit(deg, weight, maxiter, nsig, verbose)
         self.fscale = fscale
         res = self.clone()
         res.poly_val(z)
