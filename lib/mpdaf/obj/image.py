@@ -1287,10 +1287,9 @@ class Image(object):
             
         if not pix:
             center = self.wcs.sky2pix(center)[0]
-            radius = radius / self.wcs.get_step() / 3600.
+            radius = radius / np.abs(self.wcs.get_step()) / 3600.
             radius2 = radius[0]*radius[1]
             
-                
         imin = max(0,center[0] - radius[0])
         imax = min(center[0] + radius[0] +1,self.shape[0])
         jmin = max(0,center[1] - radius[1])
@@ -1704,7 +1703,7 @@ class Image(object):
                 
             if not pix:
                 center = self.wcs.sky2pix(center)[0]
-                radius = radius / self.wcs.get_step() / 3600.
+                radius = radius / np.abs(self.wcs.get_step()) / 3600.
             
             imin = center[0] - radius[0]
             if imin<0:
@@ -1774,12 +1773,13 @@ class Image(object):
                 
             if not pix:
                 center = self.wcs.sky2pix(center)[0]
-                radius = radius / self.wcs.get_step() / 3600.
+                radius = radius / np.abs(self.wcs.get_step()) / 3600.
                 
-            imin = center[0] - radius[0]
-            imax = center[0] + radius[0] + 1
-            jmin = center[1] - radius[1]
-            jmax = center[1] + radius[1] + 1
+            imin = max(0,center[0] - radius[0])
+            imax = min(center[0] + radius[0] +1,self.shape[0])
+            jmin = max(0,center[1] - radius[1])
+            jmax = min(center[1] + radius[1] +1,self.shape[1])
+            
             sigma = self[imin:imax,jmin:jmax].moments(pix=pix)
             
         return sigma*2.*np.sqrt(2.*np.log(2.0))
@@ -1833,13 +1833,13 @@ class Image(object):
                 
             if not pix:
                 center = self.wcs.sky2pix(center)[0]
-                radius = radius / self.wcs.get_step() / 3600.
+                radius = radius / np.asb(self.wcs.get_step()) / 3600.
                 radius2 = radius[0]*radius[1]
                 
-            imin = center[0] - radius[0]
-            imax = center[0] + radius[0]
-            jmin = center[1] - radius[1]
-            jmax = center[1] + radius[1]
+            imin = max(0,center[0] - radius[0])
+            imax = min(center[0] + radius[0] +1,self.shape[0])
+            jmin = max(0,center[1] - radius[1])
+            jmax = min(center[1] + radius[1] +1,self.shape[1])
             ima = self[imin:imax,jmin:jmax]
             
             if circular:
@@ -2161,7 +2161,7 @@ class Image(object):
             fwhm = width * 2.*np.sqrt(2.*np.log(2.0))
         else:
            if not pix:
-               fwhm = np.array(fwhm) / ima.wcs.get_step() / 3600.
+               fwhm = np.array(fwhm) / np.abs(ima.wcs.get_step()) / 3600.
            width = np.array(fwhm)/(2.*np.sqrt(2.*np.log(2.0)))
         
         # initial gaussian integrated flux
@@ -2275,9 +2275,9 @@ class Image(object):
         if not pix:
             #Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak,q_peak])[0]
-            err_center = np.array([err_p_peak,err_q_peak]) * self.wcs.get_step()
-            fwhm = np.array([p_fwhm,q_fwhm]) * self.wcs.get_step() * 3600.0
-            err_fwhm = np.array([err_p_fwhm,err_q_fwhm]) * self.wcs.get_step() * 3600.0
+            err_center = np.array([err_p_peak,err_q_peak]) * np.abs(self.wcs.get_step())
+            fwhm = np.array([p_fwhm,q_fwhm]) * np.abs(self.wcs.get_step()) * 3600.0
+            err_fwhm = np.array([err_p_fwhm,err_q_fwhm]) * np.abs(self.wcs.get_step()) * 3600.0
             gauss = Gauss2D(center, flux, fwhm, cont*self.fscale, rot, peak, err_center, err_flux, err_fwhm, err_rot, err_peak)
         else:
             gauss = Gauss2D((p_peak,q_peak), flux, (p_fwhm,q_fwhm), cont*self.fscale, rot, peak, (err_p_peak,err_q_peak), err_flux, (err_p_fwhm,err_q_fwhm), err_rot, err_peak)
@@ -2396,7 +2396,7 @@ class Image(object):
             a = fwhm[0]/(2*np.sqrt(2**(1.0/n)-1.0))
         else:
             if not pix:
-                a = a / ima.wcs.get_step()[0] / 3600.    
+                a = a / np.abs(ima.wcs.get_step()[0]) / 3600.    
         
         # initial integrated flux
         if I is None:
@@ -2497,9 +2497,9 @@ class Image(object):
         if not pix:
             #Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak,q_peak])[0]
-            err_center = np.array([err_p_peak,err_q_peak]) * self.wcs.get_step()[0]
-            a = a * self.wcs.get_step()[0] * 3600.0
-            err_a = err_a * self.wcs.get_step()[0] * 3600.0
+            err_center = np.array([err_p_peak,err_q_peak]) * np.abs(self.wcs.get_step()[0])
+            a = a * np.abs(self.wcs.get_step()[0]) * 3600.0
+            err_a = err_a * np.abs(self.wcs.get_step()[0]) * 3600.0
             moffat = Moffat2D(center, I, a, e, n, rot, err_center, err_I, err_a, err_e, err_n, err_rot, cont*self.fscale)
         else:
             moffat = Moffat2D((p_peak,q_peak), I, a, e, n, rot, (err_p_peak,err_q_peak), err_I, err_a, err_e, err_n, err_rot, cont*self.fscale)
