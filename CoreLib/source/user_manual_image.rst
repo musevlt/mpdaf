@@ -12,7 +12,7 @@ Note that virtually all numpy and scipy functions are available.
 
 
 Image object format
-======================
+===================
 
 An Image object O consists of:
 
