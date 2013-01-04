@@ -1593,9 +1593,8 @@ class Image(object):
         :type niter: integer
         :rtype: 2-dim float array
         """
-        ksel = np.where(self.data <= (np.ma.mean(self.data) + 3 * np.ma.std(self.data)))
-        tab = self.data[ksel]
-        for n in range(niter):
+        tab = self.data
+        for n in range(niter+1):
             ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
             tab = tab[ksel]
         return np.array([np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale])
