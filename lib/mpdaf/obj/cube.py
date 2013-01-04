@@ -2,8 +2,8 @@
 import numpy as np
 import pyfits
 import datetime
-#import multiprocessing
-
+import multiprocessing
+import types
 
 from coords import WCS
 from coords import WaveCoord
@@ -1361,15 +1361,35 @@ class Cube(object):
             self.data[key] = other/np.double(self.fscale)
         except:
             try:
-                #other is an image
+                #other is a cube
                 if other.cube:
-                    if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any() \
-                    and self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
-                        print 'Warning: cubes with different steps'
-                    self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                    try:
+                        if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any() \
+                        and self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
+                            print 'Warning: cubes with different steps'
+                        self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                    except:
+                        self.data[key] = other.data*np.double(other.fscale/self.fscale)
             except:
-                print 'Operation forbidden'
-                return None
+                try:
+                    #other is an image
+                    if other.image:
+                        try:
+                            if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any():
+                                print 'Warning: images with different steps'
+                            self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                        except:
+                            self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                except:
+                    try:
+                        #other is a spectrum
+                        if other.spectrum:
+                            if self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
+                                print 'Warning: cubes with different steps'
+                            self.data[key] = other.data*np.double(other.fscale/self.fscale) 
+                    except:
+                        print 'Operation forbidden'
+                        return None
             
     def set_wcs(self, wcs, wave):
         """Sets the world coordinates.
@@ -1834,29 +1854,68 @@ class Cube(object):
         res._rebin_factor(factor, margin)
         return res
          
+          
+    def loop_spe_multiprocessing(self,function, *args):
+        """loops over all spectra to apply a function/method.
+        Returns the resulting cube.
+        Multiprocessing is used.
         
-#    def loop_spe_multiprocessing(self,function, arglist=None):
-#        #f = STR_FUNCTIONS[function]
-#        cpu_count = multiprocessing.cpu_count()
-#        cube_result = self.clone()
-#        pool = multiprocessing.Pool(processes = cpu_count)
-#        processlist = list()
-#        for sp,pos in iter_spe(self, index=True):
-#            processlist.append([sp,pos,function,arglist])
-#        processresult = pool.map(_process_spe,processlist)
-#        for pos,out in processresult:
-#            p,q = pos
-#            cube_result[:,p,q] = out
-#        return cube_result
-#    
-#def _process_spe(arglist):
-#    print arglist
-#    sp = arglist[0]
-#    pos = arglist[1]
-#    f = arglist[2]
-#    args = arglist[3]
-#    if args is None:
-#        sp_result = f(sp)
-#    else:
-#        sp_result = f(sp,args)
-#    return (pos,sp_result)
+        :param function: Spectrum method or function that the first argument is a spectrum object. It should return a Spectrum object. 
+        :type function: function or :class:`mpdaf.obj.Spectrum` method
+        :param args: args can be used to set function arguments.
+        
+        :rtype: :class:`mpdaf.obj.Cube`
+        """
+        cpu_count = multiprocessing.cpu_count() - 1
+        cube_result = self.clone()
+        pool = multiprocessing.Pool(processes = cpu_count)
+        processlist = list()
+           
+        if isinstance (function, types.MethodType):
+            function = function.__name__
+        
+        for sp,pos in iter_spe(self, index=True):
+            processlist.append([sp,pos,function,args])
+        processresult = pool.map(_process,processlist)
+        for pos,out in processresult:
+            p,q = pos
+            cube_result[:,p,q] = out
+        return cube_result
+    
+    def loop_ima_multiprocessing(self,function, *args):
+        """loops over all images to apply a function/method.
+        Returns the resulting cube.
+        Multiprocessing is used.
+        
+        :param function: Image method or function that the first argument is a Image object. It should return an Image object. 
+        :type function: function or :class:`mpdaf.obj.Image` method
+        :param args: args can be used to set function arguments.
+        
+        :rtype: :class:`mpdaf.obj.Cube`
+        """
+        cpu_count = multiprocessing.cpu_count() - 1
+        cube_result = self.clone()
+        pool = multiprocessing.Pool(processes = cpu_count)
+        processlist = list()
+           
+        if isinstance (function, types.MethodType):
+            function = function.__name__
+        
+        for ima,k in iter_ima(self, index=True):
+            processlist.append([ima,k,function,args])
+        processresult = pool.map(_process,processlist)
+        for k,out in processresult:
+            cube_result[k,:,:] = out
+        return cube_result
+    
+def _process(arglist):
+    obj = arglist[0]
+    pos = arglist[1]
+    f = arglist[2]
+    args = arglist[3]
+    
+    if isinstance (f,types.FunctionType):
+        obj_result = f(obj,*args)
+    else:
+        obj_result = getattr(obj, f)(*args)  
+    return (pos,obj_result)

@@ -565,9 +565,12 @@ class WCS(object):
     def is_deg(self):
         """Returns True if world coordinates are in decimal degrees (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
         """
-        if self.wcs.wcs.ctype[0] == 'LINEAR' or self.wcs.wcs.ctype[0] == 'PIXEL':
-            return False
-        else:
+        try:
+            if self.wcs.wcs.ctype[0] == 'LINEAR' or self.wcs.wcs.ctype[0] == 'PIXEL':
+                return False
+            else:
+                return True
+        except:
             return True
 
 class WaveCoord(object):
