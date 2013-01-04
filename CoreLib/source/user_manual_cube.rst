@@ -76,7 +76,7 @@ The info directive gives us already some important informations:
 Let's compute the reconstructed white light image and display it::
 
  >>> ima = cube.sum(axis=0)
- >>> ima.plot(scale='arcsinh')
+ >>> ima.plot(scale='arcsinh', colorbar='v')
 
 .. figure::  user_manual_cube_images/recima1.png
    :align:   center
@@ -85,7 +85,7 @@ We extract the cube corresponding to the object centered at x=31 y=55 spaxels::
 
  >>> obj1 = cube[:,55-5:55+5,31-10:31+10]
  >>> ima1 = obj1.mean(axis=0)
- >>> ima1.plot()
+ >>> ima1.plot(colorbar='v')
 
 .. figure::  user_manual_cube_images/recima2.png
    :align:   center
@@ -158,10 +158,14 @@ And that's it, we have now the continuum datacube. Note that we have used the co
 assignment rather than the more intuitive co = sp.poly_spec(5) assignment. The use of co[:] is mandatory
 otherwise the continnum spectra co is created but not written into the cont1 datacube.
 
+But, the better way to compute the continuum datacube is to use the :func:`mpdaf.obj.Cube.loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` that automatically loop on spectrum using multiprocessing::
+
+ >>> cont2 = obj1.loop_spe_multiprocessing(Spectrum.poly_spec,5)
+
 Let's check the result and display the continuum reconstructed image::
 
- >>> rec2 = cont1.sum(axis=0)
- >>> rec2.plot(scale='arcsinh')
+ >>> rec2 = cont2.sum(axis=0)
+ >>> rec2.plot(scale='arcsinh', colorbar='v')
 
 .. figure::  user_manual_cube_images/recima4.png
    :align:   center
@@ -169,7 +173,7 @@ Let's check the result and display the continuum reconstructed image::
 We can also compute the line emission datacube::
 
  >>> line1 = obj1 - cont1
- >>> line1.sum(axis=0).plot(scale='arcsinh')
+ >>> line1.sum(axis=0).plot(scale='arcsinh', colorbar='v')
 
 .. figure::  user_manual_cube_images/recima5.png
    :align:   center
@@ -262,12 +266,21 @@ Tutorial 4
 ----------
 
 In this tutorial we are going to process our datacube in spatial direction. We consider the datacube as a collection of
-monochromatic images and we process each of them. For each monochromatic image we apply a convolution by a gaussian kernel::
+monochromatic images and we process each of them. For each monochromatic image we apply a convolution by a gaussian kernel.
+
+First, we use the image iterator::
 
  >>> from mpdaf.obj import iter_ima
  >>> cube2 = cube.clone()
  >>> for ima,k in iter_ima(cube, index=True):
  >>>   cube2[k,:,:] = ima.gaussian_filter()
+ 
+We can also use the :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method that automatically loops over all images to apply the convolution::
+
+ >>> cube2 = cube.loop_ima_multiprocessing(Image.gaussian_filter)
+ 
+We then plot the result::
+
  >>> cube.sum(axis=0).plot(title='before Gaussian filter')
  >>> cube2.sum(axis=0).plot(title='after Gaussian filter')
  
@@ -317,41 +330,41 @@ We then plot the resulting velocity field, masking the outliers::
 Tutorial 6
 ----------
 
-In this tutorial, we will use the image iterator (Tutorial 4) to fit and remove a background 
-gradient from the simulated datacube Central_DATACUBE_bkg.fits. We start by loading this cube 
-and creating a copy for the background-subtracted cube we want to create::
+In this tutorial, we will use the :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method (Tutorial 4) to fit and remove a background 
+gradient from the simulated datacube Central_DATACUBE_bkg.fits. We start by loading this cube::
 
  >>> from mpdaf.obj import Cube
- >>> from mpdaf.obj import iter_ima
  >>> import numpy as np
  >>> cube=Cube('Central_DATACUBE_bkg.fits')
- >>> cube2=cube.copy()
 
 For each image of the cube, we fit a 2nd order polynomial to the background values 
 (selected here by simply applying a flux threshold to mask all bright objects). We 
 do so by doing a chi^2 minimization over the polynomial coefficients using the 
-numpy recipe np.linalg.lstsq()::
+numpy recipe np.linalg.lstsq(). for this, we define a function that takes an image as parameter 
+and returns the background-subtracted image::
 
- >>> for ima,k in iter_ima(cube, index=True):
- >>>    print k
- >>>    ksel = np.where(ima.data.data*ima.fscale<2.5e-20)
- >>>    pval = ksel[0]
- >>>    qval = ksel[1]
- >>>    zval = ima.data.data[ksel]
- >>>    degree=2
- >>>    Ap=np.vander(pval,degree)
- >>>    Aq=np.vander(qval,degree)
- >>>    A=np.hstack((Ap,Aq))
+ >>> def remove_background_gradient(ima):
+ >>>     ksel = np.where(ima.data.data*ima.fscale<2.5e-20)
+ >>>     pval = ksel[0]
+ >>>     qval = ksel[1]
+ >>>     zval = ima.data.data[ksel]
+ >>>     degree=2
+ >>>     Ap=np.vander(pval,degree)
+ >>>     Aq=np.vander(qval,degree)
+ >>>     A=np.hstack((Ap,Aq))
+ >>>     (coeffs,residuals,rank,sing_vals)=np.linalg.lstsq(A,zval)
+ >>>     fp=np.poly1d(coeffs[0:degree])
+ >>>     fq=np.poly1d(coeffs[degree:2*degree])
+ >>>     X,Y = np.meshgrid(xrange(ima.shape[0]),xrange(ima.shape[1]))
+ >>>     ima2 = ima.clone()
+ >>>     ima2.data = (ima.data-np.array(map(lambda q,p: fp(p)+fq(q),Y,X)))*ima.fscale
+ >>>     return ima2
+    
+We can then create the background-subtracted cube:::
 
- >>>    (coeffs,residuals,rank,sing_vals)=np.linalg.lstsq(A,zval)
-   
- >>>    fp=np.poly1d(coeffs[0:degree])
- >>>    fq=np.poly1d(coeffs[degree:2*degree])
-   
- >>>    X,Y = np.meshgrid(xrange(ima.shape[0]),xrange(ima.shape[1]))
- >>>    cube2[k,:,:] = (cube[k,:,:].data-np.array(map(lambda q,p: fp(p)+fq(q),Y,X)))*cube.fscale
+ >>> cube2 = cube.loop_ima_multiprocessing(remove_background_gradient)
 
-We can then write the output datacube and compare the results for one of the slices::
+Finally, we write the output datacube and compare the results for one of the slices::
 
  >>> cube2.write('Central_DATACUBE_bkgsub.fits')
  >>> cube[1000,:,:].plot(vmin=-1e-20,vmax=4e-20)
@@ -456,5 +469,9 @@ Transformation
 :func:`mpdaf.obj.Cube.resize <mpdaf.obj.Cube.resize>` resizes the cube to have a minimum number of masked values (in place).
 
 :func:`mpdaf.obj.Cube.rebin_factor <mpdaf.obj.Cube.rebin_factor>` shrinks the size of the cube by factor.
+
+:func:`mpdaf.obj.Cube.loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` loops over all spectra to apply a function/method.
+
+:func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
 
 
