@@ -1964,54 +1964,70 @@ class Cube(object):
         return res
              
           
-    def loop_spe_multiprocessing(self,function, *args):
+    def loop_spe_multiprocessing(self, cpu=None, f=None, **kargs):
         """loops over all spectra to apply a function/method.
         Returns the resulting cube.
         Multiprocessing is used.
         
-        :param function: Spectrum method or function that the first argument is a spectrum object. It should return a Spectrum object. 
-        :type function: function or :class:`mpdaf.obj.Spectrum` method
-        :param args: args can be used to set function arguments.
+        :param cpu: number of CPUs. It is also possible to set the mpdaf.CPU global variable.
+        :type cpu: integer
+        :param f: Spectrum method or function that the first argument is a spectrum object. It should return a Spectrum object. 
+        :type f: function or :class:`mpdaf.obj.Spectrum` method
+        :param kargs: kargs can be used to set function arguments.
         
         :rtype: :class:`mpdaf.obj.Cube`
         """
-        cpu_count = multiprocessing.cpu_count() - 1
+        from mpdaf import CPU
+        if cpu is not None and cpu<multiprocessing.cpu_count():
+            cpu_count = cpu
+        elif CPU != 0 and CPU<multiprocessing.cpu_count():
+            cpu_count = cpu
+        else:
+            cpu_count = multiprocessing.cpu_count() - 1
         cube_result = self.clone()
         pool = multiprocessing.Pool(processes = cpu_count)
         processlist = list()
            
-        if isinstance (function, types.MethodType):
-            function = function.__name__
+        if isinstance (f, types.MethodType):
+            f = f.__name__
         
         for sp,pos in iter_spe(self, index=True):
-            processlist.append([sp,pos,function,args])
+            processlist.append([sp,pos,f,kargs])
         processresult = pool.map(_process,processlist)
         for pos,out in processresult:
             p,q = pos
             cube_result[:,p,q] = out
         return cube_result
     
-    def loop_ima_multiprocessing(self,function, *args):
+    def loop_ima_multiprocessing(self, cpu=None, f=None, **kargs):
         """loops over all images to apply a function/method.
         Returns the resulting cube.
         Multiprocessing is used.
         
-        :param function: Image method or function that the first argument is a Image object. It should return an Image object. 
-        :type function: function or :class:`mpdaf.obj.Image` method
-        :param args: args can be used to set function arguments.
+        :param cpu: number of CPUs. It is also possible to set the mpdaf.CPU global variable.
+        :type cpu: integer
+        :param f: Image method or function that the first argument is a Image object. It should return an Image object. 
+        :type f: function or :class:`mpdaf.obj.Image` method
+        :param kargs: kargs can be used to set function arguments.
         
         :rtype: :class:`mpdaf.obj.Cube`
         """
-        cpu_count = multiprocessing.cpu_count() - 1
+        from mpdaf import CPU
+        if cpu is not None and cpu<multiprocessing.cpu_count():
+            cpu_count = cpu
+        elif CPU != 0 and CPU<multiprocessing.cpu_count():
+            cpu_count = cpu
+        else:
+            cpu_count = multiprocessing.cpu_count() - 1
         cube_result = self.clone()
         pool = multiprocessing.Pool(processes = cpu_count)
         processlist = list()
            
-        if isinstance (function, types.MethodType):
-            function = function.__name__
+        if isinstance (f, types.MethodType):
+            f = f.__name__
         
         for ima,k in iter_ima(self, index=True):
-            processlist.append([ima,k,function,args])
+            processlist.append([ima,k,f,kargs])
         processresult = pool.map(_process,processlist)
         for k,out in processresult:
             cube_result[k,:,:] = out
@@ -2021,10 +2037,10 @@ def _process(arglist):
     obj = arglist[0]
     pos = arglist[1]
     f = arglist[2]
-    args = arglist[3]
+    kargs = arglist[3]
     
     if isinstance (f,types.FunctionType):
-        obj_result = f(obj,*args)
+        obj_result = f(obj,**kargs)
     else:
-        obj_result = getattr(obj, f)(*args)  
+        obj_result = getattr(obj, f)(**kargs)  
     return (pos,obj_result)
