@@ -160,7 +160,7 @@ otherwise the continnum spectra co is created but not written into the cont1 dat
 
 But, the better way to compute the continuum datacube is to use the :func:`mpdaf.obj.Cube.loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` that automatically loop on spectrum using multiprocessing::
 
- >>> cont2 = obj1.loop_spe_multiprocessing(Spectrum.poly_spec,5)
+ >>> cont2 = obj1.loop_spe_multiprocessing(f=Spectrum.poly_spec, deg=5)
 
 Let's check the result and display the continuum reconstructed image::
 
@@ -277,7 +277,7 @@ First, we use the image iterator::
  
 We can also use the :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method that automatically loops over all images to apply the convolution::
 
- >>> cube2 = cube.loop_ima_multiprocessing(Image.gaussian_filter)
+ >>> cube2 = cube.loop_ima_multiprocessing(f=Image.gaussian_filter)
  
 We then plot the result::
 
@@ -362,11 +362,11 @@ and returns the background-subtracted image::
     
 We can then create the background-subtracted cube:::
 
- >>> cube2 = cube.loop_ima_multiprocessing(remove_background_gradient)
+ >>> cube2 = cube.loop_ima_multiprocessing(f=remove_background_gradient)
 
 Finally, we write the output datacube and compare the results for one of the slices::
 
- >>> cube2.write('Central_DATACUBE_bkgsub.fits')
+ >>> cube2.write('Central_DATACUBE_bkgsub.fits.gz')
  >>> cube[1000,:,:].plot(vmin=-1e-20,vmax=4e-20)
  >>> cube2[1000,:,:].plot(vmin=-1e-20,vmax=4e-20)
 
@@ -469,6 +469,8 @@ Transformation
 :func:`mpdaf.obj.Cube.resize <mpdaf.obj.Cube.resize>` resizes the cube to have a minimum number of masked values (in place).
 
 :func:`mpdaf.obj.Cube.rebin_factor <mpdaf.obj.Cube.rebin_factor>` shrinks the size of the cube by factor.
+
+:func:`mpdaf.obj.Cube.rebin_median <mpdaf.obj.Cube.rebin_median>` rebins the cube using median values.
 
 :func:`mpdaf.obj.Cube.loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` loops over all spectra to apply a function/method.
 
