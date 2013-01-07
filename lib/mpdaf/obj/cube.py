@@ -1512,7 +1512,7 @@ class Cube(object):
             return None
         
     def _rebin_factor_(self, factor):
-        '''Shrinks the size of the image by factor.
+        '''Shrinks the size of the cube by factor.
         New size is an integer multiple of the original size.
         
         Parameter
@@ -1851,9 +1851,118 @@ class Cube(object):
           :type margin: 'center' or 'origin'   
         '''
         res = self.copy()
-        res._rebin_factor(factor, margin)
+        res._rebin_factor(factor, margin, flux)
         return res
-         
+    
+    def _rebin_median_(self, factor):
+        '''Shrinks the size of the cube by factor.
+        New size is an integer multiple of the original size.
+        
+        Parameter
+        ----------
+        factor : (integer,integer,integer)
+        Factor in z, y and x.
+        Python notation: (nz,ny,nx)
+        '''
+        # new size is an integer multiple of the original size
+        assert not np.sometrue(np.mod( self.shape[0], factor[0] ))
+        assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
+        assert not np.sometrue(np.mod( self.shape[2], factor[2] ))
+        #shape
+        self.shape = (self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2])
+        #data
+        self.data = np.median(np.median(np.median(self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]),1),2),3)
+        #variance
+        self.var = None
+        #coordinates
+        cdelt = self.wcs.get_step()
+        self.wcs = self.wcs.rebin_factor(factor[1:])
+        crval = self.wave.coord()[0:factor[0]].sum()/factor[0]
+        self.wave = WaveCoord(1, self.wave.cdelt*factor[0], crval, self.wave.cunit,self.shape[0])
+        
+    def _rebin_median(self, factor, margin='center'):
+        '''Shrinks the size of the cube by factor.
+  
+          :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
+          :type factor: integer or (integer,integer,integer)
+          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
+  
+            In 'center' case, cube is truncated on the left and on the right, on the bottom and of the top of the cube. 
+        
+            In 'origin'case, cube is truncatedat the end along each direction
+          :type margin: 'center' or 'origin'   
+        '''
+        if is_int(factor):
+            factor = (factor,factor,factor)
+        if factor[0]<1 or factor[0]>=self.shape[0] or factor[1]<1 or factor[1]>=self.shape[1] or factor[2]<1 or factor[2]>=self.shape[2]:
+            raise ValueError, 'factor must be in ]1,shape['
+            return None
+        if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )) and not np.sometrue(np.mod( self.shape[2], factor[2] )):
+            # new size is an integer multiple of the original size
+            self._rebin_factor_(factor)
+            return None
+        else:
+            factor = np.array(factor)
+            newshape = self.shape/factor
+            n = self.shape - newshape*factor
+            
+            if n[0] == 0:
+                n0_left = 0
+                n0_right = self.shape[0]
+            else:
+                if margin == 'origin' or n[0]==1:
+                    n0_left = 0
+                    n0_right = -n[0]
+                else:
+                    n0_left = n[0]/2
+                    n0_right = self.shape[0] - n[0] + n0_left
+            if n[1] == 0:
+                n1_left = 0
+                n1_right = self.shape[1]
+            else:
+                if margin == 'origin' or n[1]==1:
+                    n1_left = 0
+                    n1_right = -n[1]
+                else:
+                    n1_left = n[1]/2
+                    n1_right = self.shape[1] - n[1] + n1_left
+            if n[2] == 0:
+                n2_left = 0
+                n2_right = self.shape[2]
+            else:
+                if margin == 'origin' or n[2]==1:
+                    n2_left = 0
+                    n2_right = -n[2]
+                else:
+                    n2_left = n[2]/2
+                    n2_right = self.shape[2] - n[2] + n2_left
+            
+            cub = self[n0_left:n0_right,n1_left:n1_right,n2_left:n2_right]
+            cub._rebin_factor_(factor)
+            
+            self.shape = cub.shape
+            self.data = cub.data
+            self.var = None
+            self.wave = cub.wave
+            self.wcs = cub.wcs
+            return None
+        
+    def rebin_median(self, factor, margin='center'):
+        '''Shrinks the size of the cube by factor. The rebined cubes will contain median values. Variance is not conserved.
+  
+          :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
+          :type factor: integer or (integer,integer,integer)
+          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
+  
+            In 'center' case, cube is truncated on the left and on the right, on the bottom and of the top of the cube. 
+        
+            In 'origin'case, cube is truncated at the end along each direction
+          :type margin: 'center' or 'origin'   
+        '''
+        res = self.copy()
+        res._rebin_median(factor, margin)
+        return res
+             
           
     def loop_spe_multiprocessing(self,function, *args):
         """loops over all spectra to apply a function/method.
