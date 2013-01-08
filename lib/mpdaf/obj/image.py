@@ -498,12 +498,12 @@ class Image(object):
         tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
         for card in self.data_header:
             try:
-                if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
+                if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2' and tbhdu.header.keys().count(card.key)==0:
                     tbhdu.header.update(card.key, card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
+                    if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2' and tbhdu.header.keys().count(card.key)==0:
                         prihdu.header.update(card.key, card.value, card.comment)
                 except:
                     print "warning: %s not copied in data header"%card.key

@@ -365,12 +365,13 @@ class Cube(object):
         tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
         for card in self.data_header:
             try:
-                if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
+                
+                if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2' and tbhdu.header.keys().count(card.key)==0:
                     tbhdu.header.update(card.key, card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2':
+                    if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2' and tbhdu.header.keys().count(card.key)==0:
                         prihdu.header.update(card.key, card.value, card.comment)
                 except:
                     print "warning: %s not copied in data header"%card.key
@@ -1872,6 +1873,7 @@ class Cube(object):
         self.shape = (self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2])
         #data
         self.data = np.median(np.median(np.median(self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]),1),2),3)
+        #self.data = np.mean(np.mean(np.mean(self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]),1),2),3)
         #variance
         self.var = None
         #coordinates
@@ -1899,7 +1901,7 @@ class Cube(object):
             return None
         if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )) and not np.sometrue(np.mod( self.shape[2], factor[2] )):
             # new size is an integer multiple of the original size
-            self._rebin_factor_(factor)
+            self._rebin_median_(factor)
             return None
         else:
             factor = np.array(factor)
@@ -1938,7 +1940,7 @@ class Cube(object):
                     n2_right = self.shape[2] - n[2] + n2_left
             
             cub = self[n0_left:n0_right,n1_left:n1_right,n2_left:n2_right]
-            cub._rebin_factor_(factor)
+            cub._rebin_median_(factor)
             
             self.shape = cub.shape
             self.data = cub.data

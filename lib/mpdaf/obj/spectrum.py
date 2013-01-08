@@ -400,11 +400,13 @@ class Spectrum(object):
         tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
         for card in self.data_header:
             try:
-                tbhdu.header.update(card.key, card.value, card.comment)
+                if tbhdu.header.keys().count(card.key)==0:
+                    tbhdu.header.update(card.key, card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    prihdu.header.update(card.key, card.value, card.comment)
+                    if tbhdu.header.keys().count(card.key)==0:
+                        tbhdu.header.update(card.key, card.value, card.comment)
                 except:
                     print "warning: %s not copied in data header"%card.key
                     pass
@@ -2429,3 +2431,19 @@ class Spectrum(object):
         except:
             pass
         
+    def FSF_convolve(self,f,epsilon):
+        res = self.clone()
+        step = self.get_step()
+        for i in self.shape:
+            lbda = self.wave.coord(i)
+            lsf = f(lbda,step,epsilon)
+            k = len(lsf)/2
+            # add k elements to the wavelength array on each side
+            # to avoid edge effects when folding with the LSF
+            data = np.empty(len(self.data)+2*k)
+            data[k:-k] = self.data
+            data[:k] = self.data[k:0:-1]
+            data[-k:] = self.data[-2:-k-2:-1]
+            
+            res[i] = lsf*data[i-k:i+k+1]
+            
