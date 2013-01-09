@@ -315,7 +315,9 @@ Transformation
 
 :func:`mpdaf.obj.Image.norm <mpdaf.obj.Image.norm>` normalizes total flux to value (default 1) (in place).
 
-:func:`mpdaf.obj.Image.rebin_factor <mpdaf.obj.Image.rebin_factor>` shrinks the size of the image by factor.
+:func:`mpdaf.obj.Image.rebin_factor <mpdaf.obj.Image.rebin_factor>` shrinks the size of the image by factor (mean values are used).
+
+:func:`mpdaf.obj.Image.rebin_median <mpdaf.obj.Image.rebin_median>` shrinks the size of the image by factor (median values are used).
 
 :func:`mpdaf.obj.Image.rebin <mpdaf.obj.Image.rebin>` rebins the image to a new coordinate system.
 

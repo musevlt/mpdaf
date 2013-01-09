@@ -287,7 +287,9 @@ Transformation
 
 :func:`mpdaf.obj.Spectrum.resize <mpdaf.obj.Spectrum.resize>` resizes the spectrum to have a minimum number of masked values (in place).
 
-:func:`mpdaf.obj.Spectrum.rebin_factor <mpdaf.obj.Spectrum.rebin_factor>` shrinks the size of the spectrum by factor.
+:func:`mpdaf.obj.Spectrum.rebin_factor <mpdaf.obj.Spectrum.rebin_factor>` shrinks the size of the spectrum by factor (mean values used).
+
+:func:`mpdaf.obj.Spectrum.rebin_median <mpdaf.obj.Spectrum.rebin_median>` shrinks the size of the spectrum by factor (median values used).
 
 :func:`mpdaf.obj.Spectrum.rebin <mpdaf.obj.Spectrum.rebin>` rebins spectrum to different wavelength step size.
 
