@@ -513,18 +513,18 @@ class Cube(object):
                 self.data = self.data[item]
                 if is_int(item[0]):
                     if is_int(item[1]):
-                        self.shape = (1,1,data.shape[0])
+                        self.shape = np.array((1,1,data.shape[0]))
                     elif is_int(item[2]):
-                        self.shape = (1,data.shape[0],1)
+                        self.shape = np.array((1,data.shape[0],1))
                     else:
-                        self.shape = (1,data.shape[0],data.shape[1])
+                        self.shape = np.array((1,data.shape[0],data.shape[1]))
                 elif is_int(item[1]):
                     if is_int(item[2]):
-                        self.shape = (data.shape[0],1,1)
+                        self.shape = np.array((data.shape[0],1,1))
                     else:
-                        self.shape = (data.shape[0],1,data.shape[1])
+                        self.shape = np.array((data.shape[0],1,data.shape[1]))
                 elif is_int(item[2]):
-                        self.shape = (data.shape[0],data.shape[1],1)
+                        self.shape = np.array((data.shape[0],data.shape[1],1))
                 else:
                     self.shape = data.shape
                 if self.var is not None:
@@ -1527,7 +1527,7 @@ class Cube(object):
         assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
         assert not np.sometrue(np.mod( self.shape[2], factor[2] ))
         #shape
-        self.shape = (self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2])
+        self.shape = np.array((self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2]))
         #data
         self.data = self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]).sum(1).sum(2).sum(3)/factor[0]/factor[1]/factor[2]
         #variance
@@ -1855,6 +1855,9 @@ class Cube(object):
         res._rebin_factor(factor, margin, flux)
         return res
     
+    def _med_(self,k,p,q,kfactor,pfactor,qfactor):
+        return np.ma.median(self.data[k*kfactor:(k+1)*kfactor,p*pfactor:(p+1)*pfactor,q*qfactor:(q+1)*qfactor])
+    
     def _rebin_median_(self, factor):
         '''Shrinks the size of the cube by factor.
         New size is an integer multiple of the original size.
@@ -1870,10 +1873,14 @@ class Cube(object):
         assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
         assert not np.sometrue(np.mod( self.shape[2], factor[2] ))
         #shape
-        self.shape = (self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2])
+        self.shape = np.array((self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2]))
         #data
-        self.data = np.median(np.median(np.median(self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]),1),2),3)
-        #self.data = np.mean(np.mean(np.mean(self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]),1),2),3)
+        grid = np.lib.index_tricks.nd_grid()
+        g = grid[0:self.shape[0],0:self.shape[1],0:self.shape[2]]
+        vfunc = np.vectorize(self._med_)
+        data = vfunc(g[0],g[1],g[2],factor[0],factor[1],factor[2])
+        mask = self.data.mask.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]).sum(1).sum(2).sum(3)
+        self.data = np.ma.array(data, mask=mask)
         #variance
         self.var = None
         #coordinates
@@ -1881,8 +1888,8 @@ class Cube(object):
         self.wcs = self.wcs.rebin_factor(factor[1:])
         crval = self.wave.coord()[0:factor[0]].sum()/factor[0]
         self.wave = WaveCoord(1, self.wave.cdelt*factor[0], crval, self.wave.cunit,self.shape[0])
-        
-    def _rebin_median(self, factor, margin='center'):
+ 
+    def rebin_median(self, factor, margin='center'):
         '''Shrinks the size of the cube by factor.
   
           :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
@@ -1901,8 +1908,7 @@ class Cube(object):
             return None
         if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )) and not np.sometrue(np.mod( self.shape[2], factor[2] )):
             # new size is an integer multiple of the original size
-            self._rebin_median_(factor)
-            return None
+            res = self.copy()
         else:
             factor = np.array(factor)
             newshape = self.shape/factor
@@ -1939,32 +1945,10 @@ class Cube(object):
                     n2_left = n[2]/2
                     n2_right = self.shape[2] - n[2] + n2_left
             
-            cub = self[n0_left:n0_right,n1_left:n1_right,n2_left:n2_right]
-            cub._rebin_median_(factor)
+            res = self[n0_left:n0_right,n1_left:n1_right,n2_left:n2_right]
             
-            self.shape = cub.shape
-            self.data = cub.data
-            self.var = None
-            self.wave = cub.wave
-            self.wcs = cub.wcs
-            return None
-        
-    def rebin_median(self, factor, margin='center'):
-        '''Shrinks the size of the cube by factor. The rebined cubes will contain median values. Variance is not conserved.
-  
-          :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
-          :type factor: integer or (integer,integer,integer)
-          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
-  
-            In 'center' case, cube is truncated on the left and on the right, on the bottom and of the top of the cube. 
-        
-            In 'origin'case, cube is truncated at the end along each direction
-          :type margin: 'center' or 'origin'   
-        '''
-        res = self.copy()
-        res._rebin_median(factor, margin)
+        res._rebin_median_(factor)
         return res
-             
           
     def loop_spe_multiprocessing(self, cpu=None, f=None, **kargs):
         """loops over all spectra to apply a function/method.

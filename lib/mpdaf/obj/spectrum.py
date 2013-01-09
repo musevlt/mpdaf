@@ -1319,6 +1319,63 @@ class Spectrum(object):
         res._rebin_factor(factor, margin)
         return res
     
+    def _rebin_median_(self, factor):
+        '''Shrinks the size of the spectrum by factor. Median values used.
+        New size is an integer multiple of the original size.
+        
+        :param factor: Factor.
+        :type factor: integer
+        '''
+        assert not np.sometrue(np.mod( self.shape, factor ))
+        # new size is an integer multiple of the original size
+        self.shape = self.shape/factor  
+        self.data = np.ma.array(np.ma.median(self.data.reshape(self.shape,factor),1) ,mask=self.data.mask.reshape(self.shape,factor).sum(1))
+        self.var = None
+        try:
+            crval = self.wave.coord()[0:factor].sum()/factor
+            self.wave = WaveCoord(1, self.wave.cdelt*factor, crval, self.wave.cunit,self.shape)
+        except:
+            self.wave = None
+            
+    def rebin_median(self, factor, margin='center'):
+        '''Shrinks the size of the spectrum by factor. Median values are used
+  
+          :param factor: factor
+          :type factor: integer
+          :param margin: This parameters is used if new size is not an integer multiple of the original size.
+  
+            'center' : pixels truncated, on the left and on the right of the spectrum.
+        
+            'right': pixel truncated on the right of the spectrum.
+        
+            'left': pixel truncated on the left of the spectrum.
+        
+          :type margin: string in 'center'|'right'|'left'
+        '''
+        if factor<=1 or factor>=self.shape:
+            raise ValueError, 'factor must be in ]1,shape['
+        #assert not np.sometrue(np.mod( self.shape, factor ))
+        if not np.sometrue(np.mod( self.shape, factor )):
+            # new size is an integer multiple of the original size
+            res = self.copy()
+        else:
+            newshape = self.shape/factor
+            n = self.shape - newshape*factor
+            if margin == 'center' and n==1:
+                margin = 'right'
+            if margin == 'center':
+                n_left = n/2
+                n_right = self.shape - n + n_left
+                res = self[n_left:n_right]
+            elif margin == 'right':
+                res = self[0:self.shape-n]
+            elif margin == 'left':
+                res = self[n:]
+            else:
+                raise ValueError, 'margin must be center|right|left'
+        res._rebin_median_(factor)
+        return res
+    
     def _rebin(self, step, start=None, shape= None, spline = False, notnoise=False):
         """Rebins spectrum data to different wavelength step size. Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
   
@@ -2434,16 +2491,64 @@ class Spectrum(object):
     def FSF_convolve(self,f,epsilon):
         res = self.clone()
         step = self.get_step()
-        for i in self.shape:
-            lbda = self.wave.coord(i)
-            lsf = f(lbda,step,epsilon)
-            k = len(lsf)/2
+        lbda = self.wave.coord()
+        res.data = np.array(map(lambda i: self._FSF_convolve(f,epsilon,step,i,lbda[i]), range(self.shape))) * self.fscale
+        return res
+    
+    def _FSF_convolve2(self,f,epsilon,step,i):
+        lbda = self.wave.coord(i)
+        lsf = f(lbda,step,epsilon)
+        k = len(lsf)/2
+        try:
+            return (lsf*self.data[i-k:i+k+1]).sum()
+        except:
+#            data = np.empty(2*k+1)
+#            if i<k:
+#                k1 = np.abs(i-k)
+#                data[:k1] = self.data[k1:0:-1]
+#                data[k1:] = self.data[:2*k+1-k1]
+#            if (i+k)>=self.shape:
+#                k1 = i + k-self.shape + 1
+#                print k1
+#                data[-k1:] = self.data[-2:-k1-2:-1]
+#                data[:-k1] = data[k1:]
+#            return (lsf*data).sum()
             # add k elements to the wavelength array on each side
             # to avoid edge effects when folding with the LSF
             data = np.empty(len(self.data)+2*k)
             data[k:-k] = self.data
             data[:k] = self.data[k:0:-1]
             data[-k:] = self.data[-2:-k-2:-1]
-            
-            res[i] = lsf*data[i-k:i+k+1]
+        #data[i:i+2*k+1] = self.data[i-k:i+k+1]
+            return (lsf*data[i:i+2*k+1]).sum()
+        
+    def _FSF_convolve(self,f,epsilon,step,i,lbda):
+        lsf = f(lbda,step,epsilon)
+        k = len(lsf)/2
+        # add k elements to the wavelength array on each side
+        # to avoid edge effects when folding with the LSF
+        data = np.empty(self.shape+2*k)
+        data[k:-k] = self.data
+        data[:k] = self.data[k:0:-1]
+        data[-k:] = self.data[-2:-k-2:-1]
+        return (lsf*data[i:i+2*k+1]).sum()
+
+def test(lbda,step,epsilon):
+    
+    sigma = 3.0
+    Imax = 1.0
+    x0 = lbda
+    
+    x = np.array([x0])
+    diff = -1
+    k = 0
+    while diff<0:
+        k = k+1
+        x = np.empty(2*k + 1)
+        x[:k+1] = x0 - np.arange(k+1)[::-1]*step
+        x[k:] = x0 + np.arange(k+1)*step
+        g = Imax*np.exp(-(x-x0)**2/(2*sigma**2))
+        diff = epsilon*g[k]-g[0]
+    return g
+
             

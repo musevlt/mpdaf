@@ -630,11 +630,11 @@ class Image(object):
                 item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None))
                 self.data = self.data[item]
                 if is_int(item[0]):
-                    self.shape = (1,self.data.shape[0])
+                    self.shape = np.array((1,self.data.shape[0]))
                 elif is_int(item[1]):
-                    self.shape = (self.data.shape[0],1)
+                    self.shape = np.array((self.data.shape[0],1))
                 else:
-                    self.shape = (self.data.shape[0],self.data.shape[1])
+                    self.shape = np.array((self.data.shape[0],self.data.shape[1]))
                 if self.var is not None:
                     self.var = self.var[item]
                 try:
@@ -1395,7 +1395,7 @@ class Image(object):
             jmax=self.shape[1]
          
         self.data = self.data[imin:imax,jmin:jmax]
-        self.shape = (self.data.shape[0],self.data.shape[1])
+        self.shape = np.array((self.data.shape[0],self.data.shape[1]))
         if self.var is not None:
             self.var = self.var[imin:imax,jmin:jmax]
         try:
@@ -2520,7 +2520,7 @@ class Image(object):
         assert not np.sometrue(np.mod( self.shape[0], factor[0] ))
         assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
         # new size is an integer multiple of the original size
-        self.shape = (self.shape[0]/factor[0],self.shape[1]/factor[1])
+        self.shape = np.array((self.shape[0]/factor[0],self.shape[1]/factor[1]))
         self.data = self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
         if self.var is not None:
             self.var = self.var.reshape(self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]/factor[0]/factor[1]
@@ -2806,7 +2806,7 @@ class Image(object):
                 wcs.wcs.naxis2 = wcs.wcs.naxis2 +1
             else:
                 raise ValueError, 'margin must be center|origin'
-        self.shape = newshape
+        self.shape = np.array(newshape)
         self.wcs = wcs
         self.data = np.ma.array(data, mask=mask)
         self.var = var
@@ -2826,6 +2826,88 @@ class Image(object):
         '''
         res = self.copy()
         res._rebin_factor(factor, margin)
+        return res
+    
+    def _med_(self,p,q,pfactor,qfactor):
+        return np.ma.median(self.data[p*pfactor:(p+1)*pfactor,q*qfactor:(q+1)*qfactor])
+    
+    def _rebin_median_(self, factor):
+        '''Shrinks the size of the image by factor.
+        New size is an integer multiple of the original size.
+        
+        Parameter
+        ----------
+        factor : (integer,integer)
+        Factor in y and x.
+        Python notation: (ny,nx)
+        '''
+        assert not np.sometrue(np.mod( self.shape[0], factor[0] ))
+        assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
+        # new size is an integer multiple of the original size
+        self.shape = np.array((self.shape[0]/factor[0],self.shape[1]/factor[1]))
+        Nq,Np = np.meshgrid(xrange(self.shape[1]),xrange(self.shape[0]))
+        vfunc = np.vectorize(self._med_)
+        data = vfunc(Np,Nq,factor[0],factor[1])
+        mask = self.data.mask.reshape(self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
+        self.data = np.ma.array(data, mask=mask)
+        self.var = None
+        cdelt = self.wcs.get_step()
+        self.wcs = self.wcs.rebin_factor(factor)
+    
+    def rebin_median(self, factor, margin='center'):
+        '''Shrinks the size of the image by factor. Median values are used.
+  
+          :param factor: Factor in y and x. Python notation: (ny,nx).
+          :type factor: integer or (integer,integer)
+          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
+  
+            In 'center' case, image is truncated on the left and on the right, on the bottom and of the top of the image. 
+        
+            In 'origin'case, image is truncated at the end along each direction.
+          :type margin: 'center' or 'origin'
+        '''
+        if is_int(factor):
+            factor = (factor,factor)
+        if factor[0]<=1 or factor[0]>=self.shape[0] or factor[1]<=1 or factor[1]>=self.shape[1]:
+            raise ValueError, 'factor must be in ]1,shape['
+            return None
+        if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )):
+            # new size is an integer multiple of the original size
+            res = self.copy()
+        elif not np.sometrue(np.mod( self.shape[0], factor[0] )):
+            newshape1 = self.shape[1]/factor[1]
+            n1 = self.shape[1] - newshape1*factor[1]
+            if margin == 'origin' or n1==1:
+                res = self[:,:-n1]
+            else:
+                n_left = n1/2
+                n_right = self.shape[1] - n1 + n_left
+                res = self[:,n_left:n_right]
+        elif not np.sometrue(np.mod( self.shape[1], factor[1] )):
+            newshape0 = self.shape[0]/factor[0]
+            n0 = self.shape[0] - newshape0*factor[0]
+            if margin == 'origin' or n0==1:
+                res = self[:-n0,:]
+            else:
+                n_left = n0/2
+                n_right = self.shape[0] - n0 + n_left
+                res = self[n_left:n_right,:]
+        else:
+            factor = np.array(factor)
+            newshape = self.shape/factor
+            n = self.shape - newshape*factor
+            if n[0]==1 and n[1]==1:
+                margin = 'origin'
+            if margin == 'center':
+                n_left = n/2
+                n_right = self.shape - n + n_left
+                res = self[n_left[0]:n_right[0],n_left[1]:n_right[1]]
+            elif margin=='origin':
+                n_right = self.shape - n
+                res = self[0:n_right[0],0:n_right[1]]
+            else:
+                raise ValueError, 'margin must be center|origin'
+        res._rebin_median_(factor)
         return res
     
     def _rebin(self, newdim, newstart, newstep, flux=False, order=3, interp='no'):
