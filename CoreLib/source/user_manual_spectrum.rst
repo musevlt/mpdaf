@@ -305,6 +305,8 @@ Transformation
 
 :func:`mpdaf.obj.Spectrum.fftconvolve_gauss <mpdaf.obj.Spectrum.fftconvolve_gauss>` convolves the spectrum with a Gaussian using fft.
 
+:func:`mpdaf.obj.Spectrum.FSF_convolve <mpdaf.obj.Spectrum.FSF_convolve>` convolves the spectrum with an FSF.
+
 
 
 Fit
