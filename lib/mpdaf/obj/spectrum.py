@@ -1351,6 +1351,7 @@ class Spectrum(object):
             'left': pixel truncated on the left of the spectrum.
         
           :type margin: string in 'center'|'right'|'left'
+          :rtype: :class:`mpdaf.obj.Spectrum`
         '''
         if factor<=1 or factor>=self.shape:
             raise ValueError, 'factor must be in ]1,shape['
@@ -2174,6 +2175,7 @@ class Spectrum(object):
         :param epsilon: this factor is used to determine the size of FSF (min(FSF)<max(FSF)*epsilon)
         :type epsilon: float
         :param kargs: kargs can be used to set function arguments.
+        :rtype: :class:`mpdaf.obj.Spectrum`
         """
         res = self.clone()
         step = self.get_step()

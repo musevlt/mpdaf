@@ -1899,7 +1899,8 @@ class Cube(object):
             In 'center' case, cube is truncated on the left and on the right, on the bottom and of the top of the cube. 
         
             In 'origin'case, cube is truncatedat the end along each direction
-          :type margin: 'center' or 'origin'   
+          :type margin: 'center' or 'origin'  
+          :rtype: :class:`mpdaf.obj.Cube`
         '''
         if is_int(factor):
             factor = (factor,factor,factor)

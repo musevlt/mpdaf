@@ -2865,6 +2865,7 @@ class Image(object):
         
             In 'origin'case, image is truncated at the end along each direction.
           :type margin: 'center' or 'origin'
+          :rtype: :class:`mpdaf.obj.Image`
         '''
         if is_int(factor):
             factor = (factor,factor)
