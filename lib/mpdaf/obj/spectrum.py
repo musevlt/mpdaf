@@ -2161,6 +2161,49 @@ class Spectrum(object):
         res = self.copy()
         res._fftconvolve_gauss(fwhm, nsig)
         return res
+    
+    def FSF_convolve(self, f, epsilon=0.001, **kargs):
+        """Convolve spectrum with FSF.
+        
+        :param f: function describing the FSF. 
+        
+            The first three parameters of this function must be lbda (wavelength value in A), step (in A) and size (odd integer).
+            
+            f returns an np.array with shape=2*(size/2)+1 and centered in lbda. 
+        :type f: python function
+        :param epsilon: this factor is used to determine the size of FSF (min(FSF)<max(FSF)*epsilon)
+        :type epsilon: float
+        :param kargs: kargs can be used to set function arguments.
+        """
+        res = self.clone()
+        step = self.get_step()
+        lbda = self.wave.coord()
+        
+        x0 = lbda[int(self.shape/2)]
+        x = np.array([x0])
+        diff = -1
+        k = 0
+        while diff<0:
+            k = k+1
+            d = k * step
+            g = f(x0,d,3,**kargs)
+            diff = epsilon*g[1]-g[0]
+
+        data = np.empty(len(self.data)+2*k)
+        data[k:-k] = self.data
+        data[:k] = self.data[k:0:-1]
+        data[-k:] = self.data[-2:-k-2:-1]
+        
+        size = k*2
+        res.data = np.ma.array(map(lambda i: (f(lbda[i],step,size,**kargs)*data[i:i+2*k+1]).sum(), range(self.shape)),mask=self.data.mask)
+        res.fscale = self.fscale
+        
+        if self.var is None:
+            res.var = None
+        else:
+            res.var = np.array(map(lambda i: (f(lbda[i],step,size,**kargs)*data[i:i+2*k+1]).sum(), range(self.shape)))
+        return res
+
  
     def peak_detection(self, kernel_size=None, pix=False):
         """Returns a list of peak locations. Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
@@ -2487,68 +2530,4 @@ class Spectrum(object):
             self._plot_mask_id = len(plt.gca().lines)-1
         except:
             pass
-        
-    def FSF_convolve(self,f,epsilon):
-        res = self.clone()
-        step = self.get_step()
-        lbda = self.wave.coord()
-        res.data = np.array(map(lambda i: self._FSF_convolve(f,epsilon,step,i,lbda[i]), range(self.shape))) * self.fscale
-        return res
-    
-    def _FSF_convolve2(self,f,epsilon,step,i):
-        lbda = self.wave.coord(i)
-        lsf = f(lbda,step,epsilon)
-        k = len(lsf)/2
-        try:
-            return (lsf*self.data[i-k:i+k+1]).sum()
-        except:
-#            data = np.empty(2*k+1)
-#            if i<k:
-#                k1 = np.abs(i-k)
-#                data[:k1] = self.data[k1:0:-1]
-#                data[k1:] = self.data[:2*k+1-k1]
-#            if (i+k)>=self.shape:
-#                k1 = i + k-self.shape + 1
-#                print k1
-#                data[-k1:] = self.data[-2:-k1-2:-1]
-#                data[:-k1] = data[k1:]
-#            return (lsf*data).sum()
-            # add k elements to the wavelength array on each side
-            # to avoid edge effects when folding with the LSF
-            data = np.empty(len(self.data)+2*k)
-            data[k:-k] = self.data
-            data[:k] = self.data[k:0:-1]
-            data[-k:] = self.data[-2:-k-2:-1]
-        #data[i:i+2*k+1] = self.data[i-k:i+k+1]
-            return (lsf*data[i:i+2*k+1]).sum()
-        
-    def _FSF_convolve(self,f,epsilon,step,i,lbda):
-        lsf = f(lbda,step,epsilon)
-        k = len(lsf)/2
-        # add k elements to the wavelength array on each side
-        # to avoid edge effects when folding with the LSF
-        data = np.empty(self.shape+2*k)
-        data[k:-k] = self.data
-        data[:k] = self.data[k:0:-1]
-        data[-k:] = self.data[-2:-k-2:-1]
-        return (lsf*data[i:i+2*k+1]).sum()
-
-def test(lbda,step,epsilon):
-    
-    sigma = 3.0
-    Imax = 1.0
-    x0 = lbda
-    
-    x = np.array([x0])
-    diff = -1
-    k = 0
-    while diff<0:
-        k = k+1
-        x = np.empty(2*k + 1)
-        x[:k+1] = x0 - np.arange(k+1)[::-1]*step
-        x[k:] = x0 + np.arange(k+1)*step
-        g = Imax*np.exp(-(x-x0)**2/(2*sigma**2))
-        diff = epsilon*g[k]-g[0]
-    return g
-
-            
+                
