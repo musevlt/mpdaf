@@ -2851,7 +2851,6 @@ class Image(object):
         mask = self.data.mask.reshape(self.shape[0],factor[0],self.shape[1],factor[1]).sum(1).sum(2)/factor[0]/factor[1]
         self.data = np.ma.array(data, mask=mask)
         self.var = None
-        cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor)
     
     def rebin_median(self, factor, margin='center'):

@@ -1971,7 +1971,6 @@ class Cube(object):
             cpu_count = cpu
         else:
             cpu_count = multiprocessing.cpu_count() - 1
-        cube_result = self.clone()
         pool = multiprocessing.Pool(processes = cpu_count)
         processlist = list()
            
@@ -1980,7 +1979,14 @@ class Cube(object):
         
         for sp,pos in iter_spe(self, index=True):
             processlist.append([sp,pos,f,kargs])
-        processresult = pool.map(_process,processlist)
+        processresult = pool.map(_process_spe,processlist)
+        
+        out = processresult[0][1]
+        if self.var is None:
+            cube_result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit)
+        else:
+            cube_result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),var=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit)
+        
         for pos,out in processresult:
             p,q = pos
             cube_result[:,p,q] = out
@@ -2006,7 +2012,7 @@ class Cube(object):
             cpu_count = cpu
         else:
             cpu_count = multiprocessing.cpu_count() - 1
-        cube_result = self.clone()
+        
         pool = multiprocessing.Pool(processes = cpu_count)
         processlist = list()
            
@@ -2014,20 +2020,50 @@ class Cube(object):
             f = f.__name__
         
         for ima,k in iter_ima(self, index=True):
-            processlist.append([ima,k,f,kargs])
-        processresult = pool.map(_process,processlist)
-        for k,out in processresult:
+            header = ima.wcs.to_header()
+            processlist.append([ima,k,f,header,kargs])
+        processresult = pool.map(_process_ima,processlist)
+        
+        out = processresult[0][1]
+        header = processresult[0][2]
+        wcs = WCS(header)
+        wcs.set_naxis1(out.shape[1])
+        wcs.set_naxis2(out.shape[0])
+        if self.var is None:
+            cube_result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit)
+        else:
+            cube_result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit)
+        
+        for k,out,h in processresult:
             cube_result[k,:,:] = out
         return cube_result
     
-def _process(arglist):
+def _process_spe(arglist):
     obj = arglist[0]
     pos = arglist[1]
     f = arglist[2]
     kargs = arglist[3]
-    
     if isinstance (f,types.FunctionType):
         obj_result = f(obj,**kargs)
     else:
         obj_result = getattr(obj, f)(**kargs)  
+        
     return (pos,obj_result)
+
+def _process_ima(arglist):
+    #bug multiprocessing & pywcs
+    obj = arglist[0]
+    obj.wcs = WCS(arglist[3])
+    obj.wcs.set_naxis1(obj.shape[1])
+    obj.wcs.set_naxis2(obj.shape[0])
+    
+    pos = arglist[1]
+    f = arglist[2]
+    kargs = arglist[4]
+    if isinstance (f,types.FunctionType):
+        obj_result = f(obj,**kargs)
+    else:
+        obj_result = getattr(obj, f)(**kargs)  
+    header = obj_result.wcs.to_header()
+    
+    return (pos,obj_result,header)
