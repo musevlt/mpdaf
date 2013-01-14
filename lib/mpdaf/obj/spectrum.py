@@ -2163,7 +2163,7 @@ class Spectrum(object):
         res._fftconvolve_gauss(fwhm, nsig)
         return res
     
-    def FSF_convolve(self, f, epsilon=0.001, **kargs):
+    def FSF_convolve(self, f, epsilon=0.001, size=None, **kargs):
         """Convolve spectrum with FSF.
         
         :param f: function describing the FSF. 
@@ -2174,6 +2174,8 @@ class Spectrum(object):
         :type f: python function
         :param epsilon: this factor is used to determine the size of FSF (min(FSF)<max(FSF)*epsilon)
         :type epsilon: float
+        :param size: size of LSF in pixels.
+        :type size: odd integer
         :param kargs: kargs can be used to set function arguments.
         :rtype: :class:`mpdaf.obj.Spectrum`
         """
@@ -2181,29 +2183,35 @@ class Spectrum(object):
         step = self.get_step()
         lbda = self.wave.coord()
         
-        x0 = lbda[int(self.shape/2)]
-        x = np.array([x0])
-        diff = -1
-        k = 0
-        while diff<0:
-            k = k+1
-            d = k * step
-            g = f(x0,d,3,**kargs)
-            diff = epsilon*g[1]-g[0]
+        if size is None:
+            x0 = lbda[int(self.shape/2)]
+            x = np.array([x0])
+            diff = -1
+            k = 0
+            while diff<0:
+                k = k+1
+                d = k * step
+                g = f(x0,d,3,**kargs)
+                diff = epsilon*g[1]-g[0]
+            size = k*2 + 1
+        else:
+            if size%2==0:
+                raise ValueError, 'Size must be an odd number'
+            else:
+                k = size/2.
 
         data = np.empty(len(self.data)+2*k)
         data[k:-k] = self.data
         data[:k] = self.data[k:0:-1]
         data[-k:] = self.data[-2:-k-2:-1]
         
-        size = k*2
-        res.data = np.ma.array(map(lambda i: (f(lbda[i],step,size,**kargs)*data[i:i+2*k+1]).sum(), range(self.shape)),mask=self.data.mask)
+        res.data = np.ma.array(map(lambda i: (f(lbda[i],step,size,**kargs)*data[i:i+size]).sum(), range(self.shape)),mask=self.data.mask)
         res.fscale = self.fscale
         
         if self.var is None:
             res.var = None
         else:
-            res.var = np.array(map(lambda i: (f(lbda[i],step,size,**kargs)*data[i:i+2*k+1]).sum(), range(self.shape)))
+            res.var = np.array(map(lambda i: (f(lbda[i],step,size,**kargs)*data[i:i+size]).sum(), range(self.shape)))
         return res
 
  
