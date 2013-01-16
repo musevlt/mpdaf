@@ -2163,16 +2163,16 @@ class Spectrum(object):
         res._fftconvolve_gauss(fwhm, nsig)
         return res
     
-    def FSF_convolve(self, f, epsilon=0.001, size=None, **kargs):
-        """Convolve spectrum with FSF.
+    def LSF_convolve(self, f, epsilon=0.001, size=None, **kargs):
+        """Convolve spectrum with LSF.
         
-        :param f: function describing the FSF. 
+        :param f: function describing the LSF. 
         
             The first three parameters of this function must be lbda (wavelength value in A), step (in A) and size (odd integer).
             
             f returns an np.array with shape=2*(size/2)+1 and centered in lbda. 
         :type f: python function
-        :param epsilon: this factor is used to determine the size of FSF (min(FSF)<max(FSF)*epsilon)
+        :param epsilon: this factor is used to determine the size of LSF (min(LSF)<max(LSF)*epsilon)
         :type epsilon: float
         :param size: size of LSF in pixels.
         :type size: odd integer
@@ -2198,7 +2198,7 @@ class Spectrum(object):
             if size%2==0:
                 raise ValueError, 'Size must be an odd number'
             else:
-                k = size/2.
+                k = size/2
 
         data = np.empty(len(self.data)+2*k)
         data[k:-k] = self.data
