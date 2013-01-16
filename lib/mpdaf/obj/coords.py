@@ -520,8 +520,8 @@ class WCS(object):
     
     def new_step(self,factor):
         try:
-            self.wcs.wcs.cd[:,0] *= factor[1]
-            self.wcs.wcs.cd[:,1] *= factor[0]
+            self.wcs.wcs.cd[0,:] *= factor[1]
+            self.wcs.wcs.cd[1,:] *= factor[0]
             self.wcs.wcs.set()
         except:
             try:
@@ -540,6 +540,7 @@ class WCS(object):
         """
         res = self.copy()
         factor = np.array(factor)
+        
         try:
             cd = res.wcs.wcs.cd
             cd[0,:] *= factor[1]
@@ -553,13 +554,18 @@ class WCS(object):
                 res.wcs.wcs.cdelt = cdelt
             except:
                 print "problem in wcs to rebin"
+        res.wcs.wcs.set()
+        old_cdelt = self.get_step()
+        cdelt = res.get_step()
+        
         crpix = res.wcs.wcs.crpix
-        crpix[0] /= factor[1]
-        crpix[1] /= factor[0]
+        crpix[0] = (crpix[0]*old_cdelt[1] - old_cdelt[1]/2.0 + cdelt[1]/2.0) / cdelt[1]
+        crpix[1] = (crpix[1]*old_cdelt[0] - old_cdelt[0]/2.0 + cdelt[0]/2.0) / cdelt[0]
         res.wcs.wcs.crpix = crpix
         res.wcs.naxis1 = res.wcs.naxis1 / factor[1]
         res.wcs.naxis2 = res.wcs.naxis2 / factor[0]
         res.wcs.wcs.set()
+        
         return res
     
     def is_deg(self):
