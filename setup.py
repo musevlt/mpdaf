@@ -66,7 +66,7 @@ class MakeFusion(Command):
         shutil.copy('lib/mpdaf/fusion/examples/LSF_V1.fits',path + '/LSF_V1.fits')
 
 package_dir = {'mpdaf': 'lib/mpdaf/','mpdaf_user':'mpdaf_user/'}
-packages = ['mpdaf','mpdaf.tools','mpdaf.obj','mpdaf.fusion','mpdaf.drs','mpdaf_user']
+packages = ['mpdaf','mpdaf.tools','mpdaf.obj','mpdaf.fusion','mpdaf.drs','mpdaf.MUSE','mpdaf_user']
 for path in os.listdir('mpdaf_user'):
     if os.path.isdir('mpdaf_user/'+path):        
         package_dir['mpdaf_user.'+path] = 'mpdaf_user/'+path+'/lib/'

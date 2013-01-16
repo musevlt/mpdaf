@@ -1,7 +1,3 @@
-""" MUSE.py: Misc tools related to MUSE"""
-from scipy import special
-import numpy as np
-
 class Slicer:
     """Tools to convert a slice number between the various numbering
        schemes. The definition of the various numbering schemes and the
@@ -97,30 +93,3 @@ class Slicer:
         :type s: int
         """
         return Slicer.sky2optical(Slicer.ccd2sky(s))
-
-
-def LSF(lbda,step,size):
-    
-    T = lambda x: np.exp((-x**2)/2.0) + np.sqrt(2.0*np.pi)*x*special.erf(x/np.sqrt(2.0))/2.0
-    c = np.array([-0.09876662, 0.44410609, -0.03166038, 0.46285363])
-    sigma = lambda x: c[3] + c[2]*x + c[1]*x**2 + c[0]*x**3
-    
-    x = (lbda-6975.0)/4650.0
-    h = 2.09
-    sig = sigma(x)
-    dy = step / 1.25
-        
-    k = size/2
-    y = np.arange(-k, k+1)
-        
-    y1 = (y - h/2.0) / sig
-    y2 = (y + h/2.0) / sig
-    
-    LSF = T(y2 + dy/2.0) - T(y2 - dy/2.0) - T(y1 + dy/2.0) + T(y1 - dy/2.0)
-    LSF /= LSF.sum()
-        
-    return LSF
-        
-        
-        
-        

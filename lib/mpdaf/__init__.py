@@ -4,6 +4,7 @@ __date__     = '2012/11/19 16:47'
 import tools
 import obj
 import drs
+import MUSE
 try:
     import fusion
 except:

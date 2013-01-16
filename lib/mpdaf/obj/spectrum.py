@@ -2171,6 +2171,8 @@ class Spectrum(object):
             The first three parameters of this function must be lbda (wavelength value in A), step (in A) and size (odd integer).
             
             f returns an np.array with shape=2*(size/2)+1 and centered in lbda. 
+            
+            Example: from mpdaf.MUSE import LSF
         :type f: python function
         :param epsilon: this factor is used to determine the size of LSF (min(LSF)<max(LSF)*epsilon)
         :type epsilon: float
