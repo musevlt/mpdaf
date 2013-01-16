@@ -13,7 +13,7 @@ to use this class.
 Tutorial
 ========
 
-  >>> from mpdaf.tools.MUSE import Slicer
+  >>> from mpdaf.MUSE import Slicer
 
   >>> # Convert slice number 4 in CCD numbering to SKY numbering
   >>> print(Slicer.ccd2sky(4))
@@ -27,16 +27,16 @@ Tutorial
 References
 ==========
 
-:func:`mpdaf.tools.MUSE.Slicer.ccd2optical` converts slicer number from CCD to OPTICAL numbering scheme. 
+:func:`mpdaf.MUSE.Slicer.ccd2optical <mpdaf.MUSE.Slicer.ccd2optical>` converts slicer number from CCD to OPTICAL numbering scheme. 
 
-:func:`mpdaf.tools.MUSE.Slicer.ccd2sky` converts slicer number from CCD to SKY numbering scheme. 
+:func:`mpdaf.MUSE.Slicer.ccd2sky <mpdaf.MUSE.Slicer.ccd2sky>` converts slicer number from CCD to SKY numbering scheme. 
 
-:func:`mpdaf.tools.MUSE.Slicer.optical2ccd` converts slicer number from OPTICAL to CCD numbering scheme. 
+:func:`mpdaf.MUSE.Slicer.optical2ccd <mpdaf.MUSE.Slicer.optical2ccd>` converts slicer number from OPTICAL to CCD numbering scheme. 
 
-:func:`mpdaf.tools.MUSE.Slicer.optical2sky` converts slicer number from OPTICAL to SKY numbering scheme. 
+:func:`mpdaf.MUSE.Slicer.optical2sky <mpdaf.MUSE.Slicer.optical2sky>` converts slicer number from OPTICAL to SKY numbering scheme. 
 
-:func:`mpdaf.tools.MUSE.Slicer.sky2ccd` converts slicer number from SKY to CCD numbering scheme. 
+:func:`mpdaf.MUSE.Slicer.sky2ccd <mpdaf.MUSE.Slicer.sky2ccd>` converts slicer number from SKY to CCD numbering scheme. 
 
-:func:`mpdaf.tools.MUSE.Slicer.sky2optical` converts slicer number from SKY to OPTICAL numbering scheme. 
+:func:`mpdaf.MUSE.Slicer.sky2optical <mpdaf.MUSE.Slicer.sky2optical>` converts slicer number from SKY to OPTICAL numbering scheme. 
 
 

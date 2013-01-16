@@ -20,6 +20,7 @@ Contents:
    installation
    obj
    drs
+   muse
    fusion
    tools
    dvper_manual

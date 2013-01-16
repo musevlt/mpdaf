@@ -10,4 +10,5 @@ Contents:
    :maxdepth: 2
 
    user_manual_slicer
+   user_manual_PSF
 
