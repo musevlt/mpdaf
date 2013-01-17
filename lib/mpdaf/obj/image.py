@@ -2284,6 +2284,210 @@ class Image(object):
             gauss.print_param()
         return gauss
     
+    def gauss_circular_fit(self, pos_min=None, pos_max=None, center=None, flux=None, fwhm=None, cont=None, peak = False, factor = 1, weight=True, plot = False, pix=False, verbose=True):
+        """Performs Gaussian fit on image.
+  
+          :param pos_min: Minimum y and x values in degrees (pix=False) or in pixels (pix=True).
+          :type pos_min: (float,float)
+          :param pos_max: Maximum y and x values in degrees (pix=False) or in pixels (pix=True).
+          :type pos_max: (float,float)
+          :param center: Initial gaussian center (y_peak,x_peak) in degrees (pix=False) or in pixels (pix=True).
+                          
+                          If None it is estimated.
+          :type center: (float,float)
+          :param flux: Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.
+          :type flux: float
+          :param fwhm: Initial gaussian fwhm in arcseconds (pix=False) or in pixels (pix=True).
+          
+                      If None, they are estimated.
+          :type fwhm: float
+          :param cont: Initial continuum value, if None it is estimated.
+          :type cont: float
+          :param peak: If true, flux contains a gaussian peak value. 
+          :type peak: bool
+          :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
+        
+              If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.
+          :type factor: integer
+          :param weight:  If weight is True, the weight is computed as the inverse of variance.
+          :type weight: bool
+          :param plot: If True, the gaussian is plotted.
+          :type plot: bool
+          :param pix: If pix is False, center and fwhm are in degrees and arcsecs (input and output).
+  
+              If pix is True, center and fwhm are in pixels.
+          :type pix: bool
+          :param verbose: If True, the Gaussian parameters are printed at the end of the method.
+          :type verbose: True
+          :rtype: :class:`mpdaf.obj.Gauss2D`
+        """
+        if pix:
+            if pos_min is None:
+                pmin = 0
+                qmin = 0
+            else:
+                pmin = pos_min[0]
+                qmin = pos_min[1]
+            if pos_max is None:
+                pmax = self.shape[0]
+                qmax = self.shape[1]
+            else:
+                pmax = pos_max[0]
+                qmax = pos_max[1]
+        else:
+            if pos_min is None:
+                pmin = 0
+                qmin = 0
+            else:
+                pixcrd = self.wcs.sky2pix(pos_min)
+                pmin = pixcrd[0][0]
+                qmin = pixcrd[0][1]
+            if pos_max is None:
+                pmax = self.shape[0]
+                qmax = self.shape[1]
+            else:
+                pixcrd = self.wcs.sky2pix(pos_max)
+                pmax = pixcrd[0][0]
+                qmax = pixcrd[0][1]
+          
+        ima = self[pmin:pmax,qmin:qmax]
+       
+        ksel = np.where(ima.data.mask==False)
+        N = np.shape(ksel[0])[0]
+        if N == 0:
+            raise ValueError,'empty sub-image'
+        pixcrd = np.empty((np.shape(ksel[0])[0],2))
+        p = ksel[0]
+        q = ksel[1]
+        data = ima.data.data[ksel]
+        
+        #weight
+        if ima.var is not None and weight:
+            wght = 1/ima.var[ksel]
+        else:
+            wght = np.ones(np.shape(ksel[0])[0])
+        
+        # initial gaussian peak position
+        if center is None:
+            imax = data.argmax()
+            center = np.array([p[imax],q[imax]])
+        else:
+            if not pix:
+                center = self.wcs.sky2pix(center)[0]
+            else:
+                center = np.array(center)
+                center[0] -= pmin
+                center[1] -= qmin
+            
+        # continuum value 
+        if cont is None:
+            imin = data.argmin()
+            cont =  max(0,data[imin])
+        else:
+            cont = cont/self.fscale
+            
+        # initial moment value    
+        if fwhm is None:
+            width = ima.moments(pix=True)[0]
+            fwhm = width * 2.*np.sqrt(2.*np.log(2.0))
+        else:
+           if not pix:
+               fwhm = fwhm / np.abs(ima.wcs.get_step()[0]) / 3600.
+           width = fwhm/(2.*np.sqrt(2.*np.log(2.0)))
+        
+        # initial gaussian integrated flux
+        if flux is None:
+            peak = ima.data.data[center[0],center[1]] - cont
+            flux = peak * np.sqrt(2*np.pi*(width**2)) * np.sqrt(2*np.pi*(width**2))
+        elif peak is True:
+            flux /= self.fscale
+            peak = flux - cont
+            flux = peak * np.sqrt(2*np.pi*(width**2)) * np.sqrt(2*np.pi*(width**2))
+        else:
+            flux /= self.fscale
+        
+        # 2d gaussian function
+        gaussfit = lambda v, p, q: cont + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-(p-v[1])**2/(2*v[2]**2)) \
+                                                  *(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-(q-v[3])**2/(2*v[2]**2)) 
+        # inital guesses for Gaussian Fit
+        v0 = [flux,center[0], width, center[1]]
+            
+        # Minimize the sum of squares
+        if factor > 1:
+            factor = int(factor)
+            deci = np.ones((factor,factor)) * np.arange(factor)[:,np.newaxis] / float(factor) + 1/float(factor*2)
+            fp = (p[:,np.newaxis] + deci.ravel()[np.newaxis,:]).ravel()
+            fq = (q[:,np.newaxis] + deci.T.ravel()[np.newaxis,:]).ravel()
+            pixcrd = np.array(zip(fp,fq))
+                
+            e_gauss_fit = lambda v, p, q, data, w: w * (((gaussfit(v,p,q)).reshape(N,factor*factor).sum(1)/factor/factor).T.ravel() - data)
+            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(pixcrd[:,0],pixcrd[:,1],data,wght), maxfev=100000, full_output=1)           
+        else:                                             
+            e_gauss_fit = lambda v, p, q, data,w : w * (gaussfit(v,p,q) - data)
+            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(p,q,data,wght), maxfev=100000, full_output=1)
+    
+        # calculate the errors from the estimated covariance matrix
+        chisq = sum(info["fvec"] * info["fvec"])
+        dof = len(info["fvec"]) - len(v)
+        if covar is not None:
+            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        else:
+            err = None
+            
+        #center in pixel in the input image
+        v[1] += int(pmin)
+        v[3] += int(qmin)
+        
+        # plot
+        if plot:
+            pp = np.arange(pmin,pmax,float(pmax-pmin)/100)
+            qq = np.arange(qmin,qmax,float(qmax-qmin)/100)
+            ff = np.empty((np.shape(pp)[0],np.shape(qq)[0]))
+            for i in range(np.shape(pp)[0]):
+                ff[i,:] = gaussfit(v,pp[i],qq[:])*self.fscale
+            plt.contour(qq, pp, ff, 5)
+            
+        # Gauss2D object in pixels
+        flux = v[0]*self.fscale
+        p_peak = v[1]
+        q_peak = v[3]
+        p_width = np.abs(v[2])
+        q_width = np.abs(v[2])
+        p_fwhm = p_width*2*np.sqrt(2*np.log(2))
+        q_fwhm = q_width*2*np.sqrt(2*np.log(2))
+        peak = flux / np.sqrt(2*np.pi*(p_width**2)) / np.sqrt(2*np.pi*(q_width**2))
+        if err is not None:
+            err_flux = err[0]*self.fscale
+            err_p_peak = err[1]
+            err_q_peak = err[3]
+            err_p_width = np.abs(err[2])
+            err_q_width = np.abs(err[2])
+            err_p_fwhm = err_p_width*2*np.sqrt(2*np.log(2))
+            err_q_fwhm = err_q_width*2*np.sqrt(2*np.log(2))
+            err_peak = (err_flux*p_width*q_width - flux*(err_p_width*q_width+err_q_width*p_width)) / (2*np.pi*p_width*p_width*q_width*q_width)  
+        else:
+            err_flux = np.NAN
+            err_p_peak = np.NAN
+            err_p_width = np.NAN
+            err_p_fwhm = np.NAN
+            err_q_peak = np.NAN
+            err_q_width = np.NAN
+            err_q_fwhm = np.NAN
+            err_peak = np.NAN
+            
+        if not pix:
+            #Gauss2D object in degrees/arcseconds
+            center = self.wcs.pix2sky([p_peak,q_peak])[0]
+            err_center = np.array([err_p_peak,err_q_peak]) * np.abs(self.wcs.get_step())
+            fwhm = np.array([p_fwhm,q_fwhm]) * np.abs(self.wcs.get_step()) * 3600.0
+            err_fwhm = np.array([err_p_fwhm,err_q_fwhm]) * np.abs(self.wcs.get_step()) * 3600.0
+            gauss = Gauss2D(center, flux, fwhm, cont*self.fscale, 0, peak, err_center, err_flux, err_fwhm, 0, err_peak)
+        else:
+            gauss = Gauss2D((p_peak,q_peak), flux, (p_fwhm,q_fwhm), cont*self.fscale, 0, peak, (err_p_peak,err_q_peak), err_flux, (err_p_fwhm,err_q_fwhm), 0, err_peak)
+        if verbose:
+            gauss.print_param()
+        return gauss
+    
     def moffat_fit(self, pos_min=None, pos_max=None, center=None, I=None, a=None , e=1, n=2.0, cont=None, rot=0, factor = 1, weight=True, plot = False, pix=False, verbose=True):
         """Performs moffat fit on image.
         
