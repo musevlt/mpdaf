@@ -2117,7 +2117,7 @@ class Image(object):
             center = np.array([p[imax],q[imax]])
         else:
             if not pix:
-                center = self.wcs.sky2pix(center)[0]
+                center = ima.wcs.sky2pix(center)[0]
             else:
                 center = np.array(center)
                 center[0] -= pmin
@@ -2349,7 +2349,7 @@ class Image(object):
             center = np.array([p[imax],q[imax]])
         else:
             if not pix:
-                center = self.wcs.sky2pix(center)[0]
+                center = ima.wcs.sky2pix(center)[0]
             else:
                 center = np.array(center)
                 center[0] -= pmin
@@ -2555,7 +2555,7 @@ class Image(object):
             center = np.array([p[imax],q[imax]])
         else:
             if not pix:
-                center = self.wcs.sky2pix(center)[0]
+                center = ima.wcs.sky2pix(center)[0]
             else:
                 center = np.array(center)
                 center[0] -= pmin
