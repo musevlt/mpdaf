@@ -1627,12 +1627,7 @@ class Image(object):
         selec = self.data>threshold
         selec.bill_value = False
             
-        plt.imshow(selec)
-        
         selec = ndimage.morphology.binary_erosion(selec,structure=self._struct(nstruct),iterations = niter)
-        
-        plt.figure()
-        plt.imshow(selec)
         
         selec = ndimage.morphology.binary_dilation(selec,iterations = niter)
         selec = ndimage.binary_fill_holes(selec)
@@ -1641,7 +1636,6 @@ class Image(object):
         label = ndimage.measurements.label(selec,structure)
         pos = ndimage.measurements.center_of_mass(self.data, label[0], np.arange(label[1]) + 1)
         
-        plt.show()
         return np.array(pos)
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, background=None, plot=False):
