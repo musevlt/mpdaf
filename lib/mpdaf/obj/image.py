@@ -1598,69 +1598,51 @@ class Image(object):
             ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
             tab = tab[ksel]
         return np.array([np.ma.mean(tab)*self.fscale,np.ma.std(tab)*self.fscale])
-    
-    def peak_detection(self, threshold=None, kernel_size=None, flux_min=0, factor=1):
+
+    def _struct(self, n):
+        struct = np.zeros([n,n])
+        for i in range(0,n):
+            dist = abs(i - (n/2))
+            struct[i][dist: abs(n - dist)] = 1
+        return struct
+
+    def peak_detection(self, nstruct, niter, threshold=None):
         """Returns a list of peak locations.
         
+        :param nstruct: Size of the structuring element used for the erosion.
+        :type nstruct: integer
+        :param niter: number of iterations used for the erosion and the dilatation.
+        :type niter: integer
         :param threshold: threshold value. If None, it is initialized with background value
         :type threshold: float
-        :param kernel_size: size of the median filter window along each axis.
-        :type kernel_size: (float,float)
-        :param flux_min: minimum peak value
-        :type flux_min: float
-        :param factor: If factor<=1, gaussian value is computed in the center of each pixel.
-        
-              If factor>1, for each pixel, gaussian value is the sum of the gaussian values on the factor*factor pixels divided by the pixel area.   
+        :rtype: np.array
         """
-        d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
         # threshold value
         (background,std) = self.background()
         if threshold is None:
             threshold = background+10*std
         else:
             threshold /= self.fscale
-        # select brightest pixels
-        ksel = np.where(d>threshold)
         
-        # list of peaks in pixels
-        peak = []
-        # list of explored pixels
-        l = []
-        
-        
-        #gradient = ima.data != 0.0
-        selec = (d>threshold)
-        selec = ndimage.binary_fill_holes(selec)
-        structure = ndimage.morphology.generate_binary_structure(2, 2)
-        label = ndimage.measurements.label(selec, structure)
-        peak_pix = ndimage.measurements.center_of_mass(self.data, label[0], np.arange(label[1]) + 1)
-        
-        # compute real position of peaks
-        newpeak = []
-        list_center = []
-        
-        for p in peak_pix:
-            try:
-                if self.data[p[0],p[1]]>flux_min:
-                    
-                    pix_min = [[max(0,p[0]-4),max(0,p[1]-4)]]
-                    pos_min = self.wcs.pix2sky(pix_min)
-                    pix_max = [[p[0]+5,p[1]+5]]
-                    pos_max = self.wcs.pix2sky(pix_max)
-                    center = self.wcs.pix2sky([p[0],p[1]])
-                    gauss = self.gauss_fit(pos_min[0], pos_max[0], center=center[0], rot=None, factor=factor)
-                    try:
-                        list_center.index([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
-                    except:
-                        if self.inside(gauss.center):
-                            newpeak.append(gauss)
-                            list_center.append([int(gauss.center[0]*1E4),int(gauss.center[1]*1E4)])
-#                            pix = self.wcs.sky2pix(gauss.center)
-#                            plt.plot(pix[0][1],pix[0][0],'m+')
-            except:
-                pass
+        selec = self.data>threshold
+        selec.bill_value = False
             
-        return newpeak  
+        plt.imshow(selec)
+        
+        selec = ndimage.morphology.binary_erosion(selec,structure=self._struct(nstruct),iterations = niter)
+        
+        plt.figure()
+        plt.imshow(selec)
+        
+        selec = ndimage.morphology.binary_dilation(selec,iterations = niter)
+        selec = ndimage.binary_fill_holes(selec)
+
+        structure = ndimage.morphology.generate_binary_structure(2, 2)
+        label = ndimage.measurements.label(selec,structure)
+        pos = ndimage.measurements.center_of_mass(self.data, label[0], np.arange(label[1]) + 1)
+        
+        plt.show()
+        return np.array(pos)
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, background=None, plot=False):
         """Finds image peak location. Used `scipy.ndimage.measurements.maximum_position <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.maximum_position.html>`_ and `scipy.ndimage.measurements.center_of_mass <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.center_of_mass.html>`_.
@@ -3499,7 +3481,7 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
             
-        self.data = np.ma.array(np.random.normal(data, sigma),mask=self.data.mask)
+        self.data = np.ma.array(self.data.data + np.random.normal(data, sigma),mask=self.data.mask)
         if self.var is None:
             self.var = np.ones((self.shape))*sigma*sigma
         else:
@@ -3523,7 +3505,7 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        self.data = np.ma.array(np.random.poisson(data).astype(float),mask=self.data.mask)
+        self.data = np.ma.array(self.data.data + np.random.poisson(data).astype(float),mask=self.data.mask)
         if self.var is None:
             self.var = self.data.data.__copy__()
         else:
@@ -3565,9 +3547,13 @@ class Image(object):
             else:
                 data = np.ma.filled(self.data, np.ma.median(self.data))
             
-            self.data = np.ma.array(signal.fftconvolve(data ,other ,mode='same'), mask=self.data.mask)
-            if self.var is not None:
-                self.var = signal.fftconvolve(self.var ,other ,mode='same')
+            if self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
+                    print 'Operation forbidden for images with different sizes'
+                    return None
+            else:
+                self.data = np.ma.array(signal.fftconvolve(data ,other ,mode='same'), mask=self.data.mask)
+                if self.var is not None:
+                    self.var = signal.fftconvolve(self.var ,other ,mode='same')
         try:
             if other.image:
                 if interp=='linear':
@@ -3712,16 +3698,12 @@ class Image(object):
                     data = np.ma.filled(self.data, np.ma.median(self.data))
                     other_data = other.data.filled(np.ma.median(other.data))
                 
-                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
-                else:
-                    res =self.copy()
-                    res.data = np.ma.array(signal.correlate2d(data ,other_data ,mode='same'), mask=res.data.mask)
-                    res.fscale = self.fscale * other.fscale
-                    if res.var is not None:
-                        res.var = signal.correlate2d(res.var ,other_data ,mode='same') *other.fscale*other.fscale
-                    return res
+                res =self.copy()
+                res.data = np.ma.array(signal.correlate2d(data ,other_data ,mode='same'), mask=res.data.mask)
+                res.fscale = self.fscale * other.fscale
+                if res.var is not None:
+                    res.var = signal.correlate2d(res.var ,other_data ,mode='same') *other.fscale*other.fscale
+                return res
         except:
             print 'Operation forbidden'
             return None
