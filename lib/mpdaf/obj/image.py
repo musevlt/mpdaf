@@ -2093,7 +2093,9 @@ class Image(object):
                 pixcrd = self.wcs.sky2pix(pos_max)
                 pmax = pixcrd[0][0]
                 qmax = pixcrd[0][1]
-          
+        
+        pmin = max(0,pmin)
+        qmin =  max(0,qmin) 
         ima = self[pmin:pmax,qmin:qmax]
        
         ksel = np.where(ima.data.mask==False)
@@ -2325,7 +2327,9 @@ class Image(object):
                 pixcrd = self.wcs.sky2pix(pos_max)
                 pmax = pixcrd[0][0]
                 qmax = pixcrd[0][1]
-          
+         
+        pmin = max(0,pmin)
+        qmin =  max(0,qmin)
         ima = self[pmin:pmax,qmin:qmax]
        
         ksel = np.where(ima.data.mask==False)
@@ -2397,18 +2401,32 @@ class Image(object):
             pixcrd = np.array(zip(fp,fq))
                 
             e_gauss_fit = lambda v, p, q, data, w: w * (((gaussfit(v,p,q)).reshape(N,factor*factor).sum(1)/factor/factor).T.ravel() - data)
-            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(pixcrd[:,0],pixcrd[:,1],data,wght), maxfev=100000, full_output=1)           
+            try:
+                v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(pixcrd[:,0],pixcrd[:,1],data,wght), maxfev=100000, full_output=1)           
+                # calculate the errors from the estimated covariance matrix
+                chisq = sum(info["fvec"] * info["fvec"])
+                dof = len(info["fvec"]) - len(v)
+                if covar is not None:
+                    err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+                else:
+                    err = None
+            except:
+                v  = leastsq(e_gauss_fit, v0[:], args=(pixcrd[:,0],pixcrd[:,1],data,wght), maxfev=100000, full_output=0)[0] 
+                err = None         
         else:                                             
             e_gauss_fit = lambda v, p, q, data,w : w * (gaussfit(v,p,q) - data)
-            v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(p,q,data,wght), maxfev=100000, full_output=1)
-    
-        # calculate the errors from the estimated covariance matrix
-        chisq = sum(info["fvec"] * info["fvec"])
-        dof = len(info["fvec"]) - len(v)
-        if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
-        else:
-            err = None
+            try:
+                v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(p,q,data,wght), maxfev=100000, full_output=1)
+                # calculate the errors from the estimated covariance matrix
+                chisq = sum(info["fvec"] * info["fvec"])
+                dof = len(info["fvec"]) - len(v)
+                if covar is not None:
+                    err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+                else:
+                    err = None
+            except:
+                v  = leastsq(e_gauss_fit, v0[:], args=(p,q,data,wght), maxfev=100000, full_output=0)[0]
+                err = None
             
         #center in pixel in the input image
         v[1] += int(pmin)
@@ -2531,7 +2549,9 @@ class Image(object):
                 pixcrd = self.wcs.sky2pix(pos_max)
                 pmax = pixcrd[0][0]
                 qmax = pixcrd[0][1]
-            
+        
+        pmin = max(0,pmin)
+        qmin = max(0,qmin)    
         ima = self[pmin:pmax,qmin:qmax]
         
         ksel = np.where(ima.data.mask==False)
