@@ -1958,11 +1958,15 @@ class Cube(object):
         
         :param cpu: number of CPUs. It is also possible to set the mpdaf.CPU global variable.
         :type cpu: integer
-        :param f: Spectrum method or function that the first argument is a spectrum object. It should return a Spectrum object. 
+        :param f: Spectrum method or function that the first argument is a spectrum object. 
         :type f: function or :class:`mpdaf.obj.Spectrum` method
         :param kargs: kargs can be used to set function arguments.
         
-        :rtype: :class:`mpdaf.obj.Cube`
+        :rtype: :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Spectrum`,
+            
+                :class:`mpdaf.obj.Image` if f returns a number,
+                
+                np.array(dtype=object) in others cases. 
         """
         from mpdaf import CPU
         if cpu is not None and cpu<multiprocessing.cpu_count():
@@ -1982,15 +1986,36 @@ class Cube(object):
         processresult = pool.map(_process_spe,processlist)
         
         out = processresult[0][1]
-        if self.var is None:
-            cube_result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit)
-        else:
-            cube_result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),var=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit)
         
-        for pos,out in processresult:
-            p,q = pos
-            cube_result[:,p,q] = out
-        return cube_result
+        if is_float(out) or is_int(out):
+            # f returns a number -> iterator returns an image
+            from image import Image
+            ima_result = Image(wcs=self.wcs.copy(),data=np.zeros(shape=(self.shape[1],self.shape[2])),unit=self.unit)
+        
+            for pos,out in processresult:
+                p,q = pos
+                ima_result[p,q] = out
+            return ima_result         
+        try:
+            if out.spectrum:
+                #f returns a spectrum -> iterator returns a cube
+                if self.var is None:
+                    cube_result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit)
+                else:
+                    cube_result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),var=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit)
+        
+                for pos,out in processresult:
+                    p,q = pos
+                    cube_result[:,p,q] = out
+                return cube_result
+        except:
+            #f returns dtype -> iterator returns an array of dtype
+            array_result = np.empty((self.shape[1],self.shape[2]),dtype=type(out))
+            for pos,out in processresult:
+                p,q = pos
+                array_result[p,q] = out
+            return array_result          
+        
     
     def loop_ima_multiprocessing(self, cpu=None, f=None, **kargs):
         """loops over all images to apply a function/method.
@@ -2003,7 +2028,11 @@ class Cube(object):
         :type f: function or :class:`mpdaf.obj.Image` method
         :param kargs: kargs can be used to set function arguments.
         
-        :rtype: :class:`mpdaf.obj.Cube`
+        :rtype: :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Image`,
+        
+                :class:`mpdaf.obj.Spectrum` if f returns a number,
+                
+                 np.array(dtype=object) in others cases.
         """
         from mpdaf import CPU
         if cpu is not None and cpu<multiprocessing.cpu_count():
@@ -2025,45 +2054,76 @@ class Cube(object):
         processresult = pool.map(_process_ima,processlist)
         
         out = processresult[0][1]
-        header = processresult[0][2]
-        wcs = WCS(header)
-        wcs.set_naxis1(out.shape[1])
-        wcs.set_naxis2(out.shape[0])
-        if self.var is None:
-            cube_result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit)
-        else:
-            cube_result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit)
         
-        for k,out,h in processresult:
-            cube_result[k,:,:] = out
-        return cube_result
-    
+        if is_float(out) or is_int(out):
+            # f returns a number -> iterator returns a spectrum
+            from spectrum import Spectrum
+            spe_result = Spectrum(wave=self.wave.copy(),data=np.zeros(shape=self.shape[0]),unit=self.unit)
+        
+            for k,out,h in processresult:
+                spe_result[k] = out
+                    
+            return spe_result
+        try:
+            if out.image:
+                #f returns an image -> iterator returns a cube
+                header = processresult[0][2]
+                wcs = WCS(header)
+                wcs.set_naxis1(out.shape[1])
+                wcs.set_naxis2(out.shape[0])
+        
+                if self.var is None:
+                    cube_result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit)
+                else:
+                    cube_result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit)
+        
+                for k,out,h in processresult:
+                    cube_result[k,:,:] = out
+                    
+                return cube_result
+        except:
+            #f returns dtype -> iterator returns an array of dtype
+            array_result = np.empty(self.shape[0],dtype=type(out))
+            for k,out,h in processresult:
+                array_result[k] = out
+            return array_result
+                
+   
 def _process_spe(arglist):
-    obj = arglist[0]
-    pos = arglist[1]
-    f = arglist[2]
-    kargs = arglist[3]
-    if isinstance (f,types.FunctionType):
-        obj_result = f(obj,**kargs)
-    else:
-        obj_result = getattr(obj, f)(**kargs)  
+    try:
+        obj = arglist[0]
+        pos = arglist[1]
+        f = arglist[2]
+        kargs = arglist[3]
+        if isinstance (f,types.FunctionType):
+            obj_result = f(obj,**kargs)
+        else:
+            obj_result = getattr(obj, f)(**kargs)  
         
-    return (pos,obj_result)
+        return (pos,obj_result)
+    except Exception as inst:
+        raise type(inst) , str(inst) + '\n The error occurred for the spectrum [:,%i,%i]'%(pos[0],pos[1])
 
 def _process_ima(arglist):
-    #bug multiprocessing & pywcs
-    obj = arglist[0]
-    obj.wcs = WCS(arglist[3])
-    obj.wcs.set_naxis1(obj.shape[1])
-    obj.wcs.set_naxis2(obj.shape[0])
+    try:
+        obj = arglist[0]
+        #bug multiprocessing & pywcs
+        obj.wcs = WCS(arglist[3])
+        obj.wcs.set_naxis1(obj.shape[1])
+        obj.wcs.set_naxis2(obj.shape[0])
     
-    pos = arglist[1]
-    f = arglist[2]
-    kargs = arglist[4]
-    if isinstance (f,types.FunctionType):
-        obj_result = f(obj,**kargs)
-    else:
-        obj_result = getattr(obj, f)(**kargs)  
-    header = obj_result.wcs.to_header()
+        pos = arglist[1]
+        f = arglist[2]
+        kargs = arglist[4]
+        if isinstance (f,types.FunctionType):
+            obj_result = f(obj,**kargs)
+        else:
+            obj_result = getattr(obj, f)(**kargs)  
+        try:
+            header = obj_result.wcs.to_header()
+        except:
+            header = None
     
-    return (pos,obj_result,header)
+            return (pos,obj_result,header)
+    except Exception as inst:
+        raise type(inst) , str(inst) + '\n The error occurred for the image [%i,:,:]'%pos
