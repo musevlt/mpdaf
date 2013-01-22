@@ -331,9 +331,7 @@ Transformation
 2D profile fitting and Encircled Energy
 ---------------------------------------
 
-:func:`mpdaf.obj.Image.gauss_fit <mpdaf.obj.Image.gauss_fit>` performs an elliptical Gaussian fit on image.
-
-:func:`mpdaf.obj.Image.gauss_circular_fit <mpdaf.obj.Image.gauss_circular_fit>` performs a circular Gaussian fit on image.
+:func:`mpdaf.obj.Image.gauss_fit <mpdaf.obj.Image.gauss_fit>` performs a Gaussian fit on image.
 
 :func:`mpdaf.obj.Image.moffat_fit <mpdaf.obj.Image.moffat_fit>` performs Moffat fit on image.
 
