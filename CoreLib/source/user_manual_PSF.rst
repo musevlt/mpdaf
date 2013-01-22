@@ -4,8 +4,8 @@ Python interface for MUSE PSF models
 LSF models
 ==========
 
-Simple LSF model
-----------------
+'qsim_v1' LSF model
+-------------------
 
 This is a simple model where the LSF is supposed to be constant over the filed of view. It uses a simple parametric model of variation with wavelength.
     
@@ -34,7 +34,9 @@ Tutorial
 
   >>> from mpdaf.MUSE import LSF
   
-  >>> LSF(lbda=6000,step=1.25,size=11)
+  >>> lsf = LSF(type='qsim_v1')
+  
+  >>> lsf.get_LSF(lbda=6000,step=1.25,size=11)
   array([  1.35563937e-15,   1.29241981e-09,   2.87088720e-05,
          1.45978758e-02,   2.55903993e-01,   4.58938842e-01,
          2.55903993e-01,   1.45978758e-02,   2.87088720e-05,
@@ -42,7 +44,7 @@ Tutorial
 
   >>> import matplotlib.pyplot as plt
   >>> import numpy as np
-  >>> plt.plot(np.arange(-5,6),LSF(lbda=6000,step=1.25,size=11),drawstyle='steps-mid')
+  >>> plt.plot(np.arange(-5,6),lsf.get_LSF(lbda=6000,step=1.25,size=11),drawstyle='steps-mid')
   >>> plt.show()
   
 .. image:: user_manual_psf_images/simple_LSF.png
@@ -51,7 +53,11 @@ Tutorial
 References
 ==========
 
-:func:`mpdaf.MUSE.LSF <mpdaf.MUSE.LSF>` returns a MUSE LSF according to the simple model.
+:func:`mpdaf.MUSE.LSF <mpdaf.MUSE.LSF>` is the constructor.
+
+:func:`mpdaf.MUSE.LSF.get_LSF <mpdaf.MUSE.LSF.get_LSF>` returns an array containing MUSE LSF.
+
+:func:`mpdaf.MUSE.LSF.size <mpdaf.MUSE.LSF.size>` computes the LSF size in pixels (min(LSF)<max(LSF)*epsilon).
 
 
 
