@@ -156,29 +156,32 @@ class TestImage():
     def test_gauss_Image(self):
         """Image class: tests Gaussian fit"""
         wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
-        ima = gauss_image(wcs=wcs,fwhm=(2*3600,1*3600),factor=1, rot = 60)
+        ima = gauss_image(wcs=wcs,fwhm=(2,1),factor=1, rot = 60, cont = 2.0)
         #ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
-        gauss = ima.gauss_fit(cont=0)
+        gauss = ima.gauss_fit(cont=2.0, fit_back=False)
         nose.tools.assert_almost_equal(gauss.center[0], 8.5)
         nose.tools.assert_almost_equal(gauss.center[1], 12)
         nose.tools.assert_almost_equal(gauss.flux, 1)
-        gauss2 = ima.gauss_fit(cont=0)
+        ima += 10.3
+        gauss2 = ima.gauss_fit(fit_back=True)
         nose.tools.assert_almost_equal(gauss2.center[0], 8.5)
         nose.tools.assert_almost_equal(gauss2.center[1], 12)
         nose.tools.assert_almost_equal(gauss2.flux, 1)
+        nose.tools.assert_almost_equal(gauss2.cont, 12.3)
         
     @attr(speed='fast')   
     def test_moffat_Image(self):
         """Image class: tests Moffat fit"""
         wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
-        ima = moffat_image(wcs=WCS(),I=12.3, a=1.8*3600, e=1, n=1.6, rot = 0.)
-        moffat = ima.moffat_fit(cont=0)
+        ima = moffat_image(wcs=WCS(),I=12.3, a=1.8, e=1, n=1.6, rot = 0., cont=8.24)
+        moffat = ima.moffat_fit(fit_back=True)
         nose.tools.assert_almost_equal(moffat.center[0], 50.)
         nose.tools.assert_almost_equal(moffat.center[1], 50.)
         nose.tools.assert_almost_equal(moffat.I, 12.3)
-        nose.tools.assert_almost_equal(moffat.a, 1.8*3600)
+        nose.tools.assert_almost_equal(moffat.a, 1.8)
         nose.tools.assert_almost_equal(moffat.e, 1)
         nose.tools.assert_almost_equal(moffat.n, 1.6)
+        nose.tools.assert_almost_equal(moffat.cont, 8.24)
         
     @attr(speed='fast')   
     def test_mask_Image(self):
