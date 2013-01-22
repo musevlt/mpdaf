@@ -3,6 +3,7 @@
 import numpy as np
 import pyfits
 import datetime
+import types
 
 from scipy import integrate
 from scipy import interpolate
@@ -2163,19 +2164,17 @@ class Spectrum(object):
         res._fftconvolve_gauss(fwhm, nsig)
         return res
     
-    def LSF_convolve(self, f, epsilon=0.001, size=None, **kargs):
+    def LSF_convolve(self, lsf, size, **kargs):
         """Convolve spectrum with LSF.
         
-        :param f: function describing the LSF. 
+        :param lsf: :class:`mpdaf.MUSE.LSF` object or function f describing the LSF. 
         
-            The first three parameters of this function must be lbda (wavelength value in A), step (in A) and size (odd integer).
+            The first three parameters of the function f must be lbda (wavelength value in A), step (in A) and size (odd integer).
             
             f returns an np.array with shape=2*(size/2)+1 and centered in lbda. 
             
             Example: from mpdaf.MUSE import LSF
         :type f: python function
-        :param epsilon: this factor is used to determine the size of LSF (min(LSF)<max(LSF)*epsilon)
-        :type epsilon: float
         :param size: size of LSF in pixels.
         :type size: odd integer
         :param kargs: kargs can be used to set function arguments.
@@ -2185,22 +2184,18 @@ class Spectrum(object):
         step = self.get_step()
         lbda = self.wave.coord()
         
-        if size is None:
-            x0 = lbda[int(self.shape/2)]
-            x = np.array([x0])
-            diff = -1
-            k = 0
-            while diff<0:
-                k = k+1
-                d = k * step
-                g = f(x0,d,3,**kargs)
-                diff = epsilon*g[1]-g[0]
-            size = k*2 + 1
+        if size%2==0:
+            raise ValueError, 'Size must be an odd number'
         else:
-            if size%2==0:
-                raise ValueError, 'Size must be an odd number'
-            else:
-                k = size/2
+            k = size/2
+            
+        if isinstance (lsf,types.FunctionType):
+            f = lsf
+        else:
+            try:
+                f =  getattr(lsf,'get_LSF')
+            except:
+                raise ValueError, 'lsf parameter is not valid'
 
         data = np.empty(len(self.data)+2*k)
         data[k:-k] = self.data
