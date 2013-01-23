@@ -2172,32 +2172,19 @@ class Image(object):
             flux /= self.fscale
         
         if circular:
+            rot = None
             if not fit_back:
-                if rot is None:
-                    # 2d gaussian function
-                    gaussfit = lambda v, p, q: cont + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-(p-v[1])**2/(2*v[2]**2)) \
+                # 2d gaussian function
+                gaussfit = lambda v, p, q: cont + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-(p-v[1])**2/(2*v[2]**2)) \
                                                       *(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-(q-v[3])**2/(2*v[2]**2)) 
-                    # inital guesses for Gaussian Fit
-                    v0 = [flux,center[0], width[0], center[1]]
-                else:
-                    # 2d gaussian function
-                    gaussfit = lambda v, p, q: cont + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-((p-v[1])*np.cos(v[4])-(q-v[3])*np.sin(v[4]))**2/(2*v[2]**2)) \
-                                                      *(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-((p-v[1])*np.sin(v[4])+(q-v[3])*np.cos(v[4]))**2/(2*v[2]**2)) 
-                    # inital guesses for Gaussian Fit
-                    v0 = [flux,center[0], width[0], center[1], rot]
+                # inital guesses for Gaussian Fit
+                v0 = [flux,center[0], width[0], center[1]]
             else:
-                if rot is None:
-                    # 2d gaussian function
-                    gaussfit = lambda v, p, q: v[4] + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-(p-v[1])**2/(2*v[2]**2)) \
+                # 2d gaussian function
+                gaussfit = lambda v, p, q: v[4] + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-(p-v[1])**2/(2*v[2]**2)) \
                                                       *(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-(q-v[3])**2/(2*v[2]**2)) 
-                    # inital guesses for Gaussian Fit
-                    v0 = [flux,center[0], width[0], center[1], cont]
-                else:
-                    # 2d gaussian function
-                    gaussfit = lambda v, p, q: v[5] + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-((p-v[1])*np.cos(v[4])-(q-v[3])*np.sin(v[4]))**2/(2*v[2]**2)) \
-                                                      *(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-((p-v[1])*np.sin(v[4])+(q-v[3])*np.cos(v[4]))**2/(2*v[2]**2)) 
-                    # inital guesses for Gaussian Fit
-                    v0 = [flux,center[0], width[0], center[1], rot,cont]
+                # inital guesses for Gaussian Fit
+                v0 = [flux,center[0], width[0], center[1], cont]
         else:
             if not fit_back:
                 if rot is None:
@@ -2267,13 +2254,10 @@ class Image(object):
         q_peak = v[3]
         if circular:
             if fit_back:
-                if rot is None:
-                    cont = v[4]
-                else:
-                    cont= v[5]
+                cont = v[4]
             p_width = np.abs(v[2])
             q_width = p_width
-            rot = (v[4] * 180.0 / np.pi)%180
+            rot = 0
         else:
             if fit_back:
                 if rot is None:
@@ -2304,22 +2288,12 @@ class Image(object):
             err_q_peak = err[3]
             if circular:
                 if fit_back:
-                    if rot is None:
-                        err_cont = err[4]
-                    else:
-                        err_cont= err[5]
+                    err_cont = err[4]
                 else:
                     err_cont = 0
-                if np.abs(v[2])>np.abs(v[4]):
-                    err_p_width = np.abs(err[2])
-                    err_q_width = np.abs(err[4])
-                else:
-                    err_p_width = np.abs(err[4])
-                    err_q_width = np.abs(err[2])
-                try:
-                    err_rot = err[5] * 180.0 / np.pi
-                except:
-                    err_rot = 0
+                err_p_width = np.abs(err[2])
+                err_q_width = err_p_width
+                err_rot = 0
             else:
                 if fit_back:
                     if rot is None:
@@ -2328,8 +2302,14 @@ class Image(object):
                         err_cont= err[6]
                 else:
                     err_cont = 0
-                err_p_width = np.abs(err[2])
-                err_q_width = err_p_width
+                    
+                if np.abs(v[2])>np.abs(v[4]):
+                    err_p_width = np.abs(err[2])
+                    err_q_width = np.abs(err[4])
+                else:
+                    err_p_width = np.abs(err[4])
+                    err_q_width = np.abs(err[2])
+                
                 try:
                     err_rot = err[4] * 180.0 / np.pi
                 except:
