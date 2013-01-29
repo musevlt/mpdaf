@@ -1541,6 +1541,7 @@ class Cube(object):
         
     def truncate(self, lmin, lmax, y_min, y_max, x_min, x_max, mask=True):
         """ Truncates the cube and return a sub-cube.
+        
           :param lmin: Minimum wavelength.
           :type lmin: float
           :param lmax: Maximum wavelength.
@@ -2273,7 +2274,7 @@ def _process_ima(arglist):
         raise type(inst) , str(inst) + '\n The error occurred for the image [%i,:,:]'%pos
     
 class CubeDisk(object):
-    """This class manages heavy fits file with memory mapping.The DryRuns are producing sometimes fairly large datacubes (eg 21 Gb).
+    """The DryRuns are producing sometimes fairly large datacubes (eg 21 Gb).
     For some user it will be difficult to handle. Therefore this class propose to open fits file with memory mapping.
     The method can extract a spectrum, an image or a smaller datacube from the big one.
     
@@ -2528,6 +2529,7 @@ class CubeDisk(object):
         
     def truncate(self, lmin, lmax, y_min, y_max, x_min, x_max, mask=True):
         """ Truncates the cube and return a sub-cube.
+        
           :param lmin: Minimum wavelength.
           :type lmin: float
           :param lmax: Maximum wavelength.
@@ -2608,7 +2610,7 @@ class CubeDisk(object):
         return res
     
     def get_white_image(self):
-        """Perform a sum over the wavelength dimension and returns an image.
+        """Performs a sum over the wavelength dimension and returns an image.
         """
         f = pyfits.open(self.filename, memmap=True)
         from image import Image
