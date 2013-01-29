@@ -173,13 +173,12 @@ class TestImage():
     def test_moffat_Image(self):
         """Image class: tests Moffat fit"""
         wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
-        ima = moffat_image(wcs=WCS(),I=12.3, a=1.8, e=1, n=1.6, rot = 0., cont=8.24)
+        ima = moffat_image(wcs=WCS(),flux=12.3, fwhm=(1.8,1.8), n=1.6, rot = 0., cont=8.24)
         moffat = ima.moffat_fit(fit_back=True)
         nose.tools.assert_almost_equal(moffat.center[0], 50.)
         nose.tools.assert_almost_equal(moffat.center[1], 50.)
-        nose.tools.assert_almost_equal(moffat.I, 12.3)
-        nose.tools.assert_almost_equal(moffat.a, 1.8)
-        nose.tools.assert_almost_equal(moffat.e, 1)
+        nose.tools.assert_almost_equal(moffat.flux, 12.3)
+        nose.tools.assert_almost_equal(moffat.fwhm[0], 1.8)
         nose.tools.assert_almost_equal(moffat.n, 1.6)
         nose.tools.assert_almost_equal(moffat.cont, 8.24)
         

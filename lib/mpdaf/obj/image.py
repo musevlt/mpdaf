@@ -157,67 +157,68 @@ class Moffat2D:
     Attributes
     ---------- 
     
-    center (float,float) : Peak center (y,x).
+    center (float,float) : peak center (y,x).
     
-    I (float) : Intensity at image center.
+    flux (float) : integrated flux.
     
-    a (float) : Half width at half maximum of the image in the absence of atmospheric scattering.
-    
-    e (float) : Axis ratio.
-      
-    n (integer) : Atmospheric scattering coefficient.
-    
-    rot (float) : Angle position in degree.
+    fwhm (float,float) : fwhm (fhwm_y,fwhm_x).
     
     cont (float) : Continuum value.
     
+    n (integer) : Atmospheric scattering coefficient.
+    
+    rot (float) : Rotation in degrees.
+    
+    peak (float) : intensity peak value.
+    
     err_center (float,float) : Estimated error on center.
         
-    err_I (float) : Estimated error on intensity.
+    err_flux (float) : Estimated error on integrated flux.
     
-    err_a (float) : Estimated error on a parameter.
+    err_fwhm (float,float) : Estimated error on fwhm.
     
-    err_e (float) : Estimated error on axis ratio.
+    err_cont (float) : Estimated error on continuum value.
     
     err_n (float) : Estimated error on n coefficient.
     
     err_rot (float) : Estimated error on rotation.
     
-    err_cont (float) : Estimated error on continuum value.
+    err_peak (float) : Estimated error on peak value.  
     
     ima (:class:`mpdaf.obj.Image`) : Moffat image
+    
     """
-    def __init__(self, center, I, a, e, n, rot, cont, err_center, err_I, err_a, err_e, err_n, err_rot, err_cont, ima=None):
+    def __init__(self, center, flux, fwhm, cont, n, rot, peak, err_center, err_flux, err_fwhm, err_cont, err_n, err_rot, err_peak, ima=None):
         self.center = center
-        self.I = I
-        self.a = a
-        self.e = e
-        self.n = n
-        self.rot = rot
+        self.flux = flux
+        self.fwhm = fwhm
         self.cont = cont
+        self.rot = rot
+        self.peak = peak
+        self.n = n
         self.err_center = err_center
-        self.err_I = err_I
-        self.err_a = err_a
-        self.err_e = err_e
-        self.err_n = err_n
-        self.err_rot = err_rot
+        self.err_flux = err_flux
+        self.err_fwhm = err_fwhm
         self.err_cont = err_cont
+        self.err_rot = err_rot
+        self.err_peak = err_peak
+        self.err_n = err_n
         self.ima = ima
         
         
     def copy(self):
         """Returns a copy of a Moffat2D object.
         """
-        res = Moffat2D(self.center, self.I, self.a, self.e, self.n, self.rot, self.cont, self.err_center, self.err_I, self.err_a, self.err_q, self.err_n, self.err_rot, self.err_cont)
+        res = Moffat2D(self.center, self.flux, self.fwhm, self.cont, self.n, self.rot, self.peak, self.err_center, self.err_flux, self.err_fwhm, self.err_cont, self.err_n, self.err_rot, self.err_peak)
         return res
         
     def print_param(self):
         """Prints Moffat parameters.
         """
         print 'center = (%g,%g) (error:(%g,%g))' %(self.center[0],self.center[1],self.err_center[0],self.err_center[1])   
-        print 'I = %g (error:%g)' %(self.I,self.err_I)
-        print 'a = %g (error:%g)' %(self.a,self.err_a)
-        print 'e = %g (error:%g)' %(self.e,self.err_e)
+        print 'integrated flux = %g (error:%g)' %(self.flux,self.err_flux)
+        print 'peak value = %g (error:%g)' %(self.peak,self.err_peak)
+        print 'fwhm = (%g,%g) (error:(%g,%g))' %(self.fwhm[0],self.fwhm[1],self.err_fwhm[0],self.err_fwhm[1])
         print 'n = %g (error:%g)' %(self.n,self.err_n)
         print 'rotation in degree: %g (error:%g)' %(self.rot, self.err_rot)
         print 'continuum = %g (error:%g)' %(self.cont, self.err_cont)
@@ -2194,6 +2195,8 @@ class Image(object):
                     # inital guesses for Gaussian Fit
                     v0 = [flux,center[0], width[0], center[1], width[1]]
                 else:
+                    #rotation angle in rad
+                    rot = np.pi * rot / 180.0
                     # 2d gaussian function
                     gaussfit = lambda v, p, q: cont + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-((p-v[1])*np.cos(v[5])-(q-v[3])*np.sin(v[5]))**2/(2*v[2]**2)) \
                                                       *(1/np.sqrt(2*np.pi*(v[4]**2)))*np.exp(-((p-v[1])*np.sin(v[5])+(q-v[3])*np.cos(v[5]))**2/(2*v[4]**2)) 
@@ -2207,6 +2210,8 @@ class Image(object):
                     # inital guesses for Gaussian Fit
                     v0 = [flux,center[0], width[0], center[1], width[1], cont]
                 else:
+                    #rotation angle in rad
+                    rot = np.pi * rot / 180.0
                     # 2d gaussian function
                     gaussfit = lambda v, p, q: v[6] + v[0]*(1/np.sqrt(2*np.pi*(v[2]**2)))*np.exp(-((p-v[1])*np.cos(v[5])-(q-v[3])*np.sin(v[5]))**2/(2*v[2]**2)) \
                                                       *(1/np.sqrt(2*np.pi*(v[4]**2)))*np.exp(-((p-v[1])*np.sin(v[5])+(q-v[3])*np.cos(v[5]))**2/(2*v[4]**2)) 
@@ -2349,7 +2354,7 @@ class Image(object):
         return gauss
 
     
-    def moffat_fit(self, pos_min=None, pos_max=None, center=None, I=None, a=None , e=1, n=2.0, cont=0, fit_back=True, rot=0, factor = 1, weight=True, plot = False, pix=False, verbose=True, full_output=0):
+    def moffat_fit(self, pos_min=None, pos_max=None, center=None, fwhm=None, flux=None, n=2.0, circular=False, cont=0, fit_back=True, rot=0, peak=False, factor = 1, weight=True, plot = False, pix=False, verbose=True, full_output=0):
         """Performs moffat fit on image.
         
         :param pos_min: Minimum y and x values in degrees (y_min,x_min).
@@ -2361,17 +2366,18 @@ class Image(object):
         :param center: Initial Moffat center (y_peak,x_peak). If None they are estimated.
         :type center: (float,float)
             
-        :param I: Initial intensity at image center. 
-        :type I: float
-    
-        :param a: Initial half width at half maximum of the image in the absence of atmospheric scattering.
-        :type a: float
-        
-        :param e: Initial axis ratio.
-        :type e: float
+        :param flux: Initial integrated gaussian flux or gaussian peak value if peak is True. If None, peak value is estimated.
+        :type flux: float
+        :param fwhm: Initial gaussian fwhm (fwhm_y,fwhm_x) in arcseconds (pix=False) or in pixels (pix=True).
+          
+                      If None, they are estimated.
+        :type fwhm: (float,float)
         
         :param n: Initial atmospheric scattering coefficient.
         :type n: integer
+        
+        :param circular: True: circular moffat, False: elliptical moffat
+        :type circular: boolean
         
         :param cont: continuum value, 0 by default.
         :type cont: float
@@ -2381,6 +2387,9 @@ class Image(object):
         
         :param rot: Initial angle position in degree.
         :type rot: float
+        
+        :param peak: If true, flux contains a gaussian peak value. 
+        :type peak: bool
         
         :param factor: If factor<=1, gaussian is computed in the center of each pixel.
         
@@ -2458,49 +2467,70 @@ class Image(object):
         cont /= self.fscale
             
         # initial width value    
-        if a is None:
+        if fwhm is None:
             width = ima.moments(pix=True)
             fwhm = width * 2.*np.sqrt(2.*np.log(2.0))
-            a = fwhm[0]/(2*np.sqrt(2**(1.0/n)-1.0))
         else:
             if not pix:
-                a = a / np.abs(ima.wcs.get_step()[0])
-                if self.wcs.is_deg():
-                    a /= 3600.    
+               fwhm = np.array(fwhm) / np.abs(ima.wcs.get_step())
+               if self.wcs.is_deg():
+                   fwhm /= 3600.
+                   
+        a = fwhm[0]/(2*np.sqrt(2**(1.0/n)-1.0))
+        e = fwhm[0]/fwhm[1]
         
-        # initial integrated flux
-        if I is None:
-           I = ima.data.data[center[0],center[1]] - cont
+        # initial gaussian integrated flux
+        if flux is None:
+            I = ima.data.data[center[0],center[1]] - cont
+        elif peak is True:
+            flux /= self.fscale
+            I = flux - cont
         else:
-            I /= self.fscale
+            flux /= self.fscale
+            I = flux * (n-1) / (np.pi * a * a * e)
         
-        #rotation angle in rad
-        theta = np.pi * rot / 180.0
         
-        if not fit_back:
-            if rot is None:
+        if circular:
+            rot = None
+            if not fit_back:
                 # 2d moffat function
-                moffatfit = lambda v,p,q: cont + v[0]*(1+((p-v[1])/v[3])**2 +((q-v[2])/v[3]/v[5])**2)**(-v[4])
+                moffatfit = lambda v,p,q: cont + v[0]*(1+((p-v[1])/v[3])**2 +((q-v[2])/v[3])**2)**(-v[4])
                 # inital guesses 
-                v0 = [I, center[0], center[1], a, n, e]
+                v0 = [I, center[0], center[1], a, n]
             else:
                 # 2d moffat function
-                moffatfit = lambda v,p,q: cont + v[0]*(1+(((p-v[1])*np.cos(v[6])-(q-v[2])*np.sin(v[6]))/v[3])**2 \
-                                                    +(((p-v[1])*np.sin(v[6])+(q-v[2])*np.cos(v[6]))/v[3]/v[5])**2)**(-v[4])
-                # inital guesses
-                v0 = [I, center[0], center[1], a, n, e, rot]
-        else:
-            if rot is None:
-                # 2d moffat function
-                moffatfit = lambda v,p,q: v[6] + v[0]*(1+((p-v[1])/v[3])**2 +((q-v[2])/v[3]/v[5])**2)**(-v[4])
+                moffatfit = lambda v,p,q: v[5] + v[0]*(1+((p-v[1])/v[3])**2 +((q-v[2])/v[3])**2)**(-v[4])
                 # inital guesses 
-                v0 = [I, center[0], center[1], a, n, e, cont]
+                v0 = [I, center[0], center[1], a, n, cont]
+        else:
+            if not fit_back:
+                if rot is None:
+                    # 2d moffat function
+                    moffatfit = lambda v,p,q: cont + v[0]*(1+((p-v[1])/v[3])**2 +((q-v[2])/v[3]/v[5])**2)**(-v[4])
+                    # inital guesses 
+                    v0 = [I, center[0], center[1], a, n, e]
+                else:
+                    #rotation angle in rad
+                    rot = np.pi * rot / 180.0
+                    # 2d moffat function
+                    moffatfit = lambda v,p,q: cont + v[0]*(1+(((p-v[1])*np.cos(v[6])-(q-v[2])*np.sin(v[6]))/v[3])**2 \
+                                                        +(((p-v[1])*np.sin(v[6])+(q-v[2])*np.cos(v[6]))/v[3]/v[5])**2)**(-v[4])
+                    # inital guesses
+                    v0 = [I, center[0], center[1], a, n, e, rot]
             else:
-                # 2d moffat function
-                moffatfit = lambda v,p,q: v[7] + v[0]*(1+(((p-v[1])*np.cos(v[6])-(q-v[2])*np.sin(v[6]))/v[3])**2 \
-                                                    +(((p-v[1])*np.sin(v[6])+(q-v[2])*np.cos(v[6]))/v[3]/v[5])**2)**(-v[4])
-                # inital guesses
-                v0 = [I, center[0], center[1], a, n, e, rot, cont]
+                if rot is None:
+                    # 2d moffat function
+                    moffatfit = lambda v,p,q: v[6] + v[0]*(1+((p-v[1])/v[3])**2 +((q-v[2])/v[3]/v[5])**2)**(-v[4])
+                    # inital guesses 
+                    v0 = [I, center[0], center[1], a, n, e, cont]
+                else:
+                    #rotation angle in rad
+                    rot = np.pi * rot / 180.0
+                    # 2d moffat function
+                    moffatfit = lambda v,p,q: v[7] + v[0]*(1+(((p-v[1])*np.cos(v[6])-(q-v[2])*np.sin(v[6]))/v[3])**2 \
+                                                        +(((p-v[1])*np.sin(v[6])+(q-v[2])*np.cos(v[6]))/v[3]/v[5])**2)**(-v[4])
+                    # inital guesses
+                    v0 = [I, center[0], center[1], a, n, e, rot, cont]
             
         # Minimize the sum of squares
         if factor > 1:
@@ -2551,15 +2581,26 @@ class Image(object):
         q_peak = v[2]
         a = np.abs(v[3])
         n = v[4]
-        e = np.abs(v[5])
-        if rot is None:
+        if circular:
+            e = 1
             rot = 0
             if fit_back:
-                cont = v[6]
+                cont = v[5]
         else:
-            rot = (v[6] * 180.0 / np.pi)%180
-            if fit_back:
-                cont = v[7]
+            e = np.abs(v[5])
+            if rot is None:
+                rot = 0
+                if fit_back:
+                    cont = v[6]
+            else:
+                rot = (v[6] * 180.0 / np.pi)%180
+                if fit_back:
+                    cont = v[7]
+        
+        fwhm[0] = a * (2*np.sqrt(2**(1.0/n)-1.0))          
+        fwhm[1] = fwhm[0]/e
+        
+        flux = I / (n-1) * (np.pi * a * a * e)
         
         if err is not None:
             err_I = err[0]*self.fscale
@@ -2567,19 +2608,30 @@ class Image(object):
             err_q_peak = err[2]
             err_a = err[3]
             err_n = err[4]
-            err_e = err[5]
-            if rot is None:
+            err_fwhm = err_a *err_n
+            if circular:
+                err_e = 0
                 err_rot=0
+                err_fwhm = np.array([err_fwhm,err_fwhm])
                 if fit_back:
-                    err_cont = err[6]
-                else:
-                    err_cont = 0
+                    err_cont = err[5]
+                err_flux = err_I *err_n * err_a * err_a
             else:
-                err_rot = err[6] * 180.0 / np.pi
-                if fit_back:
-                    err_cont = err[7]
+                err_e = err[5]
+                err_fwhm = np.array([err_fwhm,err_fwhm/err_e])
+                if rot is None:
+                    err_rot=0
+                    if fit_back:
+                        err_cont = err[6]
+                    else:
+                        err_cont = 0
                 else:
-                    err_cont = 0
+                    err_rot = err[6] * 180.0 / np.pi
+                    if fit_back:
+                        err_cont = err[7]
+                    else:
+                        err_cont = 0
+                err_flux = err_I *err_n * err_a * err_a * err_e
         else:
             err_I = np.NAN
             err_p_peak = np.NAN
@@ -2589,6 +2641,8 @@ class Image(object):
             err_e = np.NAN
             err_rot = np.NAN
             err_cont = np.NAN
+            err_fwhm = (np.NAN,np.NAN)
+            err_flux = np.NAN
             
         if not pix:
             #Gauss2D object in degrees/arcseconds
@@ -2599,9 +2653,9 @@ class Image(object):
             if self.wcs.is_deg():
                 a *= 3600.0
                 err_a *= 3600.0
-            moffat = Moffat2D(center, I, a, e, n, rot, cont*self.fscale, err_center, err_I, err_a, err_e, err_n, err_rot, err_cont*self.fscale)
+            moffat = Moffat2D(center, flux, fwhm, cont*self.fscale, n, rot, I, err_center, err_flux, err_fwhm, err_cont*self.fscale, err_n, err_rot, err_I)
         else:
-            moffat = Moffat2D((p_peak,q_peak), I, a, e, n, rot, cont*self.fscale, (err_p_peak,err_q_peak), err_I, err_a, err_e, err_n, err_rot, err_cont*self.fscale)
+            moffat = Moffat2D((p_peak,q_peak), flux, fwhm, cont*self.fscale, n, rot, I, (err_p_peak,err_q_peak), err_flux, err_fwhm, err_cont*self.fscale, err_n, err_rot, err_I)
         if verbose:
             moffat.print_param()
         if full_output !=0 :
@@ -4140,7 +4194,7 @@ def gauss_image(shape=(101,101), wcs=WCS(), factor=1, gauss=None, center=None, f
 
 
 
-def moffat_image(shape=(101,101), wcs=WCS(), factor=1, moffat=None, center=None, I=1., a=1.0, e=1.0, n=2, rot=0., cont=0, pix = False):
+def moffat_image(shape=(101,101), wcs=WCS(), factor=1, moffat=None, center=None, flux=1., fwhm=(1.,1.), peak=False, n=2, rot=0., cont=0, pix = False):
     """Creates a new image from a 2D Moffat function.
   
       :param shape: Lengths of the image in Y and X with python notation: (ny,nx). (101,101) by default.
@@ -4159,14 +4213,12 @@ def moffat_image(shape=(101,101), wcs=WCS(), factor=1, moffat=None, center=None,
       
               If None the center of the image is used.
       :type center: (float,float)
-      :param I: Intensity at image center. 1 by default.
-      :type I: float
-      :param a: Half width at half maximum of the image in the absence of atmospheric scattering in arcsecondes (pix=False) or pixel (pix=True). 
-      
-              1 by default.
-      :type a: float
-      :param e: Axis ratio, 1 by default.
-      :type e: float
+      :param flux: Integrated gaussian flux or gaussian peak value if peak is True.
+      :type flux: float
+      :param fwhm: Gaussian fwhm (fwhm_y,fwhm_x) in arcsecondes (pix=False) or pixel (pix=True).
+      :type fwhm: (float,float)
+      :param peak: If true, flux contains a gaussian peak value.
+      :type peak: bool
       :param n: Atmospheric scattering coefficient. 2 by default.
       :type n: integer
       :param rot: Angle position in degree.
@@ -4180,8 +4232,6 @@ def moffat_image(shape=(101,101), wcs=WCS(), factor=1, moffat=None, center=None,
       :rtype: obj.Image object (`Image class`_) 
     """
     
-    a = float(a)
-    e = float(e)
     n = float(n)
     if is_int(shape):
         shape = (shape,shape)
@@ -4193,13 +4243,22 @@ def moffat_image(shape=(101,101), wcs=WCS(), factor=1, moffat=None, center=None,
         
     if moffat is not None:
         center = moffat.center
-        I = moffat.I
-        a = moffat.a
-        e = moffat.e
+        flux = moffat.flux
+        fwhm = moffat.fwhm
+        peak = False
         n = moffat.n
         rot = moffat.rot
         cont = moffat.cont
-    
+        
+    fwhm = np.array(fwhm)
+    a = fwhm[0]/(2*np.sqrt(2**(1.0/n)-1.0))
+    e = fwhm[0]/fwhm[1]
+        
+    if peak:
+        I = flux
+    else:
+        I = flux * (n-1) / (np.pi * a * a * e)    
+        
     if center is None:
         center = np.array([(shape[0]-1)/2.0,(shape[1]-1)/2.0])
     else:

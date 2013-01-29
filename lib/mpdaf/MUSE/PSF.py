@@ -49,28 +49,28 @@ class LSF(object):
         :param kargs: kargs can be used to set LSF parameters.
         :rtype: np.array
         """
+        import numexpr
         if self.type == "qsim_v1":
             T = lambda x: np.exp((-x**2)/2.0) + np.sqrt(2.0*np.pi)*x*special.erf(x/np.sqrt(2.0))/2.0
-    
             c = np.array([-0.09876662, 0.44410609, -0.03166038, 0.46285363])
             sigma = lambda x: c[3] + c[2]*x + c[1]*x**2 + c[0]*x**3
     
             x = (lbda-6975.0)/4650.0
-            h = 2.09
+            h_2 = 2.09 / 2.0
             sig = sigma(x)
-            dy = step / 1.25
+            dy_2 = step / 1.25 / 2.0
         
             k = size/2
             y = np.arange(-k, k+1)
         
-            y1 = (y - h/2.0) / sig
-            y2 = (y + h/2.0) / sig
+            y1 = (y - h_2) / sig
+            y2 = (y + h_2) / sig
     
-            lsf = T(y2 + dy/2.0) - T(y2 - dy/2.0) - T(y1 + dy/2.0) + T(y1 - dy/2.0)
-            
+            lsf = T(y2 + dy_2) - T(y2 - dy_2) - T(y1 + dy_2) + T(y1 - dy_2)
             
         lsf /= lsf.sum()
         return lsf
+    
     
     def size(self, lbda ,step, epsilon, **kargs):
         """ returns the LSF size in pixels.
