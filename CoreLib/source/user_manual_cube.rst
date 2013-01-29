@@ -29,6 +29,8 @@ A cube object O consist of:
 | O.fscale   | Scaling factor for the flux and variance values                                                  |
 +------------+--------------------------------------------------------------------------------------------------+
 
+Masked arrays are arrays that may have missing or invalid entries. The `numpy.ma <http://docs.scipy.org/doc/numpy/reference/maskedarray.html>`_ module provides a nearly work-alike replacement for numpy that supports data arrays with masks.
+
 Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis, p and q the spatial axes
 
 The format of each numpy array follows the indexing used by Python to 
@@ -273,11 +275,11 @@ First, we use the image iterator::
  >>> from mpdaf.obj import iter_ima
  >>> cube2 = cube.clone()
  >>> for ima,k in iter_ima(cube, index=True):
- >>>   cube2[k,:,:] = ima.gaussian_filter()
+ >>>   cube2[k,:,:] = ima.gaussian_filter(sigma=3)
  
 We can also use the :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method that automatically loops over all images to apply the convolution::
 
- >>> cube2 = cube.loop_ima_multiprocessing(f=Image.gaussian_filter)
+ >>> cube2 = cube.loop_ima_multiprocessing(f=Image.gaussian_filter, sigma=3)
  
 We then plot the result::
 
@@ -468,6 +470,8 @@ Transformation
 
 :func:`mpdaf.obj.Cube.resize <mpdaf.obj.Cube.resize>` resizes the cube to have a minimum number of masked values (in place).
 
+:func:`mpdaf.obj.Cube.truncate <mpdaf.obj.Cube.truncate>` extracts a sub-cube.
+
 :func:`mpdaf.obj.Cube.rebin_factor <mpdaf.obj.Cube.rebin_factor>` shrinks the size of the cube by factor.
 
 :func:`mpdaf.obj.Cube.rebin_median <mpdaf.obj.Cube.rebin_median>` rebins the cube using median values.
@@ -476,4 +480,23 @@ Transformation
 
 :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
 
+
+Open big cube with memory mapping
+---------------------------------
+
+:func:`mpdaf.obj.CubeDisk <mpdaf.obj.CubeDisk>` is the cube constructor that uses memory mapping.
+
+:func:`mpdaf.obj.CubeDisk.info <mpdaf.obj.CubeDisk.info>` prints information.
+
+:func:`CubeDisk[k,p,q] <mpdaf.obj.CubeDisk.__getitem__>` returns the corresponding value.
+
+:func:`CubeDisk[k1:k2,p1:p2,q1:q2] <mpdaf.obj.CubeDisk.__getitem__>` returns the sub-cube.
+
+:func:`CubeDisk[k,:,:] <mpdaf.obj.CubeDisk.__getitem__>` returns an Image.
+
+:func:`CubeDisk[:,p,q] <mpdaf.obj.CubeDisk.__getitem__>` returns a Spectrum.
+
+:func:`mpdaf.obj.CubeDisk.truncate <mpdaf.obj.CubeDisk.truncate>` extracts a sub-cube.
+
+:func:`mpdaf.obj.CubeDisk.get_white_image <mpdaf.obj.CubeDisk.get_white_image>` performs a sum over the wavelength dimension and returns an image.
 
