@@ -104,9 +104,11 @@ class Cube(object):
     wcs (:class:`mpdaf.obj.WCS`) : World coordinates.
 
     wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates
+    
+    ima (dict{string,:class:`mpdaf.obj.Image`} : dictionary of images
     """
     
-    def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0):
+    def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0, ima=True):
         """Creates a Cube object.
         
         :param filename: Possible FITS filename.
@@ -131,10 +133,13 @@ class Cube(object):
         :type var: float array
         :param fscale: Flux scaling factor (1 by default).
         :type fscale: float
+        :param ima: if True load images
+        :type ima: boolean
         """
         #possible FITS filename
         self.cube = True
         self.filename = filename
+        self.ima = {}
         if filename is not None:
             f = pyfits.open(filename)
             # primary header
@@ -224,6 +229,23 @@ class Cube(object):
                     self.data = np.ma.MaskedArray(self.data, mask=mask)
                 except:
                     pass
+                if ima:
+                    from image import Image
+                    for i in range(len(f)):
+                        try:
+                            hdr = f[i].header
+                            if hdr['NAXIS'] != 2:
+                                raise IOError, '  not an image'
+                            unit = hdr.get('BUNIT', None)
+                            primary_header = pyfits.CardList()
+                            data_header = hdr.ascard
+                            shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
+                            data = np.array(f[i].data, dtype=float)
+                            fscale = hdr.get('FSCALE', 1.0)
+                            wcs = WCS(hdr) # WCS object from data header
+                            self.ima[hdr.get('EXTNAME')] = Image(notnoise=True, shape=shape, wcs = wcs, unit=unit, data=data, fscale=fscale)
+                        except:
+                            pass
             f.close()
         else:
             #possible data unit type
@@ -465,6 +487,11 @@ class Cube(object):
             print 'no world coordinates for spectral direction'
         else:
             self.wave.info()
+        print ".ima: ",
+        for k in self.ima.keys():
+            print k,
+        print '\n'
+            
 
 
     def __le__ (self, item):
@@ -1512,6 +1539,86 @@ class Cube(object):
         else:
             return None
         
+    def truncate(self, lmin, lmax, y_min, y_max, x_min, x_max, mask=True):
+        """ Truncates the cube and return a sub-cube.
+          :param lmin: Minimum wavelength.
+          :type lmin: float
+          :param lmax: Maximum wavelength.
+          :type lmax: float
+          :param y_min: Minimum value of y in degrees.
+          :type y_min: float
+          :param y_max: Maximum value of y in degrees.
+          :type y_max: float
+          :param x_min: Minimum value of x in degrees.
+          :type x_min: float
+          :param x_max: Maximum value of x in degrees.
+          :type x_max: float
+          :param mask: if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.
+          :type mask: bool
+        """
+        skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
+        pixcrd = self.wcs.sky2pix(skycrd)
+        
+        imin = int(np.min(pixcrd[:,0]))
+        if imin<0:
+            imin = 0
+        imax = int(np.max(pixcrd[:,0]))+1
+        if imax>self.shape[1]:
+            imax = self.shape[1]
+        jmin = int(np.min(pixcrd[:,1]))
+        if jmin<0:
+            jmin = 0
+        jmax = int(np.max(pixcrd[:,1]))+1
+        if jmax>self.shape[2]:
+            jmax=self.shape[2]
+            
+        kmin = max(0,self.wave.pixel(lmin,nearest=True))
+        kmax = min(self.shape[0],self.wave.pixel(lmax,nearest=True) + 1)
+        
+        if kmin==kmax:
+            raise ValueError, 'Minimum and maximum wavelengths are equal'
+        
+        if kmax==kmin+1:
+            raise ValueError, 'Minimum and maximum wavelengths are outside the spectrum range'
+         
+        data = self.data[kmin:kmax,imin:imax,jmin:jmax]
+        shape = np.array((data.shape[0],data.shape[1],data.shape[2]))
+        
+        if self.var is not None:
+            var = self.var[kmin:kmax,imin:imax,jmin:jmax]
+        else:
+            var = None
+        try:
+            wcs = self.wcs[imin:imax,jmin:jmax]
+        except:
+            wcs = None
+        try:
+            wave = self.wave[kmin:kmax]
+        except:
+            wave = None
+            
+        if mask:
+            #mask outside pixels
+            m = np.ma.make_mask_none(data.shape)
+            for j in range(shape[1]):
+                pixcrd = np.array([np.ones(shape[2])*j,np.arange(shape[2])]).T
+                skycrd = self.wcs.pix2sky(pixcrd)
+                test_ra_min = np.array(skycrd[:,1]) < x_min
+                test_ra_max = np.array(skycrd[:,1]) > x_max
+                test_dec_min = np.array(skycrd[:,0]) < y_min
+                test_dec_max = np.array(skycrd[:,0]) > y_max
+                m[:,j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
+            try:
+                m = np.ma.mask_or(m,np.ma.getmask(data))
+                data = np.ma.MaskedArray(data, mask=m)
+            except:
+                pass
+            
+        res = Cube(shape=shape, wcs = wcs, wave = wave, unit=self.unit, fscale=self.fscale)
+        res.data = data
+        res.var = var
+        return res
+        
     def _rebin_factor_(self, factor):
         '''Shrinks the size of the cube by factor.
         New size is an integer multiple of the original size.
@@ -2164,3 +2271,374 @@ def _process_ima(arglist):
         return (pos,obj_result,header)
     except Exception as inst:
         raise type(inst) , str(inst) + '\n The error occurred for the image [%i,:,:]'%pos
+    
+class CubeDisk(object):
+    """This class manages heavy fits file with memory mapping.The DryRuns are producing sometimes fairly large datacubes (eg 21 Gb).
+    For some user it will be difficult to handle. Therefore this class propose to open fits file with memory mapping.
+    The method can extract a spectrum, an image or a smaller datacube from the big one.
+    
+    :param filename: Possible FITS filename.
+    :type filename: string
+    :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+    :type ext: integer or (integer,integer) or string or (string,string)
+    :param notnoise: True if the noise Variance cube is not read (if it exists).
+  
+           Use notnoise=True to create cube without variance extension.
+    :type notnoise: bool
+
+    Attributes
+    ----------
+    
+    filename (string): fits file
+    
+    data (int or string): data extension 
+
+    unit (string) : Possible data unit type
+
+    primary_header (pyfits.CardList) : Possible FITS primary header instance.
+
+    data_header (pyfits.CardList) : Possible FITS data header instance.
+
+    shape (array of 3 integers) : Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
+
+    var (int or string) : variance extension (-1 if any).
+
+    fscale (float) : Flux scaling factor (1 by default).
+
+    wcs (:class:`mpdaf.obj.WCS`) : World coordinates.
+
+    wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates
+    
+    ima (dict{string,:class:`mpdaf.obj.Image`} : dictionary of images
+    """
+    
+    def __init__(self, filename=None, ext = None, notnoise=False, ima=True):
+        """Creates a CubeDisk object.
+        
+        :param filename: Possible FITS filename.
+        :type filename: string
+        :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+        :type ext: integer or (integer,integer) or string or (string,string)
+        :param notnoise: True if the noise Variance cube is not read (if it exists).
+  
+           Use notnoise=True to create cube without variance extension.
+        :type notnoise: bool
+        """
+        self.filename = filename
+        self.ima = {}
+        if filename is not None:
+            f = pyfits.open(filename, memmap=True)
+            # primary header
+            hdr = f[0].header
+            if len(f) == 1:
+                # if the number of extension is 1, we just read the data from the primary header
+                # test if image
+                if hdr['NAXIS'] != 3:
+                    raise IOError, 'Wrong dimension number: not a cube'
+                self.unit = hdr.get('BUNIT', None)
+                self.primary_header = pyfits.CardList()
+                self.data_header = hdr.ascard
+                self.shape = np.array([hdr['NAXIS3'],hdr['NAXIS2'],hdr['NAXIS1']])
+                self.data = 0
+                self.var = -1
+                self.fscale = hdr.get('FSCALE', 1.0)
+                # WCS object from data header
+                try:
+                    self.wcs = WCS(hdr)
+                except:
+                    print "error: wcs not copied."
+                    self.wcs = None
+                #Wavelength coordinates
+                if 'CDELT3' in hdr:
+                    cdelt = hdr.get('CDELT3')
+                elif 'CD3_3' in hdr:
+                    cdelt = hdr.get('CD3_3')
+                else:
+                    cdelt = 1.0
+                crpix = hdr.get('CRPIX3')
+                crval = hdr.get('CRVAL3')
+                cunit = hdr.get('CUNIT3','')
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit,self.shape[0])
+            else:
+                if ext is None:
+                    h = f['DATA'].header
+                    d = 'DATA'
+                else:
+                    if isinstance(ext,int) or isinstance(ext,str):
+                        n = ext
+                    else:
+                        n = ext[0]
+                    h = f[n].header
+                    d = n
+                if h['NAXIS'] != 3:
+                    raise IOError, 'Wrong dimension number in DATA extension'
+                self.unit = h.get('BUNIT', None)
+                self.primary_header = hdr.ascard
+                self.data_header = h.ascard
+                self.shape= np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
+                self.data = d
+                self.fscale = h.get('FSCALE', 1.0)
+                try:
+                    self.wcs = WCS(h) # WCS object from data header
+                except:
+                    print "error: wcs not copied."
+                    self.wcs = None
+                #Wavelength coordinates
+                if 'CDELT3' in h:
+                    cdelt = h.get('CDELT3')
+                elif 'CD3_3' in h:
+                    cdelt = h.get('CD3_3')
+                else:
+                    cdelt = 1.0
+                crpix = h.get('CRPIX3')
+                crval = h.get('CRVAL3')
+                cunit = h.get('CUNIT3','')
+                self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
+                self.var = -1
+                if not notnoise:
+                    try:
+                        if ext is None:
+                            fstat = 'STAT'
+                        else:
+                            n = ext[1]
+                            fstat = n
+                        if f[fstat].header['NAXIS'] != 3:
+                            raise IOError, 'Wrong dimension number in variance extension'
+                        if f[fstat].header['NAXIS1'] != self.shape[2] and f[fstat].header['NAXIS2'] != self.shape[1] and f[fstat].header['NAXIS3'] != self.shape[0]:
+                            raise IOError, 'Number of points in STAT not equal to DATA'
+                        self.var = fstat
+                    except:
+                        self.var = -1
+                if ima:
+                    from image import Image
+                    for i in range(len(f)):
+                        try:
+                            hdr = f[i].header
+                            if hdr['NAXIS'] != 2:
+                                raise IOError, '  not an image'
+                            unit = hdr.get('BUNIT', None)
+                            primary_header = pyfits.CardList()
+                            data_header = hdr.ascard
+                            shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
+                            data = np.array(f[i].data, dtype=float)
+                            fscale = hdr.get('FSCALE', 1.0)
+                            wcs = WCS(hdr) # WCS object from data header
+                            self.ima[hdr.get('EXTNAME')] = Image(notnoise=True, shape=shape, wcs = wcs, unit=unit, data=data, fscale=fscale)
+                        except:
+                            pass
+             #DQ   
+            f.close()
+            
+    def info(self):
+        """Prints information.
+        """
+        if self.filename is None:
+            print '%i X %i X %i cube (no name)' %(self.shape[0],self.shape[1],self.shape[2])
+        else:
+            print '%i X %i X %i cube (%s)' %(self.shape[0],self.shape[1],self.shape[2],self.filename)
+        data = '.data(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
+        if self.data is None:
+            data = 'no data'
+        noise = '.var(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
+        if self.var == -1:
+            noise = 'no noise'
+        if self.unit is None:
+            unit = 'no unit'
+        else:
+            unit = self.unit
+        print '%s (%s) fscale=%g, %s' %(data,unit,self.fscale,noise)
+        if self.wcs is None:
+            print 'no world coordinates for spatial direction'
+        else:
+            self.wcs.info()
+        if self.wave is None:
+            print 'no world coordinates for spectral direction'
+        else:
+            self.wave.info()
+        print ".ima: ",
+        for k in self.ima.keys():
+            print k,
+        print '\n'
+        
+    def __getitem__(self,item):
+        """Returns the corresponding object:
+        cube[k,p,k] = value
+        cube[k,:,:] = spectrum
+        cube[:,p,q] = image
+        cube[:,:,:] = sub-cube
+        """
+        if isinstance(item, tuple) and len(item)==3:
+            f = pyfits.open(self.filename, memmap=True)
+            data = f[self.data].data[item]
+            if self.var != -1:
+                var = f[self.var].data[item]
+            else:
+                self.var = None
+            f.close()
+            if is_int(item[0]):
+                if is_int(item[1]) and is_int(item[2]):
+                    #return a float
+                    return data*self.fscale
+                else:
+                    #return an image
+                    from image import Image
+                    if is_int(item[1]):
+                        shape = (1,data.shape[0])
+                    elif is_int(item[2]):
+                        shape = (data.shape[0],1)
+                    else:
+                        shape = data.shape
+                    try:
+                        wcs = self.wcs[item[1],item[2]]
+                    except:
+                        wcs = None
+                    res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale, data=data, var=var)
+                    return res
+            elif is_int(item[1]) and is_int(item[2]):
+                #return a spectrum
+                from spectrum import Spectrum
+                shape = data.shape[0]
+                try:
+                    wave = self.wave[item[0]]
+                except:
+                    wave = None
+                res = Spectrum(shape=shape, wave = wave, unit=self.unit, fscale=self.fscale, data=data, var=var)
+                return res
+            else:
+                #return a cube
+                if is_int(item[1]):
+                    shape = (data.shape[0],1,data.shape[1])
+                elif is_int(item[2]):
+                    shape = (data.shape[0],data.shape[1],1)
+                else:
+                    shape = data.shape
+                try:
+                    wcs = self.wcs[item[1],item[2]]
+                except:
+                    wcs = None
+                try:
+                    wave = self.wave[item[0]]
+                except:
+                    wave = None
+                res = Cube(shape=shape, wcs = wcs, wave = wave, unit=self.unit, fscale=self.fscale, data=data, var=var)
+                return res
+        else:
+            raise ValueError, 'Operation forbidden'
+        
+        
+    def truncate(self, lmin, lmax, y_min, y_max, x_min, x_max, mask=True):
+        """ Truncates the cube and return a sub-cube.
+          :param lmin: Minimum wavelength.
+          :type lmin: float
+          :param lmax: Maximum wavelength.
+          :type lmax: float
+          :param y_min: Minimum value of y in degrees.
+          :type y_min: float
+          :param y_max: Maximum value of y in degrees.
+          :type y_max: float
+          :param x_min: Minimum value of x in degrees.
+          :type x_min: float
+          :param x_max: Maximum value of x in degrees.
+          :type x_max: float
+          :param mask: if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.
+          :type mask: bool
+        """
+        skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
+        pixcrd = self.wcs.sky2pix(skycrd)
+        
+        imin = int(np.min(pixcrd[:,0]))
+        if imin<0:
+            imin = 0
+        imax = int(np.max(pixcrd[:,0]))+1
+        if imax>self.shape[1]:
+            imax = self.shape[1]
+        jmin = int(np.min(pixcrd[:,1]))
+        if jmin<0:
+            jmin = 0
+        jmax = int(np.max(pixcrd[:,1]))+1
+        if jmax>self.shape[2]:
+            jmax=self.shape[2]
+            
+        kmin = max(0,self.wave.pixel(lmin,nearest=True))
+        kmax = min(self.shape[0],self.wave.pixel(lmax,nearest=True) + 1)
+        
+        if kmin==kmax:
+            raise ValueError, 'Minimum and maximum wavelengths are equal'
+        
+        if kmax==kmin+1:
+            raise ValueError, 'Minimum and maximum wavelengths are outside the spectrum range'
+    
+        f = pyfits.open(self.filename, memmap=True)
+        data = f[self.data].data[kmin:kmax,imin:imax,jmin:jmax]
+        if self.var != -1:
+            var = f[self.var].data[kmin:kmax,imin:imax,jmin:jmax]
+        else:
+            self.var = None
+        f.close()
+         
+        shape = np.array((data.shape[0],data.shape[1],data.shape[2]))
+        
+        try:
+            wcs = self.wcs[imin:imax,jmin:jmax]
+        except:
+            wcs = None
+        try:
+            wave = self.wave[kmin:kmax]
+        except:
+            wave = None
+            
+        res = Cube(shape=shape, wcs = wcs, wave = wave, unit=self.unit, fscale=self.fscale, data=data, var=var)
+        
+        if mask:
+            #mask outside pixels
+            m = np.ma.make_mask_none(res.data.shape)
+            for j in range(res.shape[1]):
+                pixcrd = np.array([np.ones(shape[2])*j,np.arange(shape[2])]).T
+                skycrd = res.wcs.pix2sky(pixcrd)
+                test_ra_min = np.array(skycrd[:,1]) < x_min
+                test_ra_max = np.array(skycrd[:,1]) > x_max
+                test_dec_min = np.array(skycrd[:,0]) < y_min
+                test_dec_max = np.array(skycrd[:,0]) > y_max
+                m[:,j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
+            try:
+                m = np.ma.mask_or(m,np.ma.getmask(res.data))
+                res.data = np.ma.MaskedArray(res.data, mask=m)
+            except:
+                pass
+        return res
+    
+    def get_white_image(self):
+        """Perform a sum over the wavelength dimension and returns an image.
+        """
+        f = pyfits.open(self.filename, memmap=True)
+        from image import Image
+        loop = True
+        k = self.shape[0]
+        while loop:
+            try:
+                data = np.sum(f[self.data].data[0:k], axis=0)
+                loop = False
+            except:
+                k = k/2
+        print k
+        kmin = k
+        kmax = 2*k
+        while kmax<self.shape[0]:
+            data += np.sum(f[self.data].data[kmin:kmax], axis=0)
+            kmin = kmax
+            kmax += k
+            
+        if self.var != -1:
+            kmin = 0
+            kmax = k
+            var = np.zeros((self.shape[1],self.shape[2]))
+            while kmax<self.shape[0]:
+                var += np.sum(f[self.var].data[kmin:kmax], axis=0)
+                kmin = kmax
+                kmax += k
+        
+        f.close()
+            
+        res = Image(shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale, data=data, var=var)
+        return res
+        

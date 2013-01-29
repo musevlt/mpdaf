@@ -59,6 +59,7 @@ from spectrum import Spectrum
 from spectrum import Gauss1D
 from image import Image
 from cube import Cube
+from cube import CubeDisk
 from astropysics_coords import AstropysicsAngularCoordinate
 from image import gauss_image
 from image import moffat_image
