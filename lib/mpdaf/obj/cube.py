@@ -1554,7 +1554,7 @@ class Cube(object):
           :type x_min: float
           :param x_max: Maximum value of x in degrees.
           :type x_max: float
-          :param mask: if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.
+          :param mask: if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
           :type mask: bool
         """
         skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
@@ -2274,9 +2274,10 @@ def _process_ima(arglist):
         raise type(inst) , str(inst) + '\n The error occurred for the image [%i,:,:]'%pos
     
 class CubeDisk(object):
-    """The DryRuns are producing sometimes fairly large datacubes (eg 21 Gb).
-    For some user it will be difficult to handle. Therefore this class propose to open fits file with memory mapping.
-    The method can extract a spectrum, an image or a smaller datacube from the big one.
+    """Sometimes, MPDAF users may want to open fairly large datacubes (> 4 Gb or so).
+    This can be difficult to handle with limited RAM.
+    This class provides a way to open datacube fits files with memory mapping.
+    The methods of the class can extract a spectrum, an image or a smaller datacube from the larger one.
     
     :param filename: Possible FITS filename.
     :type filename: string
@@ -2290,9 +2291,9 @@ class CubeDisk(object):
     Attributes
     ----------
     
-    filename (string): fits file
+    filename (string) : Fits file
     
-    data (int or string): data extension 
+    data (int or string) : Data extension 
 
     unit (string) : Possible data unit type
 
@@ -2302,7 +2303,7 @@ class CubeDisk(object):
 
     shape (array of 3 integers) : Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
 
-    var (int or string) : variance extension (-1 if any).
+    var (int or string) : Variance extension (-1 if any).
 
     fscale (float) : Flux scaling factor (1 by default).
 
@@ -2310,7 +2311,7 @@ class CubeDisk(object):
 
     wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates
     
-    ima (dict{string,:class:`mpdaf.obj.Image`} : dictionary of images
+    ima (dict{string, :class:`mpdaf.obj.Image`} : dictionary of images
     """
     
     def __init__(self, filename=None, ext = None, notnoise=False, ima=True):
@@ -2463,9 +2464,13 @@ class CubeDisk(object):
         
     def __getitem__(self,item):
         """Returns the corresponding object:
+        
         cube[k,p,k] = value
+        
         cube[k,:,:] = spectrum
+        
         cube[:,p,q] = image
+        
         cube[:,:,:] = sub-cube
         """
         if isinstance(item, tuple) and len(item)==3:
@@ -2542,7 +2547,7 @@ class CubeDisk(object):
           :type x_min: float
           :param x_max: Maximum value of x in degrees.
           :type x_max: float
-          :param mask: if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are masked.
+          :param mask: if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
           :type mask: bool
         """
         skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
