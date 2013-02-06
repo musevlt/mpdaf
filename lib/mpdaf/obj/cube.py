@@ -157,11 +157,7 @@ class Cube(object):
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
                 # WCS object from data header
-                try:
-                    self.wcs = WCS(hdr)
-                except:
-                    print "error: wcs not copied."
-                    self.wcs = None
+                self.wcs = WCS(hdr)
                 #Wavelength coordinates
                 if 'CDELT3' in hdr:
                     cdelt = hdr.get('CDELT3')
@@ -192,11 +188,7 @@ class Cube(object):
                 self.shape= np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
-                try:
-                    self.wcs = WCS(h) # WCS object from data header
-                except:
-                    print "error: wcs not copied."
-                    self.wcs = None
+                self.wcs = WCS(h) # WCS object from data header
                 #Wavelength coordinates
                 if 'CDELT3' in h:
                     cdelt = h.get('CDELT3')

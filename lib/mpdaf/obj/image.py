@@ -318,11 +318,7 @@ class Image(object):
                     self.data = np.array(f[0].data, dtype=float)
                     self.var = None
                     self.fscale = hdr.get('FSCALE', 1.0)
-                    try:
-                        self.wcs = WCS(hdr) # WCS object from data header
-                    except:
-                        print "Error: Invalid wcs. World coordonates are not copied."
-                        self.wcs = None
+                    self.wcs = WCS(hdr) # WCS object from data header
                 else:
                     if ext is None:
                         try:
@@ -350,11 +346,7 @@ class Image(object):
                     self.shape = np.array([h['NAXIS2'],h['NAXIS1']])
                     self.data = d
                     self.fscale = h.get('FSCALE', 1.0)
-                    try:
-                        self.wcs = WCS(h) # WCS object from data header
-                    except:
-                        print "Error: Invalid wcs. World coordonates are not copied."
-                        self.wcs = None
+                    self.wcs = WCS(h) # WCS object from data header
                     self.var = None
                     if not notnoise:
                         try:
