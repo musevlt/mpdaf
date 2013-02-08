@@ -2121,7 +2121,7 @@ class Spectrum(object):
                 return None
             
     def correlate(self, other):
-        """Retruns the cross-correlation of the spectrum with a other spectrum or an array. Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.
+        """Returns the cross-correlation of the spectrum with a other spectrum or an array. Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.
   
           :param other: Second spectrum or 1d-array.
           :type other: 1d-array or Spectrum
@@ -2436,7 +2436,7 @@ class Spectrum(object):
             self._clicks = None
             
     def igauss_fit(self,nclicks=5):
-        """Perform an plots a polynomial fit on spectrum.
+        """Performs and plots a polynomial fit on spectrum.
     
           To select minimum, peak and maximum wavelengths, click on the left mouse button.
   
