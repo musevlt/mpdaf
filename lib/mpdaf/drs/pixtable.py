@@ -8,7 +8,6 @@ import datetime
 import tempfile
 import os
 
-
 class PixTable(object):
     """PixTable class
 
@@ -62,8 +61,6 @@ class PixTable(object):
         self.__dq = None
         self.__stat = None
         self.__origin = None
-        self.__weight = None
-        self.__exp = None
 
         if filename!=None:
             try:
@@ -98,10 +95,6 @@ class PixTable(object):
                 os.remove(self.__stat)
             if self.__origin != None:
                 os.remove(self.__origin)
-            if self.__weight != None:
-                os.remove(self.__weight)
-            if self.__exp != None:
-                os.remove(self.__exp)
         except:
             pass
 
@@ -163,22 +156,6 @@ class PixTable(object):
         origin[:] = selforigin[:]
         del origin, selforigin
         os.close(fd)
-        #weight
-        selfweight=self.get_weight()
-        if selfweight is not None:
-            (fd,result.__weight) = tempfile.mkstemp(prefix='mpdaf')
-            weight = np.memmap(result.__weight,dtype="float32",shape=(self.nrows))
-            weight[:] = selfweight[:]
-            del weight, selfweight
-            os.close(fd)
-        #exp
-        selfexp=self.get_exp()
-        if selfexp is not None:
-            (fd,result.__exp) = tempfile.mkstemp(prefix='mpdaf')
-            exp = np.memmap(result.__exp,dtype="uint32",shape=(self.nrows))
-            exp[:] = selfexp[:]
-            del exp, selfexp
-            os.close(fd)
         return result
 
     def info(self):
@@ -353,66 +330,6 @@ class PixTable(object):
                 hdulist.close()
                 os.close(fd)
                 return origin
-            
-    def get_weight(self):
-        """Loads the weight column and returns it.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__weight != None:
-            weight = np.memmap(self.__weight,dtype="float32",shape=(self.nrows))
-            return weight
-        else:
-            if self.filename == None:
-                print 'format error'
-                print
-                return None
-            else:
-                try:
-                    if self.get_keywords("HIERARCH ESO PRO MUSE PIXTABLE WEIGHTED"):
-                        hdulist = pyfits.open(self.filename,memmap=1)
-                        try:
-                            data_weight = hdulist[1].data.field('weight')
-                            (fd,self.__weight) = tempfile.mkstemp(prefix='mpdaf')
-                            weight = np.memmap(self.__weight,dtype="float32",shape=(self.nrows))
-                            weight[:] = data_weight[:]
-                            os.close(fd)
-                        except:
-                            weight=None
-                        hdulist.close()
-                    else:
-                        weight=None
-                except:
-                    weight=None
-                return weight
-            
-    def get_exp(self):
-        """Loads the exposure numbers and returns it as a column.
-        
-        :rtype: numpy.memmap
-        """
-        if self.__exp != None:
-            exp = np.memmap(self.__exp,dtype="uint32",shape=(self.nrows))
-            return exp
-        else:
-            if self.filename == None:
-                print 'format error'
-                print
-                return None
-            else:
-                try:
-                    nexp = self.get_keywords("HIERARCH ESO PRO MUSE PIXTABLE COMBINED")
-                    (fd,self.__exp) = tempfile.mkstemp(prefix='mpdaf')
-                    exp = np.memmap(self.__exp,dtype="uint32",shape=(self.nrows))
-                    for i in range(1,nexp+1):
-                        first = self.get_keywords("HIERARCH ESO PRO MUSE PIXTABLE EXP%i FIRST"%i)
-                        last = self.get_keywords("HIERARCH ESO PRO MUSE PIXTABLE EXP%i LAST"%i)
-                        exp[first:last+1] = i
-                    os.close(fd)
-                         
-                except:
-                    exp = None
-        return exp
 
     def write(self,filename):
         """Saves the object in a FITS file.
@@ -444,9 +361,6 @@ class PixTable(object):
         cols.append(pyfits.Column(name='dq', format='1J',unit='None', array=self.get_dq()))
         cols.append(pyfits.Column(name='stat', format='1E',unit='None', array=self.get_stat()))
         cols.append(pyfits.Column(name='origin', format='1J',unit='count**2', array=self.get_origin()))
-        weight = self.get_weight()
-        if weight is not None:
-            cols.append(pyfits.Column(name='weight', format='1E',unit='count', array=weight))
         coltab = pyfits.ColDefs(cols)
         tbhdu = pyfits.new_table(coltab)
         thdulist = pyfits.HDUList([prihdu, tbhdu])
@@ -454,7 +368,7 @@ class PixTable(object):
         # update attributes
         self.filename = filename
 
-    def extract(self, sky=None, lbda=None, ifu=None, slice=None, xpix=None, ypix=None, exp=None):
+    def extract(self, sky=None, lbda=None, ifu=None, slice=None, xpix=None, ypix=None):
         """Extracts a subset of a pixtable using the following criteria:
         
         - aperture on the sky (center, size and shape)
@@ -466,9 +380,6 @@ class PixTable(object):
         - slice number
         
         - detector pixels
-        
-        - exposure numbers
-        
         
         The arguments can be either single value or a list of values to select
         multiple regions.
@@ -491,9 +402,6 @@ class PixTable(object):
 
         :param ypix: (min, max) pixel range along the Y axis
         :type ypix: (int, int)
-        
-        :param exp: list of exposure numbers
-        :type exp: list of integers
         
         :rtype: PixTable
         """
@@ -585,17 +493,6 @@ class PixTable(object):
                     kmask &= (col_ypix>=y1) & (col_ypix<y2)
                 del col_ypix
             del col_origin
-            
-        # Do the selection on the exposure numbers
-        if exp is not None:
-            col_exp = self.get_exp()
-            if col_exp is not None:
-                mask = np.zeros(self.nrows).astype('bool')
-                for iexp in exp:
-                    mask |= (col_exp==iexp)
-                kmask &= mask
-                del mask
-                del col_exp
 
         # Compute the new pixtable
         ksel = np.where(kmask)
@@ -690,32 +587,6 @@ class PixTable(object):
         slice_high.value = int(self.origin2slice(origin).max())
         del origin,selforigin
         os.close(fd)
-        
-        #weight
-        selfweight=self.get_weight()
-        if selfweight is not None:
-            (fd,ptab.__weight) = tempfile.mkstemp(prefix='mpdaf')
-            weight = np.memmap(ptab.__weight,dtype="float32",shape=(ptab.nrows))
-            weight[:] = selfweight[ksel]
-            del weight,selfweight
-            os.close(fd)
-            
-        #combined exposures
-        selfexp = self.get_exp()
-        if selfexp is not None:
-            newexp = selfexp[ksel]
-            numbers_exp = np.unique(newexp)
-            nexp = ptab.primary_header["HIERARCH ESO PRO MUSE PIXTABLE COMBINED"]
-            nexp.value = len(numbers_exp)
-            for iexp,i in zip(numbers_exp,range(1,len(numbers_exp)+1)):
-                ksel = np.where(newexp==iexp)
-                first = ptab.primary_header["HIERARCH ESO PRO MUSE PIXTABLE EXP%i FIRST"%i]
-                last = ptab.primary_header["HIERARCH ESO PRO MUSE PIXTABLE EXP%i LAST"%i]
-                first.value = ksel[0][0]
-                last.value = ksel[0][-1]
-            for i in range(len(numbers_exp)+1,self.get_keywords("HIERARCH ESO PRO MUSE PIXTABLE COMBINED")+1):
-                del ptab.primary_header["HIERARCH ESO PRO MUSE PIXTABLE EXP%i FIRST"%i]
-                del ptab.primary_header["HIERARCH ESO PRO MUSE PIXTABLE EXP%i LAST"%i]
 
         return ptab
 
