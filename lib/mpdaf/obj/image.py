@@ -3444,7 +3444,7 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
             
-        self.data = np.ma.array(self.data.data + np.random.normal(data, sigma),mask=self.data.mask)
+        self.data = np.ma.array(np.random.normal(data, sigma),mask=self.data.mask)
         if self.var is None:
             self.var = np.ones((self.shape))*sigma*sigma
         else:
@@ -3468,7 +3468,8 @@ class Image(object):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
-        self.data = np.ma.array(self.data.data + np.random.poisson(data).astype(float),mask=self.data.mask)
+        self.data = np.ma.array(np.random.poisson(data*self.fscale).astype(float),mask=self.data.mask)
+        self.data /= self.fscale
         if self.var is None:
             self.var = self.data.data.__copy__()
         else:
