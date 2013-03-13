@@ -49,7 +49,6 @@ class LSF(object):
         :param kargs: kargs can be used to set LSF parameters.
         :rtype: np.array
         """
-        import numexpr
         if self.type == "qsim_v1":
             T = lambda x: np.exp((-x**2)/2.0) + np.sqrt(2.0*np.pi)*x*special.erf(x/np.sqrt(2.0))/2.0
             c = np.array([-0.09876662, 0.44410609, -0.03166038, 0.46285363])
