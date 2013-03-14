@@ -2181,7 +2181,7 @@ class Spectrum(object):
         :rtype: :class:`mpdaf.obj.Spectrum`
         """
         res = self.clone()
-        if res.data.sum() == 0:
+        if self.data.sum() == 0:
             return res
         step = self.get_step()
         lbda = self.wave.coord()
