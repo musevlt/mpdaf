@@ -13,7 +13,7 @@ from mpdaf.obj import deg2sexa,sexa2deg
 class TestWCS():
 
     def setUp(self):
-        self.wcs = WCS()
+        self.wcs = WCS(crval=(0,0))
         self.wcs.wcs.naxis1 = 6
         self.wcs.wcs.naxis2 = 5
 
@@ -49,7 +49,7 @@ class TestWCS():
         nose.tools.assert_equal(self.wcs.get_start()[1],0.0)
         nose.tools.assert_equal(self.wcs.get_end()[0],4.0)
         nose.tools.assert_equal(self.wcs.get_end()[1],5.0)
-        wcs2 = WCS(shape=(5,6))
+        wcs2 = WCS(crval=(0,0),shape=(5,6))
         nose.tools.assert_equal(wcs2.get_step()[0],1.0)
         nose.tools.assert_equal(wcs2.get_step()[1],1.0)
         nose.tools.assert_equal(wcs2.get_start()[0],-2.0)
@@ -61,7 +61,7 @@ class TestWCS():
 class TestWaveCoord():
 
     def setUp(self):
-        self.wave = WaveCoord()
+        self.wave = WaveCoord(crval=0)
         self.wave.shape = 10
 
     def tearDown(self):

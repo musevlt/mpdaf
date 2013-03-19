@@ -141,7 +141,7 @@ class WCS(object):
     wcs (pywcs.WCS) : World coordinates.
     
     """
-    def __init__(self,hdr=None,crpix=None,crval=(0.0,0.0),cdelt=(1.0,1.0),deg=False,rot=0, shape = None):
+    def __init__(self,hdr=None,crpix=None,crval=(1.0,1.0),cdelt=(1.0,1.0),deg=False,rot=0, shape = None):
         """Creates a WCS object.
 
         :param hdr: A FITS header. If hdr is not equal to None, WCS object is created from data header and other parameters are not used.
@@ -152,7 +152,7 @@ class WCS(object):
             
             If crpix is None and shape is not None crpix = (shape + 1.0)/2.0 and the reference point is the center of the image.
         :type crpix: float or (float,float)
-        :param crval: Coordinates of the reference pixel (ref_dec,ref_ra). (0.0,0.0) by default.
+        :param crval: Coordinates of the reference pixel (ref_dec,ref_ra). (1.0,1.0) by default.
         :type crval: float or (float,float)
         :param cdelt: Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
         :type cdelt: float or (float,float)
@@ -609,14 +609,14 @@ class WaveCoord(object):
     cunit (string) : Wavelength unit.
     """
 
-    def __init__(self, crpix=1.0, cdelt=1.0, crval=0.0, cunit = 'Angstrom', shape = None):
+    def __init__(self, crpix=1.0, cdelt=1.0, crval=1.0, cunit = 'Angstrom', shape = None):
         """Creates a WaveCoord object
 
         :param crpix: Reference pixel coordinates. 1.0 by default. Note that for crpix definition, the first pixel in the spectrum has pixel coordinates.
         :type crpix: float
         :param cdelt: Step in wavelength (1.0 by default).
         :type cdelt: float
-        :param crval: Coordinates of the reference pixel (0.0 by default).
+        :param crval: Coordinates of the reference pixel (1.0 by default).
         :type crval: float
         :param cunit: Wavelength unit (Angstrom by default).
         :type cunit: string

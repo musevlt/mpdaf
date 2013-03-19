@@ -16,7 +16,7 @@ from mpdaf.obj import gauss_image
 class TestCube():
 
     def setUp(self):
-        wcs = WCS()
+        wcs = WCS(crval=(0,0))
         wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit = 'Angstrom')
         self.cube1 = Cube(shape=(10,6,5),data=np.ones(shape=(10,6,5)),wave=wave,wcs=wcs,fscale= 2.3)
         data = np.ones(shape=(6,5))*2

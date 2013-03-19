@@ -318,7 +318,14 @@ class Image(object):
                     self.data = np.array(f[0].data, dtype=float)
                     self.var = None
                     self.fscale = hdr.get('FSCALE', 1.0)
-                    self.wcs = WCS(hdr) # WCS object from data header
+                    if wcs is None:
+                        self.wcs = WCS(hdr) # WCS object from data header
+                    else:
+                        self.wcs = wcs
+                        self.wcs.set_naxis1(self.shape[1])
+                        self.wcs.set_naxis2(self.shape[0])
+                        if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
+                            print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
                 else:
                     if ext is None:
                         try:
@@ -346,7 +353,14 @@ class Image(object):
                     self.shape = np.array([h['NAXIS2'],h['NAXIS1']])
                     self.data = d
                     self.fscale = h.get('FSCALE', 1.0)
-                    self.wcs = WCS(h) # WCS object from data header
+                    if wcs is None:
+                        self.wcs = WCS(h) # WCS object from data header
+                    else:
+                        self.wcs = wcs
+                        self.wcs.set_naxis1(self.shape[1])
+                        self.wcs.set_naxis2(self.shape[0])
+                        if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
+                            print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
                     self.var = None
                     if not notnoise:
                         try:
@@ -386,9 +400,16 @@ class Image(object):
                 self.unit = unit
                 self.primary_header = pyfits.CardList()
                 self.data_header = pyfits.CardList()
-                self.wcs = WCS()
-                self.wcs.set_naxis1(self.shape[1])
-                self.wcs.set_naxis2(self.shape[0])
+                if wcs is None:
+                    self.wcs = WCS()
+                    self.wcs.set_naxis1(self.shape[1])
+                    self.wcs.set_naxis2(self.shape[0])
+                else:
+                    self.wcs = wcs
+                    self.wcs.set_naxis1(self.shape[1])
+                    self.wcs.set_naxis2(self.shape[0])
+                    if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
+                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
         else:
             #possible data unit type
             self.unit = unit

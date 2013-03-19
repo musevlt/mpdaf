@@ -184,7 +184,7 @@ class Spectrum(object):
     wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates.
     """
 
-    def __init__(self, filename=None, ext = None, notnoise=False, shape=101, wave = None, unit=None, data=None, var=None,fscale=1.0):
+    def __init__(self, filename=None, ext = None, notnoise=False, shape=101, wave = None, pix=False, unit=None, data=None, var=None,fscale=1.0):
         """Creates a Spectrum object.
         
         :param filename: Possible FITS filename.
@@ -228,16 +228,22 @@ class Spectrum(object):
                 self.data = np.array(f[0].data,dtype=float)
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
-                if 'CDELT1' in hdr:
-                    cdelt = hdr.get('CDELT1')
-                elif 'CD1_1' in hdr:
-                    cdelt = hdr.get('CD1_1')
+                if wave is None:
+                    if 'CDELT1' in hdr:
+                        cdelt = hdr.get('CDELT1')
+                    elif 'CD1_1' in hdr:
+                        cdelt = hdr.get('CD1_1')
+                    else:
+                        cdelt = 1.0
+                    crpix = hdr.get('CRPIX1')
+                    crval = hdr.get('CRVAL1')
+                    cunit = hdr.get('CUNIT1','')
+                    self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
                 else:
-                    cdelt = 1.0
-                crpix = hdr.get('CRPIX1')
-                crval = hdr.get('CRVAL1')
-                cunit = hdr.get('CUNIT1','')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
+                    self.wave = wave
+                    if wave.shape is not None and wave.shape != self.shape:
+                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                    self.wave.shape = self.shape
             else:
                 self.primary_header = hdr.ascard
                 if ext is None:
@@ -258,16 +264,22 @@ class Spectrum(object):
                 self.shape = h['NAXIS1']
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
-                if 'CDELT1' in h:
-                    cdelt = h.get('CDELT1')
-                elif 'CD1_1' in h:
-                    cdelt = h.get('CD1_1')
+                if wave is None:
+                    if 'CDELT1' in h:
+                        cdelt = h.get('CDELT1')
+                    elif 'CD1_1' in h:
+                        cdelt = h.get('CD1_1')
+                    else:
+                        cdelt = 1.0
+                    crpix = h.get('CRPIX1')
+                    crval = h.get('CRVAL1')
+                    cunit = h.get('CUNIT1','')
+                    self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
                 else:
-                    cdelt = 1.0
-                crpix = h.get('CRPIX1')
-                crval = h.get('CRVAL1')
-                cunit = h.get('CUNIT1','')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape)
+                    self.wave = wave
+                    if wave.shape is not None and wave.shape != self.shape:
+                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                    self.wave.shape = self.shape
                 # STAT extension
                 self.var = None
                 if not notnoise:

@@ -157,18 +157,31 @@ class Cube(object):
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
                 # WCS object from data header
-                self.wcs = WCS(hdr)
-                #Wavelength coordinates
-                if 'CDELT3' in hdr:
-                    cdelt = hdr.get('CDELT3')
-                elif 'CD3_3' in hdr:
-                    cdelt = hdr.get('CD3_3')
+                if wcs is None:
+                    self.wcs = WCS(hdr)
                 else:
-                    cdelt = 1.0
-                crpix = hdr.get('CRPIX3')
-                crval = hdr.get('CRVAL3')
-                cunit = hdr.get('CUNIT3','')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit,self.shape[0])
+                    self.wcs = wcs
+                    if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
+                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                    self.wcs.wcs.naxis1 = self.shape[2]
+                    self.wcs.wcs.naxis2 = self.shape[1]
+                #Wavelength coordinates
+                if wave is None:
+                    if 'CDELT3' in hdr:
+                        cdelt = hdr.get('CDELT3')
+                    elif 'CD3_3' in hdr:
+                        cdelt = hdr.get('CD3_3')
+                    else:
+                        cdelt = 1.0
+                    crpix = hdr.get('CRPIX3')
+                    crval = hdr.get('CRVAL3')
+                    cunit = hdr.get('CUNIT3','')
+                    self.wave = WaveCoord(crpix, cdelt, crval, cunit,self.shape[0])
+                else:
+                    self.wave = wave
+                    if wave.shape is not None and wave.shape != self.shape[0]:
+                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                    self.wave.shape = self.shape[0]
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -188,18 +201,31 @@ class Cube(object):
                 self.shape= np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
-                self.wcs = WCS(h) # WCS object from data header
-                #Wavelength coordinates
-                if 'CDELT3' in h:
-                    cdelt = h.get('CDELT3')
-                elif 'CD3_3' in h:
-                    cdelt = h.get('CD3_3')
+                if wcs is None:
+                    self.wcs = WCS(h) # WCS object from data header
                 else:
-                    cdelt = 1.0
-                crpix = h.get('CRPIX3')
-                crval = h.get('CRVAL3')
-                cunit = h.get('CUNIT3','')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
+                    self.wcs = wcs
+                    if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
+                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                    self.wcs.wcs.naxis1 = self.shape[2]
+                    self.wcs.wcs.naxis2 = self.shape[1]
+                #Wavelength coordinates
+                if wave is None:
+                    if 'CDELT3' in h:
+                        cdelt = h.get('CDELT3')
+                    elif 'CD3_3' in h:
+                        cdelt = h.get('CD3_3')
+                    else:
+                        cdelt = 1.0
+                    crpix = h.get('CRPIX3')
+                    crval = h.get('CRVAL3')
+                    cunit = h.get('CUNIT3','')
+                    self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
+                else:
+                    self.wave = wave
+                    if wave.shape is not None and wave.shape != self.shape[0]:
+                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                    self.wave.shape = self.shape[0]
                 self.var = None
                 if not notnoise:
                     try:

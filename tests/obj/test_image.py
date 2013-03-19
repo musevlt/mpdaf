@@ -19,7 +19,7 @@ class TestImage():
     @attr(speed='fast')
     def test_arithmetricOperator_Image(self):
         """Image class: tests arithmetic functions"""
-        wcs = WCS()
+        wcs = WCS(crval=(0,0))
         wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit = 'Angstrom')
         data = np.ones(shape=(6,5))*2
         image1 = Image(shape=(6,5),data=data,wcs=wcs)
@@ -81,7 +81,7 @@ class TestImage():
     @attr(speed='fast')
     def test_get_Image(self):
         """Image class: tests getters"""
-        wcs = WCS()
+        wcs = WCS(crval=(0,0))
         data = np.ones(shape=(6,5))*2
         image1 = Image(shape=(6,5),data=data,wcs=wcs)
         ima = image1[0:2,1:4]
@@ -97,7 +97,7 @@ class TestImage():
     @attr(speed='fast')  
     def test_resize_Image(self):
         """Image class: tests resize method"""
-        wcs = WCS()
+        wcs = WCS(crval=(0,0))
         data = np.ones(shape=(6,5))*2
         image1 = Image(shape=(6,5),data=data,wcs=wcs)
         mask = np.ones((6,5),dtype=bool)
@@ -122,7 +122,7 @@ class TestImage():
     @attr(speed='fast')  
     def test_truncate_Image(self):
         """Image class: tests truncation"""
-        wcs = WCS()
+        wcs = WCS(crval=(0,0))
         data = np.ones(shape=(6,5))*2
         image1 = Image(shape=(6,5),data=data,wcs=wcs)
         image1 = image1.truncate(0,1,1,3)
@@ -136,7 +136,7 @@ class TestImage():
     @attr(speed='fast')   
     def test_sum_Image(self):
         """Image class: tests sum"""
-        wcs = WCS()
+        wcs = WCS(crval=(0,0))
         data = np.ones(shape=(6,5))*2
         image1 = Image(shape=(6,5),data=data,wcs=wcs)
         sum1 = image1.sum()
@@ -172,8 +172,7 @@ class TestImage():
     @attr(speed='fast')   
     def test_moffat_Image(self):
         """Image class: tests Moffat fit"""
-        wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
-        ima = moffat_image(wcs=WCS(),flux=12.3, fwhm=(1.8,1.8), n=1.6, rot = 0., cont=8.24)
+        ima = moffat_image(wcs=WCS(crval=(0,0)),flux=12.3, fwhm=(1.8,1.8), n=1.6, rot = 0., cont=8.24)
         moffat = ima.moffat_fit(fit_back=True)
         nose.tools.assert_almost_equal(moffat.center[0], 50.)
         nose.tools.assert_almost_equal(moffat.center[1], 50.)
