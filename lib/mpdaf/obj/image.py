@@ -2230,18 +2230,18 @@ class Image(object):
                                                       *(1/np.sqrt(2*np.pi*(v[4]**2)))*np.exp(-((p-v[1])*np.sin(v[5])+(q-v[3])*np.cos(v[5]))**2/(2*v[4]**2)) 
                     # inital guesses for Gaussian Fit
                     v0 = [flux,center[0], width[0], center[1], width[1],rot,cont]
-            
+        
         # Minimize the sum of squares
         if factor > 1:
             factor = int(factor)
-            deci = np.ones((factor,factor)) * np.arange(factor)[:,np.newaxis] / float(factor) + 1/float(factor*2)
+            deci = np.ones((factor,factor)) * np.arange(factor)[:,np.newaxis] / float(factor) + 1./float(factor*2) - 0.5
             fp = (p[:,np.newaxis] + deci.ravel()[np.newaxis,:]).ravel()
             fq = (q[:,np.newaxis] + deci.T.ravel()[np.newaxis,:]).ravel()
             pixcrd = np.array(zip(fp,fq))
                 
             e_gauss_fit = lambda v, p, q, data, w: w * (((gaussfit(v,p,q)).reshape(N,factor*factor).sum(1)/factor/factor).T.ravel() - data)
             v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(pixcrd[:,0],pixcrd[:,1],data,wght), maxfev=100000, full_output=1)           
-        else:                                             
+        else:                                     
             e_gauss_fit = lambda v, p, q, data,w : w * (gaussfit(v,p,q) - data)
             v,covar,info, mesg, success  = leastsq(e_gauss_fit, v0[:], args=(p,q,data,wght), maxfev=100000, full_output=1)
     
@@ -2314,10 +2314,10 @@ class Image(object):
                 err_rot = 0
             else:
                 if fit_back:
-                    if rot is None:
-                        err_cont = err[5]
-                    else:
-                        err_cont= err[6]
+                    try:
+                        err_cont = err[6]
+                    except:
+                        err_cont= err[5]
                 else:
                     err_cont = 0
                     
