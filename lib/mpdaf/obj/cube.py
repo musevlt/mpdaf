@@ -2100,7 +2100,7 @@ class Cube(object):
         if cpu is not None and cpu<multiprocessing.cpu_count():
             cpu_count = cpu
         elif CPU != 0 and CPU<multiprocessing.cpu_count():
-            cpu_count = cpu
+            cpu_count = CPU
         else:
             cpu_count = multiprocessing.cpu_count() - 1
         pool = multiprocessing.Pool(processes = cpu_count)
@@ -2187,7 +2187,7 @@ class Cube(object):
         if cpu is not None and cpu<multiprocessing.cpu_count():
             cpu_count = cpu
         elif CPU != 0 and CPU<multiprocessing.cpu_count():
-            cpu_count = cpu
+            cpu_count = CPU
         else:
             cpu_count = multiprocessing.cpu_count() - 1
         
