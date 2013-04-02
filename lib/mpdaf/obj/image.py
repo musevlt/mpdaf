@@ -1653,18 +1653,14 @@ class Image(object):
         else:
             threshold /= self.fscale
         
-        selec = self.data>threshold
+        selec = self.data>threshold 
         selec.bill_value = False
-            
         selec = ndimage.morphology.binary_erosion(selec,structure=self._struct(nstruct),iterations = niter)
-        
-        selec = ndimage.morphology.binary_dilation(selec,iterations = niter)
+        selec = ndimage.morphology.binary_dilation(selec,structure=self._struct(nstruct),iterations = niter)
         selec = ndimage.binary_fill_holes(selec)
-
         structure = ndimage.morphology.generate_binary_structure(2, 2)
         label = ndimage.measurements.label(selec,structure)
         pos = ndimage.measurements.center_of_mass(self.data, label[0], np.arange(label[1]) + 1)
-        
         return np.array(pos)
     
     def peak(self, center=None, radius=0, pix = False, dpix=2, background=None, plot=False):
