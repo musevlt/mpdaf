@@ -309,8 +309,10 @@ class WCS(object):
         if isinstance(other,WCS):
             cdelt1 = self.get_step()
             cdelt2 = other.get_step()
+            x1 = self.pix2sky([0,0])[0]
+            x2 =  other.pix2sky([0,0])[0]
             if self.wcs.naxis1 == other.wcs.naxis1 and self.wcs.naxis2 == other.wcs.naxis2 and \
-               (self.wcs.wcs.crpix == other.wcs.wcs.crpix).all() and (self.wcs.wcs.crval == other.wcs.wcs.crval).all() and \
+               np.abs(x1[0]-x2[0])<1E-16 and np.abs(x1[1]-x2[1])<1E-16 and\
                (cdelt1 == cdelt2).all() and self.get_rot() == other.get_rot():
                 return True
             else:
