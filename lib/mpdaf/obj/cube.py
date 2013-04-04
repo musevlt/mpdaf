@@ -2147,9 +2147,9 @@ class Cube(object):
                     #f returns a spectrum -> iterator returns a cube
                         if init:
                             if self.var is None:
-                                result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit)
+                                result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit,fscale=out.fscale)
                             else:
-                                result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),var=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit)
+                                result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),var=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit,fscale=out.fscale)
                             init = False               
                         p,q = pos
                         result[:,p,q] = out
@@ -2237,9 +2237,9 @@ class Cube(object):
                             wcs.set_naxis1(out.shape[1])
                             wcs.set_naxis2(out.shape[0])
                             if self.var is None:
-                                result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit)
+                                result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit,fscale=out.fscale)
                             else:
-                                result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit)
+                                result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit,fscale=out.fscale)
                             init = False
                         result[k,:,:] = out
                 except:
