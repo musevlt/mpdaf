@@ -20,6 +20,8 @@ from coords import WaveCoord
 from objs import is_float
 from objs import is_int
 
+import warnings
+
 
 class ImageClicks: #Object used to save click on image plot.
     def __init__(self, binding_id, filename=None):
@@ -3776,8 +3778,8 @@ class Image(object):
                 s = 'y= %g x=%g p=%i q=%i data=%g'%(yc,xc,i,j,val)
                 self._fig.toolbar.set_message(s)
             except:
-                pass    
-            
+                pass   
+                        
     def ipos(self, filename='None'):
         """Prints cursor position in interactive mode (p and q define the nearest pixel, x and y are the position, data contains the image data value (data[p,q]) ).
   
@@ -3801,12 +3803,19 @@ class Image(object):
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
             self._clicks = ImageClicks(binding_id,filename)
+            
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
         else:
             self._clicks.filename = filename
+            
         
     def _on_click(self,event):
         """ prints dec,ra,i,j and data corresponding to the cursor position.
         """
+        
         if event.key == 'd':
             if event.button == 1:
                 if event.inaxes is not None:
@@ -3841,6 +3850,8 @@ class Image(object):
                 #clear
                 self._clicks.clear()
                 self._clicks = None
+                fig = plt.gcf()
+                fig.canvas.stop_event_loop_default()
                 
             
     def idist(self):
@@ -3853,6 +3864,11 @@ class Image(object):
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_dist, drawtype='line')
+            
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
             
     def _on_select_dist(self, eclick, erelease):
         """Prints distance and center between 2 cursor positions.
@@ -3873,6 +3889,8 @@ class Image(object):
             print 'idist deactivated.'
             self._selector.set_active(False)
             self._selector = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
 
             
     def istat(self):
@@ -3885,6 +3903,11 @@ class Image(object):
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_stat, drawtype='box')
+            
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
             
     def _on_select_stat(self,eclick, erelease):
         """Prints image statistics from windows defined by 2 cursor positions.
@@ -3909,6 +3932,8 @@ class Image(object):
             print 'istat deactivated.'
             self._selector.set_active(False)
             self._selector = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
             
     def ipeak(self):
         """Finds peak location in windows defined with left mouse button.
@@ -3920,6 +3945,11 @@ class Image(object):
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_peak, drawtype='box')
+            
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
             
     def _on_select_peak(self,eclick, erelease):
         """Prints image peak location in windows defined by 2 cursor positions.
@@ -3940,6 +3970,8 @@ class Image(object):
             print 'ipeak deactivated.'
             self._selector.set_active(False)
             self._selector = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
         
             
     def ifwhm(self):
@@ -3952,6 +3984,11 @@ class Image(object):
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_fwhm, drawtype='box')
+            
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
             
     def _on_select_fwhm(self,eclick, erelease):
         """Prints image peak location in windows defined by 2 cursor positions.
@@ -3972,6 +4009,8 @@ class Image(object):
             print 'ifwhm deactivated.'
             self._selector.set_active(False)
             self._selector = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
             
     def iee(self):
         """Computes enclosed energy in windows defined with left mouse button.
@@ -3983,6 +4022,11 @@ class Image(object):
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_ee, drawtype='box')
+            
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
             
     def _on_select_ee(self,eclick, erelease):
         """Prints image peak location in windows defined by 2 cursor positions.
@@ -4003,6 +4047,8 @@ class Image(object):
             print 'iee deactivated.'
             self._selector.set_active(False)
             self._selector = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
             
     def imask(self):
         """Over-plots masked values (interactive mode).
@@ -4041,6 +4087,11 @@ class Image(object):
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_gauss_fit, drawtype='box')
             
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
+            
     def _on_select_gauss_fit(self,eclick, erelease):
         if eclick.button == 1:
             try:
@@ -4058,6 +4109,8 @@ class Image(object):
             print 'igauss_fit deactivated.'
             self._selector.set_active(False)
             self._selector = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
             
     def imoffat_fit(self):
         """Performs Moffat fit in windows defined with left mouse button.
@@ -4070,6 +4123,11 @@ class Image(object):
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_moffat_fit, drawtype='box')
+            
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
             
     def _on_select_moffat_fit(self,eclick, erelease):
         if eclick.button == 1:
@@ -4088,6 +4146,8 @@ class Image(object):
             print 'imoffat_fit deactivated.'
             self._selector.set_active(False)
             self._selector = None       
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
             
 def gauss_image(shape=(101,101), wcs=WCS(), factor=1, gauss=None, center=None, flux=1., fwhm=(1.,1.), peak=False, rot = 0., cont = 0, pix = False):
     """Creates a new image from a 2D gaussian.

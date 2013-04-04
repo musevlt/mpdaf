@@ -19,6 +19,7 @@ from objs import is_int
 from objs import flux2mag
 import ABmag_filters
 
+import warnings
 
 class SpectrumClicks: # Object used to save click on spectrum plot.
     
@@ -1418,6 +1419,7 @@ class Spectrum(object):
         self.data = np.empty(newshape,dtype=np.float)        
         pix = np.arange(newshape+1,dtype=np.float)
         x = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval - 0.5 * newwave.cdelt
+        
         lbdamax = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
         if x[-1]> lbdamax:
             x[-1] = lbdamax
@@ -2373,6 +2375,10 @@ class Spectrum(object):
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
             self._clicks = SpectrumClicks(binding_id,filename)
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
         else:
             self._clicks.filename = filename
         
@@ -2412,6 +2418,8 @@ class Spectrum(object):
                 #clear
                 self._clicks.clear()
                 self._clicks = None
+                fig = plt.gcf()
+                fig.canvas.stop_event_loop_default()
                 
             
     def idist(self):
@@ -2424,6 +2432,11 @@ class Spectrum(object):
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click_dist)
             self._clicks = SpectrumClicks(binding_id)
+            
+            warnings.filterwarnings(action="ignore")
+            fig = plt.gcf()
+            fig.canvas.start_event_loop_default(timeout=-1)
+            warnings.filterwarnings(action="default")
     
     def _on_click_dist(self,event):
         """Prints distance and center between 2 cursor positions.
@@ -2448,6 +2461,8 @@ class Spectrum(object):
         else: 
             self._clicks.clear()
             self._clicks = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
             
     def igauss_fit(self,nclicks=5):
         """Performs and plots a polynomial fit on spectrum.
@@ -2473,6 +2488,10 @@ class Spectrum(object):
             if self._clicks is None:
                 binding_id = plt.connect('button_press_event', self._on_3clicks_gauss_fit)
                 self._clicks = SpectrumClicks(binding_id)
+                warnings.filterwarnings(action="ignore")
+                fig = plt.gcf()
+                fig.canvas.start_event_loop_default(timeout=-1)
+                warnings.filterwarnings(action="default")
         else:
             print 'Use the 2 first mouse clicks to get the wavelength range to compute the gaussian left value.'
             print 'Use the next click to get the peak wavelength.'
@@ -2482,6 +2501,10 @@ class Spectrum(object):
             if self._clicks is None:
                 binding_id = plt.connect('button_press_event', self._on_5clicks_gauss_fit)
                 self._clicks = SpectrumClicks(binding_id)
+                warnings.filterwarnings(action="ignore")
+                fig = plt.gcf()
+                fig.canvas.start_event_loop_default(timeout=-1)
+                warnings.filterwarnings(action="default")
     
     def _on_3clicks_gauss_fit(self,event):
         """Performs polynomial fit on spectrum (interactive mode).
@@ -2508,6 +2531,8 @@ class Spectrum(object):
         else: 
             self._clicks.clear()
             self._clicks = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
             
     def _on_5clicks_gauss_fit(self,event):
         """Performs polynomial fit on spectrum (interactive mode).
@@ -2536,6 +2561,8 @@ class Spectrum(object):
         else: 
             self._clicks.clear()
             self._clicks = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
             
     def imask(self):
         """Over-plots masked values (interactive mode).
