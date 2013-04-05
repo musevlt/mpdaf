@@ -324,7 +324,7 @@ class Channel(object):
         :rtype: :class:`mpdaf.obj.Image`
         """
         wcs = obj.WCS(pyfits.Header(self.header))
-        ima = obj.Image(wcs=wcs, data=self.data)
+        ima = obj.Image(wcs=wcs, data=self.data.__copy__())
         
         if det_out is not None:
             nx_data = self.header["NAXIS1"].value # length of data in X
@@ -354,30 +354,88 @@ class Channel(object):
         
         return ima
 
-    def get_trimmed_image(self, det_out = None):
+    def get_trimmed_image(self, det_out = None, bias_substract = False):
         """Returns an Image object without over scanned pixels.
         
         :param det_out: number of output detector. If None, all image is returned.
         :type det_out: integer in [1,4]
         
+        :param bias_substract: If True, median value of the overscanned pixels is substracted
+        :type bias_substract: boolean
+        
         :rtype: :class:`mpdaf.obj.Image`
         """
-        nx_data = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
-        ny_data = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
+        nx_data2 = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
+        ny_data2= self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
         if isinstance(self.data,np.ma.core.MaskedArray):
-            x = np.ma.MaskedArray(self.data.data, mask=self.mask)
+            work = np.ma.MaskedArray(self.data.data.__copy__(), mask=self.mask)
         else:
-            x = np.ma.MaskedArray(self.data, mask=self.mask)
-        data = np.ma.compressed(x)
-        data = np.reshape(data,(ny_data,nx_data))
-        wcs = obj.WCS(crpix=(1.0,1.0), shape=(ny_data,nx_data))
+            work = np.ma.MaskedArray(self.data.__copy__(), mask=self.mask)
+        
+        if bias_substract:
+            
+            ksel = np.where(self.mask==True)
+            nx_data = self.header["NAXIS1"].value # length of data in X
+            ny_data = self.header["NAXIS2"].value # length of data in Y
+            
+            if det_out is None:
+                for det in range(1,5):
+                    key = "ESO DET OUT%i" % det
+                    nx = self.header["%s NX" % key].value # Output data pixels in X
+                    ny = self.header["%s NY" % key].value # Output data pixels in Y
+                    prscx = self.header["%s PRSCX" % key].value # Output prescan pixels in X
+                    prscy = self.header["%s PRSCY" % key].value # Output prescan pixels in Y
+                    x = self.header["%s X" % key].value # X location of output
+                    y = self.header["%s Y"% key].value # Y location of output
+                    if x < nx_data2/2:
+                        i1 = x - 1
+                        i2 = i1 + nx + 2*prscx
+                    else:
+                        i2 = nx_data
+                        i1 = i2 - nx - 2*prscx
+                    if y < ny_data2/2:
+                        j1 = y -1
+                        j2 = j1 + ny + 2*prscy
+                    else:
+                        j2 = ny_data
+                        j1 = j2 - ny - 2*prscy
+                        
+                    ksel = np.where(self.mask[j1:j2,i1:i2]==True)
+                    bias_level = np.median((work.data[j1:j2,i1:i2])[ksel]) 
+                    work[j1:j2,i1:i2] -= bias_level
+            else:
+                key = "ESO DET OUT%i" % det_out
+                nx = self.header["%s NX" % key].value # Output data pixels in X
+                ny = self.header["%s NY" % key].value # Output data pixels in Y
+                prscx = self.header["%s PRSCX" % key].value # Output prescan pixels in X
+                prscy = self.header["%s PRSCY" % key].value # Output prescan pixels in Y
+                x = self.header["%s X" % key].value # X location of output
+                y = self.header["%s Y"% key].value # Y location of output
+                if x < nx_data2/2:
+                    i1 = x - 1
+                    i2 = i1 + nx + 2*prscx
+                else:
+                    i2 = nx_data
+                    i1 = i2 - nx - 2*prscx
+                if y < ny_data2/2:
+                    j1 = y -1
+                    j2 = j1 + ny + 2*prscy
+                else:
+                    j2 = ny_data
+                    j1 = j2 - ny - 2*prscy
+                        
+                ksel = np.where(self.mask[j1:j2,i1:i2]==True)
+                bias_level = np.median(work.data[j1:j2,i1:i2][ksel]) 
+                work [j1:j2,i1:i2] -= bias_level
+                
+        data = np.ma.compressed(work)
+        data = np.reshape(data,(ny_data2,nx_data2))
+        wcs = obj.WCS(crpix=(1.0,1.0), shape=(ny_data2,nx_data2))
         ima = obj.Image(wcs=wcs, data=data)
         
         if det_out is not None:
             nx_data = self.header["NAXIS1"].value # length of data in X
             ny_data = self.header["NAXIS2"].value # length of data in Y
-            nx_data2 = self.header["ESO DET CHIP NX"].value # Physical active pixels in X
-            ny_data2 = self.header["ESO DET CHIP NY"].value # Physical active pixels in Y
             key = "ESO DET OUT%i" % det_out
             nx = self.header["%s NX" % key].value # Output data pixels in X
             ny = self.header["%s NY" % key].value # Output data pixels in Y
@@ -411,7 +469,7 @@ class Channel(object):
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
-        ima.data = np.ma.MaskedArray(self.data, mask=self.mask, copy=True)
+        ima.data = np.ma.MaskedArray(self.data.__copy__(), mask=self.mask, copy=True)
         
         if det_out is not None:
             nx_data = self.header["NAXIS1"].value # length of data in X
@@ -451,7 +509,7 @@ class Channel(object):
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
-        ima.data = np.ma.MaskedArray(self.data, mask=np.logical_not(self.mask), copy=True)
+        ima.data = np.ma.MaskedArray(self.data.__copy__(), mask=np.logical_not(self.mask), copy=True)
         
         if det_out is not None:
             nx_data = self.header["NAXIS1"].value # length of data in X
