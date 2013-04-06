@@ -3400,7 +3400,7 @@ class Image(object):
             print 'Operation forbidden'
             return None
         
-    def segment(self, shape=(2,2), minsize=20, background = 20, interp='no'):
+    def segment(self, shape=(2,2), minsize=20, minpts=None, background = 20, interp='no', median=None):
         """Segments the image in a number of smaller images. Returns a list of images.
         Uses `scipy.ndimage.morphology.generate_binary_structure <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.generate_binary_structure.html>`_, `scipy.ndimage.morphology.grey_dilation <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.grey_dilation.html>`_, `scipy.ndimage.measurements.label <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.label.html>`_, and `scipy.ndimage.measurements.find_objects <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.find_objects.html>`_.
   
@@ -3408,6 +3408,8 @@ class Image(object):
           :type shape: (integer,integer)
           :param minsize: Minimmum size of the images.
           :type minsize: integer
+          :param minpts: Minimmum number of points in the object.
+          :type minpts: integer
           :param background: Under this value, flux is considered as background.
           :type background: float
           :param interp: if 'no', data median value replaced masked values.
@@ -3416,6 +3418,8 @@ class Image(object):
         
                         if 'spline', spline interpolation of the masked values.
           :type interp: 'no' | 'linear' | 'spline'
+          :param median: Size of the median filter
+          :type median: (integer,integer) or None
           :rtype: List of Image objects.
         """
         if interp=='linear':
@@ -3426,6 +3430,8 @@ class Image(object):
             data = np.ma.filled(self.data, np.ma.median(self.data))
         
         structure = ndimage.morphology.generate_binary_structure(shape[0], shape[1])
+        if median is not None:
+            data = np.ma.array(ndimage.median_filter(data, median), mask=self.data.mask)
         expanded = ndimage.morphology.grey_dilation(data, (minsize,minsize))
         ksel = np.where(expanded<background)
         expanded[ksel] = 0
@@ -3435,6 +3441,8 @@ class Image(object):
 
         imalist = []
         for i in range(lab[1]):
+            if minpts is not None:
+                if (data[slices[i]].ravel()>background).sum() < minpts: continue
             [[starty,startx]] = self.wcs.pix2sky(self.wcs.pix2sky([[slices[i][0].start,slices[i][1].start]]))
             wcs = WCS(crpix=(1.0,1.0),crval=(starty,startx),cdelt=self.wcs.get_step(),deg=self.wcs.is_deg(),rot=self.wcs.get_rot())
             if self.var is not None:
