@@ -1437,8 +1437,8 @@ class Cube(object):
                         print 'Operation forbidden'
                         return None
             
-    def set_wcs(self, wcs, wave):
-        """Sets the world coordinates.
+    def set_wcs(self, wcs=None, wave=None):
+        """Sets the world coordinates (spatial and/or spectral).
 
         :param wcs: World coordinates.
         :type wcs: :class:`mpdaf.obj.WCS`
@@ -1446,16 +1446,18 @@ class Cube(object):
         :param wave: Wavelength coordinates.
         :type wave: :class:`mpdaf.obj.WaveCoord`
         """
-        self.wcs = wcs
-        self.wcs.wcs.naxis1 = self.shape[2]
-        self.wcs.wcs.naxis2 = self.shape[1]
-        if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and (wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
-            print "warning: world coordinates and data have not the same dimensions."
+        if wcs is not None:
+            self.wcs = wcs
+            self.wcs.wcs.naxis1 = self.shape[2]
+            self.wcs.wcs.naxis2 = self.shape[1]
+            if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and (wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
+                print "warning: world coordinates and data have not the same dimensions."
         
-        if wave.shape is not None and wave.shape != self.shape[0]:
-            print "warning: wavelength coordinates and data have not the same dimensions."
-        self.wave = wave
-        self.wave.shape = self.shape[0]
+        if wave is not None:
+            if wave.shape is not None and wave.shape != self.shape[0]:
+                print "warning: wavelength coordinates and data have not the same dimensions."
+            self.wave = wave
+            self.wave.shape = self.shape[0]
             
     def set_var(self,var):
         """Sets the variance array.
@@ -1557,9 +1559,26 @@ class Cube(object):
         else:
             return None
         
-    def truncate(self, lmin, lmax, y_min, y_max, x_min, x_max, mask=True):
+#    def truncate(self,*args):
+#        print len(args)
+#        if len(args) == 1:
+#            return self._truncate(coord=args[0],mask=mask)
+#        elif len(args) == 6:
+#            raise DeprecationWarning,'cube.truncate'
+#            return self._truncate(coord=[[args[0],args[2],args[4]], [args[1],args[3],args[5]]],mask=mask)
+#        else:
+#            raise IOError,'truncate(coord=[[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]])'
+    
+    def truncate(self,coord,mask=True):
         """ Truncates the cube and return a sub-cube.
         
+            :param coord: array containing the sub-cube boundaries [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]] 
+            (output of `mpdaf.obj.cube.get_range`)
+            x and y in degrees
+            :type coord: array
+            :param mask: if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
+            :type mask: bool
+            
           :param lmin: Minimum wavelength.
           :type lmin: float
           :param lmax: Maximum wavelength.
@@ -1575,6 +1594,13 @@ class Cube(object):
           :param mask: if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
           :type mask: bool
         """
+        lmin = coord[0][0]
+        y_min = coord[0][1]
+        x_min = coord[0][2]
+        lmax = coord[1][0]
+        y_max = coord[1][1]
+        x_max = coord[1][2]
+        
         skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
         
