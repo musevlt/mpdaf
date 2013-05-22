@@ -163,7 +163,7 @@ class TestImage():
         nose.tools.assert_almost_equal(gauss.center[1], 12)
         nose.tools.assert_almost_equal(gauss.flux, 1)
         ima += 10.3
-        gauss2 = ima.gauss_fit(fit_back=True)
+        gauss2 = ima.gauss_fit(cont=2.0+10.3,fit_back=True)
         nose.tools.assert_almost_equal(gauss2.center[0], 8.5)
         nose.tools.assert_almost_equal(gauss2.center[1], 12)
         nose.tools.assert_almost_equal(gauss2.flux, 1)
