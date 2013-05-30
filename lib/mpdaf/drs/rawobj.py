@@ -5,9 +5,9 @@ import multiprocessing
 import datetime
 import sys
 #import matplotlib as mpl
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from mpdaf import obj
-
+import warnings
 
 class Channel(object):
     
@@ -354,7 +354,7 @@ class Channel(object):
         
         return ima
 
-    def get_trimmed_image(self, det_out = None, bias_substract = False):
+    def get_trimmed_image(self, det_out = None, bias_substract = False, bias = False):
         """Returns an Image object without over scanned pixels.
         
         :param det_out: number of output detector. If None, all image is returned.
@@ -362,6 +362,9 @@ class Channel(object):
         
         :param bias_substract: If True, median value of the overscanned pixels is substracted
         :type bias_substract: boolean
+        
+        :param bias: If True, median value of the overscanned pixels is subtracted
+        :type bias: boolean
         
         :rtype: :class:`mpdaf.obj.Image`
         """
@@ -373,6 +376,10 @@ class Channel(object):
             work = np.ma.MaskedArray(self.data.__copy__(), mask=self.mask)
         
         if bias_substract:
+            warnings.warn("get_trimmed_image: bias_substract parameter will be replaced by bias parameter", DeprecationWarning)
+            bias = True
+            
+        if bias:
             
             ksel = np.where(self.mask==True)
             nx_data = self.header["NAXIS1"].value # length of data in X
@@ -949,7 +956,64 @@ class RawFile(object):
         for name,chan in self.channels.items():
             del chan
             self.channels[name] = None
-
+            
+    def plot(self, title=None, channels="all", area = None, scale='linear', vmin=None, vmax=None, zscale=False, colorbar=None, **kargs): 
+        """Plots the image.
+          :param title: Figure title (None by default).
+          :type title: string
+          :param channels: list of channel names. All by default.
+          :type channels: list or 'all'
+          :param area: list of pixels [pmin,pmax,qmin,qmax] to zoom.
+          :type title: list
+          :param scale: The stretch function to use for the scaling (default is 'linear').
+          :type scale: linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+          :param vmin: Minimum pixel value to use for the scaling.
+  
+           If None, vmin is set to min of data.
+          :type vmin: float
+          :param vmax: Maximum pixel value to use for the scaling.
+        
+           If None, vmax is set to max of data.
+          :type vmax: float
+          :param zscale: If true, vmin and vmax are computed using the IRAF zscale algorithm.
+          :type zscale: bool
+          :param colorbar: If 'h'/'v', a horizontal/vertical colorbar is added.
+          :type colorbar: bool
+          :param kargs: kargs can be used to set additional Artist properties.
+          :type kargs: matplotlib.artist.Artist
+        """
+        fig = plt.figure()
+        fig.subplots_adjust(wspace=0.01, hspace=0.01)
+        if title is not None:
+            plt.title(title)
+        if channels == "all":
+            for name in self.channels.keys():
+                chan = self.get_channel(name)
+                ima = chan.get_trimmed_image(det_out = None, bias_substract = False, bias = False)
+                if area is not None:
+                    ima = ima[area[0]:area[1],area[2]:area[3]] 
+                ichan = int(name[-2:])
+                fig.add_subplot(4,6,ichan)
+                ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
+                plt.axis('off')
+                plt.text(ima.shape[0]-500, ima.shape[1]-500,'%i'%ichan,style='italic',bbox={'facecolor':'red', 'alpha':0.2, 'pad':10})
+        else:
+            nchan = len(channels)
+            nrows = int(np.sqrt(nchan))
+            if nchan%nrows == 0:
+                ncols = nchan/nrows
+            else:
+                ncols = int(nchan/nrows) + 1
+            for i, name in enumerate(channels):
+                chan = self.get_channel(name)
+                ima = chan.get_trimmed_image(det_out = None, bias_substract = False, bias = False)
+                if area is not None:
+                    ima = ima[area[0]:area[1],area[2]:area[3]] 
+                ichan = int(name[-2:])
+                fig.add_subplot(nrows,ncols,i+1)
+                ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
+                plt.axis('off')
+                plt.text(ima.shape[0]-500, ima.shape[1]-500,'%i'%ichan,style='italic',bbox={'facecolor':'red', 'alpha':0.2, 'pad':10})
 
 def _process_operator(arglist):
     #decorator used to define arithmetic functions with a RawFits object
