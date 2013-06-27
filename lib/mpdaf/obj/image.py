@@ -2142,7 +2142,8 @@ class Image(object):
         
         #weight
         if ima.var is not None and weight:
-            wght = 1/ima.var[ksel]
+            wght = 1.0/ima.var[ksel]
+            np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
             wght = np.ones(np.shape(ksel[0])[0])
         
@@ -2280,19 +2281,18 @@ class Image(object):
                     cont = v[5]
                 else:
                     cont= v[6]
-            if np.abs(v[2])>np.abs(v[4]):
+            if rot is None:
                 p_width = np.abs(v[2])
                 q_width = np.abs(v[4])
-                if rot is None:
-                    rot = 0
-                else:
-                    rot = (v[5] * 180.0 / np.pi)%180
+                rot = 0
             else:
-                p_width = np.abs(v[4])
-                q_width = np.abs(v[2])
-                if rot is None:
-                    rot = 0
+                if np.abs(v[2])>np.abs(v[4]):
+                    p_width = np.abs(v[2])
+                    q_width = np.abs(v[4])
+                    rot = (v[5] * 180.0 / np.pi)%180
                 else:
+                    p_width = np.abs(v[4])
+                    q_width = np.abs(v[2])
                     rot = (v[5] * 180.0 / np.pi + 90 )%180
         p_fwhm = p_width*2*np.sqrt(2*np.log(2))
         q_fwhm = q_width*2*np.sqrt(2*np.log(2))
@@ -2319,7 +2319,7 @@ class Image(object):
                 else:
                     err_cont = 0
                     
-                if np.abs(v[2])>np.abs(v[4]):
+                if np.abs(v[2])>np.abs(v[4]) or rot==0:
                     err_p_width = np.abs(err[2])
                     err_q_width = np.abs(err[4])
                 else:
@@ -2458,7 +2458,8 @@ class Image(object):
         
         #weight
         if ima.var is not None and weight:
-            wght = 1/ima.var[ksel]
+            wght = 1.0/ima.var[ksel]
+            np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
             wght = np.ones(np.shape(ksel[0])[0])
         
