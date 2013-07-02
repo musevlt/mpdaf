@@ -654,14 +654,13 @@ class RawFile(object):
                                 self.nx = nx
                                 self.ny = ny
                             if nx!=self.nx and ny!=self.ny:
-                                print 'format error: image extensions with different sizes'
-                                print
-                                return None
-                            self.channels[extname] = None
+                                print 'image extensions %s not considered (different sizes)'%extname
+                            else:
+                                self.channels[extname] = None
                         n = n+1
                     except:
                         break
-                    self.next = n-1
+                    self.next = len(self.channels)
                     hdulist.close()
             except IOError:
                 print 'IOError: file %s not found' % `filename`
