@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import prettytable
 from mpdaf.drs import RawFile
 from mydrs.calib import plot_qc_quads
+from mydrs.util import get_valid_channels
 
 class BIAS(object):
     """This class perform detector bias performance evaluation
@@ -22,35 +23,49 @@ class BIAS(object):
             self.size = size
             self.quad = quad
             
-    def ron(self, chanlist=None, nsigma=10, quiet=False, ncpu=0):
+    def comp_ron(self, chanlist=None, nsigma=10, quiet=False, ncpu=0):
+        """ compute RON from the list of exposures
+        chanlist: list of channel, if None all existing channels are used, if 0 use 24 channels
+        nsigma: rejection for bad pixel with respect to median value and standard deviation
+        quiet: if True do not print message
+        ncpu: nomber of cpu to use, if 0 use all available cpus
+        """
+        if chanlist is None:
+            chanlist = get_valid_channels(self.biaslist[0])
+        elif chanlist == 0:
+            chanlist = range(1,25) 
+        if not quiet:
+            print 'Computing RON from %d exposures and %d channels'%(len(self.biaslist), len(chanlist))
         if ncpu == 0:
             ncpu = min(multiprocessing.cpu_count(), len(chanlist))
         if ncpu > 0:
             pool = multiprocessing.Pool(processes = ncpu)
             if not quiet:
-                print 'parallel execution [%d cores]'%(ncpu)
+                print 'Parallel execution [%d cores]'%(ncpu)
                 
         plist = [[self.biaslist, chan, self.gain, self.size, nsigma, quiet, self.quad] for chan in chanlist]
         pres = pool.map(_compute_ron, plist)
         chan = []
         ronval = []
-        ron = []
+        ronlist = []
         for p in pres:
             chan.append(p[0])
             ronval.append(p[1])
-            ron.append(p[2])
+            ronlist.append(p[2])
         chan = np.array(chan)
         ronval = np.array(ronval)
-        ron = np.array(ron)
+        ronlist = np.array(ronlist)
         ksort = chan.argsort()
         chan = chan[ksort]
         ronval = ronval[ksort]
-        ron = ron[ksort]
-        self.ron = {'chan':chan, 'ron':ron, 'ronval':ronval}
+        ronlist = ronlist[ksort]
+        self.ron = {'chan':chan, 'ron':ronlist, 'ronval':ronval}
         
     def print_ron(self):
+        """ Print RON values for all channels
+        """
         if not hasattr(self, 'ron'):
-            raise ValueError, 'Run bias.ron() first'
+            raise ValueError, 'Run bias.comp_ron() first'
         ptable =  prettytable.PrettyTable()
         ron = self.ron
         ptable.add_column('CH', ron['chan'], align='r')
@@ -61,8 +76,10 @@ class BIAS(object):
         print ptable
         
     def plot_ron(self):
+        """ Plot RON values for all channels
+        """
         if not hasattr(self, 'ron'):
-            raise ValueError, 'Run bias.ron() first'
+            raise ValueError, 'Run bias.comp_ron() first'
         ron = self.ron
         plot_qc_quads(ron['chan'], ron['ronval'], spec=3)
         axis = plt.axis()
@@ -71,6 +88,10 @@ class BIAS(object):
         plt.ylabel('Readout Noise (e-)', fontsize='medium') 
         
     def disp_chan(self, expnum, nochan):
+        """ display a single exposure and the location of the RON computation
+        expnum: index of exposure from the biaslist
+        nochan: channel number
+        """        
         raw = RawFile(self.biaslist[expnum])
         chan = raw[nochan]
         ima = chan.get_trimmed_image()
@@ -80,6 +101,10 @@ class BIAS(object):
         plt.title('File %s Chan %02d'%(self.biaslist[expnum], nochan))
         
     def disp_quad(self, expnum, nochan):
+        """ Display quadrants for a given exposure and channel
+        expnum: index of exposure from the biaslist
+        nochan: channel number
+        """
         raw = RawFile(self.biaslist[expnum])
         chan = raw[nochan]
         ima = chan.get_trimmed_image()
@@ -92,8 +117,11 @@ class BIAS(object):
             plt.title('Q%d'%(q)) 
             
     def plot_seq_ron(self, nochan):
+        """ Plot the sequence of computed RON for a given channel
+        nochan: channel number
+        """        
         if not hasattr(self, 'ron'):
-            raise ValueError, 'Run bias.ron() first'
+            raise ValueError, 'Run bias.comp_ron() first'
         k = np.where(self.ron['chan'] == nochan)[0][0]
         ron = self.ron['ron'][k,:,:]
         plt.plot(ron[:,0], '-ob', label='Q1')
