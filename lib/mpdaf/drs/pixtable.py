@@ -807,3 +807,34 @@ class PixTable(object):
         wcs = WCS(crval=(ystart, xstart))
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
+
+
+    def reconstruct_det_waveimage(self):
+        """Reconstructs an image of wavelength values on the detector from the pixtable.
+        The pixtable must concerns only one IFU, otherwise an exception is raised.
+        
+        :rtype: :class:`mpdaf.obj.Image`
+        """
+        if self.nrows == 0:
+            return None
+
+        col_origin = self.get_origin()
+        col_lambdas = self.get_lambda()
+
+        ifu = np.empty(self.nrows, dtype='uint16')
+        slice = np.empty(self.nrows, dtype='uint16')
+        xpix = np.empty(self.nrows, dtype='uint16')
+        ypix = np.empty(self.nrows, dtype='uint16')
+
+        ifu,slice,ypix,xpix = self.origin2coords(col_origin)
+        if len(np.unique(ifu)) != 1:
+            raise ValueError, 'Pixtable contains multiple IFU'
+
+        xstart, xstop = xpix.min(), xpix.max()
+        ystart, ystop = ypix.min(), ypix.max()
+        image = np.zeros((ystop - ystart + 1, xstop - xstart + 1), dtype='float')
+        image[ypix - ystart, xpix - xstart] = col_lambdas
+
+        wcs = WCS(crval=(ystart, xstart))
+
+        return Image(shape=(image.shape), data=image, wcs=wcs)

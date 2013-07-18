@@ -1405,6 +1405,10 @@ class Spectrum(object):
           :param notnoise: True if the noise Variance spectrum is not interpolated (if it exists).
           :type notnoise: bool
         """
+        lrange = self.get_range()
+        if start is not None and (start<lrange[0] or start>lrange[1]):
+            raise ValueError, 'Start value outside the spectrum range'
+        
         data = self._interp_data(spline)
 
         f = lambda x: data[int(self.wave.pixel(x)+0.5)]
