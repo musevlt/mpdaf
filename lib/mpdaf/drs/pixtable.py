@@ -226,6 +226,7 @@ class PixTable(object):
         if os.path.basename(self.filename) in os.listdir(tempfile.gettempdir()):
             os.remove(self.filename)
         self.filename = filename
+        self.ima = save_as_ima
         
 
     def get_xpos(self, ksel=None):
