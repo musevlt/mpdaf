@@ -4,3 +4,6 @@
 [submodule "lib/mpdaf/quickViz"]
 	path = lib/mpdaf/quickViz
 	url = http://urania1.univ-lyon1.fr/git/quickViz.git
+[submodule "mpdaf_user/fsf"]
+	path = mpdaf_user/fsf
+	url = http://urania1.univ-lyon1.fr/git/fsf.git

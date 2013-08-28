@@ -70,9 +70,11 @@ if os.path.isfile('lib/mpdaf/fusion/__init__.py'):
     packages = ['mpdaf','mpdaf.tools','mpdaf.obj','mpdaf.fusion','mpdaf.drs','mpdaf.MUSE','mpdaf_user']
 else:
     packages = ['mpdaf','mpdaf.tools','mpdaf.obj','mpdaf.drs','mpdaf.MUSE','mpdaf_user']
+print 'ok'
 for path in os.listdir('mpdaf_user'):
+    print path
     if os.path.isdir('mpdaf_user/'+path):        
-        package_dir['mpdaf_user.'+path] = 'mpdaf_user/'+path+'/lib/'
+        package_dir['mpdaf_user.'+path] = 'mpdaf_user/'+path+'/lib/'+path
         packages.append('mpdaf_user.'+path)
 
 
