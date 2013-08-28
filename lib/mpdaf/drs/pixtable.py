@@ -38,15 +38,16 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, prima
     prihdu.header.update('author', 'MPDAF', 'origin of the file')
     if save_as_ima:
         hdulist = [prihdu]
-        hdulist.append(pyfits.ImageHDU(name='xpos', data=xpos))
-        hdulist.append(pyfits.ImageHDU(name='ypos', data=ypos))
-        hdulist.append(pyfits.ImageHDU(name='lambda', data=lbda))
-        hdulist.append(pyfits.ImageHDU(name='data', data=data))
-        hdulist.append(pyfits.ImageHDU(name='dq', data=np.uint8(dq)))
+        nrows = xpos.shape[0]
+        hdulist.append(pyfits.ImageHDU(name='xpos', data=xpos.reshape((nrows,1))))
+        hdulist.append(pyfits.ImageHDU(name='ypos', data=ypos.reshape((nrows,1))))
+        hdulist.append(pyfits.ImageHDU(name='lambda', data=lbda.reshape((nrows,1))))
+        hdulist.append(pyfits.ImageHDU(name='data', data=data.reshape((nrows,1))))
+        hdulist.append(pyfits.ImageHDU(name='dq', data=np.uint8(dq.reshape((nrows,1)))))
         hdulist.append(pyfits.ImageHDU(name='stat', data=stat))
-        hdulist.append(pyfits.ImageHDU(name='origin', data=np.uint8(origin)))
+        hdulist.append(pyfits.ImageHDU(name='origin', data=np.uint8(origin.reshape((nrows,1)))))
         if weight is not None:
-            hdulist.append(pyfits.ImageHDU(name='weight', data=weight))
+            hdulist.append(pyfits.ImageHDU(name='weight', data=weight.reshape((nrows,1))))
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True)
     else:
