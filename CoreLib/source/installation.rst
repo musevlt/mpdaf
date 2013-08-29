@@ -26,7 +26,29 @@ To clone the current development branch, you simply run the *git clone [url]* co
 By default, Git will create a directory labelled mpdaf. If you want something different, you can just put it at the end of the command, after the URL. 
 
 
-mpdaf contains large packages (`fusion <user_manual_fusion.html>`_ and quickViz) and user packages (in folder mpdaf_user) and the user has the choice to download or not download them. *submodule* git option is used
+MPDAF sub-modules
+-----------------
+
+mpdaf contains large packages and user packages:
+
++----------------+--------------------+----------------------------------------------------------------------------------------+
+| Large packages | Path               | Description                                                                            |
++================+====================+========================================================================================+
+| fusion         | lib/mpdaf/fusion   | C++ code for the Bayesian fusion of hyperspectral astronomical images                  |
+|                |                    | `fusion documentation <user_manual_fusion.html>`_                                      |
++----------------+--------------------+----------------------------------------------------------------------------------------+
+| quickViz       | lib/mpdaf/quickViz | vizualisation tool for MUSE cubes                                                      |
+|                |                    | `quickViz documentation <http://urania1.univ-lyon1.fr/mpdaf/wiki/DocQuickViz>`_        |                                        
++----------------+--------------------+----------------------------------------------------------------------------------------+
+
++----------------+--------------------+----------------------------------------------------------------------------------------+
+| User packages  |                    |                                                                                        |
++================+====================+========================================================================================+
+| mpdaf_user.fsf | mpdaf_user/fsf     | Estimation of the Field Spread Function                                                |
+|                |                    | `mpdaf_user.fsf documentation <http://urania1.univ-lyon1.fr/mpdaf/wiki/FsfModelWiki>`_ |                                              
++----------------+--------------------+----------------------------------------------------------------------------------------+
+
+The user has the choice to download or not download these packages. *submodule* git option is used.
 
 After the *git clone* command, the submodules directories are there, but they're empty. Pulling down the submodules is a two-step process.
 
@@ -34,7 +56,7 @@ First select the submodules that you want used. Now use *git submodule update*::
 
   /mpdaf$ git submodule init lib/mpdaf/fusion
   /mpdaf$ git submodule init lib/mpdaf/quickViz
-  /mpdaf$ git submodule init mpdaf_user/a_package
+  /mpdaf$ git submodule init mpdaf_user/fsf
   /mpdaf$ git submodule update
 
 Then, you use *git pull* command to bring your repository up to date::

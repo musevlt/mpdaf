@@ -4,11 +4,12 @@ PixTable object
 In the reduction approach of the MUSE pipeline, data need to be kept un-resampled until the very last step. 
 The pixel tables used for this purpose can be saved at each intermediate reduction step and hence 
 contain lists of pixels together with output coordinates and values.
-The pixel tables values iand units change according to the reduction step. Please consult the data reduction user manual for further informations.
+The pixel tables values and units change according to the reduction step. Please consult the data reduction user manual for further informations.
 
-The PixTable python object is used to handle the MUSE pixel tables created by the data reduction system. The PixTable object can be read and write to disk (as a large FITS binary table) and a few functions can be performed on the object.
+The PixTable python object is used to handle the MUSE pixel tables created by the data reduction system. The PixTable object can be read and write to disk and a few functions can be performed on the object.
+Note that pixel tables are saved as FITS binary tables or as multi-extension FITS images (data reduction software version 0.08 or above). PixTable python object detects the file format and acts accordingly. But by default PixTable object writes to disk using the multi-extension FITS images option because it's faster. A 8.2 GB pixel table can be saved 3x faster as FITS images and loaded 5x faster compared to saving and loading as FITS table.
 
-Note that pixtable can be very large and then used a lot of RAM. To use efficiently the memory, the file is open in memory mapping mode when a PixTable object is created from an input FITS file: i.e. the arrays are not in memory unless they are used by the script.
+Also pixtable can be very large and then used a lot of RAM. To use efficiently the memory, the file is open in memory mapping mode when a PixTable object is created from an input FITS file: i.e. the arrays are not in memory unless they are used by the script.
 
 Format
 ======
@@ -69,8 +70,8 @@ We read the pixtable from the disk and check its basic informations and FITS hea
  HIERARCH ESO TMP FILE = '../Output/dry-run-ref_000_001_001.fits'                
  AUTHOR  = 'MPDAF   '           / origin of the file                             
  COMMENT   and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H 
- >>> print pix.nrows, pix.ncols
- >>> 29960130 7
+ >>> print pix.nrows
+ >>> 29960130
 
 Note that the current table has 29960130 pixels. It is only 1/9 of the full MUSE field for a single exposure.
 It has been fully reduced. The corresponding reconstructed image from the associated datacube is available. 
@@ -100,10 +101,9 @@ We are interested in the bright object at the bottom. Let's find its position::
 Now we will extract a circular region of the pixtable centered around the object and we will restrict
 the wavelength to the 6000:6100 Angstroem range::
 
- >>> objpix = pix.extract(sky=(-30.0023, 20.0015, 2/3600., 'C'), lbda=(6000,6100))
+ >>> objpix = pix.extract(filename='Star_pixtable.fits',sky=(-30.0023, 20.0015, 2/3600., 'C'), lbda=(6000,6100))
  >>> objpix.nrows
  20558
- >>> objpix.write('Star_pixtable.fits')
 
 Note that we have extracted a circular ('C') region of 2 arcsec (2/3600.) around the object.
 The new pixtable (objpix) is much smaller, only 20558 pixels. The pixtable has been saved as a 
@@ -143,7 +143,7 @@ decode it to get for example the ifu number::
  >>> origin = objpix.get_origin()
  >>> ifu = objpix.origin2ifu(origin)
  >>> np.unique(ifu)
- memmap([ 9, 10], dtype=uint32)
+ array([ 9, 10], dtype=int32)
  >>> k = np.where(ifu == 9)
  >>> plt.plot(y[k],x[k],'ob')
  >>> k = np.where(ifu == 10)
@@ -230,6 +230,8 @@ Reference
 :func:`mpdaf.drs.PixTable.extract <mpdaf.drs.PixTable.extract>` extracts a subset of a pixtable.
 
 :func:`mpdaf.drs.PixTable.reconstruct_det_image <mpdaf.drs.PixTable.reconstruct_det_image>` reconstructs the image on the detector from the pixtable.
+
+:func:`mpdaf.drs.PixTable.reconstruct_det_waveimage <mpdaf.drs.PixTable.reconstruct_det_waveimage>` reconstructs the image of wavelength values on the detector from the pixtable.
 
 :func:`mpdaf.drs.PixTable.reconstruct_sky_image <mpdaf.drs.PixTable.reconstruct_sky_image>` reconstructs the image on the sky from the pixtable.
 
