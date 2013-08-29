@@ -9,7 +9,7 @@ import tempfile
 import os
 import shutil
 
-def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, primary_header=None, save_as_ima=True):
+def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, primary_header=None, save_as_ima=True, wcs=False):
     """Saves the object in a FITS file.
     
     :param filename: The FITS filename.
@@ -49,16 +49,31 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, prima
         if weight is not None:
             hdulist.append(pyfits.ImageHDU(name='weight', data=weight.reshape((nrows,1))))
         hdu = pyfits.HDUList(hdulist)
+        if wcs:
+            hdu[1].header.update('BUNIT','deg')
+            hdu[2].header.update('BUNIT','deg')
+        else:
+            hdu[1].header.update('BUNIT','pix')
+            hdu[2].header.update('BUNIT','pix')
+        hdu[3].header.update('BUNIT','Angstrom')
+        hdu[4].header.update('BUNIT','count')
+        hdu[6].header.update('BUNIT','count**2')
+        if weight is not None:
+            hdu[8].header.update('BUNIT','count')
         hdu.writeto(filename, clobber=True)
     else:
         cols = []
-        cols.append(pyfits.Column(name='xpos', format='1E',unit='deg', array=xpos))
-        cols.append(pyfits.Column(name='ypos', format='1E',unit='deg', array=ypos))
+        if wcs:
+            cols.append(pyfits.Column(name='xpos', format='1E',unit='deg', array=xpos))
+            cols.append(pyfits.Column(name='ypos', format='1E',unit='deg', array=ypos))
+        else:
+            cols.append(pyfits.Column(name='xpos', format='1E',unit='pix', array=xpos))
+            cols.append(pyfits.Column(name='ypos', format='1E',unit='pix', array=ypos))
         cols.append(pyfits.Column(name='lambda', format='1E',unit='Angstrom', array=lbda))
         cols.append(pyfits.Column(name='data', format='1E',unit='count', array=data))
-        cols.append(pyfits.Column(name='dq', format='1J',unit='None', array=dq))
-        cols.append(pyfits.Column(name='stat', format='1E',unit='None', array=stat))
-        cols.append(pyfits.Column(name='origin', format='1J',unit='count**2', array=origin))
+        cols.append(pyfits.Column(name='dq', format='1J', array=dq))
+        cols.append(pyfits.Column(name='stat', format='1E',unit='count**2', array=stat))
+        cols.append(pyfits.Column(name='origin', format='1J', array=origin))
         if weight is not None:
             cols.append(pyfits.Column(name='weight', format='1E',unit='count', array=weight))
         coltab = pyfits.ColDefs(cols)
@@ -223,7 +238,7 @@ class PixTable(object):
         if self.ima == save_as_ima:
             shutil.copy(self.filename, filename)
         else:
-            write(filename, self.get_xpos(), self.get_ypos(), self.get_lambda(), self.get_data(), self.get_dq(), self.get_stat(), self.get_origin(), self.get_weight(), self.primary_header, save_as_ima)
+            write(filename, self.get_xpos(), self.get_ypos(), self.get_lambda(), self.get_data(), self.get_dq(), self.get_stat(), self.get_origin(), self.get_weight(), self.primary_header, save_as_ima, self.wcs)
         if os.path.basename(self.filename) in os.listdir(tempfile.gettempdir()):
             os.remove(self.filename)
         self.filename = filename
@@ -675,7 +690,7 @@ class PixTable(object):
             (fd,filename) = tempfile.mkstemp(prefix='mpdaf')
             os.close(fd)
             
-        write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight, primary_header, self.ima)
+        write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight, primary_header, self.ima, self.wcs)
         return PixTable(filename)
     
 
