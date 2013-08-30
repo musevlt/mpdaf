@@ -834,7 +834,7 @@ class PixTable(object):
         from scipy import interpolate
         
         if step is None:
-            step = self.get_keywords('HIERARCH ESO INS PIXSCALE')
+            step = self.get_keywords('HIERARCH ESO OCS IPS PIXSCALE')
             if step <= 0 :
                 raise ValueError, 'INS PIXSCALE not valid'
             xstep = step
