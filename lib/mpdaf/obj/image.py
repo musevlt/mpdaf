@@ -2,6 +2,7 @@
 import numpy as np
 import pyfits
 import datetime
+import os
 
 from scipy import interpolate
 from scipy.optimize import leastsq
@@ -304,6 +305,8 @@ class Image(object):
         #possible FITS filename
         self.filename = filename
         if filename is not None:
+            if not os.path.isfile(filename):
+                raise IOError, 'No such file or directory: %s'%filename
             if filename[-4:]=="fits" or filename[-7:]=="fits.gz":
                 f = pyfits.open(filename)
                 # primary header
