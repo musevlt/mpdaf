@@ -21,6 +21,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, prima
     """
     pyfits.setExtensionNameCaseSensitive()
     prihdu = pyfits.PrimaryHDU()
+    warnings.simplefilter("ignore")
     if primary_header is not None:
         for card in primary_header:
             try:
@@ -37,6 +38,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, prima
                 pass
     prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
     prihdu.header.update('author', 'MPDAF', 'origin of the file')
+    warnings.simplefilter("default")
     if save_as_ima:
         hdulist = [prihdu]
         nrows = xpos.shape[0]
@@ -80,9 +82,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, prima
         coltab = pyfits.ColDefs(cols)
         tbhdu = pyfits.new_table(coltab)
         thdulist = pyfits.HDUList([prihdu, tbhdu])
-        warnings.simplefilter("ignore")
         thdulist.writeto(filename, clobber=True)
-        warnings.simplefilter("error")
 
 class PixTable(object):
     """PixTable class
