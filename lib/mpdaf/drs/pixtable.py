@@ -8,6 +8,7 @@ import datetime
 import tempfile
 import os
 import shutil
+import warnings
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, primary_header=None, save_as_ima=True, wcs=False):
     """Saves the object in a FITS file.
@@ -79,7 +80,9 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, prima
         coltab = pyfits.ColDefs(cols)
         tbhdu = pyfits.new_table(coltab)
         thdulist = pyfits.HDUList([prihdu, tbhdu])
+        warnings.simplefilter("ignore")
         thdulist.writeto(filename, clobber=True)
+        warnings.simplefilter("error")
 
 class PixTable(object):
     """PixTable class
