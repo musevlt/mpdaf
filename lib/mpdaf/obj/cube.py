@@ -328,7 +328,7 @@ class Cube(object):
         cub.primary_header = pyfits.CardList(self.primary_header)
         cub.shape = self.shape.__copy__()
         try:
-            cub.data = self.data.__copy__()
+            cub.data = self.data.copy()
         except:
             cub.data = None
         try:

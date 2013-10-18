@@ -348,7 +348,7 @@ class Spectrum(object):
         spe.primary_header = pyfits.CardList(self.primary_header)
         spe.shape = self.shape
         try:
-            spe.data = self.data.__copy__()
+            spe.data = self.data.copy()
         except:
             spe.data = None
         try:
@@ -1554,7 +1554,7 @@ class Spectrum(object):
         else:
             vec_weight = None
 
-        mask = np.array(np.ones_like(self.data) - self.data.mask,dtype=bool)
+        mask = np.array(1 - self.data.mask,dtype=bool)
         d = self.data.compress(mask)
         w = self.wave.coord().compress(mask)
         if weight:

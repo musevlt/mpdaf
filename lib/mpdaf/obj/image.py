@@ -465,7 +465,7 @@ class Image(object):
         ima.data_header = pyfits.CardList(self.data_header)
         ima.shape = self.shape.__copy__()
         try:
-            ima.data = self.data.__copy__()
+            ima.data = self.data.copy()
         except:
             ima.data = None
         try:
