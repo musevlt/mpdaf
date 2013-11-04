@@ -2056,6 +2056,7 @@ class Cube(object):
         '''
         if is_int(factor):
             factor = (factor,factor,factor)
+        factor = np.array(factor)
         if factor[0]<1:
             factor[0]=1
         if factor[0]>self.shape[0]:
@@ -2072,7 +2073,6 @@ class Cube(object):
             # new size is an integer multiple of the original size
             res = self.copy()
         else:
-            factor = np.array(factor)
             newshape = self.shape/factor
             n = self.shape - newshape*factor
             
