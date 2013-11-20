@@ -78,6 +78,7 @@ The various software required are:
  * pyfits (version 3.0 or above)
  * pywcs (version 1.11-4.7 or above)
  * nose
+ * PIL
 
 .. _installation-label:
 
