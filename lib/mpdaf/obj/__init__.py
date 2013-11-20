@@ -39,8 +39,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 
 """
-__version__  = '1.1.1'
-__date__     = '2013/08/29'
+__version__  = '1.1.3'
+__date__     = '2013/11/20'
 
 """
 Import the different submodules
@@ -69,3 +69,4 @@ from image import Gauss2D
 from image import Moffat2D
 from cube import iter_spe
 from cube import iter_ima
+import plt_zscale

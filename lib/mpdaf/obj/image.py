@@ -15,6 +15,7 @@ from matplotlib.widgets import RectangleSelector
 import matplotlib.colors
 import plt_norm
 import plt_zscale
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from coords import WCS
 from coords import WaveCoord
@@ -1359,10 +1360,9 @@ class Image(object):
                 pixcrd = np.array([np.ones(nj)*i,np.arange(nj)+jmin]).T
                 pixcrd[:,0] -= center[0]
                 pixcrd[:,1] -= center[1]
-                m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) > radius2)
-                
-                m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
-                self.data.mask[imin:imax,jmin:jmax] = m
+                m[i_in,:] = ((np.array(pixcrd[:,0])*np.array(pixcrd[:,0]) + np.array(pixcrd[:,1])*np.array(pixcrd[:,1])) > radius2)       
+            m = np.ma.mask_or(m,np.ma.getmask(self.data)[imin:imax,jmin:jmax])
+            self.data.mask[imin:imax,jmin:jmax] = m
         else:
             self.data.mask[0:imin,:] = 1
             self.data.mask[imax:,:] = 1
@@ -3724,6 +3724,8 @@ class Image(object):
           :type colorbar: bool
           :param kargs: kargs can be used to set additional Artist properties.
           :type kargs: matplotlib.artist.Artist
+          
+          :rtype: matplotlib AxesImage
         """
         plt.ion()
         #plt.clf()
@@ -3759,23 +3761,35 @@ class Image(object):
             else:
                 norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
 
-            #cax = plt.imshow(f,interpolation='nearest',origin='lower',extent=(xaxis[0],xaxis[-1],yaxis[0],yaxis[-1]),norm=norm,**kargs)
             cax = plt.imshow(f,interpolation='nearest',origin='lower',norm=norm,**kargs)
-            if colorbar == "h":
-                plt.colorbar(cax,orientation='horizontal')
-            elif colorbar == "v":
-                plt.colorbar(cax,orientation='vertical')
-            else:
-                pass
             plt.xlabel('q (%s)' %xunit)
             plt.ylabel('p (%s)' %yunit)
+                        
+            #create colorbar
+            ax = plt.gca()
+            divider = make_axes_locatable(ax)
+            if colorbar == "h":
+                cax2 = divider.append_axes("top", size="5%", pad=0.2)
+                cbar = plt.colorbar(cax, cax=cax2, orientation='horizontal')
+                for t in cbar.ax.xaxis.get_major_ticks():
+                    t.tick1On = True
+                    t.tick2On = True
+                    t.label1On = False
+                    t.label2On = True 
+            elif colorbar == "v":
+                cax2 = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(cax, cax=cax2)
+            else:
+                pass
+            
             self._ax = cax
             
         if title is not None:
-                plt.title(title)   
+            plt.title(title)   
                 
         self._fig = plt.get_current_fig_manager()
         plt.connect('motion_notify_event', self._on_move)
+        return cax
         
     def _on_move(self,event):
         """ prints y,x,p,q and data in the figure toolbar.

@@ -654,6 +654,14 @@ class PixTable(object):
         ifu_high.value = int(self.origin2ifu(origin).max())
         slice_low.value = int(self.origin2slice(origin).min())
         slice_high.value = int(self.origin2slice(origin).max())
+        #merged pixtable
+        if self.nifu >0:
+            try:
+                nifu = primary_header["HIERARCH ESO DRS MUSE PIXTABLE MERGED"]
+                nifu.value = len(np.unique(self.origin2ifu(origin)))
+            except:
+                nifu = primary_header["HIERARCH ESO PRO MUSE PIXTABLE MERGED"]
+                nifu.value = len(np.unique(self.origin2ifu(origin)))
         
         #weight
         weight=self.get_weight(ksel)
@@ -885,7 +893,7 @@ class PixTable(object):
         ima = Image(data=new_data,wcs=wcs)
         return ima
 
-    def reconstruct_det_image(self):
+    def reconstruct_det_image(self, xstart=None, ystart=None, xstop=None, ystop=None):
         """Reconstructs the image on the detector from the pixtable.
         The pixtable must concerns only one IFU, otherwise an exception is raised.
         
@@ -909,13 +917,20 @@ class PixTable(object):
         if len(np.unique(ifu)) != 1:
             raise ValueError, 'Pixtable contains multiple IFU'
 
-        xstart, xstop = xpix.min(), xpix.max()
-        ystart, ystop = ypix.min(), ypix.max()
-        image = np.zeros((ystop - ystart + 1, xstop - xstart + 1), dtype='float')
+        if xstart is None:
+            xstart = xpix.min()
+        if xstop is None:
+            xstop = xpix.max()
+        if ystart is None:
+            ystart = ypix.min()
+        if ystop is None:
+            ystop = ypix.max()
+        #xstart, xstop = xpix.min(), xpix.max()
+        #ystart, ystop = ypix.min(), ypix.max()
+        image = np.zeros((ystop - ystart + 1, xstop - xstart + 1), dtype='float')*np.NaN
         image[ypix - ystart, xpix - xstart] = col_data
 
         wcs = WCS(crval=(ystart, xstart))
-
         return Image(shape=(image.shape), data=image, wcs=wcs)
 
 

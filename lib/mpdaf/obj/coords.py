@@ -277,6 +277,8 @@ class WCS(object):
             pixsky = np.zeros(np.shape(x))
             pixsky[:,0] = x[:,1]
             pixsky[:,1] = x[:,0]
+        else:
+            raise InputError,'invalid input coordinates for sky2pix'
         pixcrd = self.wcs.wcs_sky2pix(pixsky,0)
         res = np.array(pixcrd)
         res[:,0] = pixcrd[:,1]
@@ -297,6 +299,8 @@ class WCS(object):
             pixcrd = np.zeros(np.shape(x))
             pixcrd[:,0] = x[:,1]
             pixcrd[:,1] = x[:,0]
+        else:
+            raise InputError,'invalid input coordinates for pix2sky'
         pixsky = self.wcs.wcs_pix2sky(pixcrd,0)
         res = np.array(pixsky)
         res[:,0] = pixsky[:,1]
