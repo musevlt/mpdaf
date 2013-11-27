@@ -1409,27 +1409,30 @@ class Spectrum(object):
         if start is not None and (start<lrange[0] or start>lrange[1]):
             raise ValueError, 'Start value outside the spectrum range'
         
-        data = self._interp_data(spline)
-
-        f = lambda x: data[int(self.wave.pixel(x)+0.5)]
-        
         newwave = self.wave.rebin(step,start)
         if shape is None:
             newshape = newwave.shape   
         else:
             newshape = min(shape, newwave.shape)
             newwave.shape = newshape
-            
-        self.data = np.empty(newshape,dtype=np.float)        
-        pix = np.arange(newshape+1,dtype=np.float)
-        x = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval - 0.5 * newwave.cdelt
         
-        lbdamax = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
-        if x[-1]> lbdamax:
-            x[-1] = lbdamax
+        dmin = np.min(self.data)
+        dmax = np.max(self.data)
+        if dmin==dmax:
+            self.data = np.ones(newshape,dtype=np.float)*dmin 
+        else:    
+            data = self._interp_data(spline)
+            f = lambda x: data[int(self.wave.pixel(x)+0.5)]   
+            self.data = np.empty(newshape,dtype=np.float)        
+            pix = np.arange(newshape+1,dtype=np.float)
+            x = (pix - newwave.crpix + 1) * newwave.cdelt + newwave.crval - 0.5 * newwave.cdelt
         
-        for i in range(newshape):
-            self.data[i] = integrate.quad(f,x[i],x[i+1],full_output=1)[0] / newwave.cdelt
+            lbdamax = (self.shape - self.wave.crpix ) * self.wave.cdelt + self.wave.crval + 0.5 * self.wave.cdelt
+            if x[-1]> lbdamax:
+                x[-1] = lbdamax
+        
+            for i in range(newshape):
+                self.data[i] = integrate.quad(f,x[i],x[i+1],full_output=1)[0] / newwave.cdelt
             
         if self.var is not None and not notnoise:
             f = lambda x: self.var[int(self.wave.pixel(x)+0.5)]
