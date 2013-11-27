@@ -285,7 +285,7 @@ Arithmetic
 
 :func:`\+ <mpdaf.obj.Image.__add__>` makes a addition.
 
-:func:`\- <mpdaf.obj.Image.__sub__>` makes a substraction .
+:func:`\- <mpdaf.obj.Image.__sub__>` makes a subtraction .
 
 :func:`\* <mpdaf.obj.Image.__mul__>` makes a multiplication.
 
