@@ -655,7 +655,7 @@ class PixTable(object):
         slice_low.value = int(self.origin2slice(origin).min())
         slice_high.value = int(self.origin2slice(origin).max())
         #merged pixtable
-        if self.nifu >0:
+        if self.nifu >1:
             try:
                 nifu = primary_header["HIERARCH ESO DRS MUSE PIXTABLE MERGED"]
                 nifu.value = len(np.unique(self.origin2ifu(origin)))
