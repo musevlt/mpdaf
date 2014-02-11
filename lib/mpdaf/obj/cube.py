@@ -1824,42 +1824,42 @@ class Cube(object):
                 F2 = F * F
                 
                 if cub.shape[0] != newshape[0]:
-                    d = self.data[n0_right:,n1_left:n1_right,n2_left:n2_rigth].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    d = self.data[n0_right:,n1_left:n1_right,n2_left:n2_right].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F
                     data[-1,p_left:q_left,q_left:q_right] = d.data
                     mask[-1,p_left:q_left,q_left:q_right] = d.mask
                     if var is not None:
-                        var[-1,p_left:q_left,q_left:q_right] = self.var[n0_right:,n1_left:n1_right,n2_left:n2_rigth].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                        var[-1,p_left:q_left,q_left:q_right] = self.var[n0_right:,n1_left:n1_right,n2_left:n2_right].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F2
                 if l_left==1:
-                    d = self.data[:n0_left,n1_left:n1_right,n2_left:n2_rigth].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    d = self.data[:n0_left,n1_left:n1_right,n2_left:n2_right].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F
                     data[0,p_left:q_left,q_left:q_right] = d.data
                     mask[0,p_left:q_left,q_left:q_right] = d.mask
                     if var is not None:
-                       var[0,p_left:q_left,q_left:q_right] = self.var[:n0_left,n1_left:n1_right,n2_left:n2_rigth].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                       var[0,p_left:q_left,q_left:q_right] = self.var[:n0_left,n1_left:n1_right,n2_left:n2_right].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F2
                 if cub.shape[1] != newshape[1]:
-                    d = self.data[n0_left:n0_right,n1_right:,n2_left:n2_rigth].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F
-                    data[l_left:l_rigth,-1,q_left:q_right] = d.data
-                    mask[l_left:l_rigth,-1,q_left:q_right] = d.mask
+                    d = self.data[n0_left:n0_right,n1_right:,n2_left:n2_right].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    data[l_left:l_right,-1,q_left:q_right] = d.data
+                    mask[l_left:l_right,-1,q_left:q_right] = d.mask
                     if var is not None:
-                        var[l_left:l_rigth,-1,q_left:q_right] = self.var[n0_left:n0_right,n1_right:,n2_left:n2_rigth].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                        var[l_left:l_right,-1,q_left:q_right] = self.var[n0_left:n0_right,n1_right:,n2_left:n2_right].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F2
                 if p_left==1:
-                    d = self.data[n0_left:no_right,:n1_left,n2_left:n2_rigth].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F
-                    data[l_left:l_rigth,0,q_left:q_right] = d.data
-                    mask[l_left:l_rigth,0,q_left:q_right] = d.mask
+                    d = self.data[n0_left:no_right,:n1_left,n2_left:n2_right].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    data[l_left:l_right,0,q_left:q_right] = d.data
+                    mask[l_left:l_right,0,q_left:q_right] = d.mask
                     if var is not None:
-                        var[l_left:l_rigth,0,q_left:q_right] = self.var[n0_left:no_right,:n1_left,n2_left:n2_rigth].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                        var[l_left:l_right,0,q_left:q_right] = self.var[n0_left:no_right,:n1_left,n2_left:n2_right].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F2
                     
                 if cub.shape[2] != newshape[2]:
-                    d = self.data[n0_left:n0_right,n1_left:n1_right:,n2_rigth:].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F
-                    data[l_left:l_rigth,p_left:p_right,-1] = d.data
-                    mask[l_left:l_rigth,p_left:p_right,-1] = d.mask
+                    d = self.data[n0_left:n0_right,n1_left:n1_right:,n2_right:].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F
+                    data[l_left:l_right,p_left:p_right,-1] = d.data
+                    mask[l_left:l_right,p_left:p_right,-1] = d.mask
                     if var is not None:
-                        var[l_left:l_rigth,p_left:p_right,-1] = self.var[n0_left:n0_right,n1_left:n1_right:,n2_rigth:].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F2
+                        var[l_left:l_right,p_left:p_right,-1] = self.var[n0_left:n0_right,n1_left:n1_right:,n2_right:].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F2
                 if q_left==1:
                     d = self.data[n0_left:n0_right,n1_left:n1_right:,:n2_left].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F
-                    data[l_left:l_rigth,p_left:p_right,0] = d.data
-                    mask[l_left:l_rigth,p_left:p_right,0] = d.mask
+                    data[l_left:l_right,p_left:p_right,0] = d.data
+                    mask[l_left:l_right,p_left:p_right,0] = d.mask
                     if var is not None:
-                        var[l_left:l_rigth,p_left:p_right,0] = self.var[n0_left:n0_right,n1_left:n1_right:,:n2_left].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F2
+                        var[l_left:l_right,p_left:p_right,0] = self.var[n0_left:n0_right,n1_left:n1_right:,:n2_left].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F2
                     
                 if l_left==1 and p_left==1 and q_left==1:
                     data[0,0,0] = self.data[:n0_left,:n1_left,:n2_left].sum()/ F
@@ -1974,9 +1974,9 @@ class Cube(object):
                 if l_right==(newshape[0]-1) and q_right==(newshape[2]-1):
                     d = self.data[n0_right:,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
                     data[-1,p_left:p_right,-1] = d.data
-                    mask[-1,p_left:p_righ,-1] = d.mask
+                    mask[-1,p_left:p_right,-1] = d.mask
                     if var is not None:
-                        var[-1,p_left:p_righ,-1] = self.var[n0_right:,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
+                        var[-1,p_left:p_right,-1] = self.var[n0_right:,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
                 
                 self.shape = newshape
                 self.wcs = wcs
