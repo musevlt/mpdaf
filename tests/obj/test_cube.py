@@ -149,4 +149,11 @@ class TestCube():
             for j in range(6):
                 for i in range(5):
                     nose.tools.assert_almost_equal(cube2.data[k,j,i]*cube2.fscale,0)
+                    
+    @attr(speed='fast')
+    def test_resize(self):
+        """Cube class: tests resize method."""
+        self.cube1.data.mask[0,:,:] = True
+        self.cube1.resize()
+        nose.tools.assert_equal(self.cube1.shape[0],9)
         

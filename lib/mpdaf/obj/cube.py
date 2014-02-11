@@ -558,20 +558,20 @@ class Cube(object):
                 self.data = self.data[item]
                 if is_int(item[0]):
                     if is_int(item[1]):
-                        self.shape = np.array((1,1,data.shape[0]))
+                        self.shape = np.array((1,1,self.data.shape[0]))
                     elif is_int(item[2]):
-                        self.shape = np.array((1,data.shape[0],1))
+                        self.shape = np.array((1,self.data.shape[0],1))
                     else:
-                        self.shape = np.array((1,data.shape[0],data.shape[1]))
+                        self.shape = np.array((1,self.data.shape[0],self.data.shape[1]))
                 elif is_int(item[1]):
                     if is_int(item[2]):
-                        self.shape = np.array((data.shape[0],1,1))
+                        self.shape = np.array((self.data.shape[0],1,1))
                     else:
-                        self.shape = np.array((data.shape[0],1,data.shape[1]))
+                        self.shape = np.array((self.data.shape[0],1,self.data.shape[1]))
                 elif is_int(item[2]):
-                        self.shape = np.array((data.shape[0],data.shape[1],1))
+                        self.shape = np.array((self.data.shape[0],self.data.shape[1],1))
                 else:
-                    self.shape = data.shape
+                    self.shape = self.data.shape
                 if self.var is not None:
                     self.var = self.var[item]
                 try:
