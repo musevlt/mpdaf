@@ -4,11 +4,16 @@ import pyfits
 import datetime
 import multiprocessing
 import types
+import logging
 
 from coords import WCS
 from coords import WaveCoord
 from objs import is_float
 from objs import is_int
+
+FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger('mpdaf corelib')
 
 class iter_spe(object):
     def __init__(self, cube, index=False):
@@ -162,7 +167,8 @@ class Cube(object):
                 else:
                     self.wcs = wcs
                     if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
-                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                        d = {'class': 'Cube', 'method': '__init__'}
+                        logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
                     self.wcs.wcs.naxis1 = self.shape[2]
                     self.wcs.wcs.naxis2 = self.shape[1]
                 #Wavelength coordinates
@@ -180,7 +186,8 @@ class Cube(object):
                 else:
                     self.wave = wave
                     if wave.shape is not None and wave.shape != self.shape[0]:
-                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                        d = {'class': 'Cube', 'method': '__init__'}
+                        logger.warning("wavelength coordinates and data have not the same dimensions: %s", "shape of WaveCoord object is modified", extra=d)
                     self.wave.shape = self.shape[0]
             else:
                 if ext is None:
@@ -206,7 +213,8 @@ class Cube(object):
                 else:
                     self.wcs = wcs
                     if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
-                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                        d = {'class': 'Cube', 'method': '__init__'}
+                        logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
                     self.wcs.wcs.naxis1 = self.shape[2]
                     self.wcs.wcs.naxis2 = self.shape[1]
                 #Wavelength coordinates
@@ -224,23 +232,21 @@ class Cube(object):
                 else:
                     self.wave = wave
                     if wave.shape is not None and wave.shape != self.shape[0]:
-                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                        d = {'class': 'Cube', 'method': '__init__'}
+                        logger.warning("wavelength coordinates and data have not the same dimensions: %s", "shape of WaveCoord object is modified", extra=d)
                     self.wave.shape = self.shape[0]
                 self.var = None
                 if not notnoise:
-                    try:
-                        if ext is None:
-                            fstat = f['STAT']
-                        else:
-                            n = ext[1]
-                            fstat = f[n]
-                        if fstat.header['NAXIS'] != 3:
-                            raise IOError, 'Wrong dimension number in variance extension'
-                        if fstat.header['NAXIS1'] != self.shape[2] and fstat.header['NAXIS2'] != self.shape[1] and fstat.header['NAXIS3'] != self.shape[0]:
-                            raise IOError, 'Number of points in STAT not equal to DATA'
-                        self.var = np.array(fstat.data, dtype=float)
-                    except:
-                        self.var = None
+                    if ext is None:
+                        fstat = f['STAT']
+                    else:
+                        n = ext[1]
+                        fstat = f[n]
+                    if fstat.header['NAXIS'] != 3:
+                        raise IOError, 'Wrong dimension number in variance extension'
+                    if fstat.header['NAXIS1'] != self.shape[2] and fstat.header['NAXIS2'] != self.shape[1] and fstat.header['NAXIS3'] != self.shape[0]:
+                        raise IOError, 'Number of points in STAT not equal to DATA'
+                    self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -299,21 +305,25 @@ class Cube(object):
                 self.wcs = wcs
                 if wcs is not None:
                     if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
-                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                        d = {'class': 'Cube', 'method': '__init__'}
+                        logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
                     self.wcs.wcs.naxis1 = self.shape[2]
                     self.wcs.wcs.naxis2 = self.shape[1]
             except :
                 self.wcs = None
-                print "error: world coordinates not copied."
+                d = {'class': 'Cube', 'method': '__init__'}
+                logger.warning("world coordinates not copied: %s", "wcs attribute is None",extra=d)
             try:
                 self.wave = wave
                 if wave is not None:
                     if wave.shape is not None and wave.shape != self.shape[0]:
-                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                        d = {'class': 'Cube', 'method': '__init__'}
+                        logger.warning("wavelength coordinates and data have not the same dimensions: %s", "shape of WaveCoord object is modified", extra=d)
                     self.wave.shape = self.shape[0]
             except :
                 self.wave = None
-                print "error: wavelength solution not copied."
+                d = {'class': 'Cube', 'method': '__init__'}
+                logger.warning("wavelength solution not copied: %s", "wave attribute is None", extra=d)
         #Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
             self.data = np.ma.masked_invalid(self.data)
@@ -392,7 +402,8 @@ class Cube(object):
                         else:
                             prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
                     except:
-                        print "warning: %s not copied in primary header"%card.key
+                        d = {'class': 'Cube', 'method': 'write'}
+                        logger.warning("%s not copied in primary header", card.key, extra=d)
                         pass
         prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
         prihdu.header.update('author', 'MPDAF', 'origin of the file')
@@ -414,7 +425,8 @@ class Cube(object):
                     if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2' and tbhdu.header.keys().count(card.key)==0:
                         prihdu.header.update(card.key, card.value, card.comment)
                 except:
-                    print "warning: %s not copied in data header"%card.key
+                    d = {'class': 'Cube', 'method': 'write'}
+                    logger.warning("%s not copied in data header", card.key, extra=d)
                     pass
         # add world coordinate
         cd = self.wcs.get_cd()
@@ -578,12 +590,14 @@ class Cube(object):
                     self.wcs = self.wcs[item[1],item[2]]
                 except:
                     self.wcs = None
-                    print "error: wcs not copied."
+                    d = {'class': 'Cube', 'method': 'resize'}
+                    logger.warning("wcs not copied: %s", "wcs attribute is None", extra=d)
                 try:
                     self.wave = self.wave[item[0]]
                 except:
                     self.wave = None
-                    print "error: wavelength solution not copied."
+                    d = {'class': 'Cube', 'method': 'resize'}
+                    logger.warning("wavelength solution not copied: %s", "wave attribute is None", extra=d)
             except:
                 pass
             
@@ -645,8 +659,7 @@ class Cube(object):
             if other.cube:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     res = Cube(shape=self.shape , fscale=self.fscale)
                     #coordinate
@@ -655,15 +668,13 @@ class Cube(object):
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        print 'Operation forbidden for cubes with different world coordinates in spectral direction'
-                        return None
+                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spectral direction'
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        print 'Operation forbidden for cubes with different world coordinates in spatial directions'
-                        return None
+                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
                     #data
                     res.data = self.data + (other.data*np.double(other.fscale/self.fscale))
                     #variance
@@ -679,6 +690,8 @@ class Cube(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 # cube1 + image = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
@@ -686,8 +699,7 @@ class Cube(object):
                 # if not equal to None, world coordinates in spatial directions must be the same
                 if other.image:
                     if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
-                        print 'Operation forbidden for objects with different sizes'
-                        return None
+                        raise IOError, 'Operation forbidden for objects with different sizes'
                     else:
                         res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale)
                         #coordinates
@@ -696,8 +708,7 @@ class Cube(object):
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            print 'Operation forbidden for objects with different world coordinates'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different world coordinates'
                         #data
                         res.data = self.data + (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
                         #variance
@@ -713,6 +724,8 @@ class Cube(object):
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
+            except IOError as e:
+                raise e
             except:
                 try:
                     # cube1 + spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]+spectrum[k])
@@ -720,8 +733,7 @@ class Cube(object):
                     # if not equal to None, world coordinates in spectral direction must be the same
                     if other.spectrum:
                         if other.data is None or other.shape != self.shape[0]:
-                            print 'Operation forbidden for objects with different sizes'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different sizes'
                         else:
                             res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale)
                             #coordinates
@@ -730,8 +742,7 @@ class Cube(object):
                             elif self.wave.isEqual(other.wave):
                                 res.wave = self.wave
                             else:
-                                print 'Operation forbidden for spectra with different world coordinates'
-                                return None
+                                raise IOError, 'Operation forbidden for spectra with different world coordinates'
                             #data
                             res.data = self.data + (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
                             #variance
@@ -747,9 +758,10 @@ class Cube(object):
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
+                except IOError as e:
+                    raise e
                 except:
-                    print 'Operation forbidden'
-                    return None
+                    raise IOError, 'Operation forbidden'
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -785,8 +797,7 @@ class Cube(object):
             if other.cube:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     res = Cube(shape=self.shape , fscale=self.fscale)
                     #coordinates
@@ -795,15 +806,13 @@ class Cube(object):
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        print 'Operation forbidden for cubes with different world coordinates in spectral direction'
-                        return None
+                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spectral direction'
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        print 'Operation forbidden for cubes with different world coordinates in spatial directions'
-                        return None
+                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
                     #data
                     res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
                     #variance
@@ -819,6 +828,8 @@ class Cube(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #cube1 - image = cube2 (cube2[k,j,i]=cube1[k,j,i]-image[j,i])
@@ -826,8 +837,7 @@ class Cube(object):
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.image:
                     if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
-                        print 'Operation forbidden for images with different sizes'
-                        return None
+                        raise IOError, 'Operation forbidden for images with different sizes'
                     else:
                         res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale)
                         #coordinates
@@ -836,8 +846,7 @@ class Cube(object):
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            print 'Operation forbidden for objects with different world coordinates'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different world coordinates'
                         #data
                         res.data = self.data - (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
                         #variance
@@ -853,6 +862,8 @@ class Cube(object):
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
+            except IOError as e:
+                raise e
             except:
                 try:
                     #cube1 - spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]-spectrum[k])
@@ -860,8 +871,7 @@ class Cube(object):
                     #If not equal to None, world coordinates in spectral direction must be the same.
                     if other.spectrum:
                         if other.data is None or other.shape != self.shape[0]:
-                            print 'Operation forbidden for objects with different sizes'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different sizes'
                         else:
                             res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale)
                             #coordinates
@@ -870,8 +880,7 @@ class Cube(object):
                             elif self.wave.isEqual(other.wave):
                                 res.wave = self.wave
                             else:
-                                print 'Operation forbidden for spectra with different world coordinates'
-                                return None
+                                raise IOError, 'Operation forbidden for spectra with different world coordinates'
                             #data
                             res.data = self.data - (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
                             #variance
@@ -887,9 +896,10 @@ class Cube(object):
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
+                except IOError as e:
+                    raise e
                 except:
-                    print 'Operation forbidden'
-                    return None
+                    raise IOError, 'Operation forbidden'
 
     def __rsub__(self, other):
         if self.data is None:
@@ -901,17 +911,22 @@ class Cube(object):
         try:
             if other.cube:
                 return other.__sub__(self)
+        except IOError as e:
+            raise e
         except:
             try:
                 if other.image:
                     return other.__sub__(self)
+            except IOError as a:
+                raise e
             except:
                 try:
                     if other.spectrum:
                         return other.__sub__(self)
+                except IOError as e:
+                    raise e
                 except:
-                    print 'Operation forbidden'
-                    return None
+                    raise IOError, 'Operation forbidden'
 
     def __mul__(self, other):
         """Multiplies by other
@@ -944,8 +959,7 @@ class Cube(object):
             if other.cube:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     res = Cube(shape=self.shape , fscale=self.fscale*other.fscale)
                     #coordinates
@@ -954,15 +968,13 @@ class Cube(object):
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        print 'Operation forbidden for cubes with different world coordinates in spectral direction'
-                        return None
+                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spectral direction'
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        print 'Operation forbidden for cubes with different world coordinates in spatial directions'
-                        return None
+                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
                     #data
                     res.data = self.data * other.data
                     #variance
@@ -978,6 +990,8 @@ class Cube(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #cube1 * image = cube2 (cube2[k,j,i]=cube1[k,j,i]*image[j,i])
@@ -985,8 +999,7 @@ class Cube(object):
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.image:
                     if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
-                        print 'Operation forbidden for images with different sizes'
-                        return None
+                        raise IOError, 'Operation forbidden for images with different sizes'
                     else:
                         res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale * other.fscale)
                         #coordinates
@@ -995,8 +1008,7 @@ class Cube(object):
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            print 'Operation forbidden for objects with different world coordinates'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different world coordinates'
                         #data
                         res.data = self.data * other.data[np.newaxis,:,:]
                         #variance
@@ -1012,6 +1024,8 @@ class Cube(object):
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
+            except IOError as e:
+                raise e
             except:
                 try:
                     #cube1 * spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]*spectrum[k])
@@ -1019,8 +1033,7 @@ class Cube(object):
                     #If not equal to None, world coordinates in spectral direction must be the same.
                     if other.spectrum:
                         if other.data is None or other.shape != self.shape[0]:
-                            print 'Operation forbidden for objects with different sizes'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different sizes'
                         else:
                             res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale*other.fscale)
                             #coordinates
@@ -1029,8 +1042,7 @@ class Cube(object):
                             elif self.wave.isEqual(other.wave):
                                 res.wave = self.wave
                             else:
-                                print 'Operation forbidden for spectra with different world coordinates'
-                                return None
+                                raise IOError, 'Operation forbidden for spectra with different world coordinates'
                             #data
                             res.data = self.data * other.data[:,np.newaxis,np.newaxis]
                             #variance
@@ -1046,9 +1058,10 @@ class Cube(object):
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
+                except IOError as e:
+                    raise e
                 except:
-                    print 'Operation forbidden'
-                    return None
+                    raise IOError, 'Operation forbidden'
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -1084,8 +1097,7 @@ class Cube(object):
             if other.cube:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     res = Cube(shape=self.shape , fscale=self.fscale/other.fscale)
                     #coordinates
@@ -1094,8 +1106,7 @@ class Cube(object):
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        print 'Operation forbidden for cubes with different world coordinates in spectral direction'
-                        return None
+                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spectral direction'
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
@@ -1117,6 +1128,8 @@ class Cube(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #cube1 / image = cube2 (cube2[k,j,i]=cube1[k,j,i]/image[j,i])
@@ -1124,8 +1137,7 @@ class Cube(object):
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.image:
                     if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
-                        print 'Operation forbidden for images with different sizes'
-                        return None
+                        raise IOError, 'Operation forbidden for images with different sizes'
                     else:
                         res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale / other.fscale)
                         #coordinates
@@ -1134,8 +1146,7 @@ class Cube(object):
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            print 'Operation forbidden for objects with different world coordinates'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different world coordinates'
                         #data
                         res.data = self.data / other.data[np.newaxis,:,:]
                         #variance
@@ -1151,6 +1162,8 @@ class Cube(object):
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
+            except IOError as e:
+                raise e
             except:
                 try:
                     #cube1 / spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]/spectrum[k])
@@ -1158,8 +1171,7 @@ class Cube(object):
                     #If not equal to None, world coordinates in spectral direction must be the same.
                     if other.spectrum:
                         if other.data is None or other.shape != self.shape[0]:
-                            print 'Operation forbidden for objects with different sizes'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different sizes'
                         else:
                             res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale/other.fscale)
                             #coordinates
@@ -1168,8 +1180,7 @@ class Cube(object):
                             elif self.wave.isEqual(other.wave):
                                 res.wave = self.wave
                             else:
-                                print 'Operation forbidden for spectra with different world coordinates'
-                                return None
+                                raise IOError, 'Operation forbidden for spectra with different world coordinates'
                             #data
                             res.data = self.data / other.data[:,np.newaxis,np.newaxis]
                             #variance
@@ -1185,9 +1196,10 @@ class Cube(object):
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
+                except IOError as e:
+                    raise e
                 except:
-                    print 'Operation forbidden'
-                    return None
+                    raise IOError, 'Operation forbidden'
 
     def __rdiv__(self, other):
         if self.data is None:
@@ -1201,21 +1213,25 @@ class Cube(object):
             if other.cube:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     return other.__div__(self)
+        except IOError as e:
+            raise e
         except:
             try:
                 if other.image:
                     return other.__div__(self)
+            except IOError as e:
+                raise e
             except:
                 try:
                     if other.spectrum:
                        return other.__div__(self)
+                except IOError as e:
+                    raise e
                 except:
-                    print 'Operation forbidden'
-                    return None
+                    raise IOError, 'Operation forbidden'
 
     def __pow__(self, other):
         """Computes the power exponent.
@@ -1410,9 +1426,10 @@ class Cube(object):
                 #other is a cube
                 if other.cube:
                     try:
-                        if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any() \
-                        and self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
-                            print 'Warning: cubes with different steps'
+                        if (self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any()) \
+                        or (self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step())):
+                            d = {'class': 'Cube', 'method': '__setitem__'}
+                            logger.warning("cubes with different steps",extra=d)
                         self.data[key] = other.data*np.double(other.fscale/self.fscale)
                     except:
                         self.data[key] = other.data*np.double(other.fscale/self.fscale)
@@ -1422,7 +1439,8 @@ class Cube(object):
                     if other.image:
                         try:
                             if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any():
-                                print 'Warning: images with different steps'
+                                d = {'class': 'Cube', 'method': '__setitem__'}
+                                logger.warning("cube & image with different steps",extra=d)
                             self.data[key] = other.data*np.double(other.fscale/self.fscale)
                         except:
                             self.data[key] = other.data*np.double(other.fscale/self.fscale)
@@ -1431,11 +1449,11 @@ class Cube(object):
                         #other is a spectrum
                         if other.spectrum:
                             if self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
-                                print 'Warning: cubes with different steps'
+                                d = {'class': 'Cube', 'method': '__setitem__'}
+                                logger.warning("cube & spectrum with different steps",extra=d)
                             self.data[key] = other.data*np.double(other.fscale/self.fscale) 
                     except:
-                        print 'Operation forbidden'
-                        return None
+                        raise IOError, 'Operation forbidden'
             
     def set_wcs(self, wcs=None, wave=None):
         """Sets the world coordinates (spatial and/or spectral).
@@ -1451,11 +1469,13 @@ class Cube(object):
             self.wcs.wcs.naxis1 = self.shape[2]
             self.wcs.wcs.naxis2 = self.shape[1]
             if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and (wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
-                print "warning: world coordinates and data have not the same dimensions."
+                d = {'class': 'Cube', 'method': 'set_wcs'}
+                logger.warning("world coordinates and data have not the same dimensions", extra=d)
         
         if wave is not None:
             if wave.shape is not None and wave.shape != self.shape[0]:
-                print "warning: wavelength coordinates and data have not the same dimensions."
+                d = {'class': 'Cube', 'method': 'set_wcs'}
+                logger.warning("wavelength coordinates and data have not the same dimensions", extra=d)
             self.wave = wave
             self.wave.shape = self.shape[0]
             
@@ -1559,15 +1579,6 @@ class Cube(object):
         else:
             return None
         
-#    def truncate(self,*args):
-#        print len(args)
-#        if len(args) == 1:
-#            return self._truncate(coord=args[0],mask=mask)
-#        elif len(args) == 6:
-#            raise DeprecationWarning,'cube.truncate'
-#            return self._truncate(coord=[[args[0],args[2],args[4]], [args[1],args[3],args[5]]],mask=mask)
-#        else:
-#            raise IOError,'truncate(coord=[[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]])'
     
     def truncate(self,coord,mask=True):
         """ Truncates the cube and return a sub-cube.
@@ -2401,7 +2412,8 @@ class CubeDisk(object):
                 try:
                     self.wcs = WCS(hdr)
                 except:
-                    print "error: wcs not copied."
+                    d = {'class': 'CubeDisk', 'method': '__init__'}
+                    logger.warning("wcs not copied", extra=d)
                     self.wcs = None
                 #Wavelength coordinates
                 if 'CDELT3' in hdr:
@@ -2436,7 +2448,8 @@ class CubeDisk(object):
                 try:
                     self.wcs = WCS(h) # WCS object from data header
                 except:
-                    print "error: wcs not copied."
+                    d = {'class': 'CubeDisk', 'method': '__init__'}
+                    logger.warning("wcs not copied", extra=d)
                     self.wcs = None
                 #Wavelength coordinates
                 if 'CDELT3' in h:
@@ -2680,7 +2693,6 @@ class CubeDisk(object):
                 loop = False
             except:
                 k = k/2
-        print k
         kmin = k
         kmax = 2*k
         while kmax<self.shape[0]:

@@ -73,32 +73,24 @@ class CalibFile(object):
                     self.nx = hdulist["DATA"].header["NAXIS1"]
                     self.ny = hdulist["DATA"].header["NAXIS2"]
                 except:
-                    print 'format error: no image DATA extension'
-                    print
+                    raise IOError, 'format error: no image DATA extension'
                 try:
                     naxis1 = hdulist["DQ"].header["NAXIS1"]
                     naxis2 = hdulist["DQ"].header["NAXIS2"]
                 except:
-                    print 'format error: no image DQ extension'
-                    print
+                    raise IOError, 'format error: no image DQ extension'
                 if naxis1!=self.nx and naxis2!=self.ny:
-                    print 'format error: DATA and DQ with different sizes'
-                    print
+                    raise IOError, 'format error: DATA and DQ with different sizes'
                 try:
                     naxis1 = hdulist["STAT"].header["NAXIS1"]
                     naxis2 = hdulist["STAT"].header["NAXIS2"]
                 except:
-                    print 'format error: no image STAT extension'
-                    print
+                    raise IOError, 'format error: no image STAT extension'
                 if naxis1!=self.nx and naxis2!=self.ny:
-                    print 'format error: DATA and STAT with different sizes'
-                    print       
+                    raise IOError, 'format error: DATA and STAT with different sizes'
                 hdulist.close()
             except IOError:
-                print 'IOError: file %s not found' % `filename`
-                print
-                self.filename = None
-                self.primary_header = None
+                raise IOError, 'IOError: file %s not found' % `filename`
         else:
             self.primary_header = pyfits.CardList()
             
@@ -161,9 +153,7 @@ class CalibFile(object):
         """
         if self.filename == None:
             if self.data == None:
-                print 'format error: empty DATA extension'
-                print
-                return None
+                raise IOError, 'format error: empty DATA extension'
             else:
                 data = np.memmap(self.data,dtype="float32",shape=(self.ny,self.nx))
                 return data
@@ -178,9 +168,7 @@ class CalibFile(object):
         """
         if self.filename == None:
             if self.dq == None:
-                print 'format error: empty DQ extension'
-                print
-                return None
+                raise IOError, 'format error: empty DQ extension'
             else:
                 dq = np.memmap(self.dq,dtype="int32",shape=(self.ny,self.nx))
                 return dq
@@ -195,9 +183,7 @@ class CalibFile(object):
         """
         if self.filename == None:
             if self.stat == None:
-                print 'format error: empty STAT extension'
-                print
-                return None
+                raise IOError, 'format error: empty STAT extension'
             else:
                 stat = np.memmap(self.stat,dtype="float32",shape=(self.ny,self.nx))
                 return stat
@@ -392,9 +378,7 @@ class CalibFile(object):
         """Multiplies by a number.
         """
         if isinstance(other,CalibFile):
-            print 'unsupported operand type * and / for CalibFile'
-            print
-            return None
+            raise IOError, 'unsupported operand type * and / for CalibFile'
         else:
             result = CalibFile()             
             result.primary_header = self.primary_header
@@ -426,9 +410,7 @@ class CalibFile(object):
             return self.__mul__(other)
         else:
             if isinstance(other,CalibFile):
-                print 'unsupported operand type * and / for CalibFile'
-                print
-                return None
+                raise IOError, 'unsupported operand type * and / for CalibFile'
             else:
                 # sum data values
                 newdata = np.ndarray.__mul__(self.get_data(),other)
@@ -530,12 +512,8 @@ class CalibDir(object):
         """Checks that other CalibDir contains the same ifu that the current object.
         """
         if self.type != other.type:
-            print 'error: objects with different types'
-            print
             return False
         if len(self.files) != len(other.files) or len(set(self.files)-set(other.files)) != 0:
-            print 'error: objects that contains different ifu data'
-            print
             return False   
         else:
             return True
@@ -554,9 +532,7 @@ class CalibDir(object):
         """Multiplies by a number.
         """
         if isinstance(other,CalibFile):
-            print 'unsupported operand type * and / for CalibFile'
-            print
-            return None
+            raise IOError, 'unsupported operand type * and / for CalibFile'
         else:
              return self._mp_operator(other,None,_mul_calib)
          
@@ -667,9 +643,7 @@ class CalibDir(object):
         if key in self.files:
             return self.files[key]
         else:
-            print 'invalid key'
-            print
-            return None
+            raise IOError, 'invalid key'
 
     def __setitem__(self,key,value):
         """Sets the corresponding CalibFile with value.
@@ -682,9 +656,7 @@ class CalibDir(object):
         if isinstance(value,CalibFile):
             self.files[key] = value
         else:
-            print 'format error: %s incompatible with CalibFile' %type(value)
-            print
-            return None
+            raise IOError, 'format error: %s incompatible with CalibFile' %type(value)
         
 
 def _add_calib_files(arglist):
@@ -703,9 +675,7 @@ def _add_calib_files(arglist):
     progress = arglist[11]
     if filename1 == None:
         if filedata1 == None or filestat1 == None or filedq1 == None:
-            print 'format error: empty extension'
-            print
-            return None
+            raise IOError, 'format error: empty extension'
         else:
             data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
             stat1 = np.memmap(filestat1,dtype="float32",shape=(ny,nx))
@@ -718,9 +688,7 @@ def _add_calib_files(arglist):
         hdulist.close()
     if filename2 == None:
         if filedata2 == None or filestat2 == None or filedq2 == None:
-            print 'format error: empty extension'
-            print
-            return None
+            raise IOError, 'format error: empty extension'
         else:
             data2 = np.memmap(filedata2,dtype="float32",shape=(ny,nx))
             stat2 = np.memmap(filestat2,dtype="float32",shape=(ny,nx))
@@ -753,9 +721,7 @@ def _add_calib(arglist):
     progress = arglist[8]
     if filename1 == None:
         if filedata1 == None:
-            print 'format error: empty extension'
-            print
-            return None
+            raise IOError, 'format error: empty extension'
         else:
             data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
     else:
@@ -785,9 +751,7 @@ def _sub_calib_files(arglist):
     progress = arglist[11]
     if filename1 == None:
         if filedata1 == None or filestat1 == None or filedq1 == None:
-            print 'format error: empty extension'
-            print
-            return None
+            raise IOError, 'format error: empty extension'
         else:
             data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
             stat1 = np.memmap(filestat1,dtype="float32",shape=(ny,nx))
@@ -800,9 +764,7 @@ def _sub_calib_files(arglist):
         hdulist.close()
     if filename2 == None:
         if filedata2 == None or filestat2 == None or filedq2 == None:
-            print 'format error: empty extension'
-            print
-            return None
+            raise IOError, 'format error: empty extension'
         else:
             data2 = np.memmap(filedata2,dtype="float32",shape=(ny,nx))
             stat2 = np.memmap(filestat2,dtype="float32",shape=(ny,nx))
@@ -835,9 +797,7 @@ def _sub_calib(arglist):
     progress = arglist[8]
     if filename1 == None:
         if filedata1 == None:
-            print 'format error: empty extension'
-            print
-            return None
+            raise IOError, 'format error: empty extension'
         else:
             data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
     else:
@@ -863,9 +823,7 @@ def _mul_calib(arglist):
     progress = arglist[8]
     if filename1 == None:
         if filedata1 == None or filestat1 == None:
-            print 'format error: empty extension'
-            print
-            return None
+            raise IOError, 'format error: empty extension'
         else:
             data1 = np.memmap(filedata1,dtype="float32",shape=(ny,nx))
             stat1 = np.memmap(filestat1,dtype="float32",shape=(ny,nx))

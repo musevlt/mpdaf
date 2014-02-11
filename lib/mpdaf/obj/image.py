@@ -24,6 +24,11 @@ from objs import is_int
 
 import warnings
 
+import logging
+FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger('mpdaf corelib')
+
 
 class ImageClicks: #Object used to save click on image plot.
     def __init__(self, binding_id, filename=None):
@@ -331,7 +336,8 @@ class Image(object):
                         self.wcs.set_naxis1(self.shape[1])
                         self.wcs.set_naxis2(self.shape[0])
                         if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
-                            print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                            d = {'class': 'Image', 'method': '__init__'}
+                            logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
                 else:
                     if ext is None:
                         try:
@@ -366,29 +372,28 @@ class Image(object):
                         self.wcs.set_naxis1(self.shape[1])
                         self.wcs.set_naxis2(self.shape[0])
                         if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
-                            print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                            d = {'class': 'Image', 'method': '__init__'}
+                            logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
                     self.var = None
                     if not notnoise:
-                        try:
-                            if ext is None:
+                        if ext is None:
+                            try:
+                                fstat = f['STAT']
+                            except:
                                 try:
-                                    fstat = f['STAT']
+                                    fstat = f['WHT']
                                 except:
-                                    try:
-                                        fstat = f['WHT']
-                                    except:
-                                        raise IOError, 'no STAT or WHT extension'
-                            else:
-                                n = ext[1]
-                                fstat = f[n]
+                                    raise IOError, 'no STAT or WHT extension'
+                        else:
+                            n = ext[1]
+                            fstat = f[n]
                                 
-                            if fstat.header['NAXIS'] != 2:
-                                raise IOError, 'Wrong dimension number in STAT extension'
-                            if fstat.header['NAXIS1'] != self.shape[1] and fstat.header['NAXIS2'] != self.shape[0]:
-                                raise IOError, 'Number of points in STAT not equal to DATA'
-                            self.var = np.array(fstat.data, dtype=float)
-                        except:
-                            self.var = None
+                        if fstat.header['NAXIS'] != 2:
+                            raise IOError, 'Wrong dimension number in STAT extension'
+                        if fstat.header['NAXIS1'] != self.shape[1] and fstat.header['NAXIS2'] != self.shape[0]:
+                            raise IOError, 'Number of points in STAT not equal to DATA'
+                        self.var = np.array(fstat.data, dtype=float)
+                        
                     # DQ extension
                     try:
                         mask = np.ma.make_mask(f['DQ'].data)
@@ -415,7 +420,8 @@ class Image(object):
                     self.wcs.set_naxis1(self.shape[1])
                     self.wcs.set_naxis2(self.shape[0])
                     if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
-                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                        d = {'class': 'Image', 'method': '__init__'}
+                        logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
         else:
             #possible data unit type
             self.unit = unit
@@ -446,10 +452,12 @@ class Image(object):
                     self.wcs.set_naxis1(self.shape[1])
                     self.wcs.set_naxis2(self.shape[0])
                     if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and ( wcs.wcs.naxis1!=self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
-                        print "warning: world coordinates and data have not the same dimensions. Shape of WCS object is modified."
+                        d = {'class': 'Image', 'method': '__init__'}
+                        logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
             except :
                 self.wcs = None
-                print "error: wcs not copied."
+                d = {'class': 'Image', 'method': '__init__'}
+                logger.warning("wcs not copied", extra=d)
         #Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
             self.data = np.ma.masked_invalid(self.data)
@@ -520,7 +528,8 @@ class Image(object):
                         else:
                             prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
                     except:
-                        print "warning: %s not copied in primary header"%card.key
+                        d = {'class': 'Image', 'method': 'write'}
+                        logger.warning("%s not copied in primary header", card.key, extra=d)
                         pass
         prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
         prihdu.header.update('author', 'MPDAF', 'origin of the file')
@@ -541,7 +550,8 @@ class Image(object):
                     if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2' and tbhdu.header.keys().count(card.key)==0:
                         prihdu.header.update(card.key, card.value, card.comment)
                 except:
-                    print "warning: %s not copied in data header"%card.key
+                    d = {'class': 'Image', 'method': 'write'}
+                    logger.warning("%s not copied in data header", card.key, extra=d)
                     pass
             
         cd = self.wcs.get_cd()
@@ -676,7 +686,8 @@ class Image(object):
                     self.wcs = self.wcs[item[0],item[1]]
                 except:
                     self.wcs = None
-                    print "error: wcs not copied."
+                    d = {'class': 'Image', 'method': 'resize'}
+                    logger.warning("wcs not copied", extra=d)
             except:
                 pass
 
@@ -711,8 +722,7 @@ class Image(object):
             #If not equal to None, world coordinates must be the same.
             if other.image:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     res = Image(shape=self.shape,fscale=self.fscale)
                     #coordinates
@@ -721,8 +731,7 @@ class Image(object):
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        print 'Operation forbidden for images with different world coordinates'
-                        return None
+                        raise IOError, 'Operation forbidden for images with different world coordinates'
                     #var
                     if self.var is None and other.var is None:
                         res.var = None
@@ -738,6 +747,8 @@ class Image(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #image + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
@@ -746,9 +757,10 @@ class Image(object):
                 if other.cube:
                     res = other.__add__(self)
                     return res
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -784,8 +796,7 @@ class Image(object):
             #If not equal to None, world coordinates must be the same.
             if other.image:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     res = Image(shape=self.shape,fscale=self.fscale)
                     #wcs
@@ -794,8 +805,7 @@ class Image(object):
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        print 'Operation forbidden for images with different world coordinates'
-                        return None
+                        raise IOError, 'Operation forbidden for images with different world coordinates'
                     #variance
                     if self.var is None and other.var is None:
                         res.var = None
@@ -811,6 +821,8 @@ class Image(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #image - cube1 = cube2 (cube2[k,j,i]=image[j,i] - cube1[k,j,i])
@@ -818,8 +830,7 @@ class Image(object):
                 #If not equal to None, world coordinates in spatial directions must be the same.
                 if other.cube:
                     if other.data is None or self.shape[0] != other.shape[1] or self.shape[1] != other.shape[2]:
-                        print 'Operation forbidden for images with different sizes'
-                        return None
+                        raise IOError, 'Operation forbidden for images with different sizes'
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape , wave= other.wave, fscale=self.fscale)
@@ -829,8 +840,7 @@ class Image(object):
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            print 'Operation forbidden for objects with different world coordinates'
-                            return None
+                            raise IOError, 'Operation forbidden for objects with different world coordinates'
                         #variance
                         if self.var is None and other.var is None:
                             res.var = None
@@ -846,8 +856,10 @@ class Image(object):
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
+                raise IOError,'Operation forbidden'
                 return None
 
     def __rsub__(self, other):
@@ -860,13 +872,16 @@ class Image(object):
         try:
             if other.image:
                 return other.__sub__(self)
+        except IOError as e:
+            raise e
         except:
             try:
                 if other.cube:
                    return other.__sub__(self)
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError,'Operation forbidden'
 
     def __mul__(self, other):
         """Operator \*.
@@ -901,8 +916,7 @@ class Image(object):
             #If not equal to None, world coordinates must be the same.
             if other.image:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     res = Image(shape=self.shape,fscale=self.fscale * other.fscale)
                     #coordinates
@@ -911,8 +925,7 @@ class Image(object):
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        print 'Operation forbidden for images with different world coordinates'
-                        return None
+                        raise IOError, 'Operation forbidden for images with different world coordinates'
                     #variance
                     if self.var is None and other.var is None:
                         res.var = None
@@ -928,6 +941,8 @@ class Image(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #image * cube1 = cube2 (cube2[k,j,i]=image[j,i] * cube1[k,j,i])
@@ -936,13 +951,14 @@ class Image(object):
                 if other.cube:
                     res = other.__mul__(self)
                     return res
+            except IOError as e:
+                raise e
             except:
                 try:
                     #image * spectrum = cube (cube[k,j,i]=image[j,i]*spectrum[k]
                     if other.spectrum:
                         if other.data is None :
-                            print 'Operation forbidden for empty data'
-                            return None
+                            raise IOError, 'Operation forbidden for empty data'
                         else:
                             from cube import Cube
                             shape = (other.shape,self.shape[0],self.shape[1])
@@ -962,9 +978,10 @@ class Image(object):
                             if self.unit == other.unit:
                                 res.unit = self.unit
                             return res
+                except IOError as e:
+                    raise e
                 except:
-                    print 'Operation forbidden'
-                    return None
+                    raise IOError, 'Operation forbidden'
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -1000,8 +1017,7 @@ class Image(object):
             #If not equal to None, world coordinates must be the same.
             if other.image:
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     res = Image(shape=self.shape,fscale=self.fscale / other.fscale)
                     #coordinates
@@ -1010,8 +1026,7 @@ class Image(object):
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        print 'Operation forbidden for images with different world coordinates'
-                        return None
+                        raise IOError, 'Operation forbidden for images with different world coordinates'
                     #variance
                     if self.var is None and other.var is None:
                         res.var = None
@@ -1027,6 +1042,8 @@ class Image(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #image / cube1 = cube2 (cube2[k,j,i]=image[j,i] / cube1[k,j,i])
@@ -1060,9 +1077,10 @@ class Image(object):
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def __rdiv__(self, other):
         if self.data is None:
@@ -1075,13 +1093,16 @@ class Image(object):
         try:
             if other.image:
                 return other.__sub__(self)
+        except IOError as e:
+            raise e
         except:
             try:
                 if other.cube:
                     return other.__sub__(self)
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def __pow__(self, other):
         """Computes the power exponent of data extensions (operator \*\*).
@@ -1253,11 +1274,11 @@ class Image(object):
                 #other is an image
                 if other.image:
                     if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any():
-                        print 'Warning: images with different steps'
+                        d = {'class': 'Image', 'method': '__setitem__'}
+                        logger.warning("images with different steps", extra=d)
                     self.data[key] = other.data*np.double(other.fscale/self.fscale)
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
         
     def set_wcs(self, wcs):
         """Sets the world coordinates.
@@ -1269,7 +1290,8 @@ class Image(object):
         self.wcs.set_naxis1(self.shape[1])
         self.wcs.set_naxis2(self.shape[0])
         if wcs.wcs.naxis1!=0 and wcs.wcs.naxis2 !=0 and (wcs.wcs.naxis1 != self.shape[1] or wcs.wcs.naxis2 != self.shape[0]):
-            print "warning: world coordinates and data have not the same dimensions."
+            d = {'class': 'Image', 'method': 'set_wcs'}
+            logger.warning("world coordinates and data have not the same dimensions", extra=d)
             
     def set_var(self, var):
         """Sets the variance array.
@@ -3399,10 +3421,11 @@ class Image(object):
     
                 mask = self.data.mask.__copy__()
                 self.data[k1:k2,l1:l2] += (ima.data[nk1:nk2,nl1:nl2] * ima.fscale / self.fscale)
-                self.data.mask = mask           
+                self.data.mask = mask 
+        except ValueError as e:
+            raise e          
         except:
-            print 'Operation forbidden'
-            return None
+            raise IOError, 'Operation forbidden'
         
     def segment(self, shape=(2,2), minsize=20, minpts=None, background = 20, interp='no', median=None):
         """Segments the image in a number of smaller images. Returns a list of images.
@@ -3543,8 +3566,7 @@ class Image(object):
                 data = np.ma.filled(self.data, np.ma.median(self.data))
             
             if self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
             else:
                 self.data = np.ma.array(signal.fftconvolve(data ,other ,mode='same'), mask=self.data.mask)
                 if self.var is not None:
@@ -3562,16 +3584,17 @@ class Image(object):
                     other_data = other.data.filled(np.ma.median(other.data))
                 
                 if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1]:
-                    print 'Operation forbidden for images with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for images with different sizes'
                 else:
                     self.data = np.ma.array(signal.fftconvolve(data ,other_data ,mode='same'), mask=self.data.mask)
                     self.fscale = self.fscale * other.fscale
                     if self.var is not None:
                         self.var = signal.fftconvolve(self.var ,other_data ,mode='same') *other.fscale*other.fscale
+        except IOError as e:
+            raise e
         except:
-            print 'Operation forbidden'
-            return None
+            raise IOError, 'Operation forbidden'
+        
     
     def fftconvolve(self, other, interp='no'):
         """Returns the convolution of the image with other using fft. Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_.
@@ -3700,8 +3723,8 @@ class Image(object):
                     res.var = signal.correlate2d(res.var ,other_data ,mode='same') *other.fscale*other.fscale
                 return res
         except:
-            print 'Operation forbidden'
-            return None
+            raise IOError, 'Operation forbidden'
+        
     
     def plot(self, title=None, scale='linear', vmin=None, vmax=None, zscale=False, colorbar=None, **kargs): 
         """Plots the image.

@@ -11,6 +11,11 @@ import warnings
 from scipy import integrate
 import matplotlib.cm as cm
 
+import logging
+FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger('mpdaf corelib')
+
 NB_SUBSLICERS = 4 # number of sub-slicers
 NB_SPEC_PER_SLICE = 75 # number of pixels per slice
 NB_SLICES = 12 # number of slices per sub-slicer
@@ -145,9 +150,7 @@ class Channel(object):
         def _wrapper(self,other):
             if isinstance(other,Channel):
                 if self.extname!=other.extname:
-                    print 'Error: operations on channel extensions with different names'
-                    print
-                    return None
+                    raise IOError, 'operations on channel extensions with different names'
                 result = Channel(self.extname)             
                 result.header = self.header
                 result.nx = self.nx
@@ -174,9 +177,7 @@ class Channel(object):
         def _wrapper(self,other):
             if isinstance(other,Channel):
                 if self.extname!=other.extname:
-                    print 'Error: operations on channel extensions with different names'
-                    print
-                    return None
+                    raise IOError, 'operations on channel extensions with different names'
                 result = Channel(self.extname)
                 result.header = self.header
                 result.nx = self.nx
@@ -701,7 +702,8 @@ class RawFile(object):
                                 self.nx = nx
                                 self.ny = ny
                             if nx!=self.nx and ny!=self.ny:
-                                print 'image extensions %s not considered (different sizes)'%extname
+                                d = {'class': 'RawFile', 'method': '__init__'}
+                                logger.warning("image extensions %s not considered (different sizes)", extname, extra=d)
                             else:
                                 self.channels[extname] = None
                         n = n+1
@@ -710,8 +712,7 @@ class RawFile(object):
                     self.next = len(self.channels)
                     hdulist.close()
             except IOError:
-                print 'IOError: file %s not found' % `filename`
-                print
+                raise IOError, 'file %s not found' % `filename`
                 self.filename = None
                 self.primary_header = None
         else:
@@ -797,9 +798,7 @@ class RawFile(object):
             if value.nx == self.nx and value.ny == self.ny:
                 self.channels[extname] = value
             else:
-                print 'format error: set an image extension with different sizes'
-                print
-                return None
+                raise IOError, 'set an image extension with different sizes'
         elif isinstance(value,np.ndarray):
             if np.shape(value) == (self.ny,self.nx):
                 chan = Channel(extname)
@@ -811,13 +810,9 @@ class RawFile(object):
                 if chan.header is not None:
                     chan.header.update(card.key, card.value, card.comment)
             else:
-                print 'format error: set an image extension with bad dimensions'
-                print
-                return None
+                raise IOError, 'set an image extension with bad dimensions'
         else:
-            print 'format error: %s incompatible with an image extension' %type(value)
-            print
-            return None
+            raise IOError, 'format %s incompatible with an image extension' %type(value)
 
 
     def __mul__(self,other):
@@ -1064,11 +1059,13 @@ class RawFile(object):
                 plt.text(ima.shape[0]-30, ima.shape[1]-30,'%i'%ichan,style='italic',bbox={'facecolor':'red', 'alpha':0.2, 'pad':10})
 
     
-    def reconstruct_white_image(self, mask=None):
+    def reconstruct_white_image(self, mask=None, verbose=True):
         """Reconstructs the white image of the FOV using a mask file.
         
         :param mask: mumdatMask_1x1.fits filename used fot this reconstruction (if None, the last file stored in mpdaf is used).
         :type mask: string
+        :param verbose: if True, progression is printed.
+        :type verbose: boolean
         
         :rtype: :class:`mpdaf.obj.Image`
         """
@@ -1089,8 +1086,8 @@ class RawFile(object):
         pool.close()
         
         num_tasks = len(processlist)
-        print 'reconstruct white image ...'
         if self.progress:
+            print 'reconstruct white image ...'
             import time
             import sys
             while (True):
@@ -1255,9 +1252,7 @@ def _process_operator(arglist):
     try:
         v2 = other.get_channel(k)
     except:
-        print 'Error: operations on raw files with different extensions'
-        print
-        return
+        raise IOError, 'operations on raw files with different extensions'
     out = function(v,v2)
     if progress:
         sys.stdout.write(".")

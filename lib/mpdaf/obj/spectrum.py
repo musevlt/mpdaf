@@ -21,6 +21,11 @@ import ABmag_filters
 
 import warnings
 
+import logging
+FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger('mpdaf corelib')
+
 class SpectrumClicks: # Object used to save click on spectrum plot.
     
     def __init__(self, binding_id, filename=None):
@@ -243,7 +248,8 @@ class Spectrum(object):
                 else:
                     self.wave = wave
                     if wave.shape is not None and wave.shape != self.shape:
-                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                        d = {'class': 'Spectrum', 'method': '__init__'}
+                        logger.warning("wavelength coordinates and data have not the same dimension: %s", "shape of WaveCoord object is modified", extra=d)
                     self.wave.shape = self.shape
             else:
                 self.primary_header = hdr.ascard
@@ -279,24 +285,22 @@ class Spectrum(object):
                 else:
                     self.wave = wave
                     if wave.shape is not None and wave.shape != self.shape:
-                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                        d = {'class': 'Spectrum', 'method': '__init__'}
+                        logger.warning("wavelength coordinates and data have not the same dimension: %s", "shape of WaveCoord object is modified", extra=d)
                     self.wave.shape = self.shape
                 # STAT extension
                 self.var = None
                 if not notnoise:
-                    try:
-                        if ext is None:
-                            fstat = f['STAT']
-                        else:
-                            n = ext[1]
-                            fstat = f[n]
-                        if fstat.header['NAXIS'] != 1:
-                            raise IOError, 'Wrong dimension number in STAT extension'
-                        if fstat.header['NAXIS1'] != self.shape:
-                            raise IOError, 'Number of points in STAT not equal to DATA'
-                        self.var = np.array(fstat.data, dtype=float)
-                    except:
-                        self.var = None
+                    if ext is None:
+                        fstat = f['STAT']
+                    else:
+                        n = ext[1]
+                        fstat = f[n]
+                    if fstat.header['NAXIS'] != 1:
+                        raise IOError, 'Wrong dimension number in STAT extension'
+                    if fstat.header['NAXIS1'] != self.shape:
+                        raise IOError, 'Number of points in STAT not equal to DATA'
+                    self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)
@@ -327,11 +331,13 @@ class Spectrum(object):
                 self.wave = wave
                 if wave is not None:
                     if wave.shape is not None and wave.shape != self.shape:
-                        print "warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified."
+                        d = {'class': 'Spectrum', 'method': '__init__'}
+                        logger.warning("wavelength coordinates and data have not the same dimension: %s", "shape of WaveCoord object is modified", extra=d)
                     self.wave.shape = self.shape
             except :
                 self.wave = None
-                print "error: wavelength solution not copied."
+                d = {'class': 'Spectrum', 'method': '__init__'}
+                logger.warning("wavelength solution not copied", extra=d)
         #Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
             self.data = np.ma.masked_invalid(self.data)
@@ -404,7 +410,8 @@ class Spectrum(object):
                         else:
                             prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
                     except:
-                        print "warning: %s not copied in primary header"%card.key
+                        d = {'class': 'Spectrum', 'method': 'write'}
+                        logger.warning("%s not copied in primary header", card.key, extra=d)
                         pass
         prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
         prihdu.header.update('author', 'MPDAF', 'origin of the file')
@@ -422,7 +429,8 @@ class Spectrum(object):
                     if tbhdu.header.keys().count(card.key)==0:
                         tbhdu.header.update(card.key, card.value, card.comment)
                 except:
-                    print "warning: %s not copied in data header"%card.key
+                    d = {'class': 'Spectrum', 'method': 'write'}
+                    logger.warning("%s not copied in data header", card.key, extra=d)
                     pass
         tbhdu.header.update('CRVAL1', self.wave.crval, 'Start in world coordinate')
         tbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
@@ -544,7 +552,8 @@ class Spectrum(object):
                     self.wave = self.wave[item]
                 except:
                     wave = None
-                    print "error: wavelength solution not copied."
+                    d = {'class': 'Spectrum', 'method': 'resize'}
+                    logger.warning("wavelength solution not copied", extra=d)
             except:
                 pass
 
@@ -577,8 +586,7 @@ class Spectrum(object):
             #If not equal to None, world coordinates must be the same.
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    print 'Operation forbidden for spectra with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for spectra with different sizes'
                 else:
                     res = Spectrum(shape=self.shape,fscale=self.fscale)
                     #coordinates
@@ -587,8 +595,7 @@ class Spectrum(object):
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        print 'Operation forbidden for spectra with different world coordinates'
-                        return None
+                        raise IOError, 'Operation forbidden for spectra with different world coordinates'
                     #data
                     res.data = self.data + other.data*np.double(other.fscale/self.fscale)
                     #variance
@@ -605,6 +612,8 @@ class Spectrum(object):
                         res.unit = self.unit
                     #return
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #spectrum + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+spectrum[k])
@@ -613,9 +622,10 @@ class Spectrum(object):
                 if other.cube:
                     res = other.__add__(self)
                     return res
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -648,8 +658,7 @@ class Spectrum(object):
             #If not equal to None, world coordinates must be the same.
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    print 'Operation forbidden for spectra with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for spectra with different sizes'
                 else:
                     res = Spectrum(shape=self.shape,fscale=self.fscale)
                     #coordinates
@@ -658,8 +667,7 @@ class Spectrum(object):
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        print 'Operation forbidden for spectra with different world coordinates'
-                        return None
+                        raise IOError, 'Operation forbidden for spectra with different world coordinates'
                     #data
                     res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
                     #variance
@@ -675,6 +683,8 @@ class Spectrum(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #spectrum - cube1 = cube2 (cube2[k,j,i]=spectrum[k]-cube1[k,j,i])
@@ -682,8 +692,7 @@ class Spectrum(object):
                 #If not equal to None, world coordinates in spectral direction must be the same.
                 if other.cube:
                     if other.data is None or self.shape != other.shape[0]:
-                        print 'Operation forbidden for objects with different sizes'
-                        return None
+                        raise IOError, 'Operation forbidden for objects with different sizes'
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape , wcs= other.wcs, fscale=self.fscale)
@@ -693,8 +702,7 @@ class Spectrum(object):
                         elif self.wave.isEqual(other.wave):
                             res.wave = self.wave
                         else:
-                            print 'Operation forbidden for spectra with different world coordinates'
-                            return None
+                            raise IOError, 'Operation forbidden for spectra with different world coordinates'
                         #data
                         res.data = self.data[:,np.newaxis,np.newaxis] - (other.data*np.double(other.fscale/self.fscale))
                         #variance
@@ -710,9 +718,10 @@ class Spectrum(object):
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def __rsub__(self, other):
         if self.data is None:
@@ -724,13 +733,16 @@ class Spectrum(object):
         try:
             if other.spectrum:
                 return other.__sub__(self)
+        except IOError as e:
+            raise e
         except:
             try:
                 if other.cube:
                     return other.__sub__(self)
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def __mul__(self, other):
         """ Operator \*.
@@ -762,8 +774,7 @@ class Spectrum(object):
             #If not equal to None, world coordinates must be the same.
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    print 'Operation forbidden for spectra with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for spectra with different sizes'
                 else:
                     res = Spectrum(shape=self.shape,fscale=self.fscale*other.fscale)
                     #coordinates
@@ -772,8 +783,7 @@ class Spectrum(object):
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        print 'Operation forbidden for spectra with different world coordinates'
-                        return None
+                        raise IOError, 'Operation forbidden for spectra with different world coordinates'
                     #data
                     res.data = self.data * other.data
                     #variance
@@ -790,13 +800,16 @@ class Spectrum(object):
                         res.unit = self.unit
                     #return
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 res = other.__mul__(self)
                 return res
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -831,8 +844,7 @@ class Spectrum(object):
             #If not equal to None, world coordinates must be the same.
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    print 'Operation forbidden for spectra with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for spectra with different sizes'
                 else:
                     res = Spectrum(shape=self.shape,fscale=self.fscale/other.fscale)
                     #coordinates
@@ -841,8 +853,7 @@ class Spectrum(object):
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        print 'Operation forbidden for spectra with different world coordinates'
-                        return None
+                        raise IOError, 'Operation forbidden for spectra with different world coordinates'
                     #data
                     res.data = self.data / other.data
                     #variance
@@ -858,6 +869,8 @@ class Spectrum(object):
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
+        except IOError as e:
+            raise e
         except:
             try:
                 #spectrum / cube1 = cube2 (cube2[k,j,i]=spectrum[k]/cube1[k,j,i])
@@ -865,8 +878,7 @@ class Spectrum(object):
                 #If not equal to None, world coordinates in spectral direction must be the same.
                 if other.cube:
                     if other.data is None or self.shape != other.shape[0]:
-                        print 'Operation forbidden for objects with different sizes'
-                        return None
+                        raise IOError, 'Operation forbidden for objects with different sizes'
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape , wcs= other.wcs, fscale=self.fscale/other.fscale)
@@ -876,8 +888,7 @@ class Spectrum(object):
                         elif self.wave.isEqual(other.wave):
                             res.wave = self.wave
                         else:
-                            print 'Operation forbidden for spectra with different world coordinates'
-                            return None
+                            raise IOError, 'Operation forbidden for spectra with different world coordinates'
                         #data
                         res.data = self.data[:,np.newaxis,np.newaxis] / other.data
                         #variance
@@ -893,9 +904,10 @@ class Spectrum(object):
                         if self.unit == other.unit:
                             res.unit = self.unit
                         return res
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def __rdiv__(self, other):
         if self.data is None:
@@ -907,12 +919,16 @@ class Spectrum(object):
         try:
             if other.spectrum:
                 return other.__div__(self)
+        except IOError as e:
+            raise e
         except:
             try:
                 if other.cube:
                     return other.__div__(self)
+            except IOError as e:
+                raise e
             except:
-                print 'Operation forbidden'
+                raise IOError, 'Operation forbidden'
                 return None
 
     def __pow__(self, other):
@@ -1061,11 +1077,11 @@ class Spectrum(object):
                 #other is a spectrum
                 if other.spectrum:
                     if self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
-                        print 'Warning: spectra with different steps'
+                        d = {'class': 'Spectrum', 'method': '__setitem__'}
+                        logger.warning("spectra with different steps", extra=d)
                     self.data[key] = other.data*np.double(other.fscale/self.fscale)
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
 
     def set_wcs(self, wave):
         """Sets the world coordinates.
@@ -1074,7 +1090,8 @@ class Spectrum(object):
           :type wave: :class:`mpdaf.obj.WaveCoord`
         """
         if wave.shape is not None and wave.shape != self.shape:
-            print "warning: wavelength coordinates and data have not the same dimensions."
+            d = {'class': 'Spectrum', 'method': 'set_wcs'}
+            logger.warning("wavelength coordinates and data have not the same dimensions", extra=d)
         self.wave = wave
         self.wave.shape = self.shape
             
@@ -2047,20 +2064,21 @@ class Spectrum(object):
         try:
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    print 'Operation forbidden for spectra with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for spectra with different sizes'
                 else:
                     self.data = np.ma.array(signal.convolve(self.data ,other.data ,mode='same'),mask=self.data.mask)
                     if self.var is not None:
                         self.var = signal.convolve(self.var ,other.data ,mode='same') *other.fscale*other.fscale
                     self.fscale = self.fscale * other.fscale
+        except IOError as e:
+            raise e
         except:
             try:
                 self.data = np.ma.array(signal.convolve(self.data ,other ,mode='same'),mask=self.data.mask)
                 if self.var is not None:
                     self.var = signal.convolve(self.var ,other ,mode='same')
             except:
-                print 'Operation forbidden'
+                raise IOError, 'Operation forbidden'
                 return None
      
     def convolve(self, other):
@@ -2086,21 +2104,21 @@ class Spectrum(object):
         try:
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    print 'Operation forbidden for spectra with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for spectra with different sizes'
                 else:
                     self.data = np.ma.array(signal.fftconvolve(self.data ,other.data ,mode='same'),mask=self.data.mask)
                     if self.var is not None:
                         self.var = signal.fftconvolve(self.var ,other.data ,mode='same')* other.fscale*other.fscale
                     self.fscale = self.fscale * other.fscale
+        except IOError as e:
+            raise e
         except:
             try:
                 self.data = np.ma.array(signal.fftconvolve(self.data ,other ,mode='same'),mask=self.data.mask)
                 if self.var is not None:
                     self.var = signal.fftconvolve(self.var ,other ,mode='same')
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
      
     def fftconvolve(self, other):
         """Returns the convolution of the spectrum with a other spectrum or an array using fft. Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_. self and other must have the same size.
@@ -2125,21 +2143,21 @@ class Spectrum(object):
         try:
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    print 'Operation forbidden for spectra with different sizes'
-                    return None
+                    raise IOError, 'Operation forbidden for spectra with different sizes'
                 else:
                     self.data = np.ma.array(signal.correlate(self.data ,other.data ,mode='same'),mask=self.data.mask)
                     if self.var is not None:
                         self.var = signal.correlate(self.var ,other.data ,mode='same')* other.fscale*other.fscale
                     self.fscale = self.fscale * other.fscale
+        except IOError as e:
+            raise e
         except:
             try:
                 self.data = np.ma.array(signal.correlate(self.data ,other ,mode='same'),mask=self.data.mask)
                 if self.var is not None:
                     self.var = signal.correlate(self.var ,other ,mode='same')
             except:
-                print 'Operation forbidden'
-                return None
+                raise IOError, 'Operation forbidden'
             
     def correlate(self, other):
         """Returns the cross-correlation of the spectrum with a other spectrum or an array. Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.

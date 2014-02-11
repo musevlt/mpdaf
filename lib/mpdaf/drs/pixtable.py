@@ -9,6 +9,11 @@ import tempfile
 import os
 import shutil
 import warnings
+import logging
+
+FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger('mpdaf corelib')
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, primary_header=None, save_as_ima=True, wcs=False):
     """Saves the object in a FITS file.
@@ -34,7 +39,8 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, prima
                 else:
                     prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
             except:
-                print card.key
+                d = {'class': 'pixtable', 'method': 'write'}
+                logger.warning("%s keyword not written", card.key, extra=d)
                 pass
     prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
     prihdu.header.update('author', 'MPDAF', 'origin of the file')
@@ -173,10 +179,7 @@ class PixTable(object):
                     self.wcs = False
                 
             except IOError:
-                print 'IOError: file %s not found' % `filename`
-                print
-                self.filename = None
-                self.primary_header = None
+                raise IOError, 'file %s not found' % `filename`
         else:
             self.primary_header = pyfits.CardList()
 
@@ -776,9 +779,11 @@ class PixTable(object):
         return (self.origin2ifu(origin), self.origin2slice(origin),
                 self.origin2ypix(origin), self.origin2xpix(origin))
 
-    def get_slices(self):
+    def get_slices(self, verbose=True):
         """Returns slices dictionary.
         
+        :param verbose: if True, progression is printed.
+        :type verbose: boolean
         :rtype: dict
         """
         col_origin = self.get_origin()
@@ -805,7 +810,8 @@ class PixTable(object):
         slices = {'list':slicelist, 'skypos':skypos, 'ifupix':ifupix, 'slicepix':slicepix,
                        'xpix':xpix, 'ypix':ypix}
 
-        print('%d slices found, structure returned in slices dictionary '%(nslice))
+        if verbose:
+            print('%d slices found, structure returned in slices dictionary '%(nslice))
 
         return slices
 

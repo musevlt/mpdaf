@@ -62,7 +62,6 @@ def mag_F606W():
 
 if __name__ == '__main__':
     (lbda,lmin,lmax,tck) = mag_RJohnson()
-    print tck
 
     lbda = np.arange(20)*100. + 5200.
 

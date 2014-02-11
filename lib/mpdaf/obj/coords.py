@@ -502,7 +502,7 @@ class WCS(object):
                 self.wcs.wcs.pc = new_pc
                 self.wcs.wcs.set()
             except:
-                print "problem with rotation"
+                raise StandardError,"problem with wcs rotation"
        
                 
     def rebin(self, step, start):
@@ -535,7 +535,7 @@ class WCS(object):
                 self.wcs.wcs.cdelt[1] *= factor[0]
                 self.wcs.wcs.set()
             except:
-                print "problem in wcs to rebin"
+                raise StandardError, "problem in wcs rebin"
     
     def rebin_factor(self, factor):
         """Rebins to a new coordinate system.
@@ -559,7 +559,7 @@ class WCS(object):
                 cdelt[1] *= factor[0]
                 res.wcs.wcs.cdelt = cdelt
             except:
-                print "problem in wcs to rebin"
+                raise StandardError, "problem in wcs rebin"
         res.wcs.wcs.set()
         old_cdelt = self.get_step()
         cdelt = res.get_step()
@@ -682,7 +682,7 @@ class WaveCoord(object):
         """
         if pixel is None:
             if self.shape is None:
-                print "error : wavelength coordinates without dimension"
+                raise IOError, "wavelength coordinates without dimension"
             else:
                 pix = np.arange(self.shape,dtype=np.float)
                 lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
@@ -769,7 +769,7 @@ class WaveCoord(object):
         """Returns the value of the last pixel.
         """
         if self.shape is None:
-            print "error : wavelength coordinates without dimension"
+            raise IOError, "wavelength coordinates without dimension"
         else:
             return self.coord(self.shape-1)
         
@@ -777,7 +777,7 @@ class WaveCoord(object):
         """Returns the wavelength range [Lambda_min,Lambda_max].
         """
         if self.shape is None:
-            print "error : wavelength coordinates without dimension"
+            raise IOError, "wavelength coordinates without dimension"
         else:
             return self.coord([0,self.shape-1])
     
