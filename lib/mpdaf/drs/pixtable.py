@@ -24,7 +24,11 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, prima
     :param save_as_ima: If True, pixtable is saved as multi-extension FITS image instead of FITS binary table.
     :type save_as_ima: bool
     """
-    pyfits.setExtensionNameCaseSensitive()
+    try:
+        #remove in pyfits version >3.0
+        pyfits.setExtensionNameCaseSensitive()
+    except:
+        pyfits.EXTENSION_NAME_CASE_SENSITIVE = True
     prihdu = pyfits.PrimaryHDU()
     warnings.simplefilter("ignore")
     if primary_header is not None:
