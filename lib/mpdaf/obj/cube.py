@@ -15,13 +15,14 @@ FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('mpdaf corelib')
 
+
 class iter_spe(object):
     def __init__(self, cube, index=False):
         self.cube = cube
         self.p = cube.shape[1]
         self.q = cube.shape[2]
         self.index = index
-        
+
     def next(self):
         """Returns the next spectrum."""
         if self.q == 0:
@@ -31,22 +32,22 @@ class iter_spe(object):
         if self.p == 0:
             raise StopIteration
         if self.index is False:
-            return self.cube[:,self.p-1,self.q]
+            return self.cube[:, self.p - 1, self.q]
         else:
-            return (self.cube[:,self.p-1,self.q],(self.p-1,self.q))
-    
+            return (self.cube[:, self.p - 1, self.q], (self.p - 1, self.q))
+
     def __iter__(self):
         """Returns the iterator itself."""
         return self
-    
-        
-class iter_ima(object): 
-    
+
+
+class iter_ima(object):
+
     def __init__(self, cube, index=False):
         self.cube = cube
         self.k = cube.shape[0]
         self.index = index
-        
+
     def next(self):
         """Returns the next image."""
         if self.k == 0:
@@ -55,24 +56,29 @@ class iter_ima(object):
         if self.index is False:
             return self.cube[self.k,:,:]
         else:
-            return (self.cube[self.k,:,:],self.k)
-    
+            return (self.cube[self.k,:,:], self.k)
+
     def __iter__(self):
         """Returns the iterator itself."""
         return self
 
+
 class Cube(object):
     """This class manages Cube objects.
-    
+
     :param filename: Possible FITS filename.
     :type filename: string
-    :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+    :param ext: Number/name of the data extension
+                or numbers/names of the data and variance extensions.
     :type ext: integer or (integer,integer) or string or (string,string)
-    :param notnoise: True if the noise Variance cube is not read (if it exists).
-  
+    :param notnoise: True if the noise Variance cube is not read
+                    (if it exists).
+
            Use notnoise=True to create cube without variance extension.
     :type notnoise: bool
-    :param shape: Lengths of data in Z, Y and X. Python notation is used (nz,ny,nx). (101,101,101) by default.
+    :param shape: Lengths of data in Z, Y and X.
+                  Python notation is used (nz,ny,nx).
+                  (101,101,101) by default.
     :type shape: integer or (integer,integer,integer)
     :param wcs: World coordinates.
     :type wcs: :class:`mpdaf.obj.WCS`
@@ -80,7 +86,8 @@ class Cube(object):
     :type wave: :class:`mpdaf.obj.WaveCoord`
     :param unit: Possible data unit type. None by default.
     :type unit: string
-    :param data: Array containing the pixel values of the cube. None by default.
+    :param data: Array containing the pixel values of the cube.
+                 None by default.
     :type data: float array
     :param var: Array containing the variance. None by default.
     :type var: float array
@@ -89,18 +96,19 @@ class Cube(object):
 
     Attributes
     ----------
-    
+
     filename (string) : Possible FITS filename.
 
     unit (string) : Possible data unit type
 
-    primary_header (pyfits.CardList) : Possible FITS primary header instance.
+    primary_header (pyfits.CardList) : FITS primary header instance.
 
-    data_header (pyfits.CardList) : Possible FITS data header instance.
+    data_header (pyfits.CardList) : FITS data header instance.
 
-    data (masked array numpy.ma) : Array containing the pixel values of the cube.
+    data (masked array numpy.ma) : Array containing the cube pixel values.
 
-    shape (array of 3 integers) : Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
+    shape (array of 3 integers) : Lengths of data in Z and Y and X
+                                 (python notation (nz,ny,nx)).
 
     var (array) : Array containing the variance.
 
@@ -109,22 +117,28 @@ class Cube(object):
     wcs (:class:`mpdaf.obj.WCS`) : World coordinates.
 
     wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates
-    
+
     ima (dict{string,:class:`mpdaf.obj.Image`} : dictionary of images
     """
-    
-    def __init__(self, filename=None, ext = None, notnoise=False, shape=(101,101,101), wcs = None, wave = None, unit=None, data=None, var=None,fscale=1.0, ima=True):
+
+    def __init__(self, filename=None, ext=None, notnoise=False, \
+                 shape=(101,101,101), wcs=None, wave=None, unit=None, \
+                 data=None, var=None, fscale=1.0, ima=True):
         """Creates a Cube object.
-        
+
         :param filename: Possible FITS filename.
         :type filename: string
-        :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+        :param ext: Number/name of the data extension or numbers/names
+                    of the data and variance extensions.
         :type ext: integer or (integer,integer) or string or (string,string)
-        :param notnoise: True if the noise Variance cube is not read (if it exists).
-  
+        :param notnoise: True if the noise Variance cube is not read
+                         (if it exists).
+
            Use notnoise=True to create cube without variance extension.
         :type notnoise: bool
-        :param shape: Lengths of data in Z, Y and X. Python notation is used (nz,ny,nx). (101,101,101) by default.
+        :param shape: Lengths of data in Z, Y and X.
+                    Python notation is used (nz,ny,nx).
+                    (101,101,101) by default.
         :type shape: integer or (integer,integer,integer)
         :param wcs: World coordinates.
         :type wcs: :class:`mpdaf.obj.WCS`
@@ -132,7 +146,8 @@ class Cube(object):
         :type wave: :class:`mpdaf.obj.WaveCoord`
         :param unit: Possible data unit type. None by default.
         :type unit: string
-        :param data: Array containing the pixel values of the cube. None by default.
+        :param data: Array containing the pixel values of the cube.
+                     None by default.
         :type data: float array
         :param var: Array containing the variance. None by default.
         :type var: float array
@@ -150,14 +165,16 @@ class Cube(object):
             # primary header
             hdr = f[0].header
             if len(f) == 1:
-                # if the number of extension is 1, we just read the data from the primary header
+                # if the number of extension is 1,
+                #we just read the data from the primary header
                 # test if image
                 if hdr['NAXIS'] != 3:
-                    raise IOError, 'Wrong dimension number: not a cube'
+                    raise IOError('Wrong dimension number: not a cube')
                 self.unit = hdr.get('BUNIT', None)
                 self.primary_header = pyfits.CardList()
                 self.data_header = hdr.ascard
-                self.shape = np.array([hdr['NAXIS3'],hdr['NAXIS2'],hdr['NAXIS1']])
+                self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'], \
+                                       hdr['NAXIS1']])
                 self.data = np.array(f[0].data, dtype=float)
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
@@ -166,9 +183,14 @@ class Cube(object):
                     self.wcs = WCS(hdr)
                 else:
                     self.wcs = wcs
-                    if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
+                    if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 and \
+                    (wcs.wcs.naxis1 != self.shape[2] or \
+                      wcs.wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
+                        logger.warning('world coordinates and data have not'\
+                                       ' the same dimensions: %s', \
+                                       "shape of WCS object is modified", \
+                                       extra=d)
                     self.wcs.wcs.naxis1 = self.shape[2]
                     self.wcs.wcs.naxis2 = self.shape[1]
                 #Wavelength coordinates
@@ -182,12 +204,16 @@ class Cube(object):
                     crpix = hdr.get('CRPIX3')
                     crval = hdr.get('CRVAL3')
                     cunit = hdr.get('CUNIT3','')
-                    self.wave = WaveCoord(crpix, cdelt, crval, cunit,self.shape[0])
+                    self.wave = WaveCoord(crpix, cdelt, crval, cunit, \
+                                          self.shape[0])
                 else:
                     self.wave = wave
                     if wave.shape is not None and wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning("wavelength coordinates and data have not the same dimensions: %s", "shape of WaveCoord object is modified", extra=d)
+                        logger.warning('wavelength coordinates and data have '\
+                                       'not the same dimensions: %s', \
+                                       'shape of WaveCoord object is '\
+                                       'modified', extra=d)
                     self.wave.shape = self.shape[0]
             else:
                 if ext is None:
@@ -201,20 +227,25 @@ class Cube(object):
                     h = f[n].header
                     d = np.array(f[n].data, dtype=float)
                 if h['NAXIS'] != 3:
-                    raise IOError, 'Wrong dimension number in DATA extension'
+                    raise IOError('Wrong dimension number in DATA extension')
                 self.unit = h.get('BUNIT', None)
                 self.primary_header = hdr.ascard
                 self.data_header = h.ascard
-                self.shape= np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
+                self.shape = np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
                 if wcs is None:
-                    self.wcs = WCS(h) # WCS object from data header
+                    self.wcs = WCS(h)  # WCS object from data header
                 else:
                     self.wcs = wcs
-                    if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
+                    if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 and \
+                    (wcs.wcs.naxis1 != self.shape[2] or \
+                      wcs.wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
+                        logger.warning('world coordinates and data have not '\
+                                       'the same dimensions: %s', \
+                                       'shape of WCS object is modified', \
+                                       extra=d)
                     self.wcs.wcs.naxis1 = self.shape[2]
                     self.wcs.wcs.naxis2 = self.shape[1]
                 #Wavelength coordinates
@@ -228,12 +259,17 @@ class Cube(object):
                     crpix = h.get('CRPIX3')
                     crval = h.get('CRVAL3')
                     cunit = h.get('CUNIT3','')
-                    self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
+                    self.wave = WaveCoord(crpix, cdelt, crval, cunit, \
+                                          self.shape[0])
                 else:
                     self.wave = wave
-                    if wave.shape is not None and wave.shape != self.shape[0]:
+                    if wave.shape is not None and \
+                    wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning("wavelength coordinates and data have not the same dimensions: %s", "shape of WaveCoord object is modified", extra=d)
+                        logger.warning('wavelength coordinates and data have '\
+                                       'not the same dimensions: %s', \
+                                       'shape of WaveCoord object is '\
+                                       'modified', extra=d)
                     self.wave.shape = self.shape[0]
                 self.var = None
                 if not notnoise:
@@ -243,9 +279,13 @@ class Cube(object):
                         n = ext[1]
                         fstat = f[n]
                     if fstat.header['NAXIS'] != 3:
-                        raise IOError, 'Wrong dimension number in variance extension'
-                    if fstat.header['NAXIS1'] != self.shape[2] and fstat.header['NAXIS2'] != self.shape[1] and fstat.header['NAXIS3'] != self.shape[0]:
-                        raise IOError, 'Number of points in STAT not equal to DATA'
+                        raise IOError('Wrong dimension number '\
+                                      'in variance extension')
+                    if fstat.header['NAXIS1'] != self.shape[2] and \
+                    fstat.header['NAXIS2'] != self.shape[1] and \
+                    fstat.header['NAXIS3'] != self.shape[0]:
+                        raise IOError('Number of points in STAT '\
+                                      'not equal to DATA')
                     self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
                 try:
@@ -259,15 +299,17 @@ class Cube(object):
                         try:
                             hdr = f[i].header
                             if hdr['NAXIS'] != 2:
-                                raise IOError, '  not an image'
+                                raise IOError('not an image')
                             unit = hdr.get('BUNIT', None)
                             primary_header = pyfits.CardList()
                             data_header = hdr.ascard
                             shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
                             data = np.array(f[i].data, dtype=float)
                             fscale = hdr.get('FSCALE', 1.0)
-                            wcs = WCS(hdr) # WCS object from data header
-                            self.ima[hdr.get('EXTNAME')] = Image(notnoise=True, shape=shape, wcs = wcs, unit=unit, data=data, fscale=fscale)
+                            wcs = WCS(hdr)  # WCS object from data header
+                            self.ima[hdr.get('EXTNAME')] = \
+                            Image(notnoise=True, shape=shape, wcs=wcs, \
+                                  unit=unit, data=data, fscale=fscale)
                         except:
                             pass
             f.close()
@@ -285,12 +327,12 @@ class Cube(object):
             elif len(shape) == 3:
                 pass
             else:
-                raise ValueError, 'dim with dimension > 3'
+                raise ValueError('dim with dimension > 3')
             if data is None:
                 self.data = None
                 self.shape = np.array(shape)
             else:
-                self.data = np.array(data, dtype = float)
+                self.data = np.array(data, dtype=float)
                 try:
                     self.shape = np.array(data.shape)
                 except:
@@ -299,31 +341,41 @@ class Cube(object):
             if notnoise or var is None:
                 self.var = None
             else:
-                self.var = np.array(var, dtype = float)
+                self.var = np.array(var, dtype=float)
             self.fscale = np.float(fscale)
             try:
                 self.wcs = wcs
                 if wcs is not None:
-                    if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and ( wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
+                    if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 and \
+                    (wcs.wcs.naxis1 != self.shape[2] or \
+                      wcs.wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning("world coordinates and data have not the same dimensions: %s", "shape of WCS object is modified", extra=d)
+                        logger.warning('world coordinates and data have not '\
+                                       'the same dimensions: %s', \
+                                       'shape of WCS object is modified', \
+                                       extra=d)
                     self.wcs.wcs.naxis1 = self.shape[2]
                     self.wcs.wcs.naxis2 = self.shape[1]
-            except :
+            except:
                 self.wcs = None
                 d = {'class': 'Cube', 'method': '__init__'}
-                logger.warning("world coordinates not copied: %s", "wcs attribute is None",extra=d)
+                logger.warning("world coordinates not copied: %s", \
+                               "wcs attribute is None",extra=d)
             try:
                 self.wave = wave
                 if wave is not None:
                     if wave.shape is not None and wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning("wavelength coordinates and data have not the same dimensions: %s", "shape of WaveCoord object is modified", extra=d)
+                        logger.warning('wavelength coordinates and data '\
+                                       'have not the same dimensions: %s', \
+                                       'shape of WaveCoord object is '\
+                                       'modified', extra=d)
                     self.wave.shape = self.shape[0]
-            except :
+            except:
                 self.wave = None
                 d = {'class': 'Cube', 'method': '__init__'}
-                logger.warning("wavelength solution not copied: %s", "wave attribute is None", extra=d)
+                logger.warning("wavelength solution not copied: %s", \
+                               "wave attribute is None", extra=d)
         #Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
             self.data = np.ma.masked_invalid(self.data)
@@ -355,31 +407,33 @@ class Cube(object):
         except:
             cub.wave = None
         return cub
-    
-    def clone(self, var = False):
-        """Returns a new cube of the same shape and coordinates, filled with zeros.
-        
+
+    def clone(self, var=False):
+        """Returns a new cube of the same shape and coordinates,
+        filled with zeros.
+
         :param var: Presence of the variance extension.
         :type var: bool
         """
         try:
-            wcs=self.wcs.copy()
+            wcs = self.wcs.copy()
         except:
-            wcs=None
+            wcs = None
         try:
-            wave=self.wave.copy()
+            wave = self.wave.copy()
         except:
-            wave=None
+            wave = None
         if var is False:
-            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape),unit=self.unit)
+            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape),\
+                        unit=self.unit)
         else:
-            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape),var=np.zeros(shape=self.shape),unit=self.unit)
+            cube = Cube(wcs=wcs,wave=wave,data=np.zeros(shape=self.shape),\
+                        var=np.zeros(shape=self.shape),unit=self.unit)
         return cube
-        
 
     def write(self,filename):
         """ Saves the cube in a FITS file.
-        
+
         :param filename: The FITS filename.
         :type filename: string
         """
@@ -398,17 +452,21 @@ class Cube(object):
                         if isinstance(card.value,str):
                             n = 80 - len(card.key) - 14
                             s = card.value[0:n]
-                            prihdu.header.update('hierarch %s' %card.key, s, card.comment)
+                            prihdu.header.update('hierarch %s' % card.key, s, \
+                                                 card.comment)
                         else:
-                            prihdu.header.update('hierarch %s' %card.key, card.value, card.comment)
+                            prihdu.header.update('hierarch %s' % card.key, \
+                                                 card.value, card.comment)
                     except:
                         d = {'class': 'Cube', 'method': 'write'}
-                        logger.warning("%s not copied in primary header", card.key, extra=d)
+                        logger.warning("%s not copied in primary header", \
+                                       card.key, extra=d)
                         pass
-        prihdu.header.update('date', str(datetime.datetime.now()), 'creation date')
+        prihdu.header.update('date', str(datetime.datetime.now()), \
+                             'creation date')
         prihdu.header.update('author', 'MPDAF', 'origin of the file')
         hdulist = [prihdu]
-        
+
         #world coordinates
         wcs_cards = self.wcs.to_header().ascard
 
@@ -416,75 +474,117 @@ class Cube(object):
         tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
         for card in self.data_header:
             try:
-                
-                if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2' and tbhdu.header.keys().count(card.key)==0:
+                if card.key != 'CD1_1' and card.key != 'CD1_2' and \
+                card.key != 'CD2_1' and card.key != 'CD2_2' and \
+                card.key != 'CDELT1' and card.key != 'CDELT2' and \
+                tbhdu.header.keys().count(card.key) == 0:
                     tbhdu.header.update(card.key, card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    if card.key != 'CD1_1' and card.key != 'CD1_2' and card.key != 'CD2_1' and card.key != 'CD2_2' and card.key != 'CDELT1' and card.key != 'CDELT2' and tbhdu.header.keys().count(card.key)==0:
-                        prihdu.header.update(card.key, card.value, card.comment)
+                    if card.key != 'CD1_1' and card.key != 'CD1_2' and \
+                    card.key != 'CD2_1' and card.key != 'CD2_2' and \
+                    card.key != 'CDELT1' and card.key != 'CDELT2' and \
+                    tbhdu.header.keys().count(card.key) == 0:
+                        prihdu.header.update(card.key, card.value, \
+                                             card.comment)
                 except:
                     d = {'class': 'Cube', 'method': 'write'}
-                    logger.warning("%s not copied in data header", card.key, extra=d)
+                    logger.warning("%s not copied in data header", card.key, \
+                                   extra=d)
                     pass
         # add world coordinate
         cd = self.wcs.get_cd()
-        tbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
-        tbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
-        tbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
-        tbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
-        tbhdu.header.update('CD1_1', cd[0,0], 'partial of first axis coordinate w.r.t. x ')
-        tbhdu.header.update('CD1_2', cd[0,1], 'partial of first axis coordinate w.r.t. y')
-        tbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
-        tbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
-        tbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
-        tbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
-        tbhdu.header.update('CD2_1', cd[1,0], 'partial of second axis coordinate w.r.t. x')
-        tbhdu.header.update('CD2_2', cd[1,1], 'partial of second axis coordinate w.r.t. y')
-        tbhdu.header.update('CRVAL3', self.wave.crval, 'Start in world coordinate')
-        tbhdu.header.update('CRPIX3', self.wave.crpix, 'Start in pixel')
-        tbhdu.header.update('CDELT3', self.wave.cdelt, 'Step in world coordinate')
-        tbhdu.header.update('CTYPE3', 'LINEAR', 'world coordinate type')
-        tbhdu.header.update('CUNIT3', self.wave.cunit, 'world coordinate units')
+        tbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, \
+                            wcs_cards['CTYPE1'].comment)
+        tbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, \
+                            wcs_cards['CUNIT1'].comment)
+        tbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, \
+                            wcs_cards['CRVAL1'].comment)
+        tbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, \
+                            wcs_cards['CRPIX1'].comment)
+        tbhdu.header.update('CD1_1', cd[0,0], \
+                            'partial of first axis coordinate w.r.t. x ')
+        tbhdu.header.update('CD1_2', cd[0,1], \
+                            'partial of first axis coordinate w.r.t. y')
+        tbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, \
+                            wcs_cards['CTYPE2'].comment)
+        tbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, \
+                            wcs_cards['CUNIT2'].comment)
+        tbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, \
+                            wcs_cards['CRVAL2'].comment)
+        tbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, \
+                            wcs_cards['CRPIX2'].comment)
+        tbhdu.header.update('CD2_1', cd[1,0], \
+                            'partial of second axis coordinate w.r.t. x')
+        tbhdu.header.update('CD2_2', cd[1,1], \
+                            'partial of second axis coordinate w.r.t. y')
+        tbhdu.header.update('CRVAL3', self.wave.crval, \
+                            'Start in world coordinate')
+        tbhdu.header.update('CRPIX3', self.wave.crpix, \
+                            'Start in pixel')
+        tbhdu.header.update('CDELT3', self.wave.cdelt, \
+                            'Step in world coordinate')
+        tbhdu.header.update('CTYPE3', 'LINEAR', \
+                            'world coordinate type')
+        tbhdu.header.update('CUNIT3', self.wave.cunit, \
+                            'world coordinate units')
         if self.unit is not None:
-            tbhdu.header.update('BUNIT', self.unit, 'data unit type')
-        tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            tbhdu.header.update('BUNIT', self.unit, \
+                                'data unit type')
+        tbhdu.header.update('FSCALE', self.fscale, \
+                            'Flux scaling factor')
         hdulist.append(tbhdu)
-        
+
         self.wcs = WCS(tbhdu.header)
-        
+
         # create spectrum STAT extension
         if self.var is not None:
             nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
             # add world coordinate
 #            for card in wcs_cards:
 #                nbhdu.header.update(card.key, card.value, card.comment)
-            nbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
-            nbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
-            nbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
-            nbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
-            nbhdu.header.update('CD1_1', cd[0,0], 'partial of first axis coordinate w.r.t. x ')
-            nbhdu.header.update('CD1_2', cd[0,1], 'partial of first axis coordinate w.r.t. y')
-            nbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
-            nbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
-            nbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
-            nbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
-            nbhdu.header.update('CD2_1', cd[1,0], 'partial of second axis coordinate w.r.t. x')
-            nbhdu.header.update('CD2_2', cd[1,1], 'partial of second axis coordinate w.r.t. y')
-            nbhdu.header.update('CRVAL3', self.wave.crval, 'Start in world coordinate')
-            nbhdu.header.update('CRPIX3', self.wave.crpix, 'Start in pixel')
-            nbhdu.header.update('CDELT3', self.wave.cdelt, 'Step in world coordinate')
-            nbhdu.header.update('CUNIT3', self.wave.cunit, 'world coordinate units')
+            nbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, \
+                                wcs_cards['CTYPE1'].comment)
+            nbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, \
+                                wcs_cards['CUNIT1'].comment)
+            nbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, \
+                                wcs_cards['CRVAL1'].comment)
+            nbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, \
+                                wcs_cards['CRPIX1'].comment)
+            nbhdu.header.update('CD1_1', cd[0,0], \
+                                'partial of first axis coordinate w.r.t. x ')
+            nbhdu.header.update('CD1_2', cd[0,1], \
+                                'partial of first axis coordinate w.r.t. y')
+            nbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, \
+                                wcs_cards['CTYPE2'].comment)
+            nbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, \
+                                wcs_cards['CUNIT2'].comment)
+            nbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, \
+                                wcs_cards['CRVAL2'].comment)
+            nbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, \
+                                wcs_cards['CRPIX2'].comment)
+            nbhdu.header.update('CD2_1', cd[1,0], \
+                                'partial of second axis coordinate w.r.t. x')
+            nbhdu.header.update('CD2_2', cd[1,1], \
+                                'partial of second axis coordinate w.r.t. y')
+            nbhdu.header.update('CRVAL3', self.wave.crval, \
+                                'Start in world coordinate')
+            nbhdu.header.update('CRPIX3', self.wave.crpix, \
+                                'Start in pixel')
+            nbhdu.header.update('CDELT3', self.wave.cdelt, \
+                                'Step in world coordinate')
+            nbhdu.header.update('CUNIT3', self.wave.cunit, \
+                                'world coordinate units')
             hdulist.append(nbhdu)
-            
+
         # create DQ extension
         if np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
             for card in wcs_cards:
                 dqhdu.header.update(card.key, card.value, card.comment)
             hdulist.append(dqhdu)
-            
+
         # save to disk
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True)
@@ -495,20 +595,22 @@ class Cube(object):
         """Prints information.
         """
         if self.filename is None:
-            print '%i X %i X %i cube (no name)' %(self.shape[0],self.shape[1],self.shape[2])
+            print '%i X %i X %i cube (no name)' % (self.shape[0],\
+                                                  self.shape[1],self.shape[2])
         else:
-            print '%i X %i X %i cube (%s)' %(self.shape[0],self.shape[1],self.shape[2],self.filename)
-        data = '.data(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
+            print '%i X %i X %i cube (%s)' % (self.shape[0],self.shape[1],\
+                                              self.shape[2],self.filename)
+        data = '.data(%i,%i,%i)' % (self.shape[0],self.shape[1],self.shape[2])
         if self.data is None:
             data = 'no data'
-        noise = '.var(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
+        noise = '.var(%i,%i,%i)' % (self.shape[0],self.shape[1],self.shape[2])
         if self.var is None:
             noise = 'no noise'
         if self.unit is None:
             unit = 'no unit'
         else:
             unit = self.unit
-        print '%s (%s) fscale=%g, %s' %(data,unit,self.fscale,noise)
+        print '%s (%s) fscale=%g, %s' % (data,unit,self.fscale,noise)
         if self.wcs is None:
             print 'no world coordinates for spatial direction'
         else:
@@ -521,52 +623,54 @@ class Cube(object):
         for k in self.ima.keys():
             print k,
         print '\n'
-            
 
-
-    def __le__ (self, item):
+    def __le__(self, item):
         """Masks data array where greater than a given value.
         Returns a cube object containing a masked array
         """
         result = self.copy()
         if self.data is not None:
-            result.data = np.ma.masked_greater(self.data, item/self.fscale)
+            result.data = np.ma.masked_greater(self.data, item / self.fscale)
         return result
 
-    def __lt__ (self, item):
+    def __lt__(self, item):
         """Masks data array where greater or equal than a given value.
         Returns a cube object containing a masked array
         """
         result = self.copy()
         if self.data is not None:
-            result.data = np.ma.masked_greater_equal(self.data, item/self.fscale)
+            result.data = np.ma.masked_greater_equal(self.data, \
+                                                     item / self.fscale)
         return result
 
-    def __ge__ (self, item):
+    def __ge__(self, item):
         """Masks data array where less than a given value.
         Returns a Cube object containing a masked array
         """
         result = self.copy()
         if self.data is not None:
-            result.data = np.ma.masked_less(self.data, item/self.fscale)
+            result.data = np.ma.masked_less(self.data, item / self.fscale)
         return result
 
-    def __gt__ (self, item):
+    def __gt__(self, item):
         """Masks data array where less or equal than a given value.
         Returns a Cube object containing a masked array
         """
         result = self.copy()
         if self.data is not None:
-            result.data = np.ma.masked_less_equal(self.data, item/self.fscale)
+            result.data = np.ma.masked_less_equal(self.data, \
+                                                  item / self.fscale)
         return result
 
     def resize(self):
         """Resizes the cube to have a minimum number of masked values.
         """
         if self.data is not None:
-            ksel = np.where(self.data.mask==False)
+            ksel = np.where(self.data.mask == False)
             try:
-                item = (slice(ksel[0][0], ksel[0][-1]+1, None), slice(ksel[1][0], ksel[1][-1]+1, None),slice(ksel[2][0], ksel[2][-1]+1, None))
+                item = (slice(ksel[0][0], ksel[0][-1] + 1, None), \
+                        slice(ksel[1][0], ksel[1][-1] + 1, None), \
+                        slice(ksel[2][0], ksel[2][-1] + 1, None))
                 self.data = self.data[item]
                 if is_int(item[0]):
                     if is_int(item[1]):
@@ -574,14 +678,17 @@ class Cube(object):
                     elif is_int(item[2]):
                         self.shape = np.array((1,self.data.shape[0],1))
                     else:
-                        self.shape = np.array((1,self.data.shape[0],self.data.shape[1]))
+                        self.shape = np.array((1,self.data.shape[0],\
+                                               self.data.shape[1]))
                 elif is_int(item[1]):
                     if is_int(item[2]):
                         self.shape = np.array((self.data.shape[0],1,1))
                     else:
-                        self.shape = np.array((self.data.shape[0],1,self.data.shape[1]))
+                        self.shape = np.array((self.data.shape[0],1,\
+                                               self.data.shape[1]))
                 elif is_int(item[2]):
-                        self.shape = np.array((self.data.shape[0],self.data.shape[1],1))
+                        self.shape = np.array((self.data.shape[0],\
+                                               self.data.shape[1],1))
                 else:
                     self.shape = self.data.shape
                 if self.var is not None:
@@ -591,23 +698,24 @@ class Cube(object):
                 except:
                     self.wcs = None
                     d = {'class': 'Cube', 'method': 'resize'}
-                    logger.warning("wcs not copied: %s", "wcs attribute is None", extra=d)
+                    logger.warning("wcs not copied: %s", \
+                                   "wcs attribute is None", extra=d)
                 try:
                     self.wave = self.wave[item[0]]
                 except:
                     self.wave = None
                     d = {'class': 'Cube', 'method': 'resize'}
-                    logger.warning("wavelength solution not copied: %s", "wave attribute is None", extra=d)
+                    logger.warning("wavelength solution not copied: %s", \
+                                   "wave attribute is None", extra=d)
             except:
                 pass
-            
+
     def unmask(self):
         """Unmasks the cube (just invalid data (nan,inf) are masked).
         """
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
-        
-        
+
     def mask_variance(self, threshold):
         """Masks pixels with a variance upper than threshold value.
 
@@ -615,14 +723,15 @@ class Cube(object):
         :type threshold: float
         """
         if self.var is None:
-            raise ValueError, 'Operation forbidden without variance extension.'
+            raise ValueError('Operation forbidden'\
+                             ' without variance extension.')
         else:
             ksel = np.where(self.var > threshold)
-            self.data[ksel] = np.ma.masked  
-            
+            self.data[ksel] = np.ma.masked
+
     def mask_selection(self, ksel):
         """Masks pixels corresponding to the selection.
-        
+
         :param ksel: elements depending on a condition (output of np.where)
         :type ksel: ndarray or tuple of ndarrays
         """
@@ -638,54 +747,70 @@ class Cube(object):
         If not equal to None, world coordinates must be the same.
 
         cube1 + image = cube2 (cube2[k,p,q]=cube1[k,p,q]+image[p,q])
-        The first two dimensions of cube1 must be equal to the image dimensions.
-        If not equal to None, world coordinates in spatial directions must be the same.
+        The first two dimensions of cube1 must be equal
+        to the image dimensions.
+        If not equal to None, world coordinates in spatial
+        directions must be the same.
 
         cube1 + spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]+spectrum[k])
         The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates in spectral direction must be the same.
+        If not equal to None, world coordinates
+        in spectral direction must be the same.
         """
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         if is_float(other) or is_int(other):
             # cube + number = cube (add pixel per pixel)
             res = self.copy()
-            res.data = self.data + (other/np.double(self.fscale))
+            res.data = self.data + (other / np.double(self.fscale))
             return res
         try:
             # cube1 + cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]+cube2[k,j,i])
             # dimensions must be the same
             # if not equal to None, world coordinates must be the same
             if other.cube:
-                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
-                   or self.shape[2] != other.shape[2]:
-                    raise IOError, 'Operation forbidden for images with different sizes'
+                if other.data is None or self.shape[0] != other.shape[0] \
+                or self.shape[1] != other.shape[1] \
+                or self.shape[2] != other.shape[2]:
+                    raise IOError('Operation forbidden for images '\
+                                  'with different sizes')
                 else:
-                    res = Cube(shape=self.shape , fscale=self.fscale)
+                    res = Cube(shape=self.shape, fscale=self.fscale)
                     #coordinate
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spectral direction'
+                        raise IOError('Operation forbidden for cubes with '\
+                                      'different world coordinates '\
+                                      'in spectral direction')
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
+                        raise IOError('Operation forbidden for cubes with '\
+                                      'different world coordinates '\
+                                      'in spatial directions')
                     #data
-                    res.data = self.data + (other.data*np.double(other.fscale/self.fscale))
+                    res.data = self.data + (other.data * \
+                                            np.double(other.fscale / \
+                                                      self.fscale))
                     #variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        res.var = other.var * np.double(other.fscale * \
+                                                        other.fscale / \
+                                                        self.fscale / \
+                                                        self.fscale)
                     elif other.var is None:
                         res.var = self.var
                     else:
-                        res.var = self.var + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        res.var = self.var + other.var * \
+                        np.double(other.fscale * other.fscale / \
+                                  self.fscale / self.fscale)
                     #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -695,31 +820,45 @@ class Cube(object):
         except:
             try:
                 # cube1 + image = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
-                # the 2 first dimensions of cube1 must be equal to the image dimensions
-                # if not equal to None, world coordinates in spatial directions must be the same
+                # the 2 first dimensions of cube1 must be equal
+                # to the image dimensions
+                # if not equal to None, world coordinates
+                # in spatial directions must be the same
                 if other.image:
-                    if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
-                        raise IOError, 'Operation forbidden for objects with different sizes'
+                    if other.data is None or self.shape[2] != other.shape[1] \
+                    or self.shape[1] != other.shape[0]:
+                        raise IOError('Operation forbidden for objects '\
+                                      'with different sizes')
                     else:
-                        res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale)
+                        res = Cube(shape=self.shape, wave=self.wave, \
+                                   fscale=self.fscale)
                         #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            raise IOError, 'Operation forbidden for objects with different world coordinates'
+                            raise IOError('Operation forbidden for objects '\
+                                          'with different world coordinates')
                         #data
-                        res.data = self.data + (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
+                        res.data = self.data + (other.data[np.newaxis,:,:] * \
+                                                np.double(other.fscale / \
+                                                          self.fscale))
                         #variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = np.ones(self.shape)*other.var[np.newaxis,:,:]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                            res.var = np.ones(self.shape) \
+                            * other.var[np.newaxis,:,:] \
+                            * np.double(other.fscale \
+                                        * other.fscale / self.fscale\
+                                         / self.fscale)
                         elif other.var is None:
                             res.var = self.var
                         else:
-                            res.var = self.var + other.var[np.newaxis,:,:]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                            res.var = self.var + other.var[np.newaxis,:,:] \
+                            * np.double(other.fscale * other.fscale \
+                                        / self.fscale / self.fscale)
                         #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -728,32 +867,47 @@ class Cube(object):
                 raise e
             except:
                 try:
-                    # cube1 + spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]+spectrum[k])
-                    # the last dimension of cube1 must be equal to the spectrum dimension
-                    # if not equal to None, world coordinates in spectral direction must be the same
+                    # cube1 + spectrum = cube2
+                    # (cube2[k,j,i]=cube1[k,j,i]+spectrum[k])
+                    # the last dimension of cube1 must be equal
+                    # to the spectrum dimension
+                    # if not equal to None, world coordinates
+                    # in spectral direction must be the same
                     if other.spectrum:
                         if other.data is None or other.shape != self.shape[0]:
-                            raise IOError, 'Operation forbidden for objects with different sizes'
+                            raise IOError('Operation forbidden for objects '\
+                                          'with different sizes')
                         else:
-                            res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale)
+                            res = Cube(shape=self.shape, wcs=self.wcs, \
+                                       fscale=self.fscale)
                             #coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
                                 res.wave = self.wave
                             else:
-                                raise IOError, 'Operation forbidden for spectra with different world coordinates'
+                                raise IOError('Operation forbidden for '\
+                                              'spectra with different '\
+                                              'world coordinates')
                             #data
-                            res.data = self.data + (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
+                            res.data = self.data + \
+                            (other.data[:,np.newaxis,np.newaxis] \
+                             * np.double(other.fscale / self.fscale))
                             #variance
                             if self.var is None and other.var is None:
                                 res.var = None
                             elif self.var is None:
-                                res.var = np.ones(self.shape) * other.var[:,np.newaxis,np.newaxis]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                                res.var = np.ones(self.shape) \
+                                * other.var[:,np.newaxis,np.newaxis] \
+                                * np.double(other.fscale * other.fscale \
+                                            / self.fscale / self.fscale)
                             elif other.var is None:
                                 res.var = self.var
                             else:
-                                res.var = self.var + other.var[:,np.newaxis,np.newaxis]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                                res.var = self.var \
+                                + other.var[:,np.newaxis,np.newaxis] \
+                                * np.double(other.fscale * other.fscale \
+                                            / self.fscale / self.fscale)
                             #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
@@ -761,7 +915,7 @@ class Cube(object):
                 except IOError as e:
                     raise e
                 except:
-                    raise IOError, 'Operation forbidden'
+                    raise IOError('Operation forbidden')
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -776,54 +930,70 @@ class Cube(object):
         If not equal to None, world coordinates must be the same.
 
         cube1 - image = cube2 (cube2[k,p,q]=cube1[k,p,q]-image[p,q])
-        The first two dimensions of cube1 must be equal to the image dimensions.
-        If not equal to None, world coordinates in spatial directions must be the same.
+        The first two dimensions of cube1 must be equal
+        to the image dimensions.
+        If not equal to None, world coordinates
+        in spatial directions must be the same.
 
         cube1 - spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]-spectrum[k])
         The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates in spectral direction must be the same.
+        If not equal to None, world coordinates
+        in spectral direction must be the same.
         """
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         if is_float(other) or is_int(other):
             #cube1 - number = cube2 (cube2[k,j,i]=cube1[k,j,i]-number)
             res = self.copy()
-            res.data = self.data - (other/np.double(self.fscale))
+            res.data = self.data - (other / np.double(self.fscale))
             return res
         try:
             #cube1 - cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]-cube2[k,j,i])
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.cube:
-                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                if other.data is None or self.shape[0] != other.shape[0] \
+                or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    raise IOError, 'Operation forbidden for images with different sizes'
+                    raise IOError('Operation forbidden for images '\
+                                  'with different sizes')
                 else:
-                    res = Cube(shape=self.shape , fscale=self.fscale)
+                    res = Cube(shape=self.shape, fscale=self.fscale)
                     #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spectral direction'
+                        raise IOError('Operation forbidden for cubes '\
+                                      'with different world coordinates '\
+                                      'in spectral direction')
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
+                        raise IOError('Operation forbidden for cubes '\
+                                      'with different world coordinates '\
+                                      'in spatial directions')
                     #data
-                    res.data = self.data - (other.data*np.double(other.fscale/self.fscale))
+                    res.data = self.data - (other.data \
+                                            * np.double(other.fscale \
+                                                        / self.fscale))
                     #variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        res.var = other.var * np.double(other.fscale \
+                                                        * other.fscale \
+                                                        / self.fscale \
+                                                        / self.fscale)
                     elif other.var is None:
                         res.var = self.var
                     else:
-                        res.var = self.var + other.var*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                        res.var = self.var + other.var \
+                        * np.double(other.fscale * other.fscale \
+                                    / self.fscale / self.fscale)
                     #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -833,31 +1003,44 @@ class Cube(object):
         except:
             try:
                 #cube1 - image = cube2 (cube2[k,j,i]=cube1[k,j,i]-image[j,i])
-                #The first two dimensions of cube1 must be equal to the image dimensions.
-                #If not equal to None, world coordinates in spatial directions must be the same.
+                #The first two dimensions of cube1 must be equal
+                # to the image dimensions.
+                #If not equal to None, world coordinates
+                #in spatial directions must be the same.
                 if other.image:
-                    if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
-                        raise IOError, 'Operation forbidden for images with different sizes'
+                    if other.data is None or self.shape[2] != other.shape[1] \
+                    or self.shape[1] != other.shape[0]:
+                        raise IOError('Operation forbidden for images '\
+                                      'with different sizes')
                     else:
-                        res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale)
+                        res = Cube(shape=self.shape, wave=self.wave, \
+                                   fscale=self.fscale)
                         #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            raise IOError, 'Operation forbidden for objects with different world coordinates'
+                            raise IOError('Operation forbidden for objects '\
+                                          'with different world coordinates')
                         #data
-                        res.data = self.data - (other.data[np.newaxis,:,:]*np.double(other.fscale/self.fscale))
+                        res.data = self.data - (other.data[np.newaxis,:,:] \
+                                                * np.double(other.fscale \
+                                                            / self.fscale))
                         #variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = np.ones(self.shape)*other.var[np.newaxis,:,:]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                            res.var = np.ones(self.shape) \
+                            * other.var[np.newaxis,:,:] \
+                            * np.double(other.fscale * other.fscale \
+                                        / self.fscale / self.fscale)
                         elif other.var is None:
                             res.var = self.var
                         else:
-                            res.var = self.var + other.var[np.newaxis,:,:]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                            res.var = self.var + other.var[np.newaxis,:,:] \
+                            * np.double(other.fscale * other.fscale \
+                                        / self.fscale / self.fscale)
                         #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -866,32 +1049,47 @@ class Cube(object):
                 raise e
             except:
                 try:
-                    #cube1 - spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]-spectrum[k])
-                    #The last dimension of cube1 must be equal to the spectrum dimension.
-                    #If not equal to None, world coordinates in spectral direction must be the same.
+                    #cube1 - spectrum = cube2
+                    #(cube2[k,j,i]=cube1[k,j,i]-spectrum[k])
+                    #The last dimension of cube1 must be equal
+                    #to the spectrum dimension.
+                    #If not equal to None, world coordinates
+                    #in spectral direction must be the same.
                     if other.spectrum:
                         if other.data is None or other.shape != self.shape[0]:
-                            raise IOError, 'Operation forbidden for objects with different sizes'
+                            raise IOError('Operation forbidden '\
+                                          'for objects with different sizes')
                         else:
-                            res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale)
+                            res = Cube(shape=self.shape, wcs=self.wcs, \
+                                       fscale=self.fscale)
                             #coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
                                 res.wave = self.wave
                             else:
-                                raise IOError, 'Operation forbidden for spectra with different world coordinates'
+                                raise IOError('Operation forbidden for '\
+                                              'spectra with different '\
+                                              'world coordinates')
                             #data
-                            res.data = self.data - (other.data[:,np.newaxis,np.newaxis]*np.double(other.fscale/self.fscale))
+                            res.data = self.data - \
+                            (other.data[:,np.newaxis,np.newaxis] \
+                             * np.double(other.fscale / self.fscale))
                             #variance
                             if self.var is None and other.var is None:
                                 res.var = None
                             elif self.var is None:
-                                res.var = np.ones(self.shape) * other.var[:,np.newaxis,np.newaxis]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                                res.var = np.ones(self.shape) \
+                                * other.var[:,np.newaxis,np.newaxis] \
+                                * np.double(other.fscale * other.fscale \
+                                            / self.fscale / self.fscale)
                             elif other.var is None:
                                 res.var = self.var
                             else:
-                                res.var = self.var + other.var[:,np.newaxis,np.newaxis]*np.double(other.fscale*other.fscale/self.fscale/self.fscale)
+                                res.var = self.var \
+                                + other.var[:,np.newaxis,np.newaxis] \
+                                * np.double(other.fscale * other.fscale \
+                                            / self.fscale / self.fscale)
                             #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
@@ -899,14 +1097,14 @@ class Cube(object):
                 except IOError as e:
                     raise e
                 except:
-                    raise IOError, 'Operation forbidden'
+                    raise IOError('Operation forbidden')
 
     def __rsub__(self, other):
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         if is_float(other) or is_int(other):
             res = self.copy()
-            res.data = (other/np.double(self.fscale)) - self.data
+            res.data = (other / np.double(self.fscale)) - self.data
             return res
         try:
             if other.cube:
@@ -926,7 +1124,7 @@ class Cube(object):
                 except IOError as e:
                     raise e
                 except:
-                    raise IOError, 'Operation forbidden'
+                    raise IOError('Operation forbidden')
 
     def __mul__(self, other):
         """Multiplies by other
@@ -938,15 +1136,18 @@ class Cube(object):
         If not equal to None, world coordinates must be the same.
 
         cube1 * image = cube2 (cube2[k,p,q]=cube1[k,p,q]*image[p,q])
-        The first two dimensions of cube1 must be equal to the image dimensions.
-        If not equal to None, world coordinates in spatial directions must be the same.
+        The first two dimensions of cube1 must be equal
+        to the image dimensions.
+        If not equal to None, world coordinates
+        in spatial directions must be the same.
 
         cube1 * spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]*spectrum[k])
         The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates in spectral direction must be the same.
+        If not equal to None, world coordinates
+        in spectral direction must be the same.
         """
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         if is_float(other) or is_int(other):
             #cube1 * number = cube2 (cube2[k,j,i]=cube1[k,j,i]*number)
             res = self.copy()
@@ -957,35 +1158,43 @@ class Cube(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.cube:
-                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                if other.data is None or self.shape[0] != other.shape[0] \
+                or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    raise IOError, 'Operation forbidden for images with different sizes'
+                    raise IOError('Operation forbidden for images '\
+                                  'with different sizes')
                 else:
-                    res = Cube(shape=self.shape , fscale=self.fscale*other.fscale)
+                    res = Cube(shape=self.shape, \
+                               fscale=self.fscale * other.fscale)
                     #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spectral direction'
+                        raise IOError('Operation forbidden for cubes with '\
+                                      'different world coordinates '\
+                                      'in spectral direction')
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
+                        raise IOError('Operation forbidden for cubes with '\
+                                      'different world coordinates '\
+                                      'in spatial directions')
                     #data
                     res.data = self.data * other.data
                     #variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var*self.data*self.data
+                        res.var = other.var * self.data * self.data
                     elif other.var is None:
-                        res.var = self.var*other.data*other.data
+                        res.var = self.var * other.data * other.data
                     else:
-                        res.var = other.var*self.data*self.data + self.var*other.data*other.data
+                        res.var = other.var * self.data * self.data \
+                        + self.var * other.data * other.data
                     #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -995,31 +1204,42 @@ class Cube(object):
         except:
             try:
                 #cube1 * image = cube2 (cube2[k,j,i]=cube1[k,j,i]*image[j,i])
-                #The first two dimensions of cube1 must be equal to the image dimensions.
-                #If not equal to None, world coordinates in spatial directions must be the same.
+                #The first two dimensions of cube1 must be equal
+                #to the image dimensions.
+                #If not equal to None, world coordinates
+                #in spatial directions must be the same.
                 if other.image:
-                    if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
-                        raise IOError, 'Operation forbidden for images with different sizes'
+                    if other.data is None or self.shape[2] != other.shape[1] \
+                    or self.shape[1] != other.shape[0]:
+                        raise IOError('Operation forbidden for images '\
+                                      'with different sizes')
                     else:
-                        res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale * other.fscale)
+                        res = Cube(shape=self.shape, wave=self.wave, \
+                                   fscale=self.fscale * other.fscale)
                         #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            raise IOError, 'Operation forbidden for objects with different world coordinates'
+                            raise IOError('Operation forbidden for objects '\
+                                          'with different world coordinates')
                         #data
                         res.data = self.data * other.data[np.newaxis,:,:]
                         #variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = other.var[np.newaxis,:,:]*self.data*self.data
+                            res.var = other.var[np.newaxis,:,:] \
+                            * self.data * self.data
                         elif other.var is None:
-                            res.var = self.var*other.data[np.newaxis,:,:]*other.data[np.newaxis,:,:]
+                            res.var = self.var * other.data[np.newaxis,:,:] \
+                            * other.data[np.newaxis,:,:]
                         else:
-                            res.var = other.var[np.newaxis,:,:]*self.data*self.data + self.var*other.data[np.newaxis,:,:]*other.data[np.newaxis,:,:]
+                            res.var = other.var[np.newaxis,:,:] \
+                            * self.data * self.data \
+                            + self.var * other.data[np.newaxis,:,:] \
+                            * other.data[np.newaxis,:,:]
                         #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -1028,32 +1248,46 @@ class Cube(object):
                 raise e
             except:
                 try:
-                    #cube1 * spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]*spectrum[k])
-                    #The last dimension of cube1 must be equal to the spectrum dimension.
-                    #If not equal to None, world coordinates in spectral direction must be the same.
+                    #cube1 * spectrum = cube2
+                    #(cube2[k,j,i]=cube1[k,j,i]*spectrum[k])
+                    #The last dimension of cube1 must be equal
+                    #to the spectrum dimension.
+                    #If not equal to None, world coordinates
+                    #in spectral direction must be the same.
                     if other.spectrum:
                         if other.data is None or other.shape != self.shape[0]:
-                            raise IOError, 'Operation forbidden for objects with different sizes'
+                            raise IOError('Operation forbidden for objects '\
+                                          'with different sizes')
                         else:
-                            res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale*other.fscale)
+                            res = Cube(shape=self.shape, wcs=self.wcs, \
+                                       fscale=self.fscale * other.fscale)
                             #coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
                                 res.wave = self.wave
                             else:
-                                raise IOError, 'Operation forbidden for spectra with different world coordinates'
+                                raise IOError('Operation forbidden for '\
+                                              'spectra with different '\
+                                              'world coordinates')
                             #data
-                            res.data = self.data * other.data[:,np.newaxis,np.newaxis]
+                            res.data = self.data \
+                            * other.data[:,np.newaxis,np.newaxis]
                             #variance
                             if self.var is None and other.var is None:
                                 res.var = None
                             elif self.var is None:
-                                res.var = other.var[:,np.newaxis,np.newaxis]*self.data*self.data
+                                res.var = other.var[:,np.newaxis,np.newaxis] \
+                                * self.data * self.data
                             elif other.var is None:
-                                res.var = self.var*other.data[:,np.newaxis,np.newaxis]*other.data[:,np.newaxis,np.newaxis]
+                                res.var = self.var \
+                                * other.data[:,np.newaxis,np.newaxis] \
+                                * other.data[:,np.newaxis,np.newaxis]
                             else:
-                                res.var = other.var[:,np.newaxis,np.newaxis]*self.data*self.data + self.var*other.data[:,np.newaxis,np.newaxis]*other.data[:,np.newaxis,np.newaxis]
+                                res.var = other.var[:,np.newaxis,np.newaxis] \
+                                * self.data * self.data + self.var \
+                                * other.data[:,np.newaxis,np.newaxis] \
+                                * other.data[:,np.newaxis,np.newaxis]
                             #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
@@ -1061,7 +1295,7 @@ class Cube(object):
                 except IOError as e:
                     raise e
                 except:
-                    raise IOError, 'Operation forbidden'
+                    raise IOError('Operation forbidden')
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -1075,16 +1309,20 @@ class Cube(object):
         Dimensions must be the same.
         If not equal to None, world coordinates must be the same.
 
-        cube1 / image = cube2 (cube2[k,p,q]=cube1[k,p,q]/image[p,q])
-        The first two dimensions of cube1 must be equal to the image dimensions.
-        If not equal to None, world coordinates in spatial directions must be the same.
+        cube1 / image = cube2
+        (cube2[k,p,q]=cube1[k,p,q]/image[p,q])
+        The first two dimensions of cube1 must be equal
+        to the image dimensions.
+        If not equal to None, world coordinates
+        in spatial directions must be the same.
 
         cube1 / spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]/spectrum[k])
         The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates in spectral direction must be the same.
+        If not equal to None, world coordinates
+        in spectral direction must be the same.
         """
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         if is_float(other) or is_int(other):
             #cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
             res = self.copy()
@@ -1095,35 +1333,46 @@ class Cube(object):
             #Dimensions must be the same.
             #If not equal to None, world coordinates must be the same.
             if other.cube:
-                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                if other.data is None or self.shape[0] != other.shape[0] \
+                or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    raise IOError, 'Operation forbidden for images with different sizes'
+                    raise IOError('Operation forbidden for images '\
+                                  'with different sizes')
                 else:
-                    res = Cube(shape=self.shape , fscale=self.fscale/other.fscale)
+                    res = Cube(shape=self.shape, \
+                               fscale=self.fscale / other.fscale)
                     #coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        raise IOError, 'Operation forbidden for cubes with different world coordinates in spectral direction'
+                        raise IOError('Operation forbidden for cubes with '\
+                                      'different world coordinates '\
+                                      'in spectral direction')
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        raise ValueError, 'Operation forbidden for cubes with different world coordinates in spatial directions'
+                        raise ValueError('Operation forbidden for cubes '\
+                                         'with different world coordinates' \
+                                         ' in spatial directions')
                     #data
                     res.data = self.data / other.data
                     #variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var*self.data*self.data/(other.data**4)
+                        res.var = other.var * self.data * self.data \
+                        / (other.data ** 4)
                     elif other.var is None:
-                        res.var = self.var*other.data*other.data/(other.data**4)
+                        res.var = self.var * other.data * other.data \
+                        / (other.data ** 4)
                     else:
-                        res.var = (other.var*self.data*self.data + self.var*other.data*other.data)/(other.data**4)
+                        res.var = (other.var * self.data * self.data \
+                                   + self.var * other.data * other.data) \
+                                   / (other.data ** 4)
                     #unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -1133,31 +1382,45 @@ class Cube(object):
         except:
             try:
                 #cube1 / image = cube2 (cube2[k,j,i]=cube1[k,j,i]/image[j,i])
-                #The first two dimensions of cube1 must be equal to the image dimensions.
-                #If not equal to None, world coordinates in spatial directions must be the same.
+                #The first two dimensions of cube1 must be equal
+                #to the image dimensions.
+                #If not equal to None, world coordinates
+                #in spatial directions must be the same.
                 if other.image:
-                    if other.data is None or self.shape[2] != other.shape[1] or self.shape[1] != other.shape[0]:
-                        raise IOError, 'Operation forbidden for images with different sizes'
+                    if other.data is None or self.shape[2] != other.shape[1] \
+                    or self.shape[1] != other.shape[0]:
+                        raise IOError('Operation forbidden for images '\
+                                      'with different sizes')
                     else:
-                        res = Cube(shape=self.shape , wave= self.wave, fscale=self.fscale / other.fscale)
+                        res = Cube(shape=self.shape, wave=self.wave, \
+                                   fscale=self.fscale / other.fscale)
                         #coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            raise IOError, 'Operation forbidden for objects with different world coordinates'
+                            raise IOError('Operation forbidden for objects '\
+                                          'with different world coordinates')
                         #data
                         res.data = self.data / other.data[np.newaxis,:,:]
                         #variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = other.var[np.newaxis,:,:]*self.data*self.data/(other.data[np.newaxis,:,:]**4)
+                            res.var = other.var[np.newaxis,:,:] \
+                            * self.data * self.data \
+                            / (other.data[np.newaxis,:,:] ** 4)
                         elif other.var is None:
-                            res.var = self.var*other.data[np.newaxis,:,:]*other.data[np.newaxis,:,:]/(other.data[np.newaxis,:,:]**4)
+                            res.var = self.var * other.data[np.newaxis,:,:] \
+                            * other.data[np.newaxis,:,:] \
+                            / (other.data[np.newaxis,:,:] ** 4)
                         else:
-                            res.var = (other.var[np.newaxis,:,:]*self.data*self.data + self.var*other.data[np.newaxis,:,:]*other.data[np.newaxis,:,:])/(other.data[np.newaxis,:,:]**4)
+                            res.var = (other.var[np.newaxis,:,:] \
+                                       * self.data * self.data + self.var \
+                                       * other.data[np.newaxis,:,:] \
+                                       * other.data[np.newaxis,:,:]) \
+                                       / (other.data[np.newaxis,:,:] ** 4)
                         #unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -1166,32 +1429,52 @@ class Cube(object):
                 raise e
             except:
                 try:
-                    #cube1 / spectrum = cube2 (cube2[k,j,i]=cube1[k,j,i]/spectrum[k])
-                    #The last dimension of cube1 must be equal to the spectrum dimension.
-                    #If not equal to None, world coordinates in spectral direction must be the same.
+                    #cube1 / spectrum = cube2
+                    #(cube2[k,j,i]=cube1[k,j,i]/spectrum[k])
+                    #The last dimension of cube1 must be equal
+                    #to the spectrum dimension.
+                    #If not equal to None, world coordinates
+                    #in spectral direction must be the same.
                     if other.spectrum:
                         if other.data is None or other.shape != self.shape[0]:
-                            raise IOError, 'Operation forbidden for objects with different sizes'
+                            raise IOError('Operation forbidden for objects '\
+                                          'with different sizes')
                         else:
-                            res = Cube(shape=self.shape , wcs= self.wcs, fscale=self.fscale/other.fscale)
+                            res = Cube(shape=self.shape, wcs=self.wcs, \
+                                       fscale=self.fscale / other.fscale)
                             #coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
                             elif self.wave.isEqual(other.wave):
                                 res.wave = self.wave
                             else:
-                                raise IOError, 'Operation forbidden for spectra with different world coordinates'
+                                raise IOError('Operation forbidden for '\
+                                              'spectra with different '\
+                                              'world coordinates')
                             #data
-                            res.data = self.data / other.data[:,np.newaxis,np.newaxis]
+                            res.data = self.data \
+                            / other.data[:,np.newaxis,np.newaxis]
                             #variance
                             if self.var is None and other.var is None:
                                 res.var = None
                             elif self.var is None:
-                                res.var = other.var[:,np.newaxis,np.newaxis]*self.data*self.data/(other.data[:,np.newaxis,np.newaxis]**4)
+                                res.var = other.var[:,np.newaxis,np.newaxis] \
+                                * self.data * self.data \
+                                / (other.data[:,np.newaxis,np.newaxis] ** 4)
                             elif other.var is None:
-                                res.var = self.var*other.data[:,np.newaxis,np.newaxis]*other.data[:,np.newaxis,np.newaxis]/(other.data[:,np.newaxis,np.newaxis]**4)
+                                res.var = self.var \
+                                * other.data[:,np.newaxis,np.newaxis] \
+                                * other.data[:,np.newaxis,np.newaxis] \
+                                / (other.data[:,np.newaxis,np.newaxis] ** 4)
                             else:
-                                res.var = (other.var[:,np.newaxis,np.newaxis]*self.data*self.data + self.var*other.data[:,np.newaxis,np.newaxis]*other.data[:,np.newaxis,np.newaxis])/(other.data[:,np.newaxis,np.newaxis]**4)
+                                res.var = (other.var[:,np.newaxis,np.newaxis] \
+                                           * self.data * self.data + self.var \
+                                           * other.data[:,np.newaxis,\
+                                                        np.newaxis] \
+                                           * other.data[:,np.newaxis,\
+                                                        np.newaxis]) \
+                                           / (other.data[:,np.newaxis,\
+                                                         np.newaxis] ** 4)
                             #unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
@@ -1199,11 +1482,11 @@ class Cube(object):
                 except IOError as e:
                     raise e
                 except:
-                    raise IOError, 'Operation forbidden'
+                    raise IOError('Operation forbidden')
 
     def __rdiv__(self, other):
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         if is_float(other) or is_int(other):
             #cube1 / number = cube2 (cube2[k,j,i]=cube1[k,j,i]/number)
             res = self.copy()
@@ -1211,9 +1494,11 @@ class Cube(object):
             return res
         try:
             if other.cube:
-                if other.data is None or self.shape[0] != other.shape[0] or self.shape[1] != other.shape[1] \
+                if other.data is None or self.shape[0] != other.shape[0] \
+                or self.shape[1] != other.shape[1] \
                    or self.shape[2] != other.shape[2]:
-                    raise IOError, 'Operation forbidden for images with different sizes'
+                    raise IOError('Operation forbidden for images '\
+                                  'with different sizes')
                 else:
                     return other.__div__(self)
         except IOError as e:
@@ -1227,38 +1512,39 @@ class Cube(object):
             except:
                 try:
                     if other.spectrum:
-                       return other.__div__(self)
+                        return other.__div__(self)
                 except IOError as e:
                     raise e
                 except:
-                    raise IOError, 'Operation forbidden'
+                    raise IOError('Operation forbidden')
 
     def __pow__(self, other):
         """Computes the power exponent.
         """
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         res = self.copy()
         if is_float(other) or is_int(other):
-            res.data = self.data**other
-            res.fscale = res.fscale**other
+            res.data = self.data ** other
+            res.fscale = res.fscale ** other
             res.var = None
         else:
-            raise ValueError, 'Operation forbidden'
+            raise ValueError('Operation forbidden')
         return res
 
     def _sqrt(self):
         """Computes the positive square-root of data extension.
         """
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         if self.var is not None:
-            self.var = 3*self.var*self.fscale**5/self.data**4
+            self.var = 3 * self.var * self.fscale ** 5 / self.data ** 4
         self.data = np.sqrt(self.data)
         self.fscale = np.sqrt(self.fscale)
-        
+
     def sqrt(self):
-        """Returns a cube containing the positive square-root of data extension.
+        """Returns a cube containing the positive square-root
+        of data extension.
         """
         res = self.copy()
         res._sqrt()
@@ -1268,7 +1554,7 @@ class Cube(object):
         """Computes the absolute value of data extension.
         """
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         self.data = np.abs(self.data)
         self.fscale = np.abs(self.fscale)
         self.var = None
@@ -1287,12 +1573,12 @@ class Cube(object):
         cube[:,p,q] = image
         cube[:,:,:] = sub-cube
         """
-        if isinstance(item, tuple) and len(item)==3:
+        if isinstance(item, tuple) and len(item) == 3:
             data = self.data[item]
             if is_int(item[0]):
                 if is_int(item[1]) and is_int(item[2]):
                     #return a float
-                    return data*self.fscale
+                    return data * self.fscale
                 else:
                     #return an image
                     from image import Image
@@ -1309,9 +1595,10 @@ class Cube(object):
                         wcs = self.wcs[item[1],item[2]]
                     except:
                         wcs = None
-                    res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale)
+                    res = Image(shape=shape, wcs=wcs, unit=self.unit, \
+                                fscale=self.fscale)
                     res.data = data
-                    res.var =var
+                    res.var = var
                     return res
             elif is_int(item[1]) and is_int(item[2]):
                 #return a spectrum
@@ -1324,7 +1611,8 @@ class Cube(object):
                     wave = self.wave[item[0]]
                 except:
                     wave = None
-                res = Spectrum(shape=shape, wave = wave, unit=self.unit, fscale=self.fscale)
+                res = Spectrum(shape=shape, wave=wave, unit=self.unit, \
+                               fscale=self.fscale)
                 res.data = data
                 res.var = var
                 return res
@@ -1347,12 +1635,13 @@ class Cube(object):
                     wave = self.wave[item[0]]
                 except:
                     wave = None
-                res = Cube(shape=shape, wcs = wcs, wave = wave, unit=self.unit, fscale=self.fscale)
+                res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit, \
+                           fscale=self.fscale)
                 res.data = data
                 res.var = var
                 return res
         else:
-            raise ValueError, 'Operation forbidden'
+            raise ValueError('Operation forbidden')
 
     def get_lambda(self,lbda_min,lbda_max=None):
         """Returns the sub-cube corresponding to a wavelength range.
@@ -1366,15 +1655,16 @@ class Cube(object):
         if lbda_max is None:
             lbda_max = lbda_min
         if self.wave is None:
-            raise ValueError, 'Operation forbidden without world coordinates along the spectral direction'
+            raise ValueError('Operation forbidden without world coordinates '\
+                             'along the spectral direction')
         else:
             pix_min = max(0,int(self.wave.pixel(lbda_min)))
             pix_max = min(self.shape[0],int(self.wave.pixel(lbda_max)) + 1)
-            if (pix_min+1)==pix_max:
-                return self.data[pix_min,:,:]*self.fscale
+            if (pix_min + 1) == pix_max:
+                return self.data[pix_min,:,:] * self.fscale
             else:
                 return self[pix_min:pix_max,:,:]
-            
+
     def get_step(self):
         """Returns the cube steps [dlbda,dy,dx].
         """
@@ -1382,7 +1672,7 @@ class Cube(object):
         step[0] = self.wave.cdelt
         step[1:] = self.wcs.get_step()
         return step
-    
+
     def get_range(self):
         """Returns [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ].
         """
@@ -1390,7 +1680,7 @@ class Cube(object):
         range[:,0] = self.wave.get_range()
         range[:,1:] = self.wcs.get_range()
         return range
-    
+
     def get_start(self):
         """Returns [lbda,y,x] corresponding to pixel (0,0,0).
         """
@@ -1398,7 +1688,7 @@ class Cube(object):
         start[0] = self.wave.get_start()
         start[1:] = self.wcs.get_start()
         return start
-    
+
     def get_end(self):
         """Returns [lbda,y,x] corresponding to pixel (-1,-1,-1).
         """
@@ -1406,55 +1696,71 @@ class Cube(object):
         end[0] = self.wave.get_end()
         end[1:] = self.wcs.get_end()
         return end
-    
+
     def get_rot(self):
         """Returns the rotation angle.
         """
         return self.wcs.get_rot()
-        
-            
+
     def __setitem__(self,key,other):
         """Sets the corresponding part of data.
         """
         #self.data[key] = value
         if self.data is None:
-            raise ValueError, 'empty data array'
+            raise ValueError('empty data array')
         try:
-            self.data[key] = other/np.double(self.fscale)
+            self.data[key] = other / np.double(self.fscale)
         except:
             try:
                 #other is a cube
                 if other.cube:
                     try:
-                        if (self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any()) \
-                        or (self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step())):
+                        if (self.wcs is not None and other.wcs is not None \
+                            and (self.wcs.get_step() != other.wcs.get_step())\
+                            .any()) \
+                        or (self.wave is not None and other.wave is not None \
+                            and (self.wave.get_step() != \
+                                 other.wave.get_step())):
                             d = {'class': 'Cube', 'method': '__setitem__'}
-                            logger.warning("cubes with different steps",extra=d)
-                        self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                            logger.warning("cubes with different steps", \
+                                           extra=d)
+                        self.data[key] = other.data \
+                        * np.double(other.fscale / self.fscale)
                     except:
-                        self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                        self.data[key] = other.data \
+                        * np.double(other.fscale / self.fscale)
             except:
                 try:
                     #other is an image
                     if other.image:
                         try:
-                            if self.wcs is not None and other.wcs is not None and (self.wcs.get_step()!=other.wcs.get_step()).any():
+                            if self.wcs is not None and other.wcs is not None \
+                            and (self.wcs.get_step() != other.wcs.get_step())\
+                            .any():
                                 d = {'class': 'Cube', 'method': '__setitem__'}
-                                logger.warning("cube & image with different steps",extra=d)
-                            self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                                logger.warning("cube & image with different '\
+                                'steps", extra=d)
+                            self.data[key] = other.data \
+                            * np.double(other.fscale / self.fscale)
                         except:
-                            self.data[key] = other.data*np.double(other.fscale/self.fscale)
+                            self.data[key] = other.data \
+                            * np.double(other.fscale / self.fscale)
                 except:
                     try:
                         #other is a spectrum
                         if other.spectrum:
-                            if self.wave is not None and other.wave is not None and (self.wave.get_step()!=other.wave.get_step()):
+                            if self.wave is not None \
+                            and other.wave is not None \
+                            and (self.wave.get_step() != \
+                                 other.wave.get_step()):
                                 d = {'class': 'Cube', 'method': '__setitem__'}
-                                logger.warning("cube & spectrum with different steps",extra=d)
-                            self.data[key] = other.data*np.double(other.fscale/self.fscale) 
+                                logger.warning('cube & spectrum with '\
+                                'different steps', extra=d)
+                            self.data[key] = other.data \
+                            * np.double(other.fscale / self.fscale)
                     except:
-                        raise IOError, 'Operation forbidden'
-            
+                        raise IOError('Operation forbidden')
+
     def set_wcs(self, wcs=None, wave=None):
         """Sets the world coordinates (spatial and/or spectral).
 
@@ -1468,48 +1774,56 @@ class Cube(object):
             self.wcs = wcs
             self.wcs.wcs.naxis1 = self.shape[2]
             self.wcs.wcs.naxis2 = self.shape[1]
-            if wcs.wcs.naxis1 !=0 and wcs.wcs.naxis2 != 0 and (wcs.wcs.naxis1 != self.shape[2] or wcs.wcs.naxis2 != self.shape[1]):
+            if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 \
+            and (wcs.wcs.naxis1 != self.shape[2] \
+                 or wcs.wcs.naxis2 != self.shape[1]):
                 d = {'class': 'Cube', 'method': 'set_wcs'}
-                logger.warning("world coordinates and data have not the same dimensions", extra=d)
-        
+                logger.warning('world coordinates and data have not the same '\
+                               'dimensions', extra=d)
         if wave is not None:
             if wave.shape is not None and wave.shape != self.shape[0]:
                 d = {'class': 'Cube', 'method': 'set_wcs'}
-                logger.warning("wavelength coordinates and data have not the same dimensions", extra=d)
+                logger.warning('wavelength coordinates and data have not '\
+                               'the same dimensions', extra=d)
             self.wave = wave
             self.wave.shape = self.shape[0]
-            
+
     def set_var(self,var):
         """Sets the variance array.
-        
+
         :param var: Input variance array. If None, variance is set with zeros.
         :type var: float array
         """
         if var is None:
             self.var = np.zeros((self.shape[0],self.shape[1], self.shape[2]))
         else:
-            if self.shape[0] == np.shape(var)[0] and self.shape[1] == np.shape(var)[1] and self.shape[2] == np.shape(var)[2]:
+            if self.shape[0] == np.shape(var)[0] \
+            and self.shape[1] == np.shape(var)[1] \
+            and self.shape[2] == np.shape(var)[2]:
                 self.var = var
             else:
-                raise ValueError, 'var and data have not the same dimensions.'
-            
+                raise ValueError('var and data have not the same dimensions.')
+
     def sum(self,axis=None):
         """Returns the sum over the given axis.
-        
-        :param axis: Axis or axes along which a sum is performed. 
-        
-                    The default (axis = None) is perform a sum over all the dimensions of the cube and returns a float.
-                    
-                    axis = 0  is perform a sum over the wavelength dimension and returns an image.
-                    
-                    axis = (1,2) is perform a sum over the (X,Y) axes and returns a spectrum.
-                    
+
+        :param axis: Axis or axes along which a sum is performed.
+
+                    The default (axis = None) is perform a sum over all
+                    the dimensions of the cube and returns a float.
+
+                    axis = 0  is perform a sum over the wavelength dimension
+                    and returns an image.
+
+                    axis = (1,2) is perform a sum over the (X,Y) axes and
+                    returns a spectrum.
+
                     Other cases return None.
         :type axis: None or int or tuple of ints
         """
         if axis is None:
-            return self.data.sum()*self.fscale
-        elif axis==0:
+            return self.data.sum() * self.fscale
+        elif axis == 0:
             #return an image
             from image import Image
             data = np.ma.sum(self.data, axis)
@@ -1517,11 +1831,12 @@ class Cube(object):
                 var = np.sum(self.var,axis)
             else:
                 var = None
-            res = Image(shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
+            res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit, \
+                        fscale=self.fscale)
             res.data = data
             res.var = var
             return res
-        elif axis==tuple([1,2]):
+        elif axis == tuple([1,2]):
             #return a spectrum
             from spectrum import Spectrum
             data = np.ma.sum(self.data,axis=1).sum(axis=1)
@@ -1529,30 +1844,34 @@ class Cube(object):
                 var = np.ma.sum(self.var,axis=1).sum(axis=1)
             else:
                 var = None
-            res = Spectrum(shape=data.shape[0], wave = self.wave, unit=self.unit, fscale=self.fscale)
+            res = Spectrum(shape=data.shape[0], wave=self.wave, \
+                           unit=self.unit, fscale=self.fscale)
             res.data = data
             res.var = var
             return res
         else:
             return None
-        
+
     def mean(self,axis=None):
         """ Returns the mean over the given axis.
-        
-        :param axis: Axis or axes along which a mean is performed. 
-        
-                    The default (axis = None) is perform a mean over all the dimensions of the cube and returns a float.
-                    
-                    axis = 0  is perform a mean over the wavelength dimension and returns an image.
-                    
-                    axis = (1,2) is perform a mean over the (X,Y) axes and returns a spectrum.
-                    
+
+        :param axis: Axis or axes along which a mean is performed.
+
+                    The default (axis = None) is perform a mean over all the
+                    dimensions of the cube and returns a float.
+
+                    axis = 0  is perform a mean over the wavelength dimension
+                    and returns an image.
+
+                    axis = (1,2) is perform a mean over the (X,Y) axes and
+                    returns a spectrum.
+
                     Other cases return None.
         :type axis: None or int or tuple of ints
         """
         if axis is None:
-            return self.data.mean()*self.fscale
-        elif axis==0:
+            return self.data.mean() * self.fscale
+        elif axis == 0:
             #return an image
             from image import Image
             data = np.ma.mean(self.data, axis)
@@ -1560,11 +1879,12 @@ class Cube(object):
                 var = np.ma.mean(self.var, axis)
             else:
                 var = None
-            res = Image(shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale)
+            res = Image(shape=data.shape, wcs=self.wcs, \
+                        unit=self.unit, fscale=self.fscale)
             res.data = data
             res.var = var
             return res
-        elif axis==tuple([1,2]):
+        elif axis == tuple([1,2]):
             #return a spectrum
             from spectrum import Spectrum
             data = np.ma.mean(self.data, axis=1).mean(axis=1)
@@ -1572,24 +1892,27 @@ class Cube(object):
                 var = np.ma.mean(self.var, axis=1).mean(axis=1)
             else:
                 var = None
-            res = Spectrum(notnoise=True, shape=data.shape[0], wave = self.wave, unit=self.unit, fscale=self.fscale)
+            res = Spectrum(notnoise=True, shape=data.shape[0], \
+                           wave=self.wave, \
+                           unit=self.unit, fscale=self.fscale)
             res.data = data
             res.var = var
             return res
         else:
             return None
-        
-    
+
     def truncate(self,coord,mask=True):
         """ Truncates the cube and return a sub-cube.
-        
-            :param coord: array containing the sub-cube boundaries [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]] 
+
+            :param coord: array containing the sub-cube boundaries
+            [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
             (output of `mpdaf.obj.cube.get_range`)
             x and y in degrees
             :type coord: array
-            :param mask: if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
+            :param mask: if True, pixels outside [y_min,y_max]
+            and [x_min,x_max] are masked.
             :type mask: bool
-            
+
           :param lmin: Minimum wavelength.
           :type lmin: float
           :param lmax: Maximum wavelength.
@@ -1602,7 +1925,8 @@ class Cube(object):
           :type x_min: float
           :param x_max: Maximum value of x in degrees.
           :type x_max: float
-          :param mask: if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
+          :param mask: if True, pixels outside [y_min,y_max] and
+          [x_min,x_max] are masked.
           :type mask: bool
         """
         lmin = coord[0][0]
@@ -1611,35 +1935,36 @@ class Cube(object):
         lmax = coord[1][0]
         y_max = coord[1][1]
         x_max = coord[1][2]
-        
+
         skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
-        
+
         imin = int(np.min(pixcrd[:,0]))
-        if imin<0:
+        if imin < 0:
             imin = 0
-        imax = int(np.max(pixcrd[:,0]))+1
-        if imax>self.shape[1]:
+        imax = int(np.max(pixcrd[:,0])) + 1
+        if imax > self.shape[1]:
             imax = self.shape[1]
         jmin = int(np.min(pixcrd[:,1]))
-        if jmin<0:
+        if jmin < 0:
             jmin = 0
-        jmax = int(np.max(pixcrd[:,1]))+1
-        if jmax>self.shape[2]:
-            jmax=self.shape[2]
-            
+        jmax = int(np.max(pixcrd[:,1])) + 1
+        if jmax > self.shape[2]:
+            jmax = self.shape[2]
+
         kmin = max(0,self.wave.pixel(lmin,nearest=True))
         kmax = min(self.shape[0],self.wave.pixel(lmax,nearest=True) + 1)
-        
-        if kmin==kmax:
-            raise ValueError, 'Minimum and maximum wavelengths are equal'
-        
-        if kmax==kmin+1:
-            raise ValueError, 'Minimum and maximum wavelengths are outside the spectrum range'
-         
+
+        if kmin == kmax:
+            raise ValueError('Minimum and maximum wavelengths are equal')
+
+        if kmax == kmin + 1:
+            raise ValueError('Minimum and maximum wavelengths are outside'\
+                             ' the spectrum range')
+
         data = self.data[kmin:kmax,imin:imax,jmin:jmax]
         shape = np.array((data.shape[0],data.shape[1],data.shape[2]))
-        
+
         if self.var is not None:
             var = self.var[kmin:kmax,imin:imax,jmin:jmax]
         else:
@@ -1652,33 +1977,36 @@ class Cube(object):
             wave = self.wave[kmin:kmax]
         except:
             wave = None
-            
+
         if mask:
             #mask outside pixels
             m = np.ma.make_mask_none(data.shape)
             for j in range(shape[1]):
-                pixcrd = np.array([np.ones(shape[2])*j,np.arange(shape[2])]).T
+                pixcrd = np.array([np.ones(shape[2]) * j, \
+                                   np.arange(shape[2])]).T
                 skycrd = self.wcs.pix2sky(pixcrd)
                 test_ra_min = np.array(skycrd[:,1]) < x_min
                 test_ra_max = np.array(skycrd[:,1]) > x_max
                 test_dec_min = np.array(skycrd[:,0]) < y_min
                 test_dec_max = np.array(skycrd[:,0]) > y_max
-                m[:,j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
+                m[:,j,:] = test_ra_min + test_ra_max \
+                + test_dec_min + test_dec_max
             try:
                 m = np.ma.mask_or(m,np.ma.getmask(data))
                 data = np.ma.MaskedArray(data, mask=m)
             except:
                 pass
-            
-        res = Cube(shape=shape, wcs = wcs, wave = wave, unit=self.unit, fscale=self.fscale)
+
+        res = Cube(shape=shape, wcs=wcs, wave=wave, \
+                   unit=self.unit, fscale=self.fscale)
         res.data = data
         res.var = var
         return res
-        
+
     def _rebin_factor_(self, factor):
         '''Shrinks the size of the cube by factor.
         New size is an integer multiple of the original size.
-        
+
         Parameter
         ----------
         factor : (integer,integer,integer)
@@ -1686,88 +2014,110 @@ class Cube(object):
         Python notation: (nz,ny,nx)
         '''
         # new size is an integer multiple of the original size
-        assert not np.sometrue(np.mod( self.shape[0], factor[0] ))
-        assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
-        assert not np.sometrue(np.mod( self.shape[2], factor[2] ))
+        assert not np.sometrue(np.mod(self.shape[0], factor[0]))
+        assert not np.sometrue(np.mod(self.shape[1], factor[1]))
+        assert not np.sometrue(np.mod(self.shape[2], factor[2]))
         #shape
-        self.shape = np.array((self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2]))
+        self.shape = np.array((self.shape[0] / factor[0], \
+                               self.shape[1] / factor[1], \
+                               self.shape[2] / factor[2]))
         #data
-        self.data = self.data.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]).sum(1).sum(2).sum(3)/factor[0]/factor[1]/factor[2]
+        self.data = self.data.reshape(self.shape[0], factor[0], \
+                                      self.shape[1], factor[1], \
+                                      self.shape[2], factor[2])\
+                                      .sum(1).sum(2).sum(3) \
+                                      / factor[0] / factor[1] / factor[2]
         #variance
         if self.var is not None:
-            self.var = self.var.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]).sum(1).sum(2).sum(3)/factor[0]/factor[1]/factor[2]/factor[0]/factor[1]/factor[2]
+            self.var = self.var.reshape(self.shape[0], factor[0], \
+                                        self.shape[1], factor[1], \
+                                        self.shape[2], factor[2])\
+                                        .sum(1).sum(2).sum(3) \
+                                        / factor[0] / factor[1] / factor[2] \
+                                        / factor[0] / factor[1] / factor[2]
         #coordinates
         cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor[1:])
-        crval = self.wave.coord()[0:factor[0]].sum()/factor[0]
-        self.wave = WaveCoord(1, self.wave.cdelt*factor[0], crval, self.wave.cunit,self.shape[0])
-        
+        crval = self.wave.coord()[0:factor[0]].sum() / factor[0]
+        self.wave = WaveCoord(1, self.wave.cdelt * factor[0], crval, \
+                              self.wave.cunit, self.shape[0])
+
     def _rebin_factor(self, factor, margin='center', flux=False):
         '''Shrinks the size of the cube by factor.
-  
+
           :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
           :type factor: integer or (integer,integer,integer)
-          :param flux: This parameters is used if new size is not an integer multiple of the original size.
-          
-              If Flux is False, the cube is truncated and the flux is not conserved.
-              
-              If Flux is True, margins are added to the cube to conserve the flux.
+          :param flux: This parameters is used if new size is not an integer
+          multiple of the original size.
+
+              If Flux is False, the cube is truncated and the flux
+              is not conserved.
+
+              If Flux is True, margins are added to the cube to
+              conserve the flux.
           :type flux: bool
-          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
-  
-            In 'center' case, cube is truncated/pixels are added on the left and on the right, on the bottom and of the top of the cube. 
-        
-            In 'origin'case, cube is truncated/pixels are added at the end along each direction
-          :type margin: 'center' or 'origin'   
+          :param margin: This parameters is used if new size is not an
+          integer multiple of the original size.
+
+            In 'center' case, cube is truncated/pixels are added on the left
+            and on the right, on the bottom and of the top of the cube.
+
+            In 'origin'case, cube is truncated/pixels are added at the end
+            along each direction
+          :type margin: 'center' or 'origin'
         '''
         if is_int(factor):
             factor = (factor,factor,factor)
-        if factor[0]<1 or factor[0]>=self.shape[0] or factor[1]<1 or factor[1]>=self.shape[1] or factor[2]<1 or factor[2]>=self.shape[2]:
-            raise ValueError, 'factor must be in ]1,shape['
+        if factor[0] < 1 or factor[0] >= self.shape[0] or factor[1] < 1 \
+        or factor[1] >= self.shape[1] or factor[2] < 1 \
+        or factor[2] >= self.shape[2]:
+            raise ValueError('factor must be in ]1,shape[')
             return None
-        if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )) and not np.sometrue(np.mod( self.shape[2], factor[2] )):
+        if not np.sometrue(np.mod(self.shape[0], factor[0])) \
+        and not np.sometrue(np.mod(self.shape[1], factor[1])) \
+        and not np.sometrue(np.mod(self.shape[2], factor[2])):
             # new size is an integer multiple of the original size
             self._rebin_factor_(factor)
             return None
         else:
             factor = np.array(factor)
-            newshape = self.shape/factor
-            n = self.shape - newshape*factor
-            
+            newshape = self.shape / factor
+            n = self.shape - newshape * factor
+
             if n[0] == 0:
                 n0_left = 0
                 n0_right = self.shape[0]
             else:
-                if margin == 'origin' or n[0]==1:
+                if margin == 'origin' or n[0] == 1:
                     n0_left = 0
                     n0_right = -n[0]
                 else:
-                    n0_left = n[0]/2
+                    n0_left = n[0] / 2
                     n0_right = self.shape[0] - n[0] + n0_left
             if n[1] == 0:
                 n1_left = 0
                 n1_right = self.shape[1]
             else:
-                if margin == 'origin' or n[1]==1:
+                if margin == 'origin' or n[1] == 1:
                     n1_left = 0
                     n1_right = -n[1]
                 else:
-                    n1_left = n[1]/2
+                    n1_left = n[1] / 2
                     n1_right = self.shape[1] - n[1] + n1_left
             if n[2] == 0:
                 n2_left = 0
                 n2_right = self.shape[2]
             else:
-                if margin == 'origin' or n[2]==1:
+                if margin == 'origin' or n[2] == 1:
                     n2_left = 0
                     n2_right = -n[2]
                 else:
-                    n2_left = n[2]/2
+                    n2_left = n[2] / 2
                     n2_right = self.shape[2] - n[2] + n2_left
-            
+
             cub = self[n0_left:n0_right,n1_left:n1_right,n2_left:n2_right]
             cub._rebin_factor_(factor)
-            
+
             if flux is False:
                 self.shape = cub.shape
                 self.data = cub.data
@@ -1788,243 +2138,396 @@ class Cube(object):
                     l_left = 0
                 if n0_right != self.shape[0]:
                     newshape[0] += 1
-                    l_right = newshape[0]-1
+                    l_right = newshape[0] - 1
                 else:
-                    l_right  = newshape[0]
-                    
+                    l_right = newshape[0]
+
                 if n1_left != 0:
                     newshape[1] += 1
                     wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                    wcs.set_naxis2(wcs.wcs.naxis2 +1)
+                    wcs.set_naxis2(wcs.wcs.naxis2 + 1)
                     p_left = 1
                 else:
                     p_left = 0
                 if n1_right != self.shape[1]:
                     newshape[1] += 1
                     wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                    p_right = newshape[1]-1
+                    p_right = newshape[1] - 1
                 else:
-                    p_right  = newshape[1]
-                
+                    p_right = newshape[1]
+
                 if n2_left != 0:
                     newshape[2] += 1
                     wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
-                    wcs.set_naxis1(wcs.wcs.naxis1 +1)
+                    wcs.set_naxis1(wcs.wcs.naxis1 + 1)
                     q_left = 1
                 else:
                     q_left = 0
                 if n2_right != self.shape[2]:
                     newshape[2] += 1
                     wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
-                    q_right = newshape[2]-1
+                    q_right = newshape[2] - 1
                 else:
-                    q_right  = newshape[2]
-                    
+                    q_right = newshape[2]
+
                 data = np.empty(newshape)
                 mask = np.empty(newshape,dtype=bool)
                 data[l_left:l_right,p_left:p_right,q_left:q_right] = cub.data
-                mask[l_left:l_right,p_left:p_right,q_left:q_right] = cub.data.mask
-                
+                mask[l_left:l_right,p_left:p_right,q_left:q_right] = \
+                cub.data.mask
+
                 if self.var is None:
                     var = None
                 else:
                     var = np.empty(newshape)
                     var[l_left:l_right,p_left:p_right,q_left:q_right] = cub.var
-                    
+
                 F = factor[0] * factor[1] * factor[2]
                 F2 = F * F
-                
+
                 if cub.shape[0] != newshape[0]:
-                    d = self.data[n0_right:,n1_left:n1_right,n2_left:n2_right].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    d = self.data[n0_right:,n1_left:n1_right,n2_left:n2_right]\
+                    .sum(axis=0)\
+                    .reshape(cub.shape[1],factor[1],cub.shape[2],factor[2])\
+                    .sum(1).sum(2) / F
                     data[-1,p_left:q_left,q_left:q_right] = d.data
                     mask[-1,p_left:q_left,q_left:q_right] = d.mask
                     if var is not None:
-                        var[-1,p_left:q_left,q_left:q_right] = self.var[n0_right:,n1_left:n1_right,n2_left:n2_right].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F2
-                if l_left==1:
-                    d = self.data[:n0_left,n1_left:n1_right,n2_left:n2_right].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                        var[-1,p_left:q_left,q_left:q_right] = \
+                        self.var[n0_right:,n1_left:n1_right,n2_left:n2_right]\
+                        .sum(axis=0)\
+                        .reshape(cub.shape[1],factor[1],\
+                                 cub.shape[2],factor[2])\
+                        .sum(1).sum(2) / F2
+                if l_left == 1:
+                    d = self.data[:n0_left,n1_left:n1_right,n2_left:n2_right]\
+                    .sum(axis=0)\
+                    .reshape(cub.shape[1],factor[1],cub.shape[2],factor[2])\
+                    .sum(1).sum(2) / F
                     data[0,p_left:q_left,q_left:q_right] = d.data
                     mask[0,p_left:q_left,q_left:q_right] = d.mask
                     if var is not None:
-                       var[0,p_left:q_left,q_left:q_right] = self.var[:n0_left,n1_left:n1_right,n2_left:n2_right].sum(axis=0).reshape(cub.shape[1],factor[1],cub.shape[2],factor[2]).sum(1).sum(2) / F2
+                        var[0,p_left:q_left,q_left:q_right] = \
+                        self.var[:n0_left,n1_left:n1_right,n2_left:n2_right]\
+                        .sum(axis=0)\
+                        .reshape(cub.shape[1],factor[1],\
+                                cub.shape[2],factor[2])\
+                        .sum(1).sum(2) / F2
                 if cub.shape[1] != newshape[1]:
-                    d = self.data[n0_left:n0_right,n1_right:,n2_left:n2_right].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                    d = self.data[n0_left:n0_right,n1_right:,\
+                                  n2_left:n2_right]\
+                    .sum(axis=1).reshape(cub.shape[0],factor[0],\
+                                         cub.shape[2],factor[2])\
+                                         .sum(1).sum(2) / F
                     data[l_left:l_right,-1,q_left:q_right] = d.data
                     mask[l_left:l_right,-1,q_left:q_right] = d.mask
                     if var is not None:
-                        var[l_left:l_right,-1,q_left:q_right] = self.var[n0_left:n0_right,n1_right:,n2_left:n2_right].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F2
-                if p_left==1:
-                    d = self.data[n0_left:no_right,:n1_left,n2_left:n2_right].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F
+                        var[l_left:l_right,-1,q_left:q_right] = \
+                        self.var[n0_left:n0_right,n1_right:,n2_left:n2_right]\
+                        .sum(axis=1)\
+                        .reshape(cub.shape[0],factor[0],\
+                                 cub.shape[2],factor[2])\
+                        .sum(1).sum(2) / F2
+                if p_left == 1:
+                    d = self.data[n0_left:no_right,:n1_left,n2_left:n2_right]\
+                    .sum(axis=1).reshape(cub.shape[0],factor[0],\
+                                         cub.shape[2],factor[2])\
+                    .sum(1).sum(2) / F
                     data[l_left:l_right,0,q_left:q_right] = d.data
                     mask[l_left:l_right,0,q_left:q_right] = d.mask
                     if var is not None:
-                        var[l_left:l_right,0,q_left:q_right] = self.var[n0_left:no_right,:n1_left,n2_left:n2_right].sum(axis=1).reshape(cub.shape[0],factor[0],cub.shape[2],factor[2]).sum(1).sum(2) / F2
-                    
+                        var[l_left:l_right,0,q_left:q_right] = \
+                        self.var[n0_left:no_right,:n1_left,n2_left:n2_right]\
+                        .sum(axis=1).reshape(cub.shape[0],factor[0],\
+                                             cub.shape[2],factor[2])\
+                        .sum(1).sum(2) / F2
+
                 if cub.shape[2] != newshape[2]:
-                    d = self.data[n0_left:n0_right,n1_left:n1_right:,n2_right:].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F
+                    d = self.data[n0_left:n0_right,\
+                                  n1_left:n1_right:,n2_right:]\
+                    .sum(axis=2)\
+                    .reshape(cub.shape[0],factor[0],cub.shape[1],factor[1])\
+                    .sum(1).sum(2) / F
                     data[l_left:l_right,p_left:p_right,-1] = d.data
                     mask[l_left:l_right,p_left:p_right,-1] = d.mask
                     if var is not None:
-                        var[l_left:l_right,p_left:p_right,-1] = self.var[n0_left:n0_right,n1_left:n1_right:,n2_right:].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F2
-                if q_left==1:
-                    d = self.data[n0_left:n0_right,n1_left:n1_right:,:n2_left].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F
+                        var[l_left:l_right,p_left:p_right,-1] = \
+                        self.var[n0_left:n0_right,\
+                                 n1_left:n1_right:,n2_right:]\
+                        .sum(axis=2).reshape(cub.shape[0],factor[0],\
+                                             cub.shape[1],factor[1])\
+                        .sum(1).sum(2) / F2
+                if q_left == 1:
+                    d = self.data[n0_left:n0_right,\
+                                  n1_left:n1_right:,:n2_left]\
+                    .sum(axis=2).reshape(cub.shape[0],factor[0],\
+                                         cub.shape[1],factor[1])\
+                    .sum(1).sum(2) / F
                     data[l_left:l_right,p_left:p_right,0] = d.data
                     mask[l_left:l_right,p_left:p_right,0] = d.mask
                     if var is not None:
-                        var[l_left:l_right,p_left:p_right,0] = self.var[n0_left:n0_right,n1_left:n1_right:,:n2_left].sum(axis=2).reshape(cub.shape[0],factor[0],cub.shape[1],factor[1]).sum(1).sum(2) / F2
-                    
-                if l_left==1 and p_left==1 and q_left==1:
-                    data[0,0,0] = self.data[:n0_left,:n1_left,:n2_left].sum()/ F
+                        var[l_left:l_right,p_left:p_right,0] = \
+                        self.var[n0_left:n0_right,n1_left:n1_right:,:n2_left]\
+                        .sum(axis=2)\
+                        .reshape(cub.shape[0],factor[0],\
+                                 cub.shape[1],factor[1])\
+                        .sum(1).sum(2) / F2
+
+                if l_left == 1 and p_left == 1 and q_left == 1:
+                    data[0,0,0] = \
+                    self.data[:n0_left,:n1_left,:n2_left].sum() / F
                     mask[0,0,0] = self.mask[:n0_left,:n1_left,:n2_left].any()
                     if var is not None:
-                        var[0,0,0] = self.var[:n0_left,:n1_left,:n2_left].sum()/ F2
-                if l_left==1 and p_right==(newshape[1]-1) and q_left==1:
-                    data[0,-1,0] = self.data[:n0_left,n1_right:,:n2_left].sum()/ F
-                    mask[0,-1,0] = self.mask[:n0_left,n1_right:,:n2_left].any()
+                        var[0,0,0] = \
+                        self.var[:n0_left,:n1_left,:n2_left].sum() / F2
+                if l_left == 1 and p_right == (newshape[1] - 1) \
+                and q_left == 1:
+                    data[0,-1,0] = \
+                    self.data[:n0_left,n1_right:,:n2_left].sum() / F
+                    mask[0,-1,0] = \
+                    self.mask[:n0_left,n1_right:,:n2_left].any()
                     if var is not None:
-                        var[0,-1,0] = self.var[:n0_left,n1_right:,:n2_left].sum()/ F2
-                if l_left==1 and p_right==(newshape[1]-1) and q_right==(newshape[2]-1):
-                    data[0,-1,-1] = self.data[:n0_left,n1_right:,n2_right:].sum()/ F
-                    mask[0,-1,-1] = self.mask[:n0_left,n1_right:,n2_right:].any()
+                        var[0,-1,0] = \
+                        self.var[:n0_left,n1_right:,:n2_left].sum() / F2
+                if l_left == 1 and p_right == (newshape[1] - 1) \
+                and q_right == (newshape[2] - 1):
+                    data[0,-1,-1] = \
+                    self.data[:n0_left,n1_right:,n2_right:].sum() / F
+                    mask[0,-1,-1] = \
+                    self.mask[:n0_left,n1_right:,n2_right:].any()
                     if var is not None:
-                        var[0,-1,-1] = self.var[:n0_left,n1_right:,n2_right:].sum()/ F2
-                if l_left==1 and p_left==1 and q_right==(newshape[2]-1):
-                    data[0,0,-1] = self.data[:n0_left,:n1_left,n2_right:].sum()/ F
-                    mask[0,0,-1] = self.mask[:n0_left,:n1_left,n2_right:].any()
+                        var[0,-1,-1] = \
+                        self.var[:n0_left,n1_right:,n2_right:].sum() / F2
+                if l_left == 1 and p_left == 1 and \
+                q_right == (newshape[2] - 1):
+                    data[0,0,-1] = \
+                    self.data[:n0_left,:n1_left,n2_right:].sum() / F
+                    mask[0,0,-1] = \
+                    self.mask[:n0_left,:n1_left,n2_right:].any()
                     if var is not None:
-                        var[0,0,-1] = self.var[:n0_left,:n1_left,n2_right:].sum()/ F2
-                if l_left==(newshape[0]-1) and p_left==1 and q_left==1:
-                    data[-1,0,0] = self.data[n0_right:,:n1_left,:n2_left].sum()/ F
-                    mask[-1,0,0] = self.mask[n0_right:,:n1_left,:n2_left].any()
+                        var[0,0,-1] = \
+                        self.var[:n0_left,:n1_left,n2_right:].sum() / F2
+                if l_left == (newshape[0] - 1) and p_left == 1 \
+                and q_left == 1:
+                    data[-1,0,0] = \
+                    self.data[n0_right:,:n1_left,:n2_left].sum() / F
+                    mask[-1,0,0] = \
+                    self.mask[n0_right:,:n1_left,:n2_left].any()
                     if var is not None:
-                        var[-1,0,0] = self.var[n0_right:,:n1_left,:n2_left].sum()/ F2
-                if l_left==(newshape[0]-1) and p_right==(newshape[1]-1) and q_left==1:
-                    data[-1,-1,0] = self.data[n0_right:,n1_right:,:n2_left].sum()/ F
-                    mask[-1,-1,0] = self.mask[n0_right:,n1_right:,:n2_left].any()
+                        var[-1,0,0] = \
+                        self.var[n0_right:,:n1_left,:n2_left].sum() / F2
+                if l_left == (newshape[0] - 1) \
+                and p_right == (newshape[1] - 1) and q_left == 1:
+                    data[-1,-1,0] = \
+                    self.data[n0_right:,n1_right:,:n2_left].sum() / F
+                    mask[-1,-1,0] = \
+                    self.mask[n0_right:,n1_right:,:n2_left].any()
                     if var is not None:
-                        var[-1,-1,0] = self.var[n0_right:,n1_right:,:n2_left].sum()/ F2
-                if l_left==(newshape[0]-1) and p_right==(newshape[1]-1) and q_right==(newshape[2]-1):
-                    data[-1,-1,-1] = self.data[n0_right:,n1_right:,n2_right:].sum()/ F
-                    mask[-1,-1,-1] = self.mask[n0_right:,n1_right:,n2_right:].any()
+                        var[-1,-1,0] = \
+                        self.var[n0_right:,n1_right:,:n2_left].sum() / F2
+                if l_left == (newshape[0] - 1) \
+                and p_right == (newshape[1] - 1) \
+                and q_right == (newshape[2] - 1):
+                    data[-1,-1,-1] = \
+                    self.data[n0_right:,n1_right:,n2_right:].sum() / F
+                    mask[-1,-1,-1] = \
+                    self.mask[n0_right:,n1_right:,n2_right:].any()
                     if var is not None:
-                        var[-1,-1,-1] = self.var[n0_right:,n1_right:,n2_right:].sum()/ F2
-                if l_left==(newshape[0]-1) and p_left==1 and q_right==(newshape[2]-1):
-                    data[-1,0,-1] = self.data[n0_right:,:n1_left,n2_right:].sum()/ F
-                    mask[-1,0,-1] = self.mask[n0_right:,:n1_left,n2_right:].any()    
+                        var[-1,-1,-1] = \
+                        self.var[n0_right:,n1_right:,n2_right:].sum() / F2
+                if l_left == (newshape[0] - 1) and p_left == 1 \
+                and q_right == (newshape[2] - 1):
+                    data[-1,0,-1] = \
+                    self.data[n0_right:,:n1_left,n2_right:].sum() / F
+                    mask[-1,0,-1] = \
+                    self.mask[n0_right:,:n1_left,n2_right:].any()
                     if var is not None:
-                        var[-1,0,-1] = self.var[n0_right:,:n1_left,n2_right:].sum()/ F2
-                    
-                if p_left==1 and q_left==1:
-                    d = self.data[n0_left:n0_right,:n1_left,:n2_left].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F
+                        var[-1,0,-1] = \
+                        self.var[n0_right:,:n1_left,n2_right:].sum() / F2
+
+                if p_left == 1 and q_left == 1:
+                    d = self.data[n0_left:n0_right,:n1_left,:n2_left]\
+                    .sum(axis=2).sum(axis=1)\
+                    .reshape(cub.shape[0],factor[0]).sum(1) / F
                     data[l_left:l_right,0,0] = d.data
                     mask[l_left:l_right,0,0] = d.mask
                     if var is not None:
-                        var[l_left:l_right,0,0] = self.var[n0_left:n0_right,:n1_left,:n2_left].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F2
-                if l_left==1 and p_left==1:
-                    d = self.data[:n0_left,:n1_left,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F
+                        var[l_left:l_right,0,0] = \
+                        self.var[n0_left:n0_right,:n1_left,:n2_left]\
+                        .sum(axis=2).sum(axis=1)\
+                        .reshape(cub.shape[0],factor[0]).sum(1) / F2
+                if l_left == 1 and p_left == 1:
+                    d = self.data[:n0_left,:n1_left,n2_left:n2_right]\
+                    .sum(axis=0).sum(axis=0)\
+                    .reshape(cub.shape[2],factor[2]).sum(1) / F
                     data[0,0,q_left:q_right] = d.data
                     mask[0,0,q_left:q_right] = d.mask
                     if var is not None:
-                        var[0,0,q_left:q_right] = self.var[:n0_left,:n1_left,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F2
-                if l_left==1 and q_left==1:
-                    d = self.data[:n0_left,n1_left:n1_right,:n2_left].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
+                        var[0,0,q_left:q_right] = \
+                        self.var[:n0_left,:n1_left,n2_left:n2_right]\
+                        .sum(axis=0).sum(axis=0)\
+                        .reshape(cub.shape[2],factor[2]).sum(1) / F2
+                if l_left == 1 and q_left == 1:
+                    d = self.data[:n0_left,n1_left:n1_right,:n2_left]\
+                    .sum(axis=2).sum(axis=0)\
+                    .reshape(cub.shape[1],factor[1]).sum(1) / F
                     data[0,p_left:p_right,0] = d.data
                     mask[0,p_left:p_right,0] = d.mask
                     if var is not None:
-                        var[0,p_left:p_right,0] = self.var[:n0_left,n1_left:n1_right,:n2_left].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
-                    
-                if p_left==1 and q_right==(newshape[2]-1):
-                    d = self.data[n0_left:n0_right,:n1_left,n2_right:].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F
+                        var[0,p_left:p_right,0] = \
+                        self.var[:n0_left,n1_left:n1_right,:n2_left]\
+                        .sum(axis=2).sum(axis=0)\
+                        .reshape(cub.shape[1],factor[1]).sum(1) / F2
+
+                if p_left == 1 and q_right == (newshape[2] - 1):
+                    d = self.data[n0_left:n0_right,:n1_left,n2_right:]\
+                    .sum(axis=2).sum(axis=1)\
+                    .reshape(cub.shape[0],factor[0]).sum(1) / F
                     data[l_left:l_right,0,-1] = d.data
                     mask[l_left:l_right,0,-1] = d.mask
                     if var is not None:
-                        var[l_left:l_right,0,-1] = self.var[n0_left:n0_right,:n1_left,n2_right:].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F2
-                if l_left==1 and p_right==(newshape[1]-1):
-                    d = self.data[:n0_left,n1_right:,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F
+                        var[l_left:l_right,0,-1] = \
+                        self.var[n0_left:n0_right,:n1_left,n2_right:]\
+                        .sum(axis=2).sum(axis=1)\
+                        .reshape(cub.shape[0],factor[0]).sum(1) / F2
+                if l_left == 1 and p_right == (newshape[1] - 1):
+                    d = self.data[:n0_left,n1_right:,n2_left:n2_right]\
+                    .sum(axis=0).sum(axis=0)\
+                    .reshape(cub.shape[2],factor[2]).sum(1) / F
                     data[0,-1,q_left:q_right] = d.data
                     mask[0,-1,q_left:q_right] = d.mask
                     if var is not None:
-                        var[0,-1,q_left:q_right] = self.var[:n0_left,n1_right:,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F2
-                if l_left==1 and q_right==(newshape[2]-1):
-                    d = self.data[:n0_left,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
+                        var[0,-1,q_left:q_right] = \
+                        self.var[:n0_left,n1_right:,n2_left:n2_right]\
+                        .sum(axis=0).sum(axis=0)\
+                        .reshape(cub.shape[2],factor[2]).sum(1) / F2
+                if l_left == 1 and q_right == (newshape[2] - 1):
+                    d = self.data[:n0_left,n1_left:n1_right,n2_right:]\
+                    .sum(axis=2).sum(axis=0)\
+                    .reshape(cub.shape[1],factor[1]).sum(1) / F
                     data[0,p_left:p_right,-1] = d.data
                     mask[0,p_left:p_right,-1] = d.mask
                     if var is not None:
-                        var[0,p_left:p_right,-1] = self.var[:n0_left,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
-                    
-                if p_right==(newshape[1]-1) and q_left==1:
-                    d = self.data[n0_left:n0_right,n1_right:,:n2_left].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F
+                        var[0,p_left:p_right,-1] = \
+                        self.var[:n0_left,n1_left:n1_right,n2_right:]\
+                        .sum(axis=2).sum(axis=0)\
+                        .reshape(cub.shape[1],factor[1]).sum(1) / F2
+
+                if p_right == (newshape[1] - 1) and q_left == 1:
+                    d = self.data[n0_left:n0_right,n1_right:,:n2_left]\
+                    .sum(axis=2).sum(axis=1)\
+                    .reshape(cub.shape[0],factor[0]).sum(1) / F
                     data[l_left:l_right,-1,0] = d.data
                     mask[l_left:l_right,-1,0] = d.mask
                     if var is not None:
-                        var[l_left:l_right,-1,0] = self.var[n0_left:n0_right,n1_right:,:n2_left].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) / F2
-                if l_right==(newshape[0]-1) and p_left==1:
-                    d = self.data[n0_right:,:n1_left,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F
+                        var[l_left:l_right,-1,0] = \
+                        self.var[n0_left:n0_right,n1_right:,:n2_left]\
+                        .sum(axis=2).sum(axis=1)\
+                        .reshape(cub.shape[0],factor[0]).sum(1) / F2
+                if l_right == (newshape[0] - 1) and p_left == 1:
+                    d = self.data[n0_right:,:n1_left,n2_left:n2_right]\
+                    .sum(axis=0).sum(axis=0)\
+                    .reshape(cub.shape[2],factor[2]).sum(1) / F
                     data[-1,0,q_left:q_right] = d.data
                     mask[-1,0,q_left:q_right] = d.mask
                     if var is not None:
-                        var[-1,0,q_left:q_right] = self.var[n0_right:,:n1_left,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F2
-                if l_right==(newshape[0]-1) and q_left==1:
-                    d = self.data[n0_right:,n1_left:n1_right,:n2_left].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
+                        var[-1,0,q_left:q_right] = \
+                        self.var[n0_right:,:n1_left,n2_left:n2_right]\
+                        .sum(axis=0).sum(axis=0)\
+                        .reshape(cub.shape[2],factor[2]).sum(1) / F2
+                if l_right == (newshape[0] - 1) and q_left == 1:
+                    d = self.data[n0_right:,n1_left:n1_right,:n2_left]\
+                    .sum(axis=2).sum(axis=0)\
+                    .reshape(cub.shape[1],factor[1]).sum(1) / F
                     data[-1,p_left:p_right,0] = d.data
                     mask[-1,p_left:p_right,0] = d.mask
                     if var is not None:
-                        var[-1,p_left:p_right,0] = self.var[n0_right:,n1_left:n1_right,:n2_left].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
-                
-                if p_right==(newshape[1]-1) and q_right==(newshape[2]-1):
-                    d = self.data[n0_left:n0_right,n1_right:,n2_right:].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) /F
+                        var[-1,p_left:p_right,0] = \
+                        self.var[n0_right:,n1_left:n1_right,:n2_left]\
+                        .sum(axis=2).sum(axis=0)\
+                        .reshape(cub.shape[1],factor[1]).sum(1) / F2
+
+                if p_right == (newshape[1] - 1) \
+                and q_right == (newshape[2] - 1):
+                    d = self.data[n0_left:n0_right,n1_right:,n2_right:]\
+                    .sum(axis=2).sum(axis=1)\
+                    .reshape(cub.shape[0],factor[0]).sum(1) / F
                     data[l_left:l_right,-1,-1] = d.data
                     mask[l_left:l_right,-1,-1] = d.mask
                     if var is not None:
-                        var[l_left:l_right,-1,-1] = self.var[n0_left:n0_right,n1_right:,n2_right:].sum(axis=2).sum(axis=1).reshape(cub.shape[0],factor[0]).sum(1) /F2
-                if l_right==(newshape[0]-1) and p_right==(newshape[1]-1):
-                    d = self.data[n0_right:,n1_right:,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F
+                        var[l_left:l_right,-1,-1] = \
+                        self.var[n0_left:n0_right,n1_right:,n2_right:]\
+                        .sum(axis=2).sum(axis=1)\
+                        .reshape(cub.shape[0],factor[0]).sum(1) / F2
+                if l_right == (newshape[0] - 1) \
+                and p_right == (newshape[1] - 1):
+                    d = self.data[n0_right:,n1_right:,n2_left:n2_right]\
+                    .sum(axis=0).sum(axis=0)\
+                    .reshape(cub.shape[2],factor[2]).sum(1) / F
                     data[-1,-1,q_left:q_right] = d.data
                     mask[-1,-1,q_left:q_right] = d.mask
                     if var is not None:
-                        var[-1,-1,q_left:q_right] = self.var[n0_right:,n1_right:,n2_left:n2_right].sum(axis=0).sum(axis=0).reshape(cub.shape[2],factor[2]).sum(1) / F2
-                if l_right==(newshape[0]-1) and q_right==(newshape[2]-1):
-                    d = self.data[n0_right:,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F
+                        var[-1,-1,q_left:q_right] = \
+                        self.var[n0_right:,n1_right:,n2_left:n2_right]\
+                        .sum(axis=0).sum(axis=0)\
+                        .reshape(cub.shape[2],factor[2]).sum(1) / F2
+                if l_right == (newshape[0] - 1) \
+                and q_right == (newshape[2] - 1):
+                    d = self.data[n0_right:,n1_left:n1_right,n2_right:]\
+                    .sum(axis=2).sum(axis=0)\
+                    .reshape(cub.shape[1],factor[1]).sum(1) / F
                     data[-1,p_left:p_right,-1] = d.data
                     mask[-1,p_left:p_right,-1] = d.mask
                     if var is not None:
-                        var[-1,p_left:p_right,-1] = self.var[n0_right:,n1_left:n1_right,n2_right:].sum(axis=2).sum(axis=0).reshape(cub.shape[1],factor[1]).sum(1) / F2
-                
+                        var[-1,p_left:p_right,-1] = \
+                        self.var[n0_right:,n1_left:n1_right,n2_right:]\
+                        .sum(axis=2).sum(axis=0)\
+                        .reshape(cub.shape[1],factor[1]).sum(1) / F2
+
                 self.shape = newshape
                 self.wcs = wcs
                 self.wave = wave
                 self.data = np.ma.array(data, mask=mask)
                 self.var = var
                 return None
-                
+
     def rebin_factor(self, factor, margin='center', flux=False):
         '''Shrinks the size of the cube by factor.
-  
+
           :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
           :type factor: integer or (integer,integer,integer)
-          :param flux: This parameters is used if new size is not an integer multiple of the original size.
-          
-              If Flux is False, the cube is truncated and the flux is not conserved.
-              
-              If Flux is True, margins are added to the cube to conserve the flux.
+          :param flux: This parameters is used if new size is
+          not an integer multiple of the original size.
+
+              If Flux is False, the cube is truncated and the flux
+              is not conserved.
+
+              If Flux is True, margins are added to the cube
+              to conserve the flux.
           :type flux: bool
-          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
-  
-            In 'center' case, cube is truncated/pixels are added on the left and on the right, on the bottom and of the top of the cube. 
-        
-            In 'origin'case, cube is truncated/pixels are added at the end along each direction
-          :type margin: 'center' or 'origin'   
+          :param margin: This parameters is used if new size is not
+          an integer multiple of the original size.
+
+            In 'center' case, cube is truncated/pixels are added on the left
+            and on the right, on the bottom and of the top of the cube.
+
+            In 'origin'case, cube is truncated/pixels are added
+            at the end along each direction
+          :type margin: 'center' or 'origin'
         '''
         res = self.copy()
         res._rebin_factor(factor, margin, flux)
         return res
-    
+
     def _med_(self,k,p,q,kfactor,pfactor,qfactor):
-        return np.ma.median(self.data[k*kfactor:(k+1)*kfactor,p*pfactor:(p+1)*pfactor,q*qfactor:(q+1)*qfactor])
-    
+        return np.ma.median(self.data[k * kfactor:(k + 1) * kfactor,\
+                                      p * pfactor:(p + 1) * pfactor,\
+                                      q * qfactor:(q + 1) * qfactor])
+
     def _rebin_median_(self, factor):
         '''Shrinks the size of the cube by factor.
         New size is an integer multiple of the original size.
-        
+
         Parameter
         ----------
         factor : (integer,integer,integer)
@@ -2032,246 +2535,288 @@ class Cube(object):
         Python notation: (nz,ny,nx)
         '''
         # new size is an integer multiple of the original size
-        assert not np.sometrue(np.mod( self.shape[0], factor[0] ))
-        assert not np.sometrue(np.mod( self.shape[1], factor[1] ))
-        assert not np.sometrue(np.mod( self.shape[2], factor[2] ))
+        assert not np.sometrue(np.mod(self.shape[0], factor[0]))
+        assert not np.sometrue(np.mod(self.shape[1], factor[1]))
+        assert not np.sometrue(np.mod(self.shape[2], factor[2]))
         #shape
-        self.shape = np.array((self.shape[0]/factor[0],self.shape[1]/factor[1],self.shape[2]/factor[2]))
+        self.shape = np.array((self.shape[0] / factor[0], \
+                               self.shape[1] / factor[1], \
+                               self.shape[2] / factor[2]))
         #data
         grid = np.lib.index_tricks.nd_grid()
         g = grid[0:self.shape[0],0:self.shape[1],0:self.shape[2]]
         vfunc = np.vectorize(self._med_)
         data = vfunc(g[0],g[1],g[2],factor[0],factor[1],factor[2])
-        mask = self.data.mask.reshape(self.shape[0],factor[0],self.shape[1],factor[1],self.shape[2],factor[2]).sum(1).sum(2).sum(3)
+        mask = self.data.mask.reshape(self.shape[0], factor[0], \
+                                      self.shape[1], factor[1], \
+                                      self.shape[2], factor[2])\
+                                      .sum(1).sum(2).sum(3)
         self.data = np.ma.array(data, mask=mask)
         #variance
         self.var = None
         #coordinates
         cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor[1:])
-        crval = self.wave.coord()[0:factor[0]].sum()/factor[0]
-        self.wave = WaveCoord(1, self.wave.cdelt*factor[0], crval, self.wave.cunit,self.shape[0])
- 
+        crval = self.wave.coord()[0:factor[0]].sum() / factor[0]
+        self.wave = WaveCoord(1, self.wave.cdelt * factor[0], \
+                              crval, self.wave.cunit, self.shape[0])
+
     def rebin_median(self, factor, margin='center'):
         '''Shrinks the size of the cube by factor.
-  
+
           :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
           :type factor: integer or (integer,integer,integer)
-          :param margin: This parameters is used if new size is not an integer multiple of the original size. 
-  
-            In 'center' case, cube is truncated on the left and on the right, on the bottom and of the top of the cube. 
-        
+          :param margin: This parameters is used if new size is not an
+          integer multiple of the original size.
+
+            In 'center' case, cube is truncated on the left and on the right,
+            on the bottom and of the top of the cube.
+
             In 'origin'case, cube is truncatedat the end along each direction
-          :type margin: 'center' or 'origin'  
+          :type margin: 'center' or 'origin'
           :rtype: :class:`mpdaf.obj.Cube`
         '''
         if is_int(factor):
             factor = (factor,factor,factor)
         factor = np.array(factor)
-        if factor[0]<1:
-            factor[0]=1
-        if factor[0]>self.shape[0]:
-            factor[0]=self.shape[0]
-        if factor[1]<1:
-            factor[1]=1
-        if factor[1]>self.shape[1]:
-            factor[1]=self.shape[1]
-        if factor[2]<1:
-            factor[2]=1
-        if factor[2]>self.shape[2]:
-            factor[2]=self.shape[2]
-        if not np.sometrue(np.mod( self.shape[0], factor[0] )) and not np.sometrue(np.mod( self.shape[1], factor[1] )) and not np.sometrue(np.mod( self.shape[2], factor[2] )):
+        if factor[0] < 1:
+            factor[0] = 1
+        if factor[0] > self.shape[0]:
+            factor[0] = self.shape[0]
+        if factor[1] < 1:
+            factor[1] = 1
+        if factor[1] > self.shape[1]:
+            factor[1] = self.shape[1]
+        if factor[2] < 1:
+            factor[2] = 1
+        if factor[2] > self.shape[2]:
+            factor[2] = self.shape[2]
+        if not np.sometrue(np.mod(self.shape[0], factor[0])) \
+        and not np.sometrue(np.mod(self.shape[1], factor[1])) \
+        and not np.sometrue(np.mod(self.shape[2], factor[2])):
             # new size is an integer multiple of the original size
             res = self.copy()
         else:
-            newshape = self.shape/factor
-            n = self.shape - newshape*factor
-            
+            newshape = self.shape / factor
+            n = self.shape - newshape * factor
+
             if n[0] == 0:
                 n0_left = 0
                 n0_right = self.shape[0]
             else:
-                if margin == 'origin' or n[0]==1:
+                if margin == 'origin' or n[0] == 1:
                     n0_left = 0
                     n0_right = -n[0]
                 else:
-                    n0_left = n[0]/2
+                    n0_left = n[0] / 2
                     n0_right = self.shape[0] - n[0] + n0_left
             if n[1] == 0:
                 n1_left = 0
                 n1_right = self.shape[1]
             else:
-                if margin == 'origin' or n[1]==1:
+                if margin == 'origin' or n[1] == 1:
                     n1_left = 0
                     n1_right = -n[1]
                 else:
-                    n1_left = n[1]/2
+                    n1_left = n[1] / 2
                     n1_right = self.shape[1] - n[1] + n1_left
             if n[2] == 0:
                 n2_left = 0
                 n2_right = self.shape[2]
             else:
-                if margin == 'origin' or n[2]==1:
+                if margin == 'origin' or n[2] == 1:
                     n2_left = 0
                     n2_right = -n[2]
                 else:
-                    n2_left = n[2]/2
+                    n2_left = n[2] / 2
                     n2_right = self.shape[2] - n[2] + n2_left
-            
+
             res = self[n0_left:n0_right,n1_left:n1_right,n2_left:n2_right]
-            
+
         res._rebin_median_(factor)
         return res
-          
+
     def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
         """loops over all spectra to apply a function/method.
         Returns the resulting cube.
         Multiprocessing is used.
-        
-        :param f: Spectrum method or function that the first argument is a spectrum object. 
+
+        :param f: Spectrum method or function that the first argument
+        is a spectrum object.
         :type f: function or :class:`mpdaf.obj.Spectrum` method
-        :param cpu: number of CPUs. It is also possible to set the mpdaf.CPU global variable.
+        :param cpu: number of CPUs. It is also possible to set
+        the mpdaf.CPU global variable.
         :type cpu: integer
         :param verbose: if True, progression is printed.
         :type verbose: boolean
         :param kargs: kargs can be used to set function arguments.
-        
-        :rtype: :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Spectrum`,
-            
+
+        :rtype: :class:`mpdaf.obj.Cube`
+        if f returns :class:`mpdaf.obj.Spectrum`,
+
                 :class:`mpdaf.obj.Image` if f returns a number,
-                
-                np.array(dtype=object) in others cases. 
+
+                np.array(dtype=object) in others cases.
         """
         from mpdaf import CPU
-        if cpu is not None and cpu<multiprocessing.cpu_count():
+        if cpu is not None and cpu < multiprocessing.cpu_count():
             cpu_count = cpu
-        elif CPU != 0 and CPU<multiprocessing.cpu_count():
+        elif CPU != 0 and CPU < multiprocessing.cpu_count():
             cpu_count = CPU
         else:
             cpu_count = multiprocessing.cpu_count() - 1
-        pool = multiprocessing.Pool(processes = cpu_count)
+        pool = multiprocessing.Pool(processes=cpu_count)
         processlist = list()
-           
-        if isinstance (f, types.MethodType):
+
+        if isinstance(f, types.MethodType):
             f = f.__name__
-        
+
         for sp,pos in iter_spe(self, index=True):
             processlist.append([sp,pos,f,kargs])
         num_tasks = len(processlist)
-       
+
         processresult = pool.imap_unordered(_process_spe,processlist)
         pool.close()
-        
+
         if verbose:
-            print "loop_spe_multiprocessing (%s): %i tasks"%(f,num_tasks)
+            print "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
             import time
             import sys
             while (True):
                 time.sleep(5)
                 completed = processresult._index
-                if completed == num_tasks: 
+                if completed == num_tasks:
                     output = ""
-                    sys.stdout.write("\r\x1b[K"+output.__str__())
+                    sys.stdout.write("\r\x1b[K" + output.__str__())
                     break
-                output = "\r Waiting for %i tasks to complete (%i%% done) ..." %(num_tasks-completed, float(completed)/float(num_tasks)*100.0)
-                sys.stdout.write("\r\x1b[K"+output.__str__())
+                output = "\r Waiting for %i tasks to complete '\
+                '(%i%% done) ..." \
+                % (num_tasks - completed, float(completed) \
+                   / float(num_tasks) * 100.0)
+                sys.stdout.write("\r\x1b[K" + output.__str__())
                 sys.stdout.flush()
-            
-        init = True        
+
+        init = True
         for pos,out in processresult:
             if is_float(out) or is_int(out):
                 # f returns a number -> iterator returns an image
                 if init:
                     from image import Image
-                    result = Image(wcs=self.wcs.copy(),data=np.zeros(shape=(self.shape[1],self.shape[2])),unit=self.unit)
-                    init = False       
+                    result = Image(wcs=self.wcs.copy(), \
+                                   data=np.zeros(shape=(self.shape[1],\
+                                                        self.shape[2])),\
+                                    unit=self.unit)
+                    init = False
                 p,q = pos
                 result[p,q] = out
-            else:         
+            else:
                 try:
                     if out.spectrum:
                     #f returns a spectrum -> iterator returns a cube
                         if init:
                             if self.var is None:
-                                result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit,fscale=out.fscale)
+                                result = Cube(wcs=self.wcs.copy(), \
+                                              wave=out.wave.copy(), \
+                                              data=np.zeros(shape=(out.shape,\
+                                                             self.shape[1],\
+                                                             self.shape[2])), \
+                                              unit=self.unit, \
+                                              fscale=out.fscale)
                             else:
-                                result = Cube(wcs=self.wcs.copy(),wave=out.wave.copy(),data=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),var=np.zeros(shape=(out.shape,self.shape[1],self.shape[2])),unit=self.unit,fscale=out.fscale)
-                            init = False               
+                                result = Cube(wcs=self.wcs.copy(), \
+                                              wave=out.wave.copy(), \
+                                              data=np.zeros(\
+                                              shape=(out.shape,self.shape[1],\
+                                                      self.shape[2])), \
+                                              var=np.zeros(\
+                                              shape=(out.shape,self.shape[1],\
+                                                      self.shape[2])), \
+                                              unit=self.unit, \
+                                              fscale=out.fscale)
+                            init = False
                         p,q = pos
                         result[:,p,q] = out
-                        
+
                 except:
                     #f returns dtype -> iterator returns an array of dtype
                     if init:
-                        result = np.empty((self.shape[1],self.shape[2]),dtype=type(out))
-                        init = False  
+                        result = np.empty((self.shape[1],self.shape[2]), \
+                                          dtype=type(out))
+                        init = False
                     p,q = pos
                     result[p,q] = out
-                
-        return result    
-        
-    
+
+        return result
+
     def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
         """loops over all images to apply a function/method.
         Returns the resulting cube.
         Multiprocessing is used.
-        
-        :param f: Image method or function that the first argument is a Image object. It should return an Image object. 
+
+        :param f: Image method or function that the first argument
+        is a Image object. It should return an Image object.
         :type f: function or :class:`mpdaf.obj.Image` method
-        :param cpu: number of CPUs. It is also possible to set the mpdaf.CPU global variable.
+        :param cpu: number of CPUs. It is also possible to set
+        the mpdaf.CPU global variable.
         :type cpu: integer
         :param verbose: if True, progression is printed.
         :type verbose: boolean
         :param kargs: kargs can be used to set function arguments.
         :rtype: :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Image`,
-        
+
                 :class:`mpdaf.obj.Spectrum` if f returns a number,
-                
+
                  np.array(dtype=object) in others cases.
         """
         from mpdaf import CPU
-        if cpu is not None and cpu<multiprocessing.cpu_count():
+        if cpu is not None and cpu < multiprocessing.cpu_count():
             cpu_count = cpu
-        elif CPU != 0 and CPU<multiprocessing.cpu_count():
+        elif CPU != 0 and CPU < multiprocessing.cpu_count():
             cpu_count = CPU
         else:
             cpu_count = multiprocessing.cpu_count() - 1
-        
-        pool = multiprocessing.Pool(processes = cpu_count)
+
+        pool = multiprocessing.Pool(processes=cpu_count)
         processlist = list()
-           
-        if isinstance (f, types.MethodType):
+
+        if isinstance(f, types.MethodType):
             f = f.__name__
-        
+
         for ima,k in iter_ima(self, index=True):
             header = ima.wcs.to_header()
             processlist.append([ima,k,f,header,kargs])
         num_tasks = len(processlist)
-       
+
         processresult = pool.imap_unordered(_process_ima,processlist)
         pool.close()
-        
+
         if verbose:
-            print "loop_ima_multiprocessing (%s): %i tasks"%(f,num_tasks)
-            import time, sys
+            print "loop_ima_multiprocessing (%s): %i tasks" % (f, num_tasks)
+            import time
+            import sys
             while (True):
                 time.sleep(5)
                 completed = processresult._index
                 if completed == num_tasks:
                     output = ""
-                    sys.stdout.write("\r\x1b[K"+output.__str__())
+                    sys.stdout.write("\r\x1b[K" + output.__str__())
                     break
-                output = "\r Waiting for %i tasks to complete (%i%% done) ..." %(num_tasks-completed, float(completed)/float(num_tasks)*100.0)
-                sys.stdout.write("\r\x1b[K"+output.__str__())
+                output = "\r Waiting for %i tasks to complete '\
+                '(%i%% done) ..." % (num_tasks - completed, \
+                                    float(completed) / float(num_tasks) \
+                                    * 100.0)
+                sys.stdout.write("\r\x1b[K" + output.__str__())
                 sys.stdout.flush()
-            
-        init = True        
-        for k,out,h in processresult:  
+
+        init = True
+        for k,out,h in processresult:
             if is_float(out) or is_int(out):
             # f returns a number -> iterator returns a spectrum
                 if init:
                     from spectrum import Spectrum
-                    result = Spectrum(wave=self.wave.copy(),data=np.zeros(shape=self.shape[0]),unit=self.unit)
+                    result = Spectrum(wave=self.wave.copy(), \
+                                      data=np.zeros(shape=self.shape[0]),\
+                                       unit=self.unit)
                     init = False
                 result[k] = out
             else:
@@ -2283,9 +2828,18 @@ class Cube(object):
                             wcs.set_naxis1(out.shape[1])
                             wcs.set_naxis2(out.shape[0])
                             if self.var is None:
-                                result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit,fscale=out.fscale)
+                                result = Cube(wcs=wcs, \
+                                              wave=self.wave.copy(), \
+            data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
+                                              unit=self.unit, \
+                                              fscale=out.fscale)
                             else:
-                                result = Cube(wcs=wcs,wave=self.wave.copy(),data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])),unit=self.unit,fscale=out.fscale)
+                                result = Cube(wcs=wcs, \
+                                              wave=self.wave.copy(), \
+            data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
+            var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
+                                              unit=self.unit, \
+                                              fscale=out.fscale)
                             init = False
                         result[k,:,:] = out
                 except:
@@ -2294,24 +2848,27 @@ class Cube(object):
                         result = np.empty(self.shape[0],dtype=type(out))
                         init = False
                     result[k] = out
-                    
+
         return result
-                
-   
+
+
 def _process_spe(arglist):
     try:
         obj = arglist[0]
         pos = arglist[1]
         f = arglist[2]
         kargs = arglist[3]
-        if isinstance (f,types.FunctionType):
+        if isinstance(f,types.FunctionType):
             obj_result = f(obj,**kargs)
         else:
-            obj_result = getattr(obj, f)(**kargs)  
-        
+            obj_result = getattr(obj, f)(**kargs)
+
         return (pos,obj_result)
     except Exception as inst:
-        raise type(inst) , str(inst) + '\n The error occurred for the spectrum [:,%i,%i]'%(pos[0],pos[1])
+        raise type(inst), str(inst) + \
+            '\n The error occurred for the spectrum '\
+            '[:,%i,%i]' % (pos[0],pos[1])
+
 
 def _process_ima(arglist):
     try:
@@ -2320,44 +2877,50 @@ def _process_ima(arglist):
         obj.wcs = WCS(arglist[3])
         obj.wcs.set_naxis1(obj.shape[1])
         obj.wcs.set_naxis2(obj.shape[0])
-    
+
         pos = arglist[1]
         f = arglist[2]
         kargs = arglist[4]
-        if isinstance (f,types.FunctionType):
+        if isinstance(f,types.FunctionType):
             obj_result = f(obj,**kargs)
         else:
-            obj_result = getattr(obj, f)(**kargs)  
+            obj_result = getattr(obj, f)(**kargs)
         try:
             header = obj_result.wcs.to_header()
         except:
             header = None
-    
+
         return (pos,obj_result,header)
     except Exception as inst:
-        raise type(inst) , str(inst) + '\n The error occurred for the image [%i,:,:]'%pos
-    
+        raise type(inst), str(inst) + '\n The error occurred '\
+            'for the image [%i,:,:]' % pos
+
+
 class CubeDisk(object):
-    """Sometimes, MPDAF users may want to open fairly large datacubes (> 4 Gb or so).
+    """Sometimes, MPDAF users may want to open fairly large datacubes
+    (> 4 Gb or so).
     This can be difficult to handle with limited RAM.
     This class provides a way to open datacube fits files with memory mapping.
-    The methods of the class can extract a spectrum, an image or a smaller datacube from the larger one.
-    
+    The methods of the class can extract a spectrum, an image or a smaller
+    datacube from the larger one.
+
     :param filename: Possible FITS filename.
     :type filename: string
-    :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+    :param ext: Number/name of the data extension or numbers/names
+    of the data and variance extensions.
     :type ext: integer or (integer,integer) or string or (string,string)
-    :param notnoise: True if the noise Variance cube is not read (if it exists).
-  
+    :param notnoise: True if the noise Variance cube is not read
+    (if it exists).
+
            Use notnoise=True to create cube without variance extension.
     :type notnoise: bool
 
     Attributes
     ----------
-    
+
     filename (string) : Fits file
-    
-    data (int or string) : Data extension 
+
+    data (int or string) : Data extension
 
     unit (string) : Possible data unit type
 
@@ -2365,7 +2928,8 @@ class CubeDisk(object):
 
     data_header (pyfits.CardList) : Possible FITS data header instance.
 
-    shape (array of 3 integers) : Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
+    shape (array of 3 integers) : Lengths of data in Z and Y and X
+    (python notation (nz,ny,nx)).
 
     var (int or string) : Variance extension (-1 if any).
 
@@ -2374,19 +2938,21 @@ class CubeDisk(object):
     wcs (:class:`mpdaf.obj.WCS`) : World coordinates.
 
     wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates
-    
+
     ima (dict{string, :class:`mpdaf.obj.Image`} : dictionary of images
     """
-    
-    def __init__(self, filename=None, ext = None, notnoise=False, ima=True):
+
+    def __init__(self, filename=None, ext=None, notnoise=False, ima=True):
         """Creates a CubeDisk object.
-        
+
         :param filename: Possible FITS filename.
         :type filename: string
-        :param ext: Number/name of the data extension or numbers/names of the data and variance extensions.
+        :param ext: Number/name of the data extension or
+        numbers/names of the data and variance extensions.
         :type ext: integer or (integer,integer) or string or (string,string)
-        :param notnoise: True if the noise Variance cube is not read (if it exists).
-  
+        :param notnoise: True if the noise Variance cube is not read
+        (if it exists).
+
            Use notnoise=True to create cube without variance extension.
         :type notnoise: bool
         """
@@ -2397,14 +2963,16 @@ class CubeDisk(object):
             # primary header
             hdr = f[0].header
             if len(f) == 1:
-                # if the number of extension is 1, we just read the data from the primary header
+                # if the number of extension is 1,
+                #we just read the data from the primary header
                 # test if image
                 if hdr['NAXIS'] != 3:
-                    raise IOError, 'Wrong dimension number: not a cube'
+                    raise IOError('Wrong dimension number: not a cube')
                 self.unit = hdr.get('BUNIT', None)
                 self.primary_header = pyfits.CardList()
                 self.data_header = hdr.ascard
-                self.shape = np.array([hdr['NAXIS3'],hdr['NAXIS2'],hdr['NAXIS1']])
+                self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],\
+                                        hdr['NAXIS1']])
                 self.data = 0
                 self.var = -1
                 self.fscale = hdr.get('FSCALE', 1.0)
@@ -2438,15 +3006,15 @@ class CubeDisk(object):
                     h = f[n].header
                     d = n
                 if h['NAXIS'] != 3:
-                    raise IOError, 'Wrong dimension number in DATA extension'
+                    raise IOError('Wrong dimension number in DATA extension')
                 self.unit = h.get('BUNIT', None)
                 self.primary_header = hdr.ascard
                 self.data_header = h.ascard
-                self.shape= np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
+                self.shape = np.array([h['NAXIS3'], h['NAXIS2'], h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
                 try:
-                    self.wcs = WCS(h) # WCS object from data header
+                    self.wcs = WCS(h)  # WCS object from data header
                 except:
                     d = {'class': 'CubeDisk', 'method': '__init__'}
                     logger.warning("wcs not copied", extra=d)
@@ -2461,7 +3029,8 @@ class CubeDisk(object):
                 crpix = h.get('CRPIX3')
                 crval = h.get('CRVAL3')
                 cunit = h.get('CUNIT3','')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit, self.shape[0])
+                self.wave = WaveCoord(crpix, cdelt, crval, \
+                                      cunit, self.shape[0])
                 self.var = -1
                 if not notnoise:
                     try:
@@ -2471,9 +3040,13 @@ class CubeDisk(object):
                             n = ext[1]
                             fstat = n
                         if f[fstat].header['NAXIS'] != 3:
-                            raise IOError, 'Wrong dimension number in variance extension'
-                        if f[fstat].header['NAXIS1'] != self.shape[2] and f[fstat].header['NAXIS2'] != self.shape[1] and f[fstat].header['NAXIS3'] != self.shape[0]:
-                            raise IOError, 'Number of points in STAT not equal to DATA'
+                            raise IOError('Wrong dimension number '\
+                                          'in variance extension')
+                        if f[fstat].header['NAXIS1'] != self.shape[2] and \
+                        f[fstat].header['NAXIS2'] != self.shape[1] and \
+                        f[fstat].header['NAXIS3'] != self.shape[0]:
+                            raise IOError('Number of points '\
+                                          'in STAT not equal to DATA')
                         self.var = fstat
                     except:
                         self.var = -1
@@ -2483,38 +3056,45 @@ class CubeDisk(object):
                         try:
                             hdr = f[i].header
                             if hdr['NAXIS'] != 2:
-                                raise IOError, '  not an image'
+                                raise IOError(' not an image')
                             unit = hdr.get('BUNIT', None)
                             primary_header = pyfits.CardList()
                             data_header = hdr.ascard
                             shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
                             data = np.array(f[i].data, dtype=float)
                             fscale = hdr.get('FSCALE', 1.0)
-                            wcs = WCS(hdr) # WCS object from data header
-                            self.ima[hdr.get('EXTNAME')] = Image(notnoise=True, shape=shape, wcs = wcs, unit=unit, data=data, fscale=fscale)
+                            wcs = WCS(hdr)  # WCS object from data header
+                            self.ima[hdr.get('EXTNAME')] = \
+                            Image(notnoise=True, shape=shape, wcs=wcs, \
+                                  unit=unit, data=data, fscale=fscale)
                         except:
                             pass
-             #DQ   
+             #DQ
             f.close()
-            
+
     def info(self):
         """Prints information.
         """
         if self.filename is None:
-            print '%i X %i X %i cube (no name)' %(self.shape[0],self.shape[1],self.shape[2])
+            print '%i X %i X %i cube (no name)' % (self.shape[0], \
+                                                   self.shape[1], \
+                                                   self.shape[2])
         else:
-            print '%i X %i X %i cube (%s)' %(self.shape[0],self.shape[1],self.shape[2],self.filename)
-        data = '.data(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
+            print '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],\
+                                              self.shape[2], self.filename)
+        data = '.data(%i,%i,%i)' % (self.shape[0], self.shape[1], \
+                                    self.shape[2])
         if self.data is None:
             data = 'no data'
-        noise = '.var(%i,%i,%i)' %(self.shape[0],self.shape[1],self.shape[2])
+        noise = '.var(%i,%i,%i)' % (self.shape[0], self.shape[1], \
+                                    self.shape[2])
         if self.var == -1:
             noise = 'no noise'
         if self.unit is None:
             unit = 'no unit'
         else:
             unit = self.unit
-        print '%s (%s) fscale=%g, %s' %(data,unit,self.fscale,noise)
+        print '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
         if self.wcs is None:
             print 'no world coordinates for spatial direction'
         else:
@@ -2527,19 +3107,19 @@ class CubeDisk(object):
         for k in self.ima.keys():
             print k,
         print '\n'
-        
+
     def __getitem__(self,item):
         """Returns the corresponding object:
-        
+
         cube[k,p,k] = value
-        
+
         cube[k,:,:] = spectrum
-        
+
         cube[:,p,q] = image
-        
+
         cube[:,:,:] = sub-cube
         """
-        if isinstance(item, tuple) and len(item)==3:
+        if isinstance(item, tuple) and len(item) == 3:
             f = pyfits.open(self.filename, memmap=True)
             data = f[self.data].data[item]
             if self.var != -1:
@@ -2550,21 +3130,22 @@ class CubeDisk(object):
             if is_int(item[0]):
                 if is_int(item[1]) and is_int(item[2]):
                     #return a float
-                    return data*self.fscale
+                    return data * self.fscale
                 else:
                     #return an image
                     from image import Image
                     if is_int(item[1]):
-                        shape = (1,data.shape[0])
+                        shape = (1, data.shape[0])
                     elif is_int(item[2]):
-                        shape = (data.shape[0],1)
+                        shape = (data.shape[0], 1)
                     else:
                         shape = data.shape
                     try:
                         wcs = self.wcs[item[1],item[2]]
                     except:
                         wcs = None
-                    res = Image(shape=shape, wcs = wcs, unit=self.unit, fscale=self.fscale, data=data, var=var)
+                    res = Image(shape=shape, wcs=wcs, unit=self.unit, \
+                                fscale=self.fscale, data=data, var=var)
                     return res
             elif is_int(item[1]) and is_int(item[2]):
                 #return a spectrum
@@ -2574,7 +3155,8 @@ class CubeDisk(object):
                     wave = self.wave[item[0]]
                 except:
                     wave = None
-                res = Spectrum(shape=shape, wave = wave, unit=self.unit, fscale=self.fscale, data=data, var=var)
+                res = Spectrum(shape=shape, wave=wave, unit=self.unit, \
+                               fscale=self.fscale, data=data, var=var)
                 return res
             else:
                 #return a cube
@@ -2592,15 +3174,15 @@ class CubeDisk(object):
                     wave = self.wave[item[0]]
                 except:
                     wave = None
-                res = Cube(shape=shape, wcs = wcs, wave = wave, unit=self.unit, fscale=self.fscale, data=data, var=var)
+                res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit, \
+                           fscale=self.fscale, data=data, var=var)
                 return res
         else:
-            raise ValueError, 'Operation forbidden'
-        
-        
+            raise ValueError('Operation forbidden')
+
     def truncate(self, lmin, lmax, y_min, y_max, x_min, x_max, mask=True):
         """ Truncates the cube and return a sub-cube.
-        
+
           :param lmin: Minimum wavelength.
           :type lmin: float
           :param lmax: Maximum wavelength.
@@ -2613,34 +3195,36 @@ class CubeDisk(object):
           :type x_min: float
           :param x_max: Maximum value of x in degrees.
           :type x_max: float
-          :param mask: if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
+          :param mask: if True, pixels outside [y_min,y_max]
+          and [x_min,x_max] are masked.
           :type mask: bool
         """
         skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
-        
+
         imin = int(np.min(pixcrd[:,0]))
-        if imin<0:
+        if imin < 0:
             imin = 0
-        imax = int(np.max(pixcrd[:,0]))+1
-        if imax>self.shape[1]:
+        imax = int(np.max(pixcrd[:,0])) + 1
+        if imax > self.shape[1]:
             imax = self.shape[1]
         jmin = int(np.min(pixcrd[:,1]))
-        if jmin<0:
+        if jmin < 0:
             jmin = 0
-        jmax = int(np.max(pixcrd[:,1]))+1
-        if jmax>self.shape[2]:
-            jmax=self.shape[2]
-            
-        kmin = max(0,self.wave.pixel(lmin,nearest=True))
-        kmax = min(self.shape[0],self.wave.pixel(lmax,nearest=True) + 1)
-        
-        if kmin==kmax:
-            raise ValueError, 'Minimum and maximum wavelengths are equal'
-        
-        if kmax==kmin+1:
-            raise ValueError, 'Minimum and maximum wavelengths are outside the spectrum range'
-    
+        jmax = int(np.max(pixcrd[:,1])) + 1
+        if jmax > self.shape[2]:
+            jmax = self.shape[2]
+
+        kmin = max(0,self.wave.pixel(lmin, nearest=True))
+        kmax = min(self.shape[0],self.wave.pixel(lmax, nearest=True) + 1)
+
+        if kmin == kmax:
+            raise ValueError('Minimum and maximum wavelengths are equal')
+
+        if kmax == kmin + 1:
+            raise ValueError('Minimum and maximum wavelengths '\
+                             'are outside the spectrum range')
+
         f = pyfits.open(self.filename, memmap=True)
         data = f[self.data].data[kmin:kmax,imin:imax,jmin:jmax]
         if self.var != -1:
@@ -2648,9 +3232,9 @@ class CubeDisk(object):
         else:
             self.var = None
         f.close()
-         
+
         shape = np.array((data.shape[0],data.shape[1],data.shape[2]))
-        
+
         try:
             wcs = self.wcs[imin:imax,jmin:jmax]
         except:
@@ -2659,27 +3243,30 @@ class CubeDisk(object):
             wave = self.wave[kmin:kmax]
         except:
             wave = None
-            
-        res = Cube(shape=shape, wcs = wcs, wave = wave, unit=self.unit, fscale=self.fscale, data=data, var=var)
-        
+
+        res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit, \
+                   fscale=self.fscale, data=data, var=var)
+
         if mask:
             #mask outside pixels
             m = np.ma.make_mask_none(res.data.shape)
             for j in range(res.shape[1]):
-                pixcrd = np.array([np.ones(shape[2])*j,np.arange(shape[2])]).T
+                pixcrd = np.array([np.ones(shape[2]) \
+                                   * j,np.arange(shape[2])]).T
                 skycrd = res.wcs.pix2sky(pixcrd)
                 test_ra_min = np.array(skycrd[:,1]) < x_min
                 test_ra_max = np.array(skycrd[:,1]) > x_max
                 test_dec_min = np.array(skycrd[:,0]) < y_min
                 test_dec_max = np.array(skycrd[:,0]) > y_max
-                m[:,j,:] = test_ra_min + test_ra_max + test_dec_min + test_dec_max
+                m[:,j,:] = test_ra_min + test_ra_max \
+                + test_dec_min + test_dec_max
             try:
                 m = np.ma.mask_or(m,np.ma.getmask(res.data))
                 res.data = np.ma.MaskedArray(res.data, mask=m)
             except:
                 pass
         return res
-    
+
     def get_white_image(self):
         """Performs a sum over the wavelength dimension and returns an image.
         """
@@ -2692,25 +3279,25 @@ class CubeDisk(object):
                 data = np.sum(f[self.data].data[0:k], axis=0)
                 loop = False
             except:
-                k = k/2
+                k = k / 2
         kmin = k
-        kmax = 2*k
-        while kmax<self.shape[0]:
+        kmax = 2 * k
+        while kmax < self.shape[0]:
             data += np.sum(f[self.data].data[kmin:kmax], axis=0)
             kmin = kmax
             kmax += k
-            
+
         if self.var != -1:
             kmin = 0
             kmax = k
             var = np.zeros((self.shape[1],self.shape[2]))
-            while kmax<self.shape[0]:
+            while kmax < self.shape[0]:
                 var += np.sum(f[self.var].data[kmin:kmax], axis=0)
                 kmin = kmax
                 kmax += k
-        
+
         f.close()
-            
-        res = Image(shape=data.shape, wcs = self.wcs, unit=self.unit, fscale=self.fscale, data=data, var=var)
+
+        res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit, \
+                    fscale=self.fscale, data=data, var=var)
         return res
-        

@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib.colors import Normalize
 import matplotlib.cbook as cbook
 
+
 class ArcsinhNorm(Normalize):
     """
     Normalize a given value to arcsinh scale
@@ -15,24 +16,26 @@ class ArcsinhNorm(Normalize):
         self.autoscale_None(result)
         vmin, vmax = self.vmin, self.vmax
         if vmin > vmax:
-            raise ValueError("minvalue must be less than or equal to maxvalue")
-        elif vmin==vmax:
+            raise ValueError('minvalue must be less than '\
+                             'or equal to maxvalue')
+        elif vmin == vmax:
             result.fill(0)
         else:
             if clip:
                 mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
+                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),\
                                 mask=mask)
             else:
                 val = result
-                
-            result = (val-vmin) * (1.0/(vmax-vmin))
+
+            result = (val - vmin) * (1.0 / (vmax - vmin))
             midpoint = -0.033
-            result = np.ma.arcsinh(result/midpoint) / np.ma.arcsinh(1./midpoint)
- 
+            result = np.ma.arcsinh(result / midpoint) \
+            / np.ma.arcsinh(1. / midpoint)
+
         if is_scalar:
             result = result[0]
- 
+
         return result
 
     def inverse(self, value):
@@ -44,10 +47,11 @@ class ArcsinhNorm(Normalize):
             val = np.ma.asarray(value)
         else:
             val = value
- 
+
         midpoint = -0.033
-        val = midpoint * np.ma.sinh(val*np.ma.arcsinh(1./midpoint))
+        val = midpoint * np.ma.sinh(val * np.ma.arcsinh(1. / midpoint))
         return vmin + val * (vmax - vmin)
+
 
 class PowerNorm(Normalize):
     """
@@ -62,23 +66,24 @@ class PowerNorm(Normalize):
         self.autoscale_None(result)
         vmin, vmax = self.vmin, self.vmax
         if vmin > vmax:
-            raise ValueError("minvalue must be less than or equal to maxvalue")
-        elif vmin==vmax:
+            raise ValueError('minvalue must be less '\
+                             'than or equal to maxvalue')
+        elif vmin == vmax:
             result.fill(0)
         else:
             if clip:
                 mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
+                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),\
                                 mask=mask)
             else:
                 val = result
-                
-            result = (val-vmin) * (1.0/(vmax-vmin))
+
+            result = (val - vmin) * (1.0 / (vmax - vmin))
             result = np.ma.power(result, 2)
- 
+
         if is_scalar:
             result = result[0]
- 
+
         return result
 
     def inverse(self, value):
@@ -90,8 +95,8 @@ class PowerNorm(Normalize):
             val = np.ma.asarray(value)
         else:
             val = value
- 
-        val = np.ma.power(val, (1./2))
+
+        val = np.ma.power(val, (1. / 2))
         return vmin + val * (vmax - vmin)
 
 
@@ -108,23 +113,24 @@ class SqrtNorm(Normalize):
         self.autoscale_None(result)
         vmin, vmax = self.vmin, self.vmax
         if vmin > vmax:
-            raise ValueError("minvalue must be less than or equal to maxvalue")
-        elif vmin==vmax:
+            raise ValueError('minvalue must be less than '\
+                             'or equal to maxvalue')
+        elif vmin == vmax:
             result.fill(0)
         else:
             if clip:
                 mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
+                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),\
                                 mask=mask)
             else:
                 val = result
-                
-            result = (val-vmin) * (1.0/(vmax-vmin))
+
+            result = (val - vmin) * (1.0 / (vmax - vmin))
             result = np.ma.sqrt(result)
- 
+
         if is_scalar:
             result = result[0]
- 
+
         return result
 
     def inverse(self, value):
@@ -136,10 +142,11 @@ class SqrtNorm(Normalize):
             val = np.ma.asarray(value)
         else:
             val = value
- 
+
         val = val * val
         return vmin + val * (vmax - vmin)
-               
+
+
 class LogNorm(Normalize):
     """
     Normalize a given value to the 0-1 range on a log scale
@@ -155,18 +162,20 @@ class LogNorm(Normalize):
         self.autoscale_None(result)
         vmin, vmax = self.vmin, self.vmax
         if vmin > vmax:
-            raise ValueError("minvalue must be less than or equal to maxvalue")
-        elif vmin<=0:
+            raise ValueError('minvalue must be less than '\
+                             'or equal to maxvalue')
+        elif vmin <= 0:
             raise ValueError("values must all be positive")
-        elif vmin==vmax:
+        elif vmin == vmax:
             result.fill(0)
         else:
             if clip:
                 mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
+                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),\
                                 mask=mask)
             midpoint = 0.05
-            result = np.ma.log10((result/midpoint) + 1.) / np.ma.log10((1./midpoint) + 1.)
+            result = np.ma.log10((result / midpoint) + 1.) \
+            / np.ma.log10((1. / midpoint) + 1.)
         if is_scalar:
             result = result[0]
         return result
@@ -181,8 +190,9 @@ class LogNorm(Normalize):
         else:
             val = value
         midpoint = 0.05
-        val = midpoint * (np.ma.power(10., (val*np.ma.log10(1./midpoint+1.))) - 1.)
-        
+        val = midpoint \
+        * (np.ma.power(10., (val * np.ma.log10(1. / midpoint + 1.))) - 1.)
+
         return val
 
     def autoscale(self, A):

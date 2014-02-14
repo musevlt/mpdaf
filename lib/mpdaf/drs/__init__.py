@@ -1,4 +1,3 @@
- 
 """Copyright (C) 2011 Centre de Recherche Astronomique de Lyon (CRAL)
 
 
@@ -44,8 +43,9 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 
 """
-__version__  = '1.1.3'
-__date__     = '2013/11/20'
+__version__ = '1.1.3'
+__date__ = '2013/11/20'
+
 
 """
 Import the different submodules
@@ -57,14 +57,3 @@ from calibobj import CalibFile
 from calibobj import CalibDir
 from pixtable import PixTable
 from displaypixtable import DisplayPixTable
-
-#import os
-#import atexit
-
-#@atexit.register
-#def rm_mpdaffiles():
-#    cmd_rm= "rm /tmp/mpdaf*"
-#    os.system(cmd_rm)
-
-#__all__ = ['rawobj','calibobj']
-
