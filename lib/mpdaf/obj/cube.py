@@ -2515,6 +2515,22 @@ class Cube(object):
             at the end along each direction
           :type margin: 'center' or 'origin'
         '''
+        if is_int(factor):
+            factor = (factor,factor,factor)
+        factor = np.array(factor)
+        if factor[0] < 1:
+            factor[0] = 1
+        if factor[0] > self.shape[0]:
+            factor[0] = self.shape[0]
+        if factor[1] < 1:
+            factor[1] = 1
+        if factor[1] > self.shape[1]:
+            factor[1] = self.shape[1]
+        if factor[2] < 1:
+            factor[2] = 1
+        if factor[2] > self.shape[2]:
+            factor[2] = self.shape[2]
+            
         res = self.copy()
         res._rebin_factor(factor, margin, flux)
         return res
