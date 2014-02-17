@@ -2068,11 +2068,6 @@ class Cube(object):
         '''
         if is_int(factor):
             factor = (factor,factor,factor)
-        if factor[0] < 1 or factor[0] >= self.shape[0] or factor[1] < 1 \
-        or factor[1] >= self.shape[1] or factor[2] < 1 \
-        or factor[2] >= self.shape[2]:
-            raise ValueError('factor must be in ]1,shape[')
-            return None
         if not np.sometrue(np.mod(self.shape[0], factor[0])) \
         and not np.sometrue(np.mod(self.shape[1], factor[1])) \
         and not np.sometrue(np.mod(self.shape[2], factor[2])):
