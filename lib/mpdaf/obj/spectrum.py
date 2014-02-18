@@ -321,17 +321,26 @@ class Spectrum(object):
                 self.var = None
                 if not notnoise:
                     if ext is None:
-                        fstat = f['STAT']
+                        try:
+                            fstat = f['STAT']
+                        except:
+                            fstat = None
                     else:
-                        n = ext[1]
-                        fstat = f[n]
-                    if fstat.header['NAXIS'] != 1:
-                        raise IOError('Wrong dimension number '\
-                        'in STAT extension')
-                    if fstat.header['NAXIS1'] != self.shape:
-                        raise IOError('Number of points in STAT '\
-                                      'not equal to DATA')
-                    self.var = np.array(fstat.data, dtype=float)
+                        try:
+                            n = ext[1]
+                            fstat = f[n]
+                        except:
+                            fstat = None
+                    if fstat is None:
+                        self.var = None
+                    else:
+                        if fstat.header['NAXIS'] != 1:
+                            raise IOError('Wrong dimension number '\
+                                          'in STAT extension')
+                            if fstat.header['NAXIS1'] != self.shape:
+                                raise IOError('Number of points in STAT '\
+                                              'not equal to DATA')
+                        self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)

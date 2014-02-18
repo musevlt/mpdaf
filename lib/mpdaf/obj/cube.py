@@ -274,19 +274,28 @@ class Cube(object):
                 self.var = None
                 if not notnoise:
                     if ext is None:
-                        fstat = f['STAT']
+                        try:
+                            fstat = f['STAT']  
+                        except:
+                            fstat = None
                     else:
-                        n = ext[1]
-                        fstat = f[n]
-                    if fstat.header['NAXIS'] != 3:
-                        raise IOError('Wrong dimension number '\
+                        try:
+                            n = ext[1]
+                            fstat = f[n]
+                        except:
+                            fstat = None
+                    if fstat is None:
+                        self.var = None
+                    else:
+                        if fstat.header['NAXIS'] != 3:
+                            raise IOError('Wrong dimension number '\
                                       'in variance extension')
-                    if fstat.header['NAXIS1'] != self.shape[2] and \
-                    fstat.header['NAXIS2'] != self.shape[1] and \
-                    fstat.header['NAXIS3'] != self.shape[0]:
-                        raise IOError('Number of points in STAT '\
+                        if fstat.header['NAXIS1'] != self.shape[2] and \
+                        fstat.header['NAXIS2'] != self.shape[1] and \
+                        fstat.header['NAXIS3'] != self.shape[0]:
+                            raise IOError('Number of points in STAT '\
                                       'not equal to DATA')
-                    self.var = np.array(fstat.data, dtype=float)
+                        self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
                 try:
                     mask = np.ma.make_mask(f['DQ'].data)

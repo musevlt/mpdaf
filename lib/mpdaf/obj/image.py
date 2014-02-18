@@ -432,19 +432,25 @@ class Image(object):
                                 try:
                                     fstat = f['WHT']
                                 except:
-                                    raise IOError('no STAT or WHT extension')
+                                    fstat = None
                         else:
-                            n = ext[1]
-                            fstat = f[n]
-
-                        if fstat.header['NAXIS'] != 2:
-                            raise IOError('Wrong dimension number '\
+                            try:
+                                n = ext[1]
+                                fstat = f[n]
+                            except:
+                                fstat = None
+                                
+                        if fstat is None:
+                            self.var = None
+                        else:
+                            if fstat.header['NAXIS'] != 2:
+                                raise IOError('Wrong dimension number '\
                                           'in STAT extension')
-                        if fstat.header['NAXIS1'] != self.shape[1] \
-                        and fstat.header['NAXIS2'] != self.shape[0]:
-                            raise IOError('Number of points in STAT not '\
-                                          'equal to DATA')
-                        self.var = np.array(fstat.data, dtype=float)
+                                if fstat.header['NAXIS1'] != self.shape[1] \
+                                and fstat.header['NAXIS2'] != self.shape[0]:
+                                    raise IOError('Number of points in STAT '\
+                                                  'not equal to DATA')
+                            self.var = np.array(fstat.data, dtype=float)
 
                     # DQ extension
                     try:
