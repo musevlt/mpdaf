@@ -3,7 +3,10 @@
 from mpdaf.obj import Image
 from mpdaf.obj import WCS
 import numpy as np
-import pyfits
+try:
+    from astropy.io import fits as pyfits
+except:
+    import pyfits
 import datetime
 import tempfile
 import os
@@ -36,25 +39,25 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
     prihdu = pyfits.PrimaryHDU()
     warnings.simplefilter("ignore")
     if primary_header is not None:
-        for card in primary_header:
+        for card in primary_header.cards:
             try:
-                prihdu.header.update(card.key, card.value, card.comment)
+                prihdu.header[card.keyword] = (card.value, card.comment)
             except ValueError:
                 if isinstance(card.value, str):
-                    n = 80 - len(card.key) - 14
+                    n = 80 - len(card.keyword) - 14
                     s = card.value[0:n]
-                    prihdu.header.update('hierarch %s' % card.key, s, \
-                                         card.comment)
+                    prihdu.header['hierarch %s' % card.keyword] = \
+                    (s, card.comment)
                 else:
-                    prihdu.header.update('hierarch %s' % card.key, \
-                                         card.value, card.comment)
+                    prihdu.header['hierarch %s' % card.keyword] = \
+                                         (card.value, card.comment)
             except:
                 d = {'class': 'pixtable', 'method': 'write'}
-                logger.warning("%s keyword not written", card.key, extra=d)
+                logger.warning("%s keyword not written", card.keyword, \
+                               extra=d)
                 pass
-    prihdu.header.update('date', str(datetime.datetime.now()), \
-                         'creation date')
-    prihdu.header.update('author', 'MPDAF', 'origin of the file')
+    prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
+    prihdu.header['author'] = ('MPDAF', 'origin of the file')
     warnings.simplefilter("default")
     if save_as_ima:
         hdulist = [prihdu]
@@ -79,17 +82,17 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
                                            data=weight.reshape((nrows, 1))))
         hdu = pyfits.HDUList(hdulist)
         if wcs:
-            hdu[1].header.update('BUNIT', 'deg')
-            hdu[2].header.update('BUNIT', 'deg')
+            hdu[1].header['BUNIT'] = 'deg'
+            hdu[2].header['BUNIT'] = 'deg'
         else:
-            hdu[1].header.update('BUNIT', 'pix')
-            hdu[2].header.update('BUNIT', 'pix')
-        hdu[3].header.update('BUNIT', 'Angstrom')
-        hdu[4].header.update('BUNIT', 'count')
-        hdu[6].header.update('BUNIT', 'count**2')
+            hdu[1].header['BUNIT'] = 'pix'
+            hdu[2].header['BUNIT'] = 'pix'
+        hdu[3].header['BUNIT'] = 'Angstrom'
+        hdu[4].header['BUNIT'] = 'count'
+        hdu[6].header['BUNIT'] = 'count**2'
         if weight is not None:
-            hdu[8].header.update('BUNIT', 'count')
-        hdu.writeto(filename, clobber=True)
+            hdu[8].header['BUNIT'] = 'count'
+        hdu.writeto(filename, clobber=True, output_verify='fix')
     else:
         cols = []
         if wcs:
@@ -116,7 +119,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
         coltab = pyfits.ColDefs(cols)
         tbhdu = pyfits.new_table(coltab)
         thdulist = pyfits.HDUList([prihdu, tbhdu])
-        thdulist.writeto(filename, clobber=True)
+        thdulist.writeto(filename, clobber=True, output_verify='fix')
 
 
 class PixTable(object):
@@ -132,7 +135,7 @@ class PixTable(object):
     filename : string
     The FITS file name. None if any.
 
-    primary_header : pyfits.CardList
+    primary_header : pyfits.Header
     The primary header.
 
     nrows : integer
@@ -180,7 +183,7 @@ class PixTable(object):
         if filename != None:
             try:
                 hdulist = pyfits.open(self.filename, memmap=1)
-                self.primary_header = hdulist[0].header.ascard
+                self.primary_header = hdulist[0].header
                 self.nrows = hdulist[1].header["NAXIS2"]
                 self.ima = (hdulist[1].header['XTENSION'] == 'IMAGE')
                 hdulist.close()
@@ -217,7 +220,7 @@ class PixTable(object):
             except IOError:
                 raise IOError('file %s not found' % filename)
         else:
-            self.primary_header = pyfits.CardList()
+            self.primary_header = pyfits.Header()
 
     def __del__(self):
         """Removes temporary files used for memory mapping.
@@ -241,7 +244,7 @@ class PixTable(object):
         result.fluxcal = self.fuxcal
         result.wcs = self.wcs
         result.ima = self.ima
-        result.primary_header = pyfits.CardList(self.primary_header)
+        result.primary_header = pyfits.Header(self.primary_header)
         return result
 
     def info(self):
@@ -254,20 +257,15 @@ class PixTable(object):
             "This pixel table was flux-calibrated"
         try:
             print '%s (%s)' % (self.primary_header["HIERARCH ESO "\
-                                                   "DRS MUSE "\
-                                                   "PIXTABLE WCS"].value, \
-                               self.primary_header["HIERARCH ESO "\
-                                                   "DRS MUSE "\
-                                                   "PIXTABLE WCS"].comment)
+                                                   "DRS MUSE PIXTABLE WCS"], \
+                               self.primary_header.comments["HIERARCH ESO "\
+                                                   "DRS MUSE PIXTABLE WCS"])
         except:
             try:
                 print '%s (%s)' % (self.primary_header["HIERARCH ESO "\
-                                                       "PRO MUSE "\
-                                                       "PIXTABLE WCS"].value,\
-                                    self.primary_header["HIERARCH ESO "\
-                                                        "PRO MUSE "\
-                                                        "PIXTABLE WCS"].\
-                                   comment)
+                                                       "PRO MUSE PIXTABLE WCS"],\
+                                    self.primary_header.comments["HIERARCH ESO "\
+                                                        "PRO MUSE PIXTABLE WCS"])
             except:
                 pass
         if self.filename != None:
@@ -666,45 +664,39 @@ class PixTable(object):
         # xpos
         xpos = self.get_xpos(ksel)
         try:
-            x_low = primary_header['HIERARCH ESO DRS MUSE '\
-                                   'PIXTABLE LIMITS X LOW']
-            x_high = primary_header['HIERARCH ESO DRS MUSE '\
-                                    'PIXTABLE LIMITS X HIGH']
+            primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW'] = \
+            float(xpos.min())
+            primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH'] = \
+            float(xpos.max())
         except:
-            x_low = primary_header['HIERARCH ESO PRO MUSE '\
-                                   'PIXTABLE LIMITS X LOW']
-            x_high = primary_header['HIERARCH ESO PRO MUSE '\
-                                    'PIXTABLE LIMITS X HIGH']
-        x_low.value = float(xpos.min())
-        x_high.value = float(xpos.max())
+            primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X LOW'] = \
+            float(xpos.min())
+            primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X HIGH'] = \
+            float(xpos.max())
         # ypos
         ypos = self.get_ypos(ksel)
         try:
-            y_low = primary_header['HIERARCH ESO DRS MUSE '\
-                                   'PIXTABLE LIMITS Y LOW']
-            y_high = primary_header['HIERARCH ESO DRS MUSE '\
-                                    'PIXTABLE LIMITS Y HIGH']
+            primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW'] = \
+            float(ypos.min())
+            primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH'] = \
+            float(ypos.max())
         except:
-            y_low = primary_header['HIERARCH ESO PRO MUSE '\
-                                   'PIXTABLE LIMITS Y LOW']
-            y_high = primary_header['HIERARCH ESO PRO MUSE '\
-                                    'PIXTABLE LIMITS Y HIGH']
-        y_low.value = float(ypos.min())
-        y_high.value = float(ypos.max())
+            primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y LOW'] = \
+            float(ypos.min())
+            primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y HIGH'] = \
+            float(ypos.max())
         #lambda
         lbda = self.get_lambda(ksel)
         try:
-            lbda_low = primary_header['HIERARCH ESO DRS MUSE '\
-                                      'PIXTABLE LIMITS LAMBDA LOW']
-            lbda_high = primary_header['HIERARCH ESO DRS MUSE '\
-                                       'PIXTABLE LIMITS LAMBDA HIGH']
+            primary_header['HIERARCH ESO DRS MUSE '\
+                           'PIXTABLE LIMITS LAMBDA LOW'] = float(lbda.min())
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS LAMBDA HIGH'] = float(lbda.max())
         except:
-            lbda_low = primary_header['HIERARCH ESO PRO MUSE '\
-                                      'PIXTABLE LIMITS LAMBDA LOW']
-            lbda_high = primary_header['HIERARCH ESO PRO MUSE '\
-                                       'PIXTABLE LIMITS LAMBDA HIGH']
-        lbda_low.value = float(lbda.min())
-        lbda_high.value = float(lbda.max())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS LAMBDA LOW'] = float(lbda.min())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS LAMBDA HIGH'] = float(lbda.max())
         #data
         data = self.get_data(ksel)
         #variance
@@ -714,35 +706,39 @@ class PixTable(object):
         # origin
         origin = self.get_origin(ksel)
         try:
-            ifu_low = primary_header['HIERARCH ESO DRS MUSE '\
-                                     'PIXTABLE LIMITS IFU LOW']
-            ifu_high = primary_header['HIERARCH ESO DRS MUSE '\
-                                      'PIXTABLE LIMITS IFU HIGH']
-            slice_low = primary_header['HIERARCH ESO DRS MUSE '\
-                                       'PIXTABLE LIMITS SLICE LOW']
-            slice_high = primary_header['HIERARCH ESO DRS MUSE '\
-                                        'PIXTABLE LIMITS SLICE HIGH']
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS IFU LOW'] = \
+                            int(self.origin2ifu(origin).min())
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS IFU HIGH'] = \
+                            int(self.origin2ifu(origin).max())
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS SLICE LOW'] = \
+                            int(self.origin2slice(origin).min())
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS SLICE HIGH'] = \
+                            int(self.origin2slice(origin).max())
         except:
-            ifu_low = primary_header['HIERARCH ESO PRO MUSE '\
-                                     'PIXTABLE LIMITS IFU LOW']
-            ifu_high = primary_header['HIERARCH ESO PRO MUSE '\
-                                      'PIXTABLE LIMITS IFU HIGH']
-            slice_low = primary_header['HIERARCH ESO PRO MUSE '\
-                                       'PIXTABLE LIMITS SLICE LOW']
-            slice_high = primary_header['HIERARCH ESO PRO MUSE '\
-                                        'PIXTABLE LIMITS SLICE HIGH']
-        ifu_low.value = int(self.origin2ifu(origin).min())
-        ifu_high.value = int(self.origin2ifu(origin).max())
-        slice_low.value = int(self.origin2slice(origin).min())
-        slice_high.value = int(self.origin2slice(origin).max())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS IFU LOW'] = \
+                            int(self.origin2ifu(origin).min())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS IFU HIGH'] = \
+                            int(self.origin2ifu(origin).max())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS SLICE LOW'] = \
+                            int(self.origin2slice(origin).min())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS SLICE HIGH'] = \
+                            int(self.origin2slice(origin).max())
         # merged pixtable
         if self.nifu > 1:
             try:
-                nifu = primary_header["HIERARCH ESO DRS MUSE PIXTABLE MERGED"]
-                nifu.value = len(np.unique(self.origin2ifu(origin)))
+                primary_header["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = \
+                len(np.unique(self.origin2ifu(origin)))
             except:
-                nifu = primary_header["HIERARCH ESO PRO MUSE PIXTABLE MERGED"]
-                nifu.value = len(np.unique(self.origin2ifu(origin)))
+                primary_header["HIERARCH ESO PRO MUSE PIXTABLE MERGED"] = \
+                len(np.unique(self.origin2ifu(origin)))
 
         # weight
         weight = self.get_weight(ksel)
@@ -753,18 +749,15 @@ class PixTable(object):
             newexp = selfexp[ksel]
             numbers_exp = np.unique(newexp)
             try:
-                nexp = primary_header["HIERARCH ESO DRS MUSE "\
-                                      "PIXTABLE COMBINED"]
-                nexp.value = len(numbers_exp)
+                primary_header["HIERARCH ESO DRS MUSE PIXTABLE COMBINED"] = \
+                len(numbers_exp)
                 for iexp, i in zip(numbers_exp, range(1, \
                                                       len(numbers_exp) + 1)):
                     ksel = np.where(newexp == iexp)
-                    first = primary_header["HIERARCH ESO DRS MUSE "\
-                                           "PIXTABLE EXP%i FIRST" % i]
-                    last = primary_header["HIERARCH ESO DRS MUSE "\
-                                          "PIXTABLE EXP%i LAST" % i]
-                    first.value = ksel[0][0]
-                    last.value = ksel[0][-1]
+                    primary_header["HIERARCH ESO DRS MUSE "\
+                                    "PIXTABLE EXP%i FIRST" % i] = ksel[0][0]
+                    primary_header["HIERARCH ESO DRS MUSE "\
+                                    "PIXTABLE EXP%i LAST" % i] = ksel[0][-1]
                 for i in range(len(numbers_exp) + 1, \
                                self.get_keywords("HIERARCH ESO DRS MUSE "\
                                                  "PIXTABLE COMBINED") + 1):
@@ -773,18 +766,15 @@ class PixTable(object):
                     del primary_header["HIERARCH ESO DRS MUSE "\
                                        "PIXTABLE EXP%i LAST" % i]
             except:
-                nexp = primary_header["HIERARCH ESO PRO MUSE "\
-                                      "PIXTABLE COMBINED"]
-                nexp.value = len(numbers_exp)
+                primary_header["HIERARCH ESO PRO MUSE PIXTABLE COMBINED"] = \
+                len(numbers_exp)
                 for iexp, i in zip(numbers_exp, \
                                    range(1, len(numbers_exp) + 1)):
                     ksel = np.where(newexp == iexp)
-                    first = primary_header["HIERARCH ESO PRO MUSE "\
-                                           "PIXTABLE EXP%i FIRST" % i]
-                    last = primary_header["HIERARCH ESO PRO MUSE "\
-                                          "PIXTABLE EXP%i LAST" % i]
-                    first.value = ksel[0][0]
-                    last.value = ksel[0][-1]
+                    primary_header["HIERARCH ESO PRO MUSE "\
+                                    "PIXTABLE EXP%i FIRST" % i] = ksel[0][0]
+                    primary_header["HIERARCH ESO PRO MUSE "\
+                                    "PIXTABLE EXP%i LAST" % i] = ksel[0][-1]
                 for i in range(len(numbers_exp) + 1, \
                                self.get_keywords("HIERARCH ESO PRO MUSE '\
                                PIXTABLE COMBINED") + 1):
@@ -936,9 +926,9 @@ class PixTable(object):
         else:
             alternate_key = key
         try:
-            return self.primary_header[key].value
+            return self.primary_header[key]
         except:
-            return self.primary_header[alternate_key].value
+            return self.primary_header[alternate_key]
 
     def reconstruct_sky_image(self, lbda=None, step=None):
         """Reconstructs the image on the sky from the pixtable.

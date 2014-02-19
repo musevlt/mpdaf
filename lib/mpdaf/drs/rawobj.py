@@ -1,6 +1,9 @@
 """ rawobj.py Manages raw FITS file"""
 import numpy as np
-import pyfits
+try:
+    from astropy.io import fits as pyfits
+except:
+    import pyfits
 import multiprocessing
 import datetime
 import sys
@@ -38,7 +41,7 @@ class Channel(object):
 
     extname (string) : The extension name
 
-    header (pyfits.CardList) : The extension header
+    header (pyfits.Header) : The extension header
 
     data (array) : Array containing the pixel values of the image extension
 
@@ -59,7 +62,7 @@ class Channel(object):
         self.extname = extname
         if filename != None:
             hdulist = pyfits.open(filename, memmap=1)
-            self.header = hdulist[extname].header.ascard
+            self.header = hdulist[extname].header
             self.nx = hdulist[extname].header["NAXIS1"]
             self.ny = hdulist[extname].header["NAXIS2"]
             try:
@@ -70,14 +73,14 @@ class Channel(object):
                 self.data = None
             hdulist.close()
         elif data is not None:
-            self.header = pyfits.CardList()
+            self.header = pyfits.Header()
             shape = np.shape(data)
             self.data = np.ndarray(shape)
             self.data[:] = data[:]
             self.nx = shape[1]
             self.ny = shape[0]
         else:
-            self.header = pyfits.CardList()
+            self.header = pyfits.Header()
             self.nx = 0
             self.ny = 0
             self.data = None
@@ -88,12 +91,12 @@ class Channel(object):
         """
         m = np.ones((self.ny, self.nx), dtype=int)
         try:
-            nx_data = self.header["NAXIS1"].value  # length of data in X
-            ny_data = self.header["NAXIS2"].value  # length of data in Y
+            nx_data = self.header["NAXIS1"]  # length of data in X
+            ny_data = self.header["NAXIS2"]  # length of data in Y
             # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"].value
+            nx_data2 = self.header["ESO DET CHIP NX"]
             # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"].value
+            ny_data2 = self.header["ESO DET CHIP NY"]
             m = np.ones((self.ny, self.nx), dtype=int)
 
             for i in range(4):
@@ -101,23 +104,23 @@ class Channel(object):
                     n = i + 1
                     key = "ESO DET OUT%i" % n
                     # Output data pixels in X
-                    nx = self.header["%s NX" % key].value
+                    nx = self.header["%s NX" % key]
                     # Output data pixels in Y
-                    ny = self.header["%s NY" % key].value
+                    ny = self.header["%s NY" % key]
                     try:
                         # Output prescan pixels in X
-                        prscx = self.header["%s PRSCX" % key].value
+                        prscx = self.header["%s PRSCX" % key]
                     except:
                         prscx = OVERSCAN
                     try:
                         # Output prescan pixels in Y
-                        prscy = self.header["%s PRSCY" % key].value
+                        prscy = self.header["%s PRSCY" % key]
                     except:
                         prscy = OVERSCAN
                     # X location of output
-                    x = self.header["%s X" % key].value
+                    x = self.header["%s X" % key]
                     # Y location of output
-                    y = self.header["%s Y" % key].value
+                    y = self.header["%s Y" % key]
                     if x < nx_data2 / 2:
                         i1 = x - 1 + prscx
                         i2 = i1 + nx
@@ -142,7 +145,7 @@ class Channel(object):
         """Returns a copy of the Channel object.
         """
         result = Channel(self.extname)
-        result.header = pyfits.CardList(self.header)
+        result.header = pyfits.Header(self.header)
         try:
             result.data = self.data.__copy__()
         except:
@@ -340,31 +343,31 @@ class Channel(object):
 
         :rtype: :class:`mpdaf.obj.Image`
         """
-        wcs = obj.WCS(pyfits.Header(self.header))
+        wcs = obj.WCS(self.header)
         ima = obj.Image(wcs=wcs, data=self.data.__copy__())
 
         if det_out is not None:
             # length of data in X
-            nx_data = self.header["NAXIS1"].value
+            nx_data = self.header["NAXIS1"]
             # length of data in Y
-            ny_data = self.header["NAXIS2"].value
+            ny_data = self.header["NAXIS2"]
             # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"].value
+            nx_data2 = self.header["ESO DET CHIP NX"]
             # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"].value
+            ny_data2 = self.header["ESO DET CHIP NY"]
             key = "ESO DET OUT%i" % det_out
             # Output data pixels in X
-            nx = self.header["%s NX" % key].value
+            nx = self.header["%s NX" % key]
             # Output data pixels in Y
-            ny = self.header["%s NY" % key].value
+            ny = self.header["%s NY" % key]
             # Output prescan pixels in X
-            prscx = self.header["%s PRSCX" % key].value
+            prscx = self.header["%s PRSCX" % key]
             # Output prescan pixels in Y
-            prscy = self.header["%s PRSCY" % key].value
+            prscy = self.header["%s PRSCY" % key]
             # X location of output
-            x = self.header["%s X" % key].value
+            x = self.header["%s X" % key]
             # Y location of output
-            y = self.header["%s Y" % key].value
+            y = self.header["%s Y" % key]
             if x < nx_data2 / 2:
                 i1 = x - 1
                 i2 = i1 + nx + 2 * prscx
@@ -383,27 +386,27 @@ class Channel(object):
 
         if det_out is None and bias:
             # length of data in X
-            nx_data = self.header["NAXIS1"].value
+            nx_data = self.header["NAXIS1"]
             # length of data in Y
-            ny_data = self.header["NAXIS2"].value
+            ny_data = self.header["NAXIS2"]
             # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"].value
+            nx_data2 = self.header["ESO DET CHIP NX"]
             # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"].value
+            ny_data2 = self.header["ESO DET CHIP NY"]
             for det in range(1, 5):
                 key = "ESO DET OUT%i" % det
                 # Output data pixels in X
-                nx = self.header["%s NX" % key].value
+                nx = self.header["%s NX" % key]
                 # Output data pixels in Y
-                ny = self.header["%s NY" % key].value
+                ny = self.header["%s NY" % key]
                 # Output prescan pixels in X
-                prscx = self.header["%s PRSCX" % key].value
+                prscx = self.header["%s PRSCX" % key]
                 # Output prescan pixels in Y
-                prscy = self.header["%s PRSCY" % key].value
+                prscy = self.header["%s PRSCY" % key]
                 # X location of output
-                x = self.header["%s X" % key].value
+                x = self.header["%s X" % key]
                 # Y location of output
-                y = self.header["%s Y" % key].value
+                y = self.header["%s Y" % key]
                 if x < nx_data2 / 2:
                     i1 = x - 1
                     i2 = i1 + nx + 2 * prscx
@@ -451,9 +454,9 @@ class Channel(object):
         :rtype: :class:`mpdaf.obj.Image`
         """
         # Physical active pixels in X
-        nx_data2 = self.header["ESO DET CHIP NX"].value
+        nx_data2 = self.header["ESO DET CHIP NX"]
         # Physical active pixels in Y
-        ny_data2 = self.header["ESO DET CHIP NY"].value
+        ny_data2 = self.header["ESO DET CHIP NY"]
         if isinstance(self.data, np.ma.core.MaskedArray):
             work = np.ma.MaskedArray(self.data.data.__copy__(), \
                                      mask=self.mask)
@@ -470,25 +473,25 @@ class Channel(object):
 
             ksel = np.where(self.mask == True)
             # length of data in X
-            nx_data = self.header["NAXIS1"].value
+            nx_data = self.header["NAXIS1"]
             # length of data in Y
-            ny_data = self.header["NAXIS2"].value
+            ny_data = self.header["NAXIS2"]
 
             if det_out is None:
                 for det in range(1, 5):
                     key = "ESO DET OUT%i" % det
                     # Output data pixels in X
-                    nx = self.header["%s NX" % key].value
+                    nx = self.header["%s NX" % key]
                     # Output data pixels in Y
-                    ny = self.header["%s NY" % key].value
+                    ny = self.header["%s NY" % key]
                     # Output prescan pixels in X
-                    prscx = self.header["%s PRSCX" % key].value
+                    prscx = self.header["%s PRSCX" % key]
                     # Output prescan pixels in Y
-                    prscy = self.header["%s PRSCY" % key].value
+                    prscy = self.header["%s PRSCY" % key]
                     # X location of output
-                    x = self.header["%s X" % key].value
+                    x = self.header["%s X" % key]
                     # Y location of output
-                    y = self.header["%s Y" % key].value
+                    y = self.header["%s Y" % key]
                     if x < nx_data2 / 2:
                         i1 = x - 1
                         i2 = i1 + nx + 2 * prscx
@@ -508,17 +511,17 @@ class Channel(object):
             else:
                 key = "ESO DET OUT%i" % det_out
                 # Output data pixels in X
-                nx = self.header["%s NX" % key].value
+                nx = self.header["%s NX" % key]
                 # Output data pixels in Y
-                ny = self.header["%s NY" % key].value
+                ny = self.header["%s NY" % key]
                 # Output prescan pixels in X
-                prscx = self.header["%s PRSCX" % key].value
+                prscx = self.header["%s PRSCX" % key]
                 # Output prescan pixels in Y
-                prscy = self.header["%s PRSCY" % key].value
+                prscy = self.header["%s PRSCY" % key]
                 # X location of output
-                x = self.header["%s X" % key].value
+                x = self.header["%s X" % key]
                 # Y location of output
-                y = self.header["%s Y" % key].value
+                y = self.header["%s Y" % key]
                 if x < nx_data2 / 2:
                     i1 = x - 1
                     i2 = i1 + nx + 2 * prscx
@@ -543,22 +546,22 @@ class Channel(object):
 
         if det_out is not None:
             # length of data in X
-            nx_data = self.header["NAXIS1"].value
+            nx_data = self.header["NAXIS1"]
             # length of data in Y
-            ny_data = self.header["NAXIS2"].value
+            ny_data = self.header["NAXIS2"]
             key = "ESO DET OUT%i" % det_out
             # Output data pixels in X
-            nx = self.header["%s NX" % key].value
+            nx = self.header["%s NX" % key]
             # Output data pixels in Y
-            ny = self.header["%s NY" % key].value
+            ny = self.header["%s NY" % key]
             # Output prescan pixels in X
-            prscx = self.header["%s PRSCX" % key].value
+            prscx = self.header["%s PRSCX" % key]
             # Output prescan pixels in Y
-            prscy = self.header["%s PRSCY" % key].value
+            prscy = self.header["%s PRSCY" % key]
             # X location of output
-            x = self.header["%s X" % key].value
+            x = self.header["%s X" % key]
             # Y location of output
-            y = self.header["%s Y" % key].value
+            y = self.header["%s Y" % key]
             if x < nx_data2 / 2:
                 i1 = x - 1 + prscx
                 i2 = i1 + nx
@@ -591,26 +594,26 @@ class Channel(object):
 
         if det_out is not None:
             # length of data in X
-            nx_data = self.header["NAXIS1"].value
+            nx_data = self.header["NAXIS1"]
             # length of data in Y
-            ny_data = self.header["NAXIS2"].value
+            ny_data = self.header["NAXIS2"]
             # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"].value
+            nx_data2 = self.header["ESO DET CHIP NX"]
             # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"].value
+            ny_data2 = self.header["ESO DET CHIP NY"]
             key = "ESO DET OUT%i" % det_out
             # Output data pixels in X
-            nx = self.header["%s NX" % key].value
+            nx = self.header["%s NX" % key]
             # Output data pixels in Y
-            ny = self.header["%s NY" % key].value
+            ny = self.header["%s NY" % key]
             # Output prescan pixels in X
-            prscx = self.header["%s PRSCX" % key].value
+            prscx = self.header["%s PRSCX" % key]
             # Output prescan pixels in Y
-            prscy = self.header["%s PRSCY" % key].value
+            prscy = self.header["%s PRSCY" % key]
             # X location of output
-            x = self.header["%s X" % key].value
+            x = self.header["%s X" % key]
             # Y location of output
-            y = self.header["%s Y" % key].value
+            y = self.header["%s Y" % key]
             if x < nx_data2 / 2:
                 i1 = x - 1
                 i2 = i1 + nx + 2 * prscx
@@ -645,26 +648,26 @@ class Channel(object):
 
         if det_out is not None:
             # length of data in X
-            nx_data = self.header["NAXIS1"].value
+            nx_data = self.header["NAXIS1"]
             # length of data in Y
-            ny_data = self.header["NAXIS2"].value
+            ny_data = self.header["NAXIS2"]
             # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"].value
+            nx_data2 = self.header["ESO DET CHIP NX"]
             # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"].value
+            ny_data2 = self.header["ESO DET CHIP NY"]
             key = "ESO DET OUT%i" % det_out
             # Output data pixels in X
-            nx = self.header["%s NX" % key].value
+            nx = self.header["%s NX" % key]
             # Output data pixels in Y
-            ny = self.header["%s NY" % key].value
+            ny = self.header["%s NY" % key]
             # Output prescan pixels in X
-            prscx = self.header["%s PRSCX" % key].value
+            prscx = self.header["%s PRSCX" % key]
             # Output prescan pixels in Y
-            prscy = self.header["%s PRSCY" % key].value
+            prscy = self.header["%s PRSCY" % key]
             # X location of output
-            x = self.header["%s X" % key].value
+            x = self.header["%s X" % key]
             # Y location of output
-            y = self.header["%s Y" % key].value
+            y = self.header["%s Y" % key]
             if x < nx_data2 / 2:
                 i1 = x - 1
                 i2 = i1 + nx + 2 * prscx
@@ -739,7 +742,7 @@ class RawFile(object):
 
     channels (dict) : List of extension (extname,Channel)
 
-    primary_header (pyfits.CardList) : The primary header
+    primary_header (pyfits.Header) : The primary header
 
     nx,ny (integers) : Lengths of data in X and Y
 
@@ -773,7 +776,7 @@ class RawFile(object):
         if filename != None:
             try:
                 hdulist = pyfits.open(self.filename, memmap=1)
-                self.primary_header = hdulist[0].header.ascard
+                self.primary_header = hdulist[0].header
                 n = 1
                 while True:
                     try:
@@ -805,14 +808,14 @@ class RawFile(object):
                 self.primary_header = None
         else:
             self.filename = None
-            self.primary_header = pyfits.CardList()
+            self.primary_header = pyfits.Header()
 
     def copy(self):
         """Returns a copy of the RawFile object.
         """
         result = RawFile(self.filename)
         if result.filename == None:
-            result.primary_header = pyfits.CardList(self.primary_header)
+            result.primary_header = pyfits.Header(self.primary_header)
             result.nx = self.nx
             result.ny = self.ny
             result.next = self.next
@@ -838,7 +841,7 @@ class RawFile(object):
     def get_keywords(self, key):
         """Returns the keyword value.
         """
-        return self.primary_header[key].value
+        return self.primary_header[key]
 
     def get_channels_extname_list(self):
         """Returns the list of existing channels names.
@@ -896,9 +899,6 @@ class RawFile(object):
                 chan.nx = self.nx
                 chan.ny = self.ny
                 self.channels[extname] = chan
-
-                if chan.header is not None:
-                    chan.header.update(card.key, card.value, card.comment)
             else:
                 raise IOError('set an image extension with bad dimensions')
         else:
@@ -1046,23 +1046,23 @@ class RawFile(object):
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         if self.primary_header is not None:
-            for card in self.primary_header:
+            for card in self.primary_header.cards:
                 try:
-                    prihdu.header.update(card.key, card.value, card.comment)
+                    prihdu.header[card.keyword] = (card.value, card.comment)
                 except ValueError:
                     if isinstance(card.value, str):
-                        n = 80 - len(card.key) - 14
+                        n = 80 - len(card.keyword) - 14
                         s = card.value[0:n]
-                        prihdu.header.update('hierarch %s' % card.key, \
-                                             s, card.comment)
+                        prihdu.header['hierarch %s' % card.keyword] = \
+                        (s, card.comment)
                     else:
-                        prihdu.header.update('hierarch %s' % card.key, \
-                                             card.value, card.comment)
+                        prihdu.header['hierarch %s' % card.keyword] = \
+                                             (card.value, card.comment)
                 except:
                     pass
-        prihdu.header.update('date', str(datetime.datetime.now()), \
-                             'creation date')
-        prihdu.header.update('author', 'MPDAF', 'origin of the file')
+        prihdu.header['date'] = \
+        (str(datetime.datetime.now()), 'creation date')
+        prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
         if self.channels is not None:
             for name in self.channels.keys():
@@ -1073,14 +1073,14 @@ class RawFile(object):
                     else:
                         dhdu = pyfits.ImageHDU(name=name, data=chan.data)
                     if chan.header is not None:
-                        for card in chan.header:
+                        for card in chan.header.cards:
                             try:
-                                if card.key != "EXTNAME":
-                                    dhdu.header.update(card.key, card.value, \
-                                                       card.comment)
+                                if card.keyword != "EXTNAME":
+                                    dhdu.header[card.keyword] = \
+                                    (card.value, card.comment)
                             except ValueError:
-                                dhdu.header.update('hierarch %s' % card.key, \
-                                                   card.value, card.comment)
+                                dhdu.header['hierarch %s' % card.keyword] = \
+                                                   (card.value, card.comment)
                             except:
                                 pass
                     hdulist.append(dhdu)
@@ -1250,26 +1250,26 @@ class RawFile(object):
         chan = 'CHAN%02d' % ifu
         mask_chan = mask_raw.get_channel(chan)
 
-        self.x1 = mask_chan.header['HIERARCH ESO DET SLICE1 XSTART'].value \
+        self.x1 = mask_chan.header['HIERARCH ESO DET SLICE1 XSTART'] \
         - OVERSCAN
-        self.x2 = mask_chan.header['HIERARCH ESO DET SLICE48 XEND'].value \
+        self.x2 = mask_chan.header['HIERARCH ESO DET SLICE48 XEND'] \
         - 2 * OVERSCAN
 
         xstart = mask_chan.header['HIERARCH ESO DET '\
-                                  'SLICE%d XSTART' % slice].value - OVERSCAN
+                                  'SLICE%d XSTART' % slice] - OVERSCAN
         xend = mask_chan.header['HIERARCH ESO DET '\
-                                'SLICE%d XEND' % slice].value - OVERSCAN
-        if xstart > (mask_chan.header["ESO DET CHIP NX"].value / 2.0):
+                                'SLICE%d XEND' % slice] - OVERSCAN
+        if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xstart -= 2 * OVERSCAN
-        if xend > (mask_chan.header["ESO DET CHIP NX"].value / 2.0):
+        if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xend -= 2 * OVERSCAN
         ystart = mask_chan.header['HIERARCH ESO DET '\
-                                  'SLICE%d YSTART' % slice].value - OVERSCAN
+                                  'SLICE%d YSTART' % slice] - OVERSCAN
         yend = mask_chan.header['HIERARCH ESO DET '\
-                                'SLICE%d YEND' % slice].value - OVERSCAN
-        if ystart > (mask_chan.header["ESO DET CHIP NY"].value / 2.0):
+                                'SLICE%d YEND' % slice] - OVERSCAN
+        if ystart > (mask_chan.header["ESO DET CHIP NY"] / 2.0):
             ystart -= 2 * OVERSCAN
-        if yend > (mask_chan.header["ESO DET CHIP NY"].value / 2.0):
+        if yend > (mask_chan.header["ESO DET CHIP NY"] / 2.0):
             yend -= 2 * OVERSCAN
 
         plt.plot(np.arange(xstart, xend + 1), \
@@ -1418,12 +1418,12 @@ def _process_white_image(arglist):
     data = np.empty((48, NB_SPEC_PER_SLICE))
     for slice in range(1, 49):
         xstart = mask_chan.header['HIERARCH ESO DET '\
-                                  'SLICE%d XSTART' % slice].value - OVERSCAN
+                                  'SLICE%d XSTART' % slice] - OVERSCAN
         xend = mask_chan.header['HIERARCH ESO DET '\
-                                'SLICE%d XEND' % slice].value - OVERSCAN
-        if xstart > (mask_chan.header["ESO DET CHIP NX"].value / 2.0):
+                                'SLICE%d XEND' % slice] - OVERSCAN
+        if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xstart -= 2 * OVERSCAN
-        if xend > (mask_chan.header["ESO DET CHIP NX"].value / 2.0):
+        if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xend -= 2 * OVERSCAN
 
         spe_slice = spe[xstart:xend + 1]

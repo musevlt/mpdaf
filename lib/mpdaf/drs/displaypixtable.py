@@ -215,7 +215,7 @@ class DisplayPixTable(object):
         """
         pix = PixTable(self.pixtable)
         cub = CubeDisk(self.cube)
-        date = cub.primary_header['DATE-OBS'].value.split('T')[0]
+        date = cub.primary_header['DATE-OBS'].split('T')[0]
 
         if (pix.wcs and cub.wcs.is_deg()):
             is_deg = True

@@ -1,7 +1,11 @@
 """ coords.py Manages coordinates"""
 import numpy as np
-import pyfits
-import pywcs
+try:
+    from astropy.io import fits as pyfits
+except:
+    import pyfits
+import astropy.wcs as pywcs
+
 from astropysics_coords import AstropysicsAngularCoordinate
 
 

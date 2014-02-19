@@ -2,7 +2,10 @@
 type MASTER_BIAS MASTER_DARK MASTER_FLAT OBJECT_RESAMPLED
 """
 import numpy as np
-import pyfits
+try:
+    from astropy.io import fits as pyfits
+except:
+    import pyfits
 import pylab
 import datetime
 import os
@@ -31,7 +34,7 @@ class CalibFile(object):
     filename : string
     The FITS file name. None if any.
 
-    primary_header: pyfits.CardList
+    primary_header: pyfits.Header
     The primary header
 
     data: string
@@ -74,7 +77,7 @@ class CalibFile(object):
         if filename != None:
             try:
                 hdulist = pyfits.open(self.filename, memmap=1)
-                self.primary_header = hdulist[0].header.ascard
+                self.primary_header = hdulist[0].header
                 try:
                     self.nx = hdulist["DATA"].header["NAXIS1"]
                     self.ny = hdulist["DATA"].header["NAXIS2"]
@@ -100,7 +103,7 @@ class CalibFile(object):
             except IOError:
                 raise IOError('IOError: file %s not found' % filename)
         else:
-            self.primary_header = pyfits.CardList()
+            self.primary_header = pyfits.Header()
 
     def __del__(self):
         """removes temporary files used for memory mapping"""
@@ -119,7 +122,7 @@ class CalibFile(object):
         """
         result = CalibFile()
         result.filename = self.filename
-        result.primary_header = pyfits.CardList(self.primary_header)
+        result.primary_header = pyfits.Header(self.primary_header)
         result.nx = self.nx
         result.ny = self.ny
         # data
@@ -214,7 +217,7 @@ class CalibFile(object):
 
         :rtype: :class:`mpdaf.obj.Image`
         """
-        wcs = obj.WCS(pyfits.Header(self.primary_header))
+        wcs = obj.WCS(self.primary_header)
         ima = obj.Image(wcs=wcs, data=self.get_data())
         return ima
 
@@ -227,17 +230,17 @@ class CalibFile(object):
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         if self.primary_header is not None:
-            for card in self.primary_header:
+            for card in self.primary_header.cards:
                 try:
-                    prihdu.header.update(card.key, card.value, card.comment)
+                    prihdu.header[card.keyword] = (card.value, card.comment)
                 except ValueError:
-                    prihdu.header.update('hierarch %s' % card.key, \
-                                         card.value, card.comment)
+                    prihdu.header['hierarch %s' % card.keyword] = \
+                                         (card.value, card.comment)
                 except:
                     pass
-        prihdu.header.update('date', str(datetime.datetime.now()), \
-                             'creation date')
-        prihdu.header.update('author', 'MPDAF', 'origin of the file')
+        prihdu.header['date'] = \
+        (str(datetime.datetime.now()), 'creation date')
+        prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
         datahdu = pyfits.ImageHDU(name='DATA', data=self.get_data())
         hdulist.append(datahdu)
@@ -247,7 +250,7 @@ class CalibFile(object):
         hdulist.append(stathdu)
         # save to disk
         hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True)
+        hdu.writeto(filename, clobber=True, output_verify='fix')
         # update attributes
         self.filename = filename
         if self.data != None:
@@ -264,7 +267,7 @@ class CalibFile(object):
         """Adds either a number or a CalibFile object.
         """
         result = CalibFile()
-        result.primary_header = self.primary_header
+        result.primary_header = pyfits.Header(self.primary_header)
         result.nx = self.nx
         result.ny = self.ny
         (fd, result.data) = tempfile.mkstemp(prefix='mpdaf')
@@ -341,7 +344,7 @@ class CalibFile(object):
         """Subtracts either a number or a CalibFile object.
         """
         result = CalibFile()
-        result.primary_header = self.primary_header
+        result.primary_header = pyfits.Header(self.primary_header)
         result.nx = self.nx
         result.ny = self.ny
         (fd, result.data) = tempfile.mkstemp(prefix='mpdaf')
@@ -421,7 +424,7 @@ class CalibFile(object):
             raise IOError('unsupported operand type * and / for CalibFile')
         else:
             result = CalibFile()
-            result.primary_header = self.primary_header
+            result.primary_header = pyfits.Header(self.primary_header)
             result.nx = self.nx
             result.ny = self.ny
             (fd, result.data) = tempfile.mkstemp(prefix='mpdaf')
@@ -611,7 +614,7 @@ class CalibDir(object):
                 for k, data, dq, stat in processresult:
                     out = CalibFile()
                     out.primary_header = \
-                    pyfits.CardList(self.files[k].primary_header)
+                    pyfits.Header(self.files[k].primary_header)
                     out.nx = self.files[k].nx
                     out.ny = self.files[k].ny
                     # data
@@ -655,7 +658,7 @@ class CalibDir(object):
             for k, data, dq, stat in processresult:
                 out = CalibFile()
                 out.primary_header = \
-                pyfits.CardList(self.files[k].primary_header)
+                pyfits.Header(self.files[k].primary_header)
                 out.nx = self.files[k].nx
                 out.ny = self.files[k].ny
                 # data

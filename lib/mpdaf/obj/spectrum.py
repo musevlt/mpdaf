@@ -1,7 +1,10 @@
 """ spectrum.py defines Spectrum objects."""
 
 import numpy as np
-import pyfits
+try:
+    from astropy.io import fits as pyfits
+except:
+    import pyfits
 import datetime
 import types
 
@@ -190,9 +193,9 @@ class Spectrum(object):
 
     unit (string) : Possible data unit type.
 
-    primary_header (pyfits.CardList) : Possible FITS primary header instance.
+    primary_header (pyfits.Header) : Possible FITS primary header instance.
 
-    data_header (pyfits.CardList) : Possible FITS data header instance.
+    data_header (pyfits.Header) : Possible FITS data header instance.
 
     data (masked array) : Array containing the pixel values of the spectrum.
 
@@ -243,14 +246,15 @@ class Spectrum(object):
             # primary header
             hdr = f[0].header
             if len(f) == 1:
-                self.primary_header = pyfits.CardList()
+                self.primary_header = pyfits.Header()
                 # if the number of extension is 1,
                 # we just read the data from the primary header
                 # test if spectrum
                 if hdr['NAXIS'] != 1:
                     raise IOError('Wrong dimension number: not a spectrum')
                 self.unit = hdr.get('BUNIT', None)
-                self.data_header = hdr.ascard
+                #self.data_header = hdr.ascard
+                self.data_header = hdr
                 self.shape = hdr['NAXIS1']
                 self.data = np.array(f[0].data, dtype=float)
                 self.var = None
@@ -277,7 +281,7 @@ class Spectrum(object):
                                        ' is modified', extra=d)
                     self.wave.shape = self.shape
             else:
-                self.primary_header = hdr.ascard
+                self.primary_header = hdr
                 if ext is None:
                     h = f['DATA'].header
                     d = np.array(f['DATA'].data, dtype=float)
@@ -292,7 +296,7 @@ class Spectrum(object):
                 if h['NAXIS'] != 1:
                     raise IOError('Wrong dimension number: not a spectrum')
                 self.unit = h.get('BUNIT', None)
-                self.data_header = h.ascard
+                self.data_header = h
                 self.shape = h['NAXIS1']
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
@@ -352,8 +356,8 @@ class Spectrum(object):
             # possible data unit type
             self.unit = unit
             # possible FITS header instance
-            self.data_header = pyfits.CardList()
-            self.primary_header = pyfits.CardList()
+            self.data_header = pyfits.Header()
+            self.primary_header = pyfits.Header()
             # data
             if data is None:
                 self.data = None
@@ -393,8 +397,8 @@ class Spectrum(object):
         spe = Spectrum()
         spe.filename = self.filename
         spe.unit = self.unit
-        spe.data_header = pyfits.CardList(self.data_header)
-        spe.primary_header = pyfits.CardList(self.primary_header)
+        spe.data_header = pyfits.Header(self.data_header)
+        spe.primary_header = pyfits.Header(self.primary_header)
         spe.shape = self.shape
         try:
             spe.data = self.data.copy()
@@ -440,91 +444,87 @@ class Spectrum(object):
         assert self.data is not None
         # create primary header
         prihdu = pyfits.PrimaryHDU()
-        for card in self.primary_header:
+        for card in self.primary_header.cards:
             try:
-                prihdu.header.update(card.key, card.value, card.comment)
+                prihdu.header[card.keyword] = (card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    prihdu.header.update(card.key, card.value, card.comment)
+                    prihdu.header[card.keyword] =  (card.value, card.comment)
                 except:
                     try:
                         if isinstance(card.value, str):
-                            n = 80 - len(card.key) - 14
+                            n = 80 - len(card.keyword) - 14
                             s = card.value[0:n]
-                            prihdu.header.update('hierarch %s' % card.key, \
-                                                 s, card.comment)
+                            prihdu.header['hierarch %s' % card.keyword] = \
+                                                 (s, card.comment)
                         else:
-                            prihdu.header.update('hierarch %s' % card.key, \
-                                                 card.value, card.comment)
+                            prihdu.header['hierarch %s' % card.keyword] = \
+                                                 (card.value, card.comment)
                     except:
                         d = {'class': 'Spectrum', 'method': 'write'}
                         logger.warning("%s not copied in primary header", \
-                                       card.key, extra=d)
+                                       card.keyword, extra=d)
                         pass
-        prihdu.header.update('date', str(datetime.datetime.now()), \
-                             'creation date')
-        prihdu.header.update('author', 'MPDAF', 'origin of the file')
+        prihdu.header['date'] = str(datetime.datetime.now(), 'creation date')
+        prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
 
         # create spectrum DATA extension
         tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
-        for card in self.data_header:
+        for card in self.data_header.cards:
             try:
-                if tbhdu.header.keys().count(card.key) == 0:
-                    tbhdu.header.update(card.key, card.value, card.comment)
+                if tbhdu.header.keys().count(card.keyword) == 0:
+                    tbhdu.header[card.keyword] = (card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    if tbhdu.header.keys().count(card.key) == 0:
-                        tbhdu.header.update(card.key, card.value, \
-                                            card.comment)
+                    if tbhdu.header.keys().count(card.keyword) == 0:
+                        tbhdu.header[card.keyword] = \
+                        (card.value, card.comment)
                 except:
                     d = {'class': 'Spectrum', 'method': 'write'}
                     logger.warning("%s not copied in data header",\
-                                    card.key, extra=d)
+                                    card.keyword, extra=d)
                     pass
-        tbhdu.header.update('CRVAL1', self.wave.crval, \
-                            'Start in world coordinate')
-        tbhdu.header.update('CRPIX1', self.wave.crpix, \
-                            'Start in pixel')
-        tbhdu.header.update('CDELT1', self.wave.cdelt, \
-                            'Step in world coordinate')
-        tbhdu.header.update('CTYPE1', 'LINEAR', 'world coordinate type')
-        tbhdu.header.update('CUNIT1', self.wave.cunit, \
-                            'world coordinate units')
+        tbhdu.header['CRVAL1'] = \
+        (self.wave.crval, 'Start in world coordinate')
+        tbhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
+        tbhdu.header['CDELT1'] = (self.wave.cdelt, 'Step in world coordinate')
+        tbhdu.header['CTYPE1'] = ('LINEAR', 'world coordinate type')
+        tbhdu.header['CUNIT1'] = (self.wave.cunit, 'world coordinate units')
         if self.unit is not None:
-            tbhdu.header.update('BUNIT', self.unit, 'data unit type')
-        tbhdu.header.update('FSCALE', self.fscale, 'Flux scaling factor')
+            tbhdu.header['BUNIT'] = (self.unit, 'data unit type')
+        tbhdu.header['FSCALE'] = (self.fscale, 'Flux scaling factor')
         hdulist.append(tbhdu)
 
         # create spectrum STAT extension
         if self.var is not None:
             nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
-            nbhdu.header.update('CRVAL1', self.wave.crval, \
-                                'Start in world coordinate')
-            nbhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
-            nbhdu.header.update('CDELT1', self.wave.cdelt, \
-                                'Step in world coordinate')
-            nbhdu.header.update('CUNIT1', self.wave.cunit, \
-                                'world coordinate units')
+            nbhdu.header['CRVAL1'] = \
+            (self.wave.crval, 'Start in world coordinate')
+            nbhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
+            nbhdu.header['CDELT1'] = \
+            (self.wave.cdelt, 'Step in world coordinate')
+            nbhdu.header['CUNIT1'] = \
+            (self.wave.cunit, 'world coordinate units')
             hdulist.append(nbhdu)
 
         # create spectrum DQ extension
         if np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
-            dqhdu.header.update('CRVAL1', self.wave.crval, \
-                                'Start in world coordinate')
-            dqhdu.header.update('CRPIX1', self.wave.crpix, 'Start in pixel')
-            dqhdu.header.update('CDELT1', self.wave.cdelt, \
-                                'Step in world coordinate')
-            dqhdu.header.update('CUNIT1', self.wave.cunit, \
-                                'world coordinate units')
+            dqhdu.header['CRVAL1'] = \
+            (self.wave.crval, 'Start in world coordinate')
+            dqhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
+            dqhdu.header['CDELT1'] = \
+            (self.wave.cdelt, 'Step in world coordinate')
+            dqhdu.header['CUNIT1'] = \
+            (self.wave.cunit, 'world coordinate units')
             hdulist.append(dqhdu)
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True)
+        hdu.writeto(filename, clobber=True, output_verify='fix')
 
         self.filename = filename
 

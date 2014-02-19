@@ -1,6 +1,9 @@
 """ cube.py manages Cube objects"""
 import numpy as np
-import pyfits
+try:
+    from astropy.io import fits as pyfits
+except:
+    import pyfits
 import datetime
 import multiprocessing
 import types
@@ -101,9 +104,9 @@ class Cube(object):
 
     unit (string) : Possible data unit type
 
-    primary_header (pyfits.CardList) : FITS primary header instance.
+    primary_header (pyfits.Header) : FITS primary header instance.
 
-    data_header (pyfits.CardList) : FITS data header instance.
+    data_header (pyfits.Header) : FITS data header instance.
 
     data (masked array numpy.ma) : Array containing the cube pixel values.
 
@@ -171,8 +174,8 @@ class Cube(object):
                 if hdr['NAXIS'] != 3:
                     raise IOError('Wrong dimension number: not a cube')
                 self.unit = hdr.get('BUNIT', None)
-                self.primary_header = pyfits.CardList()
-                self.data_header = hdr.ascard
+                self.primary_header = pyfits.Header()
+                self.data_header = hdr
                 self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'], \
                                        hdr['NAXIS1']])
                 self.data = np.array(f[0].data, dtype=float)
@@ -229,8 +232,8 @@ class Cube(object):
                 if h['NAXIS'] != 3:
                     raise IOError('Wrong dimension number in DATA extension')
                 self.unit = h.get('BUNIT', None)
-                self.primary_header = hdr.ascard
-                self.data_header = h.ascard
+                self.primary_header = hdr
+                self.data_header = h
                 self.shape = np.array([h['NAXIS3'],h['NAXIS2'],h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
@@ -309,16 +312,9 @@ class Cube(object):
                             hdr = f[i].header
                             if hdr['NAXIS'] != 2:
                                 raise IOError('not an image')
-                            unit = hdr.get('BUNIT', None)
-                            primary_header = pyfits.CardList()
-                            data_header = hdr.ascard
-                            shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
-                            data = np.array(f[i].data, dtype=float)
-                            fscale = hdr.get('FSCALE', 1.0)
-                            wcs = WCS(hdr)  # WCS object from data header
                             self.ima[hdr.get('EXTNAME')] = \
-                            Image(notnoise=True, shape=shape, wcs=wcs, \
-                                  unit=unit, data=data, fscale=fscale)
+                            Image(filename, ext=hdr.get('EXTNAME'), \
+                                  notnoise=True)
                         except:
                             pass
             f.close()
@@ -326,8 +322,8 @@ class Cube(object):
             #possible data unit type
             self.unit = unit
             # possible FITS header instance
-            self.data_header = pyfits.CardList()
-            self.primary_header = pyfits.CardList()
+            self.data_header = pyfits.Header()
+            self.primary_header = pyfits.Header()
             #data
             if is_int(shape):
                 shape = (shape,shape,shape)
@@ -395,8 +391,8 @@ class Cube(object):
         cub = Cube()
         cub.filename = self.filename
         cub.unit = self.unit
-        cub.data_header = pyfits.CardList(self.data_header)
-        cub.primary_header = pyfits.CardList(self.primary_header)
+        cub.data_header = pyfits.Header(self.data_header)
+        cub.primary_header = pyfits.Header(self.primary_header)
         cub.shape = self.shape.__copy__()
         try:
             cub.data = self.data.copy()
@@ -449,100 +445,95 @@ class Cube(object):
 
         # create primary header
         prihdu = pyfits.PrimaryHDU()
-        for card in self.primary_header:
+        for card in self.primary_header.cards:
             try:
-                prihdu.header.update(card.key, card.value, card.comment)
+                prihdu.header[card.keyword] = (card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    prihdu.header.update(card.key, card.value, card.comment)
+                    prihdu.header[card.keyword] = (card.value, card.comment)
                 except:
                     try:
-                        if isinstance(card.value,str):
-                            n = 80 - len(card.key) - 14
+                        if isinstance(card.value, str):
+                            n = 80 - len(card.keyword) - 14
                             s = card.value[0:n]
-                            prihdu.header.update('hierarch %s' % card.key, s, \
-                                                 card.comment)
+                            prihdu.header['hierarch %s' % card.keyword] = \
+                            (s, card.comment)
                         else:
-                            prihdu.header.update('hierarch %s' % card.key, \
-                                                 card.value, card.comment)
+                            prihdu.header['hierarch %s' % card.keyword] = \
+                                                 (card.value, card.comment)
                     except:
                         d = {'class': 'Cube', 'method': 'write'}
                         logger.warning("%s not copied in primary header", \
-                                       card.key, extra=d)
+                                       card.keyword, extra=d)
                         pass
-        prihdu.header.update('date', str(datetime.datetime.now()), \
-                             'creation date')
-        prihdu.header.update('author', 'MPDAF', 'origin of the file')
+        prihdu.header['date'] = \
+        (str(datetime.datetime.now()), 'creation date')
+        prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
 
         #world coordinates
-        wcs_cards = self.wcs.to_header().ascard
+        wcs_cards = self.wcs.to_header().cards
 
         # create spectrum DATA extension
         tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
-        for card in self.data_header:
+        for card in self.data_header.cards:
             try:
-                if card.key != 'CD1_1' and card.key != 'CD1_2' and \
-                card.key != 'CD2_1' and card.key != 'CD2_2' and \
-                card.key != 'CDELT1' and card.key != 'CDELT2' and \
-                tbhdu.header.keys().count(card.key) == 0:
-                    tbhdu.header.update(card.key, card.value, card.comment)
+                if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' and \
+                card.keyword != 'CD2_1' and card.keyword != 'CD2_2' and \
+                card.keyword != 'CDELT1' and card.keyword != 'CDELT2' and \
+                tbhdu.header.keys().count(card.keyword) == 0:
+                    tbhdu.header[card.keyword] = (card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    if card.key != 'CD1_1' and card.key != 'CD1_2' and \
-                    card.key != 'CD2_1' and card.key != 'CD2_2' and \
-                    card.key != 'CDELT1' and card.key != 'CDELT2' and \
-                    tbhdu.header.keys().count(card.key) == 0:
-                        prihdu.header.update(card.key, card.value, \
-                                             card.comment)
+                    if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' and\
+                     card.keyword != 'CD2_1' and card.keyword != 'CD2_2' and \
+                    card.keyword != 'CDELT1' and card.keyword != 'CDELT2' and \
+                    tbhdu.header.keys().count(card.keyword) == 0:
+                        prihdu.header[card.keyword] = \
+                        (card.value, card.comment)
                 except:
                     d = {'class': 'Cube', 'method': 'write'}
-                    logger.warning("%s not copied in data header", card.key, \
+                    logger.warning("%s not copied in data header", card.keyword, \
                                    extra=d)
                     pass
         # add world coordinate
         cd = self.wcs.get_cd()
-        tbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, \
-                            wcs_cards['CTYPE1'].comment)
-        tbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, \
-                            wcs_cards['CUNIT1'].comment)
-        tbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, \
-                            wcs_cards['CRVAL1'].comment)
-        tbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, \
-                            wcs_cards['CRPIX1'].comment)
-        tbhdu.header.update('CD1_1', cd[0,0], \
-                            'partial of first axis coordinate w.r.t. x ')
-        tbhdu.header.update('CD1_2', cd[0,1], \
-                            'partial of first axis coordinate w.r.t. y')
-        tbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, \
-                            wcs_cards['CTYPE2'].comment)
-        tbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, \
-                            wcs_cards['CUNIT2'].comment)
-        tbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, \
-                            wcs_cards['CRVAL2'].comment)
-        tbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, \
-                            wcs_cards['CRPIX2'].comment)
-        tbhdu.header.update('CD2_1', cd[1,0], \
-                            'partial of second axis coordinate w.r.t. x')
-        tbhdu.header.update('CD2_2', cd[1,1], \
-                            'partial of second axis coordinate w.r.t. y')
-        tbhdu.header.update('CRVAL3', self.wave.crval, \
-                            'Start in world coordinate')
-        tbhdu.header.update('CRPIX3', self.wave.crpix, \
-                            'Start in pixel')
-        tbhdu.header.update('CDELT3', self.wave.cdelt, \
-                            'Step in world coordinate')
-        tbhdu.header.update('CTYPE3', 'LINEAR', \
-                            'world coordinate type')
-        tbhdu.header.update('CUNIT3', self.wave.cunit, \
-                            'world coordinate units')
+        tbhdu.header['CTYPE1'] = \
+        (wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
+        tbhdu.header['CUNIT1'] = \
+        (wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
+        tbhdu.header['CRVAL1'] = \
+        (wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
+        tbhdu.header['CRPIX1'] = \
+        (wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
+        tbhdu.header['CD1_1'] = \
+        (cd[0,0], 'partial of first axis coordinate w.r.t. x ')
+        tbhdu.header['CD1_2'] = \
+        (cd[0,1], 'partial of first axis coordinate w.r.t. y')
+        tbhdu.header['CTYPE2'] = \
+        (wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
+        tbhdu.header['CUNIT2'] = \
+        (wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
+        tbhdu.header['CRVAL2'] = \
+        (wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
+        tbhdu.header['CRPIX2'] = \
+        (wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
+        tbhdu.header['CD2_1'] = \
+        (cd[1,0], 'partial of second axis coordinate w.r.t. x')
+        tbhdu.header['CD2_2'] = \
+        (cd[1,1], 'partial of second axis coordinate w.r.t. y')
+        tbhdu.header['CRVAL3'] = \
+        (self.wave.crval, 'Start in world coordinate')
+        tbhdu.header['CRPIX3'] = (self.wave.crpix, 'Start in pixel')
+        tbhdu.header['CDELT3'] = \
+        (self.wave.cdelt, 'Step in world coordinate')
+        tbhdu.header['CTYPE3'] = ('LINEAR', 'world coordinate type')
+        tbhdu.header['CUNIT3'] = (self.wave.cunit, 'world coordinate units')
         if self.unit is not None:
-            tbhdu.header.update('BUNIT', self.unit, \
-                                'data unit type')
-        tbhdu.header.update('FSCALE', self.fscale, \
-                            'Flux scaling factor')
+            tbhdu.header['BUNIT'] = (self.unit, 'data unit type')
+        tbhdu.header['FSCALE'] = (self.fscale, 'Flux scaling factor')
         hdulist.append(tbhdu)
 
         self.wcs = WCS(tbhdu.header)
@@ -552,51 +543,50 @@ class Cube(object):
             nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
             # add world coordinate
 #            for card in wcs_cards:
-#                nbhdu.header.update(card.key, card.value, card.comment)
-            nbhdu.header.update('CTYPE1', wcs_cards['CTYPE1'].value, \
-                                wcs_cards['CTYPE1'].comment)
-            nbhdu.header.update('CUNIT1', wcs_cards['CUNIT1'].value, \
-                                wcs_cards['CUNIT1'].comment)
-            nbhdu.header.update('CRVAL1', wcs_cards['CRVAL1'].value, \
-                                wcs_cards['CRVAL1'].comment)
-            nbhdu.header.update('CRPIX1', wcs_cards['CRPIX1'].value, \
-                                wcs_cards['CRPIX1'].comment)
-            nbhdu.header.update('CD1_1', cd[0,0], \
-                                'partial of first axis coordinate w.r.t. x ')
-            nbhdu.header.update('CD1_2', cd[0,1], \
-                                'partial of first axis coordinate w.r.t. y')
-            nbhdu.header.update('CTYPE2', wcs_cards['CTYPE2'].value, \
-                                wcs_cards['CTYPE2'].comment)
-            nbhdu.header.update('CUNIT2', wcs_cards['CUNIT2'].value, \
-                                wcs_cards['CUNIT2'].comment)
-            nbhdu.header.update('CRVAL2', wcs_cards['CRVAL2'].value, \
-                                wcs_cards['CRVAL2'].comment)
-            nbhdu.header.update('CRPIX2', wcs_cards['CRPIX2'].value, \
-                                wcs_cards['CRPIX2'].comment)
-            nbhdu.header.update('CD2_1', cd[1,0], \
-                                'partial of second axis coordinate w.r.t. x')
-            nbhdu.header.update('CD2_2', cd[1,1], \
-                                'partial of second axis coordinate w.r.t. y')
-            nbhdu.header.update('CRVAL3', self.wave.crval, \
-                                'Start in world coordinate')
-            nbhdu.header.update('CRPIX3', self.wave.crpix, \
-                                'Start in pixel')
-            nbhdu.header.update('CDELT3', self.wave.cdelt, \
-                                'Step in world coordinate')
-            nbhdu.header.update('CUNIT3', self.wave.cunit, \
-                                'world coordinate units')
+#                nbhdu.header.update(card.keyword, card.value, card.comment)
+            nbhdu.header['CTYPE1'] = \
+            (wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
+            nbhdu.header['CUNIT1'] = \
+            (wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
+            nbhdu.header['CRVAL1'] = \
+            (wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
+            nbhdu.header['CRPIX1'] = \
+            (wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
+            nbhdu.header['CD1_1'] = \
+            (cd[0,0], 'partial of first axis coordinate w.r.t. x ')
+            nbhdu.header['CD1_2'] = \
+            (cd[0,1], 'partial of first axis coordinate w.r.t. y')
+            nbhdu.header['CTYPE2'] = \
+            (wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
+            nbhdu.header['CUNIT2'] = \
+            (wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
+            nbhdu.header['CRVAL2'] = \
+            (wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
+            nbhdu.header['CRPIX2'] = \
+            (wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
+            nbhdu.header['CD2_1'] = \
+            (cd[1,0], 'partial of second axis coordinate w.r.t. x')
+            nbhdu.header['CD2_2'] = \
+            (cd[1,1], 'partial of second axis coordinate w.r.t. y')
+            nbhdu.header['CRVAL3'] = \
+            (self.wave.crval, 'Start in world coordinate')
+            nbhdu.header['CRPIX3'] = (self.wave.crpix, 'Start in pixel')
+            nbhdu.header['CDELT3'] = \
+            (self.wave.cdelt, 'Step in world coordinate')
+            nbhdu.header['CUNIT3'] = \
+            (self.wave.cunit, 'world coordinate units')
             hdulist.append(nbhdu)
 
         # create DQ extension
         if np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
             for card in wcs_cards:
-                dqhdu.header.update(card.key, card.value, card.comment)
+                dqhdu.header[card.keyword] = (card.value, card.comment)
             hdulist.append(dqhdu)
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True)
+        hdu.writeto(filename, clobber=True, output_verify='fix')
 
         self.filename = filename
 
@@ -2944,9 +2934,9 @@ class CubeDisk(object):
 
     unit (string) : Possible data unit type
 
-    primary_header (pyfits.CardList) : Possible FITS primary header instance.
+    primary_header (pyfits.Header) : Possible FITS primary header instance.
 
-    data_header (pyfits.CardList) : Possible FITS data header instance.
+    data_header (pyfits.Header) : Possible FITS data header instance.
 
     shape (array of 3 integers) : Lengths of data in Z and Y and X
     (python notation (nz,ny,nx)).
@@ -2989,8 +2979,8 @@ class CubeDisk(object):
                 if hdr['NAXIS'] != 3:
                     raise IOError('Wrong dimension number: not a cube')
                 self.unit = hdr.get('BUNIT', None)
-                self.primary_header = pyfits.CardList()
-                self.data_header = hdr.ascard
+                self.primary_header = pyfits.Header()
+                self.data_header = hdr
                 self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],\
                                         hdr['NAXIS1']])
                 self.data = 0
@@ -3028,8 +3018,8 @@ class CubeDisk(object):
                 if h['NAXIS'] != 3:
                     raise IOError('Wrong dimension number in DATA extension')
                 self.unit = h.get('BUNIT', None)
-                self.primary_header = hdr.ascard
-                self.data_header = h.ascard
+                self.primary_header = hdr
+                self.data_header = h
                 self.shape = np.array([h['NAXIS3'], h['NAXIS2'], h['NAXIS1']])
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
@@ -3077,16 +3067,8 @@ class CubeDisk(object):
                             hdr = f[i].header
                             if hdr['NAXIS'] != 2:
                                 raise IOError(' not an image')
-                            unit = hdr.get('BUNIT', None)
-                            primary_header = pyfits.CardList()
-                            data_header = hdr.ascard
-                            shape = np.array([hdr['NAXIS2'],hdr['NAXIS1']])
-                            data = np.array(f[i].data, dtype=float)
-                            fscale = hdr.get('FSCALE', 1.0)
-                            wcs = WCS(hdr)  # WCS object from data header
                             self.ima[hdr.get('EXTNAME')] = \
-                            Image(notnoise=True, shape=shape, wcs=wcs, \
-                                  unit=unit, data=data, fscale=fscale)
+                            Image(filename=filename, ext=hdr.get('EXTNAME'), notnoise=True)
                         except:
                             pass
              #DQ
