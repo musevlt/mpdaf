@@ -79,6 +79,9 @@ for path in os.listdir('mpdaf_user'):
         packages.append('mpdaf_user.'+path)
         #package_dir[path] = 'mpdaf_user/'+path
         #packages.append(path)
+    if os.path.isfile('mpdaf_user/'+path+'/'+path+'.py'):        
+        package_dir['mpdaf_user.'+path] = 'mpdaf_user/'+path
+        packages.append('mpdaf_user.'+path)
 
 setup(name = 'mpdaf',
       version = '1.1',
