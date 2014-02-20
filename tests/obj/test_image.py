@@ -219,8 +219,8 @@ class TestImage():
         nose.tools.assert_equal(p['q'],3)
         ima = Image("data/obj/a370II.fits")
         p = ima.peak(center=(790,875),radius=20,pix=True,plot=False)
-        nose.tools.assert_almost_equal(p['p'],793.3,0.1)
-        nose.tools.assert_almost_equal(p['q'],875.8,0.1)
+        nose.tools.assert_almost_equal(p['p'],793.1,1)
+        nose.tools.assert_almost_equal(p['q'],875.9,1)
         
     @attr(speed='fast')
     def test_clone(self):

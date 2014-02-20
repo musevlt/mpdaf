@@ -3047,7 +3047,10 @@ class Image(object):
                 err_flux = err_I * err_n * err_a * err_a
             else:
                 err_e = err[5]
-                err_fwhm = np.array([err_fwhm, err_fwhm / err_e])
+                if err_e != 0:
+                    err_fwhm = np.array([err_fwhm, err_fwhm / err_e])
+                else:
+                    err_fwhm = np.array([err_fwhm, err_fwhm])
                 if rot is None:
                     err_rot = 0
                     if fit_back:
