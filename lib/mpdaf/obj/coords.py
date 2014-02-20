@@ -4,7 +4,10 @@ try:
     from astropy.io import fits as pyfits
 except:
     import pyfits
-import astropy.wcs as pywcs
+try:
+    import astropy.wcs as pywcs
+except:
+    import pywcs
 
 from astropysics_coords import AstropysicsAngularCoordinate
 
