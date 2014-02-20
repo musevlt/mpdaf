@@ -297,7 +297,7 @@ class TestSpectrum():
     def test_poly_fit(self):
         """Spectrum class: tests polynomial fit"""   
         spvar=Spectrum('data/obj/Spectrum_Variance.fits',ext=[0,1])
-        polyfit1=spvar.poly_fit(35)
+        polyfit1=spvar.poly_fit(12)
         spfit1=spvar.copy()
         spfit1.poly_val(polyfit1)
         spfit2=spvar.poly_spec(10)
