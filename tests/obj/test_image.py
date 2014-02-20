@@ -19,7 +19,7 @@ class TestImage():
     @attr(speed='fast')
     def test_arithmetricOperator_Image(self):
         """Image class: tests arithmetic functions"""
-        wcs = WCS(crval=(0,0))
+        wcs = WCS(crval=(0,0), shape=(6,5))
         wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit = 'Angstrom')
         data = np.ones(shape=(6,5))*2
         image1 = Image(shape=(6,5),data=data,wcs=wcs)

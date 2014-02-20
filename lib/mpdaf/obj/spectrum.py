@@ -86,7 +86,9 @@ class SpectrumClicks:  # Object used to save click on spectrum plot.
             c3 = pyfits.Column(name='k', format='I', array=self.k)
             c4 = pyfits.Column(name='lbda', format='E', array=self.lbda)
             c5 = pyfits.Column(name='data', format='E', array=self.data)
-            tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            #tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
+            tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
             tbhdu.writeto(self.filename, clobber=True)
             print 'printing coordinates in fits table %s' % self.filename
 

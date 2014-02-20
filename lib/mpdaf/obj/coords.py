@@ -203,6 +203,8 @@ class WCS(object):
         """
         if hdr != None:
             self.wcs = pywcs.WCS(hdr, naxis=2)  # WCS object from data header
+            self.naxis1 = hdr['NAXIS1']
+            self.naxis2 = hdr['NAXIS2']
             # bug if naxis=3
             # http://mail.scipy.org/pipermail/astropy/2011-April/001242.html
         else:
@@ -256,17 +258,22 @@ class WCS(object):
                 self.wcs.wcs.cd = np.array([[cdelt[1], 0], [0, cdelt[0]]])
             # rotation
             self.wcs.rotateCD(-rot)
+            self.wcs.wcs.set()
             # dimensions
             if shape != None:
-                self.wcs.naxis1 = shape[1]
-                self.wcs.naxis2 = shape[0]
-            self.wcs.wcs.set()
+                self.naxis1 = shape[1]
+                self.naxis2 = shape[0]
+            else:
+                self.naxis1 = 1
+                self.naxis2 = 1
 
     def copy(self):
         """Copies WCS object in a new one and returns it.
         """
         out = WCS()
         out.wcs = self.wcs.deepcopy()
+        out.naxis1 = self.naxis1
+        out.naxis2 = self.naxis2
         return out
 
     def info(self):
@@ -274,7 +281,7 @@ class WCS(object):
         """
         # self.wcs.printwcs()
         if not self.is_deg():
-            pixcrd = [[0, 0], [self.wcs.naxis2 - 1, self.wcs.naxis1 - 1]]
+            pixcrd = [[0, 0], [self.naxis2 - 1, self.naxis1 - 1]]
             pixsky = self.pix2sky(pixcrd)
             cdelt = self.get_step()
             print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '\
@@ -284,8 +291,8 @@ class WCS(object):
                                              self.get_rot())
         else:
             # center in sexadecimal
-            xc = (self.wcs.naxis1 - 1) / 2.
-            yc = (self.wcs.naxis2 - 1) / 2.
+            xc = (self.naxis1 - 1) / 2.
+            yc = (self.naxis2 - 1) / 2.
             pixsky = self.pix2sky([yc, xc])
             sexa = deg2sexa(pixsky)
             ra = sexa[0][1]
@@ -294,8 +301,8 @@ class WCS(object):
             cdelt = self.get_step()
             dy = np.abs(cdelt[0] * 3600)
             dx = np.abs(cdelt[1] * 3600)
-            sizex = self.wcs.naxis1 * dx
-            sizey = self.wcs.naxis2 * dy
+            sizex = self.naxis1 * dx
+            sizey = self.naxis2 * dy
             print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '\
             'step in arcsec:(%0.3f,%0.3f) rot:%0.1f' % (dec, ra, \
                                                        sizey, sizex, \
@@ -323,7 +330,10 @@ class WCS(object):
             pixsky[:, 1] = x[:, 0]
         else:
             raise InputError('invalid input coordinates for sky2pix')
-        pixcrd = self.wcs.wcs_sky2pix(pixsky, 0)
+        try:
+            pixcrd = self.wcs.wcs_world2pix(pixsky, 0)
+        except:
+            pixcrd = self.wcs.wcs_sky2pix(pixsky, 0)
         res = np.array(pixcrd)
         res[:, 0] = pixcrd[:, 1]
         res[:, 1] = pixcrd[:, 0]
@@ -345,7 +355,10 @@ class WCS(object):
             pixcrd[:, 1] = x[:, 0]
         else:
             raise InputError('invalid input coordinates for pix2sky')
-        pixsky = self.wcs.wcs_pix2sky(pixcrd, 0)
+        try:
+            pixsky = self.wcs.wcs_pix2world(pixcrd, 0)
+        except:
+            pixsky = self.wcs.wcs_pix2sky(pixcrd, 0)
         res = np.array(pixsky)
         res[:, 0] = pixsky[:, 1]
         res[:, 1] = pixsky[:, 0]
@@ -359,8 +372,8 @@ class WCS(object):
             cdelt2 = other.get_step()
             x1 = self.pix2sky([0, 0])[0]
             x2 = other.pix2sky([0, 0])[0]
-            if self.wcs.naxis1 == other.wcs.naxis1 and \
-            self.wcs.naxis2 == other.wcs.naxis2 and \
+            if self.naxis1 == other.naxis1 and \
+            self.naxis2 == other.naxis2 and \
                np.abs(x1[0] - x2[0]) < 1E-16 and \
                np.abs(x1[1] - x2[1]) < 1E-16 and\
                (cdelt1 == cdelt2).all() and self.get_rot() == other.get_rot():
@@ -380,17 +393,17 @@ class WCS(object):
                 else:
                     imin = item[1].start
                     if imin < 0:
-                        imin = self.wcs.naxis1 + imin
-                    if imin > self.wcs.naxis1:
-                        imin = self.wcs.naxis1
+                        imin = self.naxis1 + imin
+                    if imin > self.naxis1:
+                        imin = self.naxis1
                 if item[1].stop is None:
-                    imax = self.wcs.naxis1
+                    imax = self.naxis1
                 else:
                     imax = item[1].stop
                     if imax < 0:
-                        imax = self.wcs.naxis1 + imax
-                    if imax > self.wcs.naxis1:
-                        imax = self.wcs.naxis1
+                        imax = self.naxis1 + imax
+                    if imax > self.naxis1:
+                        imax = self.naxis1
             except:
                 imin = item[1]
                 imax = item[1] + 1
@@ -400,17 +413,17 @@ class WCS(object):
                 else:
                     jmin = item[0].start
                     if jmin < 0:
-                        jmin = self.wcs.naxis2 + jmin
-                    if jmin > self.wcs.naxis2:
-                        jmin = self.wcs.naxis2
+                        jmin = self.naxis2 + jmin
+                    if jmin > self.naxis2:
+                        jmin = self.naxis2
                 if item[0].stop is None:
-                    jmax = self.wcs.naxis2
+                    jmax = self.naxis2
                 else:
                     jmax = item[0].stop
                     if jmax < 0:
-                        jmax = self.wcs.naxis2 + jmax
-                        if jmax > self.wcs.naxis2:
-                            jmax = self.wcs.naxis2
+                        jmax = self.naxis2 + jmax
+                        if jmax > self.naxis2:
+                            jmax = self.naxis2
             except:
                 jmin = item[0]
                 jmax = item[0] + 1
@@ -420,8 +433,8 @@ class WCS(object):
 
             res = self.copy()
             res.wcs.wcs.crpix = np.array(crpix)
-            res.wcs.naxis1 = int(imax - imin)
-            res.wcs.naxis2 = int(jmax - jmin)
+            res.naxis1 = int(imax - imin)
+            res.naxis2 = int(jmax - jmin)
 
             res.wcs.wcs.set()
 
@@ -453,8 +466,8 @@ class WCS(object):
     def get_range(self):
         """Returns [ [dec_min,ra_min], [dec_max,ra_max] ].
         """
-        pixcrd = [[0, 0], [self.wcs.naxis2 - 1, 0], [0, self.wcs.naxis1 - 1], \
-                  [self.wcs.naxis2 - 1, self.wcs.naxis1 - 1]]
+        pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1], \
+                  [self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd)
         dec_min = np.min(pixsky[:, 0])
         ra_min = np.min(pixsky[:, 1])
@@ -472,7 +485,7 @@ class WCS(object):
     def get_end(self):
         """Returns [dec,ra] corresponding to pixel (-1,-1).
         """
-        pixcrd = [[self.wcs.naxis2 - 1, self.wcs.naxis1 - 1]]
+        pixcrd = [[self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd)
         return np.array([pixsky[0, 0], pixsky[0, 1]])
 
@@ -506,12 +519,12 @@ class WCS(object):
     def set_naxis1(self, n):
         """NAXIS1 setter (first dimention of an image).
         """
-        self.wcs.naxis1 = n
+        self.naxis1 = n
 
     def set_naxis2(self, n):
         """NAXIS2 setter (second dimention of an image).
         """
-        self.wcs.naxis2 = n
+        self.naxis2 = n
 
     def set_crpix1(self, x):
         """CRPIX1 setter (reference pixel on the first axis).
@@ -628,8 +641,8 @@ class WCS(object):
         crpix[1] = (crpix[1] * old_cdelt[0] - old_cdelt[0] / 2.0 \
                     + cdelt[0] / 2.0) / cdelt[0]
         res.wcs.wcs.crpix = crpix
-        res.wcs.naxis1 = res.wcs.naxis1 / factor[1]
-        res.wcs.naxis2 = res.wcs.naxis2 / factor[0]
+        res.naxis1 = res.naxis1 / factor[1]
+        res.naxis2 = res.naxis2 / factor[0]
         res.wcs.wcs.set()
 
         return res

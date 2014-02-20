@@ -14,8 +14,8 @@ class TestWCS():
 
     def setUp(self):
         self.wcs = WCS(crval=(0,0))
-        self.wcs.wcs.naxis1 = 6
-        self.wcs.wcs.naxis2 = 5
+        self.wcs.naxis1 = 6
+        self.wcs.naxis2 = 5
 
     def tearDown(self):
         del self.wcs

@@ -186,16 +186,16 @@ class Cube(object):
                     self.wcs = WCS(hdr)
                 else:
                     self.wcs = wcs
-                    if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 and \
-                    (wcs.wcs.naxis1 != self.shape[2] or \
-                      wcs.wcs.naxis2 != self.shape[1]):
+                    if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
+                    (wcs.naxis1 != self.shape[2] or \
+                      wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
                         logger.warning('world coordinates and data have not'\
                                        ' the same dimensions: %s', \
                                        "shape of WCS object is modified", \
                                        extra=d)
-                    self.wcs.wcs.naxis1 = self.shape[2]
-                    self.wcs.wcs.naxis2 = self.shape[1]
+                    self.wcs.naxis1 = self.shape[2]
+                    self.wcs.naxis2 = self.shape[1]
                 #Wavelength coordinates
                 if wave is None:
                     if 'CDELT3' in hdr:
@@ -241,16 +241,16 @@ class Cube(object):
                     self.wcs = WCS(h)  # WCS object from data header
                 else:
                     self.wcs = wcs
-                    if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 and \
-                    (wcs.wcs.naxis1 != self.shape[2] or \
-                      wcs.wcs.naxis2 != self.shape[1]):
+                    if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
+                    (wcs.naxis1 != self.shape[2] or \
+                      wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
                         logger.warning('world coordinates and data have not '\
                                        'the same dimensions: %s', \
                                        'shape of WCS object is modified', \
                                        extra=d)
-                    self.wcs.wcs.naxis1 = self.shape[2]
-                    self.wcs.wcs.naxis2 = self.shape[1]
+                    self.wcs.naxis1 = self.shape[2]
+                    self.wcs.naxis2 = self.shape[1]
                 #Wavelength coordinates
                 if wave is None:
                     if 'CDELT3' in h:
@@ -351,16 +351,16 @@ class Cube(object):
             try:
                 self.wcs = wcs
                 if wcs is not None:
-                    if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 and \
-                    (wcs.wcs.naxis1 != self.shape[2] or \
-                      wcs.wcs.naxis2 != self.shape[1]):
+                    if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
+                    (wcs.naxis1 != self.shape[2] or \
+                      wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
                         logger.warning('world coordinates and data have not '\
                                        'the same dimensions: %s', \
                                        'shape of WCS object is modified', \
                                        extra=d)
-                    self.wcs.wcs.naxis1 = self.shape[2]
-                    self.wcs.wcs.naxis2 = self.shape[1]
+                    self.wcs.naxis1 = self.shape[2]
+                    self.wcs.naxis2 = self.shape[1]
             except:
                 self.wcs = None
                 d = {'class': 'Cube', 'method': '__init__'}
@@ -1771,11 +1771,11 @@ class Cube(object):
         """
         if wcs is not None:
             self.wcs = wcs
-            self.wcs.wcs.naxis1 = self.shape[2]
-            self.wcs.wcs.naxis2 = self.shape[1]
-            if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 \
-            and (wcs.wcs.naxis1 != self.shape[2] \
-                 or wcs.wcs.naxis2 != self.shape[1]):
+            self.wcs.naxis1 = self.shape[2]
+            self.wcs.naxis2 = self.shape[1]
+            if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
+            and (wcs.naxis1 != self.shape[2] \
+                 or wcs.naxis2 != self.shape[1]):
                 d = {'class': 'Cube', 'method': 'set_wcs'}
                 logger.warning('world coordinates and data have not the same '\
                                'dimensions', extra=d)
@@ -2139,7 +2139,7 @@ class Cube(object):
                 if n1_left != 0:
                     newshape[1] += 1
                     wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                    wcs.set_naxis2(wcs.wcs.naxis2 + 1)
+                    wcs.set_naxis2(wcs.naxis2 + 1)
                     p_left = 1
                 else:
                     p_left = 0
@@ -2153,7 +2153,7 @@ class Cube(object):
                 if n2_left != 0:
                     newshape[2] += 1
                     wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
-                    wcs.set_naxis1(wcs.wcs.naxis1 + 1)
+                    wcs.set_naxis1(wcs.naxis1 + 1)
                     q_left = 1
                 else:
                     q_left = 0

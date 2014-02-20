@@ -93,7 +93,9 @@ class ImageClicks:  # Object used to save click on image plot.
             c3 = pyfits.Column(name='x', format='E', array=self.x)
             c4 = pyfits.Column(name='y', format='E', array=self.y)
             c5 = pyfits.Column(name='data', format='E', array=self.data)
-            tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            #tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
+            tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
             tbhdu.writeto(self.filename, clobber=True, output_verify='fix')
             print 'printing coordinates in fits table %s' % self.filename
 
@@ -377,9 +379,9 @@ class Image(object):
                         self.wcs = wcs
                         self.wcs.set_naxis1(self.shape[1])
                         self.wcs.set_naxis2(self.shape[0])
-                        if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 \
-                        and (wcs.wcs.naxis1 != self.shape[1] \
-                             or wcs.wcs.naxis2 != self.shape[0]):
+                        if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
+                        and (wcs.naxis1 != self.shape[1] \
+                             or wcs.naxis2 != self.shape[0]):
                             d = {'class': 'Image', 'method': '__init__'}
                             logger.warning('world coordinates and data have '\
                             'not the same dimensions: %s', \
@@ -418,9 +420,9 @@ class Image(object):
                         self.wcs = wcs
                         self.wcs.set_naxis1(self.shape[1])
                         self.wcs.set_naxis2(self.shape[0])
-                        if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 \
-                        and (wcs.wcs.naxis1 != self.shape[1] \
-                             or wcs.wcs.naxis2 != self.shape[0]):
+                        if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
+                        and (wcs.naxis1 != self.shape[1] \
+                             or wcs.naxis2 != self.shape[0]):
                             d = {'class': 'Image', 'method': '__init__'}
                             logger.warning('world coordinates and data have '\
                                            'not the same dimensions: %s', \
@@ -481,9 +483,9 @@ class Image(object):
                     self.wcs = wcs
                     self.wcs.set_naxis1(self.shape[1])
                     self.wcs.set_naxis2(self.shape[0])
-                    if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 \
-                    and (wcs.wcs.naxis1 != self.shape[1] \
-                         or wcs.wcs.naxis2 != self.shape[0]):
+                    if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
+                    and (wcs.naxis1 != self.shape[1] \
+                         or wcs.naxis2 != self.shape[0]):
                         d = {'class': 'Image', 'method': '__init__'}
                         logger.warning('world coordinates and data have '\
                                        'not the same dimensions: %s', \
@@ -518,9 +520,9 @@ class Image(object):
                 if wcs is not None:
                     self.wcs.set_naxis1(self.shape[1])
                     self.wcs.set_naxis2(self.shape[0])
-                    if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 \
-                    and (wcs.wcs.naxis1 != self.shape[1] \
-                         or wcs.wcs.naxis2 != self.shape[0]):
+                    if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
+                    and (wcs.naxis1 != self.shape[1] \
+                         or wcs.naxis2 != self.shape[0]):
                         d = {'class': 'Image', 'method': '__init__'}
                         logger.warning("world coordinates and data have not '\
                         'the same dimensions: %s", \
@@ -1490,9 +1492,9 @@ class Image(object):
         self.wcs = wcs
         self.wcs.set_naxis1(self.shape[1])
         self.wcs.set_naxis2(self.shape[0])
-        if wcs.wcs.naxis1 != 0 and wcs.wcs.naxis2 != 0 \
-        and (wcs.wcs.naxis1 != self.shape[1] \
-             or wcs.wcs.naxis2 != self.shape[0]):
+        if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
+        and (wcs.naxis1 != self.shape[1] \
+             or wcs.naxis2 != self.shape[0]):
             d = {'class': 'Image', 'method': 'set_wcs'}
             logger.warning('world coordinates and data have not '\
                            'the same dimensions', extra=d)
@@ -3171,7 +3173,7 @@ class Image(object):
                     .reshape(ima.shape[0], factor[0]).sum(1)\
                      / factor[0] / factor[0] / factor[1] / factor[1]
                 wcs = ima.wcs
-                wcs.wcs.naxis1 = wcs.wcs.naxis1 + 1
+                wcs.naxis1 = wcs.naxis1 + 1
             else:
                 n_left = n1 / 2
                 n_right = self.shape[1] - n1 + n_left
@@ -3204,7 +3206,7 @@ class Image(object):
                     / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
                 wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
-                wcs.set_naxis1(wcs.wcs.naxis1 + 2)
+                wcs.set_naxis1(wcs.naxis1 + 2)
         elif not np.sometrue(np.mod(self.shape[1], factor[1])):
             newshape0 = self.shape[0] / factor[0]
             n0 = self.shape[0] - newshape0 * factor[0]
@@ -3229,7 +3231,7 @@ class Image(object):
                     .reshape(ima.shape[1], factor[1]).sum(1) \
                     / factor[0] / factor[1]
                 wcs = ima.wcs
-                wcs.wcs.naxis2 = wcs.wcs.naxis2 + 1
+                wcs.naxis2 = wcs.naxis2 + 1
             else:
                 n_left = n0 / 2
                 n_right = self.shape[0] - n0 + n_left
@@ -3262,7 +3264,7 @@ class Image(object):
                     / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
                 wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                wcs.set_naxis2(wcs.wcs.naxis2 + 2)
+                wcs.set_naxis2(wcs.naxis2 + 2)
         else:
             factor = np.array(factor)
             newshape = self.shape / factor
@@ -3348,8 +3350,8 @@ class Image(object):
                     step = wcs.get_step()
                     wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
                     wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                    wcs.set_naxis1(wcs.wcs.naxis1 + 2)
-                    wcs.set_naxis2(wcs.wcs.naxis2 + 2)
+                    wcs.set_naxis1(wcs.naxis1 + 2)
+                    wcs.set_naxis2(wcs.naxis2 + 2)
                 elif n_left[0] == 0:
                     newshape = (ima.shape[0] + 1, ima.shape[1] + 2)
                     data = np.empty(newshape)
@@ -3412,8 +3414,8 @@ class Image(object):
 
                     wcs = ima.wcs
                     wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
-                    wcs.set_naxis1(wcs.wcs.naxis1 + 2)
-                    wcs.set_naxis2(wcs.wcs.naxis2 + 1)
+                    wcs.set_naxis1(wcs.naxis1 + 2)
+                    wcs.set_naxis2(wcs.naxis2 + 1)
                 else:
                     newshape = (ima.shape[0] + 2, ima.shape[1] + 1)
                     data = np.empty(newshape)
@@ -3478,8 +3480,8 @@ class Image(object):
                         / factor[0] / factor[1]
                     wcs = ima.wcs
                     wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                    wcs.set_naxis1(wcs.wcs.naxis1 + 1)
-                    wcs.set_naxis2(wcs.wcs.naxis2 + 2)
+                    wcs.set_naxis1(wcs.naxis1 + 1)
+                    wcs.set_naxis2(wcs.naxis2 + 2)
             elif margin == 'origin':
                 n_right = self.shape - n
                 ima = self[0:n_right[0], 0:n_right[1]]
@@ -3517,8 +3519,8 @@ class Image(object):
                     var[-1, -1] = self.var[n_right[0]:, n_right[1]:]\
                     .sum() / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
-                wcs.wcs.naxis1 = wcs.wcs.naxis1 + 1
-                wcs.wcs.naxis2 = wcs.wcs.naxis2 + 1
+                wcs.naxis1 = wcs.naxis1 + 1
+                wcs.naxis2 = wcs.naxis2 + 1
             else:
                 raise ValueError('margin must be center|origin')
         self.shape = np.array(newshape)
@@ -4905,10 +4907,14 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None, \
     if is_int(shape):
         shape = (shape, shape)
     shape = np.array(shape)
-
-    if wcs.wcs.naxis1 != 0. or wcs.wcs.naxis2 != 0.:
-        shape[1] = wcs.wcs.naxis1
-        shape[0] = wcs.wcs.naxis2
+    
+    if wcs.naxis1 == 1. and wcs.naxis2 == 1.:
+        wcs.naxis1 = shape[1]
+        wcs.naxis2 = shape[0]
+    else:
+        if wcs.naxis1 != 0. or wcs.naxis2 != 0.:
+            shape[1] = wcs.naxis1
+            shape[0] = wcs.naxis2
 
     if gauss is not None:
         center = gauss.center
@@ -5045,9 +5051,13 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None, \
         shape = (shape, shape)
     shape = np.array(shape)
 
-    if wcs.wcs.naxis1 != 0. or wcs.wcs.naxis2 != 0.:
-        shape[1] = wcs.wcs.naxis1
-        shape[0] = wcs.wcs.naxis2
+    if wcs.naxis1 == 1. and wcs.naxis2 == 1.:
+        wcs.naxis1 = shape[1]
+        wcs.naxis2 = shape[0]
+    else:
+        if wcs.naxis1 != 0. or wcs.naxis2 != 0.:
+            shape[1] = wcs.naxis1
+            shape[0] = wcs.naxis2
 
     if moffat is not None:
         center = moffat.center

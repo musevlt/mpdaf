@@ -117,7 +117,8 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
             cols.append(pyfits.Column(name='weight', format='1E', \
                                       unit='count', array=weight))
         coltab = pyfits.ColDefs(cols)
-        tbhdu = pyfits.new_table(coltab)
+        #tbhdu = pyfits.new_table(coltab)
+        tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
         thdulist = pyfits.HDUList([prihdu, tbhdu])
         thdulist.writeto(filename, clobber=True, output_verify='fix')
 
