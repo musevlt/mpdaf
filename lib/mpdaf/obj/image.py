@@ -4299,8 +4299,14 @@ class Image(object):
           :type pix: bool
           :rtype: Image
         """
-        ima = moffat_image(self.shape, wcs=self.wcs, center=center, I=I, \
-                           a=a, q=q, n=n, rot=rot, factor=factor, pix=pix)
+        fwhmy = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+        fwhmx = fwhmy / q
+        
+        ima = moffat_image(self.shape, wcs=self.wcs, factor=factor, \
+                 center=center, flux=I, fwhm=(fwhmy, fwhmx), n=n, \
+                 rot=rot, pix=pix)
+        
+        
         ima.norm(type='sum')
         return self.fftconvolve(ima)
 
