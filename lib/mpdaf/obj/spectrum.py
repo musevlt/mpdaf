@@ -1619,8 +1619,11 @@ class Spectrum(object):
           :type notnoise: bool
         """
         lrange = self.get_range()
-        if start is not None and (start < lrange[0] or start > lrange[1]):
+        if start is not None and start > lrange[1]:
             raise ValueError('Start value outside the spectrum range')
+        if start is not None and start < lrange[0]:
+            n = int((lrange[0] - start) / step)
+            start = lrange[0] + (n + 1) * step
 
         newwave = self.wave.rebin(step, start)
         if shape is None:
