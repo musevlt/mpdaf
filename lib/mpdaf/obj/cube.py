@@ -3127,7 +3127,7 @@ class CubeDisk(object):
             if self.var != -1:
                 var = f[self.var].data[item]
             else:
-                self.var = None
+                var = None
             f.close()
             if is_int(item[0]):
                 if is_int(item[1]) and is_int(item[2]):
