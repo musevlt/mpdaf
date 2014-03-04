@@ -468,7 +468,7 @@ class Spectrum(object):
                         logger.warning("%s not copied in primary header", \
                                        card.keyword, extra=d)
                         pass
-        prihdu.header['date'] = (datetime.datetime.now(), 'creation date')
+        prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
 
