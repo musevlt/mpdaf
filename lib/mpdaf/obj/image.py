@@ -2284,6 +2284,7 @@ class Image(object):
                 weight = np.empty(n, dtype=float)
                 for i in range(npoints):
                     weight[i] = 1. / self.var[x[i], y[i]]
+                np.ma.fix_invalid(weight, copy=False, fill_value=0)
             else:
                 weight = None
 

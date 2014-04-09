@@ -1350,8 +1350,9 @@ class Spectrum(object):
         if self.var is not None:
             weight = np.empty(np.shape(ksel)[1] + 2)
             weight[1:-1] = 1. / self.var[ksel]
-            weight[0] = self.var[1]
-            weight[-1] = self.var[-2]
+            weight[0] = 1. / self.var[1]
+            weight[-1] = 1. / self.var[-2]
+            np.ma.fix_invalid(weight, copy=False, fill_value=0)
         else:
             weight = None
         if spline:
@@ -1723,8 +1724,10 @@ class Spectrum(object):
         data = self._interp_data(spline)
 
         if weight:
+            weights=1.0 / self.var[i1:i2]
+            np.ma.fix_invalid(weights, copy=False, fill_value=0)
             flux = np.average(data[i1:i2], \
-                              weights=1.0 / self.var[i1:i2]) * self.fscale
+                              weights=weights) * self.fscale
         else:
             flux = data[i1:i2].mean() * self.fscale
         return flux
@@ -1759,8 +1762,9 @@ class Spectrum(object):
         data = self._interp_data(spline)
 
         if weight:
-            flux = (i2 - i1) * np.average(data[i1:i2], weights=1.0 / \
-                                          self.var[i1:i2]) * self.fscale
+            weights=1.0 / self.var[i1:i2]
+            np.ma.fix_invalid(weights, copy=False, fill_value=0)
+            flux = (i2 - i1) * np.average(data[i1:i2], weights=weights) * self.fscale
         else:
             flux = data[i1:i2].sum() * self.fscale
         return flux
@@ -1791,6 +1795,7 @@ class Spectrum(object):
 
         if weight:
             vec_weight = 1. / self.var
+            np.ma.fix_invalid(vec_weight, copy=False, fill_value=0)
         else:
             vec_weight = None
 
@@ -2199,6 +2204,7 @@ class Spectrum(object):
         # 1d Gaussian fit
         if spec.var is not None and weight:
             wght = 1 / spec.var
+            np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
             wght = np.ones(spec.shape)
         e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
