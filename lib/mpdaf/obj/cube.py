@@ -2819,7 +2819,7 @@ class Cube(object):
                 sys.stdout.flush()
 
         init = True
-        for k,out,h in processresult:
+        for k,out in processresult:
             if is_float(out) or is_int(out):
             # f returns a number -> iterator returns a spectrum
                 if init:
@@ -2834,17 +2834,14 @@ class Cube(object):
                     if out.image:
                     #f returns an image -> iterator returns a cube
                         if init:
-                            wcs = WCS(h)
-                            wcs.set_naxis1(out.shape[1])
-                            wcs.set_naxis2(out.shape[0])
                             if self.var is None:
-                                result = Cube(wcs=wcs, \
+                                result = Cube(wcs=out.wcs, \
                                               wave=self.wave.copy(), \
             data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
                                               unit=self.unit, \
                                               fscale=out.fscale)
                             else:
-                                result = Cube(wcs=wcs, \
+                                result = Cube(wcs=out.wcs, \
                                               wave=self.wave.copy(), \
             data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
             var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
@@ -2864,8 +2861,8 @@ class Cube(object):
 
 def _process_spe(arglist):
     try:
-        obj = arglist[0]
         pos = arglist[1]
+        obj = arglist[0]
         f = arglist[2]
         kargs = arglist[3]
         if isinstance(f,types.FunctionType):
@@ -2882,25 +2879,17 @@ def _process_spe(arglist):
 
 def _process_ima(arglist):
     try:
-        obj = arglist[0]
-        #bug multiprocessing & pywcs
-        obj.wcs = WCS(arglist[3])
-        obj.wcs.set_naxis1(obj.shape[1])
-        obj.wcs.set_naxis2(obj.shape[0])
-
         pos = arglist[1]
+        obj = arglist[0]
+
         f = arglist[2]
         kargs = arglist[4]
         if isinstance(f,types.FunctionType):
             obj_result = f(obj,**kargs)
         else:
             obj_result = getattr(obj, f)(**kargs)
-        try:
-            header = obj_result.wcs.to_header()
-        except:
-            header = None
-
-        return (pos,obj_result,header)
+        
+        return (pos,obj_result)
     except Exception as inst:
         raise type(inst), str(inst) + '\n The error occurred '\
             'for the image [%i,:,:]' % pos
