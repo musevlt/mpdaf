@@ -6,7 +6,10 @@ from nose.plugins.attrib import attr
 import os
 import sys
 import numpy as np
-import pyfits
+try:
+    from astropy.io import fits as pyfits
+except:
+    import pyfits
 
 from mpdaf.obj import Spectrum
 from mpdaf.obj import Image
