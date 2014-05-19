@@ -81,6 +81,7 @@ class CalibFile(object):
                 try:
                     self.nx = hdulist["DATA"].header["NAXIS1"]
                     self.ny = hdulist["DATA"].header["NAXIS2"]
+                    self.data_header = hdulist["DATA"].header
                 except:
                     raise IOError('format error: no image DATA extension')
                 try:
@@ -104,6 +105,7 @@ class CalibFile(object):
                 raise IOError('IOError: file %s not found' % filename)
         else:
             self.primary_header = pyfits.Header()
+            self.data_header = pyfits.Header()
 
     def __del__(self):
         """removes temporary files used for memory mapping"""
@@ -132,6 +134,7 @@ class CalibFile(object):
                          shape=(self.ny, self.nx))
         data[:] = selfdata[:]
         os.close(fd)
+        result.data_header = pyfits.Header(self.data_header)
         # variance
         (fd, result.stat) = tempfile.mkstemp(prefix='mpdaf')
         selfstat = self.get_stat()
@@ -217,7 +220,7 @@ class CalibFile(object):
 
         :rtype: :class:`mpdaf.obj.Image`
         """
-        wcs = obj.WCS(self.primary_header)
+        wcs = obj.WCS(self.data_header)
         ima = obj.Image(wcs=wcs, data=self.get_data())
         return ima
 
@@ -268,6 +271,7 @@ class CalibFile(object):
         """
         result = CalibFile()
         result.primary_header = pyfits.Header(self.primary_header)
+        result.data_header = pyfits.Header(self.data_header)
         result.nx = self.nx
         result.ny = self.ny
         (fd, result.data) = tempfile.mkstemp(prefix='mpdaf')
@@ -345,6 +349,7 @@ class CalibFile(object):
         """
         result = CalibFile()
         result.primary_header = pyfits.Header(self.primary_header)
+        result.data_header = pyfits.Header(self.data_header)
         result.nx = self.nx
         result.ny = self.ny
         (fd, result.data) = tempfile.mkstemp(prefix='mpdaf')
@@ -425,6 +430,7 @@ class CalibFile(object):
         else:
             result = CalibFile()
             result.primary_header = pyfits.Header(self.primary_header)
+            result.data_header = pyfits.Header(self.data_header)
             result.nx = self.nx
             result.ny = self.ny
             (fd, result.data) = tempfile.mkstemp(prefix='mpdaf')
@@ -615,6 +621,8 @@ class CalibDir(object):
                     out = CalibFile()
                     out.primary_header = \
                     pyfits.Header(self.files[k].primary_header)
+                    out.data_header = \
+                    pyfits.Header(self.files[k].data_header)
                     out.nx = self.files[k].nx
                     out.ny = self.files[k].ny
                     # data
@@ -659,6 +667,8 @@ class CalibDir(object):
                 out = CalibFile()
                 out.primary_header = \
                 pyfits.Header(self.files[k].primary_header)
+                out.data_header = \
+                pyfits.Header(self.files[k].data_header)
                 out.nx = self.files[k].nx
                 out.ny = self.files[k].ny
                 # data
