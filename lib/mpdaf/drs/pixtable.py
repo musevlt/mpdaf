@@ -35,7 +35,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
         # remove in pyfits version >3.0
         pyfits.setExtensionNameCaseSensitive()
     except:
-        pyfits.EXTENSION_NAME_CASE_SENSITIVE = True
+        pyfits.EXTENSION_NAME_CASE_SENSITIVE.set(True)
     prihdu = pyfits.PrimaryHDU()
     warnings.simplefilter("ignore")
     if primary_header is not None:
