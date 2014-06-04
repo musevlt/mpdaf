@@ -21,7 +21,7 @@ logger = logging.getLogger('mpdaf corelib')
 
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
-          primary_header=None, save_as_ima=True, wcs=False):
+          primary_header=None, save_as_ima=True, wcs='pix'):
     """Saves the object in a FITS file.
 
     :param filename: The FITS filename.
@@ -81,12 +81,8 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
             hdulist.append(pyfits.ImageHDU(name='weight', \
                                            data=weight.reshape((nrows, 1))))
         hdu = pyfits.HDUList(hdulist)
-        if wcs:
-            hdu[1].header['BUNIT'] = 'deg'
-            hdu[2].header['BUNIT'] = 'deg'
-        else:
-            hdu[1].header['BUNIT'] = 'pix'
-            hdu[2].header['BUNIT'] = 'pix'
+        hdu[1].header['BUNIT'] = wcs
+        hdu[2].header['BUNIT'] = wcs
         hdu[3].header['BUNIT'] = 'Angstrom'
         hdu[4].header['BUNIT'] = 'count'
         hdu[6].header['BUNIT'] = 'count**2'
@@ -95,15 +91,9 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
         hdu.writeto(filename, clobber=True, output_verify='fix')
     else:
         cols = []
-        if wcs:
-            cols.append(pyfits.Column(name='xpos', format='1E', unit='deg', \
+        cols.append(pyfits.Column(name='xpos', format='1E', unit=wcs, \
                                       array=xpos))
-            cols.append(pyfits.Column(name='ypos', format='1E', unit='deg', \
-                                      array=ypos))
-        else:
-            cols.append(pyfits.Column(name='xpos', format='1E', unit='pix', \
-                                      array=xpos))
-            cols.append(pyfits.Column(name='ypos', format='1E', unit='pix', \
+        cols.append(pyfits.Column(name='ypos', format='1E', unit=wcs, \
                                       array=ypos))
         cols.append(pyfits.Column(name='lambda', format='1E', \
                                   unit='Angstrom', array=lbda))
@@ -151,9 +141,8 @@ class PixTable(object):
     fluxcal : boolean
     If True, this pixel table was flux-calibrated.
 
-    wcs : boolean
-    If True, the coordinates of this pixel table was
-    world coordinates on the sky
+    wcs : string
+    Type of coordinates of this pixel table ('pix', 'deg' or 'rad')
 
     ima : boolean
     If True, pixtable is saved as multi-extension FITS image
@@ -178,7 +167,7 @@ class PixTable(object):
         self.nifu = 0
         self.skysub = False
         self.fluxcal = False
-        self.wcs = False
+        self.wcs = 'pix'
         self.ima = True
 
         if filename != None:
@@ -208,16 +197,10 @@ class PixTable(object):
                 except:
                     self.fluxcal = False
                 # type of coordinates
-                try:
-                    if self.get_keywords("HIERARCH ESO DRS "\
-                                         "MUSE PIXTABLE WCS")[0:10] \
-                                         == "positioned":
-                        self.wcs = True
-                    else:
-                        self.wcs = False
-                except:
-                    self.wcs = False
-
+                if self.ima:
+                    self.wcs = hdulist[1].header['BUNIT']
+                else:
+                    self.wcs = hdulist[1].header['TUNIT1']
             except IOError:
                 raise IOError('file %s not found' % filename)
         else:
@@ -563,17 +546,25 @@ class PixTable(object):
             mask = np.zeros(self.nrows).astype('bool')
             for y0, x0, size, shape in sky:
                 if shape == 'C':
-                    if self.wcs:
+                    if self.wcs == 'deg':
                         mask |= (((col_xpos - x0) \
                                   * np.cos(y0 * np.pi / 180.)) ** 2 \
+                                 + (col_ypos - y0) ** 2) < size ** 2
+                    elif self.wcs == 'rad':
+                        mask |= (((col_xpos - x0) \
+                                  * np.cos(y0)) ** 2 \
                                  + (col_ypos - y0) ** 2) < size ** 2
                     else:
                         mask |= ((col_xpos - x0) ** 2 \
                                  + (col_ypos - y0) ** 2) < size ** 2
                 elif shape == 'S':
-                    if self.wcs:
+                    if self.wcs == 'deg':
                         mask |= (np.abs((col_xpos - x0) \
                                         * np.cos(y0 * np.pi / 180.)) < size) \
+                                        & (np.abs(col_ypos - y0) < size)
+                    elif self.wcs == 'rad':
+                        mask |= (np.abs((col_xpos - x0) \
+                                        * np.cos(y0)) < size) \
                                         & (np.abs(col_ypos - y0) < size)
                     else:
                         mask |= (np.abs(col_xpos - x0) < size) \
@@ -979,9 +970,14 @@ class PixTable(object):
         ymin = np.min(y)
         ymax = np.max(y)
 
-        if self.wcs:
+        if self.wcs == "deg": #arcsec to deg
             xstep /= (-3600. * np.cos((ymin + ymax) * np.pi / 180. / 2.))
             ystep /= 3600.
+        elif self.wcs == "deg": #arcsec to rad
+            xstep /= (-3600. * 180. / np.pi * np.cos((ymin + ymax) / 2.))
+            ystep /= (3600. * 180. / np.pi)
+        else: #pix
+            pass
 
         nx = 1 + int((xmin - xmax) / xstep)
         grid_x = np.arange(nx) * xstep + xmax
