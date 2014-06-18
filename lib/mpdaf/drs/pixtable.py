@@ -300,7 +300,7 @@ class PixTable(object):
                 xpos = hdulist[1].data.field('xpos')
         else:
             if self.ima:
-                xpos = hdulist['xpos'].data[ksel, 0]
+                xpos = hdulist['xpos'].data[ksel, 0][0]
             else:
                 xpos = hdulist[1].data.field('xpos')[ksel]
         hdulist.close()
@@ -322,7 +322,7 @@ class PixTable(object):
                 ypos = hdulist[1].data.field('ypos')
         else:
             if self.ima:
-                ypos = hdulist['ypos'].data[ksel, 0]
+                ypos = hdulist['ypos'].data[ksel, 0][0]
             else:
                 ypos = hdulist[1].data.field('ypos')[ksel]
         hdulist.close()
@@ -344,7 +344,7 @@ class PixTable(object):
                 lbda = hdulist[1].data.field('lambda')
         else:
             if self.ima:
-                lbda = hdulist['lambda'].data[ksel, 0]
+                lbda = hdulist['lambda'].data[ksel, 0][0]
             else:
                 lbda = hdulist[1].data.field('lambda')[ksel]
         hdulist.close()
@@ -366,7 +366,7 @@ class PixTable(object):
                 data = hdulist[1].data.field('data')
         else:
             if self.ima:
-                data = hdulist['data'].data[ksel, 0]
+                data = hdulist['data'].data[ksel, 0][0]
             else:
                 data = hdulist[1].data.field('data')[ksel]
         hdulist.close()
@@ -388,7 +388,7 @@ class PixTable(object):
                 stat = hdulist[1].data.field('stat')
         else:
             if self.ima:
-                stat = hdulist['stat'].data[ksel, 0]
+                stat = hdulist['stat'].data[ksel, 0][0]
             else:
                 stat = hdulist[1].data.field('stat')[ksel]
         hdulist.close()
@@ -410,7 +410,7 @@ class PixTable(object):
                 dq = hdulist[1].data.field('dq')
         else:
             if self.ima:
-                dq = hdulist['dq'].data[ksel, 0]
+                dq = hdulist['dq'].data[ksel, 0][0]
             else:
                 dq = hdulist[1].data.field('dq')[ksel]
         hdulist.close()
@@ -432,7 +432,7 @@ class PixTable(object):
                 origin = hdulist[1].data.field('origin')
         else:
             if self.ima:
-                origin = hdulist['origin'].data[ksel, 0]
+                origin = hdulist['origin'].data[ksel, 0][0]
             else:
                 origin = hdulist[1].data.field('origin')[ksel]
         hdulist.close()
@@ -456,7 +456,7 @@ class PixTable(object):
                         weight = hdulist[1].data.field('weight')
                 else:
                     if self.ima:
-                        weight = hdulist['weight'].data[ksel, 0]
+                        weight = hdulist['weight'].data[ksel, 0][0]
                     else:
                         weight = hdulist[1].data.field('weight')[ksel]
                 hdulist.close()
