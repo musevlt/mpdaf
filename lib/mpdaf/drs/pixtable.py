@@ -196,7 +196,14 @@ class PixTable(object):
                                                      "PIXTABLE FLUXCAL")
                 except:
                     self.fluxcal = False
-                # type of coordinates
+                
+                # center in degrees
+                self.xc = self.primary_header['RA']
+                self.yc = self.primary_header['DEC']
+                
+                #coder le centre get_center() -> ra, dec
+                # get_xpos_sky()
+                # extract à corriger si possible x1 x2 y1 et y2
                 if self.ima:
                     self.wcs = hdulist[1].header['BUNIT']
                 else:
@@ -327,6 +334,39 @@ class PixTable(object):
                 ypos = hdulist[1].data.field('ypos')[ksel]
         hdulist.close()
         return ypos
+    
+    def get_xpos_sky(self, ksel=None):
+        """Returns the x absolute position on the sky in degrees/pixel.
+
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+
+        :rtype: numpy.array
+        """
+        xpos = self.get_xpos(ksel)
+        ypos = self.get_ypos(ksel)
+        if self.wcs == 'deg':
+            xpos_sky = self.xc + xpos / np.cos(ypos * np.pi / 180)
+        elif self.wcs == 'rad':
+            xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(ypos)
+        else:
+            xpos_sky = self.xc + xpos
+        return xpos_sky
+    
+    def get_ypos_sky(self, ksel=None):
+        """Returns the y absolute position on the sky in degrees/pixel.
+
+        :param ksel: elements depending on a condition (output of np.where)
+        :type ksel: ndarray or tuple of ndarrays
+
+        :rtype: numpy.array
+        """
+        ypos = self.get_ypos(ksel)
+        if self.wcs == 'rad':
+            ypos_sky = self.yc + ypos * 180 / np.pi
+        else:
+            ypos_sky = self.yc + ypos
+        return ypos_sky
 
     def get_lambda(self, ksel=None):
         """Loads the lambda column and returns it.
@@ -530,6 +570,9 @@ class PixTable(object):
 
         :rtype: PixTable
         """
+        # type of coordinates
+        if self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:10] != 'positioned':
+            raise IOError('pixtable %s have an intermediate status (MUSE PIXTABLE WCS=%s)' %(filename, self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")))
         primary_header = self.primary_header.copy()
         if self.nrows == 0:
             return None
@@ -539,42 +582,47 @@ class PixTable(object):
 
         # Do the selection on the sky
         if sky is not None:
-            col_xpos = self.get_xpos()
-            col_ypos = self.get_ypos()
+            xpos = self.get_xpos_sky()
+            ypos = self.get_ypos_sky()
             if (isinstance(sky, tuple)):
                 sky = [sky]
             mask = np.zeros(self.nrows).astype('bool')
             for y0, x0, size, shape in sky:
                 if shape == 'C':
                     if self.wcs == 'deg':
-                        mask |= (((col_xpos - x0) \
+                        mask |= (((xpos - x0) * 3600 \
                                   * np.cos(y0 * np.pi / 180.)) ** 2 \
-                                 + (col_ypos - y0) ** 2) < size ** 2
+                                + ((ypos - y0) * 3600) ** 2) \
+                                < size ** 2
                     elif self.wcs == 'rad':
-                        mask |= (((col_xpos - x0) \
+                        mask |= (((xpos - x0) * 3600 * 180 / np.pi \
                                   * np.cos(y0)) ** 2 \
-                                 + (col_ypos - y0) ** 2) < size ** 2
+                                + ((ypos - y0) * 3600 * 180 / np.pi)\
+                                 ** 2) < size ** 2
                     else:
-                        mask |= ((col_xpos - x0) ** 2 \
-                                 + (col_ypos - y0) ** 2) < size ** 2
+                        mask |= ((xpos - x0) ** 2 \
+                                 + (ypos - y0) ** 2) < size ** 2
                 elif shape == 'S':
                     if self.wcs == 'deg':
-                        mask |= (np.abs((col_xpos - x0) \
-                                        * np.cos(y0 * np.pi / 180.)) < size) \
-                                        & (np.abs(col_ypos - y0) < size)
+                        mask |= (np.abs((xpos - x0) * 3600 \
+                                * np.cos(y0 * np.pi / 180.)) \
+                                 < size) \
+                                & (np.abs((ypos - y0) * 3600) \
+                                 < size)
                     elif self.wcs == 'rad':
-                        mask |= (np.abs((col_xpos - x0) \
-                                        * np.cos(y0)) < size) \
-                                        & (np.abs(col_ypos - y0) < size)
+                        mask |= (np.abs((xpos - x0) * 3600 * 180 \
+                                / np.pi * np.cos(y0)) < size) \
+                                & (np.abs((ypos - y0) * 3600 * 180 \
+                                / np.pi) < size)
                     else:
-                        mask |= (np.abs(col_xpos - x0) < size) \
-                        & (np.abs(col_ypos - y0) < size)
+                        mask |= (np.abs(xpos - x0) < size) \
+                        & (np.abs(ypos - y0) < size)
                 else:
                     raise ValueError('Unknown shape parameter')
             kmask &= mask
             del mask
-            del col_xpos
-            del col_ypos
+            del xpos
+            del ypos
 
         # Do the selection on wavelengths
         if lbda is not None:
