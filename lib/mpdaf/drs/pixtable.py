@@ -71,11 +71,11 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
         hdulist.append(pyfits.ImageHDU(name='data', \
                                        data=data.reshape((nrows, 1))))
         hdulist.append(pyfits.ImageHDU(name='dq', \
-                                       data=np.uint32(dq.reshape((nrows, 1)))))
+                                       data=np.int32(dq.reshape((nrows, 1)))))
         hdulist.append(pyfits.ImageHDU(name='stat', \
                                        data=stat.reshape((nrows, 1))))
         hdulist.append(pyfits.ImageHDU(name='origin', \
-                                       data=np.uint32(origin.reshape((nrows, \
+                                       data=np.int32(origin.reshape((nrows, \
                                                                      1)))))
         if weight is not None:
             hdulist.append(pyfits.ImageHDU(name='weight', \
