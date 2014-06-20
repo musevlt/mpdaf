@@ -2196,7 +2196,7 @@ class Image(object):
         for d in range(0, nmax):
             ee[d] = self.fscale * \
             (self.data[i - d:i + d + 1, j - d:j + d + 1] - cont).sum() / etot
-        plt.plot(rad, ee)
+        #plt.plot(range(0, nmax), ee)
         wave = WaveCoord(cdelt=np.sqrt(step[0] ** 2 + step[1] ** 2), \
                          crval=0.0, cunit='')
         return Spectrum(wave=wave, data=ee)
