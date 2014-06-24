@@ -201,9 +201,6 @@ class PixTable(object):
                 self.xc = self.primary_header['RA']
                 self.yc = self.primary_header['DEC']
                 
-                #coder le centre get_center() -> ra, dec
-                # get_xpos_sky()
-                # extract à corriger si possible x1 x2 y1 et y2
                 if self.ima:
                     self.wcs = hdulist[1].header['BUNIT']
                 else:
