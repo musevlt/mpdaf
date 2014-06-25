@@ -192,7 +192,8 @@ Developers should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ to make their packa
 Step 5: upgrade version of user package
 ---------------------------------------
 
-When the user package is added as a git submodule, the most recent commit of the submodule is stored in the UserLib library of MPDAF. That means when the code in the user package Git repository is updated, the same code will still be pulled on the repositories relying on the submodule.
+When the user package is added as a git submodule, the most recent commit of the submodule is stored in the UserLib library of MPDAF. 
+But when the code in the user package Git repository is updated by the developer, these updates are not automatically done on the repositories relying on the submodule.
 
 For each new stable version of user package, developer should ask `CRAL <laure.piqueras@univ-lyon1.fr>`_ to update the user package in the UserLib library of MPDAF.
 
@@ -241,21 +242,10 @@ Documentation
 User manual with Sphinx
 -----------------------
 
-MPDAF should be documented for the user. HTML documentation is available on the folder *mpdaf/doc*. MPDAF user manual is created using the *sphinx* tool which has excellent facilities for the documentation of Python projects.
+MPDAF should be documented for the user. MPDAF user manual is created using the *sphinx* tool which has excellent facilities for the documentation of Python projects.
 
-To update this documentation, clone the corresponding git repository::
 
-  > git clone urania1.univ-lyon1.fr:/git/mpdaf_sphinx
-  
-Update source files and use *git add*, *git commit* and *git push* commands to send your changes from your working copy to the repository on urania1::
-
-  mpdaf_sphinx> git add [file name]
-  mpdaf_sphinx> git commit -m "This is the message describing the commit"
-  mpdaf_sphinx> git push origin
-  
-The *CoreLib* repository contains the user manual of the CoreLib library. Documentation of user packages should be done in the *UserLib* repository.
-
-In the *UserLib* folder, the *Source* directory will contains the '.rst' files of *sphinx* (see `<http://packages.python.org/an_example_pypi_project/sphinx.html>`_).
+In the *doc* folder, the *Source* directory will contains the '.rst' files of *sphinx* (see `<http://packages.python.org/an_example_pypi_project/sphinx.html>`_).
 
 Convention names for these sphinx files are used in the MPDAF project:
 
@@ -270,7 +260,12 @@ Convention names for these sphinx files are used in the MPDAF project:
 
   * [PackageName].rst describes the package. This page gives a link to the different user manual pages of this package.
 
-The *UserLib* directory contains a Makefile. The HTML documentation is generated with the *make html* command.
+We can download a Makefile from::
+
+  > git clone urania1.univ-lyon1.fr:/git/mpdaf_sphinx/UserLib
+  
+
+The HTML documentation is generated with the *make html* command.
 
 
 Web interface

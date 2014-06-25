@@ -10,59 +10,51 @@ Trac system
 
 The Trac repository browser `Browse Source <http://urania1.univ-lyon1.fr/mpdaf/browser>`_ can be used to navigate through the directory structure.
 
-Or you can browse specific revisions in the wiki page `CoreLib <http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
 
+Wiki page
+---------
 
-Git repository
---------------
-
-If you want to get a local copy of the mpdaf project, it is better to clone it with git.
-
-To clone the current development branch, you simply run the *git clone [url]* command::
-
-  git clone http://urania1.univ-lyon1.fr/git/mpdaf
-
-
-By default, Git will create a directory labelled mpdaf. If you want something different, you can just put it at the end of the command, after the URL. 
+You can browse tarball of specific revisions in the wiki page `CoreLib <http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
 
 
 MPDAF sub-modules
 -----------------
 
-mpdaf contains large packages and user packages:
+mpdaf contains user packages:
 
-+----------------+--------------------+----------------------------------------------------------------------------------------+
-| Large packages | Path               | Description                                                                            |
-+================+====================+========================================================================================+
-| fusion         | lib/mpdaf/fusion   | C++ code for the Bayesian fusion of hyperspectral astronomical images                  |
-|                |                    | `fusion documentation <user_manual_fusion.html>`_                                      |
-+----------------+--------------------+----------------------------------------------------------------------------------------+
-| quickViz       | lib/mpdaf/quickViz | vizualisation tool for MUSE cubes                                                      |
-|                |                    | `quickViz documentation <http://urania1.univ-lyon1.fr/mpdaf/wiki/DocQuickViz>`_        |                                        
-+----------------+--------------------+----------------------------------------------------------------------------------------+
++-------------------+--------------------+-----------------------------------------------------------------------+
+| User packages     |                    |                                                                       |
++===================+====================+=======================================================================+
+| mpdaf_user.fsf    | mpdaf_user/fsf     | Estimation of the Field Spread Function                               |
+|                   |                    | `fsf doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/FsfModelWiki>`_     |                                              
++-------------------+--------------------+-----------------------------------------------------------------------+
+| mpdaf_user.zap    | mpdaf_user/zap     | sky subtraction tool                                                  |
+|                   |                    | `zap doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/ZapWiki>`_          |                                              
++-------------------+--------------------+-----------------------------------------------------------------------+
 
-+----------------+--------------------+----------------------------------------------------------------------------------------+
-| User packages  |                    |                                                                                        |
-+================+====================+========================================================================================+
-| mpdaf_user.fsf | mpdaf_user/fsf     | Estimation of the Field Spread Function                                                |
-|                |                    | `mpdaf_user.fsf documentation <http://urania1.univ-lyon1.fr/mpdaf/wiki/FsfModelWiki>`_ |                                              
-+----------------+--------------------+----------------------------------------------------------------------------------------+
+These user packages are included in the mpdaf tarball.
 
-The user has the choice to download or not download these packages. *submodule* git option is used.
+However mpdaf contains also large packages that are not present in tarball:
 
-After the *git clone* command, the submodules directories are there, but they're empty. Pulling down the submodules is a two-step process.
++-------------------+--------------------+-----------------------------------------------------------------------+
+| Large packages    | Path               | Description                                                           |
++===================+====================+=======================================================================+
+| fusion            | lib/mpdaf/fusion   | C++ code for the Bayesian fusion of hyperspectral astronomical images |
+|                   |                    | `fusion doc <user_manual_fusion.html>`_                               |
++-------------------+--------------------+-----------------------------------------------------------------------+
+| quickViz          | lib/mpdaf/quickViz | vizualisation tool for MUSE cubes                                     |
+|                   |                    | `quickViz doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/DocQuickViz>`_ |                                        
++-------------------+--------------------+-----------------------------------------------------------------------+
 
-First select the submodules that you want used. Now use *git submodule update*::
 
-  /mpdaf$ git submodule init lib/mpdaf/fusion
-  /mpdaf$ git submodule init lib/mpdaf/quickViz
-  /mpdaf$ git submodule init mpdaf_user/fsf
-  /mpdaf$ git submodule update
+The user has the choice to download or not download these packages, the sub-modules directories are there, but they're empty. Pulling down the submodules is a two-step process.
 
-Then, you use *git pull* command to bring your repository up to date::
+First download the submodules that you want used via the wiki page `CoreLib <http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
 
-  /mpdaf$ git pull
-  /mpdaf$ git submodule update
+Then, untar and move the repository::
+
+  $ tar -xzf fusion.tar.gz
+  $ mv fusion lib/mpdaf/
 
 
 Prerequisites
@@ -75,8 +67,8 @@ The various software required are:
  * numpy (version 1.6.2 or above)
  * scipy (version 0.10.1 or above)
  * matplotlib (version 1.1.0 or above)
- * pyfits (version 3.0 or above)
- * pywcs (version 1.11-4.7 or above)
+ * pyfits (version 3.1 or astropy)
+ * pywcs (version 1.11-4.7 or astropy)
  * nose
  * PIL
 
