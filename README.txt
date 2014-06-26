@@ -39,3 +39,9 @@ $ git clone http://urania1.univ-lyon1.fr/git/mpdaf
   Pixel table visualization
  1.1.4::
   Bugs correction + link to the sky subtraction tool zap (Zurich)
+ 1.1.5::
+  Bugs correction
+ 1.1.6::
+  update of the sky subtraction tool zap
+ 1.1.7::
+  PixTable update
