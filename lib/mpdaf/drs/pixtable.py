@@ -198,8 +198,12 @@ class PixTable(object):
                     self.fluxcal = False
                 
                 # center in degrees
-                self.xc = self.primary_header['RA']
-                self.yc = self.primary_header['DEC']
+                if self.get_keywords("CUNIT1") == 'rad':
+                    self.xc = self.primary_header['RA'] * 180 / np.pi
+                    self.yc = self.primary_header['DEC'] * 180 / np.pi
+                else:
+                    self.xc = self.primary_header['RA']
+                    self.yc = self.primary_header['DEC']
                 
                 if self.ima:
                     self.wcs = hdulist[1].header['BUNIT']
@@ -342,27 +346,58 @@ class PixTable(object):
         """
         xpos = self.get_xpos(ksel)
         ypos = self.get_ypos(ksel)
-        if self.wcs == 'deg':
-            xpos_sky = self.xc + xpos / np.cos(ypos * np.pi / 180)
-        elif self.wcs == 'rad':
-            xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(ypos)
+        try:
+            polar = (pix.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+        except:
+            polar = False
+        if polar: #polar coordinates
+            if self.wcs == 'deg':
+                xpos_sky = self.xc + ypos * np.cos(xpos * np.pi / 180) \
+                / np.cos(ypos * np.sin(xpos * np.pi / 180) * np.pi / 180)
+            elif self.wcs == 'rad':
+                xpos_sky = self.xc + ypos * np.cos(xpos) * 180 / np.pi / np.cos(ypos * np.sin(xpos))
+            else:
+                xpos_sky = self.xc + ypos * np.cos(xpos)
         else:
-            xpos_sky = self.xc + xpos
+            if self.wcs == 'deg':
+                xpos_sky = self.xc + xpos / np.cos(ypos * np.pi / 180)
+            elif self.wcs == 'rad':
+                xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(ypos)
+            else:
+                xpos_sky = self.xc + xpos
+        
+        
         return xpos_sky
     
     def get_ypos_sky(self, ksel=None):
         """Returns the y absolute position on the sky in degrees/pixel.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
+        Parameters
+        ----------
+        ksel : ndarray or tuple of ndarrays
+        elements depending on a condition (output of np.where)
 
-        :rtype: numpy.array
+        Returns
+        -------
+        out : numpy.array
         """
-        ypos = self.get_ypos(ksel)
-        if self.wcs == 'rad':
-            ypos_sky = self.yc + ypos * 180 / np.pi
+        try:
+            polar = (pix.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+        except:
+            polar = False
+        if polar: #polar coordinates
+            xpos = self.get_xpos(ksel)
+            ypos = self.get_ypos(ksel)
+            if self.wcs == 'rad':
+                ypos_sky = self.yc + ypos * np.sin(xpos) * 180 / np.pi
+            else:
+                ypos_sky = self.yc + ypos * np.sin(xpos * np.pi / 180)
         else:
-            ypos_sky = self.yc + ypos
+            ypos = self.get_ypos(ksel)
+            if self.wcs == 'rad':
+                ypos_sky = self.yc + ypos * 180 / np.pi
+            else:
+                ypos_sky = self.yc + ypos
         return ypos_sky
 
     def get_lambda(self, ksel=None):
@@ -568,8 +603,6 @@ class PixTable(object):
         :rtype: PixTable
         """
         # type of coordinates
-        if self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:10] != 'positioned':
-            raise IOError('pixtable %s have an intermediate status (MUSE PIXTABLE WCS=%s)' %(filename, self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")))
         primary_header = self.primary_header.copy()
         if self.nrows == 0:
             return None
