@@ -2444,6 +2444,14 @@ class Image(object):
                 pixcrd = self.wcs.sky2pix(pos_max)
                 pmax = pixcrd[0][0]
                 qmax = pixcrd[0][1]
+            if pmin>pmax:
+                a = pmax
+                pmax = pmin
+                pmin = a
+            if qmin>qmax:
+                a = qmax
+                qmax = qmin
+                qmin = a
 
         pmin = max(0, pmin)
         qmin = max(0, qmin)
@@ -2825,6 +2833,14 @@ class Image(object):
                 pixcrd = self.wcs.sky2pix(pos_max)
                 pmax = pixcrd[0][0]
                 qmax = pixcrd[0][1]
+            if pmin>pmax:
+                a = pmax
+                pmax = pmin
+                pmin = a
+            if qmin>qmax:
+                a = qmax
+                qmax = qmin
+                qmin = a
 
         pmin = max(0, pmin)
         qmin = max(0, qmin)
