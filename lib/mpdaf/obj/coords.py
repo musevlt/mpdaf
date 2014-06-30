@@ -549,6 +549,36 @@ class WCS(object):
         """
         self.wcs.wcs.crval[1] = x
         self.wcs.wcs.set()
+        
+    def get_naxis1(self):
+        """NAXIS1 getter (first dimention of an image).
+        """
+        return self.naxis1
+
+    def get_naxis2(self):
+        """NAXIS2 getter (second dimention of an image).
+        """
+        return self.naxis2
+
+    def get_crpix1(self):
+        """CRPIX1 getter (reference pixel on the first axis).
+        """
+        return self.wcs.wcs.crpix[0]
+
+    def get_crpix2(self):
+        """CRPIX2 getter (reference pixel on the second axis).
+        """
+        return self.wcs.wcs.crpix[1]
+
+    def get_crval1(self):
+        """CRVAL1 getter (value of the reference pixel on the first axis).
+        """
+        return self.wcs.wcs.crval[0]
+
+    def get_crval2(self):
+        """CRVAL2 getter (value of the reference pixel on the second axis).
+        """
+        return self.wcs.wcs.crval[1]
 
     def rotate(self, theta):
         """Rotates WCS coordinates to new orientation given by theta.
