@@ -198,7 +198,11 @@ class PixTable(object):
                     self.fluxcal = False
                 
                 # center in degrees
-                if self.get_keywords("CUNIT1") == 'rad':
+                try:
+                    cunit = self.get_keywords("CUNIT1")
+                except:
+                    cunit = 'pix'
+                if cunit == 'rad':
                     self.xc = self.primary_header['RA'] * 180 / np.pi
                     self.yc = self.primary_header['DEC'] * 180 / np.pi
                 else:
