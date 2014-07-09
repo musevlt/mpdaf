@@ -351,26 +351,25 @@ class PixTable(object):
         xpos = self.get_xpos(ksel)
         ypos = self.get_ypos(ksel)
         try:
-            polar = (pix.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
         except:
-            polar = False
-        if polar: #polar coordinates
-            if self.wcs == 'deg':
-                xpos_sky = self.xc + ypos * np.cos(xpos * np.pi / 180) \
-                / np.cos(ypos * np.sin(xpos * np.pi / 180) * np.pi / 180)
-            elif self.wcs == 'rad':
-                xpos_sky = self.xc + ypos * np.cos(xpos) * 180 / np.pi / np.cos(ypos * np.sin(xpos))
-            else:
-                xpos_sky = self.xc + ypos * np.cos(xpos)
+            spheric = False
+        if spheric: #spheric coordinates
+            phi = xpos
+            theta = ypos + np.pi/2
+            dp = self.yc * np.pi / 180
+            ra = np.arctan2(np.cos(theta) * np.sin(phi), \
+                      np.sin(theta) * np.cos(dp) + np.cos(theta) * np.sin(dp) * np.cos(phi)) * 180 / np.pi
+            xpos_sky = self.xc + ra
         else:
             if self.wcs == 'deg':
-                xpos_sky = self.xc + xpos / np.cos(ypos * np.pi / 180)
+                dp = self.yc * np.pi / 180
+                xpos_sky = self.xc + xpos / np.cos(dp)
             elif self.wcs == 'rad':
-                xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(ypos)
+                dp = self.yc * np.pi / 180
+                xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(dp)
             else:
-                xpos_sky = self.xc + xpos
-        
-        
+                xpos_sky = self.xc + xpos       
         return xpos_sky
     
     def get_ypos_sky(self, ksel=None):
@@ -386,16 +385,14 @@ class PixTable(object):
         out : numpy.array
         """
         try:
-            polar = (pix.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
         except:
-            polar = False
-        if polar: #polar coordinates
-            xpos = self.get_xpos(ksel)
-            ypos = self.get_ypos(ksel)
-            if self.wcs == 'rad':
-                ypos_sky = self.yc + ypos * np.sin(xpos) * 180 / np.pi
-            else:
-                ypos_sky = self.yc + ypos * np.sin(xpos * np.pi / 180)
+            spheric = False
+        if spheric: #spheric coordinates
+            phi = self.get_xpos(ksel)
+            theta = self.get_ypos(ksel) + np.pi/2
+            dp = self.yc * np.pi / 180
+            ypos_sky = np.arcsin(np.sin(theta) * np.sin(dp) - np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
         else:
             ypos = self.get_ypos(ksel)
             if self.wcs == 'rad':
