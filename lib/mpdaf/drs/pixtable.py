@@ -205,9 +205,12 @@ class PixTable(object):
                 if cunit == 'rad':
                     self.xc = self.primary_header['RA'] * 180 / np.pi
                     self.yc = self.primary_header['DEC'] * 180 / np.pi
-                else:
+                elif cunit == 'deg':
                     self.xc = self.primary_header['RA']
                     self.yc = self.primary_header['DEC']
+                else:
+                    self.xc = 0.0
+                    self.yc = 0.0
                 
                 if self.ima:
                     self.wcs = hdulist[1].header['BUNIT']
