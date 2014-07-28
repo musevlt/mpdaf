@@ -9,8 +9,6 @@ try:
 except:
     import pywcs
 
-from astropysics_coords import AstropysicsAngularCoordinate
-
 
 def deg2sexa(x):
     """Transforms the values of n coordinates from degrees to sexagesimal.
@@ -66,9 +64,10 @@ def deg2hms(x):
     :type x: float
     :rtype: string
     """
-    ac = AstropysicsAngularCoordinate(x)
-    hms = ac.getHmsStr(canonical=True)
-    return hms
+    from astropy.coordinates import Angle
+    ac = Angle(x, unit='degree')
+    hms = ac.to_string(unit='hour', sep=':', pad=True)
+    return str(hms)
 
 
 def hms2deg(x):
@@ -79,8 +78,9 @@ def hms2deg(x):
     :type x: string
     :rtype: float
     """
-    ac = AstropysicsAngularCoordinate(x, sghms=True)
-    deg = ac.d
+    from astropy.coordinates import Angle
+    ac = Angle(x, unit='hour')
+    deg = float(ac.to_string(unit='degree', decimal=True))
     return deg
 
 
@@ -92,9 +92,10 @@ def deg2dms(x):
     :type x: float
     :rtype: string
     """
-    ac = AstropysicsAngularCoordinate(x)
-    dms = ac.getDmsStr(canonical=True)
-    return dms
+    from astropy.coordinates import Angle
+    ac = Angle(x, unit='degree')
+    dms = ac.to_string(unit='degree', sep=':', pad=True)
+    return str(dms)
 
 
 def dms2deg(x):
@@ -105,8 +106,9 @@ def dms2deg(x):
     :type x: string
     :rtype: float
     """
-    ac = AstropysicsAngularCoordinate(x)
-    deg = ac.d
+    from astropy.coordinates import Angle
+    ac = Angle(x, unit='degree')
+    deg = float(ac.to_string(unit='degree', decimal=True))
     return deg
 
 

@@ -94,11 +94,11 @@ class TestCoord():
     def test_deg_sexa(self):
         """tests degree/sexagesimal transformations"""
         ra = '23:51:41.268'
-        dec = '-26:04:43.03'
+        dec = '-26:04:43.032'
         deg = sexa2deg([dec,ra])
-        nose.tools.assert_almost_equal(deg[0],-26.07862,5)
-        nose.tools.assert_almost_equal(deg[1],357.92195,5)
-        sexa = deg2sexa(deg)
+        nose.tools.assert_almost_equal(deg[0],-26.07862,3)
+        nose.tools.assert_almost_equal(deg[1],357.92195,3)
+        sexa = deg2sexa([-26.07862, 357.92195])
         nose.tools.assert_equal(sexa[0],dec)
         nose.tools.assert_equal(sexa[1],ra)
         
