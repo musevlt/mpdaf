@@ -1,5 +1,5 @@
-__version__  = '1.1.8'
-__date__     = '2014/07/09'
+__version__  = '1.1.9'
+__date__     = '2014/07/31'
 
 import tools
 import obj
