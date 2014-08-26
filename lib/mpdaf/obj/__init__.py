@@ -39,8 +39,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 
 """
-__version__ = '1.1.9'
-__date__ = '2014/07/31'
+__version__ = '1.1.10'
+__date__ = '2014/08/26'
 
 """
 Import the different submodules
