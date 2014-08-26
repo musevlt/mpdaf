@@ -1114,7 +1114,7 @@ class Cube(object):
             try:
                 if other.image:
                     return other.__sub__(self)
-            except IOError as a:
+            except IOError as e:
                 raise e
             except:
                 try:
@@ -1675,10 +1675,10 @@ class Cube(object):
     def get_range(self):
         """Returns [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ].
         """
-        range = np.empty((2,3))
-        range[:,0] = self.wave.get_range()
-        range[:,1:] = self.wcs.get_range()
-        return range
+        r = np.empty((2,3))
+        r[:,0] = self.wave.get_range()
+        r[:,1:] = self.wcs.get_range()
+        return r
 
     def get_start(self):
         """Returns [lbda,y,x] corresponding to pixel (0,0,0).
@@ -2035,7 +2035,7 @@ class Cube(object):
                                         / factor[0] / factor[1] / factor[2] \
                                         / factor[0] / factor[1] / factor[2]
         #coordinates
-        cdelt = self.wcs.get_step()
+        #cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor[1:])
         crval = self.wave.coord()[0:factor[0]].sum() / factor[0]
         self.wave = WaveCoord(1, self.wave.cdelt * factor[0], crval, \
@@ -2223,7 +2223,7 @@ class Cube(object):
                                  cub.shape[2],factor[2])\
                         .sum(1).sum(2) / F2
                 if p_left == 1:
-                    d = self.data[n0_left:no_right,:n1_left,n2_left:n2_right]\
+                    d = self.data[n0_left:n0_right,:n1_left,n2_left:n2_right]\
                     .sum(axis=1).reshape(cub.shape[0],factor[0],\
                                          cub.shape[2],factor[2])\
                     .sum(1).sum(2) / F
@@ -2231,7 +2231,7 @@ class Cube(object):
                     mask[l_left:l_right,0,q_left:q_right] = d.mask
                     if var is not None:
                         var[l_left:l_right,0,q_left:q_right] = \
-                        self.var[n0_left:no_right,:n1_left,n2_left:n2_right]\
+                        self.var[n0_left:n0_right,:n1_left,n2_left:n2_right]\
                         .sum(axis=1).reshape(cub.shape[0],factor[0],\
                                              cub.shape[2],factor[2])\
                         .sum(1).sum(2) / F2
@@ -2565,7 +2565,7 @@ class Cube(object):
         #variance
         self.var = None
         #coordinates
-        cdelt = self.wcs.get_step()
+        #cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor[1:])
         crval = self.wave.coord()[0:factor[0]].sum() / factor[0]
         self.wave = WaveCoord(1, self.wave.cdelt * factor[0], \
@@ -3060,7 +3060,7 @@ class CubeDisk(object):
                             Image(filename=filename, ext=hdr.get('EXTNAME'), notnoise=True)
                         except:
                             pass
-             #DQ
+            #DQ
             f.close()
 
     def info(self):

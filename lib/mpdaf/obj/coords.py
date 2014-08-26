@@ -331,7 +331,7 @@ class WCS(object):
             pixsky[:, 0] = x[:, 1]
             pixsky[:, 1] = x[:, 0]
         else:
-            raise InputError('invalid input coordinates for sky2pix')
+            raise IOError('invalid input coordinates for sky2pix')
         try:
             pixcrd = self.wcs.wcs_world2pix(pixsky, 0)
         except:
@@ -356,7 +356,7 @@ class WCS(object):
             pixcrd[:, 0] = x[:, 1]
             pixcrd[:, 1] = x[:, 0]
         else:
-            raise InputError('invalid input coordinates for pix2sky')
+            raise IOError('invalid input coordinates for pix2sky')
         try:
             pixsky = self.wcs.wcs_pix2world(pixcrd, 0)
         except:

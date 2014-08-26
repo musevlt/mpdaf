@@ -619,7 +619,7 @@ class Spectrum(object):
                 try:
                     self.wave = self.wave[item]
                 except:
-                    wave = None
+                    self.wave = None
                     d = {'class': 'Spectrum', 'method': 'resize'}
                     logger.warning("wavelength solution not copied", extra=d)
             except:

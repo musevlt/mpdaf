@@ -38,14 +38,14 @@ class ImageClicks:  # Object used to save click on image plot.
 
     def __init__(self, binding_id, filename=None):
         self.filename = filename  # Name of the table fits file
-                                  # where are saved the clicks values.
+        #                           where are saved the clicks values.
         self.binding_id = binding_id  # Connection id.
         self.p = []  # Nearest pixel of the cursor position along the y-axis.
         self.q = []  # Nearest pixel of the cursor position along the x-axis.
         self.x = []  # Corresponding nearest position along the x-axis
-                     # (world coordinates)
+        #              (world coordinates)
         self.y = []  # Corresponding nearest position along the y-axis
-                     # (world coordinates)
+        #              (world coordinates)
         self.data = []  # Corresponding image data value.
         self.id_lines = []  # Plot id (cross for cursor positions).
 
@@ -1822,13 +1822,13 @@ class Image(object):
             if self.var is not None:
                 var = np.sum(self.var, axis)
             if axis == 0:
-                wcs = self.wcs[0, :]
-                shape = (1, data.shape[0])
+                #wcs = self.wcs[0, :]
+                #shape = (1, data.shape[0])
                 step = self.wcs.get_step()[1]
                 start = self.wcs.get_start()[1]
             else:
-                wcs = self.wcs[:, 0]
-                shape = (data.shape[0], 1)
+                #wcs = self.wcs[:, 0]
+                #shape = (data.shape[0], 1)
                 step = self.wcs.get_step()[0]
                 start = self.wcs.get_start()[0]
 
@@ -2016,11 +2016,11 @@ class Image(object):
         if plot:
             plt.plot(jc, ic, 'r+')
             try:
-                str = 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' % \
+                _str = 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' % \
                 (center[0], center[1], radius[0], radius[1], dpix, jc, ic)
             except:
-                str = 'dpix %i peak: %g %g' % (dpix, ic, jc)
-            plt.title(str)
+                _str = 'dpix %i peak: %g %g' % (dpix, ic, jc)
+            plt.title(_str)
 
         return {'x': ra, 'y': dec, 'p': ic, 'q': jc, 'data': maxv}
 
@@ -2117,7 +2117,7 @@ class Image(object):
 
             if not pix:
                 center = self.wcs.sky2pix(center)[0]
-                radius = radius / np.asb(self.wcs.get_step()) / 3600.
+                radius = radius / np.abs(self.wcs.get_step()) / 3600.
                 radius2 = radius[0] * radius[1]
 
             imin = max(0, center[0] - radius[0])
@@ -3142,7 +3142,7 @@ class Image(object):
                                         self.shape[1], factor[1])\
                                         .sum(1).sum(2) / factor[0] \
                                         / factor[1] / factor[0] / factor[1]
-        cdelt = self.wcs.get_step()
+        #cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor)
 
     def _rebin_factor(self, factor, margin='center'):
@@ -3367,7 +3367,7 @@ class Image(object):
                         .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
                         / factor[0] / factor[1] / factor[0] / factor[1]
                     wcs = ima.wcs
-                    step = wcs.get_step()
+                    #step = wcs.get_step()
                     wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
                     wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
                     wcs.set_naxis1(wcs.naxis1 + 2)
@@ -3972,7 +3972,7 @@ class Image(object):
                         if not np.sometrue(np.mod(self_cdelt[0], \
                                                   ima_cdelt[0])) \
                         and not np.sometrue(np.mod(self_cdelt[1], \
-                                                   ma_cdelt[1])):
+                                                   ima_cdelt[1])):
                             # ima.step is an integer multiple of the self.step
                             ima = ima.rebin_factor(factor)
                         else:
@@ -5242,11 +5242,11 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90), \
         ima, col, sat = ImaCol
 
         if interp == 'linear':
-            data = self._interp_data(spline=False)
+            data = ima._interp_data(spline=False)
         elif interp == 'spline':
-            data = self._interp_data(spline=True)
+            data = ima._interp_data(spline=True)
         else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+            data = np.ma.filled(ima.data, np.ma.median(ima.data))
 
         if mode == 'lin':
             f = data
@@ -5268,11 +5268,11 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90), \
     ima, col, sat = ImaColList[0]
     p1 = PILima.new('RGB', (ima.shape[0], ima.shape[1]))
     if interp == 'linear':
-        data = self._interp_data(spline=False)
+        data = ima._interp_data(spline=False)
     elif interp == 'spline':
-        data = self._interp_data(spline=True)
+        data = ima._interp_data(spline=True)
     else:
-        data = np.ma.filled(self.data, np.ma.median(self.data))
+        data = np.ma.filled(ima.data, np.ma.median(ima.data))
     if mode == 'lin':
         f = data
     elif mode == 'sqrt':
@@ -5288,11 +5288,11 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90), \
         ima, col, sat = ImaCol
         p2 = PILima.new('RGB', (ima.shape[0], ima.shape[1]))
         if interp == 'linear':
-            data = self._interp_data(spline=False)
+            data = ima._interp_data(spline=False)
         elif interp == 'spline':
-            data = self._interp_data(spline=True)
+            data = ima._interp_data(spline=True)
         else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+            data = np.ma.filled(ima.data, np.ma.median(ima.data))
         if mode == 'lin':
             f = data
         elif mode == 'sqrt':
