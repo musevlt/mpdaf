@@ -14,12 +14,6 @@ install the mpdaf package:
 runs the test:
   ./setup.py test
 
-== Source ==
-
-You can check the source out via:
-{{{
-$ git clone http://urania1.univ-lyon1.fr/git/mpdaf
-}}}
 
 == Version History ==
 
@@ -45,3 +39,9 @@ $ git clone http://urania1.univ-lyon1.fr/git/mpdaf
   update of the sky subtraction tool zap
  1.1.7::
   PixTable update
+ 1.1.8:
+  zap v 0.3
+ 1.1.9:
+  zap v 0.4
+ 1.1.10:
+  zap v 0.5
