@@ -23,13 +23,13 @@ logger = logging.getLogger('mpdaf corelib')
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
           primary_header=None, save_as_ima=True, wcs='pix'):
     """Saves the object in a FITS file.
-
-    :param filename: The FITS filename.
-    :type filename: string
-
-    :param save_as_ima: If True, pixtable is saved as multi-extension FITS
-    image instead of FITS binary table.
-    :type save_as_ima: bool
+    
+    Parameters
+    ----------
+    filename    : string
+                  The FITS filename.
+    save_as_ima : bool
+                  If True, pixtable is saved as multi-extension FITS
     """
     try:
         # remove in pyfits version >3.0
@@ -118,35 +118,31 @@ class PixTable(object):
 
     This class manages input/output for MUSE pixel table files
 
-    :param filename: The FITS file name. None by default.
-    :type filename: string.
+    Parameters
+    ----------
+    filename : string
+               The FITS file name. None by default.
 
     Attributes
     ----------
-    filename : string
-    The FITS file name. None if any.
-
+    filename       : string
+                     The FITS file name. None if any.
     primary_header : pyfits.Header
-    The primary header.
-
-    nrows : integer
-    Number of rows.
-
-    nifu : integer
-    Number of merged IFUs that went into this pixel table.
-
-    skysub : boolean
-    If True, this pixel table was sky-subtracted.
-
-    fluxcal : boolean
-    If True, this pixel table was flux-calibrated.
-
-    wcs : string
-    Type of coordinates of this pixel table ('pix', 'deg' or 'rad')
-
-    ima : boolean
-    If True, pixtable is saved as multi-extension FITS image
-    instead of FITS binary table.
+                     The primary header.
+    nrows          : integer
+                     Number of rows.
+    nifu           : integer
+                     Number of merged IFUs that went into this pixel table.
+    skysub         : boolean
+                     If True, this pixel table was sky-subtracted.
+    fluxcal        : boolean
+                     If True, this pixel table was flux-calibrated.
+    wcs            : string
+                     Type of coordinates of this pixel table
+                     ('pix', 'deg' or 'rad')
+    ima            : boolean
+                     If True, pixtable is saved as multi-extension FITS image
+                     instead of FITS binary table.
     """
 
     def __init__(self, filename):
@@ -155,7 +151,7 @@ class PixTable(object):
         Parameters
         ----------
         filename : string
-        The FITS file name. None by default.
+                   The FITS file name. None by default.
 
         The FITS file is opened with memory mapping.
         Just the primary header and table dimensions are loaded.
@@ -279,12 +275,13 @@ class PixTable(object):
     def write(self, filename, save_as_ima=True):
         """Saves the object in a FITS file.
 
-        :param filename: The FITS filename.
-        :type filename: string
-
-        :param save_as_ima: If True, pixtable is saved
-        as multi-extension FITS image instead of FITS binary table.
-        :type save_as_ima: bool
+        Parameters
+        ----------
+        filename    : string
+                      The FITS filename.
+        save_as_ima : bool
+                      If True, pixtable is saved as multi-extension FITS image
+                      instead of FITS binary table.
         """
         if self.ima == save_as_ima:
             shutil.copy(self.filename, filename)
@@ -302,10 +299,14 @@ class PixTable(object):
     def get_xpos(self, ksel=None):
         """Loads the xpos column and returns it.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
-
-        :rtype: numpy.array
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
+               
+        Returns
+        -------
+        out : numpy.array
         """
         hdulist = pyfits.open(self.filename, memmap=1)
         if ksel is None:
@@ -324,10 +325,14 @@ class PixTable(object):
     def get_ypos(self, ksel=None):
         """Loads the ypos column and returns it.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
-
-        :rtype: numpy.array
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
+               
+        Returns
+        -------
+        out : numpy.array
         """
         hdulist = pyfits.open(self.filename, memmap=1)
         if ksel is None:
@@ -346,10 +351,14 @@ class PixTable(object):
     def get_xpos_sky(self, ksel=None):
         """Returns the x absolute position on the sky in degrees/pixel.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
-
-        :rtype: numpy.array
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
+               
+        Returns
+        -------
+        out : numpy.array
         """
         xpos = self.get_xpos(ksel)
         ypos = self.get_ypos(ksel)
@@ -380,8 +389,8 @@ class PixTable(object):
 
         Parameters
         ----------
-        ksel : ndarray or tuple of ndarrays
-        elements depending on a condition (output of np.where)
+        ksel : output of np.where
+               Elements depending on a condition.
 
         Returns
         -------
@@ -407,10 +416,14 @@ class PixTable(object):
     def get_lambda(self, ksel=None):
         """Loads the lambda column and returns it.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
 
-        :rtype: numpy.array
+        Returns
+        -------
+        out : numpy.array
         """
         hdulist = pyfits.open(self.filename, memmap=1)
         if ksel is None:
@@ -429,10 +442,14 @@ class PixTable(object):
     def get_data(self, ksel=None):
         """Loads the data column and returns it.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
 
-        :rtype: numpy.array
+        Returns
+        -------
+        out : numpy.array
         """
         hdulist = pyfits.open(self.filename, memmap=1)
         if ksel is None:
@@ -451,10 +468,14 @@ class PixTable(object):
     def get_stat(self, ksel=None):
         """Loads the stat column and returns it.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
 
-        :rtype: numpy.array
+        Returns
+        -------
+        out : numpy.array
         """
         hdulist = pyfits.open(self.filename, memmap=1)
         if ksel is None:
@@ -473,10 +494,14 @@ class PixTable(object):
     def get_dq(self, ksel=None):
         """Loads the dq column and returns it.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
 
-        :rtype: numpy.array
+        Returns
+        -------
+        out : numpy.array
         """
         hdulist = pyfits.open(self.filename, memmap=1)
         if ksel is None:
@@ -495,10 +520,14 @@ class PixTable(object):
     def get_origin(self, ksel=None):
         """Loads the origin column and returns it.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
 
-        :rtype: numpy.array
+        Returns
+        -------
+        out : numpy.array
         """
         hdulist = pyfits.open(self.filename, memmap=1)
         if ksel is None:
@@ -517,10 +546,14 @@ class PixTable(object):
     def get_weight(self, ksel=None):
         """Loads the weight column and returns it.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
 
-        :rtype: numpy.array
+        Returns
+        -------
+        out : numpy.array
         """
         try:
             if self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WEIGHTED"):
@@ -543,7 +576,9 @@ class PixTable(object):
     def get_exp(self):
         """Loads the exposure numbers and returns it as a column.
 
-        :rtype: numpy.memmap
+        Returns
+        -------
+        out : numpy.memmap
         """
         try:
             nexp = self.get_keywords("HIERARCH ESO DRS MUSE "\
@@ -560,7 +595,7 @@ class PixTable(object):
         return exp
 
     def extract(self, filename=None, sky=None, lbda=None, ifu=None, \
-                slice=None, xpix=None, ypix=None, exp=None):
+                sl=None, xpix=None, ypix=None, exp=None):
         """Extracts a subset of a pixtable using the following criteria:
 
         - aperture on the sky (center, size and shape)
@@ -577,34 +612,32 @@ class PixTable(object):
 
         The arguments can be either single value or a list of values to select
         multiple regions.
-
-        :param filename: The FITS filename used to saves the resulted object.
-        :type filename: string
-
-        :param sky: (y, x, size, shape) extract an aperture on the sky,
-        defined by a center (y, x), a shape ('C' for circular, 'S' for square)
-        and size (radius or half side length).
-        :type sky: (float, float, float, char)
-
-        :param lbda: (min, max) wavelength range in Angstrom.
-        :type lbda: (float, float)
-
-        :param ifu: IFU number.
-        :type ifu: int
-
-        :param slice: Slice number on the CCD.
-        :type slice: int
-
-        :param xpix: (min, max) pixel range along the X axis
-        :type xpix: (int, int)
-
-        :param ypix: (min, max) pixel range along the Y axis
-        :type ypix: (int, int)
-
-        :param exp: list of exposure numbers
-        :type exp: list of integers
-
-        :rtype: PixTable
+        
+        Parameters
+        ----------
+        filename : string
+                   The FITS filename used to saves the resulted object.
+        sky      : (float, float, float, char)
+                   (y, x, size, shape) extract an aperture on the sky,
+                   defined by a center (y, x),
+                   a shape ('C' for circular, 'S' for square)
+                   and size (radius or half side length).
+        lbda     : (float, float)
+                   (min, max) wavelength range in Angstrom.
+        ifu      : int
+                   IFU number.
+        sl       : int
+                   Slice number on the CCD.
+        xpix     : (int, int)
+                   (min, max) pixel range along the X axis
+        ypix     : (int, int)
+                   (min, max) pixel range along the Y axis
+        exp      : list of integers
+                   List of exposure numbers
+        
+        Returns
+        -------
+        out : PixTable
         """
         # type of coordinates
         primary_header = self.primary_header.copy()
@@ -671,13 +704,13 @@ class PixTable(object):
             del col_lambda
 
         # Do the selection on the origin column
-        if (ifu is not None) or (slice is not None) or \
+        if (ifu is not None) or (sl is not None) or \
         (xpix is not None) or (ypix is not None):
             col_origin = self.get_origin()
-            if slice is not None:
-                if hasattr(slice, '__iter__'):
+            if sl is not None:
+                if hasattr(sl, '__iter__'):
                     mask = np.zeros(self.nrows).astype('bool')
-                    for s in slice:
+                    for s in sl:
                         mask |= (self.origin2slice(col_origin) == s)
                     kmask &= mask
                     del mask
@@ -869,76 +902,100 @@ class PixTable(object):
     def origin2ifu(self, origin):
         """Converts the origin value and returns the ifu number.
 
-        :param origin: Origin value.
-        :type origin: integer
-
-        :rtype: int
+        Parameters
+        ----------
+        origin : integer
+                 Origin value.
+        
+        Returns
+        -------
+        out : integer
         """
         return (origin >> 6) & 0x1f
 
     def origin2slice(self, origin):
         """Converts the origin value and returns the slice number.
 
-        :param origin: Origin value.
-        :type origin: integer
-
-        :rtype: int
+        Parameters
+        ----------
+        origin : integer
+                 Origin value.
+        
+        Returns
+        -------
+        out : integer
         """
         return origin & 0x3f
 
     def origin2ypix(self, origin):
         """Converts the origin value and returns the y coordinates.
 
-        :param origin: Origin value.
-        :type origin: integer
-
-        :rtype: float
+        Parameters
+        ----------
+        origin : integer
+                 Origin value.
+        
+        Returns
+        -------
+        out : float
         """
         return ((origin >> 11) & 0x1fff) - 1
 
     def origin2xoffset(self, origin):
         """Converts the origin value and returns the x coordinates offset.
 
-        :param origin: Origin value.
-        :type origin: integer
-
-        :rtype: float
+        Parameters
+        ----------
+        origin : integer
+                 Origin value.
+        
+        Returns
+        -------
+        out : float
         """
         col_ifu = self.origin2ifu(origin)
         col_slice = self.origin2slice(origin)
         if isinstance(origin, np.ndarray):
             xoffset = np.zeros_like(origin)
             for ifu in np.unique(col_ifu):
-                for slice in np.unique(col_slice):
+                for sl in np.unique(col_slice):
                     value = self.get_keywords('HIERARCH ESO DRS MUSE '\
                                               'PIXTABLE EXP0 IFU%02d '\
                                               'SLICE%02d XOFFSET' \
-                                              % (ifu, slice))
+                                              % (ifu, sl))
                     xoffset[np.where((col_ifu == ifu) \
-                                     & (col_slice == slice))] = value
+                                     & (col_slice == sl))] = value
         else:
             xoffset = self.get_keywords("HIERARCH ESO DRS MUSE "\
                                         "PIXTABLE EXP0 IFU%02d "\
-                                        "SLICE%02d XOFFSET" % (ifu, slice))
+                                        "SLICE%02d XOFFSET" % (col_ifu, col_slice))
         return xoffset
 
     def origin2xpix(self, origin):
         """Converts the origin value and returns the x coordinates.
 
-        :param origin: Origin value.
-        :type origin: integer
-
-        :rtype: float
+        Parameters
+        ----------
+        origin : integer
+                 Origin value.
+        
+        Returns
+        -------
+        out : float
         """
         return self.origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1
 
     def origin2coords(self, origin):
         """Converts the origin value and returns (ifu, slice, ypix, xpix).
 
-        :param origin: Origin value.
-        :type origin: integer
-
-        :rtype: (integer, integer, float, float)
+        Parameters
+        ----------
+        origin : integer
+                 Origin value.
+        
+        Returns
+        -------
+        out : (integer, integer, float, float)
         """
         return (self.origin2ifu(origin), self.origin2slice(origin),
                 self.origin2ypix(origin), self.origin2xpix(origin))
@@ -946,9 +1003,14 @@ class PixTable(object):
     def get_slices(self, verbose=True):
         """Returns slices dictionary.
 
-        :param verbose: if True, progression is printed.
-        :type verbose: boolean
-        :rtype: dict
+        Parameters
+        ----------
+        verbose : boolean
+                  If True, progression is printed.
+        
+        Returns
+        -------
+        out : dict
         """
         col_origin = self.get_origin()
         col_xpos = self.get_xpos()
@@ -984,10 +1046,14 @@ class PixTable(object):
     def get_keywords(self, key):
         """Returns the keyword value corresponding to key.
 
-        :param key: Keyword.
-        :type key: string
+        Parameters
+        ----------
+        key : string
+              Keyword.
 
-        :rtype: float
+        Returns
+        -------
+        out : float
         """
         # HIERARCH ESO PRO MUSE has been renamed into HIERARCH ESO DRS MUSE
         # in recent versions of the DRS.
@@ -1007,17 +1073,21 @@ class PixTable(object):
     def reconstruct_sky_image(self, lbda=None, step=None):
         """Reconstructs the image on the sky from the pixtable.
 
-        :param lbda: (min, max) wavelength range in Angstrom.
-        If None, the image is reconstructed for all wavelengths.
-        :type lbda: (float,float)
-        :param step: pixel step of the final image
-        (in arcsec if the coordinates of this pixel table
-        are world coordinates on the sky ).
-        If None, the value corresponding to the keyword
-        "HIERARCH ESO INS PIXSCALE" is used.
-        :type step: (float,float)
+        Parameters
+        ----------
+        lbda : (float,float)
+               (min, max) wavelength range in Angstrom.
+               If None, the image is reconstructed for all wavelengths.
+        step : (float,float)
+               Pixel steps of the final image
+               (in arcsec if the coordinates of this pixel table
+               are world coordinates on the sky ).
+               If None, the value corresponding to the keyword
+               "HIERARCH ESO INS PIXSCALE" is used.
 
-        :rtype: :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
         """
         # TODO replace by DRS
         # step in arcsec
@@ -1087,7 +1157,9 @@ class PixTable(object):
         The pixtable must concerns only one IFU,
         otherwise an exception is raised.
 
-        :rtype: :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
         """
         if self.nrows == 0:
             return None
@@ -1099,11 +1171,11 @@ class PixTable(object):
         col_origin = self.get_origin()
 
         ifu = np.empty(self.nrows, dtype='uint16')
-        slice = np.empty(self.nrows, dtype='uint16')
+        sl = np.empty(self.nrows, dtype='uint16')
         xpix = np.empty(self.nrows, dtype='uint16')
         ypix = np.empty(self.nrows, dtype='uint16')
 
-        ifu, slice, ypix, xpix = self.origin2coords(col_origin)
+        ifu, sl, ypix, xpix = self.origin2coords(col_origin)
         if len(np.unique(ifu)) != 1:
             raise ValueError('Pixtable contains multiple IFU')
 
@@ -1130,7 +1202,9 @@ class PixTable(object):
         The pixtable must concerns only one IFU,
         otherwise an exception is raised.
 
-        :rtype: :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
         """
         if self.nrows == 0:
             return None
@@ -1142,11 +1216,11 @@ class PixTable(object):
         col_lambdas = self.get_lambda()
 
         ifu = np.empty(self.nrows, dtype='uint16')
-        slice = np.empty(self.nrows, dtype='uint16')
+        sl = np.empty(self.nrows, dtype='uint16')
         xpix = np.empty(self.nrows, dtype='uint16')
         ypix = np.empty(self.nrows, dtype='uint16')
 
-        ifu, slice, ypix, xpix = self.origin2coords(col_origin)
+        ifu, sl, ypix, xpix = self.origin2coords(col_origin)
         if len(np.unique(ifu)) != 1:
             raise ValueError('Pixtable contains multiple IFU')
 
