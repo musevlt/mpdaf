@@ -2136,14 +2136,14 @@ class Spectrum(object):
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1])
-            lmin = lmin[1]
+            lmin = (lmin[0] + lmin[1])/2.
 
         if is_int(lmax) or is_float(lmax):
                 fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
             fmax = self.mean(lmax[0], lmax[1])
-            lmax = lmax[0]
+            lmax = (lmax[0] + lmax[1])/2.
 
         # spec = self.truncate(lmin, lmax)
         spec = self.get_lambda(lmin, lmax)
