@@ -580,12 +580,23 @@ class Image(object):
                         var=np.zeros(shape=self.shape), unit=self.unit)
         return ima
 
-    def write(self, filename):
+    def write(self, filename, fscale=1e-20):
         """Saves the object in a FITS file.
 
-          :param filename: the FITS filename
-          :type filename: string
+          Parameters
+          ----------
+          filename : string
+                     The FITS filename.
+          fscale   : float
+                     Flux scaling factor (1 e-20 by default).
         """
+        #update fscale
+        if self.fscale != fscale:
+            self.data *= np.double(self.fscale / fscale)
+            if self.var is not None:
+                self.var *= np.double(self.fscale * self.fscale \
+                                   / fscale / fscale)
+            self.fscale = fscale
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         for card in self.primary_header.cards:
@@ -1461,6 +1472,12 @@ class Image(object):
            :rtype: float
         """
         return self.wcs.get_rot()
+    
+    def get_np_data(self):
+        """ Returns numpy masked array containing the flux
+            multiplied by scaling factor
+        """
+        return self.data * self.fscale
 
     def __setitem__(self, key, other):
         """ Sets the corresponding part of data.

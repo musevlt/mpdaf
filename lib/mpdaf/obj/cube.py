@@ -436,12 +436,24 @@ class Cube(object):
                         var=np.zeros(shape=self.shape),unit=self.unit)
         return cube
 
-    def write(self,filename):
+    def write(self, filename, fscale=1e-20):
         """ Saves the cube in a FITS file.
 
-        :param filename: The FITS filename.
-        :type filename: string
+        Parameters
+        ----------
+        filename : string
+                   The FITS filename.
+        fscale   : float
+                   Flux scaling factor (1 e-20 by default).
+        
         """
+        #update fscale
+        if self.fscale != fscale:
+            self.data *= np.double(self.fscale / fscale)
+            if self.var is not None:
+                self.var *= np.double(self.fscale * self.fscale \
+                                   / fscale / fscale)
+            self.fscale = fscale
 
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -1700,6 +1712,12 @@ class Cube(object):
         """Returns the rotation angle.
         """
         return self.wcs.get_rot()
+    
+    def get_np_data(self):
+        """ Returns numpy masked array containing the flux
+            multiplied by scaling factor
+        """
+        return self.data * self.fscale
 
     def __setitem__(self,key,other):
         """Sets the corresponding part of data.
@@ -2839,14 +2857,14 @@ class Cube(object):
                                               wave=self.wave.copy(), \
             data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
                                               unit=self.unit, \
-                                              fscale=out.fscale)
+                                              fscale=self.fscale)
                             else:
                                 result = Cube(wcs=out.wcs, \
                                               wave=self.wave.copy(), \
             data=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
             var=np.zeros(shape=(self.shape[0],out.shape[0],out.shape[1])), \
                                               unit=self.unit, \
-                                              fscale=out.fscale)
+                                              fscale=self.fscale)
                             init = False
                         result[k,:,:] = out
                 except:

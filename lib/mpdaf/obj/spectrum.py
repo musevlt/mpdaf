@@ -436,14 +436,27 @@ class Spectrum(object):
                            var=np.zeros(shape=self.shape), unit=self.unit)
         return spe
 
-    def write(self, filename):
+    def write(self, filename, fscale=1e-20):
         """ Saves the object in a FITS file.
 
-          :param filename: The FITS filename.
-          :type filename: string
+            Parameters
+            ----------
+            filename : string
+                       The FITS filename.
+            fscale   : float
+                       Flux scaling factor (1 e-20 by default).
         """
 
         assert self.data is not None
+        
+        #update fscale
+        if self.fscale != fscale:
+            self.data *= np.double(self.fscale / fscale)
+            if self.var is not None:
+                self.var *= np.double(self.fscale * self.fscale \
+                                   / fscale / fscale)
+            self.fscale = fscale
+        
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         for card in self.primary_header.cards:
@@ -1222,6 +1235,12 @@ class Spectrum(object):
             return self.wave.get_range()
         else:
             return None
+        
+    def get_np_data(self):
+        """ Returns numpy masked array containing the flux
+            multiplied by scaling factor
+        """
+        return self.data * self.fscale
 
     def __setitem__(self, key, other):
         """Sets the corresponding part of data
