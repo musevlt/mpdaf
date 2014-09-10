@@ -68,60 +68,59 @@ class iter_ima(object):
 
 class Cube(object):
     """This class manages Cube objects.
-
-    :param filename: Possible FITS filename.
-    :type filename: string
-    :param ext: Number/name of the data extension
-                or numbers/names of the data and variance extensions.
-    :type ext: integer or (integer,integer) or string or (string,string)
-    :param notnoise: True if the noise Variance cube is not read
-                    (if it exists).
-
-           Use notnoise=True to create cube without variance extension.
-    :type notnoise: bool
-    :param shape: Lengths of data in Z, Y and X.
-                  Python notation is used (nz,ny,nx).
-                  (101,101,101) by default.
-    :type shape: integer or (integer,integer,integer)
-    :param wcs: World coordinates.
-    :type wcs: :class:`mpdaf.obj.WCS`
-    :param wave: Wavelength coordinates.
-    :type wave: :class:`mpdaf.obj.WaveCoord`
-    :param unit: Possible data unit type. None by default.
-    :type unit: string
-    :param data: Array containing the pixel values of the cube.
-                 None by default.
-    :type data: float array
-    :param var: Array containing the variance. None by default.
-    :type var: float array
-    :param fscale: Flux scaling factor (1 by default).
-    :type fscale: float
+    
+    Parameters
+    ----------
+    filename : string
+               Possible FITS file name. None by default.
+    ext      : integer or (integer,integer) or string or (string,string)
+               Number/name of the data extension
+               or numbers/names of the data and variance extensions.
+    notnoise : boolean
+               True if the noise Variance cube is not read (if it exists).
+               Use notnoise=True to create cube without variance extension.
+    
+    shape    : integer or (integer,integer,integer)
+               Lengths of data in Z, Y and X.
+               Python notation is used (nz,ny,nx).
+    wcs      : :class:`mpdaf.obj.WCS`
+               World coordinates.
+    wave     : :class:`mpdaf.obj.WaveCoord`
+               Wavelength coordinates.
+    unit     : string
+               Possible data unit type. None by default.
+    data     : float arry 
+               Array containing the pixel values of the cube. None by default.
+    var      : float array
+               Array containing the variance. None by default.
+    fscale   : float
+               Flux scaling factor (1 by default).
 
     Attributes
     ----------
-
-    filename (string) : Possible FITS filename.
-
-    unit (string) : Possible data unit type
-
-    primary_header (pyfits.Header) : FITS primary header instance.
-
-    data_header (pyfits.Header) : FITS data header instance.
-
-    data (masked array numpy.ma) : Array containing the cube pixel values.
-
-    shape (array of 3 integers) : Lengths of data in Z and Y and X
-                                 (python notation (nz,ny,nx)).
-
-    var (array) : Array containing the variance.
-
-    fscale (float) : Flux scaling factor (1 by default).
-
-    wcs (:class:`mpdaf.obj.WCS`) : World coordinates.
-
-    wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates
-
-    ima (dict{string,:class:`mpdaf.obj.Image`} : dictionary of images
+    filename       : string
+                     Possible FITS filename.
+    unit           : string
+                     Possible data unit type
+    primary_header : pyfits.Header
+                     FITS primary header instance.
+    data_header    : pyfits.Header
+                     FITS data header instance.
+    data           : masked array numpy.ma
+                     Array containing the cube pixel values.
+    shape          : array of 3 integers
+                     Lengths of data in Z and Y and X
+                     (python notation (nz,ny,nx)).
+    var            : float array
+                     Array containing the variance.
+    fscale         : float
+                     Flux scaling factor (1 by default).
+    wcs            : :class:`mpdaf.obj.WCS`
+                     World coordinates.
+    wave           : :class:`mpdaf.obj.WaveCoord`
+                     Wavelength coordinates
+    ima            : dict{string,:class:`mpdaf.obj.Image`}
+                     dictionary of images
     """
 
     def __init__(self, filename=None, ext=None, notnoise=False, \
@@ -129,35 +128,32 @@ class Cube(object):
                  data=None, var=None, fscale=1.0, ima=True):
         """Creates a Cube object.
 
-        :param filename: Possible FITS filename.
-        :type filename: string
-        :param ext: Number/name of the data extension or numbers/names
-                    of the data and variance extensions.
-        :type ext: integer or (integer,integer) or string or (string,string)
-        :param notnoise: True if the noise Variance cube is not read
-                         (if it exists).
-
-           Use notnoise=True to create cube without variance extension.
-        :type notnoise: bool
-        :param shape: Lengths of data in Z, Y and X.
-                    Python notation is used (nz,ny,nx).
-                    (101,101,101) by default.
-        :type shape: integer or (integer,integer,integer)
-        :param wcs: World coordinates.
-        :type wcs: :class:`mpdaf.obj.WCS`
-        :param wave: Wavelength coordinates.
-        :type wave: :class:`mpdaf.obj.WaveCoord`
-        :param unit: Possible data unit type. None by default.
-        :type unit: string
-        :param data: Array containing the pixel values of the cube.
-                     None by default.
-        :type data: float array
-        :param var: Array containing the variance. None by default.
-        :type var: float array
-        :param fscale: Flux scaling factor (1 by default).
-        :type fscale: float
-        :param ima: if True load images
-        :type ima: boolean
+        Parameters
+        ----------
+        filename : string
+                   Possible FITS file name. None by default.
+        ext      : integer or (integer,integer) or string or (string,string)
+                   Number/name of the data extension
+                   or numbers/names of the data and variance extensions.
+        notnoise : boolean
+                   True if the noise Variance cube is not read (if it exists).
+                   Use notnoise=True to create cube without variance extension.
+    
+        shape    : integer or (integer,integer,integer)
+                   Lengths of data in Z, Y and X.
+                   Python notation is used (nz,ny,nx).
+        wcs      : :class:`mpdaf.obj.WCS`
+                   World coordinates.
+        wave     : :class:`mpdaf.obj.WaveCoord`
+                   Wavelength coordinates.
+        unit     : string
+                   Possible data unit type. None by default.
+        data     : float arry 
+                   Array containing the pixel values of the cube. None by default.
+        var      : float array
+                   Array containing the variance. None by default.
+        fscale   : float
+                   Flux scaling factor (1 by default).
         """
         #possible FITS filename
         self.cube = True
@@ -417,8 +413,10 @@ class Cube(object):
         """Returns a new cube of the same shape and coordinates,
         filled with zeros.
 
-        :param var: Presence of the variance extension.
-        :type var: bool
+        Parameters
+        ----------
+        var : bool
+        Presence of the variance extension.
         """
         try:
             wcs = self.wcs.copy()
@@ -730,8 +728,10 @@ class Cube(object):
     def mask_variance(self, threshold):
         """Masks pixels with a variance upper than threshold value.
 
-        :param threshold: Threshold value.
-        :type threshold: float
+        Parameters
+        ----------
+        threshold : float
+                    Threshold value.
         """
         if self.var is None:
             raise ValueError('Operation forbidden'\
@@ -743,8 +743,10 @@ class Cube(object):
     def mask_selection(self, ksel):
         """Masks pixels corresponding to the selection.
 
-        :param ksel: elements depending on a condition (output of np.where)
-        :type ksel: ndarray or tuple of ndarrays
+        Parameters
+        ----------
+        ksel : output of np.where
+               elements depending on a condition
         """
         self.data[ksel] = np.ma.masked
 
@@ -1657,11 +1659,12 @@ class Cube(object):
     def get_lambda(self,lbda_min,lbda_max=None):
         """Returns the sub-cube corresponding to a wavelength range.
 
-        :param lbda_min: Minimum wavelength.
-        :type lbda_min: float
-
-        :param lbda_max: Maximum wavelength.
-        :type lbda_max: float
+        Parameters
+        ----------
+        lbda_min : float
+                   Minimum wavelength.
+        lbda_max : float
+                   Maximum wavelength.
         """
         if lbda_max is None:
             lbda_max = lbda_min
@@ -1781,11 +1784,12 @@ class Cube(object):
     def set_wcs(self, wcs=None, wave=None):
         """Sets the world coordinates (spatial and/or spectral).
 
-        :param wcs: World coordinates.
-        :type wcs: :class:`mpdaf.obj.WCS`
-
-        :param wave: Wavelength coordinates.
-        :type wave: :class:`mpdaf.obj.WaveCoord`
+        Parameters
+        ----------
+        wcs : :class:`mpdaf.obj.WCS`
+              World coordinates.
+        wave : :class:`mpdaf.obj.WaveCoord`
+               Wavelength coordinates.
         """
         if wcs is not None:
             self.wcs = wcs
@@ -1808,8 +1812,10 @@ class Cube(object):
     def set_var(self,var):
         """Sets the variance array.
 
-        :param var: Input variance array. If None, variance is set with zeros.
-        :type var: float array
+        Parameters
+        ----------
+        var : float array
+              Input variance array. If None, variance is set with zeros.
         """
         if var is None:
             self.var = np.zeros((self.shape[0],self.shape[1], self.shape[2]))
@@ -1824,19 +1830,21 @@ class Cube(object):
     def sum(self,axis=None):
         """Returns the sum over the given axis.
 
-        :param axis: Axis or axes along which a sum is performed.
+        Parameters
+        ----------
+        axis : None or int or tuple of ints
+               Axis or axes along which a sum is performed.
 
-                    The default (axis = None) is perform a sum over all
-                    the dimensions of the cube and returns a float.
+               The default (axis = None) is perform a sum over all
+               the dimensions of the cube and returns a float.
 
-                    axis = 0  is perform a sum over the wavelength dimension
-                    and returns an image.
+               axis = 0  is perform a sum over the wavelength dimension
+               and returns an image.
 
-                    axis = (1,2) is perform a sum over the (X,Y) axes and
-                    returns a spectrum.
+               axis = (1,2) is perform a sum over the (X,Y) axes and
+               returns a spectrum.
 
-                    Other cases return None.
-        :type axis: None or int or tuple of ints
+               Other cases return None.
         """
         if axis is None:
             return self.data.sum() * self.fscale
@@ -1872,19 +1880,21 @@ class Cube(object):
     def mean(self,axis=None):
         """ Returns the mean over the given axis.
 
-        :param axis: Axis or axes along which a mean is performed.
+        Parameters
+        ----------
+        axis : None or int or tuple of ints
+               Axis or axes along which a mean is performed.
 
-                    The default (axis = None) is perform a mean over all the
-                    dimensions of the cube and returns a float.
+               The default (axis = None) is perform a mean over all the
+               dimensions of the cube and returns a float.
 
-                    axis = 0  is perform a mean over the wavelength dimension
-                    and returns an image.
+               axis = 0  is perform a mean over the wavelength dimension
+               and returns an image.
 
-                    axis = (1,2) is perform a mean over the (X,Y) axes and
-                    returns a spectrum.
+               axis = (1,2) is perform a mean over the (X,Y) axes and
+               returns a spectrum.
 
-                    Other cases return None.
-        :type axis: None or int or tuple of ints
+               Other cases return None.
         """
         if axis is None:
             return self.data.mean() * self.fscale
@@ -1920,31 +1930,17 @@ class Cube(object):
 
     def truncate(self,coord,mask=True):
         """ Truncates the cube and return a sub-cube.
-
-            :param coord: array containing the sub-cube boundaries
-            [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
-            (output of `mpdaf.obj.cube.get_range`)
-            x and y in degrees
-            :type coord: array
-            :param mask: if True, pixels outside [y_min,y_max]
-            and [x_min,x_max] are masked.
-            :type mask: bool
-
-          :param lmin: Minimum wavelength.
-          :type lmin: float
-          :param lmax: Maximum wavelength.
-          :type lmax: float
-          :param y_min: Minimum value of y in degrees.
-          :type y_min: float
-          :param y_max: Maximum value of y in degrees.
-          :type y_max: float
-          :param x_min: Minimum value of x in degrees.
-          :type x_min: float
-          :param x_max: Maximum value of x in degrees.
-          :type x_max: float
-          :param mask: if True, pixels outside [y_min,y_max] and
-          [x_min,x_max] are masked.
-          :type mask: bool
+        
+        Parameters
+        ----------
+        coord : array
+                array containing the sub-cube boundaries
+                [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
+                (output of `mpdaf.obj.cube.get_range`)
+                x and y in degrees
+        mask  : boolean
+                if True, pixels outside [y_min,y_max]
+                and [x_min,x_max] are masked.
         """
         lmin = coord[0][0]
         y_min = coord[0][1]
@@ -2024,11 +2020,11 @@ class Cube(object):
         '''Shrinks the size of the cube by factor.
         New size is an integer multiple of the original size.
 
-        Parameter
+        Parameters
         ----------
         factor : (integer,integer,integer)
-        Factor in z, y and x.
-        Python notation: (nz,ny,nx)
+                 Factor in z, y and x.
+                 Python notation: (nz,ny,nx)
         '''
         # new size is an integer multiple of the original size
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
@@ -2062,26 +2058,28 @@ class Cube(object):
     def _rebin_factor(self, factor, margin='center', flux=False):
         '''Shrinks the size of the cube by factor.
 
-          :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
-          :type factor: integer or (integer,integer,integer)
-          :param flux: This parameters is used if new size is not an integer
-          multiple of the original size.
+          Parameters
+          ----------
+          factor : integer or (integer,integer,integer)
+                   Factor in z, y and x. Python notation: (nz,ny,nx).
+          flux   : boolean
+                   This parameters is used if new size is not an integer
+                   multiple of the original size.
 
-              If Flux is False, the cube is truncated and the flux
-              is not conserved.
+                   If Flux is False, the cube is truncated and the flux
+                   is not conserved.
 
-              If Flux is True, margins are added to the cube to
-              conserve the flux.
-          :type flux: bool
-          :param margin: This parameters is used if new size is not an
-          integer multiple of the original size.
+                   If Flux is True, margins are added to the cube to
+                   conserve the flux.
+          margin : 'center' or 'origin'
+                   This parameters is used if new size is not an
+                   integer multiple of the original size.
 
-            In 'center' case, cube is truncated/pixels are added on the left
-            and on the right, on the bottom and of the top of the cube.
+                   In 'center' case, cube is truncated/pixels are added on the left
+                   and on the right, on the bottom and of the top of the cube.
 
-            In 'origin'case, cube is truncated/pixels are added at the end
-            along each direction
-          :type margin: 'center' or 'origin'
+                   In 'origin'case, cube is truncated/pixels are added at the end
+                   along each direction
         '''
         if is_int(factor):
             factor = (factor,factor,factor)
@@ -2505,27 +2503,29 @@ class Cube(object):
 
     def rebin_factor(self, factor, margin='center', flux=False):
         '''Shrinks the size of the cube by factor.
+        
+          Parameters
+          ----------
+          factor : integer or (integer,integer,integer)
+                   Factor in z, y and x. Python notation: (nz,ny,nx).
+          flux   : boolean
+                   This parameters is used if new size is
+                   not an integer multiple of the original size.
 
-          :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
-          :type factor: integer or (integer,integer,integer)
-          :param flux: This parameters is used if new size is
-          not an integer multiple of the original size.
+                   If Flux is False, the cube is truncated and the flux
+                   is not conserved.
 
-              If Flux is False, the cube is truncated and the flux
-              is not conserved.
+                   If Flux is True, margins are added to the cube
+                   to conserve the flux.
+          margin : 'center' or 'origin'
+                    This parameters is used if new size is not
+                    an integer multiple of the original size.
 
-              If Flux is True, margins are added to the cube
-              to conserve the flux.
-          :type flux: bool
-          :param margin: This parameters is used if new size is not
-          an integer multiple of the original size.
+                    In 'center' case, cube is truncated/pixels are added on the left
+                    and on the right, on the bottom and of the top of the cube.
 
-            In 'center' case, cube is truncated/pixels are added on the left
-            and on the right, on the bottom and of the top of the cube.
-
-            In 'origin'case, cube is truncated/pixels are added
-            at the end along each direction
-          :type margin: 'center' or 'origin'
+                    In 'origin'case, cube is truncated/pixels are added
+                    at the end along each direction
         '''
         if is_int(factor):
             factor = (factor,factor,factor)
@@ -2557,10 +2557,10 @@ class Cube(object):
         New size is an integer multiple of the original size.
 
         Parameter
-        ----------
+        ---------
         factor : (integer,integer,integer)
-        Factor in z, y and x.
-        Python notation: (nz,ny,nx)
+                 Factor in z, y and x.
+                Python notation: (nz,ny,nx)
         '''
         # new size is an integer multiple of the original size
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
@@ -2592,17 +2592,22 @@ class Cube(object):
     def rebin_median(self, factor, margin='center'):
         '''Shrinks the size of the cube by factor.
 
-          :param factor: Factor in z, y and x. Python notation: (nz,ny,nx).
-          :type factor: integer or (integer,integer,integer)
-          :param margin: This parameters is used if new size is not an
-          integer multiple of the original size.
+Parameters
+----------
+factor : integer or (integer,integer,integer)
+         Factor in z, y and x. Python notation: (nz,ny,nx).
+margin : 'center' or 'origin'
+         This parameters is used if new size is not an
+         integer multiple of the original size.
 
-            In 'center' case, cube is truncated on the left and on the right,
-            on the bottom and of the top of the cube.
+         In 'center' case, cube is truncated on the left and on the right,
+         on the bottom and of the top of the cube.
 
-            In 'origin'case, cube is truncatedat the end along each direction
-          :type margin: 'center' or 'origin'
-          :rtype: :class:`mpdaf.obj.Cube`
+         In 'origin'case, cube is truncatedat the end along each direction
+          
+Returns
+-------
+out : :class:`mpdaf.obj.Cube`
         '''
         if is_int(factor):
             factor = (factor,factor,factor)
@@ -2669,22 +2674,24 @@ class Cube(object):
         Returns the resulting cube.
         Multiprocessing is used.
 
-        :param f: Spectrum method or function that the first argument
-        is a spectrum object.
-        :type f: function or :class:`mpdaf.obj.Spectrum` method
-        :param cpu: number of CPUs. It is also possible to set
-        the mpdaf.CPU global variable.
-        :type cpu: integer
-        :param verbose: if True, progression is printed.
-        :type verbose: boolean
-        :param kargs: kargs can be used to set function arguments.
+        Parameters
+        ----------
+        f       : function or :class:`mpdaf.obj.Spectrum` method
+                  Spectrum method or function that the first argument
+                  is a spectrum object.
+        cpu     : integer
+                  number of CPUs. It is also possible to set
+                  the mpdaf.CPU global variable.
+        verbose : boolean
+                  if True, progression is printed.
+        kargs   : kargs 
+                  can be used to set function arguments.
 
-        :rtype: :class:`mpdaf.obj.Cube`
-        if f returns :class:`mpdaf.obj.Spectrum`,
-
-                :class:`mpdaf.obj.Image` if f returns a number,
-
-                np.array(dtype=object) in others cases.
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Spectrum`,
+        out : :class:`mpdaf.obj.Image` if f returns a number,
+        out : np.array(dtype=object) in others cases.
         """
         from mpdaf import CPU
         if cpu is not None and cpu < multiprocessing.cpu_count():
@@ -2781,20 +2788,23 @@ class Cube(object):
         Returns the resulting cube.
         Multiprocessing is used.
 
-        :param f: Image method or function that the first argument
-        is a Image object. It should return an Image object.
-        :type f: function or :class:`mpdaf.obj.Image` method
-        :param cpu: number of CPUs. It is also possible to set
-        the mpdaf.CPU global variable.
-        :type cpu: integer
-        :param verbose: if True, progression is printed.
-        :type verbose: boolean
-        :param kargs: kargs can be used to set function arguments.
-        :rtype: :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Image`,
-
-                :class:`mpdaf.obj.Spectrum` if f returns a number,
-
-                 np.array(dtype=object) in others cases.
+        Parameters
+        ----------
+        f       : function or :class:`mpdaf.obj.Image` method
+                  Image method or function that the first argument
+                  is a Image object. It should return an Image object.
+        cpu     : integer
+                  number of CPUs. It is also possible to set
+        verbose : boolean
+                  if True, progression is printed.
+        kargs   : kargs
+                  can be used to set function arguments.
+                  
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Image`,
+        out : :class:`mpdaf.obj.Spectrum` if f returns a number,
+        out : np.array(dtype=object) in others cases.
         """
         from mpdaf import CPU
         if cpu is not None and cpu < multiprocessing.cpu_count():
@@ -2920,58 +2930,58 @@ class CubeDisk(object):
     This class provides a way to open datacube fits files with memory mapping.
     The methods of the class can extract a spectrum, an image or a smaller
     datacube from the larger one.
-
-    :param filename: Possible FITS filename.
-    :type filename: string
-    :param ext: Number/name of the data extension or numbers/names
-    of the data and variance extensions.
-    :type ext: integer or (integer,integer) or string or (string,string)
-    :param notnoise: True if the noise Variance cube is not read
-    (if it exists).
-
-           Use notnoise=True to create cube without variance extension.
-    :type notnoise: bool
+    
+    Parameters
+    ----------
+    filename : string
+               Possible FITS filename.
+    ext      : integer or (integer,integer) or string or (string,string)
+               Number/name of the data extension or numbers/names
+               of the data and variance extensions.
+    notnoise : bool
+               True if the noise Variance cube is not read (if it exists).
+               Use notnoise=True to create cube without variance extension.
 
     Attributes
     ----------
-
-    filename (string) : Fits file
-
-    data (int or string) : Data extension
-
-    unit (string) : Possible data unit type
-
-    primary_header (pyfits.Header) : Possible FITS primary header instance.
-
-    data_header (pyfits.Header) : Possible FITS data header instance.
-
-    shape (array of 3 integers) : Lengths of data in Z and Y and X
-    (python notation (nz,ny,nx)).
-
-    var (int or string) : Variance extension (-1 if any).
-
-    fscale (float) : Flux scaling factor (1 by default).
-
-    wcs (:class:`mpdaf.obj.WCS`) : World coordinates.
-
-    wave (:class:`mpdaf.obj.WaveCoord`) : Wavelength coordinates
-
-    ima (dict{string, :class:`mpdaf.obj.Image`} : dictionary of images
+    filename       : string
+                     Fits file
+    data           : int or string
+                     Data extension
+    unit           : string
+                     Possible data unit type
+    primary_header : pyfits.Header
+                     Possible FITS primary header instance.
+    data_header    : pyfits.Header
+                     Possible FITS data header instance.
+    shape          : array of 3 integers)
+                     Lengths of data in Z and Y and X
+                     (python notation (nz,ny,nx)).
+    var            : int or string
+                     Variance extension (-1 if any).
+    fscale         : float
+                     Flux scaling factor (1 by default).
+    wcs            : :class:`mpdaf.obj.WCS`
+                     World coordinates.
+    wave           : :class:`mpdaf.obj.WaveCoord`)
+                     Wavelength coordinates
+    ima            : dict{string, :class:`mpdaf.obj.Image`}
+                     dictionary of images
     """
 
     def __init__(self, filename=None, ext=None, notnoise=False, ima=True):
         """Creates a CubeDisk object.
 
-        :param filename: Possible FITS filename.
-        :type filename: string
-        :param ext: Number/name of the data extension or
-        numbers/names of the data and variance extensions.
-        :type ext: integer or (integer,integer) or string or (string,string)
-        :param notnoise: True if the noise Variance cube is not read
-        (if it exists).
-
-           Use notnoise=True to create cube without variance extension.
-        :type notnoise: bool
+    Parameters
+    ----------
+    filename : string
+               Possible FITS filename.
+    ext      : integer or (integer,integer) or string or (string,string)
+               Number/name of the data extension or numbers/names
+               of the data and variance extensions.
+    notnoise : bool
+               True if the noise Variance cube is not read (if it exists).
+               Use notnoise=True to create cube without variance extension.
         """
         self.filename = filename
         self.ima = {}
@@ -3192,21 +3202,23 @@ class CubeDisk(object):
     def truncate(self, lmin, lmax, y_min, y_max, x_min, x_max, mask=True):
         """ Truncates the cube and return a sub-cube.
 
-          :param lmin: Minimum wavelength.
-          :type lmin: float
-          :param lmax: Maximum wavelength.
-          :type lmax: float
-          :param y_min: Minimum value of y in degrees.
-          :type y_min: float
-          :param y_max: Maximum value of y in degrees.
-          :type y_max: float
-          :param x_min: Minimum value of x in degrees.
-          :type x_min: float
-          :param x_max: Maximum value of x in degrees.
-          :type x_max: float
-          :param mask: if True, pixels outside [y_min,y_max]
-          and [x_min,x_max] are masked.
-          :type mask: bool
+          Parameters
+          ----------
+          lmin  : float
+                  Minimum wavelength.
+          lmax  : float
+                  Maximum wavelength.
+          y_min : float
+                  Minimum value of y in degrees.
+          y_max : float
+                  Maximum value of y in degrees.
+          x_min : float
+                  Minimum value of x in degrees.
+          x_max : float
+                  Maximum value of x in degrees.
+          mask  : boolean
+                  if True, pixels outside [y_min,y_max]
+                  and [x_min,x_max] are masked.
         """
         skycrd = [[y_min,x_min],[y_min,x_max],[y_max,x_min],[y_max,x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
