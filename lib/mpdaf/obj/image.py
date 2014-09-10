@@ -4495,7 +4495,7 @@ interp : 'no' | 'linear' | 'spline'
             raise IOError('Operation forbidden')
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None, \
-             zscale=False, colorbar=None, **kargs):
+             zscale=False, colorbar=None, var=False, **kargs):
         """Plots the image.
 
 Parameters
@@ -4516,6 +4516,9 @@ zscale   : boolean
            using the IRAF zscale algorithm.
 colorbar : boolean
            If 'h'/'v', a horizontal/vertical colorbar is added.
+var      : boolean
+           If var is True, the inverse of variance
+           is overplotted.
 kargs    : matplotlib.artist.Artist
            kargs can be used to set additional Artist properties.
            
@@ -4555,9 +4558,24 @@ out : matplotlib AxesImage
                 norm = plt_norm.SqrtNorm(vmin=vmin, vmax=vmax)
             else:
                 norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
-
-            cax = plt.imshow(f, interpolation='nearest', origin='lower', \
+                
+            if self.var is not None and var:
+                wght = 1.0 / (self.var * self.fscale * self.fscale)
+                np.ma.fix_invalid(wght, copy=False, fill_value=0)
+                
+                normalpha = matplotlib.colors.Normalize(wght.min(), wght.max())
+            
+                img_array = plt.get_cmap('jet')(norm(f))
+                img_array[:,:,3] = 1 - normalpha(wght)/2
+                cax = plt.imshow(img_array, interpolation='nearest', origin='lower', \
                              norm=norm, **kargs)
+            else:
+                cax = plt.imshow(f, interpolation='nearest', origin='lower', \
+                             norm=norm, **kargs)
+            
+            
+            
+            
             plt.xlabel('q (%s)' % xunit)
             plt.ylabel('p (%s)' % yunit)
 
