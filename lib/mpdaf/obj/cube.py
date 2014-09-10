@@ -1853,7 +1853,7 @@ class Cube(object):
             from image import Image
             data = np.ma.sum(self.data, axis)
             if self.var is not None:
-                var = np.sum(self.var,axis)
+                var = (np.ma.sum(np.ma.masked_invalid(self.var), axis)).filled(np.NaN)
             else:
                 var = None
             res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit, \
@@ -1866,7 +1866,7 @@ class Cube(object):
             from spectrum import Spectrum
             data = np.ma.sum(self.data,axis=1).sum(axis=1)
             if self.var is not None:
-                var = np.ma.sum(self.var,axis=1).sum(axis=1)
+                var = np.ma.sum(np.ma.masked_invalid(self.var),axis=1).sum(axis=1).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(shape=data.shape[0], wave=self.wave, \
@@ -1903,7 +1903,7 @@ class Cube(object):
             from image import Image
             data = np.ma.mean(self.data, axis)
             if self.var is not None:
-                var = np.ma.mean(self.var, axis)
+                var = np.ma.mean(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
             else:
                 var = None
             res = Image(shape=data.shape, wcs=self.wcs, \
@@ -1916,7 +1916,7 @@ class Cube(object):
             from spectrum import Spectrum
             data = np.ma.mean(self.data, axis=1).mean(axis=1)
             if self.var is not None:
-                var = np.ma.mean(self.var, axis=1).mean(axis=1)
+                var = np.ma.mean(np.ma.masked_invalid(self.var), axis=1).mean(axis=1).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(notnoise=True, shape=data.shape[0], \
