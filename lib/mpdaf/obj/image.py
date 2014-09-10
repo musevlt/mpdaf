@@ -3833,7 +3833,6 @@ interp   : 'no' | 'linear' | 'spline'
            if 'no', data median value replaced masked values.
            if 'linear', linear interpolation of the masked values.
            if 'spline', spline interpolation of the masked values.
-          :type interp: 'no' | 'linear' | 'spline'
           
 Returns
 -------
