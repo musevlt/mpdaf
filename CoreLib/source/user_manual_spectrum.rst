@@ -232,6 +232,8 @@ Getters and setters
 
 :func:`mpdaf.obj.Spectrum.get_range <mpdaf.obj.Spectrum.get_range>` returns the wavelength range [Lambda_min,Lambda_max]
 
+:func:`mpdaf.obj.Spectrum.get_np_data <mpdaf.obj.Spectrum.get_np_data>` returns flux array multiplied by scaling factor.
+
 :func:`mpdaf.obj.Spectrum.set_wcs <mpdaf.obj.Spectrum.set_wcs>` sets the world coordinates.
 
 :func:`mpdaf.obj.Spectrum.set_var <mpdaf.obj.Spectrum.set_var>` sets the variance array.

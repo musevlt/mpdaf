@@ -243,6 +243,10 @@ Getters
 
 :func:`mpdaf.drs.PixTable.get_ypos <mpdaf.drs.PixTable.get_ypos>` gets the ypos column.
 
+:func:`mpdaf.drs.PixTable.get_xpos_sky <mpdaf.drs.PixTable.get_xpos_sky>` gets the x absolute position on the sky.
+
+:func:`mpdaf.drs.PixTable.get_ypos_sky <mpdaf.drs.PixTable.get_ypos_sky>` gets the y absolute position on the sky.
+
 :func:`mpdaf.drs.PixTable.get_lambda <mpdaf.drs.PixTable.get_lambda>` gets the lambda column.
 
 :func:`mpdaf.drs.PixTable.get_data <mpdaf.drs.PixTable.get_data>` gets the data column.
@@ -252,6 +256,10 @@ Getters
 :func:`mpdaf.drs.PixTable.get_dq <mpdaf.drs.PixTable.get_dq>` gets the dq column.
 
 :func:`mpdaf.drs.PixTable.get_origin <mpdaf.drs.PixTable.get_origin>` gets the origin column.
+
+:func:`mpdaf.drs.PixTable.get_weight <mpdaf.drs.PixTable.get_weight>` gets the weight column.
+
+:func:`mpdaf.drs.PixTable.get_exp <mpdaf.drs.PixTable.get_exp>` gets the exposure numbers.
 
 :func:`mpdaf.drs.PixTable.get_slices <mpdaf.drs.PixTable.get_slices>` returns slices dictionary.
 

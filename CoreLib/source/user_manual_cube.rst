@@ -420,6 +420,8 @@ Getters and setters
 
 :func:`mpdaf.obj.Cube.get_rot <mpdaf.obj.Cube.get_rot>` returns the rotation angle.
 
+:func:`mpdaf.obj.Cube.get_np_data <mpdaf.obj.Cube.get_np_data>` returns flux array multiplied by scaling factor.
+
 :func:`mpdaf.obj.Cube.set_wcs <mpdaf.obj.Cube.set_wcs>` sets the world coordinates.
 
 :func:`mpdaf.obj.Cube.set_var <mpdaf.obj.Cube.set_var>` sets the variance array.

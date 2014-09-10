@@ -255,6 +255,8 @@ Getters and setters
 
 :func:`mpdaf.obj.Image.get_rot <mpdaf.obj.Image.get_rot>` returns the angle of rotation.
 
+:func:`mpdaf.obj.Image.get_np_data <mpdaf.obj.Image.get_np_data>` returns flux array multiplied by scaling factor.
+
 :func:`mpdaf.obj.Image.set_wcs <mpdaf.obj.Image.set_wcs>` sets the world coordinates.
 
 :func:`mpdaf.obj.Image.set_var <mpdaf.obj.Image.set_var>` sets the variance array.
