@@ -1808,7 +1808,7 @@ weight : boolean
          with the inverse of variance as weight.
 spline : boolean
          Linear/spline interpolation
-        to interpolate masked values.
+         to interpolate masked values.
         
 Returns
 -------
@@ -1851,7 +1851,7 @@ weight : boolean
          with the inverse of variance as weight.
 spline : boolean
          Linear/spline interpolation
-        to interpolate masked values.
+         to interpolate masked values.
         
 Returns
 -------
@@ -3045,15 +3045,15 @@ filename : string
 
 Parameters
 ----------
-nclicks: integer (3 or 5)
-         3 or 5 clicks.
+nclicks : integer (3 or 5)
+          3 or 5 clicks.
          
-        Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
+         Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
 
-        Use 5 mouse clicks: the two first select a range
-        of minimum wavelengths, the 3th selects the peak wavelength and
-        the two last clicks select a range of maximum wavelengths
-        - see :func:`mpdaf.obj.Spectrum.gauss_fit`.
+         Use 5 mouse clicks: the two first select a range
+         of minimum wavelengths, the 3th selects the peak wavelength and
+         the two last clicks select a range of maximum wavelengths
+         - see :func:`mpdaf.obj.Spectrum.gauss_fit`.
         """
         if nclicks == 3:
             print 'Use 3 mouse clicks to get minimim, '\
