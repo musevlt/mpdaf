@@ -715,7 +715,7 @@ class PixTable(object):
                     kmask &= mask
                     del mask
                 else:
-                    kmask &= (self.origin2slice(col_origin) == slice)
+                    kmask &= (self.origin2slice(col_origin) == sl)
             if ifu is not None:
                 if hasattr(ifu, '__iter__'):
                     mask = np.zeros(self.nrows).astype('bool')
