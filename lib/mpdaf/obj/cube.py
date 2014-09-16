@@ -1927,6 +1927,57 @@ class Cube(object):
             return res
         else:
             return None
+        
+    def median(self,axis=None):
+        """ Returns the median over the given axis.
+
+        Parameters
+        ----------
+        axis : None or int or tuple of ints
+               Axis or axes along which a mean is performed.
+
+               The default (axis = None) is perform a mean over all the
+               dimensions of the cube and returns a float.
+
+               axis = 0  is perform a mean over the wavelength dimension
+               and returns an image.
+
+               axis = (1,2) is perform a mean over the (X,Y) axes and
+               returns a spectrum.
+
+               Other cases return None.
+        """
+        if axis is None:
+            return self.data.median() * self.fscale
+        elif axis == 0:
+            #return an image
+            from image import Image
+            data = np.ma.median(self.data, axis)
+            if self.var is not None:
+                var = np.ma.median(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
+            else:
+                var = None
+            res = Image(shape=data.shape, wcs=self.wcs, \
+                        unit=self.unit, fscale=self.fscale)
+            res.data = data
+            res.var = var
+            return res
+        elif axis == tuple([1,2]):
+            #return a spectrum
+            from spectrum import Spectrum
+            data = np.ma.median(self.data, axis=1).median(axis=1)
+            if self.var is not None:
+                var = np.ma.median(np.ma.masked_invalid(self.var), axis=1).median(axis=1).filled(np.NaN)
+            else:
+                var = None
+            res = Spectrum(notnoise=True, shape=data.shape[0], \
+                           wave=self.wave, \
+                           unit=self.unit, fscale=self.fscale)
+            res.data = data
+            res.var = var
+            return res
+        else:
+            return None
 
     def truncate(self,coord,mask=True):
         """ Truncates the cube and return a sub-cube.
@@ -2885,6 +2936,54 @@ out : :class:`mpdaf.obj.Cube`
                     result[k] = out
 
         return result
+    
+    
+    def aperture(self, center, radius, verbose=True):
+        """ Extracts a spectra from an aperture of fixed radius.
+        
+Parameters
+----------
+center : (float,float)
+         Center of the aperture.
+         (dec,ra) is in degrees.
+radius : float
+         Radius of the aperture in arcsec.
+        """
+        center = self.wcs.sky2pix(center)[0]
+        radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
+        radius2 = radius * radius
+        if radius > 0:
+            imin = max(0, center[0] - radius)
+            imax = min(center[0] + radius + 1, self.shape[1])
+            jmin = max(0, center[1] - radius)
+            jmax = min(center[1] + radius + 1, self.shape[2])
+            data = self.data[:,imin:imax, jmin:jmax].copy()
+            
+            ni = data.shape[1]
+            nj = data.shape[2]
+            m = np.ma.make_mask_none(data.shape)
+            for i_in in range(ni):
+                i = i_in + imin
+                pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
+                pixcrd[:, 0] -= center[0]
+                pixcrd[:, 1] -= center[1]
+                m[:,i_in, :] = ((np.array(pixcrd[:, 0]) \
+                               * np.array(pixcrd[:, 0]) \
+                               + np.array(pixcrd[:, 1]) \
+                               * np.array(pixcrd[:, 1])) < radius2)
+            m = np.ma.mask_or(m, np.ma.getmask(data))
+            data.mask[:, :, :] = m
+            if self.var is not None:
+                var = (np.ma.sum(np.ma.masked_invalid(self.var[:,imin:imax, jmin:jmax]), axis=(1,2))).filled(np.NaN)
+            else:
+                var = None    
+            from spectrum import Spectrum
+            spec = Spectrum(wave=self.wave, unit=self.unit, data=data.sum(axis=(1,2)), var=var, fscale=self.fscale)       
+            if verbose: print '%d spaxels summed'%(data.shape[1]*data.shape[2])
+        else:
+            spec = self[:,int(center[0] + 0.5), int(center[1] + 0.5)] 
+            if verbose: print 'returning spectrum at nearest spaxel'
+        return spec
 
 
 def _process_spe(arglist):

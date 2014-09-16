@@ -211,7 +211,7 @@ wave           : :class:`mpdaf.obj.WaveCoord`
     """
 
     def __init__(self, filename=None, ext=None, notnoise=False, shape=101, \
-                 wave=None, pix=False, unit=None, data=None, var=None, \
+                 wave=None, unit=None, data=None, var=None, \
                  fscale=1.0):
         """Creates a Spectrum object.
 
