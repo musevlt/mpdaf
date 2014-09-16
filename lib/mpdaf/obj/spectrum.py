@@ -539,7 +539,9 @@ var : boolean
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
+        warnings.simplefilter("ignore")
         hdu.writeto(filename, clobber=True, output_verify='fix')
+        warnings.simplefilter("default")
 
         self.filename = filename
 

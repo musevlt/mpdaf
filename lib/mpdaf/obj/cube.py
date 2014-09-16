@@ -8,6 +8,7 @@ import datetime
 import multiprocessing
 import types
 import logging
+import warnings
 
 from coords import WCS
 from coords import WaveCoord
@@ -454,6 +455,7 @@ class Cube(object):
             self.fscale = fscale
 
         # create primary header
+        warnings.simplefilter("ignore")
         prihdu = pyfits.PrimaryHDU()
         for card in self.primary_header.cards:
             try:
@@ -481,6 +483,7 @@ class Cube(object):
         (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
+        warnings.simplefilter("default")
 
         #world coordinates
         wcs_cards = self.wcs.to_header().cards
@@ -596,7 +599,9 @@ class Cube(object):
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
+        warnings.simplefilter("ignore")
         hdu.writeto(filename, clobber=True, output_verify='fix')
+        warnings.simplefilter("default")
 
         self.filename = filename
 

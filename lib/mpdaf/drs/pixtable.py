@@ -58,7 +58,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
                 pass
     prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
     prihdu.header['author'] = ('MPDAF', 'origin of the file')
-    warnings.simplefilter("default")
+    
     if save_as_ima:
         hdulist = [prihdu]
         nrows = xpos.shape[0]
@@ -112,6 +112,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
         thdulist = pyfits.HDUList([prihdu, tbhdu])
         thdulist.writeto(filename, clobber=True, output_verify='fix')
 
+    warnings.simplefilter("default")
 
 class PixTable(object):
     """PixTable class
