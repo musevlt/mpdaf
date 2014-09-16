@@ -466,6 +466,8 @@ Arithmetic
 
 :func:`mpdaf.obj.Cube.mean <mpdaf.obj.Cube.mean>` returns the mean over the given axis.
 
+:func:`mpdaf.obj.Cube.median <mpdaf.obj.Cube.median>` returns the median over the given axis.
+
 
 Transformation
 --------------
@@ -478,9 +480,12 @@ Transformation
 
 :func:`mpdaf.obj.Cube.rebin_median <mpdaf.obj.Cube.rebin_median>` rebins the cube using median values.
 
-:func:`mpdaf.obj.Cube.loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` loops over all spectra to apply a function/method.
+:func:`mpdaf.obj.Cube.aperture <mpdaf.obj.Cube.aperture>` extracts a spectra from an aperture of fixed radius.
 
 :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
+
+:func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
+
 
 
 Open big cube with memory mapping
