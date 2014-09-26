@@ -450,12 +450,8 @@ var : boolean
         assert self.data is not None
         
         #update fscale
-        if fscale is not None and self.fscale != fscale:
-            self.data *= np.double(self.fscale / fscale)
-            if self.var is not None:
-                self.var *= np.double(self.fscale * self.fscale \
-                                   / fscale / fscale)
-            self.fscale = fscale
+        if fscale is None:
+            fscale = self.fscale
         
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -486,7 +482,8 @@ var : boolean
         hdulist = [prihdu]
 
         # create spectrum DATA extension
-        tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
+        tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data \
+                                * np.double(self.fscale / fscale) )
         for card in self.data_header.cards:
             try:
                 if tbhdu.header.keys().count(card.keyword) == 0:
@@ -510,12 +507,14 @@ var : boolean
         tbhdu.header['CUNIT1'] = (self.wave.cunit, 'world coordinate units')
         if self.unit is not None:
             tbhdu.header['BUNIT'] = (self.unit, 'data unit type')
-        tbhdu.header['FSCALE'] = (self.fscale, 'Flux scaling factor')
+        tbhdu.header['FSCALE'] = (fscale, 'Flux scaling factor')
         hdulist.append(tbhdu)
 
         # create spectrum STAT extension
         if self.var is not None:
-            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
+            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var \
+                                    * np.double(self.fscale * self.fscale \
+                                   / fscale / fscale))
             nbhdu.header['CRVAL1'] = \
             (self.wave.crval, 'Start in world coordinate')
             nbhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
@@ -933,7 +932,7 @@ out : Spectrum or Cube object.
             # spectrum1 * number = spectrum2
             # (spectrum2[k]=spectrum1[k]*number)
             res = self.copy()
-            res.fscale *= other
+            res.data *= other
             return res
         try:
             # spectrum1 * spectrum2 = spectrum3
@@ -946,7 +945,7 @@ out : Spectrum or Cube object.
                                   'with different sizes')
                 else:
                     res = Spectrum(shape=self.shape, \
-                                   fscale=self.fscale * other.fscale)
+                                   fscale=self.fscale)
                     # coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
@@ -956,17 +955,20 @@ out : Spectrum or Cube object.
                         raise IOError('Operation forbidden for spectra '\
                                       'with different world coordinates')
                     # data
-                    res.data = self.data * other.data
+                    res.data = self.data * other.data * other.fscale
                     # variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * self.data * self.data
-                    elif other.var is None:
-                        res.var = self.var * other.data * other.data
-                    else:
                         res.var = other.var * self.data * self.data \
-                        + self.var * other.data * other.data
+                        * other.fscale * other.fscale
+                    elif other.var is None:
+                        res.var = self.var * other.data * other.data \
+                        * other.fscale * other.fscale
+                    else:
+                        res.var = (other.var * self.data * self.data \
+                        + self.var * other.data * other.data) \
+                        * other.fscale * other.fscale
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -1021,7 +1023,7 @@ out : Spectrum or Cube object.
             # spectrum1 / number =
             # spectrum2 (spectrum2[k]=spectrum1[k]/number)
             res = self.copy()
-            res.fscale /= other
+            res.data /= other
             return res
         try:
             # spectrum1 / spectrum2 = spectrum3
@@ -1034,7 +1036,7 @@ out : Spectrum or Cube object.
                                   'with different sizes')
                 else:
                     res = Spectrum(shape=self.shape, \
-                                   fscale=self.fscale / other.fscale)
+                                   fscale=self.fscale)
                     # coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
@@ -1044,20 +1046,20 @@ out : Spectrum or Cube object.
                         raise IOError('Operation forbidden for spectra '\
                                       'with different world coordinates')
                     # data
-                    res.data = self.data / other.data
+                    res.data = self.data / other.data / other.fscale
                     # variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
                         res.var = other.var * self.data * self.data \
-                        / (other.data ** 4)
+                        / (other.data ** 4)  / (other.fscale**2)
                     elif other.var is None:
                         res.var = self.var * other.data * other.data \
-                        / (other.data ** 4)
+                        / (other.data ** 4) / (other.fscale**2)
                     else:
                         res.var = (other.var * self.data * self.data \
                                    + self.var * other.data * other.data) \
-                                   / (other.data ** 4)
+                                   / (other.data ** 4) / (other.fscale**2)
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -1079,7 +1081,7 @@ out : Spectrum or Cube object.
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape, wcs=other.wcs, \
-                                   fscale=self.fscale / other.fscale)
+                                   fscale=self.fscale)
                         # coordinates
                         if self.wave is None or other.wave is None:
                             res.wave = None
@@ -1090,7 +1092,7 @@ out : Spectrum or Cube object.
                                           'with different world coordinates')
                         # data
                         res.data = self.data[:, np.newaxis, np.newaxis] \
-                        / other.data
+                        / other.data / other.fscale
                         # variance
                         if self.var is None and other.var is None:
                             res.var = None
@@ -1098,17 +1100,19 @@ out : Spectrum or Cube object.
                             res.var = other.var \
                             * self.data[:, np.newaxis, np.newaxis] \
                             * self.data[:, np.newaxis, np.newaxis] \
-                            / (other.data ** 4)
+                            / (other.data ** 4) / (other.fscale**2)
                         elif other.var is None:
                             res.var = self.var[:, np.newaxis, np.newaxis] \
-                            * other.data * other.data / (other.data ** 4)
+                            * other.data * other.data / (other.data ** 4) \
+                            / (other.fscale**2)
                         else:
                             res.var = \
                             (other.var \
                              * self.data[:, np.newaxis, np.newaxis] \
                              * self.data[:, np.newaxis, np.newaxis] \
                              + self.var[:, np.newaxis, np.newaxis] \
-                             * other.data * other.data) / (other.data ** 4)
+                             * other.data * other.data) / (other.data ** 4) \
+                             / (other.fscale**2)
                         # unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -1147,8 +1151,7 @@ out : Spectrum or Cube object.
             raise ValueError('empty data array')
         res = self.copy()
         if is_float(other) or is_int(other):
-            res.data = self.data ** other
-            res.fscale = res.fscale ** other
+            res.data = (self.data ** other) * (self.fscale ** (other-1))
             res.var = None
         else:
             raise ValueError('Operation forbidden')
@@ -1160,9 +1163,8 @@ out : Spectrum or Cube object.
         if self.data is None:
             raise ValueError('empty data array')
         if self.var is not None:
-            self.var = 3 * self.var * self.fscale ** 5 / self.data ** 4
-        self.fscale = np.sqrt(self.fscale)
-        self.data = np.ma.sqrt(self.data)
+            self.var = 3 * self.var * self.fscale ** 4 / self.data ** 4
+        self.data = np.ma.sqrt(self.data) / np.sqrt(self.fscale)
 
     def sqrt(self):
         """Returns a spectrum containing the positive
@@ -1178,7 +1180,6 @@ out : Spectrum or Cube object.
         if self.data is None:
             raise ValueError('empty data array')
         self.data = np.ma.abs(self.data)
-        self.fscale = np.abs(self.fscale)
 
     def abs(self):
         """Returns a spectrum containing the absolute value of data extension.
@@ -1981,8 +1982,7 @@ z : array
         dw = np.max(l) - w0
         w = (l - w0) / dw
         val = np.polynomial.polynomial.polyval(w, z)
-        self.data = np.ma.masked_invalid(val)
-        self.fscale = 1.0
+        self.data = np.ma.masked_invalid(val) / self.fscale
         self.var = None
 
     def poly_spec(self, deg, weight=True, maxiter=0, \
@@ -2505,15 +2505,13 @@ other : 1d-array or Spectrum
                                   'with different sizes')
                 else:
                     self.data = \
-                    np.ma.array(signal.convolve(self.data, other.data, \
-                                                mode='same'), \
+                    np.ma.array(signal.convolve(self.data, \
+                                other.data * other.fscale, \
+                                mode='same'), \
                                 mask=self.data.mask)
                     if self.var is not None:
                         self.var = signal.convolve(self.var, \
-                                                   other.data, mode='same') \
-                                                   * other.fscale \
-                                                   * other.fscale
-                    self.fscale = self.fscale * other.fscale
+                                    other.data * other.fscale, mode='same')
         except IOError as e:
             raise e
         except:

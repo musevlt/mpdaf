@@ -590,12 +590,8 @@ fscale   : float
            Flux scaling factor.
         """
         #update fscale
-        if fscale is not None and self.fscale != fscale:
-            self.data *= np.double(self.fscale / fscale)
-            if self.var is not None:
-                self.var *= np.double(self.fscale * self.fscale \
-                                   / fscale / fscale)
-            self.fscale = fscale
+        if fscale is None:
+            fscale = self.fscale
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         for card in self.primary_header.cards:
@@ -629,7 +625,8 @@ fscale   : float
         wcs_cards = self.wcs.to_header().cards
 
         # create spectrum DATA extension
-        tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data)
+        tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data \
+                                * np.double(self.fscale / fscale))
         for card in self.data_header.cards:
             try:
                 if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' \
@@ -680,14 +677,16 @@ fscale   : float
 
         if self.unit is not None:
             tbhdu.header['BUNIT'] = (self.unit, 'data unit type')
-        tbhdu.header['FSCALE'] = (self.fscale, 'Flux scaling factor')
+        tbhdu.header['FSCALE'] = (fscale, 'Flux scaling factor')
         hdulist.append(tbhdu)
 
         self.wcs = WCS(tbhdu.header)
 
         # create image STAT extension
         if self.var is not None:
-            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var)
+            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var \
+                                    * np.double(self.fscale * self.fscale \
+                                   / fscale / fscale))
             for card in wcs_cards:
                 nbhdu.header[card.keyword] = (card.value, card.comment)
             hdulist.append(nbhdu)
@@ -1090,7 +1089,7 @@ out : Spectrum or Image or Cube object.
         if is_float(other) or is_int(other):
             # image1 * number = image2 (image2[j,i]=image1[j,i]*number)
             res = self.copy()
-            res.fscale *= other
+            res.data *= other
             return res
         try:
             # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
@@ -1103,7 +1102,7 @@ out : Spectrum or Image or Cube object.
                                   'with different sizes')
                 else:
                     res = Image(shape=self.shape, \
-                                fscale=self.fscale * other.fscale)
+                                fscale=self.fscale)
                     # coordinates
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
@@ -1116,14 +1115,17 @@ out : Spectrum or Image or Cube object.
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * self.data * self.data
+                        res.var = other.var * self.data * self.data \
+                                * other.fscale * other.fscale
                     elif other.var is None:
-                        res.var = self.var * other.data * other.data
+                        res.var = self.var * other.data * other.data \
+                                * other.fscale * other.fscale
                     else:
-                        res.var = other.var * self.data * self.data + \
-                        self.var * other.data * other.data
+                        res.var = (other.var * self.data * self.data + \
+                                self.var * other.data * other.data) \
+                                * other.fscale * other.fscale
                     # data
-                    res.data = self.data * other.data
+                    res.data = self.data * other.data * other.fscale
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -1156,28 +1158,32 @@ out : Spectrum or Image or Cube object.
                             shape = (other.shape, self.shape[0], self.shape[1])
                             res = Cube(shape=shape , wave=other.wave, \
                                        wcs=self.wcs, \
-                                       fscale=self.fscale * other.fscale)
+                                       fscale=self.fscale)
                             # data
                             res.data = self.data[np.newaxis, :, :] \
-                            * other.data[:, np.newaxis, np.newaxis]
+                            * other.data[:, np.newaxis, np.newaxis] \
+                            * other.fscale
                             # variance
                             if self.var is None and other.var is None:
                                 res.var = None
                             elif self.var is None:
                                 res.var = np.ones(res.shape) \
                                 * other.var[:, np.newaxis, np.newaxis] \
-                                * self.data * self.data
+                                * self.data * self.data \
+                                * other.fscale * other.fscale
                             elif other.var is None:
                                 res.var = np.ones(res.shape) \
                                 * self.var[np.newaxis, :, :] \
-                                * other.data * other.data
+                                * other.data * other.data \
+                                * other.fscale * other.fscale
                             else:
-                                res.var = np.ones(res.shape) \
+                                res.var = (np.ones(res.shape) \
                                 * other.var[:, np.newaxis, np.newaxis] \
                                 * self.data * self.data \
                                 + np.ones(res.shape) \
                                 * self.var[np.newaxis, :, :] \
-                                * other.data * other.data
+                                * other.data * other.data) \
+                                * other.fscale * other.fscale
                             # unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
@@ -1217,7 +1223,7 @@ out : Image or Cube object.
         if is_float(other) or is_int(other):
             # image1 / number = image2 (image2[j,i]=image1[j,i]/number
             res = self.copy()
-            res.fscale /= other
+            res.data /= other
             return res
         try:
             # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
@@ -1230,7 +1236,7 @@ out : Image or Cube object.
                                   'for images with different sizes')
                 else:
                     res = Image(shape=self.shape, \
-                                fscale=self.fscale / other.fscale)
+                                fscale=self.fscale)
                     # coordinates
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
@@ -1244,16 +1250,16 @@ out : Image or Cube object.
                         res.var = None
                     elif self.var is None:
                         res.var = other.var * self.data * self.data \
-                        / (other.data ** 4)
+                        / (other.data ** 4) / other.fscale / other.fscale
                     elif other.var is None:
                         res.var = self.var * other.data * other.data / \
-                        (other.data ** 4)
+                        (other.data ** 4) / other.fscale / other.fscale
                     else:
                         res.var = (other.var * self.data * self.data \
                                    + self.var * other.data * other.data) \
-                                   / (other.data ** 4)
+                                   / (other.data ** 4) / (other.fscale **2)
                     # data
-                    res.data = self.data / other.data
+                    res.data = self.data / other.data  / other.fscale
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -1276,7 +1282,7 @@ out : Image or Cube object.
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape, wave=other.wave, \
-                                   fscale=self.fscale / other.fscale)
+                                   fscale=self.fscale)
                         # coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
@@ -1291,19 +1297,22 @@ out : Image or Cube object.
                             res.var = None
                         elif self.var is None:
                             res.var = other.var * self.data[np.newaxis, :, :]\
-                             * self.data[np.newaxis, :, :] / (other.data ** 4)
+                             * self.data[np.newaxis, :, :] \
+                             / (other.data ** 4) / (other.fscale **2) 
                         elif other.var is None:
                             res.var = self.var[np.newaxis, :, :] \
-                            * other.data * other.data / (other.data ** 4)
+                            * other.data * other.data \
+                            / (other.data ** 4) / (other.fscale **2)
                         else:
                             res.var = \
                             (other.var * self.data[np.newaxis, :, :] \
                              * self.data[np.newaxis, :, :] \
                              + self.var[np.newaxis, :, :] \
                              * other.data * other.data) \
-                             / (other.data ** 4)
+                             / (other.data ** 4) / (other.fscale **2)
                         # data
-                        res.data = self.data[np.newaxis, :, :] / other.data
+                        res.data = self.data[np.newaxis, :, :] / other.data \
+                                   / other.fscale
                         # unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -1342,8 +1351,7 @@ out : Image or Cube object.
             raise ValueError('empty data array')
         res = self.copy()
         if is_float(other) or is_int(other):
-            res.data = self.data ** other
-            res.fscale = res.fscale ** other
+            res.data = self.data ** other  * (self.fscale ** (other-1))
             res.var = None
         else:
             raise ValueError('Operation forbidden')
@@ -1355,9 +1363,8 @@ out : Image or Cube object.
         if self.data is None:
             raise ValueError('empty data array')
         if self.var is not None:
-            self.var = 3 * self.var * self.fscale ** 5 / self.data ** 4
-        self.data = np.sqrt(self.data)
-        self.fscale = np.sqrt(self.fscale)
+            self.var = 3 * self.var * self.fscale ** 4 / self.data ** 4
+        self.data = np.ma.sqrt(self.data) / np.sqrt(self.fscale)
 
     def sqrt(self):
         """Returns an image containing the positive square-root
@@ -1371,8 +1378,7 @@ out : Image or Cube object.
         """Computes the absolute value of data extension."""
         if self.data is None:
             raise ValueError('empty data array')
-        self.data = np.abs(self.data)
-        self.fscale = np.abs(self.fscale)
+        self.data = np.ma.abs(self.data)
         self.var = None
 
     def abs(self):
@@ -1946,9 +1952,9 @@ value : float
             norm = value / (self.fscale * self.data.max())
         else:
             raise ValueError('Error in type: only flux,sum,max permitted')
-        self.fscale *= norm
+        self.data *= norm
         if self.var is not None:
-            self.var *= norm * norm
+            self.var *= (norm * norm)
 
     def background(self, niter=3):
         """Computes the image background. Returns the background value
@@ -4315,15 +4321,11 @@ interp : 'no' | 'linear' | 'spline'
                                   'with different sizes')
                 else:
                     self.data = np.ma.array(signal.fftconvolve(data, \
-                                                               other_data, \
-                                                               mode='same'), \
+                                other_data* other.fscale, mode='same'), \
                                             mask=self.data.mask)
-                    self.fscale = self.fscale * other.fscale
                     if self.var is not None:
-                        self.var = signal.fftconvolve(self.var, other_data, \
-                                                      mode='same') \
-                                                      * other.fscale \
-                                                      * other.fscale
+                        self.var = signal.fftconvolve(self.var, \
+                                   other_data * other.fscale ,mode='same')
         except IOError as e:
             raise e
         except:
@@ -4483,14 +4485,12 @@ interp : 'no' | 'linear' | 'spline'
 
                 res = self.copy()
                 res.data = np.ma.array(signal.correlate2d(data, \
-                                                          other_data,\
-                                                           mode='same'),\
-                                        mask=res.data.mask)
-                res.fscale = self.fscale * other.fscale
+                           other_data * other.fscale, mode='same'),\
+                           mask=res.data.mask)
+                res.fscale = self.fscale
                 if res.var is not None:
-                    res.var = signal.correlate2d(res.var, other_data, \
-                                                 mode='same') \
-                                                 * other.fscale * other.fscale
+                    res.var = signal.correlate2d(res.var, other_data * other.fscale, \
+                                                 mode='same')
                 return res
         except:
             raise IOError('Operation forbidden')
