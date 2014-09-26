@@ -2562,15 +2562,14 @@ other : 1d-array or Spectrum
                                   'for spectra with different sizes')
                 else:
                     self.data = \
-                    np.ma.array(signal.fftconvolve(self.data, other.data, \
-                                                   mode='same'), \
+                    np.ma.array(signal.fftconvolve(self.data, \
+                                other.data * other.fscale, \
+                                mode='same'), \
                                 mask=self.data.mask)
                     if self.var is not None:
-                        self.var = signal.fftconvolve(self.var, other.data, \
-                                                      mode='same') \
-                                                      * other.fscale \
-                                                      * other.fscale
-                    self.fscale = self.fscale * other.fscale
+                        self.var = signal.fftconvolve(self.var, \
+                                    other.data* other.fscale, \
+                                    mode='same')
         except IOError as e:
             raise e
         except:
@@ -2620,15 +2619,14 @@ other : 1d-array or Spectrum
                                   'with different sizes')
                 else:
                     self.data = \
-                    np.ma.array(signal.correlate(self.data, other.data, \
-                                                 mode='same'), \
+                    np.ma.array(signal.correlate(self.data, \
+                                other.data * other.fscale, \
+                                mode='same'), \
                                 mask=self.data.mask)
                     if self.var is not None:
-                        self.var = signal.correlate(self.var, other.data, \
-                                                    mode='same') \
-                                                    * other.fscale \
-                                                    * other.fscale
-                    self.fscale = self.fscale * other.fscale
+                        self.var = signal.correlate(self.var, \
+                                    other.data * other.fscale, \
+                                    mode='same')
         except IOError as e:
             raise e
         except:
