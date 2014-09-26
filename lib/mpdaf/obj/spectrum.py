@@ -436,7 +436,7 @@ var : boolean
                            var=np.zeros(shape=self.shape), unit=self.unit)
         return spe
 
-    def write(self, filename, fscale=1e-20):
+    def write(self, filename, fscale=None):
         """ Saves the object in a FITS file.
 
             Parameters
@@ -444,13 +444,13 @@ var : boolean
             filename : string
                        The FITS filename.
             fscale   : float
-                       Flux scaling factor (1 e-20 by default).
+                       Flux scaling factor.
         """
 
         assert self.data is not None
         
         #update fscale
-        if self.fscale != fscale:
+        if fscale is not None and self.fscale != fscale:
             self.data *= np.double(self.fscale / fscale)
             if self.var is not None:
                 self.var *= np.double(self.fscale * self.fscale \
