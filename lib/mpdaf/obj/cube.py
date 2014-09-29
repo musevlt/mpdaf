@@ -195,16 +195,19 @@ class Cube(object):
                     self.wcs.naxis2 = self.shape[1]
                 #Wavelength coordinates
                 if wave is None:
-                    if 'CDELT3' in hdr:
-                        cdelt = hdr.get('CDELT3')
-                    elif 'CD3_3' in hdr:
-                        cdelt = hdr.get('CD3_3')
+                    if 'CRPIX3' not in hdr or 'CRVAL3' not in hdr:
+                        self.wave = None
                     else:
-                        cdelt = 1.0
-                    crpix = hdr.get('CRPIX3')
-                    crval = hdr.get('CRVAL3')
-                    cunit = hdr.get('CUNIT3','')
-                    self.wave = WaveCoord(crpix, cdelt, crval, cunit, \
+                        if 'CDELT3' in hdr:
+                            cdelt = hdr.get('CDELT3')
+                        elif 'CD3_3' in hdr:
+                            cdelt = hdr.get('CD3_3')
+                        else:
+                            cdelt = 1.0
+                        crpix = hdr.get('CRPIX3')
+                        crval = hdr.get('CRVAL3')
+                        cunit = hdr.get('CUNIT3','')
+                        self.wave = WaveCoord(crpix, cdelt, crval, cunit, \
                                           self.shape[0])
                 else:
                     self.wave = wave
@@ -250,16 +253,19 @@ class Cube(object):
                     self.wcs.naxis2 = self.shape[1]
                 #Wavelength coordinates
                 if wave is None:
-                    if 'CDELT3' in h:
-                        cdelt = h.get('CDELT3')
-                    elif 'CD3_3' in h:
-                        cdelt = h.get('CD3_3')
+                    if 'CRPIX3' not in h or 'CRVAL3' not in h:
+                        self.wave = None
                     else:
-                        cdelt = 1.0
-                    crpix = h.get('CRPIX3')
-                    crval = h.get('CRVAL3')
-                    cunit = h.get('CUNIT3','')
-                    self.wave = WaveCoord(crpix, cdelt, crval, cunit, \
+                        if 'CDELT3' in h:
+                            cdelt = h.get('CDELT3')
+                        elif 'CD3_3' in h:
+                            cdelt = h.get('CD3_3')
+                        else:
+                            cdelt = 1.0
+                        crpix = h.get('CRPIX3')
+                        crval = h.get('CRVAL3')
+                        cunit = h.get('CUNIT3','')
+                        self.wave = WaveCoord(crpix, cdelt, crval, cunit, \
                                           self.shape[0])
                 else:
                     self.wave = wave
@@ -3130,16 +3136,19 @@ class CubeDisk(object):
                     logger.warning("wcs not copied", extra=d)
                     self.wcs = None
                 #Wavelength coordinates
-                if 'CDELT3' in hdr:
-                    cdelt = hdr.get('CDELT3')
-                elif 'CD3_3' in hdr:
-                    cdelt = hdr.get('CD3_3')
+                if 'CRPIX3' not in hdr or 'CRVAL3' not in hdr:
+                    self.wave = None
                 else:
-                    cdelt = 1.0
-                crpix = hdr.get('CRPIX3')
-                crval = hdr.get('CRVAL3')
-                cunit = hdr.get('CUNIT3','')
-                self.wave = WaveCoord(crpix, cdelt, crval, cunit,self.shape[0])
+                    if 'CDELT3' in hdr:
+                        cdelt = hdr.get('CDELT3')
+                    elif 'CD3_3' in hdr:
+                        cdelt = hdr.get('CD3_3')
+                    else:
+                        cdelt = 1.0
+                    crpix = hdr.get('CRPIX3')
+                    crval = hdr.get('CRVAL3')
+                    cunit = hdr.get('CUNIT3','')
+                    self.wave = WaveCoord(crpix, cdelt, crval, cunit,self.shape[0])
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -3166,16 +3175,19 @@ class CubeDisk(object):
                     logger.warning("wcs not copied", extra=d)
                     self.wcs = None
                 #Wavelength coordinates
-                if 'CDELT3' in h:
-                    cdelt = h.get('CDELT3')
-                elif 'CD3_3' in h:
-                    cdelt = h.get('CD3_3')
+                if 'CRPIX3' not in h or 'CRVAL3' not in h:
+                    self.wave = None
                 else:
-                    cdelt = 1.0
-                crpix = h.get('CRPIX3')
-                crval = h.get('CRVAL3')
-                cunit = h.get('CUNIT3','')
-                self.wave = WaveCoord(crpix, cdelt, crval, \
+                    if 'CDELT3' in h:
+                        cdelt = h.get('CDELT3')
+                    elif 'CD3_3' in h:
+                        cdelt = h.get('CD3_3')
+                    else:
+                        cdelt = 1.0
+                    crpix = h.get('CRPIX3')
+                    crval = h.get('CRVAL3')
+                    cunit = h.get('CUNIT3','')
+                    self.wave = WaveCoord(crpix, cdelt, crval, \
                                       cunit, self.shape[0])
                 self.var = -1
                 if not notnoise:

@@ -262,16 +262,19 @@ fscale   : float
                 self.var = None
                 self.fscale = hdr.get('FSCALE', 1.0)
                 if wave is None:
-                    if 'CDELT1' in hdr:
-                        cdelt = hdr.get('CDELT1')
-                    elif 'CD1_1' in hdr:
-                        cdelt = hdr.get('CD1_1')
+                    if 'CRPIX1' not in hdr or 'CRVAL1' not in hdr:
+                        self.wave = None
                     else:
-                        cdelt = 1.0
-                    crpix = hdr.get('CRPIX1')
-                    crval = hdr.get('CRVAL1')
-                    cunit = hdr.get('CUNIT1', '')
-                    self.wave = WaveCoord(crpix, cdelt, crval, \
+                        if 'CDELT1' in hdr:
+                            cdelt = hdr.get('CDELT1')
+                        elif 'CD1_1' in hdr:
+                            cdelt = hdr.get('CD1_1')
+                        else:
+                            cdelt = 1.0
+                        crpix = hdr.get('CRPIX1')
+                        crval = hdr.get('CRVAL1')
+                        cunit = hdr.get('CUNIT1', '')
+                        self.wave = WaveCoord(crpix, cdelt, crval, \
                                           cunit, self.shape)
                 else:
                     self.wave = wave
@@ -303,16 +306,19 @@ fscale   : float
                 self.data = d
                 self.fscale = h.get('FSCALE', 1.0)
                 if wave is None:
-                    if 'CDELT1' in h:
-                        cdelt = h.get('CDELT1')
-                    elif 'CD1_1' in h:
-                        cdelt = h.get('CD1_1')
+                    if 'CRPIX1' not in h or 'CRVAL1' not in h:
+                        self.wave = None
                     else:
-                        cdelt = 1.0
-                    crpix = h.get('CRPIX1')
-                    crval = h.get('CRVAL1')
-                    cunit = h.get('CUNIT1', '')
-                    self.wave = WaveCoord(crpix, cdelt, crval, \
+                        if 'CDELT1' in h:
+                            cdelt = h.get('CDELT1')
+                        elif 'CD1_1' in h:
+                            cdelt = h.get('CD1_1')
+                        else:
+                            cdelt = 1.0
+                        crpix = h.get('CRPIX1')
+                        crval = h.get('CRVAL1')
+                        cunit = h.get('CUNIT1', '')
+                        self.wave = WaveCoord(crpix, cdelt, crval, \
                                           cunit, self.shape)
                 else:
                     self.wave = wave
