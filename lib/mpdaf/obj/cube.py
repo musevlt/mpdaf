@@ -2963,6 +2963,25 @@ out : :class:`mpdaf.obj.Cube`
 
         return result
     
+    def image(self, wave, is_sum=False, verbose=True):
+        """ Extracts an image from the datacube.
+        
+Parameters
+----------
+wave : (float, float)
+       (lbda1,lbda2) interval of wavelength.
+is_sum : boolean
+         if True the sum is computes, otherwise this is the average.
+        """
+        l1,l2 = wave
+        k1,k2 = self.wave.pixel(wave, nearest=True).astype(int)
+        if verbose:
+            print 'Computing image for lbda %g-%g [%d-%d]'%(l1,l2,k1,k2)
+        if is_sum:
+            ima = self[k1:k2+1,:,:].sum(axis=0)
+        else:
+            ima = self[k1:k2+1,:,:].mean(axis=0)
+        return ima
     
     def aperture(self, center, radius, verbose=True):
         """ Extracts a spectra from an aperture of fixed radius.
