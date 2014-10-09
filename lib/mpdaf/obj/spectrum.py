@@ -488,8 +488,8 @@ var : boolean
         hdulist = [prihdu]
 
         # create spectrum DATA extension
-        tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data \
-                                * np.double(self.fscale / fscale) )
+        tbhdu = pyfits.ImageHDU(name='DATA', data=(self.data.data \
+                                * np.double(self.fscale / fscale)).astype(np.float32) )
         for card in self.data_header.cards:
             try:
                 if tbhdu.header.keys().count(card.keyword) == 0:
@@ -518,9 +518,9 @@ var : boolean
 
         # create spectrum STAT extension
         if self.var is not None:
-            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var \
+            nbhdu = pyfits.ImageHDU(name='STAT', data=(self.var \
                                     * np.double(self.fscale * self.fscale \
-                                   / fscale / fscale))
+                                   / fscale / fscale)).astype(np.float32))
             nbhdu.header['CRVAL1'] = \
             (self.wave.crval, 'Start in world coordinate')
             nbhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
@@ -781,7 +781,7 @@ other : number or Spectrum or Cube object.
         
 Returns
 -------
-out : pectrum or Cube object.
+out : Spectrum or Cube object.
         """
         if self.data is None:
             raise ValueError('empty data array')

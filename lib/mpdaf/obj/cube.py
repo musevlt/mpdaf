@@ -491,8 +491,9 @@ class Cube(object):
         wcs_cards = self.wcs.to_header().cards
 
         # create spectrum DATA extension
-        tbhdu = pyfits.ImageHDU(name='DATA', data=self.data.data \
-                                * np.double(self.fscale / fscale))
+        tbhdu = pyfits.ImageHDU(name='DATA', data=(self.data.data \
+                                * np.double(self.fscale / fscale))\
+                                .astype(np.float32))
         for card in self.data_header.cards:
             try:
                 if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' and \
@@ -556,9 +557,9 @@ class Cube(object):
 
         # create spectrum STAT extension
         if self.var is not None:
-            nbhdu = pyfits.ImageHDU(name='STAT', data=self.var \
+            nbhdu = pyfits.ImageHDU(name='STAT', data=(self.var \
                                     * np.double(self.fscale * self.fscale \
-                                   / fscale / fscale))
+                                   / fscale / fscale)).astype(np.float32))
             # add world coordinate
 #            for card in wcs_cards:
 #                nbhdu.header.update(card.keyword, card.value, card.comment)
@@ -2963,7 +2964,7 @@ out : :class:`mpdaf.obj.Cube`
 
         return result
     
-    def image(self, wave, is_sum=False, verbose=True):
+    def get_image(self, wave, is_sum=False, verbose=True):
         """ Extracts an image from the datacube.
         
 Parameters
