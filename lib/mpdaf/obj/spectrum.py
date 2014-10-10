@@ -354,11 +354,11 @@ fscale   : float
                                               'not equal to DATA')
                         self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
-                try:
-                    mask = np.ma.make_mask(f['DQ'].data)
-                    self.data = np.ma.array(self.data, mask=mask)
-                except:
-                    pass
+                #try:
+                #    mask = np.ma.make_mask(f['DQ'].data)
+                #    self.data = np.ma.array(self.data, mask=mask)
+                #except:
+                #    pass
             f.close()
         else:
             # possible data unit type
@@ -531,16 +531,16 @@ var : boolean
             hdulist.append(nbhdu)
 
         # create spectrum DQ extension
-        if np.ma.count_masked(self.data) != 0:
-            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
-            dqhdu.header['CRVAL1'] = \
-            (self.wave.crval, 'Start in world coordinate')
-            dqhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
-            dqhdu.header['CDELT1'] = \
-            (self.wave.cdelt, 'Step in world coordinate')
-            dqhdu.header['CUNIT1'] = \
-            (self.wave.cunit, 'world coordinate units')
-            hdulist.append(dqhdu)
+        #if np.ma.count_masked(self.data) != 0:
+        #    dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
+        #    dqhdu.header['CRVAL1'] = \
+        #    (self.wave.crval, 'Start in world coordinate')
+        #    dqhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
+        #    dqhdu.header['CDELT1'] = \
+        #    (self.wave.cdelt, 'Step in world coordinate')
+        #    dqhdu.header['CUNIT1'] = \
+        #    (self.wave.cunit, 'world coordinate units')
+        #    hdulist.append(dqhdu)
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
