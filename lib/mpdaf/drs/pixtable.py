@@ -217,6 +217,7 @@ class PixTable(object):
                 raise IOError('file %s not found' % filename)
         else:
             self.primary_header = pyfits.Header()
+        del hdulist
 
     def __del__(self):
         """Removes temporary files used for memory mapping.
@@ -349,7 +350,7 @@ class PixTable(object):
         hdulist.close()
         return ypos
     
-    def get_xpos_sky(self, ksel=None):
+    def get_xpos_sky(self, ksel=None, xpos=None, ypos=None):
         """Returns the x absolute position on the sky in degrees/pixel.
 
         Parameters
@@ -361,8 +362,10 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        xpos = self.get_xpos(ksel)
-        ypos = self.get_ypos(ksel)
+        if xpos is None:
+            xpos = self.get_xpos(ksel)
+        if ypos is None:
+            ypos = self.get_ypos(ksel)
         try:
             spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
         except:
@@ -385,7 +388,7 @@ class PixTable(object):
                 xpos_sky = self.xc + xpos       
         return xpos_sky
     
-    def get_ypos_sky(self, ksel=None):
+    def get_ypos_sky(self, ksel=None, xpos=None, ypos=None):
         """Returns the y absolute position on the sky in degrees/pixel.
 
         Parameters
@@ -402,12 +405,19 @@ class PixTable(object):
         except:
             spheric = False
         if spheric: #spheric coordinates
-            phi = self.get_xpos(ksel)
-            theta = self.get_ypos(ksel) + np.pi/2
+            if xpos is None:
+                phi = self.get_xpos(ksel)
+            else:
+                phi = xpos
+            if ypos is None:
+                theta = self.get_ypos(ksel) + np.pi/2
+            else:
+                theta = ypos + np.pi/2
             dp = self.yc * np.pi / 180
             ypos_sky = np.arcsin(np.sin(theta) * np.sin(dp) - np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
         else:
-            ypos = self.get_ypos(ksel)
+            if ypos is None:
+             ypos = self.get_ypos(ksel)
             if self.wcs == 'rad':
                 ypos_sky = self.yc + ypos * 180 / np.pi
             else:
@@ -594,6 +604,27 @@ class PixTable(object):
         except:
             exp = None
         return exp
+    
+    def get(self):
+        hdulist = pyfits.open(self.filename, memmap=1)
+        if self.ima:
+            xpos = hdulist['xpos'].data[:, 0]
+            ypos = hdulist['ypos'].data[:, 0]
+            lbda = hdulist['lambda'].data[:, 0]
+            data = hdulist['data'].data[:, 0]
+            stat = hdulist['stat'].data[:, 0]
+            dq = hdulist['dq'].data[:, 0]
+            origin = hdulist['origin'].data[:, 0]
+        else:
+            xpos = hdulist[1].data.field('xpos')
+            ypos = hdulist[1].data.field('ypos')
+            lbda = hdulist[1].data.field('lambda')
+            data = hdulist[1].data.field('data')
+            stat = hdulist[1].data.field('stat')
+            dq = hdulist[1].data.field('dq')
+            origin = hdulist[1].data.field('origin')
+        hdulist.close()
+        return xpos, ypos, lbda, data, stat, dq, origin
 
     def extract(self, filename=None, sky=None, lbda=None, ifu=None, \
                 sl=None, xpix=None, ypix=None, exp=None):
@@ -912,7 +943,7 @@ class PixTable(object):
         -------
         out : integer
         """
-        return (origin >> 6) & 0x1f
+        return ((origin >> 6) & 0x1f).astype(np.uint8)
 
     def origin2slice(self, origin):
         """Converts the origin value and returns the slice number.
@@ -926,7 +957,7 @@ class PixTable(object):
         -------
         out : integer
         """
-        return origin & 0x3f
+        return (origin & 0x3f).astype(np.uint8)
 
     def origin2ypix(self, origin):
         """Converts the origin value and returns the y coordinates.
@@ -940,7 +971,7 @@ class PixTable(object):
         -------
         out : float
         """
-        return ((origin >> 11) & 0x1fff) - 1
+        return (((origin >> 11) & 0x1fff) - 1).astype(np.uint16)
 
     def origin2xoffset(self, origin):
         """Converts the origin value and returns the x coordinates offset.
@@ -984,7 +1015,7 @@ class PixTable(object):
         -------
         out : float
         """
-        return self.origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1
+        return (self.origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1).astype(np.uint16)
 
     def origin2coords(self, origin):
         """Converts the origin value and returns (ifu, slice, ypix, xpix).
