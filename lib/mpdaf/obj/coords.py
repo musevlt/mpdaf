@@ -12,10 +12,15 @@ except:
 
 def deg2sexa(x):
     """Transforms the values of n coordinates from degrees to sexagesimal.
+    
+Parameters
+----------
+x : float array
+    An (n,2) array of dec- and ra- coordinates in degrees.
 
-    :param x: An (n,2) array of dec- and ra- coordinates in degrees.
-    :type x: float array
-    :rtype: (n,2) array of dec- and ra- coordinates in sexagesimal (string)
+Returns
+-------
+out : (n,2) array of dec- and ra- coordinates in sexagesimal (string)
     """
     x = np.array(x)
     if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
@@ -36,9 +41,14 @@ def deg2sexa(x):
 def sexa2deg(x):
     """Transforms the values of n coordinates from sexagesimal to degrees.
 
-    :param x: An (n,2) array of dec- and ra- coordinates in sexagesimal.
-    :type x: string array
-    :rtype: (n,2) array of dec- and ra- coordinates in degrees.
+Parameters
+----------
+x : string array
+    An (n,2) array of dec- and ra- coordinates in sexagesimal.
+
+Returns
+-------
+out : (n,2) array of dec- and ra- coordinates in degrees.
     """
     x = np.array(x)
     if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
@@ -60,9 +70,14 @@ def deg2hms(x):
     """Transforms a degree value to a string representation
     of the coordinate as hours:minutes:seconds.
 
-    :param x: degree value.
-    :type x: float
-    :rtype: string
+Parameters
+----------
+x : float
+    degree value.
+    
+Returns
+-------
+out : string
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -74,9 +89,14 @@ def hms2deg(x):
     """Transforms a string representation of the coordinate
     as hours:minutes:seconds to a float degree value.
 
-    :param x: hours:minutes:seconds
-    :type x: string
-    :rtype: float
+Parameters
+----------
+x : string
+    hours:minutes:seconds
+    
+Returns
+-------
+out : float
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='hour')
@@ -88,9 +108,14 @@ def deg2dms(x):
     """Transforms a degree value to a string representation
     of the coordinate as degrees:arcminutes:arcseconds.
 
-    :param x: degree value.
-    :type x: float
-    :rtype: string
+Parameters
+----------
+x : float
+    degree value.
+    
+Returns
+-------
+out : string
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -102,9 +127,14 @@ def dms2deg(x):
     """Transforms a string representation of the coordinate
     as degrees:arcminutes:arcseconds to a float degree value.
 
-    :param x: degrees:arcminutes:arcseconds
-    :type x: string
-    :rtype: float
+Parameters
+----------
+x : string
+    degrees:arcminutes:arcseconds
+    
+Returns
+-------
+out : float
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -115,9 +145,14 @@ def dms2deg(x):
 def deg2rad(deg):
     """Transforms a degree value to a radian value.
 
-    :param deg: degree value.
-    :type deg: float
-    :rtype: float
+Parameters
+----------
+deg : float
+      degree value.
+    
+Returns
+-------
+out : float
     """
     return (deg * np.pi / 180.)
 
@@ -125,9 +160,14 @@ def deg2rad(deg):
 def rad2deg(rad):
     """Transforms a radian value to a degree value.
 
-    :param rad: radian value.
-    :type rad: float
-    :rtype: float
+Parameters
+----------
+rad : float
+      radian value.
+      
+Returns
+-------
+out : float
     """
     return (rad * 180. / np.pi) % 180
 
@@ -137,71 +177,73 @@ class WCS(object):
     (pywcs package is used).
     Python notation is used (dec,ra).
 
-    :param hdr: A FITS header.
-    If hdr is not equal to None, WCS object is created from data header
-    and other parameters are not used.
-    :type hdr: pyfits.CardList
-    :param crpix: Reference pixel coordinates.
+Parameters
+----------
+hdr   : pyfits.CardList
+        A FITS header.
+        If hdr is not equal to None, WCS object is created from data header
+        and other parameters are not used.
+crpix : float or (float,float)
+        Reference pixel coordinates.
 
-            If crpix is None and shape is None crpix = 1.0 and
-            the reference point is the first pixel of the image.
+        If crpix is None and shape is None crpix = 1.0 and
+        the reference point is the first pixel of the image.
 
-            If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
-            and the reference point is the center of the image.
-    :type crpix: float or (float,float)
-    :param crval: Coordinates of the reference pixel (ref_dec,ref_ra).
-    (0.0,0.0) by default.
-    :type crval: float or (float,float)
-    :param cdelt: Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
-    :type cdelt: float or (float,float)
-    :param deg: If True, world coordinates are in decimal degrees
-    (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
-    If False (by default), world coordinates are linear
-    (CTYPE1=CTYPE2='LINEAR').
-    :type deg: bool
-    :param rot: Rotation angle in degree.
-    :type rot: float
-    :param shape: Dimensions. No mandatory.
-    :type shape: integer or (integer,integer)
+        If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
+        and the reference point is the center of the image.
+crval : float or (float,float)
+        Coordinates of the reference pixel (ref_dec,ref_ra).
+        (0.0,0.0) by default.
+cdelt : float or (float,float)
+        Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
+deg   : bool
+        If True, world coordinates are in decimal degrees
+        (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
+        If False (by default), world coordinates are linear
+        (CTYPE1=CTYPE2='LINEAR').
+rot   : float
+        Rotation angle in degree.
+shape : integer or (integer,integer)
+        Dimensions. No mandatory.
 
-    Attributes
-    ----------
-
-    wcs (pywcs.WCS) : World coordinates.
+Attributes
+----------
+wcs : pywcs.WCS
+      World coordinates.
 
     """
     def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0), \
                  cdelt=(1.0, 1.0), deg=False, rot=0, shape=None):
         """Creates a WCS object.
 
-        :param hdr: A FITS header.
+Parameters
+----------
+hdr   : pyfits.CardList
+        A FITS header.
         If hdr is not equal to None, WCS object is created from data header
         and other parameters are not used.
-        :type hdr: pyfits.CardList
-        :param crpix: Reference pixel coordinates.
+crpix : float or (float,float)
+        Reference pixel coordinates.
 
-            If crpix is None and shape is None crpix = 1.0
-            and the reference point is the first pixel of the image.
+        If crpix is None and shape is None crpix = 1.0 and
+        the reference point is the first pixel of the image.
 
-            If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
-            and the reference point is the center of the image.
-        :type crpix: float or (float,float)
-        :param crval: Coordinates of the reference pixel (ref_dec,ref_ra).
-        (1.0,1.0) by default.
-        :type crval: float or (float,float)
-        :param cdelt: Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
-        :type cdelt: float or (float,float)
-        :param deg: If True, world coordinates are in decimal degrees
+        If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
+        and the reference point is the center of the image.
+crval : float or (float,float)
+        Coordinates of the reference pixel (ref_dec,ref_ra).
+        (0.0,0.0) by default.
+cdelt : float or (float,float)
+        Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
+deg   : bool
+        If True, world coordinates are in decimal degrees
         (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
-
-                    If False (by default), world coordinates are linear
-                    (CTYPE1=CTYPE2='LINEAR').
-        :type deg: bool
-        :param rot: Rotation angle in degree.
-        :type rot: float
-        :param shape: Dimensions. No mandatory.
-        :type shape: integer or (integer,integer)
-
+        If False (by default), world coordinates are linear
+        (CTYPE1=CTYPE2='LINEAR').
+rot   : float
+        Rotation angle in degree.
+shape : integer or (integer,integer)
+        Dimensions. No mandatory.
         """
         if hdr != None:
             self.wcs = pywcs.WCS(hdr, naxis=2)  # WCS object from data header
@@ -316,12 +358,21 @@ class WCS(object):
         """
         return self.wcs.to_header()
 
-    def sky2pix(self, x):
+    def sky2pix(self, x, nearest=False):
         """Converts world coordinates (dec,ra) to pixel coordinates.
+If nearest=True; returns the nearest integer pixel.
 
-        :param x: An (n,2) array of dec- and ra- world coordinates.
-        :type x: array
-        :rtype: (n,2) array of pixel coordinates.
+Parameters
+----------
+x       : array
+          An (n,2) array of dec- and ra- world coordinates.
+nearest : bool
+          If nearest is True returns the nearest integer pixel
+          in place of the decimal pixel.
+
+Returns
+-------
+out : (n,2) array of pixel coordinates.
         """
         x = np.array(x, np.float_)
         if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
@@ -337,16 +388,25 @@ class WCS(object):
         except:
             pixcrd = self.wcs.wcs_sky2pix(pixsky, 0)
         res = np.array(pixcrd)
-        res[:, 0] = pixcrd[:, 1]
-        res[:, 1] = pixcrd[:, 0]
+        if nearest:
+            res[:, 0] = (pixcrd[:, 1] + 0.5).astype(int)
+            res[:, 1] = (pixcrd[:, 0] + 0.5).astype(int)
+        else:
+            res[:, 0] = pixcrd[:, 1]
+            res[:, 1] = pixcrd[:, 0]
         return res
 
     def pix2sky(self, x):
         """Converts pixel coordinates to world coordinates.
 
-        :param x: An (n,2) array of pixel coordinates (python notation).
-        :type x: array
-        :rtype: (n,2) array of dec- and ra- world coordinates.
+Parameters
+----------
+x : array
+    An (n,2) array of pixel coordinates (python notation).
+        
+Returns
+-------
+out : (n,2) array of dec- and ra- world coordinates.
         """
         x = np.array(x, np.float_)
         if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
@@ -519,12 +579,12 @@ class WCS(object):
                 raise IOError('No standard WCS')
 
     def set_naxis1(self, n):
-        """NAXIS1 setter (first dimention of an image).
+        """NAXIS1 setter (first dimension of an image).
         """
         self.naxis1 = n
 
     def set_naxis2(self, n):
-        """NAXIS2 setter (second dimention of an image).
+        """NAXIS2 setter (second dimension of an image).
         """
         self.naxis2 = n
 
@@ -553,12 +613,12 @@ class WCS(object):
         self.wcs.wcs.set()
         
     def get_naxis1(self):
-        """NAXIS1 getter (first dimention of an image).
+        """NAXIS1 getter (first dimension of an image).
         """
         return self.naxis1
 
     def get_naxis2(self):
-        """NAXIS2 getter (second dimention of an image).
+        """NAXIS2 getter (second dimension of an image).
         """
         return self.naxis2
 
@@ -585,8 +645,10 @@ class WCS(object):
     def rotate(self, theta):
         """Rotates WCS coordinates to new orientation given by theta.
 
-        :param theta: Rotation in degree.
-        :type theta: float
+Parameters
+----------
+theta : float
+        Rotation in degree.
         """
         #rotation matrix of -theta
         _theta = deg2rad(theta)
@@ -608,12 +670,17 @@ class WCS(object):
     def rebin(self, step, start):
         """Rebins to a new coordinate system.
 
-        :param start: New positions (dec,ra) for the pixel (0,0).
+Parameters
+----------
+start : float or (float, float)
+        New positions (dec,ra) for the pixel (0,0).
         If None, old position is used.
-        :type start: float or (float, float)
-        :param step: New step (ddec,dra).
-        :type step: float or (float, float)
-        :rtype: WCS
+step  : float or (float, float)
+        New step (ddec,dra).
+
+Returns
+-------
+out : WCS
         """
         if start == None:
             xc = 0
@@ -643,9 +710,14 @@ class WCS(object):
     def rebin_factor(self, factor):
         """Rebins to a new coordinate system.
 
-        :param factor: Factor in y and x.
-        :type factor: (integer,integer)
-        :rtype: WCS
+Parameters
+----------
+factor : (integer,integer)
+        Factor in y and x.
+        
+Returns
+-------
+out : WCS
         """
         res = self.copy()
         factor = np.array(factor)
@@ -696,51 +768,56 @@ class WCS(object):
 class WaveCoord(object):
     """WaveCoord class manages world coordinates in spectral direction.
 
-    :param crpix: Reference pixel coordinates. 1.0 by default.
+Parameters
+----------
+crpix : float
+        Reference pixel coordinates. 1.0 by default.
 
-    Note that for crpix definition, the first pixel in the spectrum
-    has pixel coordinates.
-    :type crpix: float
-    :param cdelt: Step in wavelength (1.0 by default).
-    :type cdelt: float
-    :param crval: Coordinates of the reference pixel (0.0 by default).
-    :type crval: float
-    :param cunit: Wavelength unit (Angstrom by default).
-    :type cunit: string
-    :param shape: Size of spectrum (no mandatory).
-    :type shape: integer or None
+        Note that for crpix definition, the first pixel in the spectrum
+        has pixel coordinates.
+cdelt : float
+        Step in wavelength (1.0 by default).
+crval : float
+        Coordinates of the reference pixel (0.0 by default).
+cunit : string
+        Wavelength unit (Angstrom by default).
+shape : integer or None
+        Size of spectrum (no mandatory).
 
-    Attributes
-    ----------
-
-    dim (integer) : Size of spectrum.
-
-    crpix (float) : Reference pixel coordinates. Note that for crpix
-    definition, the first pixel in the spectrum has pixel coordinates 1.0.
-
-    crval (float) : Coordinates of the reference pixel.
-
-    cdelt (float) : Step in wavelength.
-
-    cunit (string) : Wavelength unit.
+Attributes
+----------
+dim   : integer
+        Size of spectrum.
+crpix : float
+        Reference pixel coordinates. Note that for crpix
+        definition, the first pixel in the spectrum has pixel coordinates 1.0.
+crval : float
+        Coordinates of the reference pixel.
+cdelt : float
+        Step in wavelength.
+cunit : string
+        Wavelength unit.
     """
 
     def __init__(self, crpix=1.0, cdelt=1.0, crval=1.0, \
                  cunit='Angstrom', shape=None):
         """Creates a WaveCoord object
 
-        :param crpix: Reference pixel coordinates.
-        1.0 by default. Note that for crpix definition,
-        the first pixel in the spectrum has pixel coordinates.
-        :type crpix: float
-        :param cdelt: Step in wavelength (1.0 by default).
-        :type cdelt: float
-        :param crval: Coordinates of the reference pixel (1.0 by default).
-        :type crval: float
-        :param cunit: Wavelength unit (Angstrom by default).
-        :type cunit: string
-        :param shape: Size of spectrum (no mandatory).
-        :type shape: integer or None
+Parameters
+----------
+crpix : float
+        Reference pixel coordinates. 1.0 by default.
+
+        Note that for crpix definition, the first pixel in the spectrum
+        has pixel coordinates.
+cdelt : float
+        Step in wavelength (1.0 by default).
+crval : float
+        Coordinates of the reference pixel (0.0 by default).
+cunit : string
+        Wavelength unit (Angstrom by default).
+shape : integer or None
+        Size of spectrum (no mandatory).
         """
         self.shape = shape
         self.crpix = crpix
@@ -788,9 +865,14 @@ class WaveCoord(object):
         """Returns the coordinate corresponding to pixel. If pixel is None
         (default value), the full coordinate array is returned.
 
-        :param pixel: pixel value.
-        :type pixel: integer or None.
-        :rtype: float or array of float
+Parameters
+----------
+pixel : integer or None.
+        pixel value.
+        
+Returns
+-------
+out : float or array of float
         """
         if pixel is None:
             if self.shape is None:
@@ -805,14 +887,19 @@ class WaveCoord(object):
 
     def pixel(self, lbda, nearest=False):
         """ Returns the decimal pixel corresponding to the wavelength lbda.
-        If nearest=True; returns the nearest integer pixel.
+If nearest=True; returns the nearest integer pixel.
 
-        :param lbda: wavelength value.
-        :type lbda: float
-        :param nearest: If nearest is True returns the nearest integer pixel
-        in place of the decimal pixel.
-        :type nearest: bool
-        :rtype: float or integer
+Parameters
+----------
+lbda    : float
+          wavelength value.
+nearest : bool
+          If nearest is True returns the nearest integer pixel
+          in place of the decimal pixel.
+
+Returns
+-------
+out : float or integer
         """
         lbda = np.array(lbda)
         pix = (lbda - self.crval) / self.cdelt + self.crpix - 1
@@ -854,11 +941,16 @@ class WaveCoord(object):
     def rebin(self, step, start):
         """Rebins to a new coordinate system.
 
-        :param start: New wavelength for the pixel 0.
-        :type start: float
-        :param step: New step.
-        :type step: float
-        :rtype: WaveCoord
+Parameters
+----------
+start : float
+        New wavelength for the pixel 0.
+step  : float
+        New step.
+        
+Returns
+-------
+out : WaveCoord
         """
         # vector of pixel edges
         pix = np.arange(self.shape, dtype=np.float)
