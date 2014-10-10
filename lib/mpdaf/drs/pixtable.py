@@ -63,23 +63,23 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
         hdulist = [prihdu]
         nrows = xpos.shape[0]
         hdulist.append(pyfits.ImageHDU(name='xpos', \
-                                       data=xpos.reshape((nrows, 1))))
+                                       data=np.float32(xpos.reshape((nrows, 1)))))
         hdulist.append(pyfits.ImageHDU(name='ypos', \
-                                       data=ypos.reshape((nrows, 1))))
+                                       data=np.float32(ypos.reshape((nrows, 1)))))
         hdulist.append(pyfits.ImageHDU(name='lambda', \
-                                       data=lbda.reshape((nrows, 1))))
+                                       data=np.float32(lbda.reshape((nrows, 1)))))
         hdulist.append(pyfits.ImageHDU(name='data', \
-                                       data=data.reshape((nrows, 1))))
+                                       data=np.float32(data.reshape((nrows, 1)))))
         hdulist.append(pyfits.ImageHDU(name='dq', \
                                        data=np.int32(dq.reshape((nrows, 1)))))
         hdulist.append(pyfits.ImageHDU(name='stat', \
-                                       data=stat.reshape((nrows, 1))))
+                                       data=np.float32(stat.reshape((nrows, 1)))))
         hdulist.append(pyfits.ImageHDU(name='origin', \
                                        data=np.int32(origin.reshape((nrows, \
                                                                      1)))))
         if weight is not None:
             hdulist.append(pyfits.ImageHDU(name='weight', \
-                                           data=weight.reshape((nrows, 1))))
+                                           data=np.float32(weight.reshape((nrows, 1)))))
         hdu = pyfits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = wcs
         hdu[2].header['BUNIT'] = wcs
@@ -92,20 +92,20 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
     else:
         cols = []
         cols.append(pyfits.Column(name='xpos', format='1E', unit=wcs, \
-                                      array=xpos))
+                                      array=np.float32(xpos)))
         cols.append(pyfits.Column(name='ypos', format='1E', unit=wcs, \
-                                      array=ypos))
+                                      array=np.float32(ypos)))
         cols.append(pyfits.Column(name='lambda', format='1E', \
                                   unit='Angstrom', array=lbda))
         cols.append(pyfits.Column(name='data', format='1E', unit='count', \
-                                  array=data))
-        cols.append(pyfits.Column(name='dq', format='1J', array=dq))
+                                  array=np.float32(data)))
+        cols.append(pyfits.Column(name='dq', format='1J', array=np.int32(dq)))
         cols.append(pyfits.Column(name='stat', format='1E', unit='count**2', \
-                                  array=stat))
-        cols.append(pyfits.Column(name='origin', format='1J', array=origin))
+                                  array=np.float32(stat)))
+        cols.append(pyfits.Column(name='origin', format='1J', array=np.int32(origin)))
         if weight is not None:
             cols.append(pyfits.Column(name='weight', format='1E', \
-                                      unit='count', array=weight))
+                                      unit='count', array=np.float32(weight)))
         coltab = pyfits.ColDefs(cols)
         #tbhdu = pyfits.new_table(coltab)
         tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
