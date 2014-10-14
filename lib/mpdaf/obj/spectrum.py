@@ -2242,41 +2242,44 @@ out : float
                 raise ValueError('Error in fwhm estimation')
 
     def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None, \
-                  cont=None, peak=False, spline=False, weight=True, plot=False):
+                  cont=None, peak=False, spline=False, weight=True, \
+                  plot=False, plot_factor=10):
         """Performs Gaussian fit on spectrum.
 Uses `scipy.optimize.leastsq <http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html>`_ to minimize the sum of squares.
 
 Parameters
 ----------
-lmin   : float or (float,float)
-         Minimum wavelength value or wavelength range
-         used to compute the gaussian left value.
-lmax   : float or (float,float)
-         Maximum wavelength or wavelength range
-         used to compute the gaussian right value.
-lpeak  : float
-         Input gaussian center, if None it is estimated
-         with the wavelength corresponding to the maximum value
-         in [max(lmin), min(lmax)]
-flux   : float
-         Integrated gaussian flux
-         or gaussian peak value if peak is True.
-fwhm   : float
-         Input gaussian fwhm, if None it is estimated.
-peak   : boolean
-         If true, flux contains the gaussian peak value .
-cont   : float
-         Continuum value, if None it is estimated
-         by the line through points (max(lmin),mean(data[lmin]))
-         and (min(lmax),mean(data[lmax])).
-spline : boolean
-         Linear/spline interpolation
-         to interpolate masked values.
-weight : boolean
-         If weight is True, the weight
-         is computed as the inverse of variance.
-plot   : boolean
-         If True, the Gaussian is plotted.
+lmin        : float or (float,float)
+              Minimum wavelength value or wavelength range
+              used to compute the gaussian left value.
+lmax        : float or (float,float)
+              Maximum wavelength or wavelength range
+              used to compute the gaussian right value.
+lpeak       : float
+              Input gaussian center, if None it is estimated
+              with the wavelength corresponding to the maximum value
+              in [max(lmin), min(lmax)]
+flux        : float
+              Integrated gaussian flux
+              or gaussian peak value if peak is True.
+fwhm        : float
+              Input gaussian fwhm, if None it is estimated.
+peak        : boolean
+              If true, flux contains the gaussian peak value .
+cont        : float
+              Continuum value, if None it is estimated
+              by the line through points (max(lmin),mean(data[lmin]))
+              and (min(lmax),mean(data[lmax])).
+spline      : boolean
+              Linear/spline interpolation
+              to interpolate masked values.
+weight      : boolean
+              If weight is True, the weight
+              is computed as the inverse of variance.
+plot        : boolean
+              If True, the Gaussian is plotted.
+plot_factor : double
+              oversampling factor for the overplotted fit
 
 Returns
 -------
@@ -2380,7 +2383,7 @@ out : :class:`mpdaf.obj.Gauss1D`
 
         # plot
         if plot:
-            xxx = np.arange(l[0], l[-1], l[1] - l[0])
+            xxx = np.arange(l[0], l[-1], (l[1] - l[0])/plot_factor)
             ccc = gaussfit(v, xxx) * self.fscale
             plt.plot(xxx, ccc, 'r--')
 
