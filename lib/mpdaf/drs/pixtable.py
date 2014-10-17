@@ -350,18 +350,7 @@ class PixTable(object):
         hdulist.close()
         return ypos
     
-    def get_xpos_sky(self, ksel=None, xpos=None, ypos=None):
-        """Returns the x absolute position on the sky in degrees/pixel.
-
-        Parameters
-        ----------
-        ksel : output of np.where
-               Elements depending on a condition.
-               
-        Returns
-        -------
-        out : numpy.array
-        """
+    def _get_xpos_sky(self, ksel=None, xpos=None, ypos=None):
         if xpos is None:
             xpos = self.get_xpos(ksel)
         if ypos is None:
@@ -388,18 +377,63 @@ class PixTable(object):
                 xpos_sky = self.xc + xpos       
         return xpos_sky
     
-    def get_ypos_sky(self, ksel=None, xpos=None, ypos=None):
-        """Returns the y absolute position on the sky in degrees/pixel.
+    def _get_xpos_sky_numexpr(self, ksel=None, xpos=None, ypos=None):
+        import numexpr
+        if xpos is None:
+            xpos = self.get_xpos(ksel)
+        if ypos is None:
+            ypos = self.get_ypos(ksel)
+        try:
+            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+        except:
+            spheric = False
+        if spheric: #spheric coordinates
+            phi = xpos
+            pi = np.pi      
+            theta = numexpr.evaluate("ypos + pi/2")
+            dp = self.yc * np.pi / 180
+            ra = numexpr.evaluate("arctan2(cos(theta) * sin(phi), sin(theta) * cos(dp) + cos(theta) * sin(dp) * cos(phi)) * 180 / pi")
+            xc = self.xc
+            xpos_sky = numexpr.evaluate("xc + ra")
+        else:
+            if self.wcs == 'deg':
+                dp = self.yc * np.pi / 180
+                xc = self.xc
+                xpos_sky = numexpr.evaluate("xc + xpos / cos(dp)")
+            elif self.wcs == 'rad':
+                dp = self.yc * np.pi / 180
+                xc = self.xc
+                pi = np.pi
+                xpos_sky = numexpr.evaluate("xc + xpos * 180 / pi / cos(dp)")
+            else:
+                xc = self.xc
+                xpos_sky = numexpr.evaluate("xc + xpos")
+        return xpos_sky
+    
+    def get_xpos_sky(self, ksel=None, xpos=None, ypos=None):
+        """Returns the x absolute position on the sky in degrees/pixel.
 
         Parameters
         ----------
         ksel : output of np.where
                Elements depending on a condition.
-
+               
         Returns
         -------
         out : numpy.array
         """
+        ok_numexpr = True
+        try:
+            import numexpr
+        except:
+            ok_numexpr = False
+        if ok_numexpr:
+            return self._get_xpos_sky_numexpr(ksel, xpos, ypos)
+        else:
+            return self._get_xpos_sky(ksel, xpos, ypos)
+
+ 
+    def _get_ypos_sky(self, ksel=None, xpos=None, ypos=None):
         try:
             spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
         except:
@@ -417,12 +451,65 @@ class PixTable(object):
             ypos_sky = np.arcsin(np.sin(theta) * np.sin(dp) - np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
         else:
             if ypos is None:
-             ypos = self.get_ypos(ksel)
+                ypos = self.get_ypos(ksel)
             if self.wcs == 'rad':
                 ypos_sky = self.yc + ypos * 180 / np.pi
             else:
                 ypos_sky = self.yc + ypos
         return ypos_sky
+    
+    def _get_ypos_sky_numexpr(self, ksel=None, xpos=None, ypos=None):
+        import numexpr
+        pi = np.pi
+        try:
+            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+        except:
+            spheric = False
+        if spheric: #spheric coordinates
+            if xpos is None:
+                phi = self.get_xpos(ksel)
+            else:
+                phi = xpos
+            if ypos is None:
+                ypos = self.get_ypos(ksel)
+                theta = numexpr.evaluate("ypos + pi/2")
+            else:
+                theta = numexpr.evaluate("ypos + pi/2")
+            yc = self.yc
+            dp = numexpr.evaluate("yc * pi / 180")
+            ypos_sky = numexpr.evaluate("arcsin(sin(theta) * sin(dp) - cos(theta) * cos(dp) * cos(phi)) * 180 / pi")
+        else:
+            if ypos is None:
+                ypos = self.get_ypos(ksel)
+            if self.wcs == 'rad':
+                yc = self.yc
+                ypos_sky = numexpr.evaluate("yc + ypos * 180 / pi")
+            else:
+                ypos_sky = numexpr.evaluate("yc + ypos")
+        return ypos_sky
+    
+    def get_ypos_sky(self, ksel=None, xpos=None, ypos=None):
+        """Returns the y absolute position on the sky in degrees/pixel.
+
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
+
+        Returns
+        -------
+        out : numpy.array
+        """
+        ok_numexpr = True
+        try:
+            import numexpr
+        except:
+            ok_numexpr = False
+        if ok_numexpr:
+            return self._get_ypos_sky_numexpr(ksel, xpos, ypos)
+        else:
+            return self._get_ypos_sky(ksel, xpos, ypos)
+        
 
     def get_lambda(self, ksel=None):
         """Loads the lambda column and returns it.
@@ -626,51 +713,9 @@ class PixTable(object):
         hdulist.close()
         return xpos, ypos, lbda, data, stat, dq, origin
 
-    def extract(self, filename=None, sky=None, lbda=None, ifu=None, \
+
+    def _extract(self, filename=None, sky=None, lbda=None, ifu=None, \
                 sl=None, xpix=None, ypix=None, exp=None):
-        """Extracts a subset of a pixtable using the following criteria:
-
-        - aperture on the sky (center, size and shape)
-
-        - wavelength range
-
-        - IFU number
-
-        - slice number
-
-        - detector pixels
-
-        - exposure numbers
-
-        The arguments can be either single value or a list of values to select
-        multiple regions.
-        
-        Parameters
-        ----------
-        filename : string
-                   The FITS filename used to saves the resulted object.
-        sky      : (float, float, float, char)
-                   (y, x, size, shape) extract an aperture on the sky,
-                   defined by a center (y, x),
-                   a shape ('C' for circular, 'S' for square)
-                   and size (radius or half side length).
-        lbda     : (float, float)
-                   (min, max) wavelength range in Angstrom.
-        ifu      : int
-                   IFU number.
-        sl       : int
-                   Slice number on the CCD.
-        xpix     : (int, int)
-                   (min, max) pixel range along the X axis
-        ypix     : (int, int)
-                   (min, max) pixel range along the Y axis
-        exp      : list of integers
-                   List of exposure numbers
-        
-        Returns
-        -------
-        out : PixTable
-        """
         # type of coordinates
         primary_header = self.primary_header.copy()
         if self.nrows == 0:
@@ -930,6 +975,320 @@ class PixTable(object):
         write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
                weight, primary_header, self.ima, self.wcs)
         return PixTable(filename)
+    
+    
+    def _extract_numexpr(self, filename=None, sky=None, lbda=None, ifu=None, \
+                sl=None, xpix=None, ypix=None, exp=None):
+        import numexpr
+        # type of coordinates
+        primary_header = self.primary_header.copy()
+        if self.nrows == 0:
+            return None
+
+        # To start select the whole pixtable
+        kmask = np.ones(self.nrows).astype('bool')
+
+        # Do the selection on the sky
+        if sky is not None:
+            xpos = self.get_xpos_sky()
+            ypos = self.get_ypos_sky()
+            pi = np.pi
+            if (isinstance(sky, tuple)):
+                sky = [sky]
+            mask = np.zeros(self.nrows).astype('bool')
+            for y0, x0, size, shape in sky:
+                if shape == 'C':
+                    if self.wcs == 'deg':
+                        mask |= numexpr.evaluate('(((xpos - x0) * 3600 * cos(y0 * pi / 180.)) ** 2 + ((ypos - y0) * 3600) ** 2) < size ** 2')
+                    elif self.wcs == 'rad':
+                        mask |= numexpr.evaluate('(((xpos - x0) * 3600 * 180 / pi * cos(y0)) ** 2 + ((ypos - y0) * 3600 * 180 / pi)** 2) < size ** 2')
+                    else:
+                        mask |= numexpr.evaluate('((xpos - x0) ** 2 + (ypos - y0) ** 2) < size ** 2')
+                elif shape == 'S':
+                    if self.wcs == 'deg':
+                        mask |= numexpr.evaluate('(abs((xpos - x0) * 3600 * cos(y0 * pi / 180.)) < size) & (abs((ypos - y0) * 3600) < size)')
+                    elif self.wcs == 'rad':
+                        mask |= numexpr.evaluate('(abs((xpos - x0) * 3600 * 180 / pi * cos(y0)) < size) & (abs((ypos - y0) * 3600 * 180 / pi) < size)')
+                    else:
+                        mask |= numexpr.evaluate('(abs(xpos - x0) < size) & (abs(ypos - y0) < size)')
+                else:
+                    raise ValueError('Unknown shape parameter')
+            kmask &= mask
+            del mask
+            del xpos
+            del ypos
+
+        # Do the selection on wavelengths
+        if lbda is not None:
+            col_lambda = self.get_lambda()
+            if (isinstance(lbda, tuple)):
+                lbda = [lbda]
+            mask = np.zeros(self.nrows).astype('bool')
+            for l1, l2 in lbda:
+                mask |= numexpr.evaluate('(col_lambda >= l1) & (col_lambda < l2)')
+            kmask &= mask
+            del mask
+            del col_lambda
+
+        # Do the selection on the origin column
+        if (ifu is not None) or (sl is not None) or \
+        (xpix is not None) or (ypix is not None):
+            col_origin = self.get_origin()
+            if sl is not None:
+                if hasattr(sl, '__iter__'):
+                    mask = np.zeros(self.nrows).astype('bool')
+                    sli = self.origin2slice(col_origin)
+                    for s in sl:
+                        mask |= numexpr.evaluate('sli == s')
+                    kmask &= mask
+                    del mask, sli
+                else:
+                    sli = self.origin2slice(col_origin)
+                    kmask &= numexpr.evaluate('sli == sl')
+                    del sli
+            if ifu is not None:
+                if hasattr(ifu, '__iter__'):
+                    mask = np.zeros(self.nrows).astype('bool')
+                    _i = self.origin2ifu(col_origin)
+                    for i in ifu:
+                        mask |= numexpr.evaluate('_i == i')
+                    kmask &= mask
+                    del mask, _i
+                else:
+                    _i = self.origin2ifu(col_origin)
+                    kmask &= numexpr.evaluate('_i == ifu')
+                    del _i
+            if xpix is not None:
+                col_xpix = self.origin2xpix(col_origin)
+                if hasattr(xpix, '__iter__'):
+                    mask = np.zeros(self.nrows).astype('bool')
+                    for x1, x2 in xpix:
+                        mask |= numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
+                    kmask &= mask
+                    del mask
+                else:
+                    x1, x2 = xpix
+                    kmask &= numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
+                del col_xpix
+            if ypix is not None:
+                col_ypix = self.origin2ypix(col_origin)
+                if hasattr(ypix, '__iter__'):
+                    mask = np.zeros(self.nrows).astype('bool')
+                    for y1, y2 in ypix:
+                        mask |= numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
+                    kmask &= mask
+                    del mask
+                else:
+                    y1, y2 = ypix
+                    kmask &= numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
+                del col_ypix
+            del col_origin
+
+        # Do the selection on the exposure numbers
+        if exp is not None:
+            col_exp = self.get_exp()
+            if col_exp is not None:
+                mask = np.zeros(self.nrows).astype('bool')
+                for iexp in exp:
+                    mask |= numexpr.evaluate('col_exp == iexp')
+                kmask &= mask
+                del mask
+                del col_exp
+
+        # Compute the new pixtable
+        ksel = np.where(kmask)
+        del kmask
+        nrows = len(ksel[0])
+        if nrows == 0:
+            return None
+        # xpos
+        xpos = self.get_xpos(ksel)
+        try:
+            primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW'] = \
+            float(xpos.min())
+            primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH'] = \
+            float(xpos.max())
+        except:
+            primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X LOW'] = \
+            float(xpos.min())
+            primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X HIGH'] = \
+            float(xpos.max())
+        # ypos
+        ypos = self.get_ypos(ksel)
+        try:
+            primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW'] = \
+            float(ypos.min())
+            primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH'] = \
+            float(ypos.max())
+        except:
+            primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y LOW'] = \
+            float(ypos.min())
+            primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y HIGH'] = \
+            float(ypos.max())
+        #lambda
+        lbda = self.get_lambda(ksel)
+        try:
+            primary_header['HIERARCH ESO DRS MUSE '\
+                           'PIXTABLE LIMITS LAMBDA LOW'] = float(lbda.min())
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS LAMBDA HIGH'] = float(lbda.max())
+        except:
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS LAMBDA LOW'] = float(lbda.min())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS LAMBDA HIGH'] = float(lbda.max())
+        #data
+        data = self.get_data(ksel)
+        #variance
+        stat = self.get_stat(ksel)
+        # pixel quality
+        dq = self.get_dq(ksel)
+        # origin
+        origin = self.get_origin(ksel)
+        try:
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS IFU LOW'] = \
+                            int(self.origin2ifu(origin).min())
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS IFU HIGH'] = \
+                            int(self.origin2ifu(origin).max())
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS SLICE LOW'] = \
+                            int(self.origin2slice(origin).min())
+            primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS SLICE HIGH'] = \
+                            int(self.origin2slice(origin).max())
+        except:
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS IFU LOW'] = \
+                            int(self.origin2ifu(origin).min())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS IFU HIGH'] = \
+                            int(self.origin2ifu(origin).max())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS SLICE LOW'] = \
+                            int(self.origin2slice(origin).min())
+            primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS SLICE HIGH'] = \
+                            int(self.origin2slice(origin).max())
+        # merged pixtable
+        if self.nifu > 1:
+            try:
+                primary_header["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = \
+                len(np.unique(self.origin2ifu(origin)))
+            except:
+                primary_header["HIERARCH ESO PRO MUSE PIXTABLE MERGED"] = \
+                len(np.unique(self.origin2ifu(origin)))
+
+        # weight
+        weight = self.get_weight(ksel)
+
+        # combined exposures
+        selfexp = self.get_exp()
+        if selfexp is not None:
+            newexp = selfexp[ksel]
+            numbers_exp = np.unique(newexp)
+            try:
+                primary_header["HIERARCH ESO DRS MUSE PIXTABLE COMBINED"] = \
+                len(numbers_exp)
+                for iexp, i in zip(numbers_exp, range(1, \
+                                                      len(numbers_exp) + 1)):
+                    ksel = np.where(newexp == iexp)
+                    primary_header["HIERARCH ESO DRS MUSE "\
+                                    "PIXTABLE EXP%i FIRST" % i] = ksel[0][0]
+                    primary_header["HIERARCH ESO DRS MUSE "\
+                                    "PIXTABLE EXP%i LAST" % i] = ksel[0][-1]
+                for i in range(len(numbers_exp) + 1, \
+                               self.get_keywords("HIERARCH ESO DRS MUSE "\
+                                                 "PIXTABLE COMBINED") + 1):
+                    del primary_header["HIERARCH ESO DRS MUSE "\
+                                       "PIXTABLE EXP%i FIRST" % i]
+                    del primary_header["HIERARCH ESO DRS MUSE "\
+                                       "PIXTABLE EXP%i LAST" % i]
+            except:
+                primary_header["HIERARCH ESO PRO MUSE PIXTABLE COMBINED"] = \
+                len(numbers_exp)
+                for iexp, i in zip(numbers_exp, \
+                                   range(1, len(numbers_exp) + 1)):
+                    ksel = np.where(newexp == iexp)
+                    primary_header["HIERARCH ESO PRO MUSE "\
+                                    "PIXTABLE EXP%i FIRST" % i] = ksel[0][0]
+                    primary_header["HIERARCH ESO PRO MUSE "\
+                                    "PIXTABLE EXP%i LAST" % i] = ksel[0][-1]
+                for i in range(len(numbers_exp) + 1, \
+                               self.get_keywords("HIERARCH ESO PRO MUSE '\
+                               PIXTABLE COMBINED") + 1):
+                    del primary_header["HIERARCH ESO PRO MUSE "\
+                                       "PIXTABLE EXP%i FIRST" % i]
+                    del primary_header["HIERARCH ESO PRO MUSE "\
+                                       "PIXTABLE EXP%i LAST" % i]
+
+        # write the result in a new file
+        if filename is None:
+            (fd, filename) = tempfile.mkstemp(prefix='mpdaf')
+            os.close(fd)
+
+        write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
+               weight, primary_header, self.ima, self.wcs)
+        return PixTable(filename)
+    
+
+    def extract(self, filename=None, sky=None, lbda=None, ifu=None, \
+                sl=None, xpix=None, ypix=None, exp=None):
+        """Extracts a subset of a pixtable using the following criteria:
+
+        - aperture on the sky (center, size and shape)
+
+        - wavelength range
+
+        - IFU number
+
+        - slice number
+
+        - detector pixels
+
+        - exposure numbers
+
+        The arguments can be either single value or a list of values to select
+        multiple regions.
+        
+        Parameters
+        ----------
+        filename : string
+                   The FITS filename used to saves the resulted object.
+        sky      : (float, float, float, char)
+                   (y, x, size, shape) extract an aperture on the sky,
+                   defined by a center (y, x),
+                   a shape ('C' for circular, 'S' for square)
+                   and size (radius or half side length).
+        lbda     : (float, float)
+                   (min, max) wavelength range in Angstrom.
+        ifu      : int
+                   IFU number.
+        sl       : int
+                   Slice number on the CCD.
+        xpix     : (int, int)
+                   (min, max) pixel range along the X axis
+        ypix     : (int, int)
+                   (min, max) pixel range along the Y axis
+        exp      : list of integers
+                   List of exposure numbers
+        
+        Returns
+        -------
+        out : PixTable
+        """
+        ok_numexpr = True
+        try:
+            import numexpr
+        except:
+            ok_numexpr = False
+        if ok_numexpr:
+            return self._extract(filename, sky, lbda, ifu, sl, \
+                                 xpix, ypix, exp)
+        else:
+            return self._extract_numexpr(filename, sky, lbda, ifu, \
+                                         sl, xpix, ypix, exp)
 
     def origin2ifu(self, origin):
         """Converts the origin value and returns the ifu number.
