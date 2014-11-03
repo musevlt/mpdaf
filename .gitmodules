@@ -10,3 +10,6 @@
 [submodule "mpdaf_user/zap"]
 	path = mpdaf_user/zap
 	url = urania1.univ-lyon1.fr:/git/zap.git
+[submodule "mpdaf_user/galpak"]
+	path = mpdaf_user/galpak
+	url = urania1.univ-lyon1.fr:/git/galpak
