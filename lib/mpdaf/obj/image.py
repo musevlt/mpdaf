@@ -2840,19 +2840,24 @@ out : :class:`mpdaf.obj.Gauss2D`
 
 Parameters
 ----------
+
 pos_min     : (float,float)
-              Minimum y and x values in degrees (y_min,x_min).
+              Minimum y and x values in degrees (pix=False)
+              or in pixels (pix=True).
 pos_max     : (float,float)
-              Maximum y and x values in degrees (y_max,x_max)
+              Maximum y and x values in degrees (pix=False)
+              or in pixels (pix=True).
 center      : (float,float)
-              Initial Moffat center (y_peak,x_peak).
-              If None they are estimated.
+              Initial moffat center (y_peak,x_peak)
+              in degrees (pix=False) or in pixels (pix=True).
+              If None it is estimated.
 flux        : float
-              Initial integrated gaussian flux or gaussian peak value
-              if peak is True. If None, peak value is estimated.
+              Initial integrated gaussian flux
+              or gaussian peak value if peak is True.
+              If None, peak value is estimated.
 fwhm        : (float,float)
-              Initial gaussian fwhm (fwhm_y,fwhm_x)
-              in arcseconds (pix=False) or in pixels (pix=True).
+              Initial gaussian fwhm (fwhm_y,fwhm_x) in arcseconds
+              (pix=False) or in pixels (pix=True).
               If None, they are estimated.
 n           : integer
               Initial atmospheric scattering coefficient.
@@ -2878,6 +2883,10 @@ weight      : boolean
               as the inverse of variance.
 plot        : boolean
               If True, the gaussian is plotted.
+pix         : boolean
+              If pix is False, center and fwhm are in degrees
+              and arcsecs (input and output).
+              If pix is True, center and fwhm are in pixels.
 full_output : integer
               non-zero to return a :class:`mpdaf.obj.Moffat2D`
               object containing the moffat image
@@ -2967,6 +2976,8 @@ out : :class:`mpdaf.obj.Moffat2D`
                 fwhm = np.array(fwhm) / np.abs(ima.wcs.get_step())
                 if self.wcs.is_deg():
                     fwhm /= 3600.
+            else:
+                fwhm = np.array(fwhm)
 
         a = fwhm[0] / (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
         e = fwhm[0] / fwhm[1]
