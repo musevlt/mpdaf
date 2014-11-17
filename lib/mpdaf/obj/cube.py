@@ -303,11 +303,11 @@ class Cube(object):
                                       'not equal to DATA')
                         self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
-                #try:
-                #    mask = np.ma.make_mask(f['DQ'].data)
-                #    self.data = np.ma.MaskedArray(self.data, mask=mask)
-                #except:
-                #   pass
+                try:
+                    mask = np.ma.make_mask(f['DQ'].data)
+                    self.data = np.ma.MaskedArray(self.data, mask=mask)
+                except:
+                    pass
                 if ima:
                     from image import Image
                     for i in range(len(f)):
@@ -441,15 +441,17 @@ class Cube(object):
                         var=np.zeros(shape=self.shape),unit=self.unit)
         return cube
 
-    def write(self, filename, fscale=None):
+    def write(self, filename, fscale=None, savemask=True):
         """ Saves the cube in a FITS file.
 
-        Parameters
-        ----------
-        filename : string
-                   The FITS filename.
-        fscale   : float
-                   Flux scaling factor.
+Parameters
+----------
+filename : string
+           The FITS filename.
+fscale   : float
+           Flux scaling factor.
+savemask : boolean
+           If True,Cube mask is saved in DQ extension
         
         """
         #update fscale
@@ -597,11 +599,11 @@ class Cube(object):
             hdulist.append(nbhdu)
 
         # create DQ extension
-        #if np.ma.count_masked(self.data) != 0:
-        #    dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
-        #    for card in wcs_cards:
-        #        dqhdu.header[card.keyword] = (card.value, card.comment)
-        #    hdulist.append(dqhdu)
+        if savemask and np.ma.count_masked(self.data) != 0:
+            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
+            for card in wcs_cards:
+                dqhdu.header[card.keyword] = (card.value, card.comment)
+            hdulist.append(dqhdu)
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)

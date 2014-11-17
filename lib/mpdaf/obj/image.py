@@ -457,10 +457,10 @@ fscale   : float
                             self.var = np.array(fstat.data, dtype=float)
 
                     # DQ extension
-                    #try:
-                    #    mask = np.ma.make_mask(f['DQ'].data)
-                    #    self.data = np.ma.array(self.data, mask=mask)
-                    #except:
+                    try:
+                        mask = np.ma.make_mask(f['DQ'].data)
+                        self.data = np.ma.array(self.data, mask=mask)
+                    except:
                         pass
                 f.close()
             else:
@@ -579,7 +579,7 @@ var : boolean
                         var=np.zeros(shape=self.shape), unit=self.unit)
         return ima
 
-    def write(self, filename, fscale=None):
+    def write(self, filename, fscale=None, savemask=True):
         """Saves the object in a FITS file.
 
 Parameters
@@ -588,6 +588,8 @@ filename : string
            The FITS filename.
 fscale   : float
            Flux scaling factor.
+savemask : boolean
+           If True, Image mask is saved in DQ extension
         """
         #update fscale
         if fscale is None:
@@ -693,11 +695,11 @@ fscale   : float
             hdulist.append(nbhdu)
 
         # create DQ extension
-        #if np.ma.count_masked(self.data) != 0:
-        #    dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
-        #    for card in wcs_cards:
-        #        dqhdu.header[card.keyword] = (card.value, card.comment)
-        #    hdulist.append(dqhdu)
+        if savemask and np.ma.count_masked(self.data) != 0:
+            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
+            for card in wcs_cards:
+                dqhdu.header[card.keyword] = (card.value, card.comment)
+            hdulist.append(dqhdu)
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
@@ -3794,19 +3796,29 @@ interp   : 'no' | 'linear' | 'spline'
         newdim = np.array(newdim)
         newstart = np.array(newstart)
         newstep = np.array(newstep)
-
-        wcs = self.wcs.copy()
-        wcs.set_crpix1(1.0)
-        wcs.set_crpix2(1.0)
-        wcs.set_crval1(newstart[1])
-        wcs.set_crval2(newstart[0])
-
+        
+        wcs = WCS(crpix=[1,1], crval=newstart, cdelt=newstep, deg=self.wcs.is_deg(), rot=self.wcs.get_rot(), shape=newdim)
+        
         pstep = newstep / self.wcs.get_step()
+        print 'pstep', pstep
 
-        wcs.new_step(pstep)
-
-        poffset = self.wcs.sky2pix(newstart)[0] / pstep
-
+        #wcs.rotate(self.wcs.get_rot())
+        #print 'rotate', wcs.get_rot()
+        
+        #ang_rad =  np.radians(self.wcs.get_rot())
+        #_mrot = np.zeros(shape=(2,2), dtype=np.double)
+        #_mrot[0] = (np.cos(ang_rad), -np.sin(ang_rad))
+       # _mrot[1] = (np.sin(ang_rad), np.cos(ang_rad))
+        #np.dot(newstart,_mrot)
+        
+        #wcs0 = self.wcs.copy()
+        #wcs0.rotate(-self.wcs.get_rot())
+        #newstart0 = wcs0.pix2sky([0,0])[0]
+        #print newstart,newstart0
+        
+        poffset = self.wcs.sky2pix(newstart)[0] / pstep # ok without rotation
+        print poffset
+       
         if interp == 'linear':
             data = self._interp_data(spline=False)
         elif interp == 'spline':
@@ -4102,7 +4114,7 @@ other : Image
                         newstart = self.wcs.pix2sky([[k1, l1]])[0]
                         ima = ima.rebin(newdim, newstart, \
                                         self_cdelt, flux=True)
-
+                        
                 # here ima and self have the same step
                 [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0, 0]]))
                 l1 = int(l1 + 0.5)
