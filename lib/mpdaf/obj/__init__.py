@@ -53,8 +53,6 @@ from coords import deg2hms
 from coords import hms2deg
 from coords import deg2dms
 from coords import dms2deg
-from coords import deg2rad
-from coords import rad2deg
 from spectrum import Spectrum
 from spectrum import Gauss1D
 from image import Image

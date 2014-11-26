@@ -142,36 +142,6 @@ out : float
     return deg
 
 
-def deg2rad(deg):
-    """Transforms a degree value to a radian value.
-
-Parameters
-----------
-deg : float
-      degree value.
-    
-Returns
--------
-out : float
-    """
-    return (deg * np.pi / 180.)
-
-
-def rad2deg(rad):
-    """Transforms a radian value to a degree value.
-
-Parameters
-----------
-rad : float
-      radian value.
-      
-Returns
--------
-out : float
-    """
-    return (rad * 180. / np.pi) % 180
-
-
 class WCS(object):
     """WCS class manages world coordinates in spatial direction
     (pywcs package is used).
@@ -555,11 +525,11 @@ out : (n,2) array of dec- and ra- world coordinates.
         """Returns the rotation angle.
         """
         try:
-            return rad2deg(np.arctan2(self.wcs.wcs.cd[1, 0], \
+            return np.rad2deg(np.arctan2(self.wcs.wcs.cd[1, 0], \
                                       self.wcs.wcs.cd[1, 1]))
         except:
             try:
-                return rad2deg(np.arctan2(self.wcs.wcs.pc[1, 0], \
+                return np.rad2deg(np.arctan2(self.wcs.wcs.pc[1, 0], \
                                           self.wcs.wcs.pc[1, 1]))
             except:
                 raise IOError('No standard WCS')
@@ -651,7 +621,7 @@ theta : float
         Rotation in degree.
         """
         #rotation matrix of -theta
-        _theta = deg2rad(theta)
+        _theta = np.deg2rad(theta)
         _mrot = np.zeros(shape=(2,2), dtype=np.double)
         _mrot[0] = (np.cos(_theta), -np.sin(_theta))
         _mrot[1] = (np.sin(_theta), np.cos(_theta))
