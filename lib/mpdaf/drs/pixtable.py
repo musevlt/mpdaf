@@ -8,7 +8,6 @@ try:
 except:
     import pyfits
 import datetime
-import tempfile
 import os
 import shutil
 import warnings
@@ -146,7 +145,8 @@ class PixTable(object):
                      instead of FITS binary table.
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None, dq=None, stat=None, origin=None, weight=None, \
+          primary_header=None, save_as_ima=True, wcs='pix'):
         """creates a PixTable object
 
         Parameters
@@ -160,74 +160,108 @@ class PixTable(object):
         ,get_stat and get_origin must be used to get columns data.
         """
         self.filename = filename
+        self.wcs = wcs
+        self.ima = save_as_ima
+        
+        self.xpos = None
+        self.ypos = None
+        self.lbda = None
+        self.data = None
+        self.stat = None
+        self.dq = None
+        self.origin = None
+        self.weight = None
         self.nrows = 0
         self.nifu = 0
         self.skysub = False
         self.fluxcal = False
-        self.wcs = 'pix'
-        self.ima = True
 
-        if filename != None:
+        if xpos is None and filename != None:
             try:
-                hdulist = pyfits.open(self.filename, memmap=1)
-                self.primary_header = hdulist[0].header
-                self.nrows = hdulist[1].header["NAXIS2"]
-                self.ima = (hdulist[1].header['XTENSION'] == 'IMAGE')
-                hdulist.close()
-
-                # Merged IFUs that went into this pixel tables
-                try:
-                    self.nifu = \
-                    self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE MERGED")
-                except:
-                    self.nifu = 1
-                # sky subtraction
-                try:
-                    self.skysub = \
-                    self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE SKYSUB")
-                except:
-                    self.skysub = False
-                # flux calibration
-                try:
-                    self.fluxcal = self.get_keywords("HIERARCH ESO DRS MUSE "\
-                                                     "PIXTABLE FLUXCAL")
-                except:
-                    self.fluxcal = False
-                
-                # center in degrees
-                try:
-                    cunit = self.get_keywords("CUNIT1")
-                except:
-                    cunit = 'pix'
-                if cunit == 'rad':
-                    self.xc = self.primary_header['RA'] * 180 / np.pi
-                    self.yc = self.primary_header['DEC'] * 180 / np.pi
-                elif cunit == 'deg':
-                    self.xc = self.primary_header['RA']
-                    self.yc = self.primary_header['DEC']
-                else:
-                    self.xc = 0.0
-                    self.yc = 0.0
+                self.hdulist = pyfits.open(self.filename, memmap=1)
+                self.primary_header = self.hdulist[0].header
+                self.nrows = self.hdulist[1].header["NAXIS2"]
+                self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
                 
                 if self.ima:
-                    self.wcs = hdulist[1].header['BUNIT']
+                    self.wcs = self.hdulist[1].header['BUNIT']
                 else:
-                    self.wcs = hdulist[1].header['TUNIT1']
+                    self.wcs = self.hdulist[1].header['TUNIT1']
             except IOError:
                 raise IOError('file %s not found' % filename)
         else:
-            self.primary_header = pyfits.Header()
-        del hdulist
+            self.hdulist = None
+            if xpos is None or ypos is None or lbda is None or data is None or dq is None or stat is None or origin is None or primary_header is None:
+                self.primary_header = pyfits.Header()
+                self.nrows = 0
+            else:
+                self.primary_header = primary_header
+                xpos = np.array(xpos)
+                ypos = np.array(ypos)
+                lbda = np.array(lbda)
+                data = np.array(data)
+                stat = np.array(stat)
+                dq = np.array(dq)
+                origin = np.array(origin)
+                self.nrows = xpos.shape[0]
+                if ypos.shape[0] != self.nrows or\
+                   lbda.shape[0] != self.nrows or\
+                   data.shape[0] != self.nrows or\
+                   stat.shape[0] != self.nrows or\
+                   dq.shape[0] != self.nrows or\
+                   origin.shape[0] != self.nrows:
+                    raise IOError('input data with different dimensions')
+                else:
+                    self.xpos = xpos
+                    self.ypos = ypos
+                    self.lbda = lbda
+                    self.data = data
+                    self.stat = stat
+                    self.dq = dq
+                    self.origin = origin
+                if weight is None or weight.shape[0] == self.nrows:
+                    self.weight = weight
+                else:
+                    raise IOError('input data with different dimensions')
+                
+        if self.nrows != 0:
+            # Merged IFUs that went into this pixel tables
+            try:
+                self.nifu = \
+                self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE MERGED")
+            except:
+                self.nifu = 1
+            # sky subtraction
+            try:
+                self.skysub = \
+                self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE SKYSUB")
+            except:
+                self.skysub = False
+            # flux calibration
+            try:
+                self.fluxcal = self.get_keywords("HIERARCH ESO DRS MUSE "\
+                                                     "PIXTABLE FLUXCAL")
+            except:
+                self.fluxcal = False
+                
+            # center in degrees
+            try:
+                cunit = self.get_keywords("CUNIT1")
+            except:
+                cunit = 'pix'
+            if cunit == 'rad':
+                self.wcs = 'rad'
+                self.xc = self.primary_header['RA'] * 180 / np.pi
+                self.yc = self.primary_header['DEC'] * 180 / np.pi
+            elif cunit == 'deg':
+                self.wcs = 'deg'
+                self.xc = self.primary_header['RA']
+                self.yc = self.primary_header['DEC']
+            else:
+                self.wcs = 'pix'
+                self.xc = 0.0
+                self.yc = 0.0
 
-    def __del__(self):
-        """Removes temporary files used for memory mapping.
-        """
-        try:
-            if os.path.basename(self.filename) in \
-            os.listdir(tempfile.gettempdir()):
-                os.remove(self.filename)
-        except:
-            pass
 
     def copy(self):
         """Copies PixTable object in a new one and returns it.
@@ -266,9 +300,7 @@ class PixTable(object):
             except:
                 pass
         if self.filename != None:
-            hdulist = pyfits.open(self.filename, memmap=1)
-            print hdulist.info()
-            hdulist.close()
+            print self.hdulist.info()
         else:
             print 'No\tName\tType\tDim'
             print '0\tPRIMARY\tcard\t()'
@@ -285,16 +317,11 @@ class PixTable(object):
                       If True, pixtable is saved as multi-extension FITS image
                       instead of FITS binary table.
         """
-        if self.ima == save_as_ima:
-            shutil.copy(self.filename, filename)
-        else:
-            write(filename, self.get_xpos(), self.get_ypos(), \
-                  self.get_lambda(), self.get_data(), self.get_dq(), \
-                  self.get_stat(), self.get_origin(), self.get_weight(), \
-                  self.primary_header, save_as_ima, self.wcs)
-        if os.path.basename(self.filename) \
-        in os.listdir(tempfile.gettempdir()):
-            os.remove(self.filename)
+        write(filename, self.get_xpos(), self.get_ypos(), \
+              self.get_lambda(), self.get_data(), self.get_dq(), \
+              self.get_stat(), self.get_origin(), self.get_weight(), \
+              self.primary_header, save_as_ima, self.wcs)
+        
         self.filename = filename
         self.ima = save_as_ima
 
@@ -310,19 +337,54 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        hdulist = pyfits.open(self.filename, memmap=1)
-        if ksel is None:
-            if self.ima:
-                xpos = hdulist['xpos'].data[:, 0]
-            else:
-                xpos = hdulist[1].data.field('xpos')
+        if self.xpos is not None:
+            return self.xpos[ksel]
         else:
-            if self.ima:
-                xpos = hdulist['xpos'].data[ksel, 0][0]
+            if self.hdulist is None:
+                return None
             else:
-                xpos = hdulist[1].data.field('xpos')[ksel]
-        hdulist.close()
-        return xpos
+                if ksel is None:
+                    if self.ima:
+                        xpos = self.hdulist['xpos'].data[:, 0]
+                    else:
+                        xpos = self.hdulist[1].data.field('xpos')
+                else:
+                    if self.ima:
+                        xpos = self.hdulist['xpos'].data[ksel, 0][0]
+                    else:
+                        xpos = self.hdulist[1].data.field('xpos')[ksel]
+                return xpos
+            
+    def set_xpos(self, xpos, ksel=None):
+        """Sets xpos column (or a part of it).
+        
+        Parameters
+        ---------
+        xpos : numpy.array
+               xpos values
+        ksel : output of np.where
+               Elements depending on a condition.   
+        """
+        xpos = np.array(xpos)
+        if ksel is None:
+            if xpos.shape[0] != self.nrows:
+                raise IOError('Wrong dimension number')
+            else:
+                self.xpos = xpos
+        else:
+            if self.xpos is None:
+                self.xpos = self.get_xpos()
+            self.xpos[ksel] = xpos
+        try:
+            self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW']\
+                                = float(self.xpos.min())
+            self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH']\
+                                = float(self.xpos.max())
+        except:
+            self.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X LOW']\
+                                = float(self.xpos.min())
+            self.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X HIGH']\
+                                = float(self.xpos.max())
 
     def get_ypos(self, ksel=None):
         """Loads the ypos column and returns it.
@@ -336,180 +398,54 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        hdulist = pyfits.open(self.filename, memmap=1)
-        if ksel is None:
-            if self.ima:
-                ypos = hdulist['ypos'].data[:, 0]
-            else:
-                ypos = hdulist[1].data.field('ypos')
+        if self.ypos is not None:
+            return self.ypos[ksel]
         else:
-            if self.ima:
-                ypos = hdulist['ypos'].data[ksel, 0][0]
+            if self.hdulist is None:
+                return None
             else:
-                ypos = hdulist[1].data.field('ypos')[ksel]
-        hdulist.close()
-        return ypos
-    
-    def _get_xpos_sky(self, ksel=None, xpos=None, ypos=None):
-        if xpos is None:
-            xpos = self.get_xpos(ksel)
-        if ypos is None:
-            ypos = self.get_ypos(ksel)
-        try:
-            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
-        except:
-            spheric = False
-        if spheric: #spheric coordinates
-            phi = xpos
-            theta = ypos + np.pi/2
-            dp = self.yc * np.pi / 180
-            ra = np.arctan2(np.cos(theta) * np.sin(phi), \
-                      np.sin(theta) * np.cos(dp) + np.cos(theta) * np.sin(dp) * np.cos(phi)) * 180 / np.pi
-            xpos_sky = self.xc + ra
-        else:
-            if self.wcs == 'deg':
-                dp = self.yc * np.pi / 180
-                xpos_sky = self.xc + xpos / np.cos(dp)
-            elif self.wcs == 'rad':
-                dp = self.yc * np.pi / 180
-                xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(dp)
-            else:
-                xpos_sky = self.xc + xpos       
-        return xpos_sky
-    
-    def _get_xpos_sky_numexpr(self, ksel=None, xpos=None, ypos=None):
-        import numexpr
-        if xpos is None:
-            xpos = self.get_xpos(ksel)
-        if ypos is None:
-            ypos = self.get_ypos(ksel)
-        try:
-            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
-        except:
-            spheric = False
-        if spheric: #spheric coordinates
-            phi = xpos
-            pi = np.pi      
-            theta = numexpr.evaluate("ypos + pi/2")
-            dp = self.yc * np.pi / 180
-            ra = numexpr.evaluate("arctan2(cos(theta) * sin(phi), sin(theta) * cos(dp) + cos(theta) * sin(dp) * cos(phi)) * 180 / pi")
-            xc = self.xc
-            xpos_sky = numexpr.evaluate("xc + ra")
-        else:
-            if self.wcs == 'deg':
-                dp = self.yc * np.pi / 180
-                xc = self.xc
-                xpos_sky = numexpr.evaluate("xc + xpos / cos(dp)")
-            elif self.wcs == 'rad':
-                dp = self.yc * np.pi / 180
-                xc = self.xc
-                pi = np.pi
-                xpos_sky = numexpr.evaluate("xc + xpos * 180 / pi / cos(dp)")
-            else:
-                xc = self.xc
-                xpos_sky = numexpr.evaluate("xc + xpos")
-        return xpos_sky
-    
-    def get_xpos_sky(self, ksel=None, xpos=None, ypos=None):
-        """Returns the x absolute position on the sky in degrees/pixel.
-
-        Parameters
-        ----------
-        ksel : output of np.where
-               Elements depending on a condition.
-               
-        Returns
-        -------
-        out : numpy.array
-        """
-        ok_numexpr = True
-        try:
-            import numexpr
-        except:
-            ok_numexpr = False
-        if ok_numexpr:
-            return self._get_xpos_sky_numexpr(ksel, xpos, ypos)
-        else:
-            return self._get_xpos_sky(ksel, xpos, ypos)
-
- 
-    def _get_ypos_sky(self, ksel=None, xpos=None, ypos=None):
-        try:
-            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
-        except:
-            spheric = False
-        if spheric: #spheric coordinates
-            if xpos is None:
-                phi = self.get_xpos(ksel)
-            else:
-                phi = xpos
-            if ypos is None:
-                theta = self.get_ypos(ksel) + np.pi/2
-            else:
-                theta = ypos + np.pi/2
-            dp = self.yc * np.pi / 180
-            ypos_sky = np.arcsin(np.sin(theta) * np.sin(dp) - np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
-        else:
-            if ypos is None:
-                ypos = self.get_ypos(ksel)
-            if self.wcs == 'rad':
-                ypos_sky = self.yc + ypos * 180 / np.pi
-            else:
-                ypos_sky = self.yc + ypos
-        return ypos_sky
-    
-    def _get_ypos_sky_numexpr(self, ksel=None, xpos=None, ypos=None):
-        import numexpr
-        pi = np.pi
-        try:
-            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
-        except:
-            spheric = False
-        if spheric: #spheric coordinates
-            if xpos is None:
-                phi = self.get_xpos(ksel)
-            else:
-                phi = xpos
-            if ypos is None:
-                ypos = self.get_ypos(ksel)
-                theta = numexpr.evaluate("ypos + pi/2")
-            else:
-                theta = numexpr.evaluate("ypos + pi/2")
-            yc = self.yc
-            dp = numexpr.evaluate("yc * pi / 180")
-            ypos_sky = numexpr.evaluate("arcsin(sin(theta) * sin(dp) - cos(theta) * cos(dp) * cos(phi)) * 180 / pi")
-        else:
-            if ypos is None:
-                ypos = self.get_ypos(ksel)
-            if self.wcs == 'rad':
-                yc = self.yc
-                ypos_sky = numexpr.evaluate("yc + ypos * 180 / pi")
-            else:
-                ypos_sky = numexpr.evaluate("yc + ypos")
-        return ypos_sky
-    
-    def get_ypos_sky(self, ksel=None, xpos=None, ypos=None):
-        """Returns the y absolute position on the sky in degrees/pixel.
-
-        Parameters
-        ----------
-        ksel : output of np.where
-               Elements depending on a condition.
-
-        Returns
-        -------
-        out : numpy.array
-        """
-        ok_numexpr = True
-        try:
-            import numexpr
-        except:
-            ok_numexpr = False
-        if ok_numexpr:
-            return self._get_ypos_sky_numexpr(ksel, xpos, ypos)
-        else:
-            return self._get_ypos_sky(ksel, xpos, ypos)
+                if ksel is None:
+                    if self.ima:
+                        ypos = self.hdulist['ypos'].data[:, 0]
+                    else:
+                        ypos = self.hdulist[1].data.field('ypos')
+                else:
+                    if self.ima:
+                        ypos = self.hdulist['ypos'].data[ksel, 0][0]
+                    else:
+                        ypos = self.hdulist[1].data.field('ypos')[ksel]
+                return ypos
+            
+    def set_ypos(self, ypos, ksel=None):
+        """Sets ypos column (or a part of it).
         
+        Parameters
+        ---------
+        ypos : numpy.array
+               ypos values
+        ksel : output of np.where
+               Elements depending on a condition.   
+        """
+        ypos = np.array(ypos)
+        if ksel is None:
+            if ypos.shape[0] != self.nrows:
+                raise IOError('Wrong dimension number')
+            else:
+                self.ypos = ypos
+        else:
+            if self.ypos is None:
+                self.ypos = self.get_ypos()
+            self.ypos[ksel] = ypos
+        try:
+            self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW']\
+                                = float(self.ypos.min())
+            self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH']\
+                                = float(self.ypos.max())
+        except:
+            self.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y LOW']\
+                                = float(self.ypos.min())
+            self.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y HIGH']\
+                                = float(self.ypos.max())
 
     def get_lambda(self, ksel=None):
         """Loads the lambda column and returns it.
@@ -523,19 +459,58 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        hdulist = pyfits.open(self.filename, memmap=1)
-        if ksel is None:
-            if self.ima:
-                lbda = hdulist['lambda'].data[:, 0]
-            else:
-                lbda = hdulist[1].data.field('lambda')
+        if self.lbda is not None:
+            return self.lbda[ksel]
         else:
-            if self.ima:
-                lbda = hdulist['lambda'].data[ksel, 0][0]
+            if self.hdulist is None:
+                return None
             else:
-                lbda = hdulist[1].data.field('lambda')[ksel]
-        hdulist.close()
-        return lbda
+                if ksel is None:
+                    if self.ima:
+                        lbda = self.hdulist['lambda'].data[:, 0]
+                    else:
+                        lbda = self.hdulist[1].data.field('lambda')
+                else:
+                    if self.ima:
+                        lbda = self.hdulist['lambda'].data[ksel, 0][0]
+                    else:
+                        lbda = self.hdulist[1].data.field('lambda')[ksel]
+                return lbda
+            
+    def set_lambda(self, lbda, ksel=None):
+        """Sets lambda column (or a part of it).
+        
+        Parameters
+        ---------
+        lbda : numpy.array
+               lbda values
+        ksel : output of np.where
+               Elements depending on a condition.   
+        """
+        lbda = np.array(lbda)
+        if ksel is None:
+            if lbda.shape[0] != self.nrows:
+                raise IOError('Wrong dimension number')
+            else:
+                self.lbda = lbda
+        else:
+            if self.lbda is None:
+                self.lbda = self.get_lbda()
+            self.lbda[ksel] = lbda
+        try:
+            self.primary_header['HIERARCH ESO DRS MUSE '\
+                                'PIXTABLE LIMITS LAMBDA LOW']\
+                                = float(self.lbda.min())
+            self.primary_header['HIERARCH ESO DRS MUSE '\
+                                'PIXTABLE LIMITS LAMBDA HIGH']\
+                                = float(self.lbda.max())
+        except:
+            self.primary_header['HIERARCH ESO PRO MUSE '\
+                                'PIXTABLE LIMITS LAMBDA LOW']\
+                                = float(self.lbda.min())
+            self.primary_header['HIERARCH ESO PRO MUSE '\
+                                'PIXTABLE LIMITS LAMBDA HIGH']\
+                                = float(self.lbda.max())
 
     def get_data(self, ksel=None):
         """Loads the data column and returns it.
@@ -549,19 +524,44 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        hdulist = pyfits.open(self.filename, memmap=1)
-        if ksel is None:
-            if self.ima:
-                data = hdulist['data'].data[:, 0]
-            else:
-                data = hdulist[1].data.field('data')
+        if self.data is not None:
+            return self.data[ksel]
         else:
-            if self.ima:
-                data = hdulist['data'].data[ksel, 0][0]
+            if self.hdulist is None:
+                return None
             else:
-                data = hdulist[1].data.field('data')[ksel]
-        hdulist.close()
-        return data
+                if ksel is None:
+                    if self.ima:
+                        data = self.hdulist['data'].data[:, 0]
+                    else:
+                        data = self.hdulist[1].data.field('data')
+                else:
+                    if self.ima:
+                        data = self.hdulist['data'].data[ksel, 0][0]
+                    else:
+                        data = self.hdulist[1].data.field('data')[ksel]
+                return data
+            
+    def set_data(self, data, ksel=None):
+        """Sets data column (or a part of it).
+        
+        Parameters
+        ---------
+        data : numpy.array
+               data values
+        ksel : output of np.where
+               Elements depending on a condition.   
+        """
+        data = np.array(data)
+        if ksel is None:
+            if data.shape[0] != self.nrows:
+                raise IOError('Wrong dimension number')
+            else:
+                self.data = data
+        else:
+            if self.data is None:
+                self.data = self.get_data()
+            self.data[ksel] = data
 
     def get_stat(self, ksel=None):
         """Loads the stat column and returns it.
@@ -575,19 +575,44 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        hdulist = pyfits.open(self.filename, memmap=1)
-        if ksel is None:
-            if self.ima:
-                stat = hdulist['stat'].data[:, 0]
-            else:
-                stat = hdulist[1].data.field('stat')
+        if self.stat is not None:
+            return self.stat[ksel]
         else:
-            if self.ima:
-                stat = hdulist['stat'].data[ksel, 0][0]
+            if self.hdulist is None:
+                return None
             else:
-                stat = hdulist[1].data.field('stat')[ksel]
-        hdulist.close()
-        return stat
+                if ksel is None:
+                    if self.ima:
+                        stat = self.hdulist['stat'].data[:, 0]
+                    else:
+                        stat = self.hdulist[1].data.field('stat')
+                else:
+                    if self.ima:
+                        stat = self.hdulist['stat'].data[ksel, 0][0]
+                    else:
+                        stat = self.hdulist[1].data.field('stat')[ksel]
+                return stat
+            
+    def set_stat(self, stat, ksel=None):
+        """Sets stat column (or a part of it).
+        
+        Parameters
+        ---------
+        stat : numpy.array
+               stat values
+        ksel : output of np.where
+               Elements depending on a condition.   
+        """
+        stat = np.array(stat)
+        if ksel is None:
+            if stat.shape[0] != self.nrows:
+                raise IOError('Wrong dimension number')
+            else:
+                self.stat = stat
+        else:
+            if self.stat is None:
+                self.stat = self.get_stat()
+            self.stat[ksel] = stat
 
     def get_dq(self, ksel=None):
         """Loads the dq column and returns it.
@@ -601,19 +626,44 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        hdulist = pyfits.open(self.filename, memmap=1)
-        if ksel is None:
-            if self.ima:
-                dq = hdulist['dq'].data[:, 0]
-            else:
-                dq = hdulist[1].data.field('dq')
+        if self.dq is not None:
+            return self.dq[ksel]
         else:
-            if self.ima:
-                dq = hdulist['dq'].data[ksel, 0][0]
+            if self.hdulist is None:
+                return None
             else:
-                dq = hdulist[1].data.field('dq')[ksel]
-        hdulist.close()
-        return dq
+                if ksel is None:
+                    if self.ima:
+                        dq = self.hdulist['dq'].data[:, 0]
+                    else:
+                        dq = self.hdulist[1].data.field('dq')
+                else:
+                    if self.ima:
+                        dq = self.hdulist['dq'].data[ksel, 0][0]
+                    else:
+                        dq = self.hdulist[1].data.field('dq')[ksel]
+                return dq
+            
+    def set_dq(self, dq, ksel=None):
+        """Sets dq column (or a part of it).
+        
+        Parameters
+        ---------
+        dq   : numpy.array
+               dq values
+        ksel : output of np.where
+               Elements depending on a condition.   
+        """
+        dq = np.array(dq)
+        if ksel is None:
+            if dq.shape[0] != self.nrows:
+                raise IOError('Wrong dimension number')
+            else:
+                self.dq = dq
+        else:
+            if self.dq is None:
+                self.dq = self.get_dq()
+            self.dq[ksel] = dq
 
     def get_origin(self, ksel=None):
         """Loads the origin column and returns it.
@@ -627,19 +677,79 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        hdulist = pyfits.open(self.filename, memmap=1)
-        if ksel is None:
-            if self.ima:
-                origin = hdulist['origin'].data[:, 0]
-            else:
-                origin = hdulist[1].data.field('origin')
+        if self.origin is not None:
+            return self.origin[ksel]
         else:
-            if self.ima:
-                origin = hdulist['origin'].data[ksel, 0][0]
+            if self.hdulist is None:
+                return None
             else:
-                origin = hdulist[1].data.field('origin')[ksel]
-        hdulist.close()
-        return origin
+                if ksel is None:
+                    if self.ima:
+                        origin = self.hdulist['origin'].data[:, 0]
+                    else:
+                        origin = self.hdulist[1].data.field('origin')
+                else:
+                    if self.ima:
+                        origin = self.hdulist['origin'].data[ksel, 0][0]
+                    else:
+                        origin = self.hdulist[1].data.field('origin')[ksel]
+                return origin
+            
+    def set_origin(self, origin, ksel=None):
+        """Sets origin column (or a part of it).
+        
+        Parameters
+        ---------
+        origin : numpy.array
+                 origin values
+        ksel   : output of np.where
+                 Elements depending on a condition.   
+        """
+        origin = np.array(origin)
+        if ksel is None:
+            if origin.shape[0] != self.nrows:
+                raise IOError('Wrong dimension number')
+            else:
+                self.origin = origin
+        else:
+            if self.origin is None:
+                self.origin = self.get_origin()
+            self.origin[ksel] = origin
+        try:
+            self.primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS IFU LOW'] = \
+                            int(self.origin2ifu(self.origin).min())
+            self.primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS IFU HIGH'] = \
+                            int(self.origin2ifu(self.origin).max())
+            self.primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS SLICE LOW'] = \
+                            int(self.origin2slice(self.origin).min())
+            self.primary_header['HIERARCH ESO DRS MUSE '\
+                            'PIXTABLE LIMITS SLICE HIGH'] = \
+                            int(self.origin2slice(self.origin).max())
+        except:
+            self.primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS IFU LOW'] = \
+                            int(self.origin2ifu(self.origin).min())
+            self.primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS IFU HIGH'] = \
+                            int(self.origin2ifu(self.origin).max())
+            self.primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS SLICE LOW'] = \
+                            int(self.origin2slice(self.origin).min())
+            self.primary_header['HIERARCH ESO PRO MUSE '\
+                            'PIXTABLE LIMITS SLICE HIGH'] = \
+                            int(self.origin2slice(self.origin).max())
+                            
+        # merged pixtable
+        if self.nifu > 1:
+            try:
+                self.primary_header["HIERARCH ESO DRS MUSE PIXTABLE MERGED"]\
+                             = len(np.unique(self.origin2ifu(self.origin)))
+            except:
+                self.primary_header["HIERARCH ESO PRO MUSE PIXTABLE MERGED"]\
+                             = len(np.unique(self.origin2ifu(self.origin)))
 
     def get_weight(self, ksel=None):
         """Loads the weight column and returns it.
@@ -653,23 +763,48 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        try:
-            if self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WEIGHTED"):
-                hdulist = pyfits.open(self.filename, memmap=1)
-                if ksel is None:
-                    if self.ima:
-                        weight = hdulist['weight'].data[:, 0]
-                    else:
-                        weight = hdulist[1].data.field('weight')
-                else:
-                    if self.ima:
-                        weight = hdulist['weight'].data[ksel, 0][0]
-                    else:
-                        weight = hdulist[1].data.field('weight')[ksel]
-                hdulist.close()
-        except:
-            weight = None
-        return weight
+        if self.weight is not None:
+            return self.weight[ksel]
+        else:
+            if self.hdulist is None:
+                return None
+            else:
+                try:
+                    if self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WEIGHTED"):
+                        if ksel is None:
+                            if self.ima:
+                                weight = self.hdulist['weight'].data[:, 0]
+                            else:
+                                weight = self.hdulist[1].data.field('weight')
+                        else:
+                            if self.ima:
+                                weight = self.hdulist['weight'].data[ksel, 0][0]
+                            else:
+                                weight = self.hdulist[1].data.field('weight')[ksel]
+                except:
+                    weight = None
+                return weight
+            
+    def set_weight(self, weight, ksel=None):
+        """Sets weight column (or a part of it).
+        
+        Parameters
+        ---------
+        weight : numpy.array
+                 weight values
+        ksel   : output of np.where
+                 Elements depending on a condition.   
+        """
+        weight = np.array(weight)
+        if ksel is None:
+            if weight.shape[0] != self.nrows:
+                raise IOError('Wrong dimension number')
+            else:
+                self.weight = weight
+        else:
+            if self.weight is None:
+                self.weight = self.get_weight()
+            self.weight[ksel] = weight
 
     def get_exp(self):
         """Loads the exposure numbers and returns it as a column.
@@ -692,26 +827,26 @@ class PixTable(object):
             exp = None
         return exp
     
-    def get(self):
-        hdulist = pyfits.open(self.filename, memmap=1)
-        if self.ima:
-            xpos = hdulist['xpos'].data[:, 0]
-            ypos = hdulist['ypos'].data[:, 0]
-            lbda = hdulist['lambda'].data[:, 0]
-            data = hdulist['data'].data[:, 0]
-            stat = hdulist['stat'].data[:, 0]
-            dq = hdulist['dq'].data[:, 0]
-            origin = hdulist['origin'].data[:, 0]
-        else:
-            xpos = hdulist[1].data.field('xpos')
-            ypos = hdulist[1].data.field('ypos')
-            lbda = hdulist[1].data.field('lambda')
-            data = hdulist[1].data.field('data')
-            stat = hdulist[1].data.field('stat')
-            dq = hdulist[1].data.field('dq')
-            origin = hdulist[1].data.field('origin')
-        hdulist.close()
-        return xpos, ypos, lbda, data, stat, dq, origin
+#     def get(self):
+#         hdulist = pyfits.open(self.filename, memmap=1)
+#         if self.ima:
+#             xpos = hdulist['xpos'].data[:, 0]
+#             ypos = hdulist['ypos'].data[:, 0]
+#             lbda = hdulist['lambda'].data[:, 0]
+#             data = hdulist['data'].data[:, 0]
+#             stat = hdulist['stat'].data[:, 0]
+#             dq = hdulist['dq'].data[:, 0]
+#             origin = hdulist['origin'].data[:, 0]
+#         else:
+#             xpos = hdulist[1].data.field('xpos')
+#             ypos = hdulist[1].data.field('ypos')
+#             lbda = hdulist[1].data.field('lambda')
+#             data = hdulist[1].data.field('data')
+#             stat = hdulist[1].data.field('stat')
+#             dq = hdulist[1].data.field('dq')
+#             origin = hdulist[1].data.field('origin')
+#         hdulist.close()
+#         return xpos, ypos, lbda, data, stat, dq, origin
 
 
     def _extract(self, filename=None, sky=None, lbda=None, ifu=None, \
@@ -726,8 +861,7 @@ class PixTable(object):
 
         # Do the selection on the sky
         if sky is not None:
-            xpos = self.get_xpos_sky()
-            ypos = self.get_ypos_sky()
+            xpos, ypos = self.get_pos_sky(self.get_xpos(), self.get_ypos())
             if (isinstance(sky, tuple)):
                 sky = [sky]
             mask = np.zeros(self.nrows).astype('bool')
@@ -969,12 +1103,12 @@ class PixTable(object):
 
         # write the result in a new file
         if filename is None:
-            (fd, filename) = tempfile.mkstemp(prefix='mpdaf')
-            os.close(fd)
-
-        write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
+            return PixTable(None, xpos, ypos, lbda, data, dq, stat, origin,\
                weight, primary_header, self.ima, self.wcs)
-        return PixTable(filename)
+        else:
+            write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
+               weight, primary_header, self.ima, self.wcs)
+            return PixTable(filename)
     
     
     def _extract_numexpr(self, filename=None, sky=None, lbda=None, ifu=None, \
@@ -990,8 +1124,7 @@ class PixTable(object):
 
         # Do the selection on the sky
         if sky is not None:
-            xpos = self.get_xpos_sky()
-            ypos = self.get_ypos_sky()
+            xpos, ypos = self.get_pos_sky()
             pi = np.pi
             if (isinstance(sky, tuple)):
                 sky = [sky]
@@ -1225,12 +1358,12 @@ class PixTable(object):
 
         # write the result in a new file
         if filename is None:
-            (fd, filename) = tempfile.mkstemp(prefix='mpdaf')
-            os.close(fd)
-
-        write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
+            return PixTable(None, xpos, ypos, lbda, data, dq, stat, origin,\
                weight, primary_header, self.ima, self.wcs)
-        return PixTable(filename)
+        else:
+            write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
+               weight, primary_header, self.ima, self.wcs)
+            return PixTable(filename)
     
 
     def extract(self, filename=None, sky=None, lbda=None, ifu=None, \
@@ -1389,7 +1522,96 @@ class PixTable(object):
         out : (integer, integer, float, float)
         """
         return (self.origin2ifu(origin), self.origin2slice(origin),
-                self.origin2ypix(origin), self.origin2xpix(origin))
+                self.origin2ypix(origin), self.origin2xpix(origin))        
+        
+    def _get_pos_sky(self, xpos, ypos):
+        try:
+            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+        except:
+            spheric = False
+        if spheric: #spheric coordinates
+            phi = xpos
+            theta = ypos + np.pi/2
+            dp = self.yc * np.pi / 180
+            ra = np.arctan2(np.cos(theta) * np.sin(phi), \
+                      np.sin(theta) * np.cos(dp) + np.cos(theta) * np.sin(dp) * np.cos(phi)) * 180 / np.pi
+            xpos_sky = self.xc + ra
+            ypos_sky = np.arcsin(np.sin(theta) * np.sin(dp) - np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
+        else:
+            if self.wcs == 'deg':
+                dp = self.yc * np.pi / 180
+                xpos_sky = self.xc + xpos / np.cos(dp)
+                ypos_sky = self.yc + ypos
+            elif self.wcs == 'rad':
+                dp = self.yc * np.pi / 180
+                xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(dp)
+                ypos_sky = self.yc + ypos * 180 / np.pi
+            else:
+                xpos_sky = self.xc + xpos       
+                ypos_sky = self.yc + ypos
+        return xpos_sky, ypos_sky
+        
+    def _get_pos_sky_numexpr(self, xpos, ypos):
+        import numexpr
+        try:
+            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+        except:
+            spheric = False
+        if spheric: #spheric coordinates
+            phi = xpos
+            pi = np.pi      
+            theta = numexpr.evaluate("ypos + pi/2")
+            yc = self.yc
+            dp = numexpr.evaluate("yc * pi / 180")
+            ra = numexpr.evaluate("arctan2(cos(theta) * sin(phi), sin(theta) * cos(dp) + cos(theta) * sin(dp) * cos(phi)) * 180 / pi")
+            xc = self.xc
+            xpos_sky = numexpr.evaluate("xc + ra")
+            ypos_sky = numexpr.evaluate("arcsin(sin(theta) * sin(dp) - cos(theta) * cos(dp) * cos(phi)) * 180 / pi")
+        else:
+            if self.wcs == 'deg':
+                yc = self.yc
+                pi = np.pi
+                dp = numexpr.evaluate("yc * pi / 180")
+                xc = self.xc
+                xpos_sky = numexpr.evaluate("xc + xpos / cos(dp)")
+                ypos_sky = numexpr.evaluate("yc + ypos")
+            elif self.wcs == 'rad':
+                yc = self.yc
+                pi = np.pi
+                dp = numexpr.evaluate("yc * pi / 180")
+                xc = self.xc
+                xpos_sky = numexpr.evaluate("xc + xpos * 180 / pi / cos(dp)")
+                ypos_sky = numexpr.evaluate("yc + ypos * 180 / pi")
+            else:
+                xc = self.xc
+                yc = self.yc
+                xpos_sky = numexpr.evaluate("xc + xpos")
+                ypos_sky = numexpr.evaluate("yc + ypos")
+        return xpos_sky, ypos_sky
+    
+    def get_pos_sky(self, xpos, ypos):
+        """Returns the absolute position on the sky in degrees/pixel.
+
+        Parameters
+        ----------
+        xpos : numpy.array
+               xpos values
+        ypos : numpy.array
+               ypos values
+               
+        Returns
+        -------
+        xpos_sky, ypos_sky : numpy.array, numpy.array
+        """
+        ok_numexpr = True
+        try:
+            import numexpr
+        except:
+            ok_numexpr = False
+        if ok_numexpr:
+            return self._get_pos_sky_numexpr(xpos, ypos)
+        else:
+            return self._get_pos_sky(xpos, ypos)
 
     def get_slices(self, verbose=True):
         """Returns slices dictionary.
