@@ -1671,6 +1671,91 @@ inside : boolean
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
 
+    def mask_ellipse(self, center, radius, posangle, pix=False, inside=True):
+        """Masks values inside/outside the described region. Uses an elliptical shape.
+        
+Parameters
+----------
+center : (float,float)
+         Center of the explored region.
+         If pix is False, center = (y,x) is in degrees.
+         If pix is True, center = (p,q) is in pixels.
+radius : (float,float)
+         Radius defined the explored region.
+         radius is (float,float), it defines an elliptical region with semi-major and semi-minor axes.
+         If pix is False, radius = (da, db) is in arcsecs.
+         If pix is True, radius = (dp,dq) is in pixels.
+posangle : float
+         Position angle of the first axis. It is defined in degrees against the horizontal (q) axis of the image, counted counterclockwise.
+pix    : boolean
+         If pix is False, center and radius are in degrees and arcsecs.
+         If pix is True, center and radius are in pixels.
+inside : boolean
+         If inside is True, pixels inside the described region are masked.
+        """
+        if not pix:
+            center = self.wcs.sky2pix(center)[0]
+            radius = radius / np.abs(self.wcs.get_step()) / 3600.
+
+        maxradius=max(radius[0],radius[1])
+
+        imin = max(0, center[0] - maxradius)
+        imax = min(center[0] + maxradius + 1, self.shape[0])
+        jmin = max(0, center[1] - maxradius)
+        jmax = min(center[0] + maxradius + 1, self.shape[0])
+
+        cospa=np.cos(np.radians(posangle))
+        sinpa=np.sin(np.radians(posangle))
+
+        if inside:
+            ni = np.shape(self.data[imin:imax, jmin:jmax])[0]
+            nj = np.shape(self.data[imin:imax, jmin:jmax])[1]
+            m = np.ma.make_mask_none((ni, nj))
+            for i_in in range(ni):
+                i = i_in + imin
+                pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
+                pixcrd[:, 0] -= center[0]
+                pixcrd[:, 1] -= center[1]
+
+                listy=np.array(pixcrd[:, 0])
+                listx=np.array(pixcrd[:, 1])
+                
+                m[i_in, :] = (((listx*cospa+listy*sinpa)/radius[0])**2 \
+                               +((listy*cospa-listx*sinpa)/radius[1])**2<1)
+            try:
+                m = np.ma.mask_or(m, np.ma.getmask(self.data)\
+                                  [imin:imax, jmin:jmax])
+                self.data.mask[imin:imax, jmin:jmax] = m
+            except:
+                pass
+
+
+        if not inside:
+            self.data.mask[0:imin, :] = 1
+            self.data.mask[imax:, :] = 1
+            self.data.mask[imin:imax, 0:jmin] = 1
+            self.data.mask[imin:imax:, jmax:] = 1
+            ni = np.shape(self.data[imin:imax, jmin:jmax])[0]
+            nj = np.shape(self.data[imin:imax, jmin:jmax])[1]
+            m = np.ma.make_mask_none((ni, nj))
+            for i_in in range(ni):
+                i = i_in + imin
+                pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
+                pixcrd[:, 0] -= center[0]
+                pixcrd[:, 1] -= center[1]
+
+                listy=np.array(pixcrd[:, 0])
+                listx=np.array(pixcrd[:, 1])
+
+                m[i_in, :] = (((listx*cospa+listy*sinpa)/radius[0])**2 \
+                               +((listy*cospa-listx*sinpa)/radius[1])**2>1)
+
+            m = np.ma.mask_or(m, np.ma.getmask(self.data)\
+                              [imin:imax, jmin:jmax])
+            self.data.mask[imin:imax, jmin:jmax] = m
+
+
+
     def unmask(self):
         """Unmasks the image (just invalid data (nan,inf) are masked).
         """
