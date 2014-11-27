@@ -3797,27 +3797,11 @@ interp   : 'no' | 'linear' | 'spline'
         newstart = np.array(newstart)
         newstep = np.array(newstep)
         
-        wcs = WCS(crpix=[1,1], crval=newstart, cdelt=newstep, deg=self.wcs.is_deg(), rot=self.wcs.get_rot(), shape=newdim)
-        
-        pstep = newstep / self.wcs.get_step()
-        print 'pstep', pstep
 
-        #wcs.rotate(self.wcs.get_rot())
-        #print 'rotate', wcs.get_rot()
-        
-        #ang_rad =  np.radians(self.wcs.get_rot())
-        #_mrot = np.zeros(shape=(2,2), dtype=np.double)
-        #_mrot[0] = (np.cos(ang_rad), -np.sin(ang_rad))
-       # _mrot[1] = (np.sin(ang_rad), np.cos(ang_rad))
-        #np.dot(newstart,_mrot)
-        
-        #wcs0 = self.wcs.copy()
-        #wcs0.rotate(-self.wcs.get_rot())
-        #newstart0 = wcs0.pix2sky([0,0])[0]
-        #print newstart,newstart0
+        wcs = WCS(crpix=[1,1], crval=newstart, cdelt=newstep, deg=self.wcs.is_deg(), rot=self.wcs.get_rot(), shape=newdim)       
+        pstep = newstep / self.wcs.get_step()
         
         poffset = self.wcs.sky2pix(newstart)[0] / pstep # ok without rotation
-        print poffset
        
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -3841,7 +3825,8 @@ interp   : 'no' | 'linear' | 'spline'
         self.wcs = wcs
         self.data = np.ma.array(data, mask=mask)
         self.var = None
-
+        
+        
     def rebin(self, newdim, newstart, newstep, flux=False, \
               order=3, interp='no'):
         """Returns rebinned image to a new coordinate system.
@@ -4114,7 +4099,8 @@ other : Image
                         newstart = self.wcs.pix2sky([[k1, l1]])[0]
                         ima = ima.rebin(newdim, newstart, \
                                         self_cdelt, flux=True)
-                        
+                
+                      
                 # here ima and self have the same step
                 [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0, 0]]))
                 l1 = int(l1 + 0.5)
