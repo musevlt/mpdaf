@@ -1702,7 +1702,7 @@ inside : boolean
         imin = max(0, center[0] - maxradius)
         imax = min(center[0] + maxradius + 1, self.shape[0])
         jmin = max(0, center[1] - maxradius)
-        jmax = min(center[0] + maxradius + 1, self.shape[0])
+        jmax = min(center[1] + maxradius + 1, self.shape[0])
 
         cospa=np.cos(np.radians(posangle))
         sinpa=np.sin(np.radians(posangle))
