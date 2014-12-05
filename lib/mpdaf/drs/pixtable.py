@@ -268,7 +268,6 @@ class PixTable(object):
         """
         result = PixTable()
         result.filename = self.filename
-
         result.nrows = self.nrows
         result.nifu = self.nifu
         result.skysub = self.skysub
@@ -276,6 +275,14 @@ class PixTable(object):
         result.wcs = self.wcs
         result.ima = self.ima
         result.primary_header = pyfits.Header(self.primary_header)
+        result.xpos = self.xpos
+        result.ypos = self.ypos
+        result.lbda = self.lbda
+        result.data = self.data
+        result.stat = self.stat
+        result.dq = self.dq
+        result.origin = self.origin
+        result.weight = self.weight
         return result
 
     def info(self):
@@ -338,7 +345,10 @@ class PixTable(object):
         out : numpy.array
         """
         if self.xpos is not None:
-            return self.xpos[ksel]
+            if ksel is None:
+                return self.xpos
+            else:
+                return self.xpos[ksel]
         else:
             if self.hdulist is None:
                 return None
@@ -399,7 +409,10 @@ class PixTable(object):
         out : numpy.array
         """
         if self.ypos is not None:
-            return self.ypos[ksel]
+            if ksel is None:
+                return self.ypos
+            else:
+                return self.ypos[ksel]
         else:
             if self.hdulist is None:
                 return None
@@ -460,7 +473,10 @@ class PixTable(object):
         out : numpy.array
         """
         if self.lbda is not None:
-            return self.lbda[ksel]
+            if ksel is None:
+                return self.lbda
+            else:
+                return self.lbda[ksel]
         else:
             if self.hdulist is None:
                 return None
@@ -525,7 +541,10 @@ class PixTable(object):
         out : numpy.array
         """
         if self.data is not None:
-            return self.data[ksel]
+            if ksel is None:
+                return self.data
+            else:
+                return self.data[ksel]
         else:
             if self.hdulist is None:
                 return None
@@ -576,7 +595,10 @@ class PixTable(object):
         out : numpy.array
         """
         if self.stat is not None:
-            return self.stat[ksel]
+            if ksel is None:
+                return self.stat
+            else:
+                return self.stat[ksel]
         else:
             if self.hdulist is None:
                 return None
@@ -627,7 +649,10 @@ class PixTable(object):
         out : numpy.array
         """
         if self.dq is not None:
-            return self.dq[ksel]
+            if ksel is None:
+                return self.dq
+            else:
+                return self.dq[ksel]
         else:
             if self.hdulist is None:
                 return None
@@ -678,7 +703,10 @@ class PixTable(object):
         out : numpy.array
         """
         if self.origin is not None:
-            return self.origin[ksel]
+            if ksel is None:
+                return self.origin
+            else:
+                return self.origin[ksel]
         else:
             if self.hdulist is None:
                 return None
@@ -764,7 +792,10 @@ class PixTable(object):
         out : numpy.array
         """
         if self.weight is not None:
-            return self.weight[ksel]
+            if ksel is None:
+                return self.weight
+            else:
+                return self.weight[ksel]
         else:
             if self.hdulist is None:
                 return None
@@ -1101,11 +1132,11 @@ class PixTable(object):
                     del primary_header["HIERARCH ESO PRO MUSE "\
                                        "PIXTABLE EXP%i LAST" % i]
 
-        # write the result in a new file
+        # return sub pixtable
         if filename is None:
             return PixTable(None, xpos, ypos, lbda, data, dq, stat, origin,\
                weight, primary_header, self.ima, self.wcs)
-        else:
+        else: # write the result in a new file
             write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
                weight, primary_header, self.ima, self.wcs)
             return PixTable(filename)
@@ -1846,3 +1877,99 @@ class PixTable(object):
         wcs = WCS(crval=(ystart, xstart))
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
+    
+    def subtract_slice_median(self, maskfile=None, skysub=True):
+        """
+        Computes the median value for all slices and applies in place
+        a correction to each slice to bring all slices
+        to the same median value.
+        
+        Parameters
+        ----------
+        maskfile : string
+                   mask file to mask out all bright
+                   continuum objects present in the FoV
+        skysub   : boolean
+                   Option for sky subtraction
+        """
+        origin = self.get_origin()   
+        ifu = self.origin2ifu(origin)
+        sli = self.origin2slice(origin)
+
+        if maskfile is not None:
+            xpos = self.get_xpos()
+            ypos = self.get_ypos()
+            xpos_sky, ypos_sky = self.get_pos_sky(xpos=xpos, ypos=ypos)
+            del xpos, ypos
+            from mpdaf.obj import Image
+            ima_mask = Image(maskfile)
+            xmin = []
+            xmax = []
+            ymin = []
+            ymax = []
+            from scipy import ndimage
+            label = ndimage.measurements.label(ima_mask.data.data)[0]
+            for i in np.unique(label):
+                if i != 0:
+                    try:
+                        ksel = np.where(ima_mask.data.data == i)
+                        item = (slice(min(ksel[0]), max(ksel[0]) + 1, None), slice(min(ksel[1]), max(ksel[1]) + 1, None))
+                        coord = ima_mask.wcs[item].get_range()
+                        xmin.append(min(coord[0][1],coord[1][1]))
+                        xmax.append(max(coord[0][1],coord[1][1]))
+                        ymin.append(min(coord[0][0],coord[1][0]))
+                        ymax.append(max(coord[0][0],coord[1][0]))
+                    except:
+                        print 'masking object %i failed'%i
+            del ima_mask
+            nmask = len(xmin)
+            xmin = np.array(xmin, dtype=np.float64)
+            xmax = np.array(xmax, dtype=np.float64)
+            ymin = np.array(ymin, dtype=np.float64)
+            ymax = np.array(ymax, dtype=np.float64)
+        else:
+            nmask = 0
+            xpos_sky = np.empty(0)
+            ypos_sky = np.empty(0)
+            xmin = np.empty(0)
+            xmax = np.empty(0)
+            ymin = np.empty(0)
+            ymax = np.empty(0)
+
+        import mpdaf
+        import ctypes
+        #import _ctypes
+        #global libCmethods
+
+        # load the library, using numpy mechanisms
+        libCmethods = np.ctypeslib.load_library("libCmethods", mpdaf.__path__[0])
+
+        # define argument types
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='CONTIGUOUS')
+
+        # setup the return types and argument types
+        libCmethods.C_slice_correction.restype = None
+        libCmethods.C_slice_correction.argtypes = [array_1d_double, array_1d_int, array_1d_int, array_1d_double, array_1d_double, ctypes.c_int, ctypes.c_int, array_1d_double, array_1d_double, array_1d_double, array_1d_double, array_1d_double, array_1d_double, ctypes.c_int]
+
+        data = self.get_data()
+        result = np.empty_like(data).astype(np.float64)
+        ifu = ifu.astype(np.int32)
+        sli = sli.astype(np.int32)
+        data = data.astype(np.float64)
+        lbda = self.get_lambda()
+        lbda = lbda.astype(np.float64)
+        xpos_sky = xpos_sky.astype(np.float64)
+        ypos_sky = ypos_sky.astype(np.float64)
+        skysub = np.int32(skysub)
+        
+        libCmethods.C_slice_correction(result, ifu, sli, data, lbda, data.shape[0], nmask, xpos_sky, ypos_sky, xmin, ymin, xmax, ymax, skysub)
+
+        # set pixtable data
+        self.set_data(result)
+        
+        # close libray
+        #_ctypes.dlclose(libCmethods._handle)
+       
+        
+        

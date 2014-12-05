@@ -30,7 +30,7 @@
 # DAMAGE.
 # 
 
-from distutils.core import setup, Command
+from distutils.core import setup, Command, Extension
 import os
 #import setuptools
 
@@ -82,6 +82,8 @@ for path in os.listdir('mpdaf_user'):
     if os.path.isfile('mpdaf_user/'+path+'/'+path+'.py'):        
         package_dir['mpdaf_user.'+path] = 'mpdaf_user/'+path
         packages.append('mpdaf_user.'+path)
+        
+#Extension('libCmethods', ['src/subtract_slice_median.c'], libraries=['fopenmp'])
 
 setup(name = 'mpdaf',
       version = '1.1',
@@ -98,4 +100,6 @@ setup(name = 'mpdaf',
       maintainer_email = 'laure.piqueras@univ-lyon1.fr',
       platforms = 'any', 
       cmdclass = {'test': UnitTest, 'fusion': MakeFusion},
+      ext_package='mpdaf',
+      ext_modules=[Extension('libCmethods', ['src/subtract_slice_median.c'], libraries=['m'], extra_link_args=['-fopenmp'])],
      )
