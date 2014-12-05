@@ -485,12 +485,18 @@ out : (n,2) array of dec- and ra- world coordinates.
             return np.array([dy, dx])
         except:
             try:
-                dx = self.wcs.wcs.cdelt[0] \
-                * np.sqrt(self.wcs.wcs.pc[0, 0] * self.wcs.wcs.pc[0, 0] \
-                          + self.wcs.wcs.pc[0, 1] * self.wcs.wcs.pc[0][1])
-                dy = self.wcs.wcs.cdelt[1] \
-                * np.sqrt(self.wcs.wcs.pc[1, 0] * self.wcs.wcs.pc[1, 0] \
-                          + self.wcs.wcs.pc[1, 1] * self.wcs.wcs.pc[1][1])
+                cdelt = self.wcs.wcs.get_cdelt()
+                pc = self.wcs.wcs.get_pc()
+                dx = cdelt[0] \
+                * np.sqrt(pc[0, 0]**2 + pc[0, 1]**2)
+                dy = cdelt[1] \
+                * np.sqrt(pc[1, 0]**2 + pc[1, 1]**2)
+#                 dx = self.wcs.wcs.cdelt[0] \
+#                 * np.sqrt(self.wcs.wcs.pc[0, 0] * self.wcs.wcs.pc[0, 0] \
+#                           + self.wcs.wcs.pc[0, 1] * self.wcs.wcs.pc[0][1])
+#                 dy = self.wcs.wcs.cdelt[1] \
+#                 * np.sqrt(self.wcs.wcs.pc[1, 0] * self.wcs.wcs.pc[1, 0] \
+#                           + self.wcs.wcs.pc[1, 1] * self.wcs.wcs.pc[1][1])
                 return np.array([dy, dx])
             except:
                 raise IOError('No standard WCS')
@@ -529,8 +535,10 @@ out : (n,2) array of dec- and ra- world coordinates.
                                       self.wcs.wcs.cd[1, 1]))
         except:
             try:
-                return np.rad2deg(np.arctan2(self.wcs.wcs.pc[1, 0], \
-                                          self.wcs.wcs.pc[1, 1]))
+                pc = self.wcs.wcs.get_pc()
+                return np.rad2deg(np.arctan2(pc[1, 0], pc[1, 1]))
+                #return np.rad2deg(np.arctan2(self.wcs.wcs.pc[1, 0], \
+                #                          self.wcs.wcs.pc[1, 1]))
             except:
                 raise IOError('No standard WCS')
 
@@ -541,9 +549,13 @@ out : (n,2) array of dec- and ra- world coordinates.
             return self.wcs.wcs.cd
         except:
             try:
-                cd = self.wcs.wcs.pc
-                cd[0,:] *= self.wcs.wcs.cdelt[0]
-                cd[1,:] *= self.wcs.wcs.cdelt[1]
+                #cd = self.wcs.wcs.pc
+                #cd[0,:] *= self.wcs.wcs.cdelt[0]
+                #cd[1,:] *= self.wcs.wcs.cdelt[1]
+                cdelt = self.wcs.wcs.get_cdelt()
+                cd = self.wcs.wcs.get_pc().__copy__()
+                cd[0,:] *= cdelt[0]
+                cd[1,:] *= cdelt[1]
                 return cd
             except:
                 raise IOError('No standard WCS')
@@ -631,7 +643,8 @@ theta : float
             self.wcs.wcs.set()
         except:
             try:
-                new_pc = np.dot(self.wcs.wcs.pc, _mrot)
+                #new_pc = np.dot(self.wcs.wcs.pc, _mrot)
+                new_pc = np.dot(self.wcs.wcs.get_pc(), _mrot)
                 self.wcs.wcs.pc = new_pc
                 self.wcs.wcs.set()
             except:
