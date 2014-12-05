@@ -1912,7 +1912,7 @@ class PixTable(object):
             for i in np.unique(label):
                 if i != 0:
                     try:
-                        ksel = np.where(ima_mask.data.data == i)
+                        ksel = np.where(label == i)
                         item = (slice(min(ksel[0]), max(ksel[0]) + 1, None), slice(min(ksel[1]), max(ksel[1]) + 1, None))
                         coord = ima_mask.wcs[item].get_range()
                         xmin.append(min(coord[0][1],coord[1][1]))
