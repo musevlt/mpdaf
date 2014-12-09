@@ -101,5 +101,5 @@ setup(name = 'mpdaf',
       platforms = 'any', 
       cmdclass = {'test': UnitTest, 'fusion': MakeFusion},
       ext_package='mpdaf',
-      ext_modules=[Extension('libCmethods', ['src/subtract_slice_median.c'], libraries=['m'], extra_link_args=['-fopenmp'])],
+      ext_modules=[Extension('libCmethods', ['src/subtract_slice_median.c'], libraries=['m'], extra_link_args=['-fopenmp'], extra_compile_args=['-fopenmp'])],
      )
