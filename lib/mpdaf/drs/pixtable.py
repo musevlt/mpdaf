@@ -369,7 +369,7 @@ class PixTable(object):
         """Sets xpos column (or a part of it).
         
         Parameters
-        ---------
+        ----------
         xpos : numpy.array
                xpos values
         ksel : output of np.where
@@ -433,7 +433,7 @@ class PixTable(object):
         """Sets ypos column (or a part of it).
         
         Parameters
-        ---------
+        ----------
         ypos : numpy.array
                ypos values
         ksel : output of np.where
@@ -497,7 +497,7 @@ class PixTable(object):
         """Sets lambda column (or a part of it).
         
         Parameters
-        ---------
+        ----------
         lbda : numpy.array
                lbda values
         ksel : output of np.where
@@ -565,7 +565,7 @@ class PixTable(object):
         """Sets data column (or a part of it).
         
         Parameters
-        ---------
+        ----------
         data : numpy.array
                data values
         ksel : output of np.where
@@ -619,7 +619,7 @@ class PixTable(object):
         """Sets stat column (or a part of it).
         
         Parameters
-        ---------
+        ----------
         stat : numpy.array
                stat values
         ksel : output of np.where
@@ -673,7 +673,7 @@ class PixTable(object):
         """Sets dq column (or a part of it).
         
         Parameters
-        ---------
+        ----------
         dq   : numpy.array
                dq values
         ksel : output of np.where
@@ -727,7 +727,7 @@ class PixTable(object):
         """Sets origin column (or a part of it).
         
         Parameters
-        ---------
+        ----------
         origin : numpy.array
                  origin values
         ksel   : output of np.where
@@ -820,7 +820,7 @@ class PixTable(object):
         """Sets weight column (or a part of it).
         
         Parameters
-        ---------
+        ----------
         weight : numpy.array
                  weight values
         ksel   : output of np.where
@@ -858,27 +858,6 @@ class PixTable(object):
             exp = None
         return exp
     
-#     def get(self):
-#         hdulist = pyfits.open(self.filename, memmap=1)
-#         if self.ima:
-#             xpos = hdulist['xpos'].data[:, 0]
-#             ypos = hdulist['ypos'].data[:, 0]
-#             lbda = hdulist['lambda'].data[:, 0]
-#             data = hdulist['data'].data[:, 0]
-#             stat = hdulist['stat'].data[:, 0]
-#             dq = hdulist['dq'].data[:, 0]
-#             origin = hdulist['origin'].data[:, 0]
-#         else:
-#             xpos = hdulist[1].data.field('xpos')
-#             ypos = hdulist[1].data.field('ypos')
-#             lbda = hdulist[1].data.field('lambda')
-#             data = hdulist[1].data.field('data')
-#             stat = hdulist[1].data.field('stat')
-#             dq = hdulist[1].data.field('dq')
-#             origin = hdulist[1].data.field('origin')
-#         hdulist.close()
-#         return xpos, ypos, lbda, data, stat, dq, origin
-
 
     def _extract(self, filename=None, sky=None, lbda=None, ifu=None, \
                 sl=None, xpix=None, ypix=None, exp=None):
