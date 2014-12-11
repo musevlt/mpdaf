@@ -1,10 +1,6 @@
 """ coords.py Manages coordinates"""
 import numpy as np
 try:
-    from astropy.io import fits as pyfits
-except:
-    import pyfits
-try:
     import astropy.wcs as pywcs
 except:
     import pywcs

@@ -1,9 +1,6 @@
 """ rawobj.py Manages raw FITS file"""
 import numpy as np
-try:
-    from astropy.io import fits as pyfits
-except:
-    import pyfits
+from astropy.io import fits as pyfits
 import multiprocessing
 import datetime
 import sys

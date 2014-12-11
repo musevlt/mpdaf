@@ -41,7 +41,7 @@ class CubeList(object):
         self.fscale = None
         self.wcs = None
         self.wave = None
-        self.check_compatibility()
+        #self.check_compatibility()
         
     def info(self):
         """Prints information.

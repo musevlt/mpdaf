@@ -2,10 +2,7 @@
 type MASTER_BIAS MASTER_DARK MASTER_FLAT OBJECT_RESAMPLED
 """
 import numpy as np
-try:
-    from astropy.io import fits as pyfits
-except:
-    import pyfits
+from astropy.io import fits as pyfits
 import pylab
 import datetime
 import os
@@ -448,7 +445,7 @@ class CalibFile(object):
             newstat = np.ndarray.__mul__(self.get_stat(), other * other)
             stat = np.memmap(result.stat, dtype="float32", \
                              shape=(self.ny, self.nx))
-            stat[:] = selfstat[:]
+            stat[:] = newstat[:]
             # pixel quality
             selfdq = self.get_dq()
             dq = np.memmap(result.dq, dtype="int32", shape=(self.ny, self.nx))
@@ -472,7 +469,7 @@ class CalibFile(object):
                 newstat = np.ndarray.__mul__(self.get_stat(), other * other)
                 stat = np.memmap(self.stat, dtype="float32", \
                                  shape=(self.ny, self.nx))
-                stat[:] = selfstat[:]
+                stat[:] = newstat[:]
             return self
 
     def __div__(self, other):
@@ -552,7 +549,7 @@ class CalibDir(object):
         result = CalibDir(self.type, self.dirname)
         if self.dirname == None:
             for ifu, fileobj in self.files.items():
-                files[ifu] = fileobj.copy()
+                self.files[ifu] = fileobj.copy()
         return result
 
     def info(self):

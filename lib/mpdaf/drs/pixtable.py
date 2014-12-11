@@ -3,10 +3,7 @@
 from mpdaf.obj import Image
 from mpdaf.obj import WCS
 import numpy as np
-try:
-    from astropy.io import fits as pyfits
-except:
-    import pyfits
+from astropy.io import fits as pyfits
 import datetime
 import os
 import shutil

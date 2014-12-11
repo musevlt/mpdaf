@@ -1,9 +1,6 @@
 """ cube.py manages Cube objects"""
 import numpy as np
-try:
-    from astropy.io import fits as pyfits
-except:
-    import pyfits
+from astropy.io import fits as pyfits
 import datetime
 import multiprocessing
 import types
