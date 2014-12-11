@@ -68,3 +68,4 @@ from image import Moffat2D
 from cube import iter_spe
 from cube import iter_ima
 import plt_zscale
+from cubelist import CubeList
