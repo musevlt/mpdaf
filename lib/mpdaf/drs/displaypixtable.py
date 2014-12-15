@@ -2,7 +2,6 @@ from mpdaf.obj import CubeDisk
 from mpdaf.drs import PixTable
 from mpdaf.MUSE import Slicer
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import ImageGrid
 import numpy as np
 from mpdaf.obj import plt_zscale
 import matplotlib.cm as cm
@@ -86,7 +85,7 @@ class DisplayPixTable(object):
         If None, det_vmax is set with the IRAF zscale algorithm.
         :type det_vmax: float
         """
-        fig = plt.figure()
+        plt.figure()
         plt.figtext(0.1, 0.05, 'Pixtable %s %s' % (self.pixtable, date), \
                     fontsize=10)
         plt.figtext(0.1, 0.03, 'Cube %s %s' % (self.cube, date), fontsize=10)
@@ -334,7 +333,7 @@ class DisplayPixTable(object):
         del ypix
 
         # plot corresponding image
-        fig = plt.figure()
+        plt.figure()
         plt.figtext(0.1, 0.05, 'Pixtable %s %s' % (self.pixtable, date), \
                     fontsize=10)
         plt.figtext(0.1, 0.03, 'Cube %s %s' % (self.cube, date), fontsize=10)
@@ -346,8 +345,8 @@ class DisplayPixTable(object):
             pixifu = subpix.extract(ifu=ifu)
             list_slice = np.unique(pixifu.origin2slice(pixifu.get_origin()))
             for slice_ccd in list_slice:
-                slice = Slicer.ccd2sky(slice_ccd)
-                p, q = slice_limits[(ifu, slice)]
+                sli = Slicer.ccd2sky(slice_ccd)
+                p, q = slice_limits[(ifu, sli)]
                 p, q = ima.wcs.sky2pix((p, q))[0]
                 d = np.abs((p - ima_center_p) ** 2 + (q - ima_center_q) ** 2)
                 distance.append((d, ifu, slice_ccd, p))
@@ -363,7 +362,7 @@ class DisplayPixTable(object):
             colspan_ima = int(nplots / 2) + 1
         # colspan_spe = nplot - colspan_ima
         plt.subplot2grid((9, nplots), (0, 0), colspan=colspan_ima, rowspan=3)
-        for ifu, slice, p in zip(distance[:, 1], distance[:, 2], \
+        for ifu, sli, p in zip(distance[:, 1], distance[:, 2], \
                                  distance[:, 3]):
             if q < 0:
                 q_label = 0
@@ -371,7 +370,7 @@ class DisplayPixTable(object):
                 q_label = ima.shape[1] - 1
             else:
                 q_label = q
-            plt.annotate('%02d/%02d' % (ifu, slice), xy=(q_label, p - 0.2), \
+            plt.annotate('%02d/%02d' % (ifu, sli), xy=(q_label, p - 0.2), \
                          xycoords='data', textcoords='data', color='b')
             pmin = p - dp_slice / 2.0
             pmax = p + dp_slice / 2.0
@@ -399,10 +398,10 @@ class DisplayPixTable(object):
         list_vmin = []
         list_vmax = []
         list_sliceima = []
-        for ifu, slice in zip(distance[:, 1], distance[:, 2]):
-            print 'plot slice image ifu=%02d slice=%02d ...' % (ifu, slice)
-            pixslice = subpix.extract(ifu=ifu, slice=slice)
-            slice = Slicer.ccd2sky(slice)
+        for ifu, sli in zip(distance[:, 1], distance[:, 2]):
+            print 'plot slice image ifu=%02d slice=%02d ...' % (ifu, sli)
+            pixslice = subpix.extract(ifu=ifu, sl=sli)
+            sli = Slicer.ccd2sky(sli)
             sliceima = pixslice.reconstruct_det_image(ystart=ystart, ystop=ystop)
             del pixslice
             list_sliceima.append(sliceima)
@@ -417,11 +416,11 @@ class DisplayPixTable(object):
             slice_vmax = np.max(list_vmax)
 
         iplot = 0
-        for ifu, slice, sliceima in zip(distance[:, 1], distance[:, 2], \
+        for ifu, sli, sliceima in zip(distance[:, 1], distance[:, 2], \
                                         list_sliceima):
             limits = sliceima.wcs.get_range()
             plt.subplot2grid((9, nplots), (4, iplot), rowspan=3)
-            im = sliceima.plot(title='%02d/%02d' % (ifu, slice), \
+            im = sliceima.plot(title='%02d/%02d' % (ifu, sli), \
                                scale=slice_scale, \
                                vmin=slice_vmin, vmax=slice_vmax, \
                                extent=[limits[0][1], limits[1][1], \
@@ -502,11 +501,11 @@ class DisplayPixTable(object):
         dp_slice = dp_ifu / 12
         dq_slice = float(cub.shape[2]) / 4
 
-        pmin_ifu = np.arange(nifu) * dp_ifu
-        pmax_ifu = np.arange(1, nifu + 1) * dp_ifu
+        #pmin_ifu = np.arange(nifu) * dp_ifu
+        #pmax_ifu = np.arange(1, nifu + 1) * dp_ifu
 
-        p_slice = np.arange(12) * dp_slice + dp_slice / 2.0
-        q_slice = np.arange(4) * dq_slice + dq_slice / 2.0
+        #p_slice = np.arange(12) * dp_slice + dp_slice / 2.0
+        #q_slice = np.arange(4) * dq_slice + dq_slice / 2.0
 
         list_ifu = np.empty((nifu, 48))
         for i, ifu in enumerate(range(ifu_high, ifu_low - 1, -1)):
@@ -545,7 +544,7 @@ class DisplayPixTable(object):
         list_p = coord_sky[:, 0]
         list_q = coord_sky[:, 1]
 
-        slice_limits = dict(((ifu, slice), (p, q)) for ifu, slice, p, q \
+        slice_limits = dict(((ifu, sli), (p, q)) for ifu, sli, p, q \
                             in zip(list_ifu, list_slice, list_p, list_q))
 
         # plot corresponding white image and spectrum

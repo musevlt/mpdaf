@@ -1,10 +1,6 @@
 """ coords.py Manages coordinates"""
 import numpy as np
-try:
-    import astropy.wcs as pywcs
-except:
-    import pywcs
-
+import astropy.wcs as pywcs
 
 def deg2sexa(x):
     """Transforms the values of n coordinates from degrees to sexagesimal.
@@ -819,8 +815,8 @@ shape : integer or None
         """Prints information.
         """
         if self.shape is None:
-            min = (1 - self.crpix) * self.cdelt + self.crval
-            print 'wavelength: min:%0.2f step:%0.2f %s' % (min, self.cdelt, \
+            m = (1 - self.crpix) * self.cdelt + self.crval
+            print 'wavelength: min:%0.2f step:%0.2f %s' % (m, self.cdelt, \
                                                            self.cunit)
         else:
             print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % \

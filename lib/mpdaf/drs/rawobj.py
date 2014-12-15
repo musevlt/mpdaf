@@ -1194,7 +1194,6 @@ class RawFile(object):
         if self.progress:
             print 'reconstruct white image ...'
             import time
-            import sys
             while (True):
                 time.sleep(1)
                 completed = processresult._index
@@ -1221,7 +1220,7 @@ class RawFile(object):
 
         return obj.Image(data=white_ima, wcs=obj.WCS())
 
-    def _plot_ifu_slice_on_white_image(self, ifu, slice):
+    def _plot_ifu_slice_on_white_image(self, ifu, sli):
         # plot channel
         ymin = NB_SLICES * (24 - ifu) - 0.5
         ymax = ymin + NB_SLICES
@@ -1230,8 +1229,8 @@ class RawFile(object):
         plt.annotate('%02d' % ifu, xy=(0, (ymin + ymax) / 2.0),  \
                      xycoords='data', textcoords='data', color='b')
         # plot slice
-        k = np.floor((slice - 1) / NB_SLICES)
-        l = np.mod(slice - 1, NB_SLICES) + 1
+        k = np.floor((sli - 1) / NB_SLICES)
+        l = np.mod(sli - 1, NB_SLICES) + 1
         wr_row = NB_SLICES - slit_position[l - 1] + 12 * (24 - ifu) - 0.5
         wr_col = k * NB_SPEC_PER_SLICE - 0.5
         plt.plot(np.arange(wr_col, wr_col + 76), np.ones(76) * wr_row, 'r-')
@@ -1242,7 +1241,7 @@ class RawFile(object):
                  np.arange(wr_row, wr_row + 2), 'r-')
         self.whiteima.plot(cmap=cm.copper)
 
-    def _plot_slice_on_raw_image(self, ifu, slice, same_raw=False):
+    def _plot_slice_on_raw_image(self, ifu, sli, same_raw=False):
         mask_raw = RawFile(self.mask_file)
         chan = 'CHAN%02d' % ifu
         mask_chan = mask_raw.get_channel(chan)
@@ -1253,17 +1252,17 @@ class RawFile(object):
         - 2 * OVERSCAN
 
         xstart = mask_chan.header['HIERARCH ESO DET '\
-                                  'SLICE%d XSTART' % slice] - OVERSCAN
+                                  'SLICE%d XSTART' % sli] - OVERSCAN
         xend = mask_chan.header['HIERARCH ESO DET '\
-                                'SLICE%d XEND' % slice] - OVERSCAN
+                                'SLICE%d XEND' % sli] - OVERSCAN
         if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xstart -= 2 * OVERSCAN
         if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xend -= 2 * OVERSCAN
         ystart = mask_chan.header['HIERARCH ESO DET '\
-                                  'SLICE%d YSTART' % slice] - OVERSCAN
+                                  'SLICE%d YSTART' % sli] - OVERSCAN
         yend = mask_chan.header['HIERARCH ESO DET '\
-                                'SLICE%d YEND' % slice] - OVERSCAN
+                                'SLICE%d YEND' % sli] - OVERSCAN
         if ystart > (mask_chan.header["ESO DET CHIP NY"] / 2.0):
             ystart -= 2 * OVERSCAN
         if yend > (mask_chan.header["ESO DET CHIP NY"] / 2.0):
@@ -1277,7 +1276,7 @@ class RawFile(object):
                  np.arange(ystart, yend + 1), 'r-')
         plt.plot(np.ones(yend + 1 - ystart) * xend, \
                  np.arange(ystart, yend + 1), 'r-')
-        plt.annotate('%02d' % slice, xy=(xstart, yend + 1), \
+        plt.annotate('%02d' % sli, xy=(xstart, yend + 1), \
                      xycoords='data', textcoords='data', color='r')
         if same_raw is False:
             self.rawima = self.get_channel(chan).get_trimmed_image()
@@ -1294,30 +1293,30 @@ class RawFile(object):
                     k = int(q + 0.5) / NB_SPEC_PER_SLICE
                     pos = NB_SLICES + 12 * (24 - ifu) - int(p + 0.5)
                     l = np.where(slit_position == pos)[0][0] + 1
-                    slice = k * NB_SLICES + l
+                    sli = k * NB_SLICES + l
                     ax = plt.subplot(1, 2, 1)
                     ax.clear()
-                    self._plot_ifu_slice_on_white_image(ifu, slice)
+                    self._plot_ifu_slice_on_white_image(ifu, sli)
                     ax = plt.subplot(1, 2, 2)
                     ax.clear()
                     if ifu == self.plotted_chan:
-                        self._plot_slice_on_raw_image(ifu, slice, \
+                        self._plot_slice_on_raw_image(ifu, sli, \
                                                       same_raw=True)
                     else:
-                        self._plot_slice_on_raw_image(ifu, slice)
+                        self._plot_slice_on_raw_image(ifu, sli)
                 else:
                     p = event.ydata
                     q = event.xdata
                     nq = (self.x2 - self.x1) / 48
-                    slice = int((q + 0.5 - self.x1) / nq) + 1
+                    sli = int((q + 0.5 - self.x1) / nq) + 1
                     ax = plt.subplot(1, 2, 2)
                     ax.clear()
                     self._plot_slice_on_raw_image(self.plotted_chan, \
-                                                  slice, same_raw=True)
+                                                  sli, same_raw=True)
                     ax = plt.subplot(1, 2, 1)
                     ax.clear()
                     self._plot_ifu_slice_on_white_image(self.plotted_chan, \
-                                                        slice)
+                                                        sli)
 
     def plot_white_image(self, mask=None):
         """Reconstructs the white image of the FOV using a mask file
@@ -1413,11 +1412,11 @@ def _process_white_image(arglist):
     ima *= mask
     spe = ima.sum(axis=0)
     data = np.empty((48, NB_SPEC_PER_SLICE))
-    for slice in range(1, 49):
+    for sli in range(1, 49):
         xstart = mask_chan.header['HIERARCH ESO DET '\
-                                  'SLICE%d XSTART' % slice] - OVERSCAN
+                                  'SLICE%d XSTART' % sli] - OVERSCAN
         xend = mask_chan.header['HIERARCH ESO DET '\
-                                'SLICE%d XEND' % slice] - OVERSCAN
+                                'SLICE%d XEND' % sli] - OVERSCAN
         if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xstart -= 2 * OVERSCAN
         if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
@@ -1443,7 +1442,7 @@ def _process_white_image(arglist):
             spe_slice_75pix[i] = integrate.quad(f, x[i], x[i + 1], \
                                                 full_output=1)[0] / new_step
 
-        data[slice - 1, :] = spe_slice_75pix
+        data[sli - 1, :] = spe_slice_75pix
     return (ifu, data)
 
 

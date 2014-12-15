@@ -1406,7 +1406,6 @@ out : Image or Cube object.
                     wcs = None
                 if is_int(item[0]):
                     from spectrum import Spectrum
-                    from coords import WaveCoord
                     if self.wcs.is_deg():
                         cunit = 'deg'
                     else:
@@ -1422,7 +1421,6 @@ out : Image or Cube object.
                     return res
                 elif is_int(item[1]):
                     from spectrum import Spectrum
-                    from coords import WaveCoord
                     if self.wcs.is_deg():
                         cunit = 'deg'
                     else:
@@ -1452,7 +1450,6 @@ out : Image or Cube object.
                     if self.var is not None:
                         var = self.var[item]
                     from spectrum import Spectrum
-                    from coords import WaveCoord
                     if self.wcs.is_deg():
                         cunit = 'deg'
                     else:
@@ -1995,7 +1992,6 @@ out : float or Image
                 start = self.wcs.get_start()[0]
 
             from spectrum import Spectrum
-            from coords import WaveCoord
             if self.wcs.is_deg():
                 cunit = 'deg'
             else:
