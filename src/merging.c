@@ -73,7 +73,7 @@ double median(double* data, int n)
   return data[n / 2];
 }
 
-int merging_median(char* input, char* output)
+int merging_median(char* input, char* output, char* output_path)
 {
   int status = 0;  /* CFITSIO status value MUST be initialized to zero! */
   
@@ -90,10 +90,16 @@ int merging_median(char* input, char* output)
   struct tm *info;
  
   // output filenames
-  strcpy(cube_filename, output);
-  strcat(cube_filename,"_cube.fits\0" );
-  strcpy(expmap_filename, output);
-  strcat(expmap_filename,"_expmap.fits\0" );
+  strcpy(cube_filename, output_path);
+  strcat(cube_filename, "/DATACUBE_");
+  strcat(cube_filename, output);
+  strcat(cube_filename,".fits\0" );
+  
+  
+  strcpy(expmap_filename, output_path);
+  strcat(expmap_filename, "/EXPMAP_");
+  strcat(expmap_filename, output);
+  strcat(expmap_filename,".fits\0" );
 
   // read input files list
   nfiles = 0;
@@ -270,7 +276,7 @@ int merging_median(char* input, char* output)
 }
 
 
-int merging_sigma_clipping(char* input, char* output, int nmax, double nclip, int nstop, int var_mean)
+int merging_sigma_clipping(char* input, char* output, char* output_path, int nmax, double nclip, int nstop, int var_mean)
 {
   int status = 0;  //CFITSIO status value MUST be initialized to zero!
   int naxis, i, ii, n;
@@ -285,7 +291,7 @@ int merging_sigma_clipping(char* input, char* output, int nmax, double nclip, in
   char* filenames[500];
   double* pix[100];
   fitsfile* fptr[100]; 
-  FILE *farg, *fpix;
+  FILE *fpix;
   double x[3];
 
   char buffer[80], begin[80];
@@ -293,12 +299,20 @@ int merging_sigma_clipping(char* input, char* output, int nmax, double nclip, in
   struct tm *info;
 
   // output filenames
-  strcpy(cube_filename, output);
-  strcat(cube_filename,"_cube.fits\0" );
-  strcpy(expmap_filename, output);
-  strcat(expmap_filename,"_expmap.fits\0" );
-  strcpy(novalid_filename, output);
-  strcat(novalid_filename,"_novalid.txt\0" );
+  strcpy(cube_filename, output_path);
+  strcat(cube_filename, "/DATACUBE_");
+  strcat(cube_filename, output);
+  strcat(cube_filename,".fits\0" );
+  
+  strcpy(expmap_filename, output_path);
+  strcat(expmap_filename, "/EXPMAP_");
+  strcat(expmap_filename, output);
+  strcat(expmap_filename,".fits\0" );
+
+  strcpy(novalid_filename, output_path);
+  strcat(novalid_filename, "/NOVALID_");
+  strcat(novalid_filename, output);
+  strcat(novalid_filename,".txt\0" );
 
   // read input files list
   nfiles = 0;

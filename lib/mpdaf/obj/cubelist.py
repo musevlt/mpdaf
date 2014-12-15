@@ -129,15 +129,18 @@ class CubeList(object):
         else:
             return False
         
-    def median(self, output):
+    def median(self, output, output_path='.'):
         """merges cubes in a single data cube using median
         
         Parameters
         ----------
-        output   : string
-                   output_cube.fits will contain the merged cube
-                   output_expmap.fits will contain an exposure map data cube 
-                   which counts the number of exposures used for the combination of each pixel.
+        output      : string
+                      DATACUBE_<output>.fits will contain the merged cube
+                      EXPMAP_<output>.fits will contain an exposure map
+                      data cube which counts the number of exposures used
+                      for the combination of each pixel.
+        output_path : string
+                      Output path where resulted cubes are stored.
         """
         import mpdaf
         import ctypes
@@ -149,31 +152,37 @@ class CubeList(object):
         # setup argument types
         libCmethods.merging_median.argtypes = [charptr, charptr]
         # run C method
-        libCmethods.merging_median(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output))
+        libCmethods.merging_median(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path))
         
         
-    def merging(self, output, nmax=2, nclip=5.0, nstop=2, var_mean=True):
-        """merges cubes in a single data cube using median
-        or sigma clipped mean.
+    def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var_mean=True):
+        """merges cubes in a single data cube using sigma clipped mean.
         
         Parameters
         ----------
-        output   : string
-                   output_cube.fits, output_expmap.fits, output_novalid.txt
-        nmax     : integer
-                   maximum number of clipping iterations
-        nclip    : float
-                   Number of sigma at which to clip.
-        nstop    : integer
-                   If the number of not rejected pixels is less
-                   than this number, the clipping iterations stop.   
-        var_mean : boolean
-                   True: the variance of each combined pixel is computed
-                   as the variance derived from the comparison of the
-                   N individual exposures divided N-1.
-                   False: the variance of each combined pixel is computed
-                   as the variance derived from the comparison of the
-                   N individual exposures.
+        output      : string
+                      DATACUBE_<output>.fits will contain the merged cube
+                      EXPMAP_<output>.fits will contain an exposure map
+                      data cube which counts the number of exposures used
+                      for the combination of each pixel.
+                      NOVALID_<output>.txt will give the number of invalid
+                      pixels per exposures.
+        output_path : string
+                      Output path where resulted cubes are stored.
+        nmax        : integer
+                      maximum number of clipping iterations
+        nclip       : float
+                      Number of sigma at which to clip.
+        nstop       : integer
+                      If the number of not rejected pixels is less
+                      than this number, the clipping iterations stop.   
+        var_mean    : boolean
+                      True: the variance of each combined pixel is computed
+                      as the variance derived from the comparison of the
+                      N individual exposures divided N-1.
+                      False: the variance of each combined pixel is computed
+                      as the variance derived from the comparison of the
+                      N individual exposures.
         """
         import mpdaf
         import ctypes
@@ -183,7 +192,7 @@ class CubeList(object):
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
         # setup argument types
-        libCmethods.merging_sigma_clipping.argtypes = [charptr, charptr, ctypes.c_int, ctypes.c_double, ctypes.c_int, ctypes.c_int]
+        libCmethods.merging_sigma_clipping.argtypes = [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double, ctypes.c_int, ctypes.c_int]
         # run C method
-        libCmethods.merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), nmax, np.float64(nclip), nstop, np.int32(var_mean))
+        libCmethods.merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path), nmax, np.float64(nclip), nstop, np.int32(var_mean))
         
