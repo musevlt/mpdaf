@@ -345,10 +345,7 @@ out : (n,2) array of pixel coordinates.
             pixsky[:, 1] = x[:, 0]
         else:
             raise IOError('invalid input coordinates for sky2pix')
-        try:
-            pixcrd = self.wcs.wcs_world2pix(pixsky, 0)
-        except:
-            pixcrd = self.wcs.wcs_sky2pix(pixsky, 0)
+        pixcrd = self.wcs.wcs_world2pix(pixsky, 0)
         res = np.array(pixcrd)
         if nearest:
             res[:, 0] = (pixcrd[:, 1] + 0.5).astype(int)
@@ -379,10 +376,7 @@ out : (n,2) array of dec- and ra- world coordinates.
             pixcrd[:, 1] = x[:, 0]
         else:
             raise IOError('invalid input coordinates for pix2sky')
-        try:
-            pixsky = self.wcs.wcs_pix2world(pixcrd, 0)
-        except:
-            pixsky = self.wcs.wcs_pix2sky(pixcrd, 0)
+        pixsky = self.wcs.wcs_pix2world(pixcrd, 0)
         res = np.array(pixsky)
         res[:, 0] = pixsky[:, 1]
         res[:, 1] = pixsky[:, 0]
