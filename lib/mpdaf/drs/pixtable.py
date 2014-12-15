@@ -5,8 +5,6 @@ from mpdaf.obj import WCS
 import numpy as np
 from astropy.io import fits as pyfits
 import datetime
-import os
-import shutil
 import warnings
 import logging
 
@@ -17,7 +15,7 @@ logger = logging.getLogger('mpdaf corelib')
 
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
-          primary_header=None, save_as_ima=True, wcs='pix'):
+          primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom'):
     """Saves the object in a FITS file.
     
     Parameters
@@ -27,11 +25,8 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
     save_as_ima : bool
                   If True, pixtable is saved as multi-extension FITS
     """
-    try:
-        # remove in pyfits version >3.0
-        pyfits.setExtensionNameCaseSensitive()
-    except:
-        pyfits.conf.extension_name_case_sensitive = True
+    pyfits.conf.extension_name_case_sensitive = True
+    
     prihdu = pyfits.PrimaryHDU()
     warnings.simplefilter("ignore")
     if primary_header is not None:
@@ -79,7 +74,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None, \
         hdu = pyfits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = wcs
         hdu[2].header['BUNIT'] = wcs
-        hdu[3].header['BUNIT'] = 'Angstrom'
+        hdu[3].header['BUNIT'] = wave
         hdu[4].header['BUNIT'] = 'count'
         hdu[6].header['BUNIT'] = 'count**2'
         if weight is not None:
@@ -143,7 +138,7 @@ class PixTable(object):
     """
 
     def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None, dq=None, stat=None, origin=None, weight=None, \
-          primary_header=None, save_as_ima=True, wcs='pix'):
+          primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom'):
         """creates a PixTable object
 
         Parameters
@@ -158,6 +153,7 @@ class PixTable(object):
         """
         self.filename = filename
         self.wcs = wcs
+        self.wave = wave
         self.ima = save_as_ima
         
         self.xpos = None
@@ -177,13 +173,15 @@ class PixTable(object):
             try:
                 self.hdulist = pyfits.open(self.filename, memmap=1)
                 self.primary_header = self.hdulist[0].header
-                self.nrows = self.hdulist[1].header["NAXIS2"]
-                self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
+                self.nrows = self.hdulist['xpos'].header["NAXIS2"]
+                self.ima = (self.hdulist['xpos'].header['XTENSION'] == 'IMAGE')
                 
                 if self.ima:
-                    self.wcs = self.hdulist[1].header['BUNIT']
+                    self.wcs = self.hdulist['xpos'].header['BUNIT']
+                    self.wave = self.hdulist['lambda'].header['BUNIT']
                 else:
-                    self.wcs = self.hdulist[1].header['TUNIT1']
+                    self.wcs = self.hdulist['xpos'].header['TUNIT1']
+                    self.wave = self.hdulist['lambda'].header['TUNIT1']
             except IOError:
                 raise IOError('file %s not found' % filename)
         else:
@@ -247,15 +245,12 @@ class PixTable(object):
             except:
                 cunit = 'pix'
             if cunit == 'rad':
-                self.wcs = 'rad'
                 self.xc = self.primary_header['RA'] * 180 / np.pi
                 self.yc = self.primary_header['DEC'] * 180 / np.pi
             elif cunit == 'deg':
-                self.wcs = 'deg'
                 self.xc = self.primary_header['RA']
                 self.yc = self.primary_header['DEC']
             else:
-                self.wcs = 'pix'
                 self.xc = 0.0
                 self.yc = 0.0
 
@@ -270,6 +265,7 @@ class PixTable(object):
         result.skysub = self.skysub
         result.fluxcal = self.fuxcal
         result.wcs = self.wcs
+        result.wave = self.wave
         result.ima = self.ima
         result.primary_header = pyfits.Header(self.primary_header)
         result.xpos = self.xpos
@@ -324,7 +320,7 @@ class PixTable(object):
         write(filename, self.get_xpos(), self.get_ypos(), \
               self.get_lambda(), self.get_data(), self.get_dq(), \
               self.get_stat(), self.get_origin(), self.get_weight(), \
-              self.primary_header, save_as_ima, self.wcs)
+              self.primary_header, save_as_ima, self.wcs, self.wave)
         
         self.filename = filename
         self.ima = save_as_ima
@@ -1111,10 +1107,10 @@ class PixTable(object):
         # return sub pixtable
         if filename is None:
             return PixTable(None, xpos, ypos, lbda, data, dq, stat, origin,\
-               weight, primary_header, self.ima, self.wcs)
+               weight, primary_header, self.ima, self.wcs, self.wave)
         else: # write the result in a new file
             write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
-               weight, primary_header, self.ima, self.wcs)
+               weight, primary_header, self.ima, self.wcs, self.wave)
             return PixTable(filename)
     
     
@@ -1366,10 +1362,10 @@ class PixTable(object):
         # write the result in a new file
         if filename is None:
             return PixTable(None, xpos, ypos, lbda, data, dq, stat, origin,\
-               weight, primary_header, self.ima, self.wcs)
+               weight, primary_header, self.ima, self.wcs, self.wave)
         else:
             write(filename, xpos, ypos, lbda, data, dq, stat, origin,\
-               weight, primary_header, self.ima, self.wcs)
+               weight, primary_header, self.ima, self.wcs, self.wave)
             return PixTable(filename)
     
 
@@ -1398,11 +1394,11 @@ class PixTable(object):
                    The FITS filename used to saves the resulted object.
         sky      : (float, float, float, char)
                    (y, x, size, shape) extract an aperture on the sky,
-                   defined by a center (y, x),
+                   defined by a center (y, x) in degrees/pixel,
                    a shape ('C' for circular, 'S' for square)
-                   and size (radius or half side length).
+                   and size (radius or half side length) in arcsec/pixels.
         lbda     : (float, float)
-                   (min, max) wavelength range in Angstrom.
+                   (min, max) wavelength range in wavelength unit.
         ifu      : int
                    IFU number.
         sl       : int
@@ -1745,7 +1741,7 @@ class PixTable(object):
         if self.wcs == "deg": #arcsec to deg
             xstep /= (-3600. * np.cos((ymin + ymax) * np.pi / 180. / 2.))
             ystep /= 3600.
-        elif self.wcs == "deg": #arcsec to rad
+        elif self.wcs == "rad": #arcsec to rad
             xstep /= (-3600. * 180. / np.pi * np.cos((ymin + ymax) / 2.))
             ystep /= (3600. * 180. / np.pi)
         else: #pix
