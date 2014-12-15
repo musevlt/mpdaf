@@ -1351,15 +1351,18 @@ var : float array
             else:
                 raise ValueError('var and data have not the same dimensions.')
 
-    def mask(self, lmin=None, lmax=None):
-        """Masks the spectrum on [lmin,lmax].
+    def mask(self, lmin=None, lmax=None, inside=True):
+        """Masks the spectrum inside/outside [lmin,lmax].
 
 Parameters
 ----------
-lmin : float
-       minimum wavelength.
-lmax : float
-       maximum wavelength.
+lmin   : float
+         minimum wavelength.
+lmax   : float
+         maximum wavelength.
+inside : boolean
+         If inside is True, pixels inside [lmin,lmax] are masked.
+         If inside is False, pixels outside [lmin,lmax] are masked.
         """
         if self.wave is None:
             raise ValueError('Operation forbidden without world coordinates '\
@@ -1375,7 +1378,11 @@ lmax : float
                 pix_max = min(self.shape, \
                               self.wave.pixel(lmax, nearest=True) + 1)
 
-            self.data[pix_min:pix_max] = np.ma.masked
+            if inside:
+                self.data[pix_min:pix_max] = np.ma.masked
+            else:
+                self.data[:pix_min] = np.ma.masked
+                self.data[pix_max+1:] = np.ma.masked
 
     def unmask(self):
         """Unmasks the spectrum (just invalid data (nan,inf) are masked).
