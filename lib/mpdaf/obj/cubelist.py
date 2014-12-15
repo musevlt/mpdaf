@@ -41,7 +41,7 @@ class CubeList(object):
         self.fscale = None
         self.wcs = None
         self.wave = None
-        #self.check_compatibility()
+        self.check_compatibility()
         
     def info(self):
         """Prints information.
@@ -71,7 +71,7 @@ class CubeList(object):
             return True
             
     def check_wcs(self):
-        """Checks if all cubes have same word coordinates.
+        """Checks if all cubes have same world coordinates.
         """
         cub0 = CubeDisk(self.files[0])
         self.wcs = cub0.wcs
@@ -136,6 +136,7 @@ class CubeList(object):
         ----------
         output      : string
                       DATACUBE_<output>.fits will contain the merged cube
+                      
                       EXPMAP_<output>.fits will contain an exposure map
                       data cube which counts the number of exposures used
                       for the combination of each pixel.
@@ -162,9 +163,11 @@ class CubeList(object):
         ----------
         output      : string
                       DATACUBE_<output>.fits will contain the merged cube
+                      
                       EXPMAP_<output>.fits will contain an exposure map
                       data cube which counts the number of exposures used
                       for the combination of each pixel.
+                      
                       NOVALID_<output>.txt will give the number of invalid
                       pixels per exposures.
         output_path : string
@@ -180,6 +183,7 @@ class CubeList(object):
                       True: the variance of each combined pixel is computed
                       as the variance derived from the comparison of the
                       N individual exposures divided N-1.
+                      
                       False: the variance of each combined pixel is computed
                       as the variance derived from the comparison of the
                       N individual exposures.
