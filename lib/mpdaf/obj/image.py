@@ -368,7 +368,7 @@ class Image(object):
                         self.wcs.set_naxis1(self.shape[1])
                         self.wcs.set_naxis2(self.shape[0])
                         if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-                            and (wcs.naxis1 != self.shape[1] \
+                            and (wcs.naxis1 != self.shape[1]
                                  or wcs.naxis2 != self.shape[0]):
                             d = {'class': 'Image', 'method': '__init__'}
                             logger.warning('world coordinates and data have '
@@ -409,7 +409,7 @@ class Image(object):
                         self.wcs.set_naxis1(self.shape[1])
                         self.wcs.set_naxis2(self.shape[0])
                         if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-                            and (wcs.naxis1 != self.shape[1] \
+                            and (wcs.naxis1 != self.shape[1]
                                  or wcs.naxis2 != self.shape[0]):
                             d = {'class': 'Image', 'method': '__init__'}
                             logger.warning('world coordinates and data have '
@@ -509,7 +509,7 @@ class Image(object):
                     self.wcs.set_naxis1(self.shape[1])
                     self.wcs.set_naxis2(self.shape[0])
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-                        and (wcs.naxis1 != self.shape[1] \
+                        and (wcs.naxis1 != self.shape[1]
                              or wcs.naxis2 != self.shape[0]):
                         d = {'class': 'Image', 'method': '__init__'}
                         logger.warning("world coordinates and data have not "
@@ -561,10 +561,10 @@ class Image(object):
         except:
             wcs = None
         if var is False:
-            ima = Image(wcs=wcs, data=np.zeros(shape=self.shape), \
+            ima = Image(wcs=wcs, data=np.zeros(shape=self.shape),
                         unit=self.unit)
         else:
-            ima = Image(wcs=wcs, data=np.zeros(shape=self.shape), \
+            ima = Image(wcs=wcs, data=np.zeros(shape=self.shape),
                         var=np.zeros(shape=self.shape), unit=self.unit)
         return ima
 
@@ -754,7 +754,7 @@ class Image(object):
         """
         result = self.copy()
         if self.data is not None:
-            result.data = np.ma.masked_greater_equal(self.data, \
+            result.data = np.ma.masked_greater_equal(self.data,
                                                      item / self.fscale)
         return result
 
@@ -1009,14 +1009,14 @@ class Image(object):
                             res.var = None
                         elif self.var is None:
                             res.var = other.var \
-                                * np.double(other.fscale * other.fscale \
+                                * np.double(other.fscale * other.fscale
                                             / self.fscale / self.fscale)
                         elif other.var is None:
                             res.var = np.ones(res.shape) \
                             * self.var[np.newaxis,:,:]
                         else:
                             res.var = self.var[np.newaxis,:,:] + other.var \
-                                * np.double(other.fscale * other.fscale \
+                                * np.double(other.fscale * other.fscale
                                             / self.fscale / self.fscale)
                         # data
                         res.data = self.data[np.newaxis,:,:] \
@@ -1090,10 +1090,10 @@ out : Spectrum or Image or Cube object.
             if other.image:
                 if other.data is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
-                    raise IOError('Operation forbidden for images '\
+                    raise IOError('Operation forbidden for images '
                                   'with different sizes')
                 else:
-                    res = Image(shape=self.shape, \
+                    res = Image(shape=self.shape,
                                 fscale=self.fscale)
                     # coordinates
                     if self.wcs is None or other.wcs is None:
@@ -1101,7 +1101,7 @@ out : Spectrum or Image or Cube object.
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        raise IOError('Operation forbidden for images '\
+                        raise IOError('Operation forbidden for images '
                                       'with different world coordinates')
                     # variance
                     if self.var is None and other.var is None:
@@ -1113,7 +1113,7 @@ out : Spectrum or Image or Cube object.
                         res.var = self.var * other.data * other.data \
                             * other.fscale * other.fscale
                     else:
-                        res.var = (other.var * self.data * self.data + \
+                        res.var = (other.var * self.data * self.data +
                                    self.var * other.data * other.data) \
                             * other.fscale * other.fscale
                     # data
@@ -1143,13 +1143,13 @@ out : Spectrum or Image or Cube object.
                     # (cube[k,j,i]=image[j,i]*spectrum[k]
                     if other.spectrum:
                         if other.data is None:
-                            raise IOError('Operation forbidden '\
+                            raise IOError('Operation forbidden '
                                           'for empty data')
                         else:
                             from cube import Cube
                             shape = (other.shape, self.shape[0], self.shape[1])
-                            res = Cube(shape=shape, wave=other.wave, \
-                                       wcs=self.wcs, \
+                            res = Cube(shape=shape, wave=other.wave,
+                                       wcs=self.wcs,
                                        fscale=self.fscale)
                             # data
                             res.data = self.data[np.newaxis,:,:] \
@@ -1169,11 +1169,11 @@ out : Spectrum or Image or Cube object.
                                     * other.data * other.data \
                                     * other.fscale * other.fscale
                             else:
-                                res.var = (np.ones(res.shape) \
-                                           * other.var[:, np.newaxis, np.newaxis] \
-                                           * self.data * self.data \
-                                           + np.ones(res.shape) \
-                                * self.var[np.newaxis,:,:] \
+                                res.var = (np.ones(res.shape)
+                                           * other.var[:, np.newaxis, np.newaxis]
+                                           * self.data * self.data
+                                           + np.ones(res.shape)
+                                * self.var[np.newaxis,:,:]
                                            * other.data * other.data) \
                                     * other.fscale * other.fscale
                             # unit
@@ -1224,10 +1224,10 @@ out : Image or Cube object.
             if other.image:
                 if other.data is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
-                    raise IOError('Operation forbidden '\
+                    raise IOError('Operation forbidden '
                                   'for images with different sizes')
                 else:
-                    res = Image(shape=self.shape, \
+                    res = Image(shape=self.shape,
                                 fscale=self.fscale)
                     # coordinates
                     if self.wcs is None or other.wcs is None:
@@ -1235,7 +1235,7 @@ out : Image or Cube object.
                     elif self.wcs.isEqual(other.wcs):
                         res.wcs = self.wcs
                     else:
-                        raise IOError('Operation forbidden for images '\
+                        raise IOError('Operation forbidden for images '
                                       'with different world coordinates')
                     # variance
                     if self.var is None and other.var is None:
@@ -1247,7 +1247,7 @@ out : Image or Cube object.
                         res.var = self.var * other.data * other.data / \
                             (other.data ** 4) / other.fscale / other.fscale
                     else:
-                        res.var = (other.var * self.data * self.data \
+                        res.var = (other.var * self.data * self.data
                                    + self.var * other.data * other.data) \
                             / (other.data ** 4) / (other.fscale ** 2)
                     # data
@@ -1269,11 +1269,11 @@ out : Image or Cube object.
                 if other.cube:
                     if other.data is None or self.shape[0] != other.shape[1] \
                             or self.shape[1] != other.shape[2]:
-                        raise ValueError('Operation forbidden for images '\
+                        raise ValueError('Operation forbidden for images '
                                          'with different sizes')
                     else:
                         from cube import Cube
-                        res = Cube(shape=other.shape, wave=other.wave, \
+                        res = Cube(shape=other.shape, wave=other.wave,
                                    fscale=self.fscale)
                         # coordinates
                         if self.wcs is None or other.wcs is None:
@@ -1281,8 +1281,8 @@ out : Image or Cube object.
                         elif self.wcs.isEqual(other.wcs):
                             res.wcs = self.wcs
                         else:
-                            raise ValueError('Operation forbidden '\
-                                             'for objects with different'\
+                            raise ValueError('Operation forbidden '
+                                             'for objects with different'
                                              ' world coordinates')
                         # variance
                         if self.var is None and other.var is None:
@@ -1297,9 +1297,9 @@ out : Image or Cube object.
                                 / (other.data ** 4) / (other.fscale ** 2)
                         else:
                             res.var = \
-                            (other.var * self.data[np.newaxis,:,:] \
-                             * self.data[np.newaxis,:,:] \
-                             + self.var[np.newaxis,:,:] \
+                            (other.var * self.data[np.newaxis,:,:]
+                             * self.data[np.newaxis,:,:]
+                             + self.var[np.newaxis,:,:]
                              * other.data * other.data) \
                                 / (other.data ** 4) / (other.fscale ** 2)
                         # data
@@ -1402,11 +1402,11 @@ out : Image or Cube object.
                         cunit = 'deg'
                     else:
                         cunit = 'pixel'
-                    wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1], \
-                                     crval=self.get_start()[1], cunit=cunit, \
+                    wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1],
+                                     crval=self.get_start()[1], cunit=cunit,
                                      shape=data.shape[0])
-                    res = Spectrum(shape=data.shape[0], wave=wave, \
-                                   unit=self.unit, data=data, var=var, \
+                    res = Spectrum(shape=data.shape[0], wave=wave,
+                                   unit=self.unit, data=data, var=var,
                                    fscale=self.fscale)
                     res.data = data
                     res.var = var
@@ -1417,17 +1417,17 @@ out : Image or Cube object.
                         cunit = 'deg'
                     else:
                         cunit = 'pixel'
-                    wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0], \
-                                     crval=self.get_start()[0], cunit=cunit, \
+                    wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0],
+                                     crval=self.get_start()[0], cunit=cunit,
                                      shape=data.shape[0])
-                    res = Spectrum(shape=data.shape[0], wave=wave, \
-                                   unit=self.unit, data=data, var=var, \
+                    res = Spectrum(shape=data.shape[0], wave=wave,
+                                   unit=self.unit, data=data, var=var,
                                    fscale=self.fscale)
                     res.data = data
                     res.var = var
                     return res
                 else:
-                    res = Image(shape=data.shape, wcs=wcs, \
+                    res = Image(shape=data.shape, wcs=wcs,
                                 unit=self.unit, fscale=self.fscale)
                     res.data = data
                     res.var = var
@@ -1447,15 +1447,15 @@ out : Image or Cube object.
                     else:
                         cunit = 'pixel'
                     if self.shape[0] == 1:
-                        wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1],\
-                                         crval=self.get_start()[1], \
+                        wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1],
+                                         crval=self.get_start()[1],
                                          cunit=cunit, shape=data.shape[0])
                     else:
-                        wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0],\
-                                         crval=self.get_start()[0], \
+                        wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0],
+                                         crval=self.get_start()[0],
                                          cunit=cunit, shape=data.shape[0])
-                    res = Spectrum(shape=data.shape[0], wave=wave, \
-                                   unit=self.unit, data=data, \
+                    res = Spectrum(shape=data.shape[0], wave=wave,
+                                   unit=self.unit, data=data,
                                    var=var, fscale=self.fscale)
                     res.data = data
                     res.var = var
@@ -1547,10 +1547,10 @@ wcs : :class:`mpdaf.obj.WCS`
         self.wcs.set_naxis1(self.shape[1])
         self.wcs.set_naxis2(self.shape[0])
         if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-            and (wcs.naxis1 != self.shape[1] \
+            and (wcs.naxis1 != self.shape[1]
                  or wcs.naxis2 != self.shape[0]):
             d = {'class': 'Image', 'method': 'set_wcs'}
-            logger.warning('world coordinates and data have not '\
+            logger.warning('world coordinates and data have not '
                            'the same dimensions', extra=d)
 
     def set_var(self, var):
@@ -1621,12 +1621,12 @@ inside : boolean
                 pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
                 pixcrd[:, 0] -= center[0]
                 pixcrd[:, 1] -= center[1]
-                m[i_in,:] = ((np.array(pixcrd[:, 0]) \
-                              * np.array(pixcrd[:, 0]) \
-                              + np.array(pixcrd[:, 1]) \
+                m[i_in,:] = ((np.array(pixcrd[:, 0])
+                              * np.array(pixcrd[:, 0])
+                              + np.array(pixcrd[:, 1])
                               * np.array(pixcrd[:, 1])) < radius2)
             try:
-                m = np.ma.mask_or(m, np.ma.getmask(self.data)\
+                m = np.ma.mask_or(m, np.ma.getmask(self.data)
                                   [imin:imax, jmin:jmax])
                 self.data.mask[imin:imax, jmin:jmax] = m
             except:
@@ -1644,11 +1644,11 @@ inside : boolean
                 pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
                 pixcrd[:, 0] -= center[0]
                 pixcrd[:, 1] -= center[1]
-                m[i_in,:] = ((np.array(pixcrd[:, 0]) \
-                              * np.array(pixcrd[:, 0]) \
-                              + np.array(pixcrd[:, 1]) \
+                m[i_in,:] = ((np.array(pixcrd[:, 0])
+                              * np.array(pixcrd[:, 0])
+                              + np.array(pixcrd[:, 1])
                               * np.array(pixcrd[:, 1])) > radius2)
-            m = np.ma.mask_or(m, np.ma.getmask(self.data)\
+            m = np.ma.mask_or(m, np.ma.getmask(self.data)
                               [imin:imax, jmin:jmax])
             self.data.mask[imin:imax, jmin:jmax] = m
         else:
@@ -1706,10 +1706,10 @@ inside : boolean
                 listy = np.array(pixcrd[:, 0])
                 listx = np.array(pixcrd[:, 1])
 
-                m[i_in,:] = (((listx*cospa+listy*sinpa)/radius[0])**2 \
+                m[i_in,:] = (((listx*cospa+listy*sinpa)/radius[0])**2
                              + ((listy * cospa - listx * sinpa) / radius[1]) ** 2 < 1)
             try:
-                m = np.ma.mask_or(m, np.ma.getmask(self.data)\
+                m = np.ma.mask_or(m, np.ma.getmask(self.data)
                                   [imin:imax, jmin:jmax])
                 self.data.mask[imin:imax, jmin:jmax] = m
             except:
@@ -1732,10 +1732,10 @@ inside : boolean
                 listy = np.array(pixcrd[:, 0])
                 listx = np.array(pixcrd[:, 1])
 
-                m[i_in,:] = (((listx*cospa+listy*sinpa)/radius[0])**2 \
+                m[i_in,:] = (((listx*cospa+listy*sinpa)/radius[0])**2
                              + ((listy * cospa - listx * sinpa) / radius[1]) ** 2 > 1)
 
-            m = np.ma.mask_or(m, np.ma.getmask(self.data)\
+            m = np.ma.mask_or(m, np.ma.getmask(self.data)
                               [imin:imax, jmin:jmax])
             self.data.mask[imin:imax, jmin:jmax] = m
 
@@ -1754,7 +1754,7 @@ threshold : float
             Threshold value.
         """
         if self.var is None:
-            raise ValueError('Operation forbidden without '\
+            raise ValueError('Operation forbidden without '
                              'variance extension.')
         else:
             ksel = np.where(self.var > threshold)
@@ -1787,7 +1787,7 @@ mask  : boolean
         if True, pixels outside [dec_min,dec_max]
         and [ra_min,ra_max] are masked.
         """
-        skycrd = [[y_min, x_min], [y_min, x_max], \
+        skycrd = [[y_min, x_min], [y_min, x_max],
                   [y_max, x_min], [y_max, x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
 
@@ -1817,7 +1817,7 @@ mask  : boolean
             # mask outside pixels
             m = np.ma.make_mask_none(self.data.shape)
             for j in range(self.shape[0]):
-                pixcrd = np.array([np.ones(self.shape[1]) \
+                pixcrd = np.array([np.ones(self.shape[1])
                                    * j, np.arange(self.shape[1])]).T
                 skycrd = self.wcs.pix2sky(pixcrd)
                 test_ra_min = np.array(skycrd[:, 1]) < x_min
@@ -1985,9 +1985,9 @@ out : float or Image
                 cunit = 'deg'
             else:
                 cunit = 'pixel'
-            wave = WaveCoord(crpix=1.0, cdelt=step, crval=start, \
+            wave = WaveCoord(crpix=1.0, cdelt=step, crval=start,
                              cunit=cunit, shape=data.shape[0])
-            res = Spectrum(shape=data.shape[0], wave=wave, unit=self.unit, \
+            res = Spectrum(shape=data.shape[0], wave=wave, unit=self.unit,
                            data=data, var=var, fscale=self.fscale)
 
             res.data = data
@@ -2014,7 +2014,7 @@ value : float
         Normalized value (default 1).
         """
         if type == 'flux':
-            norm = value / (self.get_step().prod() \
+            norm = value / (self.get_step().prod()
                             * self.fscale * self.data.sum())
         elif type == 'sum':
             norm = value / (self.fscale * self.data.sum())
@@ -2043,7 +2043,7 @@ out : 2-dim float array
         for n in range(niter + 1):
             ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
             tab = tab[ksel]
-        return np.array([np.ma.mean(tab) * self.fscale, \
+        return np.array([np.ma.mean(tab) * self.fscale,
                          np.ma.std(tab) * self.fscale])
 
     def _struct(self, n):
@@ -2080,21 +2080,21 @@ out : np.array
         selec = self.data > threshold
         selec.bill_value = False
         selec = \
-            ndimage.morphology.binary_erosion(selec, \
-                                              structure=self._struct(nstruct), \
+            ndimage.morphology.binary_erosion(selec,
+                                              structure=self._struct(nstruct),
                                               iterations=niter)
         selec = \
-            ndimage.morphology.binary_dilation(selec, \
-                                               structure=self._struct(nstruct), \
+            ndimage.morphology.binary_dilation(selec,
+                                               structure=self._struct(nstruct),
                                                iterations=niter)
         selec = ndimage.binary_fill_holes(selec)
         structure = ndimage.morphology.generate_binary_structure(2, 2)
         label = ndimage.measurements.label(selec, structure)
-        pos = ndimage.measurements.center_of_mass(self.data, label[0], \
+        pos = ndimage.measurements.center_of_mass(self.data, label[0],
                                                   np.arange(label[1]) + 1)
         return np.array(pos)
 
-    def peak(self, center=None, radius=0, pix=False, dpix=2, \
+    def peak(self, center=None, radius=0, pix=False, dpix=2,
              background=None, plot=False):
         """Finds image peak location.
         Used `scipy.ndimage.measurements.maximum_position <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.maximum_position.html>`_ and `scipy.ndimage.measurements.center_of_mass <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.center_of_mass.html>`_.
@@ -2159,10 +2159,10 @@ out : dictionary {'y', 'x', 'p', 'q', 'data'}
                 background = self.background()[0] / self.fscale
             else:
                 background /= self.fscale
-            di, dj = ndimage.measurements.center_of_mass(d[max(0, ic - dpix)\
-                                                           :ic + dpix + 1, \
-                                                           max(0, jc - dpix)\
-                                                           :jc + dpix + 1] \
+            di, dj = ndimage.measurements.center_of_mass(d[max(0, ic - dpix)
+                                                           :ic + dpix + 1,
+                                                           max(0, jc - dpix)
+                                                           :jc + dpix + 1]
                                                          - background)
         ic = imin + max(0, ic - dpix) + di
         jc = jmin + max(0, jc - dpix) + dj
@@ -2348,7 +2348,7 @@ out : :class:`mpdaf.obj.Spectrum`
             ee[d] = self.fscale * \
                 (self.data[i - d:i + d + 1, j - d:j + d + 1] - cont).sum() / etot
         #plt.plot(range(0, nmax), ee)
-        wave = WaveCoord(cdelt=np.sqrt(step[0] ** 2 + step[1] ** 2), \
+        wave = WaveCoord(cdelt=np.sqrt(step[0] ** 2 + step[1] ** 2),
                          crval=0.0, cunit='')
         return Spectrum(wave=wave, data=ee)
 
@@ -2398,7 +2398,7 @@ out : float array
         if nmax <= 1:
             return np.array([step[0], step[1], 0, 0])
         for d in range(1, nmax):
-            ee2 = self.fscale * (self.data[i - d:i + d + 1, j - d:j + d + 1] \
+            ee2 = self.fscale * (self.data[i - d:i + d + 1, j - d:j + d + 1]
                                  - cont).sum() / ee
             if ee2 > frac:
                 break
@@ -2453,8 +2453,8 @@ out : float array
             points = np.empty((npoints, 2), dtype=float)
             points[:, 0] = ksel[0]
             points[:, 1] = ksel[1]
-            res = interpolate.griddata(points, data, \
-                                       (grid[:, 0], grid[:, 1]), \
+            res = interpolate.griddata(points, data,
+                                       (grid[:, 0], grid[:, 1]),
                                        method='linear')
             # res = np.zeros(n,dtype=float)
             # for i in range(n):
@@ -2498,10 +2498,10 @@ out : float array
         p = np.argmax((Q * np.abs(self.data)).sum(axis=1) / total)
         q = np.argmax((P * np.abs(self.data)).sum(axis=0) / total)
         col = self.data[int(p),:]
-        width_q = np.sqrt(np.abs((np.arange(col.size) - p) * col).sum() \
+        width_q = np.sqrt(np.abs((np.arange(col.size) - p) * col).sum()
                           / np.abs(col).sum())
         row = self.data[:, int(q)]
-        width_p = np.sqrt(np.abs((np.arange(row.size) - q) * row).sum() \
+        width_p = np.sqrt(np.abs((np.arange(row.size) - q) * row).sum()
                           / np.abs(row).sum())
         mom = np.array([width_p, width_q])
         if pix is True:
@@ -2510,9 +2510,9 @@ out : float array
             cdelt = np.abs(self.wcs.get_step())
             return mom * cdelt
 
-    def gauss_fit(self, pos_min=None, pos_max=None, center=None, flux=None, \
-                  fwhm=None, circular=False, cont=0, fit_back=True, rot=0, \
-                  peak=False, factor=1, weight=True, plot=False, pix=False, \
+    def gauss_fit(self, pos_min=None, pos_max=None, center=None, flux=None,
+                  fwhm=None, circular=False, cont=0, fit_back=True, rot=0,
+                  peak=False, factor=1, weight=True, plot=False, pix=False,
                   verbose=True, full_output=0):
         """Performs Gaussian fit on image.
 
@@ -2706,12 +2706,12 @@ out : :class:`mpdaf.obj.Gauss2D`
                     # 2d gaussian function
                     gaussfit = lambda v, p, q: \
                         cont + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                        * np.exp(-((p - v[1]) * np.cos(v[5]) \
-                                   - (q - v[3]) * np.sin(v[5])) ** 2 \
+                        * np.exp(-((p - v[1]) * np.cos(v[5])
+                                   - (q - v[3]) * np.sin(v[5])) ** 2
                                  / (2 * v[2] ** 2)) \
                         * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
-                        * np.exp(-((p - v[1]) * np.sin(v[5]) \
-                                   + (q - v[3]) * np.cos(v[5])) ** 2 \
+                        * np.exp(-((p - v[1]) * np.sin(v[5])
+                                   + (q - v[3]) * np.cos(v[5])) ** 2
                                  / (2 * v[4] ** 2))
                     # inital guesses for Gaussian Fit
                     v0 = [flux, center[0], width[0], center[1], width[1], rot]
@@ -2724,7 +2724,7 @@ out : :class:`mpdaf.obj.Gauss2D`
                         * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
                         * np.exp(-(q - v[3]) ** 2 / (2 * v[4] ** 2))
                     # inital guesses for Gaussian Fit
-                    v0 = [flux, center[0], width[0], center[1], \
+                    v0 = [flux, center[0], width[0], center[1],
                           width[1], cont]
                 else:
                     # r otation angle in rad
@@ -2732,15 +2732,15 @@ out : :class:`mpdaf.obj.Gauss2D`
                     # 2d gaussian function
                     gaussfit = lambda v, p, q: \
                         v[6] + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                        * np.exp(-((p - v[1]) * np.cos(v[5]) \
-                                   - (q - v[3]) * np.sin(v[5])) ** 2 \
+                        * np.exp(-((p - v[1]) * np.cos(v[5])
+                                   - (q - v[3]) * np.sin(v[5])) ** 2
                                  / (2 * v[2] ** 2)) \
                         * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
-                        * np.exp(-((p - v[1]) * np.sin(v[5]) \
-                                   + (q - v[3]) * np.cos(v[5])) ** 2 \
+                        * np.exp(-((p - v[1]) * np.sin(v[5])
+                                   + (q - v[3]) * np.cos(v[5])) ** 2
                                  / (2 * v[4] ** 2))
                     # inital guesses for Gaussian Fit
-                    v0 = [flux, center[0], width[0], center[1], \
+                    v0 = [flux, center[0], width[0], center[1],
                           width[1], rot, cont]
 
         # Minimize the sum of squares
@@ -2754,25 +2754,25 @@ out : :class:`mpdaf.obj.Gauss2D`
             pixcrd = np.array(zip(fp, fq))
 
             e_gauss_fit = lambda v, p, q, data, w: \
-                w * (((gaussfit(v, p, q)).reshape(N, factor * factor).sum(1) \
+                w * (((gaussfit(v, p, q)).reshape(N, factor * factor).sum(1)
                       / factor / factor).T.ravel() - data)
             v, covar, info, mesg, success = \
-                leastsq(e_gauss_fit, v0[:], \
-                        args=(pixcrd[:, 0], pixcrd[:, 1], data, wght), \
+                leastsq(e_gauss_fit, v0[:],
+                        args=(pixcrd[:, 0], pixcrd[:, 1], data, wght),
                         maxfev=100, full_output=1)
         else:
             e_gauss_fit = lambda v, p, q, data, w : \
                 w * (gaussfit(v, p, q) - data)
             v, covar, info, mesg, success = \
-                leastsq(e_gauss_fit, v0[:], args=(p, q, data, wght), \
+                leastsq(e_gauss_fit, v0[:], args=(p, q, data, wght),
                         maxfev=100, full_output=1)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
         if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) \
-                            * np.sqrt(np.abs(chisq / dof)) \
+            err = np.array([np.sqrt(np.abs(covar[i, i]))
+                            * np.sqrt(np.abs(chisq / dof))
                             for i in range(len(v))])
         else:
             err = None
@@ -2858,7 +2858,7 @@ out : :class:`mpdaf.obj.Gauss2D`
                     err_rot = 0
             err_p_fwhm = err_p_width * 2 * np.sqrt(2 * np.log(2))
             err_q_fwhm = err_q_width * 2 * np.sqrt(2 * np.log(2))
-            err_peak = (err_flux * p_width * q_width - flux \
+            err_peak = (err_flux * p_width * q_width - flux
                         * (err_p_width * q_width + err_q_width * p_width)) \
                 / (2 * np.pi * p_width * p_width * q_width * q_width)
         else:
@@ -2885,14 +2885,14 @@ out : :class:`mpdaf.obj.Gauss2D`
             if self.wcs.is_deg():
                 fwhm *= 3600.0
                 err_fwhm *= 3600.0
-            gauss = Gauss2D(center, flux, fwhm, cont * self.fscale, rot, \
-                            peak, err_center, err_flux, err_fwhm, \
+            gauss = Gauss2D(center, flux, fwhm, cont * self.fscale, rot,
+                            peak, err_center, err_flux, err_fwhm,
                             err_cont * self.fscale, err_rot, err_peak)
         else:
-            gauss = Gauss2D((p_peak, q_peak), flux, (p_fwhm, q_fwhm), \
-                            cont * self.fscale, rot, peak, \
-                            (err_p_peak, err_q_peak), err_flux, \
-                            (err_p_fwhm, err_q_fwhm), err_cont * self.fscale, \
+            gauss = Gauss2D((p_peak, q_peak), flux, (p_fwhm, q_fwhm),
+                            cont * self.fscale, rot, peak,
+                            (err_p_peak, err_q_peak), err_flux,
+                            (err_p_fwhm, err_q_fwhm), err_cont * self.fscale,
                             err_rot, err_peak)
         if verbose:
             gauss.print_param()
@@ -2901,9 +2901,9 @@ out : :class:`mpdaf.obj.Gauss2D`
             gauss.ima = ima
         return gauss
 
-    def moffat_fit(self, pos_min=None, pos_max=None, center=None, fwhm=None, \
-                   flux=None, n=2.0, circular=False, cont=0, fit_back=True, \
-                   rot=0, peak=False, factor=1, weight=True, plot=False, \
+    def moffat_fit(self, pos_min=None, pos_max=None, center=None, fwhm=None,
+                   flux=None, n=2.0, circular=False, cont=0, fit_back=True,
+                   rot=0, peak=False, factor=1, weight=True, plot=False,
                    pix=False, verbose=True, full_output=0):
         """Performs moffat fit on image.
 
@@ -3066,14 +3066,14 @@ out : :class:`mpdaf.obj.Moffat2D`
             if not fit_back:
                 # 2d moffat function
                 moffatfit = lambda v, p, q: \
-                    cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2 \
+                    cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
                                    + ((q - v[2]) / v[3]) ** 2) ** (-v[4])
                 # inital guesses
                 v0 = [I, center[0], center[1], a, n]
             else:
                 # 2d moffat function
                 moffatfit = lambda v, p, q: \
-                    v[5] + v[0] * (1 + ((p - v[1]) / v[3]) ** 2 \
+                    v[5] + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
                                    + ((q - v[2]) / v[3]) ** 2) ** (-v[4])
                 # inital guesses
                 v0 = [I, center[0], center[1], a, n, cont]
@@ -3082,7 +3082,7 @@ out : :class:`mpdaf.obj.Moffat2D`
                 if rot is None:
                     # 2d moffat function
                     moffatfit = lambda v, p, q: \
-                        cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2 \
+                        cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
                                        + ((q - v[2]) / v[3] / v[5]) ** 2) \
                         ** (-v[4])
                     # inital guesses
@@ -3092,9 +3092,9 @@ out : :class:`mpdaf.obj.Moffat2D`
                     rot = np.pi * rot / 180.0
                     # 2d moffat function
                     moffatfit = lambda v, p, q: cont + v[0] \
-                        * (1 + (((p - v[1]) * np.cos(v[6]) - (q - v[2]) \
-                                 * np.sin(v[6])) / v[3]) ** 2 \
-                           + (((p - v[1]) * np.sin(v[6]) + (q - v[2]) \
+                        * (1 + (((p - v[1]) * np.cos(v[6]) - (q - v[2])
+                                 * np.sin(v[6])) / v[3]) ** 2
+                           + (((p - v[1]) * np.sin(v[6]) + (q - v[2])
                                * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
                     # inital guesses
                     v0 = [I, center[0], center[1], a, n, e, rot]
@@ -3102,7 +3102,7 @@ out : :class:`mpdaf.obj.Moffat2D`
                 if rot is None:
                     # 2d moffat function
                     moffatfit = lambda v, p, q: v[6] + v[0] \
-                        * (1 + ((p - v[1]) / v[3]) ** 2  \
+                        * (1 + ((p - v[1]) / v[3]) ** 2
                            + ((q - v[2]) / v[3] / v[5]) ** 2) ** (-v[4])
                     # inital guesses
                     v0 = [I, center[0], center[1], a, n, e, cont]
@@ -3111,9 +3111,9 @@ out : :class:`mpdaf.obj.Moffat2D`
                     rot = np.pi * rot / 180.0
                     # 2d moffat function
                     moffatfit = lambda v, p, q: v[7] + v[0] \
-                        * (1 + (((p - v[1]) * np.cos(v[6]) \
-                                 - (q - v[2]) * np.sin(v[6])) / v[3]) ** 2 \
-                           + (((p - v[1]) * np.sin(v[6]) \
+                        * (1 + (((p - v[1]) * np.cos(v[6])
+                                 - (q - v[2]) * np.sin(v[6])) / v[3]) ** 2
+                           + (((p - v[1]) * np.sin(v[6])
                                + (q - v[2]) * np.cos(v[6])) / v[3] / v[5]) ** 2) \
                         ** (-v[4])
                     # inital guesses
@@ -3130,40 +3130,40 @@ out : :class:`mpdaf.obj.Moffat2D`
             pixcrd = np.array(zip(fp, fq))
 
             e_moffat_fit = lambda v, p, q, data, w: \
-                w * (((moffatfit(v, p, q)).reshape(N, factor * factor).sum(1) \
+                w * (((moffatfit(v, p, q)).reshape(N, factor * factor).sum(1)
                       / factor / factor).T.ravel() - data)
             v, covar, info, mesg, success = \
-                leastsq(e_moffat_fit, v0[:], args=(pixcrd[:, 0], pixcrd[:, 1], \
-                                                   data, wght), \
+                leastsq(e_moffat_fit, v0[:], args=(pixcrd[:, 0], pixcrd[:, 1],
+                                                   data, wght),
                         maxfev=100, full_output=1)
             while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
                     or np.abs(v[3] - v0[3]) > 0.1:
                 v0 = v
                 v, covar, info, mesg, success = \
-                    leastsq(e_moffat_fit, v0[:], \
-                            args=(pixcrd[:, 0], pixcrd[:, 1], \
+                    leastsq(e_moffat_fit, v0[:],
+                            args=(pixcrd[:, 0], pixcrd[:, 1],
                                   data, wght), maxfev=100, full_output=1)
         else:
             e_moffat_fit = lambda v, p, q, data, w: \
                 w * (moffatfit(v, p, q) - data)
             v, covar, info, mesg, success = \
-                leastsq(e_moffat_fit, v0[:], \
-                        args=(p, q, data, wght), \
+                leastsq(e_moffat_fit, v0[:],
+                        args=(p, q, data, wght),
                         maxfev=100, full_output=1)
             while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
                     or np.abs(v[3] - v0[3]) > 0.1:
                 v0 = v
                 v, covar, info, mesg, success = \
-                    leastsq(e_moffat_fit, v0[:], \
-                            args=(p, q, data, wght), \
+                    leastsq(e_moffat_fit, v0[:],
+                            args=(p, q, data, wght),
                             maxfev=100, full_output=1)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
         if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) \
-                            * np.sqrt(np.abs(chisq / dof)) \
+            err = np.array([np.sqrt(np.abs(covar[i, i]))
+                            * np.sqrt(np.abs(chisq / dof))
                             for i in range(len(v))])
         else:
             err = np.zeros_like(v)
@@ -3264,14 +3264,14 @@ out : :class:`mpdaf.obj.Moffat2D`
             if self.wcs.is_deg():
                 a *= 3600.0
                 err_a *= 3600.0
-            moffat = Moffat2D(center, flux, fwhm, cont * self.fscale, n, \
-                              rot, I, err_center, err_flux, err_fwhm, \
+            moffat = Moffat2D(center, flux, fwhm, cont * self.fscale, n,
+                              rot, I, err_center, err_flux, err_fwhm,
                               err_cont * self.fscale, err_n, err_rot, err_I)
         else:
-            moffat = Moffat2D((p_peak, q_peak), flux, fwhm, \
-                              cont * self.fscale, n, rot, I, \
-                              (err_p_peak, err_q_peak), err_flux, \
-                              err_fwhm, err_cont * self.fscale, \
+            moffat = Moffat2D((p_peak, q_peak), flux, fwhm,
+                              cont * self.fscale, n, rot, I,
+                              (err_p_peak, err_q_peak), err_flux,
+                              err_fwhm, err_cont * self.fscale,
                               err_n, err_rot, err_I)
         if verbose:
             moffat.print_param()
@@ -3293,13 +3293,13 @@ out : :class:`mpdaf.obj.Moffat2D`
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
         assert not np.sometrue(np.mod(self.shape[1], factor[1]))
         # new size is an integer multiple of the original size
-        self.shape = np.array((self.shape[0] / factor[0], \
+        self.shape = np.array((self.shape[0] / factor[0],
                                self.shape[1] / factor[1]))
-        self.data = self.data.reshape(self.shape[0], factor[0], \
+        self.data = self.data.reshape(self.shape[0], factor[0],
                                       self.shape[1], factor[1]).sum(1).sum(2)\
             / factor[0] / factor[1]
         if self.var is not None:
-            self.var = self.var.reshape(self.shape[0], factor[0], \
+            self.var = self.var.reshape(self.shape[0], factor[0],
                                         self.shape[1], factor[1])\
                 .sum(1).sum(2) / factor[0] \
                 / factor[1] / factor[0] / factor[1]
@@ -3733,7 +3733,7 @@ out : Image
         return res
 
     def _med_(self, p, q, pfactor, qfactor):
-        return np.ma.median(self.data[p * pfactor:(p + 1) * pfactor, \
+        return np.ma.median(self.data[p * pfactor:(p + 1) * pfactor,
                                       q * qfactor:(q + 1) * qfactor])
 
     def _rebin_median_(self, factor):
@@ -3749,12 +3749,12 @@ out : Image
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
         assert not np.sometrue(np.mod(self.shape[1], factor[1]))
         # new size is an integer multiple of the original size
-        self.shape = np.array((self.shape[0] / factor[0], \
+        self.shape = np.array((self.shape[0] / factor[0],
                                self.shape[1] / factor[1]))
         Nq, Np = np.meshgrid(xrange(self.shape[1]), xrange(self.shape[0]))
         vfunc = np.vectorize(self._med_)
         data = vfunc(Np, Nq, factor[0], factor[1])
-        mask = self.data.mask.reshape(self.shape[0], factor[0], \
+        mask = self.data.mask.reshape(self.shape[0], factor[0],
                                       self.shape[1], factor[1])\
             .sum(1).sum(2) / factor[0] / factor[1]
         self.data = np.ma.array(data, mask=mask)
@@ -3826,7 +3826,7 @@ out : :class:`mpdaf.obj.Image`
         res._rebin_median_(factor)
         return res
 
-    def _rebin(self, newdim, newstart, newstep, \
+    def _rebin(self, newdim, newstart, newstep,
                flux=False, order=3, interp='no'):
         """Rebins the image to a new coordinate system.
 Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
@@ -3876,10 +3876,10 @@ interp   : 'no' | 'linear' | 'spline'
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        data = ndimage.affine_transform(data, pstep, poffset, \
+        data = ndimage.affine_transform(data, pstep, poffset,
                                         output_shape=newdim, order=order)
         mask = np.array(1 - self.data.mask, dtype=bool)
-        newmask = ndimage.affine_transform(mask, pstep, poffset, \
+        newmask = ndimage.affine_transform(mask, pstep, poffset,
                                            output_shape=newdim, order=0)
         mask = np.ma.make_mask(1 - newmask)
 
@@ -3892,7 +3892,7 @@ interp   : 'no' | 'linear' | 'spline'
         self.data = np.ma.array(data, mask=mask)
         self.var = None
 
-    def rebin(self, newdim, newstart, newstep, flux=False, \
+    def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no'):
         """Returns rebinned image to a new coordinate system.
 Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
@@ -3944,7 +3944,7 @@ interp : 'no' | 'linear' | 'spline'
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        self.data = np.ma.array(ndimage.gaussian_filter(data, sigma), \
+        self.data = np.ma.array(ndimage.gaussian_filter(data, sigma),
                                 mask=self.data.mask)
         if self.var is not None:
             self.var = ndimage.gaussian_filter(self.var, sigma)
@@ -3993,7 +3993,7 @@ interp : 'no' | 'linear' | 'spline'
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        self.data = np.ma.array(ndimage.median_filter(data, size), \
+        self.data = np.ma.array(ndimage.median_filter(data, size),
                                 mask=self.data.mask)
         if self.var is not None:
             self.var = ndimage.median_filter(self.var, size)
@@ -4044,7 +4044,7 @@ interp : 'no' | 'linear' | 'spline'
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        self.data = np.ma.array(ndimage.maximum_filter(data, size), \
+        self.data = np.ma.array(ndimage.maximum_filter(data, size),
                                 mask=self.data.mask)
 
     def maximum_filter(self, size=3, interp='no'):
@@ -4093,7 +4093,7 @@ interp : 'no' | 'linear' | 'spline'
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        self.data = np.ma.array(ndimage.minimum_filter(data, size), \
+        self.data = np.ma.array(ndimage.minimum_filter(data, size),
                                 mask=self.data.mask)
 
     def minimum_filter(self, size=3, interp='no'):
@@ -4137,7 +4137,7 @@ interp : 'no' | 'linear' | 'spline'
                 if self_rot != ima_rot:
                     ima2 = ima.rotate(-self_rot + ima_rot, reshape=True)
                     if ima.wcs.get_cd()[0, 0] * self.wcs.get_cd()[0, 0] < 0:
-                        ima = ima.rotate(180 - self_rot + ima_rot, \
+                        ima = ima.rotate(180 - self_rot + ima_rot,
                                          reshape=True)
                     else:
                         ima = ima2
@@ -4147,9 +4147,9 @@ interp : 'no' | 'linear' | 'spline'
                 if (self_cdelt != ima_cdelt).all():
                     try:
                         factor = self_cdelt / ima_cdelt
-                        if not np.sometrue(np.mod(self_cdelt[0], \
+                        if not np.sometrue(np.mod(self_cdelt[0],
                                                   ima_cdelt[0])) \
-                            and not np.sometrue(np.mod(self_cdelt[1], \
+                            and not np.sometrue(np.mod(self_cdelt[1],
                                                        ima_cdelt[1])):
                             # ima.step is an integer multiple of the self.step
                             ima = ima.rebin_factor(factor)
@@ -4162,7 +4162,7 @@ interp : 'no' | 'linear' | 'spline'
                         l1 = int(l1 + 0.5)
                         k1 = int(k1 + 0.5)
                         newstart = self.wcs.pix2sky([[k1, l1]])[0]
-                        ima = ima.rebin(newdim, newstart, \
+                        ima = ima.rebin(newdim, newstart,
                                         self_cdelt, flux=True)
 
                 # here ima and self have the same step
@@ -4244,7 +4244,7 @@ interp : 'no' | 'linear' | 'spline'
         structure = \
             ndimage.morphology.generate_binary_structure(shape[0], shape[1])
         if median is not None:
-            data = np.ma.array(ndimage.median_filter(data, median), \
+            data = np.ma.array(ndimage.median_filter(data, median),
                                mask=self.data.mask)
         expanded = ndimage.morphology.grey_dilation(data, (minsize, minsize))
         ksel = np.where(expanded < background)
@@ -4260,16 +4260,16 @@ interp : 'no' | 'linear' | 'spline'
                         .sum() < minpts:
                     continue
             [[starty, startx]] = \
-                self.wcs.pix2sky(self.wcs.pix2sky([[slices[i][0].start, \
+                self.wcs.pix2sky(self.wcs.pix2sky([[slices[i][0].start,
                                                     slices[i][1].start]]))
-            wcs = WCS(crpix=(1.0, 1.0), crval=(starty, startx), \
-                      cdelt=self.wcs.get_step(), deg=self.wcs.is_deg(), \
+            wcs = WCS(crpix=(1.0, 1.0), crval=(starty, startx),
+                      cdelt=self.wcs.get_step(), deg=self.wcs.is_deg(),
                       rot=self.wcs.get_rot())
             if self.var is not None:
-                res = Image(data=self.data[slices[i]], wcs=wcs, \
+                res = Image(data=self.data[slices[i]], wcs=wcs,
                             fscale=self.fscale, unit=self.unit, var=self.var[slices[i]])
             else:
-                res = Image(data=self.data[slices[i]], wcs=wcs, \
+                res = Image(data=self.data[slices[i]], wcs=wcs,
                             fscale=self.fscale, unit=self.unit)
             imalist.append(res)
         return imalist
@@ -4370,14 +4370,14 @@ interp : 'no' | 'linear' | 'spline'
 
             if self.shape[0] != other.shape[0] \
                     or self.shape[1] != other.shape[1]:
-                raise IOError('Operation forbidden for images '\
+                raise IOError('Operation forbidden for images '
                               'with different sizes')
             else:
-                self.data = np.ma.array(signal.fftconvolve(data, other, \
-                                                           mode='same'), \
+                self.data = np.ma.array(signal.fftconvolve(data, other,
+                                                           mode='same'),
                                         mask=self.data.mask)
                 if self.var is not None:
-                    self.var = signal.fftconvolve(self.var, other, \
+                    self.var = signal.fftconvolve(self.var, other,
                                                   mode='same')
         try:
             if other.image:
@@ -4393,14 +4393,14 @@ interp : 'no' | 'linear' | 'spline'
 
                 if other.data is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
-                    raise IOError('Operation forbidden for images '\
+                    raise IOError('Operation forbidden for images '
                                   'with different sizes')
                 else:
-                    self.data = np.ma.array(signal.fftconvolve(data, \
-                                                               other_data * other.fscale, mode='same'), \
+                    self.data = np.ma.array(signal.fftconvolve(data,
+                                                               other_data * other.fscale, mode='same'),
                                             mask=self.data.mask)
                     if self.var is not None:
-                        self.var = signal.fftconvolve(self.var, \
+                        self.var = signal.fftconvolve(self.var,
                                                       other_data * other.fscale, mode='same')
         except IOError as e:
             raise e
@@ -4763,8 +4763,8 @@ interp : 'no' | 'linear' | 'spline'
             else:
                 self._clicks.write_fits()
                 # save clicks in a dictionary {'i','j','x','y','data'}
-                d = {'p': self._clicks.p, 'q': self._clicks.q, \
-                     'x': self._clicks.x, 'y': self._clicks.y, \
+                d = {'p': self._clicks.p, 'q': self._clicks.q,
+                     'x': self._clicks.x, 'y': self._clicks.y,
                      'data': self._clicks.data}
                 self.clicks = d
                 # clear
@@ -4783,7 +4783,7 @@ interp : 'no' | 'linear' | 'spline'
         print 'To quit the interactive mode, click on the right mouse button.'
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
-            self._selector = RectangleSelector(ax, self._on_select_dist, \
+            self._selector = RectangleSelector(ax, self._on_select_dist,
                                                drawtype='line')
 
             warnings.filterwarnings(action="ignore")
@@ -4825,7 +4825,7 @@ interp : 'no' | 'linear' | 'spline'
         print 'To quit the interactive mode, click on the right mouse button.'
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
-            self._selector = RectangleSelector(ax, self._on_select_stat, \
+            self._selector = RectangleSelector(ax, self._on_select_stat,
                                                drawtype='box')
 
             warnings.filterwarnings(action="ignore")
@@ -4869,7 +4869,7 @@ interp : 'no' | 'linear' | 'spline'
         print 'To quit the interactive mode, click on the right mouse button.'
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
-            self._selector = RectangleSelector(ax, self._on_select_peak, \
+            self._selector = RectangleSelector(ax, self._on_select_peak,
                                                drawtype='box')
 
             warnings.filterwarnings(action="ignore")
@@ -4909,7 +4909,7 @@ interp : 'no' | 'linear' | 'spline'
         print 'To quit the interactive mode, click on the right mouse button.'
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
-            self._selector = RectangleSelector(ax, self._on_select_fwhm, \
+            self._selector = RectangleSelector(ax, self._on_select_fwhm,
                                                drawtype='box')
 
             warnings.filterwarnings(action="ignore")
@@ -4949,7 +4949,7 @@ interp : 'no' | 'linear' | 'spline'
         print 'To quit the interactive mode, click on the right mouse button.'
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
-            self._selector = RectangleSelector(ax, self._on_select_ee, \
+            self._selector = RectangleSelector(ax, self._on_select_ee,
                                                drawtype='box')
 
             warnings.filterwarnings(action="ignore")
@@ -5000,13 +5000,13 @@ interp : 'no' | 'linear' | 'spline'
                 plt.plot(xaxis, self.data.data, alpha=0.3)
             else:
                 mask = np.array(1 - self.data.mask, dtype=bool)
-                data = np.ma.MaskedArray(self.data.data * self.fscale, \
+                data = np.ma.MaskedArray(self.data.data * self.fscale,
                                          mask=mask)
                 self._plot_mask_id = \
-                    plt.imshow(data, interpolation='nearest', origin='lower', \
-                               extent=(0, self.shape[1] - 1, 0, \
-                                       self.shape[0] - 1), \
-                               vmin=self.data.min(), vmax=self.data.max(), \
+                    plt.imshow(data, interpolation='nearest', origin='lower',
+                               extent=(0, self.shape[1] - 1, 0,
+                                       self.shape[0] - 1),
+                               vmin=self.data.min(), vmax=self.data.max(),
                                alpha=0.9)
         except:
             pass
@@ -5183,12 +5183,12 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
         I = flux
 
     gauss = lambda p, q: I * (1 / np.sqrt(2 * np.pi * (p_width ** 2))) \
-        * np.exp(-((p - center[0]) * np.cos(theta) \
-                   - (q - center[1]) * np.sin(theta)) ** 2 \
+        * np.exp(-((p - center[0]) * np.cos(theta)
+                   - (q - center[1]) * np.sin(theta)) ** 2
                  / (2 * p_width ** 2)) \
         * (1 / np.sqrt(2 * np.pi * (q_width ** 2))) \
-        * np.exp(-((p - center[0]) * np.sin(theta) \
-                   + (q - center[1]) * np.cos(theta)) ** 2 \
+        * np.exp(-((p - center[0]) * np.sin(theta)
+                   + (q - center[1]) * np.cos(theta)) ** 2
                  / (2 * q_width ** 2))
 
     if factor > 1:
@@ -5211,13 +5211,13 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
                 * (special.erf(ymax) - special.erf(ymin))
             data = np.reshape(data, (shape[1], shape[0])).T
         else:
-            X, Y = np.meshgrid(xrange(shape[0] * factor), \
+            X, Y = np.meshgrid(xrange(shape[0] * factor),
                                xrange(shape[1] * factor))
             factor = float(factor)
             pixcrd = np.array(zip(X.ravel() / factor, Y.ravel() / factor))
             # pixsky = wcs.pix2sky(pixcrd)
             data = gauss(pixcrd[:, 0], pixcrd[:, 1])
-            data = (data.reshape(shape[1], factor, shape[0], factor)\
+            data = (data.reshape(shape[1], factor, shape[0], factor)
                     .sum(1).sum(2) / factor / factor).T
     else:
         X, Y = np.meshgrid(xrange(shape[0]), xrange(shape[1]))
@@ -5326,18 +5326,18 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
     theta = np.pi * rot / 180.0
 
     moffat = lambda p, q: \
-        I * (1 + (((p - center[0]) * np.cos(theta) \
-                   - (q - center[1]) * np.sin(theta)) / a) ** 2 \
-             + (((p - center[0]) * np.sin(theta) \
+        I * (1 + (((p - center[0]) * np.cos(theta)
+                   - (q - center[1]) * np.sin(theta)) / a) ** 2
+             + (((p - center[0]) * np.sin(theta)
                  + (q - center[1]) * np.cos(theta)) / a / e) ** 2) ** (-n)
 
     if factor > 1:
-        X, Y = np.meshgrid(xrange(shape[0] * factor), \
+        X, Y = np.meshgrid(xrange(shape[0] * factor),
                            xrange(shape[1] * factor))
         factor = float(factor)
         pixcrd = np.array(zip(X.ravel() / factor, Y.ravel() / factor))
         data = moffat(pixcrd[:, 0], pixcrd[:, 1])
-        data = (data.reshape(shape[1], factor, shape[0], factor)\
+        data = (data.reshape(shape[1], factor, shape[0], factor)
                 .sum(1).sum(2) / factor / factor).T
     else:
         X, Y = np.meshgrid(xrange(shape[0]), xrange(shape[1]))
@@ -5490,8 +5490,8 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
     lum = np.clip((f - d1) * 100 / (d2 - d1), 0, 100)
     for i in range(ima.shape[0]):
         for j in range(ima.shape[1]):
-            p1.putpixel((i, j), \
-                        ImageColor.getrgb('hsl(%d,%d%%,%d%%)' \
+            p1.putpixel((i, j),
+                        ImageColor.getrgb('hsl(%d,%d%%,%d%%)'
                                           % (int(col), int(sat), int(lum[i, j]))))
 
     for ImaCol in ImaColList[1:]:
@@ -5510,7 +5510,7 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
         lum = np.clip((f - d1) * 100 / (d2 - d1), 0, 100)
         for i in range(ima.shape[0]):
             for j in range(ima.shape[1]):
-                p2.putpixel((i, j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)' \
+                p2.putpixel((i, j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'
                                                       % (int(col), int(sat), int(lum[i, j]))))
         p1 = ImageChops.add(p1, p2)
 
@@ -5524,7 +5524,7 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
             ima, col, sat = ImaCol
             for i in range(i1, i1 + dx):
                 for j in range(nyb):
-                    p3.putpixel((i, j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)' \
+                    p3.putpixel((i, j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'
                                                           % (int(col), int(sat), 50)))
             i1 += dx
 

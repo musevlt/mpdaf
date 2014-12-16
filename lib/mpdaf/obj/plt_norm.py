@@ -16,14 +16,14 @@ class ArcsinhNorm(Normalize):
         self.autoscale_None(result)
         vmin, vmax = self.vmin, self.vmax
         if vmin > vmax:
-            raise ValueError('minvalue must be less than '\
+            raise ValueError('minvalue must be less than '
                              'or equal to maxvalue')
         elif vmin == vmax:
             result.fill(0)
         else:
             if clip:
                 mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),\
+                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
                                 mask=mask)
             else:
                 val = result
@@ -66,14 +66,14 @@ class PowerNorm(Normalize):
         self.autoscale_None(result)
         vmin, vmax = self.vmin, self.vmax
         if vmin > vmax:
-            raise ValueError('minvalue must be less '\
+            raise ValueError('minvalue must be less '
                              'than or equal to maxvalue')
         elif vmin == vmax:
             result.fill(0)
         else:
             if clip:
                 mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),\
+                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
                                 mask=mask)
             else:
                 val = result
@@ -113,14 +113,14 @@ class SqrtNorm(Normalize):
         self.autoscale_None(result)
         vmin, vmax = self.vmin, self.vmax
         if vmin > vmax:
-            raise ValueError('minvalue must be less than '\
+            raise ValueError('minvalue must be less than '
                              'or equal to maxvalue')
         elif vmin == vmax:
             result.fill(0)
         else:
             if clip:
                 mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),\
+                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
                                 mask=mask)
             else:
                 val = result
@@ -162,7 +162,7 @@ class LogNorm(Normalize):
         self.autoscale_None(result)
         vmin, vmax = self.vmin, self.vmax
         if vmin > vmax:
-            raise ValueError('minvalue must be less than '\
+            raise ValueError('minvalue must be less than '
                              'or equal to maxvalue')
         elif vmin <= 0:
             raise ValueError("values must all be positive")
@@ -171,7 +171,7 @@ class LogNorm(Normalize):
         else:
             if clip:
                 mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),\
+                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
                                 mask=mask)
             midpoint = 0.05
             result = np.ma.log10((result / midpoint) + 1.) \

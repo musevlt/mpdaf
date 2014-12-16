@@ -39,7 +39,7 @@ class Slicer:
                             43: (1, 6), 44: (1, 5), 45: (1, 4),
                             46: (1, 3), 47: (1, 2), 48: (1, 1)})
 
-    __OPTICAL2SKY__ = dict((value, key) \
+    __OPTICAL2SKY__ = dict((value, key)
                            for key, value in __SKY2OPTICAL__.iteritems())
 
     @staticmethod

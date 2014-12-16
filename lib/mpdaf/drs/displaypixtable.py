@@ -44,8 +44,8 @@ class DisplayPixTable(object):
         pix = PixTable(self.pixtable)
         pix.info()
 
-    def _det_display(self, date, pix, ima, spe, ifu_limits, l, exp, sky, \
-                     lbda, sky_scale, sky_cmap, det_scale, det_cmap, \
+    def _det_display(self, date, pix, ima, spe, ifu_limits, l, exp, sky,
+                     lbda, sky_scale, sky_cmap, det_scale, det_cmap,
                      det_vmin, det_vmax):
         """display in detector mode for one exposure
 
@@ -86,7 +86,7 @@ class DisplayPixTable(object):
         :type det_vmax: float
         """
         plt.figure()
-        plt.figtext(0.1, 0.05, 'Pixtable %s %s' % (self.pixtable, date), \
+        plt.figtext(0.1, 0.05, 'Pixtable %s %s' % (self.pixtable, date),
                     fontsize=10)
         plt.figtext(0.1, 0.03, 'Cube %s %s' % (self.cube, date), fontsize=10)
 
@@ -113,7 +113,7 @@ class DisplayPixTable(object):
         for ifu in list_ifu:
             print 'plot detector image of the CHAN%02d ...' % ifu
             subsubpix = subpix.extract(ifu=ifu)
-            detima = subsubpix.reconstruct_det_image(ystart=ystart, \
+            detima = subsubpix.reconstruct_det_image(ystart=ystart,
                                                      ystop=ystop)
             del subsubpix
             list_detima.append(detima)
@@ -131,10 +131,10 @@ class DisplayPixTable(object):
         for ifu, detima in zip(list_ifu, list_detima):
             limits = detima.wcs.get_range()
             plt.subplot2grid((5, nplots), (2, iplot), rowspan=2)
-            im = detima.plot(title='%02d' % ifu, scale=det_scale, \
-                             vmin=det_vmin, vmax=det_vmax, \
-                             extent=[limits[0][1], limits[1][1], \
-                                     limits[0][0], limits[1][0]], \
+            im = detima.plot(title='%02d' % ifu, scale=det_scale,
+                             vmin=det_vmin, vmax=det_vmax,
+                             extent=[limits[0][1], limits[1][1],
+                                     limits[0][0], limits[1][0]],
                              cmap=det_cmap)
             if iplot != 0:
                 plt.ylabel('')
@@ -164,18 +164,18 @@ class DisplayPixTable(object):
             plt.plot(np.arange(0, l), np.ones(l) * ymax, 'b-')
             ymin = max(0, ymin)
             ymax = min(ymax, ima.shape[0])
-            plt.annotate('%02d' % ifu, xy=(0, (ymin + ymax) / 2.0),  \
+            plt.annotate('%02d' % ifu, xy=(0, (ymin + ymax) / 2.0),
                          xycoords='data', textcoords='data', color='b')
         im = ima.plot(colorbar='h', scale=sky_scale, cmap=sky_cmap)
         im.get_axes().set_axis_off()
         print 'plot corresponding spectrum ...'
-        plt.subplot2grid((5, nplots), (0, colspan_ima), \
+        plt.subplot2grid((5, nplots), (0, colspan_ima),
                          rowspan=2, colspan=int(nplots / 2))
         spe.plot()
         plt.xlim(lbda[0], lbda[1])
 
-    def det_display(self, sky, lbda, sky_scale='linear', sky_cmap=cm.copper, \
-                    det_scale='linear', det_cmap=cm.copper, \
+    def det_display(self, sky, lbda, sky_scale='linear', sky_cmap=cm.copper,
+                    det_scale='linear', det_cmap=cm.copper,
                     det_vmin=None, det_vmax=None):
         """display in detector mode
 
@@ -240,8 +240,8 @@ class DisplayPixTable(object):
         ymin = cub.wcs.pix2sky(c)[:, 0]
         c[:, 0] = pmax
         ymax = cub.wcs.pix2sky(c)[:, 0]
-        ifu_limits = dict((_ifu, (_ymin, _ymax)) for _ifu, _ymin, _ymax \
-                          in zip(np.arange(ifu_high, ifu_low - 1, -1), \
+        ifu_limits = dict((_ifu, (_ymin, _ymax)) for _ifu, _ymin, _ymax
+                          in zip(np.arange(ifu_high, ifu_low - 1, -1),
                                  ymin, ymax))
 
         # plot corresponding white image and spectrum
@@ -271,17 +271,17 @@ class DisplayPixTable(object):
             exposures = np.unique(col_exp)
             for exp in exposures:
                 print 'exposure %02d' % exp
-                self._det_display(date, pix, ima, spe, ifu_limits, l, exp, \
-                                  sky, lbda, sky_scale, sky_cmap, det_scale, \
+                self._det_display(date, pix, ima, spe, ifu_limits, l, exp,
+                                  sky, lbda, sky_scale, sky_cmap, det_scale,
                                   det_cmap, det_vmin, det_vmax)
         except:
-            self._det_display(date, pix, ima, spe, ifu_limits, l, None, \
-                              sky, lbda, sky_scale, sky_cmap, det_scale, \
+            self._det_display(date, pix, ima, spe, ifu_limits, l, None,
+                              sky, lbda, sky_scale, sky_cmap, det_scale,
                               det_cmap, det_vmin, det_vmax)
 
-    def _slice_display(self, date, pix, ima, spe, slice_limits, \
-                       ima_center_p, ima_center_q, dp_slice, dq_slice, \
-                       exp, sky, lbda, sky_scale, sky_cmap, slice_scale, \
+    def _slice_display(self, date, pix, ima, spe, slice_limits,
+                       ima_center_p, ima_center_q, dp_slice, dq_slice,
+                       exp, sky, lbda, sky_scale, sky_cmap, slice_scale,
                        slice_cmap, slice_vmin, slice_vmax):
         """display in slice mode
 
@@ -334,7 +334,7 @@ class DisplayPixTable(object):
 
         # plot corresponding image
         plt.figure()
-        plt.figtext(0.1, 0.05, 'Pixtable %s %s' % (self.pixtable, date), \
+        plt.figtext(0.1, 0.05, 'Pixtable %s %s' % (self.pixtable, date),
                     fontsize=10)
         plt.figtext(0.1, 0.03, 'Cube %s %s' % (self.cube, date), fontsize=10)
 
@@ -362,7 +362,7 @@ class DisplayPixTable(object):
             colspan_ima = int(nplots / 2) + 1
         # colspan_spe = nplot - colspan_ima
         plt.subplot2grid((9, nplots), (0, 0), colspan=colspan_ima, rowspan=3)
-        for ifu, sli, p in zip(distance[:, 1], distance[:, 2], \
+        for ifu, sli, p in zip(distance[:, 1], distance[:, 2],
                                  distance[:, 3]):
             if q < 0:
                 q_label = 0
@@ -370,26 +370,26 @@ class DisplayPixTable(object):
                 q_label = ima.shape[1] - 1
             else:
                 q_label = q
-            plt.annotate('%02d/%02d' % (ifu, sli), xy=(q_label, p - 0.2), \
+            plt.annotate('%02d/%02d' % (ifu, sli), xy=(q_label, p - 0.2),
                          xycoords='data', textcoords='data', color='b')
             pmin = p - dp_slice / 2.0
             pmax = p + dp_slice / 2.0
             qmin = q - dq_slice / 2.0
             qmax = q + dq_slice / 2.0
-            plt.plot(np.arange(qmin, qmax + 1, 1), \
+            plt.plot(np.arange(qmin, qmax + 1, 1),
                      np.ones(qmax - qmin + 2) * pmin, 'b-')
-            plt.plot(np.arange(qmin, qmax + 1, 1), \
+            plt.plot(np.arange(qmin, qmax + 1, 1),
                      np.ones(qmax - qmin + 2) * pmax, 'b-')
-            plt.plot(np.ones(pmax - pmin + 2) * qmin, \
+            plt.plot(np.ones(pmax - pmin + 2) * qmin,
                      np.arange(pmin, pmax + 1, 1), 'b-')
-            plt.plot(np.ones(pmax - pmin + 2) * qmax, \
+            plt.plot(np.ones(pmax - pmin + 2) * qmax,
                      np.arange(pmin, pmax + 1, 1), 'b-')
         im = ima.plot(colorbar='h', scale=sky_scale, cmap=sky_cmap)
         im.get_axes().set_axis_off()
 
         # plot corresponding spectrum
         print 'plot corresponding spectrum ...'
-        plt.subplot2grid((9, nplots), (0, colspan_ima), \
+        plt.subplot2grid((9, nplots), (0, colspan_ima),
                          rowspan=3, colspan=nplots - colspan_ima)
         spe.plot()
         plt.xlim(lbda[0], lbda[1])
@@ -416,15 +416,15 @@ class DisplayPixTable(object):
             slice_vmax = np.max(list_vmax)
 
         iplot = 0
-        for ifu, sli, sliceima in zip(distance[:, 1], distance[:, 2], \
+        for ifu, sli, sliceima in zip(distance[:, 1], distance[:, 2],
                                         list_sliceima):
             limits = sliceima.wcs.get_range()
             plt.subplot2grid((9, nplots), (4, iplot), rowspan=3)
-            im = sliceima.plot(title='%02d/%02d' % (ifu, sli), \
-                               scale=slice_scale, \
-                               vmin=slice_vmin, vmax=slice_vmax, \
-                               extent=[limits[0][1], limits[1][1], \
-                                       limits[0][0], limits[1][0]], \
+            im = sliceima.plot(title='%02d/%02d' % (ifu, sli),
+                               scale=slice_scale,
+                               vmin=slice_vmin, vmax=slice_vmax,
+                               extent=[limits[0][1], limits[1][1],
+                                       limits[0][0], limits[1][0]],
                                cmap=slice_cmap)
             if iplot != 0:
                 plt.ylabel('')
@@ -439,8 +439,8 @@ class DisplayPixTable(object):
         plt.gca().set_visible(False)
         plt.colorbar(im, orientation='horizontal')
 
-    def slice_display(self, sky, lbda, sky_scale='linear', \
-                      sky_cmap=cm.copper, slice_scale='linear', \
+    def slice_display(self, sky, lbda, sky_scale='linear',
+                      sky_cmap=cm.copper, slice_scale='linear',
                       slice_cmap=cm.copper, slice_vmin=None, slice_vmax=None):
         """display in slice mode
 
@@ -544,7 +544,7 @@ class DisplayPixTable(object):
         list_p = coord_sky[:, 0]
         list_q = coord_sky[:, 1]
 
-        slice_limits = dict(((ifu, sli), (p, q)) for ifu, sli, p, q \
+        slice_limits = dict(((ifu, sli), (p, q)) for ifu, sli, p, q
                             in zip(list_ifu, list_slice, list_p, list_q))
 
         # plot corresponding white image and spectrum
@@ -574,14 +574,14 @@ class DisplayPixTable(object):
             col_exp = pix.get_exp()
             exposures = np.unique(col_exp)
             for exp in exposures:
-                self._slice_display(date, pix, ima, spe, slice_limits, \
-                                   ima_center_p, ima_center_q, dp_slice, \
-                                   dq_slice, exp, sky, lbda, sky_scale, \
-                                   sky_cmap, slice_scale, slice_cmap, \
+                self._slice_display(date, pix, ima, spe, slice_limits,
+                                   ima_center_p, ima_center_q, dp_slice,
+                                   dq_slice, exp, sky, lbda, sky_scale,
+                                   sky_cmap, slice_scale, slice_cmap,
                                    slice_vmin, slice_vmax)
         except:
-            self._slice_display(date, pix, ima, spe, slice_limits, \
-                                ima_center_p, ima_center_q, dp_slice, \
-                                dq_slice, None, sky, lbda, sky_scale, \
-                                sky_cmap, slice_scale, slice_cmap, \
+            self._slice_display(date, pix, ima, spe, slice_limits,
+                                ima_center_p, ima_center_q, dp_slice,
+                                dq_slice, None, sky, lbda, sky_scale,
+                                sky_cmap, slice_scale, slice_cmap,
                                 slice_vmin, slice_vmax)

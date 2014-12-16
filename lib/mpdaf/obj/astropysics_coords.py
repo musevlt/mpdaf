@@ -170,10 +170,10 @@ class AstropysicsAngularCoordinate(object):
                             else:
                                 self.degrees = float(val)
                         except ValueError:
-                            raise ValueError('invalid string input '\
+                            raise ValueError('invalid string input '
                                              'for AstropysicsAngularCoordinate')
                 else:
-                    raise ValueError('Invalid string input for '\
+                    raise ValueError('Invalid string input for '
                                      'AstropysicsAngularCoordinate: ' + inpt)
 
         elif isSequenceType(inpt) and len(inpt) == 3:
@@ -280,7 +280,7 @@ class AstropysicsAngularCoordinate(object):
                 if low <= rads <= up:
                     return rads
                 else:
-                    raise ValueError('Attempted to set angular coordinate '\
+                    raise ValueError('Attempted to set angular coordinate '
                                      'outside range')
             else:
                 if cycle > 0:
@@ -290,7 +290,7 @@ class AstropysicsAngularCoordinate(object):
                     from math import asin
                     offset = low / (low - up) - 0.5
                     return (up - low) * \
-                        (asin(sin(pi * (2 * rads / cycle + offset))) \
+                        (asin(sin(pi * (2 * rads / cycle + offset)))
                                          / pi + 0.5) + low
                 else:
                     return (rads - low) % (up - low) + low
@@ -317,7 +317,7 @@ class AstropysicsAngularCoordinate(object):
                 if newrng[0] > newrng[1]:
                     raise ValueError('lower edge of range is not <= upper')
 
-                newrng = (radians(newrng[0]), radians(newrng[1]), \
+                newrng = (radians(newrng[0]), radians(newrng[1]),
                            None if newrng[2] is None else radians(newrng[2]))
             self._range = newrng
             self._decval = self._checkRange(self._decval)
@@ -326,7 +326,7 @@ class AstropysicsAngularCoordinate(object):
             if e.args[0] == 'lower edge of range is not <= upper':
                 raise e
             else:
-                raise ValueError('Attempted to set range '\
+                raise ValueError('Attempted to set range '
                                  'when value is out of range')
 
     def _getRange(self):
@@ -407,7 +407,7 @@ class AstropysicsAngularCoordinate(object):
     def __float__(self):
         return self.degrees
 
-    def getDmsStr(self, secform='%05.2f', sep=(unichr(176), "'", '"'), \
+    def getDmsStr(self, secform='%05.2f', sep=(unichr(176), "'", '"'),
                   sign=True, canonical=False):
         """
         Generates the string representation of this AstropysicsAngularCoordinate as

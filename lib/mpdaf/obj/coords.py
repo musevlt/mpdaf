@@ -174,7 +174,7 @@ wcs : pywcs.WCS
       World coordinates.
 
     """
-    def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0), \
+    def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0),
                  cdelt=(1.0, 1.0), deg=False, rot=0, shape=None):
         """Creates a WCS object.
 
@@ -291,9 +291,9 @@ shape : integer or (integer,integer)
             pixsky = self.pix2sky(pixcrd)
             cdelt = self.get_step()
             print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '\
-            'step:(%0.1f,%0.1f) rot:%0.1f' % (pixsky[0, 0], pixsky[0, 1], \
-                                             pixsky[1, 0], pixsky[1, 1], \
-                                             cdelt[0], cdelt[1], \
+            'step:(%0.1f,%0.1f) rot:%0.1f' % (pixsky[0, 0], pixsky[0, 1],
+                                             pixsky[1, 0], pixsky[1, 1],
+                                             cdelt[0], cdelt[1],
                                              self.get_rot())
         else:
             # center in sexadecimal
@@ -310,9 +310,9 @@ shape : integer or (integer,integer)
             sizex = self.naxis1 * dx
             sizey = self.naxis2 * dy
             print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '\
-            'step in arcsec:(%0.3f,%0.3f) rot:%0.1f' % (dec, ra, \
-                                                       sizey, sizex, \
-                                                       dy, dx, \
+            'step in arcsec:(%0.3f,%0.3f) rot:%0.1f' % (dec, ra,
+                                                       sizey, sizex,
+                                                       dy, dx,
                                                        self.get_rot())
 
     def to_header(self):
@@ -446,7 +446,7 @@ out : (n,2) array of dec- and ra- world coordinates.
                 jmin = item[0]
                 jmax = item[0] + 1
 
-            crpix = (self.wcs.wcs.crpix[0] - imin, \
+            crpix = (self.wcs.wcs.crpix[0] - imin,
                      self.wcs.wcs.crpix[1] - jmin)
 
             res = self.copy()
@@ -464,9 +464,9 @@ out : (n,2) array of dec- and ra- world coordinates.
         """Returns [dDec,dRa].
         """
         try:
-            dx = np.sqrt(self.wcs.wcs.cd[0, 0] * self.wcs.wcs.cd[0, 0] \
+            dx = np.sqrt(self.wcs.wcs.cd[0, 0] * self.wcs.wcs.cd[0, 0]
                          + self.wcs.wcs.cd[0, 1] * self.wcs.wcs.cd[0][1])
-            dy = np.sqrt(self.wcs.wcs.cd[1, 0] * self.wcs.wcs.cd[1, 0] \
+            dy = np.sqrt(self.wcs.wcs.cd[1, 0] * self.wcs.wcs.cd[1, 0]
                          + self.wcs.wcs.cd[1, 1] * self.wcs.wcs.cd[1][1])
             return np.array([dy, dx])
         except:
@@ -490,7 +490,7 @@ out : (n,2) array of dec- and ra- world coordinates.
     def get_range(self):
         """Returns [ [dec_min,ra_min], [dec_max,ra_max] ].
         """
-        pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1], \
+        pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1],
                   [self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd)
         dec_min = np.min(pixsky[:, 0])
@@ -517,7 +517,7 @@ out : (n,2) array of dec- and ra- world coordinates.
         """Returns the rotation angle.
         """
         try:
-            return np.rad2deg(np.arctan2(self.wcs.wcs.cd[1, 0], \
+            return np.rad2deg(np.arctan2(self.wcs.wcs.cd[1, 0],
                                       self.wcs.wcs.cd[1, 1]))
         except:
             try:
@@ -656,10 +656,10 @@ out : WCS
             yc = 0
             pixsky = self.pix2sky([xc, yc])
             cdelt = self.get_step()
-            start = (pixsky[0][0] - 0.5 * cdelt[0] + 0.5 * step[0], \
+            start = (pixsky[0][0] - 0.5 * cdelt[0] + 0.5 * step[0],
                      pixsky[0][1] - 0.5 * cdelt[1] + 0.5 * step[1])
 
-        res = WCS(crpix=1.0, crval=start, cdelt=step, deg=self.is_deg(), \
+        res = WCS(crpix=1.0, crval=start, cdelt=step, deg=self.is_deg(),
                   rot=self.get_rot())
         return res
 
@@ -709,9 +709,9 @@ out : WCS
         cdelt = res.get_step()
 
         crpix = res.wcs.wcs.crpix
-        crpix[0] = (crpix[0] * old_cdelt[1] - old_cdelt[1] / 2.0 \
+        crpix[0] = (crpix[0] * old_cdelt[1] - old_cdelt[1] / 2.0
                     + cdelt[1] / 2.0) / cdelt[1]
-        crpix[1] = (crpix[1] * old_cdelt[0] - old_cdelt[0] / 2.0 \
+        crpix[1] = (crpix[1] * old_cdelt[0] - old_cdelt[0] / 2.0
                     + cdelt[0] / 2.0) / cdelt[0]
         res.wcs.wcs.crpix = crpix
         res.naxis1 = res.naxis1 / factor[1]
@@ -768,7 +768,7 @@ cunit : string
         Wavelength unit.
     """
 
-    def __init__(self, crpix=1.0, cdelt=1.0, crval=1.0, \
+    def __init__(self, crpix=1.0, cdelt=1.0, crval=1.0,
                  cunit='Angstrom', shape=None):
         """Creates a WaveCoord object
 
@@ -810,11 +810,11 @@ shape : integer or None
         """
         if self.shape is None:
             m = (1 - self.crpix) * self.cdelt + self.crval
-            print 'wavelength: min:%0.2f step:%0.2f %s' % (m, self.cdelt, \
+            print 'wavelength: min:%0.2f step:%0.2f %s' % (m, self.cdelt,
                                                            self.cunit)
         else:
             print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % \
-            (self.__getitem__(0), self.__getitem__(self.shape - 1), \
+            (self.__getitem__(0), self.__getitem__(self.shape - 1),
              self.cdelt, self.cunit)
 
     def isEqual(self, other):
@@ -901,7 +901,7 @@ out : float or integer
             if dim < 2:
                 raise ValueError('Spectrum with dim < 2')
             cdelt = newlbda[1] - newlbda[0]
-            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0], \
+            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0],
                             cunit=self.cunit, shape=dim)
             return res
         else:
@@ -930,7 +930,7 @@ out : WaveCoord
             start = lbda[0] + step * 0.5
         # pixel number necessary to cover old range
         dim = np.ceil((lbda[-1] + self.cdelt - (start - step * 0.5)) / step)
-        res = WaveCoord(crpix=1.0, cdelt=step, crval=start, \
+        res = WaveCoord(crpix=1.0, cdelt=step, crval=start,
                         cunit=self.cunit, shape=int(dim))
         return res
 

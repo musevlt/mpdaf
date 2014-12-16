@@ -157,7 +157,7 @@ class Channel(object):
         def _wrapper(self, other):
             if isinstance(other, Channel):
                 if self.extname != other.extname:
-                    raise IOError('operations on channel extensions '\
+                    raise IOError('operations on channel extensions '
                                   'with different names')
                 result = Channel(self.extname)
                 result.header = self.header
@@ -185,7 +185,7 @@ class Channel(object):
         def _wrapper(self, other):
             if isinstance(other, Channel):
                 if self.extname != other.extname:
-                    raise IOError('operations on channel extensions '\
+                    raise IOError('operations on channel extensions '
                                   'with different names')
                 result = Channel(self.extname)
                 result.header = self.header
@@ -322,8 +322,8 @@ class Channel(object):
         result.nx = self.nx
         result.ny = self.ny
         result.mask = self.mask
-        result.data = np.ma.MaskedArray(self.data, \
-                                        mask=np.logical_not(self.mask), \
+        result.data = np.ma.MaskedArray(self.data,
+                                        mask=np.logical_not(self.mask),
                                         copy=True)
         return result
 
@@ -432,7 +432,7 @@ class Channel(object):
         ksel = np.where(ima.data.mask == False)
         return np.median(ima.data.data[ksel])
 
-    def get_trimmed_image(self, det_out=None, bias_substract=False, \
+    def get_trimmed_image(self, det_out=None, bias_substract=False,
                           bias=False):
         """Returns an Image object without over scanned pixels.
 
@@ -455,14 +455,14 @@ class Channel(object):
         # Physical active pixels in Y
         ny_data2 = self.header["ESO DET CHIP NY"]
         if isinstance(self.data, np.ma.core.MaskedArray):
-            work = np.ma.MaskedArray(self.data.data.__copy__(), \
+            work = np.ma.MaskedArray(self.data.data.__copy__(),
                                      mask=self.mask)
         else:
             work = np.ma.MaskedArray(self.data.__copy__(), mask=self.mask)
 
         if bias_substract:
-            warnings.warn("get_trimmed_image: bias_substract parameter "\
-                          "will be replaced by bias parameter", \
+            warnings.warn("get_trimmed_image: bias_substract parameter "
+                          "will be replaced by bias parameter",
                           DeprecationWarning)
             bias = True
 
@@ -586,7 +586,7 @@ class Channel(object):
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
-        ima.data = np.ma.MaskedArray(self.data.__copy__(), \
+        ima.data = np.ma.MaskedArray(self.data.__copy__(),
                                      mask=self.mask, copy=True)
 
         if det_out is not None:
@@ -639,8 +639,8 @@ class Channel(object):
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
-        ima.data = np.ma.MaskedArray(self.data.__copy__(), \
-                                     mask=np.logical_not(self.mask), \
+        ima.data = np.ma.MaskedArray(self.data.__copy__(),
+                                     mask=np.logical_not(self.mask),
                                      copy=True)
 
         if det_out is not None:
@@ -788,9 +788,9 @@ class RawFile(object):
                                 self.ny = ny
                             if nx != self.nx and ny != self.ny:
                                 d = {'class': 'RawFile', 'method': '__init__'}
-                                logger.warning("image extensions %s not"\
-                                               " considered "\
-                                               "(different sizes)", \
+                                logger.warning("image extensions %s not"
+                                               " considered "
+                                               "(different sizes)",
                                                extname, extra=d)
                             else:
                                 self.channels[extname] = None
@@ -830,8 +830,8 @@ class RawFile(object):
             print self.filename
         else:
             print 'NoName'
-        print 'Nb extensions:\t%i (loaded:%i %s)' % (self.next, \
-                                                     len(self.channels), \
+        print 'Nb extensions:\t%i (loaded:%i %s)' % (self.next,
+                                                     len(self.channels),
                                                      self.channels.keys())
         print 'format:\t(%i,%i)' % (self.nx, self.ny)
 
@@ -899,7 +899,7 @@ class RawFile(object):
             else:
                 raise IOError('set an image extension with bad dimensions')
         else:
-            raise IOError('format %s incompatible '\
+            raise IOError('format %s incompatible '
                           'with an image extension' % type(value))
 
     def __mul__(self, other):
@@ -1001,7 +1001,7 @@ class RawFile(object):
         processlist = list()
         if self.channels is not None:
             for k in self.channels.keys():
-                processlist.append(['Channel.trimmed', k, \
+                processlist.append(['Channel.trimmed', k,
                                     self, self.progress])
             processresult = pool.map(_process_operator3, processlist)
             for k, out in processresult:
@@ -1025,7 +1025,7 @@ class RawFile(object):
         processlist = list()
         if self.channels is not None:
             for k in self.channels.keys():
-                processlist.append(['Channel.overscan', k, \
+                processlist.append(['Channel.overscan', k,
                                     self, self.progress])
             processresult = pool.map(_process_operator3, processlist)
             for k, out in processresult:
@@ -1092,7 +1092,7 @@ class RawFile(object):
             del chan
             self.channels[name] = None
 
-    def plot(self, title=None, channels="all", area=None, scale='linear', \
+    def plot(self, title=None, channels="all", area=None, scale='linear',
              vmin=None, vmax=None, zscale=False, colorbar=None, **kargs):
         """Plots the raw images.
           :param title: Figure title (None by default).
@@ -1128,8 +1128,8 @@ class RawFile(object):
         if channels == "all":
             for name in self.channels.keys():
                 chan = self.get_channel(name)
-                ima = chan.get_trimmed_image(det_out=None, \
-                                             bias_substract=False, \
+                ima = chan.get_trimmed_image(det_out=None,
+                                             bias_substract=False,
                                              bias=False)
                 if area is not None:
                     ima = ima[area[0]:area[1], area[2]:area[3]]
@@ -1138,8 +1138,8 @@ class RawFile(object):
                 fig.add_subplot(4, 6, ichan)
                 ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
                 plt.axis('off')
-                plt.text(ima.shape[0] - 30, ima.shape[1] - 30, '%i' % ichan, \
-                         style='italic', \
+                plt.text(ima.shape[0] - 30, ima.shape[1] - 30, '%i' % ichan,
+                         style='italic',
                          bbox={'facecolor': 'red', 'alpha': 0.2, 'pad': 10})
         else:
             nchan = len(channels)
@@ -1150,7 +1150,7 @@ class RawFile(object):
                 ncols = int(nchan / nrows) + 1
             for i, name in enumerate(channels):
                 chan = self.get_channel(name)
-                ima = chan.get_trimmed_image(det_out=None, \
+                ima = chan.get_trimmed_image(det_out=None,
                                              bias_substract=False, bias=False)
                 if area is not None:
                     ima = ima[area[0]:area[1], area[2]:area[3]]
@@ -1159,8 +1159,8 @@ class RawFile(object):
                 fig.add_subplot(nrows, ncols, i + 1)
                 ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
                 plt.axis('off')
-                plt.text(ima.shape[0] - 30, ima.shape[1] - 30, '%i' % ichan, \
-                         style='italic', \
+                plt.text(ima.shape[0] - 30, ima.shape[1] - 30, '%i' % ichan,
+                         style='italic',
                          bbox={'facecolor': 'red', 'alpha': 0.2, 'pad': 10})
 
     def reconstruct_white_image(self, mask=None, verbose=True):
@@ -1201,7 +1201,7 @@ class RawFile(object):
                     output = ""
                     sys.stdout.write("\r\x1b[K" + output.__str__())
                     break
-                output = "\r (%i%% done)" % (float(completed) \
+                output = "\r (%i%% done)" % (float(completed)
                                              / float(num_tasks) * 100.0)
                 sys.stdout.write("\r\x1b[K" + output.__str__())
                 sys.stdout.flush()
@@ -1226,7 +1226,7 @@ class RawFile(object):
         ymax = ymin + NB_SLICES
         plt.plot(np.arange(-0.5, 299.5), np.ones(300) * ymin, 'b-')
         plt.plot(np.arange(-0.5, 299.5), np.ones(300) * ymax, 'b-')
-        plt.annotate('%02d' % ifu, xy=(0, (ymin + ymax) / 2.0),  \
+        plt.annotate('%02d' % ifu, xy=(0, (ymin + ymax) / 2.0),
                      xycoords='data', textcoords='data', color='b')
         # plot slice
         k = np.floor((sli - 1) / NB_SLICES)
@@ -1234,10 +1234,10 @@ class RawFile(object):
         wr_row = NB_SLICES - slit_position[l - 1] + 12 * (24 - ifu) - 0.5
         wr_col = k * NB_SPEC_PER_SLICE - 0.5
         plt.plot(np.arange(wr_col, wr_col + 76), np.ones(76) * wr_row, 'r-')
-        plt.plot(np.arange(wr_col, wr_col + 76), \
+        plt.plot(np.arange(wr_col, wr_col + 76),
                  np.ones(76) * (wr_row + 1), 'r-')
         plt.plot(np.ones(2) * wr_col, np.arange(wr_row, wr_row + 2), 'r-')
-        plt.plot(np.ones(2) * (wr_col + 75), \
+        plt.plot(np.ones(2) * (wr_col + 75),
                  np.arange(wr_row, wr_row + 2), 'r-')
         self.whiteima.plot(cmap=cm.copper)
 
@@ -1251,32 +1251,32 @@ class RawFile(object):
         self.x2 = mask_chan.header['HIERARCH ESO DET SLICE48 XEND'] \
         - 2 * OVERSCAN
 
-        xstart = mask_chan.header['HIERARCH ESO DET '\
+        xstart = mask_chan.header['HIERARCH ESO DET '
                                   'SLICE%d XSTART' % sli] - OVERSCAN
-        xend = mask_chan.header['HIERARCH ESO DET '\
+        xend = mask_chan.header['HIERARCH ESO DET '
                                 'SLICE%d XEND' % sli] - OVERSCAN
         if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xstart -= 2 * OVERSCAN
         if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xend -= 2 * OVERSCAN
-        ystart = mask_chan.header['HIERARCH ESO DET '\
+        ystart = mask_chan.header['HIERARCH ESO DET '
                                   'SLICE%d YSTART' % sli] - OVERSCAN
-        yend = mask_chan.header['HIERARCH ESO DET '\
+        yend = mask_chan.header['HIERARCH ESO DET '
                                 'SLICE%d YEND' % sli] - OVERSCAN
         if ystart > (mask_chan.header["ESO DET CHIP NY"] / 2.0):
             ystart -= 2 * OVERSCAN
         if yend > (mask_chan.header["ESO DET CHIP NY"] / 2.0):
             yend -= 2 * OVERSCAN
 
-        plt.plot(np.arange(xstart, xend + 1), \
+        plt.plot(np.arange(xstart, xend + 1),
                  np.ones(xend + 1 - xstart) * ystart, 'r-')
-        plt.plot(np.arange(xstart, xend + 1), \
+        plt.plot(np.arange(xstart, xend + 1),
                  np.ones(xend + 1 - xstart) * yend, 'r-')
-        plt.plot(np.ones(yend + 1 - ystart) * xstart, \
+        plt.plot(np.ones(yend + 1 - ystart) * xstart,
                  np.arange(ystart, yend + 1), 'r-')
-        plt.plot(np.ones(yend + 1 - ystart) * xend, \
+        plt.plot(np.ones(yend + 1 - ystart) * xend,
                  np.arange(ystart, yend + 1), 'r-')
-        plt.annotate('%02d' % sli, xy=(xstart, yend + 1), \
+        plt.annotate('%02d' % sli, xy=(xstart, yend + 1),
                      xycoords='data', textcoords='data', color='r')
         if same_raw is False:
             self.rawima = self.get_channel(chan).get_trimmed_image()
@@ -1300,7 +1300,7 @@ class RawFile(object):
                     ax = plt.subplot(1, 2, 2)
                     ax.clear()
                     if ifu == self.plotted_chan:
-                        self._plot_slice_on_raw_image(ifu, sli, \
+                        self._plot_slice_on_raw_image(ifu, sli,
                                                       same_raw=True)
                     else:
                         self._plot_slice_on_raw_image(ifu, sli)
@@ -1311,11 +1311,11 @@ class RawFile(object):
                     sli = int((q + 0.5 - self.x1) / nq) + 1
                     ax = plt.subplot(1, 2, 2)
                     ax.clear()
-                    self._plot_slice_on_raw_image(self.plotted_chan, \
+                    self._plot_slice_on_raw_image(self.plotted_chan,
                                                   sli, same_raw=True)
                     ax = plt.subplot(1, 2, 1)
                     ax.clear()
-                    self._plot_ifu_slice_on_white_image(self.plotted_chan, \
+                    self._plot_ifu_slice_on_white_image(self.plotted_chan,
                                                         sli)
 
     def plot_white_image(self, mask=None):
@@ -1413,9 +1413,9 @@ def _process_white_image(arglist):
     spe = ima.sum(axis=0)
     data = np.empty((48, NB_SPEC_PER_SLICE))
     for sli in range(1, 49):
-        xstart = mask_chan.header['HIERARCH ESO DET '\
+        xstart = mask_chan.header['HIERARCH ESO DET '
                                   'SLICE%d XSTART' % sli] - OVERSCAN
-        xend = mask_chan.header['HIERARCH ESO DET '\
+        xend = mask_chan.header['HIERARCH ESO DET '
                                 'SLICE%d XEND' % sli] - OVERSCAN
         if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
             xstart -= 2 * OVERSCAN
@@ -1439,7 +1439,7 @@ def _process_white_image(arglist):
         x = pix * new_step - 0.5 * new_step
 
         for i in range(NB_SPEC_PER_SLICE):
-            spe_slice_75pix[i] = integrate.quad(f, x[i], x[i + 1], \
+            spe_slice_75pix[i] = integrate.quad(f, x[i], x[i + 1],
                                                 full_output=1)[0] / new_step
 
         data[sli - 1, :] = spe_slice_75pix

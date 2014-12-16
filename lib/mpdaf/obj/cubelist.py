@@ -62,7 +62,7 @@ class CubeList(object):
            len(np.unique(shapes[:,2])) != 1:
             print 'all cubes have not same dimensions'
             for i in range(self.nfiles):
-                print '%i X %i X %i cube (%s)' % (shapes[i,0], shapes[i,1],\
+                print '%i X %i X %i cube (%s)' % (shapes[i,0], shapes[i,1],
                                                   shapes[i,2], self.files[i])
             print ''
             return False

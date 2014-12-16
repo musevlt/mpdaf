@@ -42,21 +42,21 @@
 # known as a hot pixel and saturated would have a flag value
 # of 128 + 256 + 4096 = 4480.
 
-DQ_PIXEL = dict({'Good': 0, \
-                 'TelluricCorrected': (1 << 0), \
-                 'TelluricUnCorrected': (1 << 1), \
-                 'GhostStrayLight': (1 << 2), \
-                 'ElectronicNoise': (1 << 3), \
-                 'CosmicRemoved': (1 << 4), \
-                 'CosmicUnCorrected': (1 << 5), \
-                 'LowQE': (1 << 6), \
-                 'CalibrationFileDefect': (1 << 7), \
-                 'HotPixel': (1 << 8), \
-                 'Dark': (1 << 9), \
-                 'Questionable': (1 << 10), \
-                 'WellSaturation': (1 << 11), \
-                 'ADSaturation': (1 << 12), \
-                 'PermanentCameraDefect': (1 << 13), \
-                 'BadOther': (1 << 14), \
-                 'MissingData': (1 << 30), \
+DQ_PIXEL = dict({'Good': 0,
+                 'TelluricCorrected': (1 << 0),
+                 'TelluricUnCorrected': (1 << 1),
+                 'GhostStrayLight': (1 << 2),
+                 'ElectronicNoise': (1 << 3),
+                 'CosmicRemoved': (1 << 4),
+                 'CosmicUnCorrected': (1 << 5),
+                 'LowQE': (1 << 6),
+                 'CalibrationFileDefect': (1 << 7),
+                 'HotPixel': (1 << 8),
+                 'Dark': (1 << 9),
+                 'Questionable': (1 << 10),
+                 'WellSaturation': (1 << 11),
+                 'ADSaturation': (1 << 12),
+                 'PermanentCameraDefect': (1 << 13),
+                 'BadOther': (1 << 14),
+                 'MissingData': (1 << 30),
                  'OutsideDataRange': (1 << 31)})
