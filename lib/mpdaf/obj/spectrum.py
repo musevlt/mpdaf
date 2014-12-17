@@ -31,13 +31,13 @@ class SpectrumClicks:  # Object used to save click on spectrum plot.
 
     def __init__(self, binding_id, filename=None):
         self.filename = filename  # Name of the table fits file where are
-                                  # saved the clicks values.
+        # saved the clicks values.
         self.binding_id = binding_id  # Connection id.
         self.xc = []  # Cursor position in spectrum (world coordinates).
         self.yc = []  # Cursor position in spectrum (world coordinates).
         self.k = []  # Nearest pixel in spectrum.
         self.lbda = []  # Corresponding nearest position in spectrum
-                        # (world coordinates)
+        # (world coordinates)
         self.data = []  # Corresponding spectrum data value.
         self.id_lines = []  # Plot id (cross for cursor positions).
 
@@ -69,11 +69,11 @@ class SpectrumClicks:  # Object used to save click on spectrum plot.
         # prints a cursor positions
         if fscale == 1:
             print 'xc=%g\tyc=%g\tk=%d\tlbda=%g\tdata=%g' \
-            % (self.xc[i], self.yc[i], self.k[i], self.lbda[i], self.data[i])
+                % (self.xc[i], self.yc[i], self.k[i], self.lbda[i], self.data[i])
         else:
             print 'xc=%g\tyc=%g\tk=%d\tlbda=%g\tdata=%g\t[scaled=%g]' \
-            % (self.xc[i], self.yc[i], self.k[i], self.lbda[i], \
-               self.data[i], self.data[i] / fscale)
+                % (self.xc[i], self.yc[i], self.k[i], self.lbda[i],
+                   self.data[i], self.data[i] / fscale)
 
     def write_fits(self):
         # prints coordinates in fits table.
@@ -101,6 +101,7 @@ class SpectrumClicks:  # Object used to save click on spectrum plot.
 
 
 class Gauss1D:
+
     """ This class stores 1D Gaussian parameters.
 
     Attributes
@@ -124,7 +125,8 @@ class Gauss1D:
     flux      : float
                 Gaussian integrated flux.
     """
-    def __init__(self, lpeak, peak, flux, fwhm, cont, err_lpeak, \
+
+    def __init__(self, lpeak, peak, flux, fwhm, cont, err_lpeak,
                  err_peak, err_flux, err_fwhm):
         self.cont = cont
         self.fwhm = fwhm
@@ -139,8 +141,8 @@ class Gauss1D:
     def copy(self):
         """Copies Gauss1D object in a new one and returns it.
         """
-        res = Gauss1D(self.lpeak, self.peak, self.flux, self.fwhm, \
-                      self.cont, self.err_lpeak, self.err_peak, \
+        res = Gauss1D(self.lpeak, self.peak, self.flux, self.fwhm,
+                      self.cont, self.err_lpeak, self.err_peak,
                       self.err_flux, self.err_fwhm)
         return res
 
@@ -149,18 +151,19 @@ class Gauss1D:
         """
         print 'Gaussian center = %g (error:%g)' % (self.lpeak, self.err_lpeak)
         print 'Gaussian integrated flux = %g (error:%g)' % \
-        (self.flux, self.err_flux)
+            (self.flux, self.err_flux)
         print 'Gaussian peak value = %g (error:%g)' % \
-        (self.peak, self.err_peak)
+            (self.peak, self.err_peak)
         print 'Gaussian fwhm = %g (error:%g)' % (self.fwhm, self.err_fwhm)
         print 'Gaussian continuum = %g' % self.cont
         print ''
 
 
 class Spectrum(object):
+
     """Spectrum class manages spectrum, optionally including a
     variance and a bad pixel mask.
-    
+
 Parameters
 ----------
 filename : string
@@ -207,8 +210,8 @@ wave           : :class:`mpdaf.obj.WaveCoord`
                  Wavelength coordinates.
     """
 
-    def __init__(self, filename=None, ext=None, notnoise=False, shape=101, \
-                 wave=None, unit=None, data=None, var=None, \
+    def __init__(self, filename=None, ext=None, notnoise=False, shape=101,
+                 wave=None, unit=None, data=None, var=None,
                  fscale=1.0):
         """Creates a Spectrum object.
 
@@ -271,15 +274,15 @@ fscale   : float
                         crpix = hdr.get('CRPIX1')
                         crval = hdr.get('CRVAL1')
                         cunit = hdr.get('CUNIT1', '')
-                        self.wave = WaveCoord(crpix, cdelt, crval, \
-                                          cunit, self.shape)
+                        self.wave = WaveCoord(crpix, cdelt, crval,
+                                              cunit, self.shape)
                 else:
                     self.wave = wave
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
-                        logger.warning('wavelength coordinates and data '\
-                                       'have not the same dimension: %s', \
-                                       'shape of WaveCoord object'\
+                        logger.warning('wavelength coordinates and data '
+                                       'have not the same dimension: %s',
+                                       'shape of WaveCoord object'
                                        ' is modified', extra=d)
                     self.wave.shape = self.shape
             else:
@@ -315,15 +318,15 @@ fscale   : float
                         crpix = h.get('CRPIX1')
                         crval = h.get('CRVAL1')
                         cunit = h.get('CUNIT1', '')
-                        self.wave = WaveCoord(crpix, cdelt, crval, \
-                                          cunit, self.shape)
+                        self.wave = WaveCoord(crpix, cdelt, crval,
+                                              cunit, self.shape)
                 else:
                     self.wave = wave
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
-                        logger.warning('wavelength coordinates and data '\
-                                       'have not the same dimension: %s', \
-                                       'shape of WaveCoord object '\
+                        logger.warning('wavelength coordinates and data '
+                                       'have not the same dimension: %s',
+                                       'shape of WaveCoord object '
                                        'is modified', extra=d)
                     self.wave.shape = self.shape
                 # STAT extension
@@ -344,10 +347,10 @@ fscale   : float
                         self.var = None
                     else:
                         if fstat.header['NAXIS'] != 1:
-                            raise IOError('Wrong dimension number '\
+                            raise IOError('Wrong dimension number '
                                           'in STAT extension')
                             if fstat.header['NAXIS1'] != self.shape:
-                                raise IOError('Number of points in STAT '\
+                                raise IOError('Number of points in STAT '
                                               'not equal to DATA')
                         self.var = np.array(fstat.data, dtype=float)
                 # DQ extension
@@ -381,9 +384,9 @@ fscale   : float
                 if wave is not None:
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
-                        logger.warning('wavelength coordinates and data '\
-                                       'have not the same dimension: %s', \
-                                       'shape of WaveCoord object '\
+                        logger.warning('wavelength coordinates and data '
+                                       'have not the same dimension: %s',
+                                       'shape of WaveCoord object '
                                        'is modified', extra=d)
                     self.wave.shape = self.shape
             except:
@@ -432,10 +435,10 @@ var : boolean
         except:
             wave = None
         if var is False:
-            spe = Spectrum(wave=wave, data=np.zeros(shape=self.shape), \
+            spe = Spectrum(wave=wave, data=np.zeros(shape=self.shape),
                            unit=self.unit)
         else:
-            spe = Spectrum(wave=wave, data=np.zeros(shape=self.shape), \
+            spe = Spectrum(wave=wave, data=np.zeros(shape=self.shape),
                            var=np.zeros(shape=self.shape), unit=self.unit)
         return spe
 
@@ -453,11 +456,11 @@ savemask : boolean
         """
 
         assert self.data is not None
-        
-        #update fscale
+
+        # update fscale
         if fscale is None:
             fscale = self.fscale
-        
+
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         for card in self.primary_header.cards:
@@ -466,20 +469,20 @@ savemask : boolean
             except:
                 try:
                     card.verify('fix')
-                    prihdu.header[card.keyword] =  (card.value, card.comment)
+                    prihdu.header[card.keyword] = (card.value, card.comment)
                 except:
                     try:
                         if isinstance(card.value, str):
                             n = 80 - len(card.keyword) - 14
                             s = card.value[0:n]
                             prihdu.header['hierarch %s' % card.keyword] = \
-                                                 (s, card.comment)
+                                (s, card.comment)
                         else:
                             prihdu.header['hierarch %s' % card.keyword] = \
-                                                 (card.value, card.comment)
+                                (card.value, card.comment)
                     except:
                         d = {'class': 'Spectrum', 'method': 'write'}
-                        logger.warning("%s not copied in primary header", \
+                        logger.warning("%s not copied in primary header",
                                        card.keyword, extra=d)
                         pass
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
@@ -487,8 +490,8 @@ savemask : boolean
         hdulist = [prihdu]
 
         # create spectrum DATA extension
-        tbhdu = pyfits.ImageHDU(name='DATA', data=(self.data.data \
-                                * np.double(self.fscale / fscale)).astype(np.float32) )
+        tbhdu = pyfits.ImageHDU(name='DATA', data=(self.data.data
+                                                   * np.double(self.fscale / fscale)).astype(np.float32))
         for card in self.data_header.cards:
             try:
                 if tbhdu.header.keys().count(card.keyword) == 0:
@@ -498,14 +501,14 @@ savemask : boolean
                     card.verify('fix')
                     if tbhdu.header.keys().count(card.keyword) == 0:
                         tbhdu.header[card.keyword] = \
-                        (card.value, card.comment)
+                            (card.value, card.comment)
                 except:
                     d = {'class': 'Spectrum', 'method': 'write'}
-                    logger.warning("%s not copied in data header",\
-                                    card.keyword, extra=d)
+                    logger.warning("%s not copied in data header",
+                                   card.keyword, extra=d)
                     pass
         tbhdu.header['CRVAL1'] = \
-        (self.wave.crval, 'Start in world coordinate')
+            (self.wave.crval, 'Start in world coordinate')
         tbhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
         tbhdu.header['CDELT1'] = (self.wave.cdelt, 'Step in world coordinate')
         tbhdu.header['CTYPE1'] = ('LINEAR', 'world coordinate type')
@@ -517,28 +520,28 @@ savemask : boolean
 
         # create spectrum STAT extension
         if self.var is not None:
-            nbhdu = pyfits.ImageHDU(name='STAT', data=(self.var \
-                                    * np.double(self.fscale * self.fscale \
-                                   / fscale / fscale)).astype(np.float32))
+            nbhdu = pyfits.ImageHDU(name='STAT', data=(self.var
+                                                       * np.double(self.fscale * self.fscale
+                                                                   / fscale / fscale)).astype(np.float32))
             nbhdu.header['CRVAL1'] = \
-            (self.wave.crval, 'Start in world coordinate')
+                (self.wave.crval, 'Start in world coordinate')
             nbhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
             nbhdu.header['CDELT1'] = \
-            (self.wave.cdelt, 'Step in world coordinate')
+                (self.wave.cdelt, 'Step in world coordinate')
             nbhdu.header['CUNIT1'] = \
-            (self.wave.cunit, 'world coordinate units')
+                (self.wave.cunit, 'world coordinate units')
             hdulist.append(nbhdu)
 
         # create spectrum DQ extension
         if savemask and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
             dqhdu.header['CRVAL1'] = \
-            (self.wave.crval, 'Start in world coordinate')
+                (self.wave.crval, 'Start in world coordinate')
             dqhdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
             dqhdu.header['CDELT1'] = \
-            (self.wave.cdelt, 'Step in world coordinate')
+                (self.wave.cdelt, 'Step in world coordinate')
             dqhdu.header['CUNIT1'] = \
-            (self.wave.cunit, 'world coordinate units')
+                (self.wave.cunit, 'world coordinate units')
             hdulist.append(dqhdu)
 
         # save to disk
@@ -579,7 +582,7 @@ Parameters
 ----------
 item : float
        minimum value.
-       
+
 Returns
 -------
 out : Spectrum object.
@@ -597,14 +600,14 @@ Parameters
 ----------
 item : float
        minimum value.
-       
+
 Returns
 -------
 out : Spectrum object.
         """
         result = self.copy()
         if self.data is not None:
-            result.data = np.ma.masked_greater_equal(self.data, item \
+            result.data = np.ma.masked_greater_equal(self.data, item
                                                      / self.fscale)
         return result
 
@@ -615,7 +618,7 @@ Parameters
 ----------
 item : float
        maximum value.
-       
+
 Returns
 -------
 out : Spectrum object.
@@ -633,14 +636,14 @@ Parameters
 ----------
 item : float
        maximum value.
-       
+
 Returns
 -------
 out : Spectrum object.
         """
         result = self.copy()
         if self.data is not None:
-            result.data = np.ma.masked_less_equal(self.data, item \
+            result.data = np.ma.masked_less_equal(self.data, item
                                                   / self.fscale)
         return result
 
@@ -684,7 +687,7 @@ other : number or Spectrum or Cube object.
         It is Cube : The first dimension of cube1 must be
         equal to the spectrum dimension.
         Wavelength coordinates must be the same.
-        
+
 Results
 -------
 out : Spectrum or Cube object.
@@ -703,7 +706,7 @@ out : Spectrum or Cube object.
             # If not equal to None, world coordinates must be the same.
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '\
+                    raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
                     res = Spectrum(shape=self.shape, fscale=self.fscale)
@@ -713,28 +716,28 @@ out : Spectrum or Cube object.
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        raise IOError('Operation forbidden for spectra '\
+                        raise IOError('Operation forbidden for spectra '
                                       'with different world coordinates')
                     # data
                     res.data = self.data + other.data \
-                    * np.double(other.fscale / self.fscale)
+                        * np.double(other.fscale / self.fscale)
                     # variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
                         res.var = other.var \
-                        * np.double(other.fscale * other.fscale \
-                                    / self.fscale / self.fscale)
+                            * np.double(other.fscale * other.fscale
+                                        / self.fscale / self.fscale)
                     elif other.var is None:
                         res.var = self.var
                     else:
                         res.var = self.var + other.var \
-                        * np.double(other.fscale * other.fscale \
-                                    / self.fscale / self.fscale)
+                            * np.double(other.fscale * other.fscale
+                                        / self.fscale / self.fscale)
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
-                    #return
+                    # return
                     return res
         except IOError as e:
             raise e
@@ -759,7 +762,7 @@ out : Spectrum or Cube object.
 
     def __sub__(self, other):
         """ Operator -.
-        
+
 spectrum1 - number = spectrum2
 (spectrum2[k] = spectrum1[k] - number)
 
@@ -777,7 +780,7 @@ other : number or Spectrum or Cube object.
         It is Cube : The first dimension of cube1 must be equal
         to the spectrum dimension.
         Wavelength coordinates must be the same.
-        
+
 Returns
 -------
 out : Spectrum or Cube object.
@@ -797,7 +800,7 @@ out : Spectrum or Cube object.
             # If not equal to None, world coordinates must be the same.
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '\
+                    raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
                     res = Spectrum(shape=self.shape, fscale=self.fscale)
@@ -807,26 +810,26 @@ out : Spectrum or Cube object.
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        raise IOError('Operation forbidden for spectra '\
+                        raise IOError('Operation forbidden for spectra '
                                       'with different world coordinates')
                     # data
                     res.data = self.data \
-                    - (other.data * np.double(other.fscale / self.fscale))
+                        - (other.data * np.double(other.fscale / self.fscale))
                     # variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * np.double(other.fscale \
-                                                        * other.fscale \
-                                                        / self.fscale \
+                        res.var = other.var * np.double(other.fscale
+                                                        * other.fscale
+                                                        / self.fscale
                                                         / self.fscale)
                     elif other.var is None:
                         res.var = self.var
                     else:
                         res.var = self.var + other.var \
-                        * np.double(other.fscale * other.fscale \
-                                    / self.fscale / self.fscale)
-                    #unit
+                            * np.double(other.fscale * other.fscale
+                                        / self.fscale / self.fscale)
+                    # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
                     return res
@@ -842,11 +845,11 @@ out : Spectrum or Cube object.
                 # in spectral direction must be the same.
                 if other.cube:
                     if other.data is None or self.shape != other.shape[0]:
-                        raise IOError('Operation forbidden for objects'\
+                        raise IOError('Operation forbidden for objects'
                                       ' with different sizes')
                     else:
                         from cube import Cube
-                        res = Cube(shape=other.shape, wcs=other.wcs, \
+                        res = Cube(shape=other.shape, wcs=other.wcs,
                                    fscale=self.fscale)
                         # coordinates
                         if self.wave is None or other.wave is None:
@@ -854,26 +857,26 @@ out : Spectrum or Cube object.
                         elif self.wave.isEqual(other.wave):
                             res.wave = self.wave
                         else:
-                            raise IOError('Operation forbidden for spectra '\
+                            raise IOError('Operation forbidden for spectra '
                                           'with different world coordinates')
                         # data
                         res.data = self.data[:, np.newaxis, np.newaxis] \
-                        - (other.data * np.double(other.fscale / self.fscale))
+                            - (other.data * np.double(other.fscale / self.fscale))
                         # variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
                             res.var = other.var \
-                            * np.double(other.fscale * other.fscale \
-                                        / self.fscale / self.fscale)
+                                * np.double(other.fscale * other.fscale
+                                            / self.fscale / self.fscale)
                         elif other.var is None:
                             res.var = np.ones(res.shape) \
-                            * self.var[:, np.newaxis, np.newaxis]
+                                * self.var[:, np.newaxis, np.newaxis]
                         else:
                             res.var = self.var[:, np.newaxis, np.newaxis] \
-                            + other.var \
-                            * np.double(other.fscale * other.fscale \
-                                        / self.fscale / self.fscale)
+                                + other.var \
+                                * np.double(other.fscale * other.fscale
+                                            / self.fscale / self.fscale)
                         # unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -906,7 +909,7 @@ out : Spectrum or Cube object.
 
     def __mul__(self, other):
         """ Operator \*.
-        
+
 spectrum1 \* number = spectrum2
 (spectrum2[k] = spectrum1[k] \* number)
 
@@ -926,7 +929,7 @@ other : number or Spectrum or Image or Cube object.
         It is Cube : The first dimension of cube1 must be equal
         to the spectrum dimension.
         Wavelength coordinates must be the same.
-          
+
 Results
 -------
 out : Spectrum or Cube object.
@@ -946,10 +949,10 @@ out : Spectrum or Cube object.
             # If not equal to None, world coordinates must be the same.
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '\
+                    raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
-                    res = Spectrum(shape=self.shape, \
+                    res = Spectrum(shape=self.shape,
                                    fscale=self.fscale)
                     # coordinates
                     if self.wave is None or other.wave is None:
@@ -957,7 +960,7 @@ out : Spectrum or Cube object.
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        raise IOError('Operation forbidden for spectra '\
+                        raise IOError('Operation forbidden for spectra '
                                       'with different world coordinates')
                     # data
                     res.data = self.data * other.data * other.fscale
@@ -966,14 +969,14 @@ out : Spectrum or Cube object.
                         res.var = None
                     elif self.var is None:
                         res.var = other.var * self.data * self.data \
-                        * other.fscale * other.fscale
+                            * other.fscale * other.fscale
                     elif other.var is None:
                         res.var = self.var * other.data * other.data \
-                        * other.fscale * other.fscale
+                            * other.fscale * other.fscale
                     else:
-                        res.var = (other.var * self.data * self.data \
-                        + self.var * other.data * other.data) \
-                        * other.fscale * other.fscale
+                        res.var = (other.var * self.data * self.data
+                                   + self.var * other.data * other.data) \
+                            * other.fscale * other.fscale
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -999,7 +1002,7 @@ out : Spectrum or Cube object.
 Note : divide functions that have a validity domain returns
 the masked constant whenever the input is masked or falls
 outside the validity domain.
-          
+
 spectrum1 / number = spectrum2
 (spectrum2[k] = spectrum1[k] / number)
 
@@ -1017,7 +1020,7 @@ other : number or Spectrum or Cube object.
         It is Cube : The first dimension of cube1 must be equal
         to the spectrum dimension.
         Wavelength coordinates must be the same.
-        
+
 Results
 -------
 out : Spectrum or Cube object.
@@ -1037,10 +1040,10 @@ out : Spectrum or Cube object.
             # If not equal to None, world coordinates must be the same.
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '\
+                    raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
-                    res = Spectrum(shape=self.shape, \
+                    res = Spectrum(shape=self.shape,
                                    fscale=self.fscale)
                     # coordinates
                     if self.wave is None or other.wave is None:
@@ -1048,7 +1051,7 @@ out : Spectrum or Cube object.
                     elif self.wave.isEqual(other.wave):
                         res.wave = self.wave
                     else:
-                        raise IOError('Operation forbidden for spectra '\
+                        raise IOError('Operation forbidden for spectra '
                                       'with different world coordinates')
                     # data
                     res.data = self.data / other.data / other.fscale
@@ -1057,14 +1060,14 @@ out : Spectrum or Cube object.
                         res.var = None
                     elif self.var is None:
                         res.var = other.var * self.data * self.data \
-                        / (other.data ** 4)  / (other.fscale**2)
+                            / (other.data ** 4) / (other.fscale ** 2)
                     elif other.var is None:
                         res.var = self.var * other.data * other.data \
-                        / (other.data ** 4) / (other.fscale**2)
+                            / (other.data ** 4) / (other.fscale ** 2)
                     else:
-                        res.var = (other.var * self.data * self.data \
+                        res.var = (other.var * self.data * self.data
                                    + self.var * other.data * other.data) \
-                                   / (other.data ** 4) / (other.fscale**2)
+                            / (other.data ** 4) / (other.fscale ** 2)
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -1081,11 +1084,11 @@ out : Spectrum or Cube object.
                 # in spectral direction must be the same.
                 if other.cube:
                     if other.data is None or self.shape != other.shape[0]:
-                        raise IOError('Operation forbidden for objects '\
+                        raise IOError('Operation forbidden for objects '
                                       'with different sizes')
                     else:
                         from cube import Cube
-                        res = Cube(shape=other.shape, wcs=other.wcs, \
+                        res = Cube(shape=other.shape, wcs=other.wcs,
                                    fscale=self.fscale)
                         # coordinates
                         if self.wave is None or other.wave is None:
@@ -1093,31 +1096,31 @@ out : Spectrum or Cube object.
                         elif self.wave.isEqual(other.wave):
                             res.wave = self.wave
                         else:
-                            raise IOError('Operation forbidden for spectra '\
+                            raise IOError('Operation forbidden for spectra '
                                           'with different world coordinates')
                         # data
                         res.data = self.data[:, np.newaxis, np.newaxis] \
-                        / other.data / other.fscale
+                            / other.data / other.fscale
                         # variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
                             res.var = other.var \
-                            * self.data[:, np.newaxis, np.newaxis] \
-                            * self.data[:, np.newaxis, np.newaxis] \
-                            / (other.data ** 4) / (other.fscale**2)
+                                * self.data[:, np.newaxis, np.newaxis] \
+                                * self.data[:, np.newaxis, np.newaxis] \
+                                / (other.data ** 4) / (other.fscale ** 2)
                         elif other.var is None:
                             res.var = self.var[:, np.newaxis, np.newaxis] \
-                            * other.data * other.data / (other.data ** 4) \
-                            / (other.fscale**2)
+                                * other.data * other.data / (other.data ** 4) \
+                                / (other.fscale ** 2)
                         else:
                             res.var = \
-                            (other.var \
-                             * self.data[:, np.newaxis, np.newaxis] \
-                             * self.data[:, np.newaxis, np.newaxis] \
-                             + self.var[:, np.newaxis, np.newaxis] \
-                             * other.data * other.data) / (other.data ** 4) \
-                             / (other.fscale**2)
+                                (other.var
+                                 * self.data[:, np.newaxis, np.newaxis]
+                                 * self.data[:, np.newaxis, np.newaxis]
+                                 + self.var[:, np.newaxis, np.newaxis]
+                                 * other.data * other.data) / (other.data ** 4) \
+                                / (other.fscale ** 2)
                         # unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -1156,7 +1159,7 @@ out : Spectrum or Cube object.
             raise ValueError('empty data array')
         res = self.copy()
         if is_float(other) or is_int(other):
-            res.data = (self.data ** other) * (self.fscale ** (other-1))
+            res.data = (self.data ** other) * (self.fscale ** (other - 1))
             res.var = None
         else:
             raise ValueError('Operation forbidden')
@@ -1208,7 +1211,7 @@ out : Spectrum or Cube object.
                 wave = self.wave[item]
             except:
                 wave = None
-            res = Spectrum(shape=shape, wave=wave, unit=self.unit, \
+            res = Spectrum(shape=shape, wave=wave, unit=self.unit,
                            fscale=self.fscale)
             res.data = data
             res.var = var
@@ -1226,7 +1229,7 @@ lmin : float
        minimum wavelength.
 lmax : float
        maximum wavelength.
-       
+
 Results
 -------
 out : float or Spectrum
@@ -1234,7 +1237,7 @@ out : float or Spectrum
         if lmax is None:
             lmax = lmin
         if self.wave is None:
-            raise ValueError('Operation forbidden without world coordinates '\
+            raise ValueError('Operation forbidden without world coordinates '
                              'along the spectral direction')
         else:
             pix_min = max(0, self.wave.pixel(lmin, nearest=True))
@@ -1291,7 +1294,7 @@ out : float array
             return self.wave.get_range()
         else:
             return None
-        
+
     def get_np_data(self):
         """ Returns numpy masked array containing the flux
             multiplied by scaling factor
@@ -1310,12 +1313,12 @@ out : float array
                 # other is a spectrum
                 if other.spectrum:
                     if self.wave is not None and other.wave is not None \
-                    and (self.wave.get_step() != other.wave.get_step()):
+                            and (self.wave.get_step() != other.wave.get_step()):
                         d = {'class': 'Spectrum', 'method': '__setitem__'}
-                        logger.warning("spectra with different steps", \
+                        logger.warning("spectra with different steps",
                                        extra=d)
                     self.data[key] = other.data \
-                    * np.double(other.fscale / self.fscale)
+                        * np.double(other.fscale / self.fscale)
             except:
                 raise IOError('Operation forbidden')
 
@@ -1329,7 +1332,7 @@ wave : :class:`mpdaf.obj.WaveCoord`
         """
         if wave.shape is not None and wave.shape != self.shape:
             d = {'class': 'Spectrum', 'method': 'set_wcs'}
-            logger.warning('wavelength coordinates and data have '\
+            logger.warning('wavelength coordinates and data have '
                            'not the same dimensions', extra=d)
         self.wave = wave
         self.wave.shape = self.shape
@@ -1365,7 +1368,7 @@ inside : boolean
          If inside is False, pixels outside [lmin,lmax] are masked.
         """
         if self.wave is None:
-            raise ValueError('Operation forbidden without world coordinates '\
+            raise ValueError('Operation forbidden without world coordinates '
                              'along the spectral direction')
         else:
             if lmin is None:
@@ -1375,14 +1378,14 @@ inside : boolean
             if lmax is None:
                 pix_max = self.shape
             else:
-                pix_max = min(self.shape, \
+                pix_max = min(self.shape,
                               self.wave.pixel(lmax, nearest=True) + 1)
 
             if inside:
                 self.data[pix_min:pix_max] = np.ma.masked
             else:
                 self.data[:pix_min] = np.ma.masked
-                self.data[pix_max+1:] = np.ma.masked
+                self.data[pix_max + 1:] = np.ma.masked
 
     def unmask(self):
         """Unmasks the spectrum (just invalid data (nan,inf) are masked).
@@ -1399,7 +1402,7 @@ threshold : float
             Threshold value.
         """
         if self.var is None:
-            raise ValueError('Operation forbidden '\
+            raise ValueError('Operation forbidden '
                              'without variance extension.')
         else:
             ksel = np.where(self.var > threshold)
@@ -1437,9 +1440,9 @@ spline      : boolean
         d[0] = d[1]
         d[-1] = d[-2]
         w[0] = (-self.wave.crpix + 1) * self.wave.cdelt + self.wave.crval \
-        - 0.5 * self.wave.cdelt
+            - 0.5 * self.wave.cdelt
         w[-1] = (self.shape - self.wave.crpix) * self.wave.cdelt \
-        + self.wave.crval + 0.5 * self.wave.cdelt
+            + self.wave.crval + 0.5 * self.wave.cdelt
         if self.var is not None:
             weight = np.empty(np.shape(ksel)[1] + 2)
             weight[1:-1] = 1. / self.var[ksel]
@@ -1500,14 +1503,14 @@ factor : integer
         # new size is an integer multiple of the original size
         self.shape = self.shape / factor
         self.data = \
-        np.ma.array(self.data.reshape(self.shape, factor).sum(1) / factor, \
-                    mask=self.data.mask.reshape(self.shape, factor).sum(1))
+            np.ma.array(self.data.reshape(self.shape, factor).sum(1) / factor,
+                        mask=self.data.mask.reshape(self.shape, factor).sum(1))
         if self.var is not None:
             self.var = self.var.reshape(self.shape, factor).sum(1) \
-            / factor / factor
+                / factor / factor
         try:
             crval = self.wave.coord()[0:factor].sum() / factor
-            self.wave = WaveCoord(1, self.wave.cdelt * factor, crval, \
+            self.wave = WaveCoord(1, self.wave.cdelt * factor, crval,
                                   self.wave.cunit, self.shape)
         except:
             self.wave = None
@@ -1559,7 +1562,7 @@ margin : string in 'center'|'right'|'left'
                     var[-1] = self.var[n_right:].sum() / factor / factor
                 try:
                     crval = spe.wave.crval - spe.wave.cdelt
-                    wave = WaveCoord(1, spe.wave.cdelt, crval, \
+                    wave = WaveCoord(1, spe.wave.cdelt, crval,
                                      spe.wave.cunit, shape=newshape)
                 except:
                     wave = None
@@ -1580,7 +1583,7 @@ margin : string in 'center'|'right'|'left'
                     var[:-1] = spe.var
                     var[-1] = self.var[self.shape - n:].sum() / factor / factor
                 try:
-                    wave = WaveCoord(1, spe.wave.cdelt, spe.wave.crval, \
+                    wave = WaveCoord(1, spe.wave.cdelt, spe.wave.crval,
                                      spe.wave.cunit, shape=newshape)
                 except:
                     wave = None
@@ -1602,7 +1605,7 @@ margin : string in 'center'|'right'|'left'
                     var[1:] = spe.var
                 try:
                     crval = spe.wave.crval - spe.wave.cdelt
-                    wave = WaveCoord(1, spe.wave.cdelt, crval, \
+                    wave = WaveCoord(1, spe.wave.cdelt, crval,
                                      spe.wave.cunit, shape=newshape)
                 except:
                     wave = None
@@ -1654,12 +1657,12 @@ factor : integer
         # new size is an integer multiple of the original size
         self.shape = self.shape / factor
         self.data = \
-        np.ma.array(np.ma.median(self.data.reshape(self.shape, factor), 1), \
-                    mask=self.data.mask.reshape(self.shape, factor).sum(1))
+            np.ma.array(np.ma.median(self.data.reshape(self.shape, factor), 1),
+                        mask=self.data.mask.reshape(self.shape, factor).sum(1))
         self.var = None
         try:
             crval = self.wave.coord()[0:factor].sum() / factor
-            self.wave = WaveCoord(1, self.wave.cdelt * factor, crval, \
+            self.wave = WaveCoord(1, self.wave.cdelt * factor, crval,
                                   self.wave.cunit, self.shape)
         except:
             self.wave = None
@@ -1681,7 +1684,7 @@ margin : string in 'center'|'right'|'left'
          'right': one pixel added on the right of the spectrum.
 
          'left': one pixel added on the left of the spectrum.
-         
+
 Results
 -------
 out  :class:`mpdaf.obj.Spectrum`
@@ -1710,7 +1713,7 @@ out  :class:`mpdaf.obj.Spectrum`
         res._rebin_median_(factor)
         return res
 
-    def _rebin(self, step, start=None, shape=None, \
+    def _rebin(self, step, start=None, shape=None,
                spline=False, notnoise=False):
         """Rebins spectrum data to different wavelength step size.
 Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
@@ -1755,25 +1758,25 @@ notnoise : boolean
             self.data = np.empty(newshape, dtype=np.float)
             pix = np.arange(newshape + 1, dtype=np.float)
             x = (pix - newwave.crpix + 1) * newwave.cdelt \
-            + newwave.crval - 0.5 * newwave.cdelt
+                + newwave.crval - 0.5 * newwave.cdelt
 
             lbdamax = (self.shape - self.wave.crpix) * self.wave.cdelt \
-            + self.wave.crval + 0.5 * self.wave.cdelt
+                + self.wave.crval + 0.5 * self.wave.cdelt
             if x[-1] > lbdamax:
                 x[-1] = lbdamax
 
             for i in range(newshape):
                 self.data[i] = \
-                integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
-                / newwave.cdelt
+                    integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
+                    / newwave.cdelt
 
         if self.var is not None and not notnoise:
             f = lambda x: self.var[int(self.wave.pixel(x) + 0.5)]
             var = np.empty(newshape, dtype=np.float)
             for i in range(newshape):
                 var[i] = \
-                integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
-                / newwave.cdelt
+                    integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
+                    / newwave.cdelt
             self.var = var
         else:
             self.var = None
@@ -1782,7 +1785,7 @@ notnoise : boolean
         self.shape = newshape
         self.wave = newwave
 
-    def rebin(self, step, start=None, shape=None, \
+    def rebin(self, step, start=None, shape=None,
               spline=False, notnoise=False):
         """Returns a spectrum with data rebin to different wavelength step size.
 Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
@@ -1824,7 +1827,7 @@ weight : boolean
 spline : boolean
          Linear/spline interpolation
          to interpolate masked values.
-        
+
 Returns
 -------
 out : float
@@ -1844,9 +1847,9 @@ out : float
         data = self._interp_data(spline)
 
         if weight:
-            weights=1.0 / self.var[i1:i2]
+            weights = 1.0 / self.var[i1:i2]
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
-            flux = np.average(data[i1:i2], \
+            flux = np.average(data[i1:i2],
                               weights=weights) * self.fscale
         else:
             flux = data[i1:i2].mean() * self.fscale
@@ -1867,7 +1870,7 @@ weight : boolean
 spline : boolean
          Linear/spline interpolation
          to interpolate masked values.
-        
+
 Returns
 -------
 out : float
@@ -1887,14 +1890,14 @@ out : float
         data = self._interp_data(spline)
 
         if weight:
-            weights=1.0 / self.var[i1:i2]
+            weights = 1.0 / self.var[i1:i2]
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
             flux = (i2 - i1) * np.average(data[i1:i2], weights=weights) * self.fscale
         else:
             flux = data[i1:i2].sum() * self.fscale
         return flux
 
-    def poly_fit(self, deg, weight=True, maxiter=0, \
+    def poly_fit(self, deg, weight=True, maxiter=0,
                  nsig=(-3.0, 3.0), verbose=False):
         """Performs polynomial fit on normalized spectrum
 and returns polynomial coefficients.
@@ -1911,7 +1914,7 @@ maxiter : integer
 nsig    : (float,float)
           the low and high rejection factor
           in std units (-3.0,3.0)
-          
+
 Returns
 -------
 out : ndarray, shape.
@@ -1947,24 +1950,24 @@ out : ndarray, shape.
             sig = np.std(err)
             n_p = len(d)
             for iter in range(maxiter):
-                ind = np.where((err >= nsig[0] * sig) \
+                ind = np.where((err >= nsig[0] * sig)
                                & (np.abs(err) <= nsig[1] * sig))
                 if len(ind[0]) == n_p:
                     break
                 if len(ind[0]) <= deg + 1:
-                    raise ValueError('Too few points to perform '\
+                    raise ValueError('Too few points to perform '
                                      'polynomial fit')
                 if vec_weight is not None:
                     vec_weight = vec_weight[ind]
-                p = np.polynomial.polynomial.polyfit(w[ind], d[ind], \
+                p = np.polynomial.polynomial.polyfit(w[ind], d[ind],
                                                      deg, w=vec_weight)
                 err = d[ind] - np.polynomial.polynomial.polyval(w[ind], p)
                 sig = np.std(err)
                 n_p = len(ind[0])
                 if verbose:
                     print 'Number of iteration: '\
-                    '%d Std: %10.4e Np: %d Frac: %4.2f' \
-                    % (iter + 1, sig, n_p, 100. * n_p / self.shape)
+                        '%d Std: %10.4e Np: %d Frac: %4.2f' \
+                        % (iter + 1, sig, n_p, 100. * n_p / self.shape)
 
 #        a = p
 #        from scipy.misc import comb
@@ -1997,7 +2000,7 @@ z : array
         self.data = np.ma.masked_invalid(val) / self.fscale
         self.var = None
 
-    def poly_spec(self, deg, weight=True, maxiter=0, \
+    def poly_spec(self, deg, weight=True, maxiter=0,
                   nsig=(-3.0, 3.0), verbose=False):
         """Returns a spectrum containing a polynomial fit.
 
@@ -2013,7 +2016,7 @@ maxiter : integer
 nsig    : (float,float)
           the low and high rejection factor
           in std units (-3.0,3.0)
-          
+
 Returns
 -------
 out : Spectrum
@@ -2075,7 +2078,7 @@ out    : 1 or 2
 spline : boolean
          Linear/spline interpolation
          to interpolate masked values.
-       
+
 Results
 -------  
 out : magnitude value (out=1) or magnitude,
@@ -2117,7 +2120,7 @@ out    : 1 or 2
 spline : boolean
          Linear/spline interpolation
          to interpolate masked values.
-         
+
 Returns
 -------
 out : magnitude value (out=1) or magnitude,
@@ -2164,7 +2167,7 @@ out : magnitude value (out=1) or magnitude,
             else:
                 raise ValueError('filter band smaller than spectrum step')
         lb = (np.arange(imin, imax) - self.wave.crpix + 1) \
-        * self.wave.cdelt + self.wave.crval
+            * self.wave.cdelt + self.wave.crval
         w = interpolate.splev(lb, tck, der=0)
         data = self._interp_data(spline)
         vflux = np.average(data[imin:imax], weights=w) * self.fscale
@@ -2197,7 +2200,7 @@ lmax : float
             raise ValueError('Minimum and maximum wavelengths are equal')
 
         if i2 == i1 + 1:
-            raise ValueError('Minimum and maximum wavelengths '\
+            raise ValueError('Minimum and maximum wavelengths '
                              'are outside the spectrum range')
 
         res = self.__getitem__(slice(i1, i2, 1))
@@ -2247,8 +2250,8 @@ out : float
             except:
                 raise ValueError('Error in fwhm estimation')
 
-    def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None, \
-                  cont=None, peak=False, spline=False, weight=True, \
+    def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None,
+                  cont=None, peak=False, spline=False, weight=True,
                   plot=False, plot_factor=10):
         """Performs Gaussian fit on spectrum.
 Uses `scipy.optimize.leastsq <http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html>`_ to minimize the sum of squares.
@@ -2293,18 +2296,18 @@ out : :class:`mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
         if is_int(lmin) or is_float(lmin):
-                fmin = None
+            fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1])
-            lmin = (lmin[0] + lmin[1])/2.
+            lmin = (lmin[0] + lmin[1]) / 2.
 
         if is_int(lmax) or is_float(lmax):
-                fmax = None
+            fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
             fmax = self.mean(lmax[0], lmax[1])
-            lmax = (lmax[0] + lmax[1])/2.
+            lmax = (lmax[0] + lmax[1]) / 2.
 
         # spec = self.truncate(lmin, lmax)
         spec = self.get_lambda(lmin, lmax)
@@ -2325,7 +2328,7 @@ out : :class:`mpdaf.obj.Gauss1D`
 
         # continuum value
         if cont is None:
-            cont0 = ((fmax - fmin) * lpeak + lmax \
+            cont0 = ((fmax - fmin) * lpeak + lmax
                      * fmin - lmin * fmax) / (lmax - lmin)
         else:
             cont /= self.fscale
@@ -2354,14 +2357,14 @@ out : :class:`mpdaf.obj.Gauss1D`
         # 1d gaussian function
         if cont is None:
             gaussfit = lambda p, x: \
-            ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
-            / (lmax - lmin) + p[0] \
-            * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
-            * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
+                ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
+                / (lmax - lmin) + p[0] \
+                * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
+                * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
         else:
             gaussfit = lambda p, x: \
-            cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
-            * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
+                cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
+                * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
         # 1d Gaussian fit
         if spec.var is not None and weight:
             wght = 1 / spec.var
@@ -2373,23 +2376,23 @@ out : :class:`mpdaf.obj.Gauss1D`
         # inital guesses for Gaussian Fit
         v0 = [flux, lpeak, sigma]
         # Minimize the sum of squares
-        v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:], \
-                                                 args=(l, d, wght), \
-                                                 maxfev=100000, full_output=1)
+        v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:],
+                                                args=(l, d, wght),
+                                                maxfev=100000, full_output=1)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
         if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) \
-                            * np.sqrt(np.abs(chisq / dof)) \
+            err = np.array([np.sqrt(np.abs(covar[i, i]))
+                            * np.sqrt(np.abs(chisq / dof))
                             for i in range(len(v))])
         else:
             err = None
 
         # plot
         if plot:
-            xxx = np.arange(l[0], l[-1], (l[1] - l[0])/plot_factor)
+            xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
             ccc = gaussfit(v, xxx) * self.fscale
             plt.plot(xxx, ccc, 'r--')
 
@@ -2405,8 +2408,8 @@ out : :class:`mpdaf.obj.Gauss1D`
             err_lpeak = err[1]
             err_sigma = err[2]
             err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
-            err_peak = np.abs(1. / np.sqrt(2 * np.pi) \
-                              * (err_flux * sigma - flux * err_sigma) \
+            err_peak = np.abs(1. / np.sqrt(2 * np.pi)
+                              * (err_flux * sigma - flux * err_sigma)
                               / sigma / sigma)
         else:
             err_flux = np.NAN
@@ -2415,7 +2418,7 @@ out : :class:`mpdaf.obj.Gauss1D`
             err_fwhm = np.NAN
             err_peak = np.NAN
 
-        return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak, \
+        return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
                        err_peak, err_flux, err_fwhm)
 
     def add_gaussian(self, lpeak, flux, fwhm, cont=0, peak=False):
@@ -2436,8 +2439,8 @@ peak  : boolean
         If true, flux contains the gaussian peak value
         """
         gauss = lambda p, x: cont \
-        + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
-        * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
+            + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
+            * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
 
         sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
 
@@ -2456,7 +2459,7 @@ peak  : boolean
         v = [flux, lpeak, sigma]
 
         self.data[imin:imax] = self.data[imin:imax] \
-        + gauss(v, wave) / self.fscale
+            + gauss(v, wave) / self.fscale
 
     def _median_filter(self, kernel_size=1., pixel=True, spline=False):
         """Performs a median filter on the spectrum.
@@ -2516,24 +2519,24 @@ other : 1d-array or Spectrum
         try:
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '\
+                    raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
                     self.data = \
-                    np.ma.array(signal.convolve(self.data, \
-                                other.data * other.fscale, \
-                                mode='same'), \
-                                mask=self.data.mask)
+                        np.ma.array(signal.convolve(self.data,
+                                                    other.data * other.fscale,
+                                                    mode='same'),
+                                    mask=self.data.mask)
                     if self.var is not None:
-                        self.var = signal.convolve(self.var, \
-                                    other.data * other.fscale, mode='same')
+                        self.var = signal.convolve(self.var,
+                                                   other.data * other.fscale, mode='same')
         except IOError as e:
             raise e
         except:
             try:
                 self.data = \
-                np.ma.array(signal.convolve(self.data, other, mode='same'), \
-                            mask=self.data.mask)
+                    np.ma.array(signal.convolve(self.data, other, mode='same'),
+                                mask=self.data.mask)
                 if self.var is not None:
                     self.var = signal.convolve(self.var, other, mode='same')
             except:
@@ -2549,7 +2552,7 @@ Parameters
 ----------
 other : 1d-array or Spectrum
         Second spectrum or 1d-array.
-        
+
 Returns
 -------
 out : Spectrum
@@ -2573,24 +2576,24 @@ other : 1d-array or Spectrum
         try:
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    raise IOError('Operation forbidden '\
+                    raise IOError('Operation forbidden '
                                   'for spectra with different sizes')
                 else:
                     self.data = \
-                    np.ma.array(signal.fftconvolve(self.data, \
-                                other.data * other.fscale, \
-                                mode='same'), \
-                                mask=self.data.mask)
+                        np.ma.array(signal.fftconvolve(self.data,
+                                                       other.data * other.fscale,
+                                                       mode='same'),
+                                    mask=self.data.mask)
                     if self.var is not None:
-                        self.var = signal.fftconvolve(self.var, \
-                                    other.data* other.fscale, \
-                                    mode='same')
+                        self.var = signal.fftconvolve(self.var,
+                                                      other.data * other.fscale,
+                                                      mode='same')
         except IOError as e:
             raise e
         except:
             try:
-                self.data = np.ma.array(signal.fftconvolve(self.data, other, \
-                                                           mode='same'), \
+                self.data = np.ma.array(signal.fftconvolve(self.data, other,
+                                                           mode='same'),
                                         mask=self.data.mask)
                 if self.var is not None:
                     self.var = signal.fftconvolve(self.var, other, mode='same')
@@ -2606,7 +2609,7 @@ Parameters
 ----------
 other : 1d-array or Spectrum
         Second spectrum or 1d-array.
-        
+
 Returns
 -------
 out : Spectrum
@@ -2630,25 +2633,25 @@ other : 1d-array or Spectrum
         try:
             if other.spectrum:
                 if other.data is None or self.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '\
+                    raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
                     self.data = \
-                    np.ma.array(signal.correlate(self.data, \
-                                other.data * other.fscale, \
-                                mode='same'), \
-                                mask=self.data.mask)
+                        np.ma.array(signal.correlate(self.data,
+                                                     other.data * other.fscale,
+                                                     mode='same'),
+                                    mask=self.data.mask)
                     if self.var is not None:
-                        self.var = signal.correlate(self.var, \
-                                    other.data * other.fscale, \
-                                    mode='same')
+                        self.var = signal.correlate(self.var,
+                                                    other.data * other.fscale,
+                                                    mode='same')
         except IOError as e:
             raise e
         except:
             try:
-                self.data = np.ma.array(signal.correlate(self.data, \
-                                                         other, mode='same'),\
-                                         mask=self.data.mask)
+                self.data = np.ma.array(signal.correlate(self.data,
+                                                         other, mode='same'),
+                                        mask=self.data.mask)
                 if self.var is not None:
                     self.var = signal.correlate(self.var, other, mode='same')
             except:
@@ -2663,7 +2666,7 @@ Parameters
 ----------
 other : 1d-array or Spectrum
         Second spectrum or 1d-array.
-        
+
 Returns
 -------
 out : Spectrum
@@ -2688,11 +2691,11 @@ nsig : integer
         n = int(n / 2) * 2
         d = np.arange(-n, n + 1)
         kernel = special.erf((1 + 2 * d) / (2 * np.sqrt(2) * s)) \
-        + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
+            + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
         kernel /= kernel.sum()
 
-        self.data = np.ma.array(signal.correlate(self.data, kernel, \
-                                                 mode='same'), \
+        self.data = np.ma.array(signal.correlate(self.data, kernel,
+                                                 mode='same'),
                                 mask=self.data.mask)
         if self.var is not None:
             self.var = signal.correlate(self.var, kernel, mode='same')
@@ -2706,7 +2709,7 @@ fwhm : float
        Gaussian fwhm.
 nsig : integer
        Number of standard deviations.
-       
+
 Returns
 -------
 out : Spectrum
@@ -2733,7 +2736,7 @@ size  : odd integer
         size of LSF in pixels.
 kargs : kargs 
         it can be used to set function arguments.
-        
+
 Returns
 -------
 out : :class:`mpdaf.obj.Spectrum`
@@ -2762,17 +2765,17 @@ out : :class:`mpdaf.obj.Spectrum`
         data[:k] = self.data[k:0:-1]
         data[-k:] = self.data[-2:-k - 2:-1]
 
-        res.data = np.ma.array(map(lambda i: (f(lbda[i], step, \
-                                                size, **kargs) \
-                                              * data[i:i + size]).sum(), \
+        res.data = np.ma.array(map(lambda i: (f(lbda[i], step,
+                                                size, **kargs)
+                                              * data[i:i + size]).sum(),
                                    range(self.shape)), mask=self.data.mask)
         res.fscale = self.fscale
 
         if self.var is None:
             res.var = None
         else:
-            res.var = np.array(map(lambda i: (f(lbda[i], step, size, **kargs)\
-                                               * data[i:i + size]).sum(), \
+            res.var = np.array(map(lambda i: (f(lbda[i], step, size, **kargs)
+                                              * data[i:i + size]).sum(),
                                    range(self.shape)))
         return res
 
@@ -2797,7 +2800,7 @@ pix         : boolean
             wave = self.wave.coord()
             return wave[ksel]
 
-    def plot(self, max=None, title=None, noise=False, \
+    def plot(self, max=None, title=None, noise=False,
              lmin=None, lmax=None, **kargs):
         """Plots the spectrum. By default, drawstyle is 'steps-mid'.
 
@@ -2828,7 +2831,7 @@ kargs : matplotlib.lines.Line2D
         f = res.data * res.fscale
         if max != None:
             f = f * max / f.max()
-        if res.var is  None:
+        if res.var is None:
             noise = False
 
         # default plot arguments
@@ -2838,8 +2841,8 @@ kargs : matplotlib.lines.Line2D
         plt.plot(x, f, **plotargs)
 
         if noise:
-            plt.fill_between(x, f + np.sqrt(res.var) * res.fscale, \
-                             f - np.sqrt(res.var) * res.fscale, \
+            plt.fill_between(x, f + np.sqrt(res.var) * res.fscale,
+                             f - np.sqrt(res.var) * res.fscale,
                              color='0.75', facecolor='0.75', alpha=0.5)
         if title is not None:
             plt.title(title)
@@ -2851,7 +2854,7 @@ kargs : matplotlib.lines.Line2D
         plt.connect('motion_notify_event', self._on_move)
         self._plot_id = len(plt.gca().lines) - 1
 
-    def log_plot(self, max=None, title=None, noise=False, \
+    def log_plot(self, max=None, title=None, noise=False,
                  lmin=None, lmax=None, **kargs):
         """Plots the spectrum with y logarithmic scale.
 By default, drawstyle is 'steps-mid'.
@@ -2883,7 +2886,7 @@ kargs : matplotlib.lines.Line2D
         f = res.data * res.fscale
         if max != None:
             f = f * max / f.max()
-        if res.var is  None:
+        if res.var is None:
             noise = False
 
         # default plot arguments
@@ -2892,8 +2895,8 @@ kargs : matplotlib.lines.Line2D
 
         plt.semilogy(x, f, **plotargs)
         if noise:
-            plt.fill_between(x, f + np.sqrt(res.var) * res.fscale, \
-                             f - np.sqrt(res.var) * res.fscale, \
+            plt.fill_between(x, f + np.sqrt(res.var) * res.fscale,
+                             f - np.sqrt(res.var) * res.fscale,
                              color='0.75', facecolor='0.75', alpha=0.5)
         if title is not None:
             plt.title(title)
@@ -2944,10 +2947,10 @@ filename : string
         """
         print 'To read cursor position, click on the left mouse button'
         print 'To remove a cursor position, '\
-        'click on the left mouse button + <d>'
+            'click on the left mouse button + <d>'
         print 'To quit the interactive mode, click on the right mouse button.'
         print 'After quit, clicks are saved in self.clicks '\
-        'as dictionary {xc,yc,k,lbda,data}.'
+            'as dictionary {xc,yc,k,lbda,data}.'
 
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
@@ -2984,18 +2987,18 @@ filename : string
                         if len(self._clicks.k) == 0:
                             print ''
                         self._clicks.add(xc, yc, i, x, val)
-                        self._clicks.iprint(len(self._clicks.k) - 1, \
+                        self._clicks.iprint(len(self._clicks.k) - 1,
                                             self.fscale)
                     except:
                         pass
             else:
                 self._clicks.write_fits()
                 # save clicks in a dictionary {'xc','yc','x','data'}
-                d = {'xc': self._clicks.xc, 'yc': self._clicks.yc, \
-                     'k': self._clicks.k, 'lbda': self._clicks.lbda, \
+                d = {'xc': self._clicks.xc, 'yc': self._clicks.yc,
+                     'k': self._clicks.k, 'lbda': self._clicks.lbda,
                      'data': self._clicks.data}
                 self.clicks = d
-                #clear
+                # clear
                 self._clicks.clear()
                 self._clicks = None
                 fig = plt.gcf()
@@ -3009,7 +3012,7 @@ filename : string
         print 'Use 2 mouse clicks to get center and distance.'
         print 'To quit the interactive mode, click on the right mouse button.'
         if self._clicks is None:
-            binding_id = plt.connect('button_press_event', \
+            binding_id = plt.connect('button_press_event',
                                      self._on_click_dist)
             self._clicks = SpectrumClicks(binding_id)
 
@@ -3060,7 +3063,7 @@ Parameters
 ----------
 nclicks : integer (3 or 5)
           3 or 5 clicks.
-         
+
          Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
 
          Use 5 mouse clicks: the two first select a range
@@ -3070,13 +3073,13 @@ nclicks : integer (3 or 5)
         """
         if nclicks == 3:
             print 'Use 3 mouse clicks to get minimim, '\
-            'peak and maximum wavelengths.'
+                'peak and maximum wavelengths.'
             print 'To quit the interactive mode, '\
-            'click on the right mouse button.'
+                'click on the right mouse button.'
             print 'The parameters of the last '\
-            'gaussian are saved in self.gauss.'
+                'gaussian are saved in self.gauss.'
             if self._clicks is None:
-                binding_id = plt.connect('button_press_event', \
+                binding_id = plt.connect('button_press_event',
                                          self._on_3clicks_gauss_fit)
                 self._clicks = SpectrumClicks(binding_id)
                 warnings.filterwarnings(action="ignore")
@@ -3085,16 +3088,16 @@ nclicks : integer (3 or 5)
                 warnings.filterwarnings(action="default")
         else:
             print 'Use the 2 first mouse clicks to get the wavelength '\
-            'range to compute the gaussian left value.'
+                'range to compute the gaussian left value.'
             print 'Use the next click to get the peak wavelength.'
             print 'Use the 2 last mouse clicks to get the wavelength range '\
-            'to compute the gaussian rigth value.'
+                'to compute the gaussian rigth value.'
             print 'To quit the interactive mode, '\
-            'click on the right mouse button.'
+                'click on the right mouse button.'
             print 'The parameters of the last gaussian '\
-            'are saved in self.gauss.'
+                'are saved in self.gauss.'
             if self._clicks is None:
-                binding_id = plt.connect('button_press_event', \
+                binding_id = plt.connect('button_press_event',
                                          self._on_5clicks_gauss_fit)
                 self._clicks = SpectrumClicks(binding_id)
                 warnings.filterwarnings(action="ignore")
@@ -3119,7 +3122,7 @@ nclicks : integer (3 or 5)
                         lmin = self._clicks.xc[-3]
                         lpeak = self._clicks.xc[-2]
                         lmax = self._clicks.xc[-1]
-                        self.gauss = self.gauss_fit(lmin, lmax, \
+                        self.gauss = self.gauss_fit(lmin, lmax,
                                                     lpeak=lpeak, plot=True)
                         self.gauss.print_param()
                         self._clicks.id_lines.append(len(plt.gca().lines) - 1)
@@ -3150,8 +3153,8 @@ nclicks : integer (3 or 5)
                         lpeak = self._clicks.xc[-3]
                         lmax1 = self._clicks.xc[-2]
                         lmax2 = self._clicks.xc[-1]
-                        self.gauss = self.gauss_fit((lmin1, lmin2), \
-                                                    (lmax1, lmax2), \
+                        self.gauss = self.gauss_fit((lmin1, lmin2),
+                                                    (lmax1, lmax2),
                                                     lpeak=lpeak, plot=True)
                         self.gauss.print_param()
                         self._clicks.id_lines.append(len(plt.gca().lines) - 1)
@@ -3173,7 +3176,7 @@ nclicks : integer (3 or 5)
                 pass
             lbda = self.wave.coord()
             drawstyle = plt.gca().lines[self._plot_id].get_drawstyle()
-            plt.plot(lbda, self.data.data, drawstyle=drawstyle, \
+            plt.plot(lbda, self.data.data, drawstyle=drawstyle,
                      hold=True, alpha=0.3)
             self._plot_mask_id = len(plt.gca().lines) - 1
         except:

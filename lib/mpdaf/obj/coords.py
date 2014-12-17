@@ -2,9 +2,10 @@
 import numpy as np
 import astropy.wcs as pywcs
 
+
 def deg2sexa(x):
     """Transforms the values of n coordinates from degrees to sexagesimal.
-    
+
 Parameters
 ----------
 x : float array
@@ -66,7 +67,7 @@ Parameters
 ----------
 x : float
     degree value.
-    
+
 Returns
 -------
 out : string
@@ -85,7 +86,7 @@ Parameters
 ----------
 x : string
     hours:minutes:seconds
-    
+
 Returns
 -------
 out : float
@@ -104,7 +105,7 @@ Parameters
 ----------
 x : float
     degree value.
-    
+
 Returns
 -------
 out : string
@@ -123,7 +124,7 @@ Parameters
 ----------
 x : string
     degrees:arcminutes:arcseconds
-    
+
 Returns
 -------
 out : float
@@ -135,6 +136,7 @@ out : float
 
 
 class WCS(object):
+
     """WCS class manages world coordinates in spatial direction
     (pywcs package is used).
     Python notation is used (dec,ra).
@@ -174,7 +176,8 @@ wcs : pywcs.WCS
       World coordinates.
 
     """
-    def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0), \
+
+    def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0),
                  cdelt=(1.0, 1.0), deg=False, rot=0, shape=None):
         """Creates a WCS object.
 
@@ -251,7 +254,7 @@ shape : integer or (integer,integer)
                     self.wcs.wcs.crpix = np.array([1.0, 1.0])
                 else:
                     self.wcs.wcs.crpix = \
-                    (np.array([shape[1], shape[0]]) + 1) / 2.
+                        (np.array([shape[1], shape[0]]) + 1) / 2.
             # value of reference pixel
             self.wcs.wcs.crval = np.array([crval[1], crval[0]])
             if deg:  # in decimal degree
@@ -291,10 +294,10 @@ shape : integer or (integer,integer)
             pixsky = self.pix2sky(pixcrd)
             cdelt = self.get_step()
             print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '\
-            'step:(%0.1f,%0.1f) rot:%0.1f' % (pixsky[0, 0], pixsky[0, 1], \
-                                             pixsky[1, 0], pixsky[1, 1], \
-                                             cdelt[0], cdelt[1], \
-                                             self.get_rot())
+                'step:(%0.1f,%0.1f) rot:%0.1f' % (pixsky[0, 0], pixsky[0, 1],
+                                                  pixsky[1, 0], pixsky[1, 1],
+                                                  cdelt[0], cdelt[1],
+                                                  self.get_rot())
         else:
             # center in sexadecimal
             xc = (self.naxis1 - 1) / 2.
@@ -310,10 +313,10 @@ shape : integer or (integer,integer)
             sizex = self.naxis1 * dx
             sizey = self.naxis2 * dy
             print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '\
-            'step in arcsec:(%0.3f,%0.3f) rot:%0.1f' % (dec, ra, \
-                                                       sizey, sizex, \
-                                                       dy, dx, \
-                                                       self.get_rot())
+                'step in arcsec:(%0.3f,%0.3f) rot:%0.1f' % (dec, ra,
+                                                            sizey, sizex,
+                                                            dy, dx,
+                                                            self.get_rot())
 
     def to_header(self):
         """Generates a pyfits header object with the WCS information.
@@ -362,7 +365,7 @@ Parameters
 ----------
 x : array
     An (n,2) array of pixel coordinates (python notation).
-        
+
 Returns
 -------
 out : (n,2) array of dec- and ra- world coordinates.
@@ -391,7 +394,7 @@ out : (n,2) array of dec- and ra- world coordinates.
             x1 = self.pix2sky([0, 0])[0]
             x2 = other.pix2sky([0, 0])[0]
             if self.naxis1 == other.naxis1 and \
-            self.naxis2 == other.naxis2 and \
+                self.naxis2 == other.naxis2 and \
                np.abs(x1[0] - x2[0]) < 1E-16 and \
                np.abs(x1[1] - x2[1]) < 1E-16 and\
                (cdelt1 == cdelt2).all() and self.get_rot() == other.get_rot():
@@ -446,7 +449,7 @@ out : (n,2) array of dec- and ra- world coordinates.
                 jmin = item[0]
                 jmax = item[0] + 1
 
-            crpix = (self.wcs.wcs.crpix[0] - imin, \
+            crpix = (self.wcs.wcs.crpix[0] - imin,
                      self.wcs.wcs.crpix[1] - jmin)
 
             res = self.copy()
@@ -464,9 +467,9 @@ out : (n,2) array of dec- and ra- world coordinates.
         """Returns [dDec,dRa].
         """
         try:
-            dx = np.sqrt(self.wcs.wcs.cd[0, 0] * self.wcs.wcs.cd[0, 0] \
+            dx = np.sqrt(self.wcs.wcs.cd[0, 0] * self.wcs.wcs.cd[0, 0]
                          + self.wcs.wcs.cd[0, 1] * self.wcs.wcs.cd[0][1])
-            dy = np.sqrt(self.wcs.wcs.cd[1, 0] * self.wcs.wcs.cd[1, 0] \
+            dy = np.sqrt(self.wcs.wcs.cd[1, 0] * self.wcs.wcs.cd[1, 0]
                          + self.wcs.wcs.cd[1, 1] * self.wcs.wcs.cd[1][1])
             return np.array([dy, dx])
         except:
@@ -474,9 +477,9 @@ out : (n,2) array of dec- and ra- world coordinates.
                 cdelt = self.wcs.wcs.get_cdelt()
                 pc = self.wcs.wcs.get_pc()
                 dx = cdelt[0] \
-                * np.sqrt(pc[0, 0]**2 + pc[0, 1]**2)
+                    * np.sqrt(pc[0, 0] ** 2 + pc[0, 1] ** 2)
                 dy = cdelt[1] \
-                * np.sqrt(pc[1, 0]**2 + pc[1, 1]**2)
+                    * np.sqrt(pc[1, 0] ** 2 + pc[1, 1] ** 2)
 #                 dx = self.wcs.wcs.cdelt[0] \
 #                 * np.sqrt(self.wcs.wcs.pc[0, 0] * self.wcs.wcs.pc[0, 0] \
 #                           + self.wcs.wcs.pc[0, 1] * self.wcs.wcs.pc[0][1])
@@ -490,7 +493,7 @@ out : (n,2) array of dec- and ra- world coordinates.
     def get_range(self):
         """Returns [ [dec_min,ra_min], [dec_max,ra_max] ].
         """
-        pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1], \
+        pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1],
                   [self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd)
         dec_min = np.min(pixsky[:, 0])
@@ -517,13 +520,13 @@ out : (n,2) array of dec- and ra- world coordinates.
         """Returns the rotation angle.
         """
         try:
-            return np.rad2deg(np.arctan2(self.wcs.wcs.cd[1, 0], \
-                                      self.wcs.wcs.cd[1, 1]))
+            return np.rad2deg(np.arctan2(self.wcs.wcs.cd[1, 0],
+                                         self.wcs.wcs.cd[1, 1]))
         except:
             try:
                 pc = self.wcs.wcs.get_pc()
                 return np.rad2deg(np.arctan2(pc[1, 0], pc[1, 1]))
-                #return np.rad2deg(np.arctan2(self.wcs.wcs.pc[1, 0], \
+                # return np.rad2deg(np.arctan2(self.wcs.wcs.pc[1, 0], \
                 #                          self.wcs.wcs.pc[1, 1]))
             except:
                 raise IOError('No standard WCS')
@@ -540,8 +543,8 @@ out : (n,2) array of dec- and ra- world coordinates.
                 #cd[1,:] *= self.wcs.wcs.cdelt[1]
                 cdelt = self.wcs.wcs.get_cdelt()
                 cd = self.wcs.wcs.get_pc().__copy__()
-                cd[0,:] *= cdelt[0]
-                cd[1,:] *= cdelt[1]
+                cd[0, :] *= cdelt[0]
+                cd[1, :] *= cdelt[1]
                 return cd
             except:
                 raise IOError('No standard WCS')
@@ -579,7 +582,7 @@ out : (n,2) array of dec- and ra- world coordinates.
         """
         self.wcs.wcs.crval[1] = x
         self.wcs.wcs.set()
-        
+
     def get_naxis1(self):
         """NAXIS1 getter (first dimension of an image).
         """
@@ -618,9 +621,9 @@ Parameters
 theta : float
         Rotation in degree.
         """
-        #rotation matrix of -theta
+        # rotation matrix of -theta
         _theta = np.deg2rad(theta)
-        _mrot = np.zeros(shape=(2,2), dtype=np.double)
+        _mrot = np.zeros(shape=(2, 2), dtype=np.double)
         _mrot[0] = (np.cos(_theta), -np.sin(_theta))
         _mrot[1] = (np.sin(_theta), np.cos(_theta))
         try:
@@ -656,17 +659,17 @@ out : WCS
             yc = 0
             pixsky = self.pix2sky([xc, yc])
             cdelt = self.get_step()
-            start = (pixsky[0][0] - 0.5 * cdelt[0] + 0.5 * step[0], \
+            start = (pixsky[0][0] - 0.5 * cdelt[0] + 0.5 * step[0],
                      pixsky[0][1] - 0.5 * cdelt[1] + 0.5 * step[1])
 
-        res = WCS(crpix=1.0, crval=start, cdelt=step, deg=self.is_deg(), \
+        res = WCS(crpix=1.0, crval=start, cdelt=step, deg=self.is_deg(),
                   rot=self.get_rot())
         return res
 
     def new_step(self, factor):
         try:
-            self.wcs.wcs.cd[0,:] *= factor[1]
-            self.wcs.wcs.cd[1,:] *= factor[0]
+            self.wcs.wcs.cd[0, :] *= factor[1]
+            self.wcs.wcs.cd[1, :] *= factor[0]
             self.wcs.wcs.set()
         except:
             try:
@@ -683,7 +686,7 @@ Parameters
 ----------
 factor : (integer,integer)
         Factor in y and x.
-        
+
 Returns
 -------
 out : WCS
@@ -693,8 +696,8 @@ out : WCS
 
         try:
             cd = res.wcs.wcs.cd
-            cd[0,:] *= factor[1]
-            cd[1,:] *= factor[0]
+            cd[0, :] *= factor[1]
+            cd[1, :] *= factor[0]
             res.wcs.wcs.cd = cd
         except:
             try:
@@ -709,9 +712,9 @@ out : WCS
         cdelt = res.get_step()
 
         crpix = res.wcs.wcs.crpix
-        crpix[0] = (crpix[0] * old_cdelt[1] - old_cdelt[1] / 2.0 \
+        crpix[0] = (crpix[0] * old_cdelt[1] - old_cdelt[1] / 2.0
                     + cdelt[1] / 2.0) / cdelt[1]
-        crpix[1] = (crpix[1] * old_cdelt[0] - old_cdelt[0] / 2.0 \
+        crpix[1] = (crpix[1] * old_cdelt[0] - old_cdelt[0] / 2.0
                     + cdelt[0] / 2.0) / cdelt[0]
         res.wcs.wcs.crpix = crpix
         res.naxis1 = res.naxis1 / factor[1]
@@ -726,7 +729,7 @@ out : WCS
         """
         try:
             if self.wcs.wcs.ctype[0] == 'LINEAR' \
-            or self.wcs.wcs.ctype[0] == 'PIXEL':
+                    or self.wcs.wcs.ctype[0] == 'PIXEL':
                 return False
             else:
                 return True
@@ -735,6 +738,7 @@ out : WCS
 
 
 class WaveCoord(object):
+
     """WaveCoord class manages world coordinates in spectral direction.
 
 Parameters
@@ -768,7 +772,7 @@ cunit : string
         Wavelength unit.
     """
 
-    def __init__(self, crpix=1.0, cdelt=1.0, crval=1.0, \
+    def __init__(self, crpix=1.0, cdelt=1.0, crval=1.0,
                  cunit='Angstrom', shape=None):
         """Creates a WaveCoord object
 
@@ -810,17 +814,17 @@ shape : integer or None
         """
         if self.shape is None:
             m = (1 - self.crpix) * self.cdelt + self.crval
-            print 'wavelength: min:%0.2f step:%0.2f %s' % (m, self.cdelt, \
+            print 'wavelength: min:%0.2f step:%0.2f %s' % (m, self.cdelt,
                                                            self.cunit)
         else:
             print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % \
-            (self.__getitem__(0), self.__getitem__(self.shape - 1), \
-             self.cdelt, self.cunit)
+                (self.__getitem__(0), self.__getitem__(self.shape - 1),
+                 self.cdelt, self.cunit)
 
     def isEqual(self, other):
         """Returns True if other and self have the same attributes.
         """
-        if isinstance(other,WaveCoord):
+        if isinstance(other, WaveCoord):
             if self.crpix == other.crpix and self.cdelt == other.cdelt and \
                self.crval == other.crval and self.cunit == other.cunit and \
                self.shape == other.shape:
@@ -838,7 +842,7 @@ Parameters
 ----------
 pixel : integer or None.
         pixel value.
-        
+
 Returns
 -------
 out : float or array of float
@@ -892,7 +896,7 @@ out : float or integer
             raise ValueError('wavelength coordinates without dimension')
         else:
             lbda = (np.arange(self.shape, dtype=np.float) - self.crpix + 1)\
-             * self.cdelt + self.crval
+                * self.cdelt + self.crval
         if isinstance(item, int):
             return lbda[item]
         elif isinstance(item, slice):
@@ -901,7 +905,7 @@ out : float or integer
             if dim < 2:
                 raise ValueError('Spectrum with dim < 2')
             cdelt = newlbda[1] - newlbda[0]
-            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0], \
+            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0],
                             cunit=self.cunit, shape=dim)
             return res
         else:
@@ -916,7 +920,7 @@ start : float
         New wavelength for the pixel 0.
 step  : float
         New step.
-        
+
 Returns
 -------
 out : WaveCoord
@@ -924,13 +928,13 @@ out : WaveCoord
         # vector of pixel edges
         pix = np.arange(self.shape, dtype=np.float)
         lbda = (pix - self.crpix + 1) * self.cdelt + self.crval \
-        - 0.5 * self.cdelt
+            - 0.5 * self.cdelt
         # vector of new pixel positions
         if start == None:
             start = lbda[0] + step * 0.5
         # pixel number necessary to cover old range
         dim = np.ceil((lbda[-1] + self.cdelt - (start - step * 0.5)) / step)
-        res = WaveCoord(crpix=1.0, cdelt=step, crval=start, \
+        res = WaveCoord(crpix=1.0, cdelt=step, crval=start,
                         cunit=self.cunit, shape=int(dim))
         return res
 

@@ -2,9 +2,11 @@
 import numpy as np
 from cube import CubeDisk
 
+
 class CubeList(object):
+
     """This class manages a list of cube FITS filenames.
-    
+
     Parameters
     ----------
     files : list of strings
@@ -42,34 +44,34 @@ class CubeList(object):
         self.wcs = None
         self.wave = None
         self.check_compatibility()
-        
+
     def info(self):
         """Prints information.
         """
         for f in self.files:
             cub = CubeDisk(f)
             cub.info()
-        
+
     def check_dim(self):
         """Checks if all cubes have same dimensions.
         """
         shapes = np.empty((self.nfiles, 3))
         for i in range(self.nfiles):
             cub = CubeDisk(self.files[i])
-            shapes[i,:] = cub.shape
-        if len(np.unique(shapes[:,0])) != 1 or \
-           len(np.unique(shapes[:,1])) != 1 or \
-           len(np.unique(shapes[:,2])) != 1:
+            shapes[i, :] = cub.shape
+        if len(np.unique(shapes[:, 0])) != 1 or \
+           len(np.unique(shapes[:, 1])) != 1 or \
+           len(np.unique(shapes[:, 2])) != 1:
             print 'all cubes have not same dimensions'
             for i in range(self.nfiles):
-                print '%i X %i X %i cube (%s)' % (shapes[i,0], shapes[i,1],\
-                                                  shapes[i,2], self.files[i])
+                print '%i X %i X %i cube (%s)' % (shapes[i, 0], shapes[i, 1],
+                                                  shapes[i, 2], self.files[i])
             print ''
             return False
         else:
-            self.shape = shapes[0,:]
+            self.shape = shapes[0, :]
             return True
-            
+
     def check_wcs(self):
         """Checks if all cubes have same world coordinates.
         """
@@ -99,8 +101,7 @@ class CubeList(object):
                     self.wave = None
                 return False
         return True
-        
-    
+
     def check_fscale(self):
         """Checks if all cubes have same scale factor.
         """
@@ -108,7 +109,7 @@ class CubeList(object):
         for i in range(self.nfiles):
             cub = CubeDisk(self.files[i])
             fscale[i] = cub.fscale
-        if len(np.unique(fscale)) == 1 :
+        if len(np.unique(fscale)) == 1:
             self.fscale = fscale[0]
             return True
         else:
@@ -117,7 +118,7 @@ class CubeList(object):
                 print 'fscale=%g (%s)' % (fscale[i], self.files[i])
             print ''
             return False
-    
+
     def check_compatibility(self):
         """Checks if all cubes are compatible.
         """
@@ -128,15 +129,15 @@ class CubeList(object):
             return True
         else:
             return False
-        
+
     def median(self, output, output_path='.'):
         """merges cubes in a single data cube using median
-        
+
         Parameters
         ----------
         output      : string
                       DATACUBE_<output>.fits will contain the merged cube
-                      
+
                       EXPMAP_<output>.fits will contain an exposure map
                       data cube which counts the number of exposures used
                       for the combination of each pixel.
@@ -154,20 +155,19 @@ class CubeList(object):
         libCmethods.merging_median.argtypes = [charptr, charptr]
         # run C method
         libCmethods.merging_median(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path))
-        
-        
+
     def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var_mean=True):
         """merges cubes in a single data cube using sigma clipped mean.
-        
+
         Parameters
         ----------
         output      : string
                       DATACUBE_<output>.fits will contain the merged cube
-                      
+
                       EXPMAP_<output>.fits will contain an exposure map
                       data cube which counts the number of exposures used
                       for the combination of each pixel.
-                      
+
                       NOVALID_<output>.txt will give the number of invalid
                       pixels per exposures.
         output_path : string
@@ -183,7 +183,7 @@ class CubeList(object):
                       True: the variance of each combined pixel is computed
                       as the variance derived from the comparison of the
                       N individual exposures divided N-1.
-                      
+
                       False: the variance of each combined pixel is computed
                       as the variance derived from the comparison of the
                       N individual exposures.
@@ -199,4 +199,3 @@ class CubeList(object):
         libCmethods.merging_sigma_clipping.argtypes = [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double, ctypes.c_int, ctypes.c_int]
         # run C method
         libCmethods.merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path), nmax, np.float64(nclip), nstop, np.int32(var_mean))
-        

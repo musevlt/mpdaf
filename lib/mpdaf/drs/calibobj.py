@@ -13,6 +13,7 @@ from mpdaf import obj
 
 
 class CalibFile(object):
+
     """CalibFile class manages input/output for the calibration files
 
     :param filename: The FITS file name.
@@ -87,7 +88,7 @@ class CalibFile(object):
                 except:
                     raise IOError('format error: no image DQ extension')
                 if naxis1 != self.nx and naxis2 != self.ny:
-                    raise IOError('format error: DATA and DQ '\
+                    raise IOError('format error: DATA and DQ '
                                   'with different sizes')
                 try:
                     naxis1 = hdulist["STAT"].header["NAXIS1"]
@@ -95,7 +96,7 @@ class CalibFile(object):
                 except:
                     raise IOError('format error: no image STAT extension')
                 if naxis1 != self.nx and naxis2 != self.ny:
-                    raise IOError('format error: DATA and STAT '\
+                    raise IOError('format error: DATA and STAT '
                                   'with different sizes')
                 hdulist.close()
             except IOError:
@@ -127,7 +128,7 @@ class CalibFile(object):
         # data
         (fd, result.data) = tempfile.mkstemp(prefix='mpdaf')
         selfdata = self.get_data()
-        data = np.memmap(result.data, dtype="float32", \
+        data = np.memmap(result.data, dtype="float32",
                          shape=(self.ny, self.nx))
         data[:] = selfdata[:]
         os.close(fd)
@@ -135,7 +136,7 @@ class CalibFile(object):
         # variance
         (fd, result.stat) = tempfile.mkstemp(prefix='mpdaf')
         selfstat = self.get_stat()
-        stat = np.memmap(result.stat, dtype="float32", \
+        stat = np.memmap(result.stat, dtype="float32",
                          shape=(self.ny, self.nx))
         stat[:] = selfstat[:]
         os.close(fd)
@@ -169,7 +170,7 @@ class CalibFile(object):
             if self.data == None:
                 raise IOError('format error: empty DATA extension')
             else:
-                data = np.memmap(self.data, dtype="float32", \
+                data = np.memmap(self.data, dtype="float32",
                                  shape=(self.ny, self.nx))
                 return data
         else:
@@ -186,7 +187,7 @@ class CalibFile(object):
             if self.dq == None:
                 raise IOError('format error: empty DQ extension')
             else:
-                dq = np.memmap(self.dq, dtype="int32", \
+                dq = np.memmap(self.dq, dtype="int32",
                                shape=(self.ny, self.nx))
                 return dq
         else:
@@ -203,7 +204,7 @@ class CalibFile(object):
             if self.stat == None:
                 raise IOError('format error: empty STAT extension')
             else:
-                stat = np.memmap(self.stat, dtype="float32", \
+                stat = np.memmap(self.stat, dtype="float32",
                                  shape=(self.ny, self.nx))
                 return stat
         else:
@@ -235,11 +236,11 @@ class CalibFile(object):
                     prihdu.header[card.keyword] = (card.value, card.comment)
                 except ValueError:
                     prihdu.header['hierarch %s' % card.keyword] = \
-                                         (card.value, card.comment)
+                        (card.value, card.comment)
                 except:
                     pass
         prihdu.header['date'] = \
-        (str(datetime.datetime.now()), 'creation date')
+            (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
         datahdu = pyfits.ImageHDU(name='DATA', data=self.get_data())
@@ -278,35 +279,35 @@ class CalibFile(object):
         (fd, result.stat) = tempfile.mkstemp(prefix='mpdaf')
         os.close(fd)
         if isinstance(other, CalibFile):
-            #sum data values
+            # sum data values
             newdata = np.ndarray.__add__(self.get_data(), other.get_data())
-            data = np.memmap(result.data, dtype="float32", \
+            data = np.memmap(result.data, dtype="float32",
                              shape=(self.ny, self.nx))
             data[:] = newdata[:]
             # sum variance
             newstat = np.ndarray.__add__(self.get_stat(), other.get_stat())
-            stat = np.memmap(result.stat, dtype="float32", \
+            stat = np.memmap(result.stat, dtype="float32",
                              shape=(self.ny, self.nx))
             stat[:] = newstat[:]
             # pixel quality
             newdq = np.logical_or(self.get_dq(), other.get_dq())
-            dq = np.memmap(result.dq, dtype="int32", \
+            dq = np.memmap(result.dq, dtype="int32",
                            shape=(self.ny, self.nx))
             dq[:] = newdq[:]
         else:
             # sum data values
             newdata = np.ndarray.__add__(self.get_data(), other)
-            data = np.memmap(result.data, dtype="float32", \
+            data = np.memmap(result.data, dtype="float32",
                              shape=(self.ny, self.nx))
             data[:] = newdata[:]
             # variance
             selfstat = self.get_stat()
-            stat = np.memmap(result.stat, dtype="float32", \
+            stat = np.memmap(result.stat, dtype="float32",
                              shape=(self.ny, self.nx))
             stat[:] = selfstat[:]
             # pixel quality
             selfdq = self.get_dq()
-            dq = np.memmap(result.dq, dtype="int32", \
+            dq = np.memmap(result.dq, dtype="int32",
                            shape=(self.ny, self.nx))
             dq[:] = selfdq[:]
         return result
@@ -317,26 +318,26 @@ class CalibFile(object):
         else:
             if isinstance(other, CalibFile):
                 # sum data values
-                newdata = np.ndarray.__add__(self.get_data(), \
+                newdata = np.ndarray.__add__(self.get_data(),
                                              other.get_data())
-                data = np.memmap(self.data, dtype="float32", \
+                data = np.memmap(self.data, dtype="float32",
                                  shape=(self.ny, self.nx))
                 data[:] = newdata[:]
                 # sum variance
-                newstat = np.ndarray.__add__(self.get_stat(), \
+                newstat = np.ndarray.__add__(self.get_stat(),
                                              other.get_stat())
-                stat = np.memmap(self.stat, dtype="float32", \
+                stat = np.memmap(self.stat, dtype="float32",
                                  shape=(self.ny, self.nx))
                 stat[:] = newstat[:]
                 # pixel quality
                 newdq = np.logical_or(self.get_dq(), other.get_dq())
-                dq = np.memmap(self.dq, dtype="int32", \
+                dq = np.memmap(self.dq, dtype="int32",
                                shape=(self.ny, self.nx))
                 dq[:] = newdq[:]
             else:
                 # sum data values
                 newdata = np.ndarray.__add__(self.get_data(), other)
-                data = np.memmap(self.data, dtype="float32", \
+                data = np.memmap(self.data, dtype="float32",
                                  shape=(self.ny, self.nx))
                 data[:] = newdata[:]
             return self
@@ -358,33 +359,33 @@ class CalibFile(object):
         if isinstance(other, CalibFile):
             # sum data values
             newdata = np.ndarray.__sub__(self.get_data(), other.get_data())
-            data = np.memmap(result.data, dtype="float32", \
+            data = np.memmap(result.data, dtype="float32",
                              shape=(self.ny, self.nx))
             data[:] = newdata[:]
             # sum variance
             newstat = np.ndarray.__add__(self.get_stat(), other.get_stat())
-            stat = np.memmap(result.stat, dtype="float32", \
+            stat = np.memmap(result.stat, dtype="float32",
                              shape=(self.ny, self.nx))
             stat[:] = newstat[:]
             # pixel quality
             newdq = np.logical_or(self.get_dq(), other.get_dq())
-            dq = np.memmap(result.dq, dtype="int32", \
+            dq = np.memmap(result.dq, dtype="int32",
                            shape=(self.ny, self.nx))
             dq[:] = newdq[:]
         else:
             # sum data values
             newdata = np.ndarray.__sub__(self.get_data(), other)
-            data = np.memmap(result.data, dtype="float32", \
+            data = np.memmap(result.data, dtype="float32",
                              shape=(self.ny, self.nx))
             data[:] = newdata[:]
             # variance
             selfstat = self.get_stat()
-            stat = np.memmap(result.stat, dtype="float32", \
+            stat = np.memmap(result.stat, dtype="float32",
                              shape=(self.ny, self.nx))
             stat[:] = selfstat[:]
             # pixel quality
             selfdq = self.get_dq()
-            dq = np.memmap(result.dq, dtype="int32", \
+            dq = np.memmap(result.dq, dtype="int32",
                            shape=(self.ny, self.nx))
             dq[:] = selfdq[:]
         return result
@@ -394,27 +395,27 @@ class CalibFile(object):
             return self.__sub__(other)
         else:
             if isinstance(other, CalibFile):
-                #sum data values
-                newdata = np.ndarray.__sub__(self.get_data(), \
+                # sum data values
+                newdata = np.ndarray.__sub__(self.get_data(),
                                              other.get_data())
-                data = np.memmap(self.data, dtype="float32", \
+                data = np.memmap(self.data, dtype="float32",
                                  shape=(self.ny, self.nx))
                 data[:] = newdata[:]
                 # sum variance
-                newstat = np.ndarray.__add__(self.get_stat(), \
+                newstat = np.ndarray.__add__(self.get_stat(),
                                              other.get_stat())
-                stat = np.memmap(self.stat, dtype="float32", \
+                stat = np.memmap(self.stat, dtype="float32",
                                  shape=(self.ny, self.nx))
                 stat[:] = newstat[:]
                 # pixel quality
                 newdq = np.logical_or(self.get_dq(), other.get_dq())
-                dq = np.memmap(self.dq, dtype="int32", \
+                dq = np.memmap(self.dq, dtype="int32",
                                shape=(self.ny, self.nx))
                 dq[:] = newdq[:]
             else:
                 # sum data values
                 newdata = np.ndarray.__sub__(self.get_data(), other)
-                data = np.memmap(self.data, dtype="float32", \
+                data = np.memmap(self.data, dtype="float32",
                                  shape=(self.ny, self.nx))
                 data[:] = newdata[:]
             return self
@@ -438,12 +439,12 @@ class CalibFile(object):
             os.close(fd)
             # sum data values
             newdata = np.ndarray.__mul__(self.get_data(), other)
-            data = np.memmap(result.data, dtype="float32", \
+            data = np.memmap(result.data, dtype="float32",
                              shape=(self.ny, self.nx))
             data[:] = newdata[:]
             # variance
             newstat = np.ndarray.__mul__(self.get_stat(), other * other)
-            stat = np.memmap(result.stat, dtype="float32", \
+            stat = np.memmap(result.stat, dtype="float32",
                              shape=(self.ny, self.nx))
             stat[:] = newstat[:]
             # pixel quality
@@ -457,17 +458,17 @@ class CalibFile(object):
             return self.__mul__(other)
         else:
             if isinstance(other, CalibFile):
-                raise IOError('unsupported operand type * and / '\
+                raise IOError('unsupported operand type * and / '
                               'for CalibFile')
             else:
                 # sum data values
                 newdata = np.ndarray.__mul__(self.get_data(), other)
-                data = np.memmap(self.data, dtype="float32", \
+                data = np.memmap(self.data, dtype="float32",
                                  shape=(self.ny, self.nx))
                 data[:] = newdata[:]
                 # variance
                 newstat = np.ndarray.__mul__(self.get_stat(), other * other)
-                stat = np.memmap(self.stat, dtype="float32", \
+                stat = np.memmap(self.stat, dtype="float32",
                                  shape=(self.ny, self.nx))
                 stat[:] = newstat[:]
             return self
@@ -482,17 +483,18 @@ class CalibFile(object):
 
 
 STR_FUNCTIONS = {'CalibFile.__mul__': CalibFile.__mul__,
-                'CalibFile.__imul__': CalibFile.__imul__,
-                'CalibFile.__div__': CalibFile.__div__,
-                'CalibFile.__idiv__': CalibFile.__idiv__,
-                'CalibFile.__sub__': CalibFile.__sub__,
-                'CalibFile.__isub__': CalibFile.__isub__,
-                'CalibFile.__add__': CalibFile.__add__,
-                'CalibFile.__iadd__': CalibFile.__iadd__,
-                }
+                 'CalibFile.__imul__': CalibFile.__imul__,
+                 'CalibFile.__div__': CalibFile.__div__,
+                 'CalibFile.__idiv__': CalibFile.__idiv__,
+                 'CalibFile.__sub__': CalibFile.__sub__,
+                 'CalibFile.__isub__': CalibFile.__isub__,
+                 'CalibFile.__add__': CalibFile.__add__,
+                 'CalibFile.__iadd__': CalibFile.__iadd__,
+                 }
 
 
 class CalibDir(object):
+
     """CalibDir class manages input/output for a repository
     containing calibration files (one per ifu).
 
@@ -567,7 +569,7 @@ class CalibDir(object):
         if self.type != other.type:
             return False
         if len(self.files) != len(other.files) or \
-        len(set(self.files) - set(other.files)) != 0:
+                len(set(self.files) - set(other.files)) != 0:
             return False
         else:
             return True
@@ -603,34 +605,34 @@ class CalibDir(object):
                 pool = multiprocessing.Pool(processes=cpu_count)
                 processlist = list()
                 for k in self.files.keys():
-                    processlist.append([k, self.files[k].nx, \
-                                        self.files[k].ny, \
-                                        self.files[k].filename, \
-                                        self.files[k].data, \
-                                        self.files[k].dq, \
-                                        self.files[k].stat, \
-                                        other.files[k].filename, \
-                                        other.files[k].data, \
-                                        other.files[k].dq, \
+                    processlist.append([k, self.files[k].nx,
+                                        self.files[k].ny,
+                                        self.files[k].filename,
+                                        self.files[k].data,
+                                        self.files[k].dq,
+                                        self.files[k].stat,
+                                        other.files[k].filename,
+                                        other.files[k].data,
+                                        other.files[k].dq,
                                         other.files[k].stat, self.progress])
                 processresult = pool.map(funcfile, processlist)
                 for k, data, dq, stat in processresult:
                     out = CalibFile()
                     out.primary_header = \
-                    pyfits.Header(self.files[k].primary_header)
+                        pyfits.Header(self.files[k].primary_header)
                     out.data_header = \
-                    pyfits.Header(self.files[k].data_header)
+                        pyfits.Header(self.files[k].data_header)
                     out.nx = self.files[k].nx
                     out.ny = self.files[k].ny
                     # data
                     (fd, out.data) = tempfile.mkstemp(prefix='mpdaf')
-                    rdata = np.memmap(out.data, dtype="float32", \
+                    rdata = np.memmap(out.data, dtype="float32",
                                       shape=(out.ny, out.nx))
                     rdata[:] = data[:]
                     os.close(fd)
                     # variance
                     (fd, out.stat) = tempfile.mkstemp(prefix='mpdaf')
-                    rstat = np.memmap(out.stat, dtype="float32", \
+                    rstat = np.memmap(out.stat, dtype="float32",
                                       shape=(out.ny, out.nx))
                     if stat != None:
                         rstat[:] = stat[:]
@@ -639,7 +641,7 @@ class CalibDir(object):
                     os.close(fd)
                     # pixel quality
                     (fd, out.dq) = tempfile.mkstemp(prefix='mpdaf')
-                    rdq = np.memmap(out.dq, dtype="int32", \
+                    rdq = np.memmap(out.dq, dtype="int32",
                                     shape=(out.ny, out.nx))
                     if dq != None:
                         rdq[:] = dq[:]
@@ -655,28 +657,28 @@ class CalibDir(object):
             pool = multiprocessing.Pool(processes=cpu_count)
             processlist = list()
             for k in self.files.keys():
-                processlist.append([k, self.files[k].nx, self.files[k].ny, \
-                                    self.files[k].filename, \
-                                    self.files[k].data, self.files[k].dq, \
+                processlist.append([k, self.files[k].nx, self.files[k].ny,
+                                    self.files[k].filename,
+                                    self.files[k].data, self.files[k].dq,
                                     self.files[k].stat, other, self.progress])
             processresult = pool.map(funcnumber, processlist)
             for k, data, dq, stat in processresult:
                 out = CalibFile()
                 out.primary_header = \
-                pyfits.Header(self.files[k].primary_header)
+                    pyfits.Header(self.files[k].primary_header)
                 out.data_header = \
-                pyfits.Header(self.files[k].data_header)
+                    pyfits.Header(self.files[k].data_header)
                 out.nx = self.files[k].nx
                 out.ny = self.files[k].ny
                 # data
                 (fd, out.data) = tempfile.mkstemp(prefix='mpdaf')
-                rdata = np.memmap(out.data, dtype="float32", \
+                rdata = np.memmap(out.data, dtype="float32",
                                   shape=(out.ny, out.nx))
                 rdata[:] = data[:]
                 os.close(fd)
                 # variance
                 (fd, out.stat) = tempfile.mkstemp(prefix='mpdaf')
-                rstat = np.memmap(out.stat, dtype="float32", \
+                rstat = np.memmap(out.stat, dtype="float32",
                                   shape=(out.ny, out.nx))
                 os.close(fd)
                 if stat != None:
@@ -733,7 +735,7 @@ class CalibDir(object):
         if isinstance(value, CalibFile):
             self.files[key] = value
         else:
-            raise IOError('format error: %s incompatible '\
+            raise IOError('format error: %s incompatible '
                           'with CalibFile' % type(value))
 
 

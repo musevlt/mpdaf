@@ -1,4 +1,4 @@
-#Copyright 2008 Erik Tollerud
+# Copyright 2008 Erik Tollerud
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from math import pi
 
 
 class AstropysicsAngularCoordinate(object):
+
     """
     A class representing an angular value.
 
@@ -33,10 +34,10 @@ class AstropysicsAngularCoordinate(object):
     import re as _re
     __slots__ = ('_decval', '_range')
 
-    #this disturbingly complex RE matches anything that looks
-    #like a standard sexigesimal or similar string
+    # this disturbingly complex RE matches anything that looks
+    # like a standard sexigesimal or similar string
     __acregex = _re.compile(r'(?:([+-])?(\d+(?:[.]\d*)?)(hours|h|degrees|d|radians|rads|rad|r| |:(?=\d+:\d+[.]?\d*$)))?(?:(\d+(?:[.]\d*)?)(m|\'|[:]| ))?(?:(\d+(?:[.]\d*)?)(s|"|$))?$')
-    #and this one matches all things that look like raw numbers
+    # and this one matches all things that look like raw numbers
     __decregex = _re.compile(r'[+-]?\d+([.]\d*)?$')
 
     def __init__(self, inpt=None, sghms=None, range=None, radians=False):
@@ -140,7 +141,7 @@ class AstropysicsAngularCoordinate(object):
                 acm = self.__acregex.match(sinpt)
                 if acm:
                     sgn, dec1, mark1, dec2, mark2, dec3, mark3 = \
-                    acm.group(1, 2, 3, 4, 5, 6, 7)
+                        acm.group(1, 2, 3, 4, 5, 6, 7)
                     val = (0 if dec1 is None else float(dec1)) + \
                           (0 if dec2 is None else float(dec2) / 60) + \
                           (0 if dec3 is None else float(dec3) / 3600)
@@ -161,7 +162,7 @@ class AstropysicsAngularCoordinate(object):
                     elif mark1 == 'degrees' or mark1 == 'd':
                         self.degrees = val
                     elif mark1 == 'radians' or mark1 == 'rad' or \
-                    mark1 == 'rads' or mark1 == 'r':
+                            mark1 == 'rads' or mark1 == 'r':
                         self.radians = val
                     else:
                         try:
@@ -170,10 +171,10 @@ class AstropysicsAngularCoordinate(object):
                             else:
                                 self.degrees = float(val)
                         except ValueError:
-                            raise ValueError('invalid string input '\
+                            raise ValueError('invalid string input '
                                              'for AstropysicsAngularCoordinate')
                 else:
-                    raise ValueError('Invalid string input for '\
+                    raise ValueError('Invalid string input for '
                                      'AstropysicsAngularCoordinate: ' + inpt)
 
         elif isSequenceType(inpt) and len(inpt) == 3:
@@ -280,18 +281,18 @@ class AstropysicsAngularCoordinate(object):
                 if low <= rads <= up:
                     return rads
                 else:
-                    raise ValueError('Attempted to set angular coordinate '\
+                    raise ValueError('Attempted to set angular coordinate '
                                      'outside range')
             else:
                 if cycle > 0:
-                    #this means use "triangle wave" pattern
-                    #with the given quarter-period
+                    # this means use "triangle wave" pattern
+                    # with the given quarter-period
                     from math import sin
                     from math import asin
                     offset = low / (low - up) - 0.5
                     return (up - low) * \
-                        (asin(sin(pi * (2 * rads / cycle + offset))) \
-                                         / pi + 0.5) + low
+                        (asin(sin(pi * (2 * rads / cycle + offset)))
+                         / pi + 0.5) + low
                 else:
                     return (rads - low) % (up - low) + low
         else:
@@ -317,8 +318,8 @@ class AstropysicsAngularCoordinate(object):
                 if newrng[0] > newrng[1]:
                     raise ValueError('lower edge of range is not <= upper')
 
-                newrng = (radians(newrng[0]), radians(newrng[1]), \
-                           None if newrng[2] is None else radians(newrng[2]))
+                newrng = (radians(newrng[0]), radians(newrng[1]),
+                          None if newrng[2] is None else radians(newrng[2]))
             self._range = newrng
             self._decval = self._checkRange(self._decval)
         except ValueError, e:
@@ -326,7 +327,7 @@ class AstropysicsAngularCoordinate(object):
             if e.args[0] == 'lower edge of range is not <= upper':
                 raise e
             else:
-                raise ValueError('Attempted to set range '\
+                raise ValueError('Attempted to set range '
                                  'when value is out of range')
 
     def _getRange(self):
@@ -407,7 +408,7 @@ class AstropysicsAngularCoordinate(object):
     def __float__(self):
         return self.degrees
 
-    def getDmsStr(self, secform='%05.2f', sep=(unichr(176), "'", '"'), \
+    def getDmsStr(self, secform='%05.2f', sep=(unichr(176), "'", '"'),
                   sign=True, canonical=False):
         """
         Generates the string representation of this AstropysicsAngularCoordinate as

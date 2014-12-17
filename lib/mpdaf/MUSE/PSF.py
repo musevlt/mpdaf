@@ -3,6 +3,7 @@ import numpy as np
 
 
 class LSF(object):
+
     """This class manages MUSE LSF models.
 
     :param type: type of LSF
@@ -57,7 +58,7 @@ class LSF(object):
         """
         if self.type == "qsim_v1":
             T = lambda x: np.exp((-x ** 2) / 2.0) + np.sqrt(2.0 * np.pi) \
-            * x * special.erf(x / np.sqrt(2.0)) / 2.0
+                * x * special.erf(x / np.sqrt(2.0)) / 2.0
             c = np.array([-0.09876662, 0.44410609, -0.03166038, 0.46285363])
             sigma = lambda x: c[3] + c[2] * x + c[1] * x ** 2 + c[0] * x ** 3
 
