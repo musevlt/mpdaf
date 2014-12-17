@@ -45,3 +45,11 @@ runs the test:
   zap v 0.4
  1.1.10:
   zap v 0.5
+ 1.1.11:
+   zap v 0.5.1
+ 1.1.12:
+  zap v 0.6
+  galpak tool
+ 1.1.13
+  Pixel table setters and transformation methods
+  CubeList class
