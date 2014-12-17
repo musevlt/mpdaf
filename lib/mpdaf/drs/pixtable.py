@@ -173,15 +173,15 @@ class PixTable(object):
             try:
                 self.hdulist = pyfits.open(self.filename, memmap=1)
                 self.primary_header = self.hdulist[0].header
-                self.nrows = self.hdulist['xpos'].header["NAXIS2"]
-                self.ima = (self.hdulist['xpos'].header['XTENSION'] == 'IMAGE')
+                self.nrows = self.hdulist[1].header["NAXIS2"]
+                self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
                 
                 if self.ima:
                     self.wcs = self.hdulist['xpos'].header['BUNIT']
                     self.wave = self.hdulist['lambda'].header['BUNIT']
                 else:
-                    self.wcs = self.hdulist['xpos'].header['TUNIT1']
-                    self.wave = self.hdulist['lambda'].header['TUNIT1']
+                    self.wcs = self.hdulist[1].header['TUNIT1']
+                    self.wave = self.hdulist[1].header['TUNIT3']
             except IOError:
                 raise IOError('file %s not found' % filename)
         else:
