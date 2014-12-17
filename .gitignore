@@ -1,2 +1,6 @@
 .directory
 *.pyc
+*.so
+*.egg-info/
+tags
+build/
