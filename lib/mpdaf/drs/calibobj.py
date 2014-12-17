@@ -13,6 +13,7 @@ from mpdaf import obj
 
 
 class CalibFile(object):
+
     """CalibFile class manages input/output for the calibration files
 
     :param filename: The FITS file name.
@@ -235,11 +236,11 @@ class CalibFile(object):
                     prihdu.header[card.keyword] = (card.value, card.comment)
                 except ValueError:
                     prihdu.header['hierarch %s' % card.keyword] = \
-                                         (card.value, card.comment)
+                        (card.value, card.comment)
                 except:
                     pass
         prihdu.header['date'] = \
-        (str(datetime.datetime.now()), 'creation date')
+            (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
         datahdu = pyfits.ImageHDU(name='DATA', data=self.get_data())
@@ -278,7 +279,7 @@ class CalibFile(object):
         (fd, result.stat) = tempfile.mkstemp(prefix='mpdaf')
         os.close(fd)
         if isinstance(other, CalibFile):
-            #sum data values
+            # sum data values
             newdata = np.ndarray.__add__(self.get_data(), other.get_data())
             data = np.memmap(result.data, dtype="float32",
                              shape=(self.ny, self.nx))
@@ -394,7 +395,7 @@ class CalibFile(object):
             return self.__sub__(other)
         else:
             if isinstance(other, CalibFile):
-                #sum data values
+                # sum data values
                 newdata = np.ndarray.__sub__(self.get_data(),
                                              other.get_data())
                 data = np.memmap(self.data, dtype="float32",
@@ -482,17 +483,18 @@ class CalibFile(object):
 
 
 STR_FUNCTIONS = {'CalibFile.__mul__': CalibFile.__mul__,
-                'CalibFile.__imul__': CalibFile.__imul__,
-                'CalibFile.__div__': CalibFile.__div__,
-                'CalibFile.__idiv__': CalibFile.__idiv__,
-                'CalibFile.__sub__': CalibFile.__sub__,
-                'CalibFile.__isub__': CalibFile.__isub__,
-                'CalibFile.__add__': CalibFile.__add__,
-                'CalibFile.__iadd__': CalibFile.__iadd__,
-                }
+                 'CalibFile.__imul__': CalibFile.__imul__,
+                 'CalibFile.__div__': CalibFile.__div__,
+                 'CalibFile.__idiv__': CalibFile.__idiv__,
+                 'CalibFile.__sub__': CalibFile.__sub__,
+                 'CalibFile.__isub__': CalibFile.__isub__,
+                 'CalibFile.__add__': CalibFile.__add__,
+                 'CalibFile.__iadd__': CalibFile.__iadd__,
+                 }
 
 
 class CalibDir(object):
+
     """CalibDir class manages input/output for a repository
     containing calibration files (one per ifu).
 
@@ -567,7 +569,7 @@ class CalibDir(object):
         if self.type != other.type:
             return False
         if len(self.files) != len(other.files) or \
-        len(set(self.files) - set(other.files)) != 0:
+                len(set(self.files) - set(other.files)) != 0:
             return False
         else:
             return True
@@ -617,9 +619,9 @@ class CalibDir(object):
                 for k, data, dq, stat in processresult:
                     out = CalibFile()
                     out.primary_header = \
-                    pyfits.Header(self.files[k].primary_header)
+                        pyfits.Header(self.files[k].primary_header)
                     out.data_header = \
-                    pyfits.Header(self.files[k].data_header)
+                        pyfits.Header(self.files[k].data_header)
                     out.nx = self.files[k].nx
                     out.ny = self.files[k].ny
                     # data
@@ -663,9 +665,9 @@ class CalibDir(object):
             for k, data, dq, stat in processresult:
                 out = CalibFile()
                 out.primary_header = \
-                pyfits.Header(self.files[k].primary_header)
+                    pyfits.Header(self.files[k].primary_header)
                 out.data_header = \
-                pyfits.Header(self.files[k].data_header)
+                    pyfits.Header(self.files[k].data_header)
                 out.nx = self.files[k].nx
                 out.ny = self.files[k].ny
                 # data

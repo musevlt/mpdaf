@@ -36,7 +36,7 @@ def zscale(image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
     minpix = max(MIN_NPIXELS, int(npix * MAX_REJECT))
     ngrow = max(1, int(npix * 0.01))
     ngoodpix, zstart, zslope = zsc_fit_line(samples, npix, KREJ, ngrow,
-                                             MAX_ITERATIONS)
+                                            MAX_ITERATIONS)
 
     if ngoodpix < minpix:
         z1 = zmin
@@ -148,7 +148,7 @@ def zsc_compute_sigma(flat, badpix, npix):
     else:
         mean = sumz / ngoodpix
         temp = sumsq / (ngoodpix - 1) - sumz * sumz \
-        / (ngoodpix * (ngoodpix - 1))
+            / (ngoodpix * (ngoodpix - 1))
         if temp < 0:
             sigma = 0.0
         else:

@@ -1013,13 +1013,13 @@ class Image(object):
                                             / self.fscale / self.fscale)
                         elif other.var is None:
                             res.var = np.ones(res.shape) \
-                            * self.var[np.newaxis,:,:]
+                            * self.var[np.newaxis, :,:]
                         else:
-                            res.var = self.var[np.newaxis,:,:] + other.var \
+                            res.var = self.var[np.newaxis, :,:] + other.var \
                                 * np.double(other.fscale * other.fscale
                                             / self.fscale / self.fscale)
                         # data
-                        res.data = self.data[np.newaxis,:,:] \
+                        res.data = self.data[np.newaxis, :,:] \
                             - (other.data * np.double(other.fscale / self.fscale))
                         # unit
                         if self.unit == other.unit:
@@ -1152,7 +1152,7 @@ out : Spectrum or Image or Cube object.
                                        wcs=self.wcs,
                                        fscale=self.fscale)
                             # data
-                            res.data = self.data[np.newaxis,:,:] \
+                            res.data = self.data[np.newaxis, :,:] \
                                 * other.data[:, np.newaxis, np.newaxis] \
                                 * other.fscale
                             # variance
@@ -1165,7 +1165,7 @@ out : Spectrum or Image or Cube object.
                                     * other.fscale * other.fscale
                             elif other.var is None:
                                 res.var = np.ones(res.shape) \
-                                * self.var[np.newaxis,:,:] \
+                                * self.var[np.newaxis, :,:] \
                                     * other.data * other.data \
                                     * other.fscale * other.fscale
                             else:
@@ -1173,7 +1173,7 @@ out : Spectrum or Image or Cube object.
                                            * other.var[:, np.newaxis, np.newaxis]
                                            * self.data * self.data
                                            + np.ones(res.shape)
-                                * self.var[np.newaxis,:,:]
+                                * self.var[np.newaxis, :,:]
                                            * other.data * other.data) \
                                     * other.fscale * other.fscale
                             # unit
@@ -1288,22 +1288,22 @@ out : Image or Cube object.
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = other.var * self.data[np.newaxis,:,:]\
-                             * self.data[np.newaxis,:,:] \
+                            res.var = other.var * self.data[np.newaxis, :,:]\
+                             * self.data[np.newaxis, :,:] \
                              / (other.data ** 4) / (other.fscale ** 2)
                         elif other.var is None:
-                            res.var = self.var[np.newaxis,:,:] \
+                            res.var = self.var[np.newaxis, :,:] \
                                 * other.data * other.data \
                                 / (other.data ** 4) / (other.fscale ** 2)
                         else:
                             res.var = \
-                            (other.var * self.data[np.newaxis,:,:]
-                             * self.data[np.newaxis,:,:]
-                             + self.var[np.newaxis,:,:]
+                            (other.var * self.data[np.newaxis, :,:]
+                             * self.data[np.newaxis, :,:]
+                             + self.var[np.newaxis, :,:]
                              * other.data * other.data) \
                                 / (other.data ** 4) / (other.fscale ** 2)
                         # data
-                        res.data = self.data[np.newaxis,:,:] / other.data \
+                        res.data = self.data[np.newaxis, :,:] / other.data \
                             / other.fscale
                         # unit
                         if self.unit == other.unit:
@@ -1621,7 +1621,7 @@ inside : boolean
                 pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
                 pixcrd[:, 0] -= center[0]
                 pixcrd[:, 1] -= center[1]
-                m[i_in,:] = ((np.array(pixcrd[:, 0])
+                m[i_in, :] = ((np.array(pixcrd[:, 0])
                               * np.array(pixcrd[:, 0])
                               + np.array(pixcrd[:, 1])
                               * np.array(pixcrd[:, 1])) < radius2)
@@ -1632,8 +1632,8 @@ inside : boolean
             except:
                 pass
         elif not inside and circular:
-            self.data.mask[0:imin,:] = 1
-            self.data.mask[imax:,:] = 1
+            self.data.mask[0:imin, :] = 1
+            self.data.mask[imax:, :] = 1
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
             ni = np.shape(self.data[imin:imax, jmin:jmax])[0]
@@ -1644,7 +1644,7 @@ inside : boolean
                 pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
                 pixcrd[:, 0] -= center[0]
                 pixcrd[:, 1] -= center[1]
-                m[i_in,:] = ((np.array(pixcrd[:, 0])
+                m[i_in, :] = ((np.array(pixcrd[:, 0])
                               * np.array(pixcrd[:, 0])
                               + np.array(pixcrd[:, 1])
                               * np.array(pixcrd[:, 1])) > radius2)
@@ -1652,8 +1652,8 @@ inside : boolean
                               [imin:imax, jmin:jmax])
             self.data.mask[imin:imax, jmin:jmax] = m
         else:
-            self.data.mask[0:imin,:] = 1
-            self.data.mask[imax:,:] = 1
+            self.data.mask[0:imin, :] = 1
+            self.data.mask[imax:, :] = 1
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
 
@@ -1706,7 +1706,7 @@ inside : boolean
                 listy = np.array(pixcrd[:, 0])
                 listx = np.array(pixcrd[:, 1])
 
-                m[i_in,:] = (((listx*cospa+listy*sinpa)/radius[0])**2
+                m[i_in, :] = (((listx*cospa+listy*sinpa)/radius[0])**2
                              + ((listy * cospa - listx * sinpa) / radius[1]) ** 2 < 1)
             try:
                 m = np.ma.mask_or(m, np.ma.getmask(self.data)
@@ -1716,8 +1716,8 @@ inside : boolean
                 pass
 
         if not inside:
-            self.data.mask[0:imin,:] = 1
-            self.data.mask[imax:,:] = 1
+            self.data.mask[0:imin, :] = 1
+            self.data.mask[imax:, :] = 1
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
             ni = np.shape(self.data[imin:imax, jmin:jmax])[0]
@@ -1732,7 +1732,7 @@ inside : boolean
                 listy = np.array(pixcrd[:, 0])
                 listx = np.array(pixcrd[:, 1])
 
-                m[i_in,:] = (((listx*cospa+listy*sinpa)/radius[0])**2
+                m[i_in, :] = (((listx*cospa+listy*sinpa)/radius[0])**2
                              + ((listy * cospa - listx * sinpa) / radius[1]) ** 2 > 1)
 
             m = np.ma.mask_or(m, np.ma.getmask(self.data)
@@ -1824,7 +1824,7 @@ mask  : boolean
                 test_ra_max = np.array(skycrd[:, 1]) > x_max
                 test_dec_min = np.array(skycrd[:, 0]) < y_min
                 test_dec_max = np.array(skycrd[:, 0]) > y_max
-                m[j,:] = test_ra_min + test_ra_max \
+                m[j, :] = test_ra_min + test_ra_max \
                     + test_dec_min + test_dec_max
             try:
                 m = np.ma.mask_or(m, np.ma.getmask(self.data))
@@ -2159,10 +2159,8 @@ out : dictionary {'y', 'x', 'p', 'q', 'data'}
                 background = self.background()[0] / self.fscale
             else:
                 background /= self.fscale
-            di, dj = ndimage.measurements.center_of_mass(d[max(0, ic - dpix)
-                                                           :ic + dpix + 1,
-                                                           max(0, jc - dpix)
-                                                           :jc + dpix + 1]
+            di, dj = ndimage.measurements.center_of_mass(d[max(0, ic - dpix):ic + dpix + 1,
+                                                           max(0, jc - dpix):jc + dpix + 1]
                                                          - background)
         ic = imin + max(0, ic - dpix) + di
         jc = jmin + max(0, jc - dpix) + dj
@@ -2286,7 +2284,7 @@ out : float
                 for j in range(ima.shape[1]):
                     gridx[:, j] = xaxis
                 for i in range(ima.shape[0]):
-                    gridy[i,:] = yaxis
+                    gridy[i, :] = yaxis
                 r2 = gridx * gridx + gridy * gridy
                 ksel = np.where(r2 < radius2)
                 if frac:
@@ -2497,7 +2495,7 @@ out : float array
         # python convention: reverse x,y numpy.indices
         p = np.argmax((Q * np.abs(self.data)).sum(axis=1) / total)
         q = np.argmax((P * np.abs(self.data)).sum(axis=0) / total)
-        col = self.data[int(p),:]
+        col = self.data[int(p), :]
         width_q = np.sqrt(np.abs((np.arange(col.size) - p) * col).sum()
                           / np.abs(col).sum())
         row = self.data[:, int(q)]
@@ -2749,8 +2747,8 @@ out : :class:`mpdaf.obj.Gauss2D`
             deci = np.ones((factor, factor)) \
                 * np.arange(factor)[:, np.newaxis] \
                 / float(factor) + 1. / float(factor * 2) - 0.5
-            fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis,:]).ravel()
-            fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis,:]).ravel()
+            fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis, :]).ravel()
+            fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
             pixcrd = np.array(zip(fp, fq))
 
             e_gauss_fit = lambda v, p, q, data, w: \
@@ -2787,7 +2785,7 @@ out : :class:`mpdaf.obj.Gauss2D`
             qq = np.arange(qmin, qmax, float(qmax - qmin) / 100)
             ff = np.empty((np.shape(pp)[0], np.shape(qq)[0]))
             for i in range(np.shape(pp)[0]):
-                ff[i,:] = gaussfit(v, pp[i], qq[:]) * self.fscale
+                ff[i, :] = gaussfit(v, pp[i], qq[:]) * self.fscale
             plt.contour(qq, pp, ff, 5)
 
         # Gauss2D object in pixels
@@ -3125,8 +3123,8 @@ out : :class:`mpdaf.obj.Moffat2D`
             deci = np.ones((factor, factor)) \
                 * np.arange(factor)[:, np.newaxis] / float(factor) \
                 + 1 / float(factor * 2)
-            fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis,:]).ravel()
-            fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis,:]).ravel()
+            fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis, :]).ravel()
+            fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
             pixcrd = np.array(zip(fp, fq))
 
             e_moffat_fit = lambda v, p, q, data, w: \
@@ -3179,7 +3177,7 @@ out : :class:`mpdaf.obj.Moffat2D`
             qq = np.arange(qmin, qmax, float(qmax - qmin) / 100)
             ff = np.empty((np.shape(pp)[0], np.shape(qq)[0]))
             for i in range(np.shape(pp)[0]):
-                ff[i,:] = moffatfit(v, pp[i], qq[:]) * self.fscale
+                ff[i, :] = moffatfit(v, pp[i], qq[:]) * self.fscale
             plt.contour(qq, pp, ff, 5)
 
         # Gauss2D object in pixels
@@ -3392,23 +3390,23 @@ margin : 'center' or 'origin'
             newshape0 = self.shape[0] / factor[0]
             n0 = self.shape[0] - newshape0 * factor[0]
             if margin == 'origin' or n0 == 1:
-                ima = self[:-n0,:]
+                ima = self[:-n0, :]
                 ima._rebin_factor_(factor)
                 newshape = (ima.shape[0] + 1, ima.shape[1])
                 data = np.empty(newshape)
                 mask = np.empty(newshape, dtype=bool)
-                data[0:-1,:] = ima.data
-                mask[0:-1,:] = ima.data.mask
-                d = self.data[-n0:,:].sum(axis=0)\
+                data[0:-1, :] = ima.data
+                mask[0:-1, :] = ima.data.mask
+                d = self.data[-n0:, :].sum(axis=0)\
                     .reshape(ima.shape[1], factor[1]).sum(1) \
                     / factor[0] / factor[1]
-                data[-1,:] = d.data
-                mask[-1,:] = d.mask
+                data[-1, :] = d.data
+                mask[-1, :] = d.mask
                 var = None
                 if self.var is not None:
                     var = np.empty(newshape)
-                    var[0:-1,:] = ima.var
-                    var[-1,:] = self.var[-n0:,:].sum(axis=0)\
+                    var[0:-1, :] = ima.var
+                    var[-1, :] = self.var[-n0:,:].sum(axis=0)\
                         .reshape(ima.shape[1], factor[1]).sum(1) \
                         / factor[0] / factor[1]
                 wcs = ima.wcs
@@ -3416,31 +3414,31 @@ margin : 'center' or 'origin'
             else:
                 n_left = n0 / 2
                 n_right = self.shape[0] - n0 + n_left
-                ima = self[n_left:n_right,:]
+                ima = self[n_left:n_right, :]
                 ima._rebin_factor_(factor)
                 newshape = (ima.shape[0] + 2, ima.shape[1])
                 data = np.empty(newshape)
                 mask = np.empty(newshape, dtype=bool)
-                data[1:-1,:] = ima.data
-                mask[1:-1,:] = ima.data.mask
-                d = self.data[0:n_left,:].sum(axis=0)\
+                data[1:-1, :] = ima.data
+                mask[1:-1, :] = ima.data.mask
+                d = self.data[0:n_left, :].sum(axis=0)\
                     .reshape(ima.shape[1], factor[1]).sum(1)\
                     / factor[0] / factor[1]
-                data[0,:] = d.data
-                mask[0,:] = d.mask
-                d = self.data[n_right:,:].sum(axis=0)\
+                data[0, :] = d.data
+                mask[0, :] = d.mask
+                d = self.data[n_right:, :].sum(axis=0)\
                     .reshape(ima.shape[1], factor[1]).sum(1) \
                     / factor[0] / factor[1]
-                data[-1,:] = d.data
-                mask[-1,:] = d.mask
+                data[-1, :] = d.data
+                mask[-1, :] = d.mask
                 var = None
                 if self.var is not None:
                     var = np.empty(newshape)
-                    var[1:-1,:] = ima.var
-                    var[0,:] = self.var[0:n_left,:].sum(axis=0)\
+                    var[1:-1, :] = ima.var
+                    var[0, :] = self.var[0:n_left,:].sum(axis=0)\
                         .reshape(ima.shape[1], factor[1]).sum(1) \
                         / factor[0] / factor[1] / factor[0] / factor[1]
-                    var[-1,:] = self.var[n_right:,:].sum(axis=0)\
+                    var[-1, :] = self.var[n_right:,:].sum(axis=0)\
                         .reshape(ima.shape[1], factor[1]).sum(1) \
                         / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
@@ -3803,11 +3801,11 @@ out : :class:`mpdaf.obj.Image`
             newshape0 = self.shape[0] / factor[0]
             n0 = self.shape[0] - newshape0 * factor[0]
             if margin == 'origin' or n0 == 1:
-                res = self[:-n0,:]
+                res = self[:-n0, :]
             else:
                 n_left = n0 / 2
                 n_right = self.shape[0] - n0 + n_left
-                res = self[n_left:n_right,:]
+                res = self[n_left:n_right, :]
         else:
             factor = np.array(factor)
             newshape = self.shape / factor
@@ -4641,7 +4639,7 @@ interp : 'no' | 'linear' | 'spline'
                 normalpha = matplotlib.colors.Normalize(wght.min(), wght.max())
 
                 img_array = plt.get_cmap('jet')(norm(f))
-                img_array[:,:, 3] = 1 - normalpha(wght)/2
+                img_array[:, :, 3] = 1 - normalpha(wght)/2
                 cax = plt.imshow(img_array, interpolation='nearest', origin='lower',
                                  norm=norm, **kargs)
             else:

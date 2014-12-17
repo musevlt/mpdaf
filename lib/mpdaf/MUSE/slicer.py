@@ -1,4 +1,5 @@
 class Slicer:
+
     """Tools to convert a slice number between the various numbering
        schemes. The definition of the various numbering schemes and the
        conversion table can be found in the "Global Positioning System"
@@ -24,8 +25,8 @@ class Slicer:
 
     __SKY2OPTICAL__ = dict({1: (4, 12), 2: (4, 11), 3: (4, 10),
                             4: (4, 9), 5: (4, 8), 6: (4, 7),
-                             7: (4, 6), 8: (4, 5),  9: (4, 4),
-                             10: (4, 3), 11: (4, 2), 12: (4, 1),
+                            7: (4, 6), 8: (4, 5), 9: (4, 4),
+                            10: (4, 3), 11: (4, 2), 12: (4, 1),
                             13: (3, 12), 14: (3, 11), 15: (3, 10),
                             16: (3, 9), 17: (3, 8), 18: (3, 7),
                             19: (3, 6), 20: (3, 5), 21: (3, 4),

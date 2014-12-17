@@ -8,6 +8,7 @@ import matplotlib.cm as cm
 
 
 class DisplayPixTable(object):
+
     """DisplayPixTable class
 
     This class displays MUSE pixel table files
@@ -228,9 +229,9 @@ class DisplayPixTable(object):
 
         # ifu grid
         ifu_low = \
-        pix.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW')
+            pix.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW')
         ifu_high = \
-        pix.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH')
+            pix.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH')
         nifu = pix.nifu
         dp_ifu = float(cub.shape[1]) / nifu
         pmin = np.arange(nifu) * dp_ifu
@@ -252,7 +253,7 @@ class DisplayPixTable(object):
 
         subcub = cub.truncate(l1, l2, y_min, y_max, x_min, x_max, mask=True)
         if subcub.shape[0] == 0 or subcub.shape[1] == 0 \
-        or subcub.shape[2] == 0:
+                or subcub.shape[2] == 0:
             raise ValueError('cube extraction is not valid')
         ima = subcub.sum(axis=0)
         spe = subcub.sum(axis=(1, 2))
@@ -363,7 +364,7 @@ class DisplayPixTable(object):
         # colspan_spe = nplot - colspan_ima
         plt.subplot2grid((9, nplots), (0, 0), colspan=colspan_ima, rowspan=3)
         for ifu, sli, p in zip(distance[:, 1], distance[:, 2],
-                                 distance[:, 3]):
+                               distance[:, 3]):
             if q < 0:
                 q_label = 0
             elif q >= ima.shape[1]:
@@ -417,7 +418,7 @@ class DisplayPixTable(object):
 
         iplot = 0
         for ifu, sli, sliceima in zip(distance[:, 1], distance[:, 2],
-                                        list_sliceima):
+                                      list_sliceima):
             limits = sliceima.wcs.get_range()
             plt.subplot2grid((9, nplots), (4, iplot), rowspan=3)
             im = sliceima.plot(title='%02d/%02d' % (ifu, sli),
@@ -491,11 +492,11 @@ class DisplayPixTable(object):
         l1, l2 = lbda
         y, x, size, shape = sky
 
-        #ifu grid
+        # ifu grid
         ifu_low = \
-        pix.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW')
+            pix.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW')
         ifu_high = \
-        pix.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH')
+            pix.get_keywords('HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH')
         nifu = pix.nifu
         dp_ifu = float(cub.shape[1]) / nifu
         dp_slice = dp_ifu / 12
@@ -520,13 +521,13 @@ class DisplayPixTable(object):
         list_p = np.empty((nifu, 48))
         for i in range(nifu):
             list_p[i, 0:12] = i * dp_ifu + np.arange(12) * dp_slice \
-            + dp_slice / 2.0 - 0.5
+                + dp_slice / 2.0 - 0.5
             list_p[i, 12:24] = i * dp_ifu + np.arange(12) * dp_slice \
-            + dp_slice / 2.0 - 0.5
+                + dp_slice / 2.0 - 0.5
             list_p[i, 24:36] = i * dp_ifu + np.arange(12) * dp_slice \
-            + dp_slice / 2.0 - 0.5
+                + dp_slice / 2.0 - 0.5
             list_p[i, 36:48] = i * dp_ifu + np.arange(12) * dp_slice \
-            + dp_slice / 2.0 - 0.5
+                + dp_slice / 2.0 - 0.5
         list_p = np.concatenate(list_p)
 
         list_q = np.empty((nifu, 48))
@@ -555,7 +556,7 @@ class DisplayPixTable(object):
 
         subcub = cub.truncate(l1, l2, y_min, y_max, x_min, x_max, mask=True)
         if subcub.shape[0] == 0 or subcub.shape[1] == 0 \
-        or subcub.shape[2] == 0:
+                or subcub.shape[2] == 0:
             raise ValueError('cube extraction is not valid')
         ima = subcub.sum(axis=0)
         spe = subcub.sum(axis=(1, 2))
@@ -575,10 +576,10 @@ class DisplayPixTable(object):
             exposures = np.unique(col_exp)
             for exp in exposures:
                 self._slice_display(date, pix, ima, spe, slice_limits,
-                                   ima_center_p, ima_center_q, dp_slice,
-                                   dq_slice, exp, sky, lbda, sky_scale,
-                                   sky_cmap, slice_scale, slice_cmap,
-                                   slice_vmin, slice_vmax)
+                                    ima_center_p, ima_center_q, dp_slice,
+                                    dq_slice, exp, sky, lbda, sky_scale,
+                                    sky_cmap, slice_scale, slice_cmap,
+                                    slice_vmin, slice_vmax)
         except:
             self._slice_display(date, pix, ima, spe, slice_limits,
                                 ima_center_p, ima_center_q, dp_slice,

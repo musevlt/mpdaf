@@ -26,6 +26,7 @@ slit_position = np.array([9, 8, 1, 10, 7, 2, 11, 6, 3, 12, 5, 4])
 
 
 class Channel(object):
+
     """Channel object corresponds to an extension of a raw FITS file.
 
     :param extname: The extension name.
@@ -683,19 +684,19 @@ class Channel(object):
 
 
 STR_FUNCTIONS = {'Channel.__mul__': Channel.__mul__,
-                'Channel.__imul__': Channel.__imul__,
-                'Channel.__div__': Channel.__div__,
-                'Channel.__idiv__': Channel.__idiv__,
-                'Channel.__sub__': Channel.__sub__,
-                'Channel.__isub__': Channel.__isub__,
-                'Channel.__add__': Channel.__add__,
-                'Channel.__iadd__': Channel.__iadd__,
-                'Channel.__pow__': Channel.__pow__,
-                'Channel.__ipow__': Channel.__ipow__,
-                'Channel.sqrt': Channel.sqrt,
-                'Channel.trimmed': Channel.trimmed,
-                'Channel.overscan': Channel.overscan,
-                }
+                 'Channel.__imul__': Channel.__imul__,
+                 'Channel.__div__': Channel.__div__,
+                 'Channel.__idiv__': Channel.__idiv__,
+                 'Channel.__sub__': Channel.__sub__,
+                 'Channel.__isub__': Channel.__isub__,
+                 'Channel.__add__': Channel.__add__,
+                 'Channel.__iadd__': Channel.__iadd__,
+                 'Channel.__pow__': Channel.__pow__,
+                 'Channel.__ipow__': Channel.__ipow__,
+                 'Channel.sqrt': Channel.sqrt,
+                 'Channel.trimmed': Channel.trimmed,
+                 'Channel.overscan': Channel.overscan,
+                 }
 
 
 def Channel_median(channels):
@@ -717,6 +718,7 @@ def Channel_median(channels):
 
 
 class RawFile(object):
+
     """
     RawFile class manages input/output for raw FITS file.
 
@@ -780,7 +782,7 @@ class RawFile(object):
                         extname = hdulist[n].header["EXTNAME"]
                         exttype = hdulist[n].header["XTENSION"]
                         if exttype == 'IMAGE' \
-                        and hdulist[n].header["NAXIS"] != 0:
+                                and hdulist[n].header["NAXIS"] != 0:
                             nx = hdulist[n].header["NAXIS1"]
                             ny = hdulist[n].header["NAXIS2"]
                             if self.nx == 0:
@@ -1051,14 +1053,14 @@ class RawFile(object):
                         n = 80 - len(card.keyword) - 14
                         s = card.value[0:n]
                         prihdu.header['hierarch %s' % card.keyword] = \
-                        (s, card.comment)
+                            (s, card.comment)
                     else:
                         prihdu.header['hierarch %s' % card.keyword] = \
-                                             (card.value, card.comment)
+                            (card.value, card.comment)
                 except:
                     pass
         prihdu.header['date'] = \
-        (str(datetime.datetime.now()), 'creation date')
+            (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
         if self.channels is not None:
@@ -1074,10 +1076,10 @@ class RawFile(object):
                             try:
                                 if card.keyword != "EXTNAME":
                                     dhdu.header[card.keyword] = \
-                                    (card.value, card.comment)
+                                        (card.value, card.comment)
                             except ValueError:
                                 dhdu.header['hierarch %s' % card.keyword] = \
-                                                   (card.value, card.comment)
+                                    (card.value, card.comment)
                             except:
                                 pass
                     hdulist.append(dhdu)
@@ -1213,10 +1215,10 @@ class RawFile(object):
                 for l in range(1, NB_SLICES + 1):
                     noslice = (k - 1) * NB_SLICES + l
                     wr_row = NB_SLICES - slit_position[l - 1] \
-                    + 12 * (24 - ifu)
+                        + 12 * (24 - ifu)
                     wr_col = k * NB_SPEC_PER_SLICE
                     white_ima[wr_row, wr_col - NB_SPEC_PER_SLICE:wr_col] = \
-                    data[noslice - 1, :]
+                        data[noslice - 1, :]
 
         return obj.Image(data=white_ima, wcs=obj.WCS())
 
@@ -1247,9 +1249,9 @@ class RawFile(object):
         mask_chan = mask_raw.get_channel(chan)
 
         self.x1 = mask_chan.header['HIERARCH ESO DET SLICE1 XSTART'] \
-        - OVERSCAN
+            - OVERSCAN
         self.x2 = mask_chan.header['HIERARCH ESO DET SLICE48 XEND'] \
-        - 2 * OVERSCAN
+            - 2 * OVERSCAN
 
         xstart = mask_chan.header['HIERARCH ESO DET '
                                   'SLICE%d XSTART' % sli] - OVERSCAN
@@ -1329,7 +1331,7 @@ class RawFile(object):
         if mask is None:
             import mpdaf
             self.mask_file = mpdaf.__path__[0] + \
-            '/drs/mumdatMask_1x1/PAE_July2013.fits'
+                '/drs/mumdatMask_1x1/PAE_July2013.fits'
         # create image
         self.whiteima = self.reconstruct_white_image(self.mask_file)
         # highlighted ifu
@@ -1343,11 +1345,11 @@ class RawFile(object):
         self._plot_slice_on_raw_image(selected_ifu, 1)
         cid = self.fig.canvas.mpl_connect('button_press_event', self._onclick)
         print 'To select on other channel/slice, '\
-        'click on the images with the right mouse button.'
+            'click on the images with the right mouse button.'
 
 
 def _process_operator(arglist):
-    #d ecorator used to define arithmetic functions with a RawFits object
+    # d ecorator used to define arithmetic functions with a RawFits object
     function = STR_FUNCTIONS[arglist[0]]
     k = arglist[1]
     obj = arglist[2]
