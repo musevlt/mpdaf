@@ -32,6 +32,7 @@
 
 from distutils.core import setup, Command, Extension
 import os
+import commands
 #import setuptools
 
 class UnitTest(Command):
@@ -83,16 +84,40 @@ for path in os.listdir('mpdaf_user'):
         package_dir['mpdaf_user.'+path] = 'mpdaf_user/'+path
         packages.append('mpdaf_user.'+path)
         
-#Extension('libCmethods', ['src/subtract_slice_median.c'], libraries=['fopenmp'])
+
+def options(*packages, **kw):
+    flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
+
+    err = commands.getstatusoutput("pkg-config --version")
+    if err[0] !=0 :
+        raise ImportError(err[1])
+
+    for package in packages:
+        err = commands.getstatusoutput("pkg-config %s"%package)
+        if err[0] !=0 :
+            raise ImportError(err[1])
+    
+    for token in commands.getoutput("pkg-config --libs --cflags %s" % ' '.join(packages)).split():
+       if flag_map.has_key(token[:2]):
+           kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
+       else: # throw others to extra_link_args
+           kw.setdefault('extra_link_args', []).append(token)
+
+    kw.setdefault('libraries', []).append('m')
+    kw.setdefault('extra_link_args', []).append('-fopenmp')
+    kw.setdefault('extra_compile_args', []).append('-fopenmp')
+
+    for k, v in kw.iteritems(): # remove duplicated
+        kw[k] = list(set(v))
+    return kw
+
 
 setup(name = 'mpdaf',
       version = '1.1',
       description = 'MUSE Python Data Analysis Framework is a python framework in view of '
                     'the analysis of MUSE data in the context of the GTO.',
       url = 'http://urania1.univ-lyon1.fr/mpdaf/login',
-      requires = ['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib','pyfits','pywcs','nose','PIL'],
-      #install_requires = ['pyfits','pywcs','nose'],
-      #provides = ['mpdaf'],
+      requires = ['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib','astropy','nose','PIL'],
       package_dir = package_dir,
       packages = packages,
       package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits']},
@@ -101,5 +126,5 @@ setup(name = 'mpdaf',
       platforms = 'any', 
       cmdclass = {'test': UnitTest, 'fusion': MakeFusion},
       ext_package='mpdaf',
-      ext_modules=[Extension('libCmethods', ['src/subtract_slice_median.c', 'src/merging.c'], libraries=['m', 'cfitsio'], extra_link_args=['-fopenmp', '-O2', '-march=native', '-Wall'], extra_compile_args=['-fopenmp', '-O2', '-march=native', '-Wall'])],
+      ext_modules=[Extension('libCmethods', ['src/subtract_slice_median.c', 'src/merging.c'], **options('cfitsio'))],
      )
