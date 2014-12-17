@@ -3466,6 +3466,8 @@ class CubeDisk(object):
                 var += np.sum(f[self.var].data[kmin:kmax], axis=0)
                 kmin = kmax
                 kmax += k
+        else:
+            var = None
 
         f.close()
 
