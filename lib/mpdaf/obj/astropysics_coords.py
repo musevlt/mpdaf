@@ -22,14 +22,12 @@ from math import pi
 
 class AstropysicsAngularCoordinate(object):
 
-    """
-    A class representing an angular value.
+    """A class representing an angular value.
 
     Arithmetic operators can be applied to the coordinate, and will be applied
     directly to the numerical value in radians.  For + and -, two angular
     coordinates may be used, although for -, an AngularSeparation object will
     be returned.
-
     """
     import re as _re
     __slots__ = ('_decval', '_range')
@@ -410,9 +408,8 @@ class AstropysicsAngularCoordinate(object):
 
     def getDmsStr(self, secform='%05.2f', sep=(unichr(176), "'", '"'),
                   sign=True, canonical=False):
-        """
-        Generates the string representation of this AstropysicsAngularCoordinate as
-        degrees, arcminutes, and arcseconds.
+        """Generates the string representation of this
+        AstropysicsAngularCoordinate as degrees, arcminutes, and arcseconds.
 
         :param secform: a formatter for the seconds
         :type secform: string
@@ -461,10 +458,8 @@ class AstropysicsAngularCoordinate(object):
         return ''.join(tojoin)
 
     def getHmsStr(self, secform=None, sep=('h', 'm', 's'), canonical=False):
-        """
-        gets the string representation of
-        this AstropysicsAngularCoordinate as hours,
-        minutes, and seconds
+        """gets the string representation of this AstropysicsAngularCoordinate
+        as hours, minutes, and seconds.
 
         secform is the formatter for the seconds component
 

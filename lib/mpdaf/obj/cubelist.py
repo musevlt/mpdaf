@@ -1,4 +1,4 @@
-""" cube.py manages Cube objects"""
+"""cube.py manages Cube objects."""
 
 import numpy as np
 from .cube import CubeDisk
@@ -48,15 +48,13 @@ class CubeList(object):
         self.check_compatibility()
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         for f in self.files:
             cub = CubeDisk(f)
             cub.info()
 
     def check_dim(self):
-        """Checks if all cubes have same dimensions.
-        """
+        """Checks if all cubes have same dimensions."""
         shapes = np.array([CubeDisk(f).shape for f in self.files])
 
         if not np.all(shapes == shapes[0]):
@@ -71,8 +69,7 @@ class CubeList(object):
             return True
 
     def check_wcs(self):
-        """Checks if all cubes have same world coordinates.
-        """
+        """Checks if all cubes have same world coordinates."""
         cub0 = CubeDisk(self.files[0])
         self.wcs = cub0.wcs
         self.wave = cub0.wave
@@ -102,8 +99,7 @@ class CubeList(object):
         return True
 
     def check_fscale(self):
-        """Checks if all cubes have same scale factor.
-        """
+        """Checks if all cubes have same scale factor."""
         fscale = np.array([CubeDisk(f).fscale for f in self.files])
 
         if len(np.unique(fscale)) == 1:
@@ -117,12 +113,11 @@ class CubeList(object):
             return False
 
     def check_compatibility(self):
-        """Checks if all cubes are compatible.
-        """
+        """Checks if all cubes are compatible."""
         return self.check_dim() and self.check_wcs() and self.check_fscale()
 
     def median(self, output, output_path='.'):
-        """merges cubes in a single data cube using median
+        """merges cubes in a single data cube using median.
 
         Parameters
         ----------

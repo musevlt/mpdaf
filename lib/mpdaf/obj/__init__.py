@@ -1,12 +1,10 @@
 
 """Copyright (C) 2011 Centre de Recherche Astronomique de Lyon (CRAL)
 
-
 Submodules:
 =========
 image:
     manages image object
-
 """
 __LICENSE__ = """
 Copyright (C) 2011  Centre de Recherche Astronomique de Lyon (CRAL)

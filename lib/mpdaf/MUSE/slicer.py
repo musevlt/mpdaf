@@ -45,8 +45,8 @@ class Slicer:
 
     @staticmethod
     def ccd2sky(s):
-        """Convert a slice number from CCD to SKY numbering scheme. Return
-        None if the input slice number is invalid.
+        """Convert a slice number from CCD to SKY numbering scheme. Return None
+        if the input slice number is invalid.
 
         :param s: slice number in CCD numbering scheme
         :type s: int
@@ -55,8 +55,8 @@ class Slicer:
 
     @staticmethod
     def sky2ccd(s):
-        """Convert a slice number from SKY to CCD numbering scheme. Return
-        None if the input slice number is invalid.
+        """Convert a slice number from SKY to CCD numbering scheme. Return None
+        if the input slice number is invalid.
 
         :param s: slice number in SKY numbering scheme
         :type s: int
