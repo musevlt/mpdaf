@@ -1,7 +1,8 @@
 """ cube.py manages Cube objects"""
 import numpy as np
 from cube import CubeDisk
-
+from objs import is_float
+from objs import is_int
 
 class CubeList(object):
 
@@ -174,8 +175,9 @@ class CubeList(object):
                       Output path where resulted cubes are stored.
         nmax        : integer
                       maximum number of clipping iterations
-        nclip       : float
+        nclip       : float or (float,float)
                       Number of sigma at which to clip.
+                      Single clipping parameter or lower / upper clipping parameters
         nstop       : integer
                       If the number of not rejected pixels is less
                       than this number, the clipping iterations stop.   
@@ -190,12 +192,19 @@ class CubeList(object):
         """
         import mpdaf
         import ctypes
+        if is_int(nclip) or is_float(nclip):
+            nclip_low = nclip
+            nclip_up = nclip
+        else:
+            nclip_low = nclip[0]
+            nclip_up = nclip[1]
+        
 
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods", mpdaf.__path__[0])
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
         # setup argument types
-        libCmethods.merging_sigma_clipping.argtypes = [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double, ctypes.c_int, ctypes.c_int]
+        libCmethods.merging_sigma_clipping.argtypes = [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int]
         # run C method
-        libCmethods.merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path), nmax, np.float64(nclip), nstop, np.int32(var_mean))
+        libCmethods.merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path), nmax, np.float64(nclip_low), np.float64(nclip_up), nstop, np.int32(var_mean))

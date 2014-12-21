@@ -36,15 +36,15 @@ static double med_value(double* data, int n)
   return data[n / 2];
 }
 
-static void sigma_clip(double* data, int n, double x[3], int nmax, double nclip, int nstop, int* files_id)
+static void sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* files_id)
 {
   double clip_lo, clip_up;
   mean_st(data, n, x);
   x[2] = n;
   double med;
   med =  med_value(data,n);
-  clip_lo = med - (nclip*x[1]);
-  clip_up = med + (nclip*x[1]);
+  clip_lo = med - (nclip_low*x[1]);
+  clip_up = med + (nclip_up*x[1]);
 
   int i, ni = 0; 
   for (i=0; i<n; i++)
@@ -63,7 +63,7 @@ static void sigma_clip(double* data, int n, double x[3], int nmax, double nclip,
    if ( nmax > 0 )
    {
      nmax = nmax - 1;
-     sigma_clip(data, ni, x, nmax, nclip, nstop, files_id);
+     sigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop, files_id);
    }
 }
 
@@ -276,7 +276,7 @@ int merging_median(char* input, char* output, char* output_path)
 }
 
 
-int merging_sigma_clipping(char* input, char* output, char* output_path, int nmax, double nclip, int nstop, int var_mean)
+int merging_sigma_clipping(char* input, char* output, char* output_path, int nmax, double nclip_low, double nclip_up, int nstop, int var_mean)
 {
   int status = 0;  //CFITSIO status value MUST be initialized to zero!
   int naxis, i, ii, n;
@@ -374,7 +374,8 @@ int merging_sigma_clipping(char* input, char* output, char* output_path, int nma
 
   printf("merging cube using mean with sigma clipping\n");
   printf("nmax = %d\n", nmax);
-  printf("nclip = %f\n", nclip);
+  printf("nclip_low = %f\n", nclip_low);
+  printf("nclip_high = %f\n", nclip_up);
   printf("nstop = %d\n", nstop);
 
   //initialization
@@ -449,7 +450,7 @@ int merging_sigma_clipping(char* input, char* output, char* output_path, int nma
 		    }
 		    else
 		    {
-                      sigma_clip(work, n, x, nmax, nclip, nstop, files_id);
+                      sigma_clip(work, n, x, nmax, nclip_low, nclip_up, nstop, files_id);
                       pix[0][ii] = x[0];//mean value
 		      pix[1][ii] = x[2];//exp map
 		      if (x[2]>1)
