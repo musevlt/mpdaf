@@ -82,7 +82,7 @@ class ImageClicks(object):  # Object used to save click on image plot.
             c3 = pyfits.Column(name='x', format='E', array=self.x)
             c4 = pyfits.Column(name='y', format='E', array=self.y)
             c5 = pyfits.Column(name='data', format='E', array=self.data)
-            #tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            # tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
             coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
             tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
             tbhdu.writeto(self.filename, clobber=True, output_verify='fix')
@@ -361,7 +361,13 @@ class Image(object):
                     self.var = None
                     self.fscale = hdr.get('FSCALE', 1.0)
                     if wcs is None:
-                        self.wcs = WCS(hdr)  # WCS object from data header
+                        try:
+                            self.wcs = WCS(hdr)  # WCS object from data header
+                        except pyfits.VerifyError as e:
+                            # Workaround for
+                            # https://github.com/astropy/astropy/issues/887
+                            print e
+                            self.wcs = WCS(hdr)
                     else:
                         self.wcs = wcs
                         self.wcs.set_naxis1(self.shape[1])
