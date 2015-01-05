@@ -1,8 +1,9 @@
 """ cube.py manages Cube objects"""
+
 import numpy as np
-from cube import CubeDisk
-from objs import is_float
-from objs import is_int
+from .cube import CubeDisk
+from .objs import is_float, is_int
+
 
 class CubeList(object):
 
@@ -56,13 +57,9 @@ class CubeList(object):
     def check_dim(self):
         """Checks if all cubes have same dimensions.
         """
-        shapes = np.empty((self.nfiles, 3))
-        for i in range(self.nfiles):
-            cub = CubeDisk(self.files[i])
-            shapes[i, :] = cub.shape
-        if len(np.unique(shapes[:, 0])) != 1 or \
-           len(np.unique(shapes[:, 1])) != 1 or \
-           len(np.unique(shapes[:, 2])) != 1:
+        shapes = np.array([CubeDisk(f).shape for f in self.files])
+
+        if not np.all(shapes == shapes[0]):
             print 'all cubes have not same dimensions'
             for i in range(self.nfiles):
                 print '%i X %i X %i cube (%s)' % (shapes[i, 0], shapes[i, 1],
@@ -79,15 +76,16 @@ class CubeList(object):
         cub0 = CubeDisk(self.files[0])
         self.wcs = cub0.wcs
         self.wave = cub0.wave
-        for i in range(1, self.nfiles):
-            cub = CubeDisk(self.files[i])
+
+        for f in self.files:
+            cub = CubeDisk(f)
             if not cub.wcs.isEqual(self.wcs) or not cub.wave.isEqual(self.wave):
                 if not cub.wcs.isEqual(self.wcs):
                     print 'all cubes have not same spatial coordinates'
                     print self.files[0]
                     self.wcs.info()
                     print ''
-                    print self.files[i]
+                    print f
                     cub.wcs.info()
                     print ''
                     self.wcs = None
@@ -96,7 +94,7 @@ class CubeList(object):
                     print self.files[0]
                     self.wave.info()
                     print ''
-                    print self.files[i]
+                    print f
                     cub.wave.info()
                     print ''
                     self.wave = None
@@ -106,10 +104,8 @@ class CubeList(object):
     def check_fscale(self):
         """Checks if all cubes have same scale factor.
         """
-        fscale = np.empty(self.nfiles)
-        for i in range(self.nfiles):
-            cub = CubeDisk(self.files[i])
-            fscale[i] = cub.fscale
+        fscale = np.array([CubeDisk(f).fscale for f in self.files])
+
         if len(np.unique(fscale)) == 1:
             self.fscale = fscale[0]
             return True
@@ -123,13 +119,7 @@ class CubeList(object):
     def check_compatibility(self):
         """Checks if all cubes are compatible.
         """
-        dim = self.check_dim()
-        wcs = self.check_wcs()
-        fscale = self.check_fscale()
-        if dim and wcs and fscale:
-            return True
-        else:
-            return False
+        return self.check_dim() and self.check_wcs() and self.check_fscale()
 
     def median(self, output, output_path='.'):
         """merges cubes in a single data cube using median
@@ -180,7 +170,7 @@ class CubeList(object):
                       Single clipping parameter or lower / upper clipping parameters
         nstop       : integer
                       If the number of not rejected pixels is less
-                      than this number, the clipping iterations stop.   
+                      than this number, the clipping iterations stop.
         var_mean    : boolean
                       True: the variance of each combined pixel is computed
                       as the variance derived from the comparison of the
@@ -198,7 +188,6 @@ class CubeList(object):
         else:
             nclip_low = nclip[0]
             nclip_up = nclip[1]
-        
 
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods", mpdaf.__path__[0])
