@@ -1,6 +1,5 @@
-""" calibobj.py Manages calibration FITS files
-type MASTER_BIAS MASTER_DARK MASTER_FLAT OBJECT_RESAMPLED
-"""
+"""calibobj.py Manages calibration FITS files type MASTER_BIAS MASTER_DARK
+MASTER_FLAT OBJECT_RESAMPLED."""
 import numpy as np
 from astropy.io import fits as pyfits
 import pylab
@@ -14,7 +13,7 @@ from mpdaf import obj
 
 class CalibFile(object):
 
-    """CalibFile class manages input/output for the calibration files
+    """CalibFile class manages input/output for the calibration files.
 
     :param filename: The FITS file name.
     None by default (in this case, an empty object is created).
@@ -53,7 +52,7 @@ class CalibFile(object):
     """
 
     def __init__(self, filename=None):
-        """creates a CalibFile object
+        """creates a CalibFile object.
 
         :param filename: The FITS file name.
         None by default (in this case, an empty object is created).
@@ -106,7 +105,7 @@ class CalibFile(object):
             self.data_header = pyfits.Header()
 
     def __del__(self):
-        """removes temporary files used for memory mapping"""
+        """removes temporary files used for memory mapping."""
         try:
             if self.data != None:
                 os.remove(self.data)
@@ -118,8 +117,7 @@ class CalibFile(object):
             pass
 
     def copy(self):
-        """Returns a new copy of a CalibFile object.
-        """
+        """Returns a new copy of a CalibFile object."""
         result = CalibFile()
         result.filename = self.filename
         result.primary_header = pyfits.Header(self.primary_header)
@@ -149,8 +147,7 @@ class CalibFile(object):
         return result
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         if self.filename != None:
             hdulist = pyfits.open(self.filename, memmap=1)
             print hdulist.info()
@@ -163,9 +160,8 @@ class CalibFile(object):
             print "3\tSTAT\timage\t(%i,%i)" % (self.nx, self.ny)
 
     def get_data(self):
-        """Opens the FITS file with memory mapping,
-        loads the data array and returns it.
-        """
+        """Opens the FITS file with memory mapping, loads the data array and
+        returns it."""
         if self.filename == None:
             if self.data == None:
                 raise IOError('format error: empty DATA extension')
@@ -180,9 +176,8 @@ class CalibFile(object):
             return data
 
     def get_dq(self):
-        """Opens the FITS file with memory mapping,
-        loads the dq array and returns it.
-        """
+        """Opens the FITS file with memory mapping, loads the dq array and
+        returns it."""
         if self.filename == None:
             if self.dq == None:
                 raise IOError('format error: empty DQ extension')
@@ -197,9 +192,8 @@ class CalibFile(object):
             return data
 
     def get_stat(self):
-        """Opens the FITS file with memory mapping,
-        loads the stat array and returns it.
-        """
+        """Opens the FITS file with memory mapping, loads the stat array and
+        returns it."""
         if self.filename == None:
             if self.stat == None:
                 raise IOError('format error: empty STAT extension')
@@ -265,8 +259,7 @@ class CalibFile(object):
         self.stat = None
 
     def __add__(self, other):
-        """Adds either a number or a CalibFile object.
-        """
+        """Adds either a number or a CalibFile object."""
         result = CalibFile()
         result.primary_header = pyfits.Header(self.primary_header)
         result.data_header = pyfits.Header(self.data_header)
@@ -343,8 +336,7 @@ class CalibFile(object):
             return self
 
     def __sub__(self, other):
-        """Subtracts either a number or a CalibFile object.
-        """
+        """Subtracts either a number or a CalibFile object."""
         result = CalibFile()
         result.primary_header = pyfits.Header(self.primary_header)
         result.data_header = pyfits.Header(self.data_header)
@@ -421,8 +413,7 @@ class CalibFile(object):
             return self
 
     def __mul__(self, other):
-        """Multiplies by a number.
-        """
+        """Multiplies by a number."""
         if isinstance(other, CalibFile):
             raise IOError('unsupported operand type * and / for CalibFile')
         else:
@@ -474,8 +465,7 @@ class CalibFile(object):
             return self
 
     def __div__(self, other):
-        """Divides by a number.
-        """
+        """Divides by a number."""
         return self.__mul__(1. / other)
 
     def __idiv__(self, other):
@@ -495,8 +485,8 @@ STR_FUNCTIONS = {'CalibFile.__mul__': CalibFile.__mul__,
 
 class CalibDir(object):
 
-    """CalibDir class manages input/output for a repository
-    containing calibration files (one per ifu).
+    """CalibDir class manages input/output for a repository containing
+    calibration files (one per ifu).
 
     :param type: Type of calibration files that appears in filenames
     (<type>_<ifu id>.fits)
@@ -546,8 +536,7 @@ class CalibDir(object):
                     self.files[ifu] = fileobj
 
     def copy(self):
-        """Returns a new copy of a CalibDir object.
-        """
+        """Returns a new copy of a CalibDir object."""
         result = CalibDir(self.type, self.dirname)
         if self.dirname == None:
             for ifu, fileobj in self.files.items():
@@ -555,17 +544,15 @@ class CalibDir(object):
         return result
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         print '%i %s files' % (len(self.files), self.type)
         for ifu, fileobj in self.files.items():
             print 'ifu %i' % ifu
             fileobj.info()
 
     def _check(self, other):
-        """Checks that other CalibDir contains the same ifu
-        that the current object.
-        """
+        """Checks that other CalibDir contains the same ifu that the current
+        object."""
         if self.type != other.type:
             return False
         if len(self.files) != len(other.files) or \
@@ -575,26 +562,22 @@ class CalibDir(object):
             return True
 
     def __add__(self, other):
-        """Adds either a number or a CalibFile object.
-        """
+        """Adds either a number or a CalibFile object."""
         return self._mp_operator(other, _add_calib_files, _add_calib)
 
     def __sub__(self, other):
-        """Adds either a number or a CalibFile object.
-        """
+        """Adds either a number or a CalibFile object."""
         return self._mp_operator(other, _sub_calib_files, _sub_calib)
 
     def __mul__(self, other):
-        """Multiplies by a number.
-        """
+        """Multiplies by a number."""
         if isinstance(other, CalibFile):
             raise IOError('unsupported operand type * and / for CalibFile')
         else:
             return self._mp_operator(other, None, _mul_calib)
 
     def __div__(self, other):
-        """Divides by a number.
-        """
+        """Divides by a number."""
         return self.__mul__(1. / other)
 
     def _mp_operator(self, other, funcfile, funcnumber):
@@ -699,8 +682,7 @@ class CalibDir(object):
         return result
 
     def write(self, dirname):
-        """Writes files in self.dirname.
-        """
+        """Writes files in self.dirname."""
         if self.dirname == None:
             for ifu, fileobj in self.files.items():
                 filename = "%s/%s_%02d.fits" % (dirname, self.type, ifu)
@@ -708,8 +690,7 @@ class CalibDir(object):
         self.dirname = dirname
 
     def __len__(self):
-        """Returns the number of files.
-        """
+        """Returns the number of files."""
         return len(self.files)
 
     def __getitem__(self, key):
@@ -740,7 +721,7 @@ class CalibDir(object):
 
 
 def _add_calib_files(arglist):
-    """adds CalibFile extensions"""
+    """adds CalibFile extensions."""
     k = arglist[0]
     nx = arglist[1]
     ny = arglist[2]
@@ -792,7 +773,7 @@ def _add_calib_files(arglist):
 
 
 def _add_calib(arglist):
-    """adds CalibFile extensions"""
+    """adds CalibFile extensions."""
     k = arglist[0]
     nx = arglist[1]
     ny = arglist[2]
@@ -818,7 +799,7 @@ def _add_calib(arglist):
 
 
 def _sub_calib_files(arglist):
-    """subtracts CalibFile extensions"""
+    """subtracts CalibFile extensions."""
     k = arglist[0]
     nx = arglist[1]
     ny = arglist[2]
@@ -870,7 +851,7 @@ def _sub_calib_files(arglist):
 
 
 def _sub_calib(arglist):
-    """subtracts CalibFile extensions"""
+    """subtracts CalibFile extensions."""
     k = arglist[0]
     nx = arglist[1]
     ny = arglist[2]
@@ -896,7 +877,7 @@ def _sub_calib(arglist):
 
 
 def _mul_calib(arglist):
-    """subtracts CalibFile extensions"""
+    """subtracts CalibFile extensions."""
     k = arglist[0]
     nx = arglist[1]
     ny = arglist[2]

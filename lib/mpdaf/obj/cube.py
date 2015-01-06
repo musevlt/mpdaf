@@ -1,4 +1,4 @@
-""" cube.py manages Cube objects"""
+"""cube.py manages Cube objects."""
 
 import datetime
 import logging
@@ -387,8 +387,7 @@ class Cube(object):
             self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
-        """Returns a new copy of a Cube object.
-        """
+        """Returns a new copy of a Cube object."""
         cub = Cube()
         cub.filename = self.filename
         cub.unit = self.unit
@@ -415,8 +414,8 @@ class Cube(object):
         return cub
 
     def clone(self, var=False):
-        """Returns a new cube of the same shape and coordinates,
-        filled with zeros.
+        """Returns a new cube of the same shape and coordinates, filled with
+        zeros.
 
         Parameters
         ----------
@@ -440,7 +439,7 @@ class Cube(object):
         return cube
 
     def write(self, filename, fscale=None, savemask=True):
-        """ Saves the cube in a FITS file.
+        """Saves the cube in a FITS file.
 
         Parameters
         ----------
@@ -450,7 +449,6 @@ class Cube(object):
                 Flux scaling factor.
         savemask : boolean
                 If True,Cube mask is saved in DQ extension
-
         """
         # update fscale
         if fscale is None:
@@ -612,8 +610,7 @@ class Cube(object):
         self.filename = filename
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         if self.filename is None:
             print '%i X %i X %i cube (no name)' % (self.shape[0],
                                                    self.shape[1], self.shape[2])
@@ -646,6 +643,7 @@ class Cube(object):
 
     def __le__(self, item):
         """Masks data array where greater than a given value.
+
         Returns a cube object containing a masked array
         """
         result = self.copy()
@@ -655,6 +653,7 @@ class Cube(object):
 
     def __lt__(self, item):
         """Masks data array where greater or equal than a given value.
+
         Returns a cube object containing a masked array
         """
         result = self.copy()
@@ -665,6 +664,7 @@ class Cube(object):
 
     def __ge__(self, item):
         """Masks data array where less than a given value.
+
         Returns a Cube object containing a masked array
         """
         result = self.copy()
@@ -674,6 +674,7 @@ class Cube(object):
 
     def __gt__(self, item):
         """Masks data array where less or equal than a given value.
+
         Returns a Cube object containing a masked array
         """
         result = self.copy()
@@ -683,8 +684,7 @@ class Cube(object):
         return result
 
     def resize(self):
-        """Resizes the cube to have a minimum number of masked values.
-        """
+        """Resizes the cube to have a minimum number of masked values."""
         if self.data is not None:
             ksel = np.where(self.data.mask == False)
             try:
@@ -731,8 +731,7 @@ class Cube(object):
                 pass
 
     def unmask(self):
-        """Unmasks the cube (just invalid data (nan,inf) are masked).
-        """
+        """Unmasks the cube (just invalid data (nan,inf) are masked)."""
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
 
@@ -762,7 +761,7 @@ class Cube(object):
         self.data[ksel] = np.ma.masked
 
     def __add__(self, other):
-        """Adds other
+        """Adds other.
 
         cube1 + number = cube2 (cube2[k,p,q]=cube1[k,p,q]+number)
 
@@ -945,7 +944,7 @@ class Cube(object):
         return self.__add__(other)
 
     def __sub__(self, other):
-        """Subtracts other
+        """Subtracts other.
 
         cube1 - number = cube2 (cube2[k,p,q]=cube1[k,p,q]-number)
 
@@ -1151,7 +1150,7 @@ class Cube(object):
                     raise IOError('Operation forbidden')
 
     def __mul__(self, other):
-        """Multiplies by other
+        """Multiplies by other.
 
         cube1 * number = cube2 (cube2[k,p,q]=cube1[k,p,q]*number)
 
@@ -1334,7 +1333,7 @@ class Cube(object):
         return self.__mul__(other)
 
     def __div__(self, other):
-        """Divides by other
+        """Divides by other.
 
         cube1 / number = cube2 (cube2[k,p,q]=cube1[k,p,q]/number)
 
@@ -1562,8 +1561,7 @@ class Cube(object):
                     raise IOError('Operation forbidden')
 
     def __pow__(self, other):
-        """Computes the power exponent.
-        """
+        """Computes the power exponent."""
         if self.data is None:
             raise ValueError('empty data array')
         res = self.copy()
@@ -1592,16 +1590,14 @@ class Cube(object):
         return res
 
     def _abs(self):
-        """Computes the absolute value of data extension.
-        """
+        """Computes the absolute value of data extension."""
         if self.data is None:
             raise ValueError('empty data array')
         self.data = np.ma.abs(self.data)
         self.var = None
 
     def abs(self):
-        """Returns a cube containing the absolute value of data extension.
-        """
+        """Returns a cube containing the absolute value of data extension."""
         res = self.copy()
         res._abs()
         return res
@@ -1707,24 +1703,21 @@ class Cube(object):
                 return self[pix_min:pix_max, :,:]
 
     def get_step(self):
-        """Returns the cube steps [dlbda,dy,dx].
-        """
+        """Returns the cube steps [dlbda,dy,dx]."""
         step = np.empty(3)
         step[0] = self.wave.cdelt
         step[1:] = self.wcs.get_step()
         return step
 
     def get_range(self):
-        """Returns [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ].
-        """
+        """Returns [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ]."""
         r = np.empty((2, 3))
         r[:, 0] = self.wave.get_range()
         r[:, 1:] = self.wcs.get_range()
         return r
 
     def get_start(self):
-        """Returns [lbda,y,x] corresponding to pixel (0,0,0).
-        """
+        """Returns [lbda,y,x] corresponding to pixel (0,0,0)."""
         start = np.empty(3)
         start[0] = self.wave.get_start()
         start[1:] = self.wcs.get_start()
@@ -1739,19 +1732,16 @@ class Cube(object):
         return end
 
     def get_rot(self):
-        """Returns the rotation angle.
-        """
+        """Returns the rotation angle."""
         return self.wcs.get_rot()
 
     def get_np_data(self):
-        """ Returns numpy masked array containing the flux
-            multiplied by scaling factor
-        """
+        """Returns numpy masked array containing the flux multiplied by scaling
+        factor."""
         return self.data * self.fscale
 
     def __setitem__(self, key, other):
-        """Sets the corresponding part of data.
-        """
+        """Sets the corresponding part of data."""
         #self.data[key] = value
         if self.data is None:
             raise ValueError('empty data array')
@@ -1905,7 +1895,7 @@ class Cube(object):
             return None
 
     def mean(self, axis=None):
-        """ Returns the mean over the given axis.
+        """Returns the mean over the given axis.
 
         Parameters
         ----------
@@ -1956,7 +1946,7 @@ class Cube(object):
             return None
 
     def median(self, axis=None):
-        """ Returns the median over the given axis.
+        """Returns the median over the given axis.
 
         Parameters
         ----------
@@ -2095,15 +2085,15 @@ class Cube(object):
         return res
 
     def _rebin_factor_(self, factor):
-        '''Shrinks the size of the cube by factor.
-        New size is an integer multiple of the original size.
+        """Shrinks the size of the cube by factor. New size is an integer
+        multiple of the original size.
 
         Parameters
         ----------
         factor : (integer,integer,integer)
                  Factor in z, y and x.
                  Python notation: (nz,ny,nx)
-        '''
+        """
         # new size is an integer multiple of the original size
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
         assert not np.sometrue(np.mod(self.shape[1], factor[1]))
@@ -2134,31 +2124,31 @@ class Cube(object):
                               self.wave.cunit, self.shape[0])
 
     def _rebin_factor(self, factor, margin='center', flux=False):
-        '''Shrinks the size of the cube by factor.
+        """Shrinks the size of the cube by factor.
 
-          Parameters
-          ----------
-          factor : integer or (integer,integer,integer)
-                   Factor in z, y and x. Python notation: (nz,ny,nx).
-          flux   : boolean
-                   This parameters is used if new size is not an integer
-                   multiple of the original size.
+        Parameters
+        ----------
+        factor : integer or (integer,integer,integer)
+                 Factor in z, y and x. Python notation: (nz,ny,nx).
+        flux   : boolean
+                 This parameters is used if new size is not an integer
+                 multiple of the original size.
 
-                   If Flux is False, the cube is truncated and the flux
-                   is not conserved.
+                 If Flux is False, the cube is truncated and the flux
+                 is not conserved.
 
-                   If Flux is True, margins are added to the cube to
-                   conserve the flux.
-          margin : 'center' or 'origin'
-                   This parameters is used if new size is not an
-                   integer multiple of the original size.
+                 If Flux is True, margins are added to the cube to
+                 conserve the flux.
+        margin : 'center' or 'origin'
+                 This parameters is used if new size is not an
+                 integer multiple of the original size.
 
-                   In 'center' case, cube is truncated/pixels are added on the left
-                   and on the right, on the bottom and of the top of the cube.
+                 In 'center' case, cube is truncated/pixels are added on the left
+                 and on the right, on the bottom and of the top of the cube.
 
-                   In 'origin'case, cube is truncated/pixels are added at the end
-                   along each direction
-        '''
+                 In 'origin'case, cube is truncated/pixels are added at the end
+                 along each direction
+        """
         if is_int(factor):
             factor = (factor, factor, factor)
         if not np.sometrue(np.mod(self.shape[0], factor[0])) \
@@ -2580,31 +2570,31 @@ class Cube(object):
                 return None
 
     def rebin_factor(self, factor, margin='center', flux=False):
-        '''Shrinks the size of the cube by factor.
+        """Shrinks the size of the cube by factor.
 
-          Parameters
-          ----------
-          factor : integer or (integer,integer,integer)
-                   Factor in z, y and x. Python notation: (nz,ny,nx).
-          flux   : boolean
-                   This parameters is used if new size is
-                   not an integer multiple of the original size.
+        Parameters
+        ----------
+        factor : integer or (integer,integer,integer)
+                 Factor in z, y and x. Python notation: (nz,ny,nx).
+        flux   : boolean
+                 This parameters is used if new size is
+                 not an integer multiple of the original size.
 
-                   If Flux is False, the cube is truncated and the flux
-                   is not conserved.
+                 If Flux is False, the cube is truncated and the flux
+                 is not conserved.
 
-                   If Flux is True, margins are added to the cube
-                   to conserve the flux.
-          margin : 'center' or 'origin'
-                    This parameters is used if new size is not
-                    an integer multiple of the original size.
+                 If Flux is True, margins are added to the cube
+                 to conserve the flux.
+        margin : 'center' or 'origin'
+                  This parameters is used if new size is not
+                  an integer multiple of the original size.
 
-                    In 'center' case, cube is truncated/pixels are added on the left
-                    and on the right, on the bottom and of the top of the cube.
+                  In 'center' case, cube is truncated/pixels are added on the left
+                  and on the right, on the bottom and of the top of the cube.
 
-                    In 'origin'case, cube is truncated/pixels are added
-                    at the end along each direction
-        '''
+                  In 'origin'case, cube is truncated/pixels are added
+                  at the end along each direction
+        """
         if is_int(factor):
             factor = (factor, factor, factor)
         factor = np.array(factor)
@@ -2631,15 +2621,15 @@ class Cube(object):
                                       q * qfactor:(q + 1) * qfactor])
 
     def _rebin_median_(self, factor):
-        '''Shrinks the size of the cube by factor.
-        New size is an integer multiple of the original size.
+        """Shrinks the size of the cube by factor. New size is an integer
+        multiple of the original size.
 
         Parameter
         ---------
         factor : (integer,integer,integer)
                  Factor in z, y and x.
                 Python notation: (nz,ny,nx)
-        '''
+        """
         # new size is an integer multiple of the original size
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
         assert not np.sometrue(np.mod(self.shape[1], factor[1]))
@@ -2668,7 +2658,7 @@ class Cube(object):
                               crval, self.wave.cunit, self.shape[0])
 
     def rebin_median(self, factor, margin='center'):
-        '''Shrinks the size of the cube by factor.
+        """Shrinks the size of the cube by factor.
 
         Parameters
         ----------
@@ -2686,7 +2676,7 @@ class Cube(object):
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`
-        '''
+        """
         if is_int(factor):
             factor = (factor, factor, factor)
         factor = np.array(factor)
@@ -2748,9 +2738,8 @@ class Cube(object):
         return res
 
     def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
-        """loops over all spectra to apply a function/method.
-        Returns the resulting cube.
-        Multiprocessing is used.
+        """loops over all spectra to apply a function/method. Returns the
+        resulting cube. Multiprocessing is used.
 
         Parameters
         ----------
@@ -2862,9 +2851,8 @@ class Cube(object):
         return result
 
     def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
-        """loops over all images to apply a function/method.
-        Returns the resulting cube.
-        Multiprocessing is used.
+        """loops over all images to apply a function/method. Returns the
+        resulting cube. Multiprocessing is used.
 
         Parameters
         ----------
@@ -2965,7 +2953,7 @@ class Cube(object):
         return result
 
     def get_image(self, wave, is_sum=False, verbose=True):
-        """ Extracts an image from the datacube.
+        """Extracts an image from the datacube.
 
         Parameters
         ----------
@@ -2985,7 +2973,7 @@ class Cube(object):
         return ima
 
     def aperture(self, center, radius, verbose=True):
-        """ Extracts a spectra from an aperture of fixed radius.
+        """Extracts a spectra from an aperture of fixed radius.
 
         Parameters
         ----------
@@ -3070,12 +3058,11 @@ def _process_ima(arglist):
 
 class CubeDisk(object):
 
-    """Sometimes, MPDAF users may want to open fairly large datacubes
-    (> 4 Gb or so).
-    This can be difficult to handle with limited RAM.
-    This class provides a way to open datacube fits files with memory mapping.
-    The methods of the class can extract a spectrum, an image or a smaller
-    datacube from the larger one.
+    """Sometimes, MPDAF users may want to open fairly large datacubes (> 4 Gb
+    or so). This can be difficult to handle with limited RAM. This class
+    provides a way to open datacube fits files with memory mapping. The methods
+    of the class can extract a spectrum, an image or a smaller datacube from
+    the larger one.
 
     Parameters
     ----------
@@ -3118,16 +3105,16 @@ class CubeDisk(object):
     def __init__(self, filename=None, ext=None, notnoise=False, ima=True):
         """Creates a CubeDisk object.
 
-    Parameters
-    ----------
-    filename : string
-               Possible FITS filename.
-    ext      : integer or (integer,integer) or string or (string,string)
-               Number/name of the data extension or numbers/names
-               of the data and variance extensions.
-    notnoise : bool
-               True if the noise Variance cube is not read (if it exists).
-               Use notnoise=True to create cube without variance extension.
+        Parameters
+        ----------
+        filename : string
+                   Possible FITS filename.
+        ext      : integer or (integer,integer) or string or (string,string)
+                   Number/name of the data extension or numbers/names
+                   of the data and variance extensions.
+        notnoise : bool
+                   True if the noise Variance cube is not read (if it exists).
+                   Use notnoise=True to create cube without variance extension.
         """
         self.filename = filename
         self.ima = {}
@@ -3244,8 +3231,7 @@ class CubeDisk(object):
             f.close()
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         if self.filename is None:
             print '%i X %i X %i cube (no name)' % (self.shape[0],
                                                    self.shape[1],
@@ -3441,8 +3427,8 @@ class CubeDisk(object):
         return res
 
     def get_white_image(self):
-        """Performs a sum over the wavelength dimension and returns an image.
-        """
+        """Performs a sum over the wavelength dimension and returns an
+        image."""
         f = pyfits.open(self.filename, memmap=True)
         from image import Image
         loop = True

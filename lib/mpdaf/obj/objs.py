@@ -1,4 +1,4 @@
-""" obj.py contains generic methods used in obj package"""
+"""obj.py contains generic methods used in obj package."""
 import numpy as np
 
 

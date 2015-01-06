@@ -1,4 +1,4 @@
-""" image.py manages image objects"""
+"""image.py manages image objects."""
 
 import datetime
 import logging
@@ -82,7 +82,7 @@ class ImageClicks(object):  # Object used to save click on image plot.
             c3 = pyfits.Column(name='x', format='E', array=self.x)
             c4 = pyfits.Column(name='y', format='E', array=self.y)
             c5 = pyfits.Column(name='data', format='E', array=self.data)
-            #tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            # tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
             coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
             tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
             tbhdu.writeto(self.filename, clobber=True, output_verify='fix')
@@ -101,7 +101,7 @@ class ImageClicks(object):  # Object used to save click on image plot.
 
 class Gauss2D(object):
 
-    """ This class stores 2D gaussian parameters.
+    """This class stores 2D gaussian parameters.
 
     Attributes
     ----------
@@ -157,8 +157,7 @@ class Gauss2D(object):
                        self.err_peak)
 
     def print_param(self):
-        """Prints Gaussian parameters.
-        """
+        """Prints Gaussian parameters."""
         print 'Gaussian center = (%g,%g) (error:(%g,%g))' \
             % (self.center[0], self.center[1],
                self.err_center[0], self.err_center[1])
@@ -176,7 +175,7 @@ class Gauss2D(object):
 
 class Moffat2D(object):
 
-    """ This class stores 2D moffat parameters.
+    """This class stores 2D moffat parameters.
 
     Attributes
     ----------
@@ -239,8 +238,7 @@ class Moffat2D(object):
                         self.err_n, self.err_rot, self.err_peak)
 
     def print_param(self):
-        """Prints Moffat parameters.
-        """
+        """Prints Moffat parameters."""
         print 'center = (%g,%g) (error:(%g,%g))' \
             % (self.center[0], self.center[1],
                self.err_center[0], self.err_center[1])
@@ -256,7 +254,8 @@ class Moffat2D(object):
 
 class Image(object):
 
-    """Image class manages image, optionally including a variance and a bad pixel mask.
+    """Image class manages image, optionally including a variance and a bad
+    pixel mask.
 
     Parameters
     ----------
@@ -309,7 +308,7 @@ class Image(object):
     def __init__(self, filename=None, ext=None, notnoise=False,
                  shape=(101, 101), wcs=None, unit=None, data=None,
                  var=None, fscale=1.0):
-        """Creates a Image object
+        """Creates a Image object.
 
         Parameters
         ----------
@@ -362,7 +361,13 @@ class Image(object):
                     self.var = None
                     self.fscale = hdr.get('FSCALE', 1.0)
                     if wcs is None:
-                        self.wcs = WCS(hdr)  # WCS object from data header
+                        try:
+                            self.wcs = WCS(hdr)  # WCS object from data header
+                        except pyfits.VerifyError as e:
+                            # Workaround for
+                            # https://github.com/astropy/astropy/issues/887
+                            print e
+                            self.wcs = WCS(hdr)
                     else:
                         self.wcs = wcs
                         self.wcs.set_naxis1(self.shape[1])
@@ -524,8 +529,7 @@ class Image(object):
             self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
-        """Returns a new copy of an Image object.
-        """
+        """Returns a new copy of an Image object."""
         ima = Image()
         ima.filename = self.filename
         ima.unit = self.unit
@@ -548,8 +552,8 @@ class Image(object):
         return ima
 
     def clone(self, var=False):
-        """Returns a new image of the same shape and coordinates,
-        filled with zeros.
+        """Returns a new image of the same shape and coordinates, filled with
+        zeros.
 
         Parameters
         ----------
@@ -676,9 +680,9 @@ class Image(object):
 
         # create image STAT extension
         if self.var is not None:
-            nbhdu = pyfits.ImageHDU(name='STAT', data=(self.var
-                                                       * np.double(self.fscale * self.fscale
-                                                                   / fscale / fscale)).astype(np.float32))
+            nbhdu = pyfits.ImageHDU(name='STAT', data=(
+                self.var * np.double(self.fscale * self.fscale
+                                     / fscale / fscale)).astype(np.float32))
             for card in wcs_cards:
                 nbhdu.header[card.keyword] = (card.value, card.comment)
             hdulist.append(nbhdu)
@@ -699,8 +703,7 @@ class Image(object):
         self.filename = filename
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         if self.filename is None:
             print '%i X %i image (no name)' % (self.shape[0], self.shape[1])
         else:
@@ -741,7 +744,9 @@ class Image(object):
 
     def __lt__(self, item):
         """Masks data array where greater or equal than a given value
-        (operator <).
+        (operator.
+
+        <).
 
         Parameters
         ----------
@@ -776,8 +781,9 @@ class Image(object):
         return result
 
     def __gt__(self, item):
-        """Masks data array where less or equal than a given value
-        (operator >).
+        """Masks data array where less or equal than a given value (operator.
+
+        >).
 
         Parameters
         ----------
@@ -795,8 +801,7 @@ class Image(object):
         return result
 
     def resize(self):
-        """Resizes the image to have a minimum number of masked values.
-        """
+        """Resizes the image to have a minimum number of masked values."""
         if self.data is not None:
             ksel = np.where(self.data.mask == False)
             try:
@@ -1013,7 +1018,7 @@ class Image(object):
                                             / self.fscale / self.fscale)
                         elif other.var is None:
                             res.var = np.ones(res.shape) \
-                            * self.var[np.newaxis, :,:]
+                                * self.var[np.newaxis, :,:]
                         else:
                             res.var = self.var[np.newaxis, :,:] + other.var \
                                 * np.double(other.fscale * other.fscale
@@ -1055,26 +1060,26 @@ class Image(object):
     def __mul__(self, other):
         """Operator \*.
 
-image1 \* number = image2 (image2[p,q] = image1[p,q] \* number)
+        image1 \* number = image2 (image2[p,q] = image1[p,q] \* number)
 
-image1 \* image2 = image3 (image3[p,q] = image1[p,q] \* image2[p,q])
+        image1 \* image2 = image3 (image3[p,q] = image1[p,q] \* image2[p,q])
 
-image \* cube1 = cube2 (cube2[k,p,q] = image[p,q] \* cube1[k,p,q])
+        image \* cube1 = cube2 (cube2[k,p,q] = image[p,q] \* cube1[k,p,q])
 
-image \* spectrum = cube (cube[k,p,q] = image[p,q] \* spectrum[k]
+        image \* spectrum = cube (cube[k,p,q] = image[p,q] \* spectrum[k]
 
-Parameters
-----------
-other : number or Spectrum or Image or Cube object.
-        x is Image: Dimensions and world coordinates must be the same.
+        Parameters
+        ----------
+        other : number or Spectrum or Image or Cube object.
+                x is Image: Dimensions and world coordinates must be the same.
 
-        x is Cube: The last two dimensions of the cube must be equal
-        to the image dimensions.
-        World coordinates in spatial directions must be the same.
+                x is Cube: The last two dimensions of the cube must be equal
+                to the image dimensions.
+                World coordinates in spatial directions must be the same.
 
-Returns
--------
-out : Spectrum or Image or Cube object.
+        Returns
+        -------
+        out : Spectrum or Image or Cube object.
         """
         if self.data is None:
             raise ValueError('empty data array')
@@ -1165,7 +1170,7 @@ out : Spectrum or Image or Cube object.
                                     * other.fscale * other.fscale
                             elif other.var is None:
                                 res.var = np.ones(res.shape) \
-                                * self.var[np.newaxis, :,:] \
+                                    * self.var[np.newaxis, :,:] \
                                     * other.data * other.data \
                                     * other.fscale * other.fscale
                             else:
@@ -1173,7 +1178,7 @@ out : Spectrum or Image or Cube object.
                                            * other.var[:, np.newaxis, np.newaxis]
                                            * self.data * self.data
                                            + np.ones(res.shape)
-                                * self.var[np.newaxis, :,:]
+                                           * self.var[np.newaxis, :,:]
                                            * other.data * other.data) \
                                     * other.fscale * other.fscale
                             # unit
@@ -1191,24 +1196,24 @@ out : Spectrum or Image or Cube object.
     def __div__(self, other):
         """Operator /.
 
-image1 / number = image2 (image2[p,q] = image1[p,q] / number)
+        image1 / number = image2 (image2[p,q] = image1[p,q] / number)
 
-image1 / image2 = image3 (image3[p,q] = image1[p,q] / image2[p,q])
+        image1 / image2 = image3 (image3[p,q] = image1[p,q] / image2[p,q])
 
-image / cube1 = cube2 (cube2[k,p,q] = image[p,q] / cube1[k,p,q])
+        image / cube1 = cube2 (cube2[k,p,q] = image[p,q] / cube1[k,p,q])
 
-Parameters
-----------
-other : number or Image or Cube object.
-        x is Image: Dimensions and world coordinates must be the same.
+        Parameters
+        ----------
+        other : number or Image or Cube object.
+                x is Image: Dimensions and world coordinates must be the same.
 
-        x is Cube: The last two dimensions of the cube must
-        be equal to the image dimensions.
-        World coordinates in spatial directions must be the same.
+                x is Cube: The last two dimensions of the cube must
+                be equal to the image dimensions.
+                World coordinates in spatial directions must be the same.
 
-Returns
--------
-out : Image or Cube object.
+        Returns
+        -------
+        out : Image or Cube object.
         """
         if self.data is None:
             raise ValueError('empty data array')
@@ -1289,20 +1294,20 @@ out : Image or Cube object.
                             res.var = None
                         elif self.var is None:
                             res.var = other.var * self.data[np.newaxis, :,:]\
-                             * self.data[np.newaxis, :,:] \
-                             / (other.data ** 4) / (other.fscale ** 2)
+                                * self.data[np.newaxis, :,:] \
+                                / (other.data ** 4) / (other.fscale ** 2)
                         elif other.var is None:
                             res.var = self.var[np.newaxis, :,:] \
                                 * other.data * other.data \
                                 / (other.data ** 4) / (other.fscale ** 2)
                         else:
                             res.var = \
-                            (other.var * self.data[np.newaxis, :,:]
-                             * self.data[np.newaxis, :,:]
-                             + self.var[np.newaxis, :,:]
-                             * other.data * other.data) \
+                                (other.var * self.data[np.newaxis, :,:]
+                                 * self.data[np.newaxis, :,:]
+                                 + self.var[np.newaxis, :,:]
+                                 * other.data * other.data) \
                                 / (other.data ** 4) / (other.fscale ** 2)
-                        # data
+                            # data
                         res.data = self.data[np.newaxis, :,:] / other.data \
                             / other.fscale
                         # unit
@@ -1374,9 +1379,7 @@ out : Image or Cube object.
         self.var = None
 
     def abs(self):
-        """Returns an image containing the absolute value of data extension.
-
-        """
+        """Returns an image containing the absolute value of data extension."""
         res = self.copy()
         res._abs()
         return res
@@ -1466,57 +1469,55 @@ out : Image or Cube object.
     def get_step(self):
         """Returns the image steps [dy, dx].
 
-Returns
--------
-out : float array
+        Returns
+        -------
+        out : float array
         """
         return self.wcs.get_step()
 
     def get_range(self):
         """Returns [ [y_min,x_min], [y_max,x_max] ]
 
-Returns
--------
-out : float array
+        Returns
+        -------
+        out : float array
         """
         return self.wcs.get_range()
 
     def get_start(self):
         """Returns [y,x] corresponding to pixel (0,0).
 
-Returns
--------
-out : float array
+        Returns
+        -------
+        out : float array
         """
         return self.wcs.get_start()
 
     def get_end(self):
         """Returns [y,x] corresponding to pixel (-1,-1).
 
-Returns
--------
-out : float array
+        Returns
+        -------
+        out : float array
         """
         return self.wcs.get_end()
 
     def get_rot(self):
         """Returns the angle of rotation.
 
-Returns
--------
-out : float
+        Returns
+        -------
+        out : float
         """
         return self.wcs.get_rot()
 
     def get_np_data(self):
-        """ Returns numpy masked array containing the flux
-            multiplied by scaling factor
-        """
+        """Returns numpy masked array containing the flux multiplied by scaling
+        factor."""
         return self.data * self.fscale
 
     def __setitem__(self, key, other):
-        """ Sets the corresponding part of data.
-        """
+        """Sets the corresponding part of data."""
         # self.data[key] = other
         if self.data is None:
             raise ValueError('empty data array')
@@ -1538,10 +1539,10 @@ out : float
     def set_wcs(self, wcs):
         """Sets the world coordinates.
 
-Parameters
-----------
-wcs : :class:`mpdaf.obj.WCS`
-      World coordinates.
+        Parameters
+        ----------
+        wcs : :class:`mpdaf.obj.WCS`
+              World coordinates.
         """
         self.wcs = wcs
         self.wcs.set_naxis1(self.shape[1])
@@ -1556,11 +1557,11 @@ wcs : :class:`mpdaf.obj.WCS`
     def set_var(self, var):
         """Sets the variance array.
 
-Parameters
-----------
-var : float array
-      Input variance array.
-      If None, variance is set with zeros.
+        Parameters
+        ----------
+        var : float array
+              Input variance array.
+              If None, variance is set with zeros.
         """
         if var is None:
             self.var = np.zeros((self.shape[0], self.shape[1]))
@@ -1574,24 +1575,24 @@ var : float array
     def mask(self, center, radius, pix=False, inside=True):
         """Masks values inside/outside the described region.
 
-Parameters
-----------
-center : (float,float)
-         Center of the explored region.
-         If pix is False, center = (y,x) is in degrees.
-         If pix is True, center = (p,q) is in pixels.
-radius : float or (float,float)
-         Radius defined the explored region.
-         If radius is float, it defined a circular region.
-         If radius is (float,float), it defined a rectangular region.
-         If pix is False, radius = (dy/2, dx/2) is in arcsecs.
-         If pix is True, radius = (dp,dq) is in pixels.
-pix    : boolean
-         If pix is False, center and radius are in degrees and arcsecs.
-         If pix is True, center and radius are in pixels.
-inside : boolean
-         If inside is True, pixels inside the described region are masked.
-         If inside is False, pixels outside the described region are masked.
+        Parameters
+        ----------
+        center : (float,float)
+                 Center of the explored region.
+                 If pix is False, center = (y,x) is in degrees.
+                 If pix is True, center = (p,q) is in pixels.
+        radius : float or (float,float)
+                 Radius defined the explored region.
+                 If radius is float, it defined a circular region.
+                 If radius is (float,float), it defined a rectangular region.
+                 If pix is False, radius = (dy/2, dx/2) is in arcsecs.
+                 If pix is True, radius = (dp,dq) is in pixels.
+        pix    : boolean
+                 If pix is False, center and radius are in degrees and arcsecs.
+                 If pix is True, center and radius are in pixels.
+        inside : boolean
+                 If inside is True, pixels inside the described region are masked.
+                 If inside is False, pixels outside the described region are masked.
         """
         if is_int(radius) or is_float(radius):
             circular = True
@@ -1658,26 +1659,27 @@ inside : boolean
             self.data.mask[imin:imax:, jmax:] = 1
 
     def mask_ellipse(self, center, radius, posangle, pix=False, inside=True):
-        """Masks values inside/outside the described region. Uses an elliptical shape.
+        """Masks values inside/outside the described region. Uses an elliptical
+        shape.
 
-Parameters
-----------
-center : (float,float)
-         Center of the explored region.
-         If pix is False, center = (y,x) is in degrees.
-         If pix is True, center = (p,q) is in pixels.
-radius : (float,float)
-         Radius defined the explored region.
-         radius is (float,float), it defines an elliptical region with semi-major and semi-minor axes.
-         If pix is False, radius = (da, db) is in arcsecs.
-         If pix is True, radius = (dp,dq) is in pixels.
-posangle : float
-         Position angle of the first axis. It is defined in degrees against the horizontal (q) axis of the image, counted counterclockwise.
-pix    : boolean
-         If pix is False, center and radius are in degrees and arcsecs.
-         If pix is True, center and radius are in pixels.
-inside : boolean
-         If inside is True, pixels inside the described region are masked.
+        Parameters
+        ----------
+        center : (float,float)
+                 Center of the explored region.
+                 If pix is False, center = (y,x) is in degrees.
+                 If pix is True, center = (p,q) is in pixels.
+        radius : (float,float)
+                 Radius defined the explored region.
+                 radius is (float,float), it defines an elliptical region with semi-major and semi-minor axes.
+                 If pix is False, radius = (da, db) is in arcsecs.
+                 If pix is True, radius = (dp,dq) is in pixels.
+        posangle : float
+                 Position angle of the first axis. It is defined in degrees against the horizontal (q) axis of the image, counted counterclockwise.
+        pix    : boolean
+                 If pix is False, center and radius are in degrees and arcsecs.
+                 If pix is True, center and radius are in pixels.
+        inside : boolean
+                 If inside is True, pixels inside the described region are masked.
         """
         if not pix:
             center = self.wcs.sky2pix(center)[0]
@@ -1740,18 +1742,17 @@ inside : boolean
             self.data.mask[imin:imax, jmin:jmax] = m
 
     def unmask(self):
-        """Unmasks the image (just invalid data (nan,inf) are masked).
-        """
+        """Unmasks the image (just invalid data (nan,inf) are masked)."""
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
 
     def mask_variance(self, threshold):
         """Masks pixels with a variance upper than threshold value.
 
-Parameters
-----------
-threshold : float
-            Threshold value.
+        Parameters
+        ----------
+        threshold : float
+                    Threshold value.
         """
         if self.var is None:
             raise ValueError('Operation forbidden without '
@@ -1763,29 +1764,29 @@ threshold : float
     def mask_selection(self, ksel):
         """Masks pixels corresponding to a selection.
 
-Parameters
-----------
-ksel : output of np.where
-       elements depending on a condition.
+        Parameters
+        ----------
+        ksel : output of np.where
+               elements depending on a condition.
         """
         self.data[ksel] = np.ma.masked
 
     def _truncate(self, y_min, y_max, x_min, x_max, mask=True):
-        """ Truncates the image.
+        """Truncates the image.
 
-Parameters
-----------
-y_min : float
-        Minimum value of y in degrees.
-y_max : float
-        Maximum value of y in degrees.
-x_min : float
-        Minimum value of x in degrees.
-x_max : float
-        Maximum value of x in degrees.
-mask  : boolean
-        if True, pixels outside [dec_min,dec_max]
-        and [ra_min,ra_max] are masked.
+        Parameters
+        ----------
+        y_min : float
+                Minimum value of y in degrees.
+        y_max : float
+                Maximum value of y in degrees.
+        x_min : float
+                Minimum value of x in degrees.
+        x_max : float
+                Maximum value of x in degrees.
+        mask  : boolean
+                if True, pixels outside [dec_min,dec_max]
+                and [ra_min,ra_max] are masked.
         """
         skycrd = [[y_min, x_min], [y_min, x_max],
                   [y_max, x_min], [y_max, x_max]]
@@ -1833,36 +1834,36 @@ mask  : boolean
                 pass
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True):
-        """ Returns truncated image.
+        """Returns truncated image.
 
-Parameters
-----------
-y_min : float
-        Minimum value of y in degrees.
-y_max : float
-        Maximum value of y in degrees.
-x_min : float
-        Minimum value of x in degrees.
-x_max : float
-        Maximum value of x in degrees.
-mask  : boolean
+        Parameters
+        ----------
+        y_min : float
+                Minimum value of y in degrees.
+        y_max : float
+                Maximum value of y in degrees.
+        x_min : float
+                Minimum value of x in degrees.
+        x_max : float
+                Maximum value of x in degrees.
+        mask  : boolean
 
-Returns
--------
-out : Image
+        Returns
+        -------
+        out : Image
         """
         res = self.copy()
         res._truncate(y_min, y_max, x_min, x_max, mask)
         return res
 
     def rotate_wcs(self, theta):
-        """Rotates WCS coordinates to new orientation given
-by theta (in place).
+        """Rotates WCS coordinates to new orientation given by theta (in
+        place).
 
-Parameters
-----------
-theta : float
-        Rotation in degree.
+        Parameters
+        ----------
+        theta : float
+                Rotation in degree.
         """
         self.wcs.rotate(theta)
 
@@ -1870,18 +1871,18 @@ theta : float
         """ Rotates the image using spline interpolation
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
-Parameters
-----------
-theta   : float
-          Rotation in degrees.
-interp  : 'no' | 'linear' | 'spline'
-          if 'no', data median value replaced masked values.
-          if 'linear', linear interpolation of the masked values.
-          if 'spline', spline interpolation of the masked values.
-reshape : boolean
-          if reshape is true, the output image is adapted
-          so that the input image is contained completely in the output.
-          Default is False.
+        Parameters
+        ----------
+        theta   : float
+                Rotation in degrees.
+        interp  : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
+        reshape : boolean
+                if reshape is true, the output image is adapted
+                so that the input image is contained completely in the output.
+                Default is False.
         """
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -1926,22 +1927,22 @@ reshape : boolean
         """ Returns rotated image
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
-Parameters
-----------
-theta   : float
-          Rotation in degrees.
-interp  : 'no' | 'linear' | 'spline'
-          if 'no', data median value replaced masked values.
-          if 'linear', linear interpolation of the masked values.
-          if 'spline', spline interpolation of the masked values.
-reshape : boolean
-          if reshape is true, the output image is adapted
-          so that the input image is contained completely in the output.
-          Default is False.
+        Parameters
+        ----------
+        theta   : float
+                Rotation in degrees.
+        interp  : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
+        reshape : boolean
+                if reshape is true, the output image is adapted
+                so that the input image is contained completely in the output.
+                Default is False.
 
-Returns
--------
-out : Image
+        Returns
+        -------
+        out : Image
         """
         res = self.copy()
         res._rotate(theta, interp, reshape)
@@ -1950,16 +1951,16 @@ out : Image
     def sum(self, axis=None):
         """Returns the sum over the given axis.
 
-Parameters
-----------
-axis : None, 0 or 1
-       axis = None returns a float
-       axis=0 or 1 returns a Spectrum object corresponding to a line or a column,
-       other cases return None.
+        Parameters
+        ----------
+        axis : None, 0 or 1
+               axis = None returns a float
+               axis=0 or 1 returns a Spectrum object corresponding to a line or a column,
+               other cases return None.
 
-Returns
--------
-out : float or Image
+        Returns
+        -------
+        out : float or Image
         """
         if axis is None:
             return self.data.sum() * self.fscale
@@ -1999,19 +2000,19 @@ out : float or Image
     def norm(self, type='flux', value=1.0):
         """Normalizes in place total flux to value (default 1).
 
-Parameters
-----------
-type  : 'flux' | 'sum' | 'max'
-        If 'flux',the flux is normalized and
-        the pixel area is taken into account.
+        Parameters
+        ----------
+        type  : 'flux' | 'sum' | 'max'
+                If 'flux',the flux is normalized and
+                the pixel area is taken into account.
 
-        If 'sum', the flux is normalized to the sum
-        of flux independantly of pixel size.
+                If 'sum', the flux is normalized to the sum
+                of flux independantly of pixel size.
 
-        If 'max', the flux is normalized so that
-        the maximum of intensity will be 'value'.
-value : float
-        Normalized value (default 1).
+                If 'max', the flux is normalized so that
+                the maximum of intensity will be 'value'.
+        value : float
+                Normalized value (default 1).
         """
         if type == 'flux':
             norm = value / (self.get_step().prod()
@@ -2027,17 +2028,17 @@ value : float
             self.var *= (norm * norm)
 
     def background(self, niter=3):
-        """Computes the image background. Returns the background value
-        and its standard deviation.
+        """Computes the image background. Returns the background value and its
+        standard deviation.
 
-Parameters
-----------
-niter: integer
-       Number of iterations.
+        Parameters
+        ----------
+        niter: integer
+               Number of iterations.
 
-Returns
--------
-out : 2-dim float array
+        Returns
+        -------
+        out : 2-dim float array
         """
         tab = self.data
         for n in range(niter + 1):
@@ -2056,19 +2057,19 @@ out : 2-dim float array
     def peak_detection(self, nstruct, niter, threshold=None):
         """Returns a list of peak locations.
 
-Parameters
-----------
-nstruct   : integer
-            Size of the structuring element used for the erosion.
-niter     : integer
-            number of iterations used for the erosion and the dilatation.
-threshold : float
-            threshold value.
-            If None, it is initialized with background value
+        Parameters
+        ----------
+        nstruct   : integer
+                    Size of the structuring element used for the erosion.
+        niter     : integer
+                    number of iterations used for the erosion and the dilatation.
+        threshold : float
+                    threshold value.
+                    If None, it is initialized with background value
 
-Returns
--------
-out : np.array
+        Returns
+        -------
+        out : np.array
         """
         # threshold value
         (background, std) = self.background()
@@ -2099,31 +2100,31 @@ out : np.array
         """Finds image peak location.
         Used `scipy.ndimage.measurements.maximum_position <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.maximum_position.html>`_ and `scipy.ndimage.measurements.center_of_mass <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.center_of_mass.html>`_.
 
-Parameters
-----------
-center     : (float,float)
-             Center of the explored region.
-             If pix is False, center = (y, x) is in degrees.
-             If pix is True, center = (p,q) is in pixels.
-             If center is None, the full image is explored.
-radius     : float or (float,float)
-             Radius defined the explored region.
-             If pix is False, radius = (dy/2, dx/2) is in arcsecs.
-             If pix is True, radius = (dp,dq) is in pixels.
-pix        : boolean
-             If pix is False, center and radius are in degrees and arcsecs.
-             If pix is True, center and radius are in pixels.
-dpix       : integer
-             Half size of the window to compute the center of gravity.
-background : float
-             background value. If None, it is computed.
-plot       : boolean
-             If True, the peak center is overplotted on the image.
+        Parameters
+        ----------
+        center     : (float,float)
+                    Center of the explored region.
+                    If pix is False, center = (y, x) is in degrees.
+                    If pix is True, center = (p,q) is in pixels.
+                    If center is None, the full image is explored.
+        radius     : float or (float,float)
+                    Radius defined the explored region.
+                    If pix is False, radius = (dy/2, dx/2) is in arcsecs.
+                    If pix is True, radius = (dp,dq) is in pixels.
+        pix        : boolean
+                    If pix is False, center and radius are in degrees and arcsecs.
+                    If pix is True, center and radius are in pixels.
+        dpix       : integer
+                    Half size of the window to compute the center of gravity.
+        background : float
+                    background value. If None, it is computed.
+        plot       : boolean
+                    If True, the peak center is overplotted on the image.
 
-Returns
--------
-out : dictionary {'y', 'x', 'p', 'q', 'data'}
-      containing the peak position and the peak intensity.
+        Returns
+        -------
+        out : dictionary {'y', 'x', 'p', 'q', 'data'}
+            containing the peak position and the peak intensity.
         """
         if center is None or radius == 0:
             d = self.data
@@ -2180,27 +2181,27 @@ out : dictionary {'y', 'x', 'p', 'q', 'data'}
     def fwhm(self, center=None, radius=0, pix=False):
         """Computes the fwhm center.
 
-Parameters
-----------
-center : (float,float)
-         Center of the explored region.
-         If pix is False, center = (y,x) is in degrees.
-         If pix is True, center = (p,q) is in pixels.
-         If center is None, the full image is explored.
-radius : float or (float,float)
-         Radius defined the explored region.
-         If pix is False, radius = (dy/2, dx/2) is in arcsecs.
-         If pix is True, radius = (dp,dq) is in pixels.
-pix    : boolean
-         If pix is False, center and radius are
-         in degrees and arcsecs. fwhm is returned in arcseconds.
-         If pix is True, center and radius are in pixels.
-         fwhm is returned in pixels.
+        Parameters
+        ----------
+        center : (float,float)
+                 Center of the explored region.
+                 If pix is False, center = (y,x) is in degrees.
+                 If pix is True, center = (p,q) is in pixels.
+                 If center is None, the full image is explored.
+        radius : float or (float,float)
+                 Radius defined the explored region.
+                 If pix is False, radius = (dy/2, dx/2) is in arcsecs.
+                 If pix is True, radius = (dp,dq) is in pixels.
+        pix    : boolean
+                 If pix is False, center and radius are
+                 in degrees and arcsecs. fwhm is returned in arcseconds.
+                 If pix is True, center and radius are in pixels.
+                 fwhm is returned in pixels.
 
-Returns
--------
-out : array of float
-      [fwhm_y,fwhm_x].
+        Returns
+        -------
+        out : array of float
+              [fwhm_y,fwhm_x].
         """
         if center is None or radius == 0:
             sigma = self.moments(pix=pix)
@@ -2224,30 +2225,30 @@ out : array of float
     def ee(self, center=None, radius=0, pix=False, frac=False, cont=0):
         """Computes ensquared energy.
 
-Parameters
-----------
-center : (float,float)
-         Center of the explored region.
-         If pix is False, center = (y,x) is in degrees.
-         If pix is True, center = (p,q) is in pixels.
-         If center is None, the full image is explored.
-radius : float or (float,float)
-         Radius defined the explored region.
-         If radius is float, it defined a circular region.
-         If radius is (float,float), it defined a rectangular region.
-         If pix is False, radius = (dy/2, dx/2) is in arcsecs.
-         If pix is True, radius = (dp,dq) is in pixels.
-pix    : boolean
-         If pix is False, center and radius are in degrees and arcsecs.
-         If pix is True, center and radius are in pixels.
-frac   : boolean
-         If frac is True, result is given relative to the total energy.
-cont   : float
-         continuum value.
+        Parameters
+        ----------
+        center : (float,float)
+                 Center of the explored region.
+                 If pix is False, center = (y,x) is in degrees.
+                 If pix is True, center = (p,q) is in pixels.
+                 If center is None, the full image is explored.
+        radius : float or (float,float)
+                 Radius defined the explored region.
+                 If radius is float, it defined a circular region.
+                 If radius is (float,float), it defined a rectangular region.
+                 If pix is False, radius = (dy/2, dx/2) is in arcsecs.
+                 If pix is True, radius = (dp,dq) is in pixels.
+        pix    : boolean
+                 If pix is False, center and radius are in degrees and arcsecs.
+                 If pix is True, center and radius are in pixels.
+        frac   : boolean
+                 If frac is True, result is given relative to the total energy.
+        cont   : float
+                 continuum value.
 
-Returns
--------
-out : float
+        Returns
+        -------
+        out : float
         """
         cont /= self.fscale
         if center is None or radius == 0:
@@ -2299,28 +2300,28 @@ out : float
                     return (ima.data - cont).sum() * self.fscale
 
     def ee_curve(self, center=None, pix=False, etot=None, cont=0):
-        """Returns Spectrum object containing enclosed energy
-as function of radius.
+        """Returns Spectrum object containing enclosed energy as function of
+        radius.
 
-Parameters
-----------
-center : (float,float)
-         Center of the explored region.
-         If pix is False, center = (y,x) is in degrees.
-         If pix is True, center = (p,q) is in pixels.
-         If center is None, center of the image is used.
-pix    : boolean
-         If pix is False, center is in degrees.
-         If pix is True, center is in pixels.
-etot   : float
-         Total energy. If etot is not set
-         it is computed from the full image.
-cont   : float
-         continuum value
+        Parameters
+        ----------
+        center : (float,float)
+                 Center of the explored region.
+                 If pix is False, center = (y,x) is in degrees.
+                 If pix is True, center = (p,q) is in pixels.
+                 If center is None, center of the image is used.
+        pix    : boolean
+                 If pix is False, center is in degrees.
+                 If pix is True, center is in pixels.
+        etot   : float
+                 Total energy. If etot is not set
+                 it is computed from the full image.
+        cont   : float
+                 continuum value
 
-Returns
--------
-out : :class:`mpdaf.obj.Spectrum`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Spectrum`
         """
         cont /= self.fscale
         from spectrum import Spectrum
@@ -2351,30 +2352,30 @@ out : :class:`mpdaf.obj.Spectrum`
         return Spectrum(wave=wave, data=ee)
 
     def ee_size(self, center=None, pix=False, ee=None, frac=0.9, cont=0):
-        """Computes the size of the square centered on (y,x)
-containing the fraction of the energy.
+        """Computes the size of the square centered on (y,x) containing the
+        fraction of the energy.
 
-Parameters
-----------
-center : (float,float)
-         Center of the explored region.
-         If pix is False, center = (y,x) is in degrees.
-         If pix is True, center = (p,q) is in pixels.
-         If center is None, center of the image is used.
-pix    : boolean
-         If pix is False, center is in degrees.
-         If pix is True, center is in pixels.
-ee     : float
-         Enclosed energy. If ee is not set it is computed from
-         the full image that contain the fraction (frac) of the total energy.
-frac   : float in ]0,1]
-         Fraction of energy.
-cont   : float
-         continuum value
+        Parameters
+        ----------
+        center : (float,float)
+                 Center of the explored region.
+                 If pix is False, center = (y,x) is in degrees.
+                 If pix is True, center = (p,q) is in pixels.
+                 If center is None, center of the image is used.
+        pix    : boolean
+                 If pix is False, center is in degrees.
+                 If pix is True, center is in pixels.
+        ee     : float
+                 Enclosed energy. If ee is not set it is computed from
+                 the full image that contain the fraction (frac) of the total energy.
+        frac   : float in ]0,1]
+                 Fraction of energy.
+        cont   : float
+                 continuum value
 
-Returns
--------
-out : float array
+        Returns
+        -------
+        out : float array
         """
         cont /= self.fscale
         if center is None:
@@ -2409,7 +2410,7 @@ out : float array
         return np.array([dx, dy])
 
     def _interp(self, grid, spline=False):
-        """ returns the interpolated values corresponding to the grid points
+        """returns the interpolated values corresponding to the grid points.
 
         Parameters
         ----------
@@ -2460,13 +2461,13 @@ out : float array
             return res
 
     def _interp_data(self, spline=False):
-        """ returns data array with interpolated values for masked pixels
+        """returns data array with interpolated values for masked pixels.
 
-Parameters
-----------
-spline : bool
-        False: bilinear interpolation
-        (it uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`_), True: spline interpolation (it uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`_)
+        Parameters
+        ----------
+        spline : bool
+                False: bilinear interpolation
+                (it uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`_), True: spline interpolation (it uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`_)
         """
         if np.ma.count_masked(self.data) == 0:
             return self.data.data
@@ -2479,15 +2480,15 @@ spline : bool
     def moments(self, pix=False):
         """Returns [width_y, width_x] first moments of the 2D gaussian.
 
-Parameters
-----------
-pix : boolean
-      if pix is True, returned moments are in pixels.
-      if pix is False, returned moments are in arcseconds.
+        Parameters
+        ----------
+        pix : boolean
+              if pix is True, returned moments are in pixels.
+              if pix is False, returned moments are in arcseconds.
 
-Returns
--------
-out : float array
+        Returns
+        -------
+        out : float array
         """
         cdelt = self.wcs.get_step()
         total = np.abs(self.data).sum()
@@ -2514,62 +2515,62 @@ out : float array
                   verbose=True, full_output=0):
         """Performs Gaussian fit on image.
 
-Parameters
-----------
-pos_min     : (float,float)
-              Minimum y and x values in degrees (pix=False)
-              or in pixels (pix=True).
-pos_max     : (float,float)
-              Maximum y and x values in degrees (pix=False)
-              or in pixels (pix=True).
-center      : (float,float)
-              Initial gaussian center (y_peak,x_peak)
-              in degrees (pix=False) or in pixels (pix=True).
-              If None it is estimated.
-flux        : float
-              Initial integrated gaussian flux
-              or gaussian peak value if peak is True.
-              If None, peak value is estimated.
-fwhm        : (float,float)
-              Initial gaussian fwhm (fwhm_y,fwhm_x) in arcseconds
-              (pix=False) or in pixels (pix=True).
-              If None, they are estimated.
-circular    : boolean
-              True: circular gaussian, False: elliptical gaussian
-cont        : float
-              continuum value, 0 by default.
-fit_back    : boolean
-              False: continuum value is fixed,
-              True: continuum value is a fit parameter.
-rot         : float
-              Initial rotation in degree.
-              If None, rotation is fixed to 0.
-peak        : boolean
-              If true, flux contains a gaussian peak value.
-factor      : integer
-              If factor<=1, gaussian value is computed in the center of each pixel.
-              If factor>1, for each pixel,
-              gaussian value is the sum of the gaussian values
-              on the factor*factor pixels divided by the pixel area.
-weight      : boolean
-              If weight is True, the weight is computed
-              as the inverse of variance.
-plot        : boolean
-              If True, the gaussian is plotted.
-pix         : boolean
-              If pix is False, center and fwhm are in degrees
-              and arcsecs (input and output).
-              If pix is True, center and fwhm are in pixels.
-verbose     : boolean
-              If True, the Gaussian parameters are printed
-              at the end of the method.
-full_output : integer
-              non-zero to return a
-              :class:`mpdaf.obj.Gauss2D` object containing the gauss image
+        Parameters
+        ----------
+        pos_min     : (float,float)
+                      Minimum y and x values in degrees (pix=False)
+                      or in pixels (pix=True).
+        pos_max     : (float,float)
+                      Maximum y and x values in degrees (pix=False)
+                      or in pixels (pix=True).
+        center      : (float,float)
+                      Initial gaussian center (y_peak,x_peak)
+                      in degrees (pix=False) or in pixels (pix=True).
+                      If None it is estimated.
+        flux        : float
+                      Initial integrated gaussian flux
+                      or gaussian peak value if peak is True.
+                      If None, peak value is estimated.
+        fwhm        : (float,float)
+                      Initial gaussian fwhm (fwhm_y,fwhm_x) in arcseconds
+                      (pix=False) or in pixels (pix=True).
+                      If None, they are estimated.
+        circular    : boolean
+                      True: circular gaussian, False: elliptical gaussian
+        cont        : float
+                      continuum value, 0 by default.
+        fit_back    : boolean
+                      False: continuum value is fixed,
+                      True: continuum value is a fit parameter.
+        rot         : float
+                      Initial rotation in degree.
+                      If None, rotation is fixed to 0.
+        peak        : boolean
+                      If true, flux contains a gaussian peak value.
+        factor      : integer
+                      If factor<=1, gaussian value is computed in the center of each pixel.
+                      If factor>1, for each pixel,
+                      gaussian value is the sum of the gaussian values
+                      on the factor*factor pixels divided by the pixel area.
+        weight      : boolean
+                      If weight is True, the weight is computed
+                      as the inverse of variance.
+        plot        : boolean
+                      If True, the gaussian is plotted.
+        pix         : boolean
+                      If pix is False, center and fwhm are in degrees
+                      and arcsecs (input and output).
+                      If pix is True, center and fwhm are in pixels.
+        verbose     : boolean
+                      If True, the Gaussian parameters are printed
+                      at the end of the method.
+        full_output : integer
+                      non-zero to return a
+                      :class:`mpdaf.obj.Gauss2D` object containing the gauss image
 
-Returns
--------
-out : :class:`mpdaf.obj.Gauss2D`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Gauss2D`
         """
         if pix:
             if pos_min is None:
@@ -2905,62 +2906,62 @@ out : :class:`mpdaf.obj.Gauss2D`
                    pix=False, verbose=True, full_output=0):
         """Performs moffat fit on image.
 
-Parameters
-----------
+        Parameters
+        ----------
 
-pos_min     : (float,float)
-              Minimum y and x values in degrees (pix=False)
-              or in pixels (pix=True).
-pos_max     : (float,float)
-              Maximum y and x values in degrees (pix=False)
-              or in pixels (pix=True).
-center      : (float,float)
-              Initial moffat center (y_peak,x_peak)
-              in degrees (pix=False) or in pixels (pix=True).
-              If None it is estimated.
-flux        : float
-              Initial integrated gaussian flux
-              or gaussian peak value if peak is True.
-              If None, peak value is estimated.
-fwhm        : (float,float)
-              Initial gaussian fwhm (fwhm_y,fwhm_x) in arcseconds
-              (pix=False) or in pixels (pix=True).
-              If None, they are estimated.
-n           : integer
-              Initial atmospheric scattering coefficient.
-circular    : boolean
-              True: circular moffat, False: elliptical moffat
-cont        : float
-              continuum value, 0 by default.
-fit_back    : boolean
-              False: continuum value is fixed,
-              True: continuum value is a fit parameter.
-rot         : float
-              Initial angle position in degree.
-peak        : boolean
-              If true, flux contains a gaussian peak value.
-factor      : integer
-              If factor<=1,
-              gaussian is computed in the center of each pixel.
-              If factor>1, for each pixel,
-              gaussian value is the sum of the gaussian values
-              on the factor*factor pixels divided by the pixel area.
-weight      : boolean
-              If weight is True, the weight is computed
-              as the inverse of variance.
-plot        : boolean
-              If True, the gaussian is plotted.
-pix         : boolean
-              If pix is False, center and fwhm are in degrees
-              and arcsecs (input and output).
-              If pix is True, center and fwhm are in pixels.
-full_output : integer
-              non-zero to return a :class:`mpdaf.obj.Moffat2D`
-              object containing the moffat image
+        pos_min     : (float,float)
+                      Minimum y and x values in degrees (pix=False)
+                      or in pixels (pix=True).
+        pos_max     : (float,float)
+                      Maximum y and x values in degrees (pix=False)
+                      or in pixels (pix=True).
+        center      : (float,float)
+                      Initial moffat center (y_peak,x_peak)
+                      in degrees (pix=False) or in pixels (pix=True).
+                      If None it is estimated.
+        flux        : float
+                      Initial integrated gaussian flux
+                      or gaussian peak value if peak is True.
+                      If None, peak value is estimated.
+        fwhm        : (float,float)
+                      Initial gaussian fwhm (fwhm_y,fwhm_x) in arcseconds
+                      (pix=False) or in pixels (pix=True).
+                      If None, they are estimated.
+        n           : integer
+                      Initial atmospheric scattering coefficient.
+        circular    : boolean
+                      True: circular moffat, False: elliptical moffat
+        cont        : float
+                      continuum value, 0 by default.
+        fit_back    : boolean
+                      False: continuum value is fixed,
+                      True: continuum value is a fit parameter.
+        rot         : float
+                      Initial angle position in degree.
+        peak        : boolean
+                      If true, flux contains a gaussian peak value.
+        factor      : integer
+                      If factor<=1,
+                      gaussian is computed in the center of each pixel.
+                      If factor>1, for each pixel,
+                      gaussian value is the sum of the gaussian values
+                      on the factor*factor pixels divided by the pixel area.
+        weight      : boolean
+                      If weight is True, the weight is computed
+                      as the inverse of variance.
+        plot        : boolean
+                      If True, the gaussian is plotted.
+        pix         : boolean
+                      If pix is False, center and fwhm are in degrees
+                      and arcsecs (input and output).
+                      If pix is True, center and fwhm are in pixels.
+        full_output : integer
+                      non-zero to return a :class:`mpdaf.obj.Moffat2D`
+                      object containing the moffat image
 
-Returns
--------
-out : :class:`mpdaf.obj.Moffat2D`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Moffat2D`
         """
         if pix:
             if pos_min is None:
@@ -3279,15 +3280,15 @@ out : :class:`mpdaf.obj.Moffat2D`
         return moffat
 
     def _rebin_factor_(self, factor):
-        '''Shrinks the size of the image by factor.
-        New size is an integer multiple of the original size.
+        """Shrinks the size of the image by factor. New size is an integer
+        multiple of the original size.
 
         Parameters
         ----------
         factor : (integer,integer)
                  Factor in y and x.
                  Python notation: (ny,nx)
-        '''
+        """
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
         assert not np.sometrue(np.mod(self.shape[1], factor[1]))
         # new size is an integer multiple of the original size
@@ -3305,19 +3306,19 @@ out : :class:`mpdaf.obj.Moffat2D`
         self.wcs = self.wcs.rebin_factor(factor)
 
     def _rebin_factor(self, factor, margin='center'):
-        '''Shrinks the size of the image by factor.
+        """Shrinks the size of the image by factor.
 
-Parameters
-----------
-factor : integer or (integer,integer)
-         Factor in y and x. Python notation: (ny,nx).
-margin : 'center' or 'origin'
-         This parameters is used if new size
-         is not an integer multiple of the original size.
-         In 'center' case, pixels will be added on the left
-         and on the right, on the bottom and of the top of the image.
-        In 'origin'case, pixels will be added on (n+1) line/column.
-        '''
+        Parameters
+        ----------
+        factor : integer or (integer,integer)
+                 Factor in y and x. Python notation: (ny,nx).
+        margin : 'center' or 'origin'
+                 This parameters is used if new size
+                 is not an integer multiple of the original size.
+                 In 'center' case, pixels will be added on the left
+                 and on the right, on the bottom and of the top of the image.
+                In 'origin'case, pixels will be added on (n+1) line/column.
+        """
         if is_int(factor):
             factor = (factor, factor)
         if factor[0] <= 1 or factor[0] >= self.shape[0] \
@@ -3708,24 +3709,24 @@ margin : 'center' or 'origin'
         self.var = var
 
     def rebin_factor(self, factor, margin='center'):
-        '''Returns an image that shrinks the size
-of the current image by factor.
+        """Returns an image that shrinks the size of the current image by
+        factor.
 
-Parameters
-----------
-factor : integer or (integer,integer)
-         Factor in y and x. Python notation: (ny,nx).
-margin : 'center' or 'origin'
-         This parameters is used if new size is not
-         an integer multiple of the original size.
-         In 'center' case, pixels will be added on the left
-         and on the right, on the bottom and of the top of the image.
-         In 'origin'case, pixels will be added on (n+1) line/column.
+        Parameters
+        ----------
+        factor : integer or (integer,integer)
+                 Factor in y and x. Python notation: (ny,nx).
+        margin : 'center' or 'origin'
+                 This parameters is used if new size is not
+                 an integer multiple of the original size.
+                 In 'center' case, pixels will be added on the left
+                 and on the right, on the bottom and of the top of the image.
+                 In 'origin'case, pixels will be added on (n+1) line/column.
 
-Returns
--------
-out : Image
-        '''
+        Returns
+        -------
+        out : Image
+        """
         res = self.copy()
         res._rebin_factor(factor, margin)
         return res
@@ -3735,15 +3736,15 @@ out : Image
                                       q * qfactor:(q + 1) * qfactor])
 
     def _rebin_median_(self, factor):
-        '''Shrinks the size of the image by factor.
-        New size is an integer multiple of the original size.
+        """Shrinks the size of the image by factor. New size is an integer
+        multiple of the original size.
 
         Parameters
         ----------
         factor : (integer,integer)
                  Factor in y and x.
                  Python notation: (ny,nx)
-        '''
+        """
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
         assert not np.sometrue(np.mod(self.shape[1], factor[1]))
         # new size is an integer multiple of the original size
@@ -3760,24 +3761,24 @@ out : Image
         self.wcs = self.wcs.rebin_factor(factor)
 
     def rebin_median(self, factor, margin='center'):
-        '''Shrinks the size of the image by factor. Median values are used.
+        """Shrinks the size of the image by factor. Median values are used.
 
-Parameters
-----------
-factor : integer or (integer,integer)
-         Factor in y and x. Python notation: (ny,nx).
-margin : 'center' or 'origin'
-          This parameters is used
-          if new size is not an integer multiple of the original size.
-          In 'center' case, image is truncated on the left
-          and on the right, on the bottom and of the top of the image.
-          In 'origin'case, image is truncated
-          at the end along each direction.
+        Parameters
+        ----------
+        factor : integer or (integer,integer)
+                 Factor in y and x. Python notation: (ny,nx).
+        margin : 'center' or 'origin'
+                  This parameters is used
+                  if new size is not an integer multiple of the original size.
+                  In 'center' case, image is truncated on the left
+                  and on the right, on the bottom and of the top of the image.
+                  In 'origin'case, image is truncated
+                  at the end along each direction.
 
-Returns
--------
-out : :class:`mpdaf.obj.Image`
-        '''
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
+        """
         if is_int(factor):
             factor = (factor, factor)
         if factor[0] <= 1 or factor[0] >= self.shape[0] \
@@ -3827,26 +3828,26 @@ out : :class:`mpdaf.obj.Image`
     def _rebin(self, newdim, newstart, newstep,
                flux=False, order=3, interp='no'):
         """Rebins the image to a new coordinate system.
-Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
+        Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
 
-Parameters
-----------
-newdim   : integer or (integer,integer)
-           New dimensions. Python notation: (ny,nx)
-newstart : float or (float, float)
-           New positions (y,x) for the pixel (0,0).
-           If None, old position is used.
-newstep  : float or (float, float)
-           New step (dy,dx).
-flux     : boolean
-           if flux is True, the flux is conserved.
-order    : integer
-           The order of the spline interpolation, default is 3.
-           The order has to be in the range 0-5.
-interp   : 'no' | 'linear' | 'spline'
-           if 'no', data median value replaced masked values.
-           if 'linear', linear interpolation of the masked values.
-           if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        newdim   : integer or (integer,integer)
+                New dimensions. Python notation: (ny,nx)
+        newstart : float or (float, float)
+                New positions (y,x) for the pixel (0,0).
+                If None, old position is used.
+        newstep  : float or (float, float)
+                New step (dy,dx).
+        flux     : boolean
+                if flux is True, the flux is conserved.
+        order    : integer
+                The order of the spline interpolation, default is 3.
+                The order has to be in the range 0-5.
+        interp   : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
         """
         if is_int(newdim):
             newdim = (newdim, newdim)
@@ -3893,30 +3894,30 @@ interp   : 'no' | 'linear' | 'spline'
     def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no'):
         """Returns rebinned image to a new coordinate system.
-Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
+        Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
 
-Parameters
-----------
-newdim   : integer or (integer,integer)
-           New dimensions. Python notation: (ny,nx)
-newstart : float or (float, float)
-           New positions (y,x) for the pixel (0,0).
-           If None, old position is used.
-newstep  : float or (float, float)
-           New step (dy,dx).
-flux     : boolean
-           if flux is True, the flux is conserved.
-order    : integer
-           The order of the spline interpolation, default is 3.
-           The order has to be in the range 0-5.
-interp   : 'no' | 'linear' | 'spline'
-           if 'no', data median value replaced masked values.
-           if 'linear', linear interpolation of the masked values.
-           if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        newdim   : integer or (integer,integer)
+                New dimensions. Python notation: (ny,nx)
+        newstart : float or (float, float)
+                New positions (y,x) for the pixel (0,0).
+                If None, old position is used.
+        newstep  : float or (float, float)
+                New step (dy,dx).
+        flux     : boolean
+                if flux is True, the flux is conserved.
+        order    : integer
+                The order of the spline interpolation, default is 3.
+                The order has to be in the range 0-5.
+        interp   : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
 
-Returns
--------
-out : Image
+        Returns
+        -------
+        out : Image
         """
         res = self.copy()
         res._rebin(newdim, newstart, newstep, flux, order, interp)
@@ -3924,16 +3925,16 @@ out : Image
 
     def _gaussian_filter(self, sigma=3, interp='no'):
         """Applies Gaussian filter to the image.
-Uses `scipy.ndimage.gaussian_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html>`_.
+        Uses `scipy.ndimage.gaussian_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html>`_.
 
-Parameters
-----------
-sigma  : float
-         Standard deviation for Gaussian kernel
-interp : 'no' | 'linear' | 'spline'
-         if 'no', data median value replaced masked values.
-         if 'linear', linear interpolation of the masked values.
-         if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        sigma  : float
+                Standard deviation for Gaussian kernel
+        interp : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
         """
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -3949,21 +3950,21 @@ interp : 'no' | 'linear' | 'spline'
 
     def gaussian_filter(self, sigma=3, interp='no'):
         """Returns an image containing Gaussian filter
-applied to the current image.
-Uses `scipy.ndimage.gaussian_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html>`_.
+        applied to the current image.
+        Uses `scipy.ndimage.gaussian_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html>`_.
 
-Parameters
-----------
-sigma  : float
-         Standard deviation for Gaussian kernel
-interp : 'no' | 'linear' | 'spline'
-         if 'no', data median value replaced masked values.
-         if 'linear', linear interpolation of the masked values.
-         if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        sigma  : float
+                Standard deviation for Gaussian kernel
+        interp : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
 
-Returns
--------
-out : Image
+        Returns
+        -------
+        out : Image
         """
         res = self.copy()
         res._gaussian_filter(sigma, interp)
@@ -3971,18 +3972,18 @@ out : Image
 
     def _median_filter(self, size=3, interp='no'):
         """Applies median filter to the image.
-Uses `scipy.ndimage.median_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.median_filter.html>`_.
+        Uses `scipy.ndimage.median_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.median_filter.html>`_.
 
-Parameters
-----------
-size   : float
-         Shape that is taken from the input array,
-         at every element position, to define the input to
-         the filter function. Default is 3.
-interp : 'no' | 'linear' | 'spline'
-         if 'no', data median value replaced masked values.
-         if 'linear', linear interpolation of the masked values.
-         if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        size   : float
+                Shape that is taken from the input array,
+                at every element position, to define the input to
+                the filter function. Default is 3.
+        interp : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
         """
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -3998,23 +3999,23 @@ interp : 'no' | 'linear' | 'spline'
 
     def median_filter(self, size=3, interp='no'):
         """Returns an image containing median filter
-applied to the current image.
-Uses `scipy.ndimage.median_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.median_filter.html>`_.
+        applied to the current image.
+        Uses `scipy.ndimage.median_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.median_filter.html>`_.
 
-Parameters
-----------
-size   : float
-         Shape that is taken from the input array,
-         at every element position, to define the input to
-         the filter function. Default is 3.
-interp : 'no' | 'linear' | 'spline'
-         if 'no', data median value replaced masked values.
-         if 'linear', linear interpolation of the masked values.
-         if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        size   : float
+                Shape that is taken from the input array,
+                at every element position, to define the input to
+                the filter function. Default is 3.
+        interp : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
 
-Returns
--------
-out : Image
+        Returns
+        -------
+        out : Image
         """
         res = self.copy()
         res._median_filter(size, interp)
@@ -4022,18 +4023,18 @@ out : Image
 
     def _maximum_filter(self, size=3, interp='no'):
         """Applies maximum filter to the image.
-Uses `scipy.ndimage.maximum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.maximum_filter.html>`_.
+        Uses `scipy.ndimage.maximum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.maximum_filter.html>`_.
 
-Parameters
-----------
-size   : float
-         Shape that is taken from the input array,
-         at every element position, to define the input to
-         the filter function. Default is 3.
-interp : 'no' | 'linear' | 'spline'
-         if 'no', data median value replaced masked values.
-         if 'linear', linear interpolation of the masked values.
-         if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        size   : float
+                Shape that is taken from the input array,
+                at every element position, to define the input to
+                the filter function. Default is 3.
+        interp : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
         """
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -4047,23 +4048,23 @@ interp : 'no' | 'linear' | 'spline'
 
     def maximum_filter(self, size=3, interp='no'):
         """Returns an image containing maximum filter
-applied to the current image.
-Uses `scipy.ndimage.maximum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.maximum_filter.html>`_.
+        applied to the current image.
+        Uses `scipy.ndimage.maximum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.maximum_filter.html>`_.
 
-Parameters
-----------
-size   : float
-         Shape that is taken from the input array,
-         at every element position, to define the input to
-         the filter function. Default is 3.
-interp : 'no' | 'linear' | 'spline'
-         if 'no', data median value replaced masked values.
-         if 'linear', linear interpolation of the masked values.
-         if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        size   : float
+                Shape that is taken from the input array,
+                at every element position, to define the input to
+                the filter function. Default is 3.
+        interp : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
 
-Returns
--------
-out : Image
+        Returns
+        -------
+        out : Image
         """
         res = self.copy()
         res._maximum_filter(size, interp)
@@ -4073,16 +4074,16 @@ out : Image
         """Applies minimum filter to the image.
         Uses `scipy.ndimage.minimum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.minimum_filter.html>`_.
 
-Parameters
-----------
-size   : float
-         Shape that is taken from the input array,
-         at every element position, to define the input to
-         the filter function. Default is 3.
-interp : 'no' | 'linear' | 'spline'
-         if 'no', data median value replaced masked values.
-         if 'linear', linear interpolation of the masked values.
-         if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        size   : float
+                Shape that is taken from the input array,
+                at every element position, to define the input to
+                the filter function. Default is 3.
+        interp : 'no' | 'linear' | 'spline'
+                if 'no', data median value replaced masked values.
+                if 'linear', linear interpolation of the masked values.
+                if 'spline', spline interpolation of the masked values.
         """
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -4119,8 +4120,8 @@ interp : 'no' | 'linear' | 'spline'
         return res
 
     def add(self, other):
-        """Adds the image other to the current image in place.
-        The coordinate are taken into account.
+        """Adds the image other to the current image in place. The coordinate
+        are taken into account.
 
         Parameters
         ----------
@@ -4275,14 +4276,14 @@ interp : 'no' | 'linear' | 'spline'
     def add_gaussian_noise(self, sigma, interp='no'):
         """Adds Gaussian noise to image in place.
 
-Parameters
-----------
-sigma  : float
-         Standard deviation.
-interp : 'no' | 'linear' | 'spline'
-         if 'no', data median value replaced masked values.
-         if 'linear', linear interpolation of the masked values.
-         if 'spline', spline interpolation of the masked values.
+        Parameters
+        ----------
+        sigma  : float
+                 Standard deviation.
+        interp : 'no' | 'linear' | 'spline'
+                 if 'no', data median value replaced masked values.
+                 if 'linear', linear interpolation of the masked values.
+                 if 'spline', spline interpolation of the masked values.
         """
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -4599,7 +4600,6 @@ interp : 'no' | 'linear' | 'spline'
         -------
         out : matplotlib AxesImage
         """
-        plt.ion()
 
         f = self.data * self.fscale
         xaxis = np.arange(self.shape[1], dtype=np.float)
@@ -4676,8 +4676,7 @@ interp : 'no' | 'linear' | 'spline'
         return cax
 
     def _on_move(self, event):
-        """ prints y,x,p,q and data in the figure toolbar.
-        """
+        """prints y,x,p,q and data in the figure toolbar."""
         if event.inaxes is not None:
             j, i = event.xdata, event.ydata
             try:
@@ -4691,9 +4690,9 @@ interp : 'no' | 'linear' | 'spline'
                 pass
 
     def ipos(self, filename='None'):
-        """Prints cursor position in interactive mode
-        (p and q define the nearest pixel, x and y are the position,
-        data contains the image data value (data[p,q]) ).
+        """Prints cursor position in interactive mode (p and q define the
+        nearest pixel, x and y are the position, data contains the image data
+        value (data[p,q]) ).
 
           To read cursor position, click on the left mouse button.
 
@@ -4730,8 +4729,7 @@ interp : 'no' | 'linear' | 'spline'
             self._clicks.filename = filename
 
     def _on_click(self, event):
-        """ prints dec,ra,i,j and data corresponding to the cursor position.
-        """
+        """prints dec,ra,i,j and data corresponding to the cursor position."""
         if event.key == 'd':
             if event.button == 1:
                 if event.inaxes is not None:
@@ -4772,10 +4770,9 @@ interp : 'no' | 'linear' | 'spline'
                 fig.canvas.stop_event_loop_default()
 
     def idist(self):
-        """Gets distance and center from 2 cursor positions
-        (interactive mode).
+        """Gets distance and center from 2 cursor positions (interactive mode).
 
-          To quit the interactive mode, click on the right mouse button.
+        To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the line.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -4790,8 +4787,7 @@ interp : 'no' | 'linear' | 'spline'
             warnings.filterwarnings(action="default")
 
     def _on_select_dist(self, eclick, erelease):
-        """Prints distance and center between 2 cursor positions.
-        """
+        """Prints distance and center between 2 cursor positions."""
         if eclick.button == 1:
             try:
                 j1, i1 = int(eclick.xdata), int(eclick.ydata)
@@ -4812,12 +4808,12 @@ interp : 'no' | 'linear' | 'spline'
             fig.canvas.stop_event_loop_default()
 
     def istat(self):
-        """Computes image statistics from windows defined
-        with left mouse button (mean is the mean value,
-        median the median value, std is the rms standard deviation,
-        sum the sum, peak the peak value, npts is the total number of points).
+        """Computes image statistics from windows defined with left mouse
+        button (mean is the mean value, median the median value, std is the rms
+        standard deviation, sum the sum, peak the peak value, npts is the total
+        number of points).
 
-          To quit the interactive mode, click on the right mouse button.
+        To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -4832,8 +4828,8 @@ interp : 'no' | 'linear' | 'spline'
             warnings.filterwarnings(action="default")
 
     def _on_select_stat(self, eclick, erelease):
-        """Prints image statistics from windows defined by 2 cursor positions.
-        """
+        """Prints image statistics from windows defined by 2 cursor
+        positions."""
         if eclick.button == 1:
             try:
                 j1 = int(min(eclick.xdata, erelease.xdata))
@@ -4861,7 +4857,7 @@ interp : 'no' | 'linear' | 'spline'
     def ipeak(self):
         """Finds peak location in windows defined with left mouse button.
 
-          To quit the interactive mode, click on the right mouse button.
+        To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -4876,8 +4872,8 @@ interp : 'no' | 'linear' | 'spline'
             warnings.filterwarnings(action="default")
 
     def _on_select_peak(self, eclick, erelease):
-        """Prints image peak location in windows defined by 2 cursor positions.
-        """
+        """Prints image peak location in windows defined by 2 cursor
+        positions."""
         if eclick.button == 1:
             try:
                 j1 = int(min(eclick.xdata, erelease.xdata))
@@ -4901,7 +4897,7 @@ interp : 'no' | 'linear' | 'spline'
     def ifwhm(self):
         """Computes fwhm in windows defined with left mouse button.
 
-          To quit the interactive mode, click on the right mouse button.
+        To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -4916,9 +4912,8 @@ interp : 'no' | 'linear' | 'spline'
             warnings.filterwarnings(action="default")
 
     def _on_select_fwhm(self, eclick, erelease):
-        """Prints image peak location in windows defined'\
-        'by 2 cursor positions.
-        """
+        """Prints image peak location in windows defined'\ 'by 2 cursor
+        positions."""
         if eclick.button == 1:
             try:
                 j1 = int(min(eclick.xdata, erelease.xdata))
@@ -4941,7 +4936,7 @@ interp : 'no' | 'linear' | 'spline'
     def iee(self):
         """Computes enclosed energy in windows defined with left mouse button.
 
-          To quit the interactive mode, click on the right mouse button.
+        To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -4956,9 +4951,8 @@ interp : 'no' | 'linear' | 'spline'
             warnings.filterwarnings(action="default")
 
     def _on_select_ee(self, eclick, erelease):
-        """Prints image peak location in windows defined
-        by 2 cursor positions.
-        """
+        """Prints image peak location in windows defined by 2 cursor
+        positions."""
         if eclick.button == 1:
             try:
                 j1 = int(min(eclick.xdata, erelease.xdata))
@@ -5012,7 +5006,7 @@ interp : 'no' | 'linear' | 'spline'
     def igauss_fit(self):
         """Performs Gaussian fit in windows defined with left mouse button.
 
-          To quit the interactive mode, click on the right mouse button.
+        To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'
@@ -5050,7 +5044,7 @@ interp : 'no' | 'linear' | 'spline'
     def imoffat_fit(self):
         """Performs Moffat fit in windows defined with left mouse button.
 
-          To quit the interactive mode, click on the right mouse button.
+        To quit the interactive mode, click on the right mouse button.
         """
         print 'Use left mouse button to define the box.'
         print 'To quit the interactive mode, click on the right mouse button.'

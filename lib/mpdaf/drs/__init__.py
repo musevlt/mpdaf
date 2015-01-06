@@ -1,6 +1,5 @@
 """Copyright (C) 2011 Centre de Recherche Astronomique de Lyon (CRAL)
 
-
 Submodules:
 =========
 rawobj:
@@ -9,8 +8,6 @@ calibobj:
     I/O for calibration files
 pixtable:
     I/O for MUSE pixel table
-
-
 """
 __LICENSE__ = """
 Copyright (C) 2011  Centre de Recherche Astronomique de Lyon (CRAL)

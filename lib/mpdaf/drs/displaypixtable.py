@@ -9,7 +9,7 @@ import matplotlib.cm as cm
 
 class DisplayPixTable(object):
 
-    """DisplayPixTable class
+    """DisplayPixTable class.
 
     This class displays MUSE pixel table files
 
@@ -30,15 +30,14 @@ class DisplayPixTable(object):
     """
 
     def __init__(self, pixtable, cube):
-        """creates a DisplayPixTable object and verifies
-        that pixtable and cube are compatible"""
+        """creates a DisplayPixTable object and verifies that pixtable and cube
+        are compatible."""
 
         self.pixtable = pixtable
         self.cube = cube
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         cub = CubeDisk(self.cube)
         cub.info()
         print ''
@@ -48,7 +47,7 @@ class DisplayPixTable(object):
     def _det_display(self, date, pix, ima, spe, ifu_limits, l, exp, sky,
                      lbda, sky_scale, sky_cmap, det_scale, det_cmap,
                      det_vmin, det_vmax):
-        """display in detector mode for one exposure
+        """display in detector mode for one exposure.
 
         :param exp: exposure number.
         :type sky: integer or None
@@ -178,7 +177,7 @@ class DisplayPixTable(object):
     def det_display(self, sky, lbda, sky_scale='linear', sky_cmap=cm.copper,
                     det_scale='linear', det_cmap=cm.copper,
                     det_vmin=None, det_vmax=None):
-        """display in detector mode
+        """display in detector mode.
 
         :param sky: (y, x, size, shape) extract an aperture on the sky,
         defined by a center in degrees (y, x), a shape
@@ -284,7 +283,7 @@ class DisplayPixTable(object):
                        ima_center_p, ima_center_q, dp_slice, dq_slice,
                        exp, sky, lbda, sky_scale, sky_cmap, slice_scale,
                        slice_cmap, slice_vmin, slice_vmax):
-        """display in slice mode
+        """display in slice mode.
 
         :param exp: exposure number.
         :type sky: integer or None
@@ -443,7 +442,7 @@ class DisplayPixTable(object):
     def slice_display(self, sky, lbda, sky_scale='linear',
                       sky_cmap=cm.copper, slice_scale='linear',
                       slice_cmap=cm.copper, slice_vmin=None, slice_vmax=None):
-        """display in slice mode
+        """display in slice mode.
 
         :param sky: (y, x, size, shape) extract an aperture on the sky,
         defined by a center in degrees (y, x), a shape

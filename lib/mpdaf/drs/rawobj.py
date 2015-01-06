@@ -1,4 +1,4 @@
-""" rawobj.py Manages raw FITS file"""
+"""rawobj.py Manages raw FITS file."""
 import numpy as np
 from astropy.io import fits as pyfits
 import multiprocessing
@@ -85,8 +85,7 @@ class Channel(object):
         self.mask = self._init_mask()
 
     def _init_mask(self):
-        """Creates mask that invalidates over scanned pixels.
-        """
+        """Creates mask that invalidates over scanned pixels."""
         m = np.ones((self.ny, self.nx), dtype=int)
         try:
             nx_data = self.header["NAXIS1"]  # length of data in X
@@ -140,8 +139,7 @@ class Channel(object):
         return mask
 
     def copy(self):
-        """Returns a copy of the Channel object.
-        """
+        """Returns a copy of the Channel object."""
         result = Channel(self.extname)
         result.header = pyfits.Header(self.header)
         try:
@@ -207,8 +205,7 @@ class Channel(object):
 
     @_decorator
     def __mul__(self, other):
-        """Multiplies either a number or a Channel object.
-        """
+        """Multiplies either a number or a Channel object."""
         if isinstance(self, np.ma.core.MaskedArray):
             return np.ma.MaskedArray.__mul__(self, other)
         else:
@@ -223,8 +220,7 @@ class Channel(object):
 
     @_decorator
     def __div__(self, other):
-        """Divides either a number or a Channel object.
-        """
+        """Divides either a number or a Channel object."""
         if isinstance(self, np.ma.core.MaskedArray):
             return np.ma.MaskedArray.__div__(self, other)
         else:
@@ -239,8 +235,7 @@ class Channel(object):
 
     @_decorator
     def __sub__(self, other):
-        """Subtracts either a number or a Channel object.
-        """
+        """Subtracts either a number or a Channel object."""
         if isinstance(self, np.ma.core.MaskedArray):
             return np.ma.MaskedArray.__sub__(self, other)
         else:
@@ -255,8 +250,7 @@ class Channel(object):
 
     @_decorator
     def __add__(self, other):
-        """Adds either a number or a Channel object.
-        """
+        """Adds either a number or a Channel object."""
         if isinstance(self, np.ma.core.MaskedArray):
             return np.ma.MaskedArray.__add__(self, other)
         else:
@@ -271,8 +265,7 @@ class Channel(object):
 
     @_decorator
     def __pow__(self, other):
-        """Computes the power exponent.
-        """
+        """Computes the power exponent."""
         if isinstance(self, np.ma.core.MaskedArray):
             return np.ma.MaskedArray.__pow__(self, other)
         else:
@@ -299,8 +292,8 @@ class Channel(object):
         return result
 
     def trimmed(self):
-        """Returns a Channel object containing only reference
-        to the valid pixels.
+        """Returns a Channel object containing only reference to the valid
+        pixels.
 
         :rtype: :class:`mpdaf.drs.Channel`
         """
@@ -313,8 +306,8 @@ class Channel(object):
         return result
 
     def overscan(self):
-        """Returns a Channel object containing only reference
-        to the overscanned pixels.
+        """Returns a Channel object containing only reference to the
+        overscanned pixels.
 
         :rtype: :class:`mpdaf.drs.Channel`
         """
@@ -629,8 +622,8 @@ class Channel(object):
         return ima
 
     def get_image_just_overscan(self, det_out=None):
-        """Returns an Image object in which only overscanned
-        pixels are not masked.
+        """Returns an Image object in which only overscanned pixels are not
+        masked.
 
         :param det_out: number of output detector.
         If None, all image is returned.
@@ -719,8 +712,7 @@ def Channel_median(channels):
 
 class RawFile(object):
 
-    """
-    RawFile class manages input/output for raw FITS file.
+    """RawFile class manages input/output for raw FITS file.
 
     :param filename: The raw FITS file name.
     filename=None creates an empty object.
@@ -810,8 +802,7 @@ class RawFile(object):
             self.primary_header = pyfits.Header()
 
     def copy(self):
-        """Returns a copy of the RawFile object.
-        """
+        """Returns a copy of the RawFile object."""
         result = RawFile(self.filename)
         if result.filename == None:
             result.primary_header = pyfits.Header(self.primary_header)
@@ -826,8 +817,7 @@ class RawFile(object):
         return result
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         if self.filename != None:
             print self.filename
         else:
@@ -838,13 +828,11 @@ class RawFile(object):
         print 'format:\t(%i,%i)' % (self.nx, self.ny)
 
     def get_keywords(self, key):
-        """Returns the keyword value.
-        """
+        """Returns the keyword value."""
         return self.primary_header[key]
 
     def get_channels_extname_list(self):
-        """Returns the list of existing channels names.
-        """
+        """Returns the list of existing channels names."""
         return self.channels.keys()
 
     def get_channel(self, extname):
@@ -861,8 +849,7 @@ class RawFile(object):
             return chan
 
     def __len__(self):
-        """Returns the number of extensions.
-        """
+        """Returns the number of extensions."""
         return self.next
 
     def __getitem__(self, key):
@@ -905,40 +892,35 @@ class RawFile(object):
                           'with an image extension' % type(value))
 
     def __mul__(self, other):
-        """Multiplies either a number or a RawFits object.
-        """
+        """Multiplies either a number or a RawFits object."""
         return self._mp_operator(other, 'Channel.__mul__')
 
     def __imul__(self, other):
         return self._mp_operator(other, 'Channel.__imul__')
 
     def __div__(self, other):
-        """Divides either a number or a RawFits object.
-        """
+        """Divides either a number or a RawFits object."""
         return self._mp_operator(other, 'Channel.__div__')
 
     def __idiv__(self, other):
         return self._mp_operator(other, 'Channel.__idiv__')
 
     def __sub__(self, other):
-        """Subtracts either a number or a RawFits object.
-        """
+        """Subtracts either a number or a RawFits object."""
         return self._mp_operator(other, 'Channel.__sub__')
 
     def __isub__(self, other):
         return self._mp_operator(other, 'Channel.__isub__')
 
     def __add__(self, other):
-        """Adds either a number or a RawFits object.
-        """
+        """Adds either a number or a RawFits object."""
         return self._mp_operator(other, 'Channel.__add__')
 
     def __iadd__(self, other):
         return self._mp_operator(other, 'Channel.__iadd__')
 
     def __pow__(self, other):
-        """Computes the power exponent of each channel.
-        """
+        """Computes the power exponent of each channel."""
         return self._mp_operator(other, 'Channel.__pow__')
 
     def __ipow__(self, other):
@@ -968,8 +950,7 @@ class RawFile(object):
         return result
 
     def sqrt(self):
-        """Compute the square root of each channel.
-        """
+        """Compute the square root of each channel."""
         cpu_count = multiprocessing.cpu_count()
         result = RawFile()
         result.primary_header = self.primary_header
@@ -1097,31 +1078,32 @@ class RawFile(object):
     def plot(self, title=None, channels="all", area=None, scale='linear',
              vmin=None, vmax=None, zscale=False, colorbar=None, **kargs):
         """Plots the raw images.
-          :param title: Figure title (None by default).
-          :type title: string
-          :param channels: list of channel names. All by default.
-          :type channels: list or 'all'
-          :param area: list of pixels [pmin,pmax,qmin,qmax] to zoom.
-          :type title: list
-          :param scale: The stretch function to use for the scaling
-          (default is 'linear').
-          :type scale: linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-          :param vmin: Minimum pixel value to use for the scaling.
 
-           If None, vmin is set to min of data.
-          :type vmin: float
-          :param vmax: Maximum pixel value to use for the scaling.
+        :param title: Figure title (None by default).
+        :type title: string
+        :param channels: list of channel names. All by default.
+        :type channels: list or 'all'
+        :param area: list of pixels [pmin,pmax,qmin,qmax] to zoom.
+        :type title: list
+        :param scale: The stretch function to use for the scaling
+        (default is 'linear').
+        :type scale: linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+        :param vmin: Minimum pixel value to use for the scaling.
 
-           If None, vmax is set to max of data.
-          :type vmax: float
-          :param zscale: If true, vmin and vmax are computed
-          using the IRAF zscale algorithm.
-          :type zscale: bool
-          :param colorbar: If 'h'/'v', a horizontal/vertical
-          colorbar is added.
-          :type colorbar: bool
-          :param kargs: kargs can be used to set additional Artist properties.
-          :type kargs: matplotlib.artist.Artist
+         If None, vmin is set to min of data.
+        :type vmin: float
+        :param vmax: Maximum pixel value to use for the scaling.
+
+         If None, vmax is set to max of data.
+        :type vmax: float
+        :param zscale: If true, vmin and vmax are computed
+        using the IRAF zscale algorithm.
+        :type zscale: bool
+        :param colorbar: If 'h'/'v', a horizontal/vertical
+        colorbar is added.
+        :type colorbar: bool
+        :param kargs: kargs can be used to set additional Artist properties.
+        :type kargs: matplotlib.artist.Artist
         """
         fig = plt.figure()
         fig.subplots_adjust(wspace=0.02, hspace=0.01)
@@ -1321,8 +1303,8 @@ class RawFile(object):
                                                         sli)
 
     def plot_white_image(self, mask=None):
-        """Reconstructs the white image of the FOV using a mask file
-        and plots this image.
+        """Reconstructs the white image of the FOV using a mask file and plots
+        this image.
 
         :param mask: mumdatMask_1x1.fits filename used for
         this reconstruction (if None, the last file stored in mpdaf is used).

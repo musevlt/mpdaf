@@ -5,9 +5,7 @@ import matplotlib.cbook as cbook
 
 class ArcsinhNorm(Normalize):
 
-    """
-    Normalize a given value to arcsinh scale
-    """
+    """Normalize a given value to arcsinh scale."""
 
     def __call__(self, value, clip=None):
         if clip is None:
@@ -57,9 +55,7 @@ class ArcsinhNorm(Normalize):
 
 class PowerNorm(Normalize):
 
-    """
-    Normalize a given value to power scale
-    """
+    """Normalize a given value to power scale."""
 
     def __call__(self, value, clip=None):
         if clip is None:
@@ -106,9 +102,7 @@ class PowerNorm(Normalize):
 
 class SqrtNorm(Normalize):
 
-    """
-    Normalize a given value to square root scale
-    """
+    """Normalize a given value to square root scale."""
 
     def __call__(self, value, clip=None):
         if clip is None:

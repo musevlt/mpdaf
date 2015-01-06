@@ -1,5 +1,4 @@
-""" pixtable.py Manages MUSE pixel table files
-"""
+"""pixtable.py Manages MUSE pixel table files."""
 from mpdaf.obj import Image
 from mpdaf.obj import WCS
 import numpy as np
@@ -108,7 +107,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
 
 class PixTable(object):
 
-    """PixTable class
+    """PixTable class.
 
     This class manages input/output for MUSE pixel table files
 
@@ -141,7 +140,7 @@ class PixTable(object):
 
     def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None, dq=None, stat=None, origin=None, weight=None,
                  primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom'):
-        """creates a PixTable object
+        """creates a PixTable object.
 
         Parameters
         ----------
@@ -257,8 +256,7 @@ class PixTable(object):
                 self.yc = 0.0
 
     def copy(self):
-        """Copies PixTable object in a new one and returns it.
-        """
+        """Copies PixTable object in a new one and returns it."""
         result = PixTable()
         result.filename = self.filename
         result.nrows = self.nrows
@@ -280,8 +278,7 @@ class PixTable(object):
         return result
 
     def info(self):
-        """Prints information.
-        """
+        """Prints information."""
         print "%i merged IFUs went into this pixel table" % self.nifu
         if self.skysub:
             "This pixel table was sky-subtracted"
@@ -367,7 +364,7 @@ class PixTable(object):
         xpos : numpy.array
                xpos values
         ksel : output of np.where
-               Elements depending on a condition.   
+               Elements depending on a condition.
         """
         xpos = np.array(xpos)
         if ksel is None:
@@ -431,7 +428,7 @@ class PixTable(object):
         ypos : numpy.array
                ypos values
         ksel : output of np.where
-               Elements depending on a condition.   
+               Elements depending on a condition.
         """
         ypos = np.array(ypos)
         if ksel is None:
@@ -495,7 +492,7 @@ class PixTable(object):
         lbda : numpy.array
                lbda values
         ksel : output of np.where
-               Elements depending on a condition.   
+               Elements depending on a condition.
         """
         lbda = np.array(lbda)
         if ksel is None:
@@ -563,7 +560,7 @@ class PixTable(object):
         data : numpy.array
                data values
         ksel : output of np.where
-               Elements depending on a condition.   
+               Elements depending on a condition.
         """
         data = np.array(data)
         if ksel is None:
@@ -617,7 +614,7 @@ class PixTable(object):
         stat : numpy.array
                stat values
         ksel : output of np.where
-               Elements depending on a condition.   
+               Elements depending on a condition.
         """
         stat = np.array(stat)
         if ksel is None:
@@ -671,7 +668,7 @@ class PixTable(object):
         dq   : numpy.array
                dq values
         ksel : output of np.where
-               Elements depending on a condition.   
+               Elements depending on a condition.
         """
         dq = np.array(dq)
         if ksel is None:
@@ -725,7 +722,7 @@ class PixTable(object):
         origin : numpy.array
                  origin values
         ksel   : output of np.where
-                 Elements depending on a condition.   
+                 Elements depending on a condition.
         """
         origin = np.array(origin)
         if ksel is None:
@@ -818,7 +815,7 @@ class PixTable(object):
         weight : numpy.array
                  weight values
         ksel   : output of np.where
-                 Elements depending on a condition.   
+                 Elements depending on a condition.
         """
         weight = np.array(weight)
         if ksel is None:
@@ -1771,9 +1768,8 @@ class PixTable(object):
 
     def reconstruct_det_image(self, xstart=None, ystart=None,
                               xstop=None, ystop=None):
-        """Reconstructs the image on the detector from the pixtable.
-        The pixtable must concerns only one IFU,
-        otherwise an exception is raised.
+        """Reconstructs the image on the detector from the pixtable. The
+        pixtable must concerns only one IFU, otherwise an exception is raised.
 
         Returns
         -------
@@ -1815,10 +1811,9 @@ class PixTable(object):
         return Image(shape=(image.shape), data=image, wcs=wcs)
 
     def reconstruct_det_waveimage(self):
-        """Reconstructs an image of wavelength values
-        on the detector from the pixtable.
-        The pixtable must concerns only one IFU,
-        otherwise an exception is raised.
+        """Reconstructs an image of wavelength values on the detector from the
+        pixtable. The pixtable must concerns only one IFU, otherwise an
+        exception is raised.
 
         Returns
         -------
@@ -1853,10 +1848,8 @@ class PixTable(object):
         return Image(shape=(image.shape), data=image, wcs=wcs)
 
     def subtract_slice_median(self, maskfile=None, skysub=True):
-        """
-        Computes the median value for all slices and applies in place
-        a correction to each slice to bring all slices
-        to the same median value.
+        """Computes the median value for all slices and applies in place a
+        correction to each slice to bring all slices to the same median value.
 
         Parameters
         ----------

@@ -26,7 +26,7 @@ class LSF(object):
     """
 
     def __init__(self, type="qsim_v1"):
-        """ Manages LSF model.
+        """Manages LSF model.
 
         :param type: type of LSF
 
@@ -79,7 +79,7 @@ class LSF(object):
         return lsf
 
     def size(self, lbda, step, epsilon, **kargs):
-        """ returns the LSF size in pixels.
+        """returns the LSF size in pixels.
 
         :param lbda: wavelength value in A
         :type lbda: float
