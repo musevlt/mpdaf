@@ -28,7 +28,7 @@ void C_slice_correction(double* result, int* ifu, int* sli, double* data, double
          #pragma omp for 
          for (chan=1; chan<=24; chan++)
          {
-            int sl, i, p, count, insource;
+            int sl, i, count;
             double m;
             double *temp;
 	    temp = (double *) malloc(npix * sizeof(double));
