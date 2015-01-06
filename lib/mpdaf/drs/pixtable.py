@@ -1590,7 +1590,7 @@ class PixTable(object):
                 ypos_sky = numexpr.evaluate("yc + ypos")
         return xpos_sky, ypos_sky
 
-    def get_pos_sky(self, xpos, ypos):
+    def get_pos_sky(self, xpos=None, ypos=None):
         """Returns the absolute position on the sky in degrees/pixel.
 
         Parameters
@@ -1604,6 +1604,10 @@ class PixTable(object):
         -------
         xpos_sky, ypos_sky : numpy.array, numpy.array
         """
+        if xpos is None:
+            xpos = self.get_xpos()
+        if ypos is None:
+            ypos = self.get_ypos()
         ok_numexpr = True
         try:
             import numexpr
@@ -1866,6 +1870,7 @@ class PixTable(object):
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
 
+        mask = np.zeros(self.nrows).astype('bool')
         if maskfile is not None:
             xpos = self.get_xpos()
             ypos = self.get_ypos()
@@ -1873,10 +1878,6 @@ class PixTable(object):
             del xpos, ypos
             from mpdaf.obj import Image
             ima_mask = Image(maskfile)
-            xmin = []
-            xmax = []
-            ymin = []
-            ymax = []
             from scipy import ndimage
             label = ndimage.measurements.label(ima_mask.data.data)[0]
             for i in np.unique(label):
@@ -1885,42 +1886,35 @@ class PixTable(object):
                         ksel = np.where(label == i)
                         item = (slice(min(ksel[0]), max(ksel[0]) + 1, None), slice(min(ksel[1]), max(ksel[1]) + 1, None))
                         coord = ima_mask.wcs[item].get_range()
-                        xmin.append(min(coord[0][1], coord[1][1]))
-                        xmax.append(max(coord[0][1], coord[1][1]))
-                        ymin.append(min(coord[0][0], coord[1][0]))
-                        ymax.append(max(coord[0][0], coord[1][0]))
+                        x0 = min(coord[0][1], coord[1][1])
+                        x1 = max(coord[0][1], coord[1][1])
+                        y0 = min(coord[0][0], coord[1][0])
+                        y1 = max(coord[0][0], coord[1][0])
+                        ksel = np.where((xpos_sky>x0) & (xpos_sky<x1) & (ypos_sky>y0) & (ypos_sky<y1))
+                        pix = np.array(ima_mask.wcs.sky2pix(zip(ypos_sky[ksel], xpos_sky[ksel]), nearest=True), dtype=int)
+                        imask = [ima_mask[p[0],p[1]]!=0 for p in pix]
+                        mask[ksel] = np.logical_or(mask[ksel], imask)        
                     except:
                         print 'masking object %i failed' % i
             del ima_mask
-            nmask = len(xmin)
-            xmin = np.array(xmin, dtype=np.float64)
-            xmax = np.array(xmax, dtype=np.float64)
-            ymin = np.array(ymin, dtype=np.float64)
-            ymax = np.array(ymax, dtype=np.float64)
         else:
-            nmask = 0
             xpos_sky = np.empty(0)
             ypos_sky = np.empty(0)
-            xmin = np.empty(0)
-            xmax = np.empty(0)
-            ymin = np.empty(0)
-            ymax = np.empty(0)
 
         import mpdaf
         import ctypes
-        #import _ctypes
         #global libCmethods
 
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods", mpdaf.__path__[0])
-
+        
         # define argument types
         array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')
         array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='CONTIGUOUS')
 
         # setup the return types and argument types
         libCmethods.C_slice_correction.restype = None
-        libCmethods.C_slice_correction.argtypes = [array_1d_double, array_1d_int, array_1d_int, array_1d_double, array_1d_double, ctypes.c_int, ctypes.c_int, array_1d_double, array_1d_double, array_1d_double, array_1d_double, array_1d_double, array_1d_double, ctypes.c_int]
+        libCmethods.C_slice_correction.argtypes = [array_1d_double, array_1d_int, array_1d_int, array_1d_double, array_1d_double, ctypes.c_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
         result = np.empty_like(data).astype(np.float64)
@@ -1929,14 +1923,19 @@ class PixTable(object):
         data = data.astype(np.float64)
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
-        xpos_sky = xpos_sky.astype(np.float64)
-        ypos_sky = ypos_sky.astype(np.float64)
+        mask = mask.astype(np.int32)
         skysub = np.int32(skysub)
 
-        libCmethods.C_slice_correction(result, ifu, sli, data, lbda, data.shape[0], nmask, xpos_sky, ypos_sky, xmin, ymin, xmax, ymax, skysub)
+        libCmethods.C_slice_correction(result, ifu, sli, data, lbda, data.shape[0], mask, skysub)
 
         # set pixtable data
         self.set_data(result)
 
         # close libray
+        #import _ctypes
         #_ctypes.dlclose(libCmethods._handle)
+        #libCmethods._handle = None
+        #libCmethods._name = None
+        #libCmethods._FuncPtr = None
+        del libCmethods
+        

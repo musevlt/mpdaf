@@ -15,13 +15,15 @@ double med_value(double* data, int n)
   return data[n / 2];
 }
 
-void C_slice_correction(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int nmask, double* xpos, double* ypos, double* xmin, double* ymin, double* xmax, double* ymax, int skysub)
+void C_slice_correction(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int* mask, int skysub)
 {
     int n,chan;
     double med[24 * 48];
     double median;
 
-    #pragma omp parallel shared(ifu,sli,data,npix,med,nmask,xpos,ypos,xmin,ymin,xmax,ymax) private(chan)
+    //omp_set_num_threads
+
+    #pragma omp parallel shared(ifu,sli,data,npix,med,mask) private(chan)
     {
          #pragma omp for 
          for (chan=1; chan<=24; chan++)
@@ -35,21 +37,10 @@ void C_slice_correction(double* result, int* ifu, int* sli, double* data, double
 	        count = 0;
                 for (i=0; i<npix; i++)
 	        {
-		     if ((ifu[i]==chan) && (sli[i]==sl) && (lbda[i] > 4800) && (lbda[i] < 9300))
+		  if ((mask[i]==0) && (ifu[i]==chan) && (sli[i]==sl) && (lbda[i] > 4800) && (lbda[i] < 9300))
 		     {
-		          insource = 0;
-		          for (p=0; p<nmask; p++)
-		          {
-			       if((xpos[i]>=xmin[p]) && (xpos[i]<=xmax[p]) && (ypos[i]>=ymin[p]) && (ypos[i]<=ymax[p]))
-			       {
-			          insource = 1;
-			       }
-		          }
-		          if (insource == 0)
-		          {
-			      temp[count] = data[i];
-			      count += 1;
-		          }
+			  temp[count] = data[i];
+			  count += 1;
 		     }
 	        }
 	        m = med_value(temp,count);
