@@ -98,10 +98,10 @@ def options(*packages, **kw):
             raise ImportError(err[1])
     
     for token in commands.getoutput("pkg-config --libs --cflags %s" % ' '.join(packages)).split():
-       if flag_map.has_key(token[:2]):
-           kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
-       else: # throw others to extra_link_args
-           kw.setdefault('extra_link_args', []).append(token)
+        if flag_map.has_key(token[:2]):
+            kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
+        else: # throw others to extra_link_args
+            kw.setdefault('extra_link_args', []).append(token)
 
     kw.setdefault('libraries', []).append('m')
     kw.setdefault('extra_link_args', []).append('-fopenmp')
