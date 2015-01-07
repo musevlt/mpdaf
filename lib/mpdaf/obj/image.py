@@ -1614,44 +1614,22 @@ class Image(object):
         if inside and not circular:
             self.data.mask[imin:imax, jmin:jmax] = 1
         elif inside and circular:
-            ni = np.shape(self.data[imin:imax, jmin:jmax])[0]
-            nj = np.shape(self.data[imin:imax, jmin:jmax])[1]
-            m = np.ma.make_mask_none((ni, nj))
-            for i_in in range(ni):
-                i = i_in + imin
-                pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
-                pixcrd[:, 0] -= center[0]
-                pixcrd[:, 1] -= center[1]
-                m[i_in, :] = ((np.array(pixcrd[:, 0])
-                              * np.array(pixcrd[:, 0])
-                              + np.array(pixcrd[:, 1])
-                              * np.array(pixcrd[:, 1])) < radius2)
-            try:
-                m = np.ma.mask_or(m, np.ma.getmask(self.data)
-                                  [imin:imax, jmin:jmax])
-                self.data.mask[imin:imax, jmin:jmax] = m
-            except:
-                pass
+        
+            grid = np.meshgrid(np.arange(imin,imax)-center[0], \
+                               np.arange(jmin,jmax)-center[1], indexing='ij')
+            self.data.mask[imin:imax, jmin:jmax] = \
+            np.logical_or(self.data.mask[imin:imax, jmin:jmax],\
+                          (grid[0]**2 + grid[1]**2) < radius2)
         elif not inside and circular:
             self.data.mask[0:imin, :] = 1
             self.data.mask[imax:, :] = 1
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
-            ni = np.shape(self.data[imin:imax, jmin:jmax])[0]
-            nj = np.shape(self.data[imin:imax, jmin:jmax])[1]
-            m = np.ma.make_mask_none((ni, nj))
-            for i_in in range(ni):
-                i = i_in + imin
-                pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
-                pixcrd[:, 0] -= center[0]
-                pixcrd[:, 1] -= center[1]
-                m[i_in, :] = ((np.array(pixcrd[:, 0])
-                              * np.array(pixcrd[:, 0])
-                              + np.array(pixcrd[:, 1])
-                              * np.array(pixcrd[:, 1])) > radius2)
-            m = np.ma.mask_or(m, np.ma.getmask(self.data)
-                              [imin:imax, jmin:jmax])
-            self.data.mask[imin:imax, jmin:jmax] = m
+            grid = np.meshgrid(np.arange(imin,imax)-center[0], \
+                               np.arange(jmin,jmax)-center[1], indexing='ij')
+            self.data.mask[imin:imax, jmin:jmax] = \
+            np.logical_or(self.data.mask[imin:imax, jmin:jmax],\
+                          (grid[0]**2 + grid[1]**2) > radius2)
         else:
             self.data.mask[0:imin, :] = 1
             self.data.mask[imax:, :] = 1
@@ -1696,50 +1674,25 @@ class Image(object):
         sinpa = np.sin(np.radians(posangle))
 
         if inside:
-            ni = np.shape(self.data[imin:imax, jmin:jmax])[0]
-            nj = np.shape(self.data[imin:imax, jmin:jmax])[1]
-            m = np.ma.make_mask_none((ni, nj))
-            for i_in in range(ni):
-                i = i_in + imin
-                pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
-                pixcrd[:, 0] -= center[0]
-                pixcrd[:, 1] -= center[1]
-
-                listy = np.array(pixcrd[:, 0])
-                listx = np.array(pixcrd[:, 1])
-
-                m[i_in, :] = (((listx*cospa+listy*sinpa)/radius[0])**2
-                             + ((listy * cospa - listx * sinpa) / radius[1]) ** 2 < 1)
-            try:
-                m = np.ma.mask_or(m, np.ma.getmask(self.data)
-                                  [imin:imax, jmin:jmax])
-                self.data.mask[imin:imax, jmin:jmax] = m
-            except:
-                pass
-
+            grid = np.meshgrid(np.arange(imin,imax)-center[0], \
+                               np.arange(jmin,jmax)-center[1], indexing='ij')
+            self.data.mask[imin:imax, jmin:jmax] = \
+            np.logical_or(self.data.mask[imin:imax, jmin:jmax],\
+                          ((grid[1]*cospa+grid[0]*sinpa)/radius[0])**2 \
+                          + ((grid[0] * cospa - grid[1] * sinpa) \
+                             / radius[1]) ** 2 < 1)
         if not inside:
             self.data.mask[0:imin, :] = 1
             self.data.mask[imax:, :] = 1
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
-            ni = np.shape(self.data[imin:imax, jmin:jmax])[0]
-            nj = np.shape(self.data[imin:imax, jmin:jmax])[1]
-            m = np.ma.make_mask_none((ni, nj))
-            for i_in in range(ni):
-                i = i_in + imin
-                pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
-                pixcrd[:, 0] -= center[0]
-                pixcrd[:, 1] -= center[1]
-
-                listy = np.array(pixcrd[:, 0])
-                listx = np.array(pixcrd[:, 1])
-
-                m[i_in, :] = (((listx*cospa+listy*sinpa)/radius[0])**2
-                             + ((listy * cospa - listx * sinpa) / radius[1]) ** 2 > 1)
-
-            m = np.ma.mask_or(m, np.ma.getmask(self.data)
-                              [imin:imax, jmin:jmax])
-            self.data.mask[imin:imax, jmin:jmax] = m
+            grid = np.meshgrid(np.arange(imin,imax)-center[0], \
+                               np.arange(jmin,jmax)-center[1], indexing='ij')
+            self.data.mask[imin:imax, jmin:jmax] = \
+            np.logical_or(self.data.mask[imin:imax, jmin:jmax],\
+                          ((grid[1]*cospa+grid[0]*sinpa)/radius[0])**2 \
+                          + ((grid[0] * cospa - grid[1] * sinpa) \
+                             / radius[1]) ** 2 > 1)
 
     def unmask(self):
         """Unmasks the image (just invalid data (nan,inf) are masked)."""
@@ -5524,3 +5477,57 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
         return p1, p3
     else:
         return p1
+
+def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
+    """Creates a new image from a table of apertures.
+    
+    ra(deg), dec(deg) and radius(arcsec).
+
+    Parameters
+    ----------
+    shape  : integer or (integer,integer)
+            Lengths of the image in Y and X
+            with python notation: (ny,nx). (101,101) by default.
+            If wcs object contains dimensions,
+            shape is ignored and wcs dimensions are used.
+    wcs    : :class:`mpdaf.obj.WCS`
+            World coordinates.
+    sky      : list of (float, float, float)
+               (y, x, size) describes an aperture on the sky,
+                   defined by a center (y, x) in degrees,
+                   and size (radius) in arcsec.
+                 
+    Returns
+    -------
+    out : obj.Image object (`Image class`_)
+    center, radius, pix=False, inside=True):
+    """
+    
+    if is_int(shape):
+        shape = (shape, shape)
+    shape = np.array(shape)
+
+    if wcs.naxis1 == 1. and wcs.naxis2 == 1.:
+        wcs.naxis1 = shape[1]
+        wcs.naxis2 = shape[0]
+    else:
+        if wcs.naxis1 != 0. or wcs.naxis2 != 0.:
+            shape[1] = wcs.naxis1
+            shape[0] = wcs.naxis2
+            
+    data = np.zeros(shape)
+    
+    for y ,x , r in objects:        
+        center = wcs.sky2pix([y,x])[0]
+        r = r / np.abs(wcs.get_step()) / 3600.
+        r2 = r[0] * r[1]
+
+        imin = max(0, center[0] - r[0])
+        imax = min(center[0] + r[0] + 1, shape[0])
+        jmin = max(0, center[1] - r[1])
+        jmax = min(center[1] + r[1] + 1, shape[1])
+        
+        grid = np.meshgrid(np.arange(imin,imax)-center[0], np.arange(jmin,jmax)-center[1], indexing='ij')
+        data[imin:imax, jmin:jmax] = np.array((grid[0]**2 + grid[1]**2) < r2, dtype =int)
+        
+    return Image(data=data, wcs=wcs)
