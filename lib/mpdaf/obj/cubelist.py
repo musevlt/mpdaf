@@ -138,9 +138,9 @@ class CubeList(object):
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
         # setup argument types
-        libCmethods.merging_median.argtypes = [charptr, charptr]
+        libCmethods.mpdaf_merging_median.argtypes = [charptr, charptr]
         # run C method
-        libCmethods.merging_median(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path))
+        libCmethods.mpdaf_merging_median(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path))
 
     def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var_mean=True):
         """merges cubes in a single data cube using sigma clipped mean.
@@ -189,6 +189,6 @@ class CubeList(object):
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
         # setup argument types
-        libCmethods.merging_sigma_clipping.argtypes = [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int]
+        libCmethods.mpdaf_merging_sigma_clipping.argtypes = [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int]
         # run C method
-        libCmethods.merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path), nmax, np.float64(nclip_low), np.float64(nclip_up), nstop, np.int32(var_mean))
+        libCmethods.mpdaf_merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path), nmax, np.float64(nclip_low), np.float64(nclip_up), nstop, np.int32(var_mean))

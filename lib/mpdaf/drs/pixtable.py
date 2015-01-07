@@ -1,12 +1,14 @@
 """pixtable.py Manages MUSE pixel table files."""
 from mpdaf.obj import Image
 from mpdaf.obj import WCS
+from mpdaf.obj import Spectrum
+from mpdaf.obj import WaveCoord
+from mpdaf.obj.objs import is_float, is_int
 import numpy as np
 from astropy.io import fits as pyfits
 import datetime
 import warnings
 import logging
-
 
 FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
 logging.basicConfig(format=FORMAT)
@@ -1846,23 +1848,21 @@ class PixTable(object):
         wcs = WCS(crval=(ystart, xstart))
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
-
-    def subtract_slice_median(self, maskfile=None, skysub=True):
-        """Computes the median value for all slices and applies in place a
-        correction to each slice to bring all slices to the same median value.
+    
+    def _mask_column(self, maskfile=None):
+        """Computes the mask column correcponding to a mask file
 
         Parameters
         ----------
         maskfile : string
                    mask file to mask out all bright
                    continuum objects present in the FoV
-        skysub   : boolean
-                   Option for sky subtraction
+                   
+        Returns
+        -------
+        out : array of boolean
         """
-        origin = self.get_origin()
-        ifu = self.origin2ifu(origin)
-        sli = self.origin2slice(origin)
-
+        
         mask = np.zeros(self.nrows).astype('bool')
         if maskfile is not None:
             xpos = self.get_xpos()
@@ -1890,24 +1890,45 @@ class PixTable(object):
                     except:
                         print 'masking object %i failed' % i
             del ima_mask
-        else:
-            xpos_sky = np.empty(0)
-            ypos_sky = np.empty(0)
+        return mask
+
+    def subtract_slice_median(self, maskfile=None, skysub=True):
+        """Computes the median value for all slices and applies in place a
+        correction to each slice to bring all slices to the same median value.
+
+        Parameters
+        ----------
+        maskfile : string
+                   mask file to mask out all bright
+                   continuum objects present in the FoV
+        skysub   : boolean
+                   Option for sky subtraction
+        """
+        origin = self.get_origin()
+        ifu = self.origin2ifu(origin)
+        sli = self.origin2slice(origin)
+
+        mask = self._mask_column(maskfile)
 
         import mpdaf
         import ctypes
         #global libCmethods
 
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods", mpdaf.__path__[0])
+        libCmethods = np.ctypeslib.load_library("libCmethods", \
+                                                mpdaf.__path__[0])
         
         # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='CONTIGUOUS')
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
+                                                 flags='CONTIGUOUS')
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
+                                              flags='CONTIGUOUS')
 
         # setup the return types and argument types
-        libCmethods.C_slice_correction.restype = None
-        libCmethods.C_slice_correction.argtypes = [array_1d_double, array_1d_int, array_1d_int, array_1d_double, array_1d_double, ctypes.c_int, array_1d_int, ctypes.c_int]
+        libCmethods.mpdaf_slice_correction.restype = None
+        libCmethods.mpdaf_slice_correction.argtypes = \
+        [array_1d_double, array_1d_int, array_1d_int, array_1d_double, \
+         array_1d_double, ctypes.c_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
         result = np.empty_like(data).astype(np.float64)
@@ -1919,7 +1940,8 @@ class PixTable(object):
         mask = mask.astype(np.int32)
         skysub = np.int32(skysub)
 
-        libCmethods.C_slice_correction(result, ifu, sli, data, lbda, data.shape[0], mask, skysub)
+        libCmethods.mpdaf_slice_correction(result, ifu, sli, data, lbda, \
+                                           data.shape[0], mask, skysub)
 
         # set pixtable data
         self.set_data(result)
@@ -1932,3 +1954,75 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         del libCmethods
         
+    def sky_ref(self, maskfile=None, dlbda = 1.0, nmax=2, nclip=5.0, nstop=2): #25min
+        """Computes the reference sky spectrum using sigma clipped median.
+        
+        Parameters
+        ----------
+        maskfile : string
+                   mask file to mask out all bright
+                   continuum objects present in the FoV
+        dlbda    : double
+                   wavelength step
+        nmax     : integer
+                   maximum number of clipping iterations
+        nclip    : float or (float,float)
+                   Number of sigma at which to clip.
+                   Single clipping parameter or lower / upper clipping parameters
+        nstop    : integer
+                   If the number of not rejected pixels is less
+                   than this number, the clipping iterations stop.
+
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Spectrum`
+        """
+        # mask
+        mask = self._mask_column(maskfile)
+        # sigma clipped parameters
+        import mpdaf
+        import ctypes
+        if is_int(nclip) or is_float(nclip):
+            nclip_low = nclip
+            nclip_up = nclip
+        else:
+            nclip_low = nclip[0]
+            nclip_up = nclip[1]
+        # wavelength step
+        lbda = self.get_lambda()
+        lmin = np.min(lbda) - dlbda/2.0
+        lmax = np.max(lbda) + dlbda/2.0
+        n = (int)((lmax-lmin) / dlbda);
+
+        # load the library, using numpy mechanisms
+        libCmethods = np.ctypeslib.load_library("libCmethods", \
+                                                mpdaf.__path__[0])
+        # define argument types
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
+                                                 flags='CONTIGUOUS')
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
+                                              flags='CONTIGUOUS')
+        # setup argument types
+        libCmethods.mpdaf_sky_ref.argtypes = \
+        [array_1d_double, array_1d_double, array_1d_int, ctypes.c_int, \
+         ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int, \
+         ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int, \
+         array_1d_double]
+        
+        # setup return type
+        libCmethods.mpdaf_sky_ref.restype = None
+        
+        data = self.get_data()
+        data = data.astype(np.float64) 
+        lbda = lbda.astype(np.float64)
+        mask = mask.astype(np.int32)
+        result = np.empty(n).astype(np.float64)
+        # run C method
+        libCmethods.mpdaf_sky_ref(data, lbda, mask, data.shape[0], \
+                                  np.float64(lmin), np.float64(lmax), \
+                                  np.float64(dlbda), n, nmax, \
+                                  np.float64(nclip_low), \
+                                  np.float64(nclip_up), nstop, result)
+        wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda), cunit='Angstrom', shape=n)
+        return Spectrum(shape=n, data=result, wave=wave)
+    

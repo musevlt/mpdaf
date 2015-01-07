@@ -1,79 +1,12 @@
+#include "tools.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <fitsio.h>
 #include <time.h>
 #include <math.h>
-//#include <omp.h>
 
-
-static int qsort_compare (const void * a, const void * b)
-{
-        return ( *(double*)a > *(double*)b );
-}
-
-static void mean_st(double* data, int n, double x[3])
-{
-    double mean=0.0, sum_deviation=0.0;
-    int i;
-    for(i=0; i<n;i++)
-    {
-      mean+=data[i];
-      //printf("%g, ",data[i]);
-    }
-    //printf("\n");
-    mean=mean/n;
-    for(i=0; i<n;i++)
-      {
-	sum_deviation+=(data[i]-mean)*(data[i]-mean);
-      }
-    x[0] = mean;
-    x[1] = sqrt(sum_deviation/n);           
-}
-
-static double med_value(double* data, int n)
-{
-  qsort(data, n, sizeof(double), qsort_compare);
-  return data[n / 2];
-}
-
-static void sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* files_id)
-{
-  double clip_lo, clip_up;
-  mean_st(data, n, x);
-  x[2] = n;
-  double med;
-  med =  med_value(data,n);
-  clip_lo = med - (nclip_low*x[1]);
-  clip_up = med + (nclip_up*x[1]);
-
-  int i, ni = 0; 
-  for (i=0; i<n; i++)
-    {
-      if ((data[i]<clip_up) && (data[i]>clip_lo))
-        {
-	  data[ni]=data[i];
-	  files_id[ni]=files_id[i];
-	  ni = ni + 1;
-	}
-    }
-  if (ni<nstop || ni==n)
-    {
-      return;
-    }
-   if ( nmax > 0 )
-   {
-     nmax = nmax - 1;
-     sigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop, files_id);
-   }
-}
-
-double median(double* data, int n)
-{
-  qsort(data, n, sizeof(double), qsort_compare);
-  return data[n / 2];
-}
-
-int merging_median(char* input, char* output, char* output_path)
+int mpdaf_merging_median(char* input, char* output, char* output_path)
 {
   int status = 0;  /* CFITSIO status value MUST be initialized to zero! */
   
@@ -224,7 +157,7 @@ int merging_median(char* input, char* output, char* output_path)
 		    }
 		    else
 		    {
-                      pix[0][ii] = median(work,n);
+                      pix[0][ii] = mpdaf_median(work,n);
 		      pix[1][ii] = n;//exp map
        		    }
 	       }
@@ -276,7 +209,7 @@ int merging_median(char* input, char* output, char* output_path)
 }
 
 
-int merging_sigma_clipping(char* input, char* output, char* output_path, int nmax, double nclip_low, double nclip_up, int nstop, int var_mean)
+int mpdaf_merging_sigma_clipping(char* input, char* output, char* output_path, int nmax, double nclip_low, double nclip_up, int nstop, int var_mean)
 {
   int status = 0;  //CFITSIO status value MUST be initialized to zero!
   int naxis, i, ii, n;
@@ -450,7 +383,7 @@ int merging_sigma_clipping(char* input, char* output, char* output_path, int nma
 		    }
 		    else
 		    {
-                      sigma_clip(work, n, x, nmax, nclip_low, nclip_up, nstop, files_id);
+                      mpdaf_mean_sigma_clip(work, n, x, nmax, nclip_low, nclip_up, nstop, files_id);
                       pix[0][ii] = x[0];//mean value
 		      pix[1][ii] = x[2];//exp map
 		      if (x[2]>1)

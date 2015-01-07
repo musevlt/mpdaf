@@ -136,5 +136,5 @@ setup(name='mpdaf',
       platforms='any',
       cmdclass={'test': UnitTest, 'fusion': MakeFusion},
       ext_package='mpdaf',
-      ext_modules=[Extension('libCmethods', ['src/subtract_slice_median.c', 'src/merging.c'], **options('cfitsio'))],
+      ext_modules=[Extension('libCmethods', ['src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'], **options('cfitsio'))],
       )
