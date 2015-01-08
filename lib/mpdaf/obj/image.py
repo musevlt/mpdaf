@@ -1757,7 +1757,7 @@ class Image(object):
         jmax = int(np.max(pixcrd[:, 1])) + 1
         if jmax > self.shape[1]:
             jmax = self.shape[1]
-
+            
         self.data = self.data[imin:imax, jmin:jmax]
         self.shape = np.array((self.data.shape[0], self.data.shape[1]))
         if self.var is not None:
@@ -1768,23 +1768,19 @@ class Image(object):
             self.wcs = None
 
         if mask:
-            # mask outside pixels
-            m = np.ma.make_mask_none(self.data.shape)
-            for j in range(self.shape[0]):
-                pixcrd = np.array([np.ones(self.shape[1])
-                                   * j, np.arange(self.shape[1])]).T
-                skycrd = self.wcs.pix2sky(pixcrd)
-                test_ra_min = np.array(skycrd[:, 1]) < x_min
-                test_ra_max = np.array(skycrd[:, 1]) > x_max
-                test_dec_min = np.array(skycrd[:, 0]) < y_min
-                test_dec_max = np.array(skycrd[:, 0]) > y_max
-                m[j, :] = test_ra_min + test_ra_max \
-                    + test_dec_min + test_dec_max
-            try:
-                m = np.ma.mask_or(m, np.ma.getmask(self.data))
-                self.data = np.ma.MaskedArray(self.data, mask=m)
-            except:
-                pass
+            # mask outside pixels 
+            grid = np.meshgrid(np.arange(0,self.shape[0]), \
+                                np.arange(0,self.shape[1]), indexing='ij')
+            shape = grid[1].shape
+            pixcrd = np.array([[p, q] for p,q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
+            skycrd = np.array(self.wcs.pix2sky(pixcrd))
+            x = skycrd[:, 1].reshape(shape)
+            y = skycrd[:, 0].reshape(shape)
+            test_x = np.logical_or(x <= x_min, x > x_max)
+            test_y = np.logical_or(y <= y_min, y > y_max)
+            test = np.logical_or(test_x, test_y)
+            self.data.mask = np.logical_or(self.data.mask, test)
+            self.resize()
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True):
         """Returns truncated image.

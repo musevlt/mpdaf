@@ -2058,30 +2058,27 @@ class Cube(object):
             wave = self.wave[kmin:kmax]
         except:
             wave = None
-
-        if mask:
-            # mask outside pixels
-            m = np.ma.make_mask_none(data.shape)
-            for j in range(shape[1]):
-                pixcrd = np.array([np.ones(shape[2]) * j,
-                                   np.arange(shape[2])]).T
-                skycrd = self.wcs.pix2sky(pixcrd)
-                test_ra_min = np.array(skycrd[:, 1]) < x_min
-                test_ra_max = np.array(skycrd[:, 1]) > x_max
-                test_dec_min = np.array(skycrd[:, 0]) < y_min
-                test_dec_max = np.array(skycrd[:, 0]) > y_max
-                m[:, j, :] = test_ra_min + test_ra_max \
-                    + test_dec_min + test_dec_max
-            try:
-                m = np.ma.mask_or(m, np.ma.getmask(data))
-                data = np.ma.MaskedArray(data, mask=m)
-            except:
-                pass
-
+            
         res = Cube(shape=shape, wcs=wcs, wave=wave,
                    unit=self.unit, fscale=self.fscale)
         res.data = data
         res.var = var
+
+        if mask:
+            # mask outside pixels
+            grid = np.meshgrid(np.arange(0, res.shape[1]), \
+                                np.arange(0, res.shape[2]), indexing='ij')
+            shape = grid[1].shape
+            pixcrd = np.array([[p, q] for p,q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
+            skycrd = np.array(res.wcs.pix2sky(pixcrd))
+            x = skycrd[:, 1].reshape(shape)
+            y = skycrd[:, 0].reshape(shape)
+            test_x = np.logical_or(x <= x_min, x > x_max)
+            test_y = np.logical_or(y <= y_min, y > y_max)
+            test = np.logical_or(test_x, test_y)
+            res.data.mask = np.logical_or(res.data.mask, np.tile(test,[res.shape[0],1,1]))
+            res.resize()
+
         return res
 
     def _rebin_factor_(self, factor):
@@ -3337,27 +3334,27 @@ class CubeDisk(object):
         else:
             raise ValueError('Operation forbidden')
 
-    def truncate(self, lmin, lmax, y_min, y_max, x_min, x_max, mask=True):
+    def truncate(self, coord, mask=True):
         """ Truncates the cube and return a sub-cube.
 
-          Parameters
-          ----------
-          lmin  : float
-                  Minimum wavelength.
-          lmax  : float
-                  Maximum wavelength.
-          y_min : float
-                  Minimum value of y in degrees.
-          y_max : float
-                  Maximum value of y in degrees.
-          x_min : float
-                  Minimum value of x in degrees.
-          x_max : float
-                  Maximum value of x in degrees.
-          mask  : boolean
-                  if True, pixels outside [y_min,y_max]
-                  and [x_min,x_max] are masked.
+        Parameters
+        ----------
+        coord : array
+                array containing the sub-cube boundaries
+                [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
+                (output of `mpdaf.obj.cube.get_range`)
+                x and y in degrees
+        mask  : boolean
+                if True, pixels outside [y_min,y_max]
+                and [x_min,x_max] are masked.
         """
+        lmin = coord[0][0]
+        y_min = coord[0][1]
+        x_min = coord[0][2]
+        lmax = coord[1][0]
+        y_max = coord[1][1]
+        x_max = coord[1][2]
+
         skycrd = [[y_min, x_min], [y_min, x_max], [y_max, x_min], [y_max, x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
 
@@ -3408,22 +3405,20 @@ class CubeDisk(object):
 
         if mask:
             # mask outside pixels
-            m = np.ma.make_mask_none(res.data.shape)
-            for j in range(res.shape[1]):
-                pixcrd = np.array([np.ones(shape[2])
-                                   * j, np.arange(shape[2])]).T
-                skycrd = res.wcs.pix2sky(pixcrd)
-                test_ra_min = np.array(skycrd[:, 1]) < x_min
-                test_ra_max = np.array(skycrd[:, 1]) > x_max
-                test_dec_min = np.array(skycrd[:, 0]) < y_min
-                test_dec_max = np.array(skycrd[:, 0]) > y_max
-                m[:, j, :] = test_ra_min + test_ra_max \
-                    + test_dec_min + test_dec_max
-            try:
-                m = np.ma.mask_or(m, np.ma.getmask(res.data))
-                res.data = np.ma.MaskedArray(res.data, mask=m)
-            except:
-                pass
+            grid = np.meshgrid(np.arange(0, res.shape[1]), \
+                                np.arange(0, res.shape[2]), indexing='ij')
+            shape = grid[1].shape
+            pixcrd = np.array([[p, q] for p,q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
+            skycrd = np.array(res.wcs.pix2sky(pixcrd))
+            x = skycrd[:, 1].reshape(shape)
+            y = skycrd[:, 0].reshape(shape)
+            test_x = np.logical_or(x <= x_min, x > x_max)
+            test_y = np.logical_or(y <= y_min, y > y_max)
+            test = np.logical_or(test_x, test_y)
+            res.data.mask = np.logical_or(res.data.mask, np.tile(test,[res.shape[0],1,1]))
+            res.resize()
+            
+
         return res
 
     def get_white_image(self):
