@@ -1892,7 +1892,7 @@ class PixTable(object):
             del ima_mask
         return mask
 
-    def subtract_slice_median(self, maskfile=None, skysub=True):
+    def subtract_slice_median(self, maskfile=None, norm='sky'):
         """Computes the median value for all slices and applies in place a
         correction to each slice to bring all slices to the same median value.
 
@@ -1901,8 +1901,8 @@ class PixTable(object):
         maskfile : string
                    mask file to mask out all bright
                    continuum objects present in the FoV
-        skysub   : boolean
-                   Option for sky subtraction
+        norm     : string
+                   Option for sky subtraction 'sky' or 'zero' 
         """
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
@@ -1938,6 +1938,10 @@ class PixTable(object):
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
         mask = mask.astype(np.int32)
+        if norm == 'sky':
+            skysub = 1
+        else:
+            skysub = 0 
         skysub = np.int32(skysub)
 
         libCmethods.mpdaf_slice_correction(result, ifu, sli, data, lbda, \
