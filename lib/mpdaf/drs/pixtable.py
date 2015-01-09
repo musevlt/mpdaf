@@ -10,8 +10,8 @@ import datetime
 import warnings
 import logging
 
-FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
-logging.basicConfig(format=FORMAT)
+# FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
+# logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('mpdaf corelib')
 
 
@@ -1849,7 +1849,7 @@ class PixTable(object):
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
     
-    def _mask_column(self, maskfile=None):
+    def mask_column(self, maskfile=None):
         """Computes the mask column correcponding to a mask file
 
         Parameters
@@ -1908,7 +1908,7 @@ class PixTable(object):
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
 
-        mask = self._mask_column(maskfile)
+        mask = self.mask_column(maskfile)
 
         import mpdaf
         import ctypes
@@ -1958,7 +1958,7 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         del libCmethods
         
-    def sky_ref(self, maskfile=None, dlbda = 1.0, nmax=2, nclip=5.0, nstop=2): #25min
+    def sky_ref(self, maskfile=None, dlbda = 1.0, nmax=2, nclip=5.0, nstop=2, mask_col=None): #25min
         """Computes the reference sky spectrum using sigma clipped median.
         
         Parameters
@@ -1976,13 +1976,18 @@ class PixTable(object):
         nstop    : integer
                    If the number of not rejected pixels is less
                    than this number, the clipping iterations stop.
-
+        mask_col : array of boolean
+                   column corresponding to a mask file (previously computed by mask_column)
+                   if None, mask_column is computed
         Returns
         -------
         out : :class:`mpdaf.obj.Spectrum`
         """
         # mask
-        mask = self._mask_column(maskfile)
+        if mask_col is None:
+            mask = self.mask_column(maskfile)
+        else:
+            mask = mask_col
         # sigma clipped parameters
         import mpdaf
         import ctypes
@@ -2029,4 +2034,72 @@ class PixTable(object):
                                   np.float64(nclip_up), nstop, result)
         wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda), cunit='Angstrom', shape=n)
         return Spectrum(shape=n, data=result, wave=wave)
+    
+    def subtract_slice_median_skyref(self, maskfile=None):
+        """Computes the median value for all slices and applies in place a
+        correction to each slice to bring all slices to the same median value.
+
+        Parameters
+        ----------
+        maskfile : string
+                   mask file to mask out all bright
+                   continuum objects present in the FoV
+        norm     : string
+                   Option for sky subtraction 'sky' or 'zero' 
+        """
+        origin = self.get_origin()
+        ifu = self.origin2ifu(origin)
+        sli = self.origin2slice(origin)
+
+        mask = self.mask_column(maskfile)
+        
+        spe_skyref = self.sky_ref(maskfile=maskfile, dlbda = 1.0, nmax=2, nclip=5.0, nstop=2, mask_col=mask)
+
+        import mpdaf
+        import ctypes
+        #global libCmethods
+
+        # load the library, using numpy mechanisms
+        libCmethods = np.ctypeslib.load_library("libCmethods", \
+                                                mpdaf.__path__[0])
+        
+        # define argument types
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
+                                                 flags='CONTIGUOUS')
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
+                                              flags='CONTIGUOUS')
+        
+        # setup the return types and argument types
+        libCmethods.mpdaf_slice_correction_skyref.restype = None
+        libCmethods.mpdaf_slice_correction_skyref.argtypes = \
+        [array_1d_double, array_1d_int, array_1d_int, array_1d_double, \
+         array_1d_double, ctypes.c_int, array_1d_int, array_1d_double, \
+         array_1d_double, ctypes.c_int]
+
+        data = self.get_data()
+        result = np.empty_like(data).astype(np.float64)
+        ifu = ifu.astype(np.int32)
+        sli = sli.astype(np.int32)
+        data = data.astype(np.float64)
+        lbda = self.get_lambda()
+        lbda = lbda.astype(np.float64)
+        mask = mask.astype(np.int32)
+        skyref_flux = spe_skyref.data.data.astype(np.float64)
+        skyref_lbda = spe_skyref.wave.coord()
+        skyref_n = spe_skyref.shape
+
+        libCmethods.mpdaf_slice_correction_skyref(result, ifu, sli, data, lbda, \
+                                           data.shape[0], mask, skyref_flux, \
+                                           skyref_lbda, skyref_n)
+
+        # set pixtable data
+        self.set_data(result)
+
+        # close libray
+        #import _ctypes
+        #_ctypes.dlclose(libCmethods._handle)
+        #libCmethods._handle = None
+        #libCmethods._name = None
+        #libCmethods._FuncPtr = None
+        del libCmethods
     

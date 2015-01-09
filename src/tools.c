@@ -103,4 +103,36 @@ void mpdaf_median_sigma_clip(double* data, int n, double x[3], int nmax, double 
    }
 }
 
+// Given a value x, return a value j such that x is in the subrange data[j,j+1]
+// data must be increasing
+int mpdaf_locate(double* xx, int n, double x)
+{
+  int ju, jm, jl;
+  jl = 0;
+  ju = n-1;
+  while(ju-jl > 1)
+  {
+    jm = (ju+jl) >> 1;
+    if(x >= xx[jm])
+      jl = jm;
+    else
+      ju = jm;
+  }
+  return fmax(0, fmin(n-2, jl));
+  
+}
+
+double mpdaf_linear_interpolation(double* xx, double* yy, int n, double x)
+{
+  int jl = mpdaf_locate(xx, n, x);
+  double x0 =  xx[jl];
+  double x1 = xx[jl+1];
+  double y0 = yy[jl];
+  double y1 = yy[jl+1];
+  double a = (y1 - y0) / (x1 - x0);
+  double b = -a*x0 + y0;
+  double y = a * x + b;
+  return y;
+}
+
 
