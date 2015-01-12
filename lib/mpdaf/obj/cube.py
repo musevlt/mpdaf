@@ -11,11 +11,6 @@ from astropy.io import fits as pyfits
 from .coords import WCS, WaveCoord
 from .objs import is_float, is_int
 
-FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
-logging.basicConfig(format=FORMAT)
-logger = logging.getLogger('mpdaf corelib')
-
-
 class iter_spe(object):
 
     def __init__(self, cube, index=False):
@@ -155,6 +150,7 @@ class Cube(object):
                    Flux scaling factor (1 by default).
         """
         # possible FITS filename
+        self.logger = logging.getLogger('mpdaf corelib')
         self.cube = True
         self.filename = filename
         self.ima = {}
@@ -185,7 +181,7 @@ class Cube(object):
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning('world coordinates and data have not'
+                        self.logger.warning('world coordinates and data have not'
                                        ' the same dimensions: %s',
                                        "shape of WCS object is modified",
                                        extra=d)
@@ -211,7 +207,7 @@ class Cube(object):
                     self.wave = wave
                     if wave.shape is not None and wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning('wavelength coordinates and data have '
+                        self.logger.warning('wavelength coordinates and data have '
                                        'not the same dimensions: %s',
                                        'shape of WaveCoord object is '
                                        'modified', extra=d)
@@ -243,7 +239,7 @@ class Cube(object):
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning('world coordinates and data have not '
+                        self.logger.warning('world coordinates and data have not '
                                        'the same dimensions: %s',
                                        'shape of WCS object is modified',
                                        extra=d)
@@ -270,7 +266,7 @@ class Cube(object):
                     if wave.shape is not None and \
                             wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning('wavelength coordinates and data have '
+                        self.logger.warning('wavelength coordinates and data have '
                                        'not the same dimensions: %s',
                                        'shape of WaveCoord object is '
                                        'modified', extra=d)
@@ -356,7 +352,7 @@ class Cube(object):
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning('world coordinates and data have not '
+                        self.logger.warning('world coordinates and data have not '
                                        'the same dimensions: %s',
                                        'shape of WCS object is modified',
                                        extra=d)
@@ -365,14 +361,14 @@ class Cube(object):
             except:
                 self.wcs = None
                 d = {'class': 'Cube', 'method': '__init__'}
-                logger.warning("world coordinates not copied: %s",
+                self.logger.warning("world coordinates not copied: %s",
                                "wcs attribute is None", extra=d)
             try:
                 self.wave = wave
                 if wave is not None:
                     if wave.shape is not None and wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
-                        logger.warning('wavelength coordinates and data '
+                        self.logger.warning('wavelength coordinates and data '
                                        'have not the same dimensions: %s',
                                        'shape of WaveCoord object is '
                                        'modified', extra=d)
@@ -380,7 +376,7 @@ class Cube(object):
             except:
                 self.wave = None
                 d = {'class': 'Cube', 'method': '__init__'}
-                logger.warning("wavelength solution not copied: %s",
+                self.logger.warning("wavelength solution not copied: %s",
                                "wave attribute is None", extra=d)
         # Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
@@ -476,7 +472,7 @@ class Cube(object):
                                 (card.value, card.comment)
                     except:
                         d = {'class': 'Cube', 'method': 'write'}
-                        logger.warning("%s not copied in primary header",
+                        self.logger.warning("%s not copied in primary header",
                                        card.keyword, extra=d)
                         pass
         prihdu.header['date'] = \
@@ -510,7 +506,7 @@ class Cube(object):
                             (card.value, card.comment)
                 except:
                     d = {'class': 'Cube', 'method': 'write'}
-                    logger.warning("%s not copied in data header", card.keyword,
+                    self.logger.warning("%s not copied in data header", card.keyword,
                                    extra=d)
                     pass
         # add world coordinate
@@ -611,12 +607,15 @@ class Cube(object):
 
     def info(self):
         """Prints information."""
+        d = {'class': 'Cube', 'method': 'info'}
         if self.filename is None:
-            print '%i X %i X %i cube (no name)' % (self.shape[0],
+            msg = '%i X %i X %i cube (no name)' % (self.shape[0],
                                                    self.shape[1], self.shape[2])
         else:
-            print '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],
+            msg = '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],
                                               self.shape[2], self.filename)
+        self.logger.info(msg, extra=d)
+        
         data = '.data(%i,%i,%i)' % (self.shape[0], self.shape[1], self.shape[2])
         if self.data is None:
             data = 'no data'
@@ -627,19 +626,24 @@ class Cube(object):
             unit = 'no unit'
         else:
             unit = self.unit
-        print '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
+        msg = '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
+        self.logger.info(msg, extra=d)
+        
         if self.wcs is None:
-            print 'no world coordinates for spatial direction'
+            msg = 'no world coordinates for spatial direction'
+            self.logger.info(msg, extra=d)
         else:
             self.wcs.info()
+            
         if self.wave is None:
-            print 'no world coordinates for spectral direction'
+            msg = 'no world coordinates for spectral direction'
+            self.logger.info(msg, extra=d)
         else:
             self.wave.info()
-        print ".ima: ",
+        msg = ".ima:",
         for k in self.ima.keys():
-            print k,
-        print '\n'
+            msg += " %s,"%k
+        self.logger.info(msg, extra=d)
 
     def __le__(self, item):
         """Masks data array where greater than a given value.
@@ -718,14 +722,14 @@ class Cube(object):
                 except:
                     self.wcs = None
                     d = {'class': 'Cube', 'method': 'resize'}
-                    logger.warning("wcs not copied: %s",
+                    self.logger.warning("wcs not copied: %s",
                                    "wcs attribute is None", extra=d)
                 try:
                     self.wave = self.wave[item[0]]
                 except:
                     self.wave = None
                     d = {'class': 'Cube', 'method': 'resize'}
-                    logger.warning("wavelength solution not copied: %s",
+                    self.logger.warning("wavelength solution not copied: %s",
                                    "wave attribute is None", extra=d)
             except:
                 pass
@@ -1759,7 +1763,7 @@ class Cube(object):
                                 and (self.wave.get_step() !=
                                      other.wave.get_step())):
                             d = {'class': 'Cube', 'method': '__setitem__'}
-                            logger.warning("cubes with different steps",
+                            self.logger.warning("cubes with different steps",
                                            extra=d)
                         self.data[key] = other.data \
                             * np.double(other.fscale / self.fscale)
@@ -1775,7 +1779,7 @@ class Cube(object):
                                     and (self.wcs.get_step() != other.wcs.get_step())\
                                     .any():
                                 d = {'class': 'Cube', 'method': '__setitem__'}
-                                logger.warning("cube & image with different '\
+                                self.logger.warning("cube & image with different '\
                                 'steps", extra=d)
                             self.data[key] = other.data \
                                 * np.double(other.fscale / self.fscale)
@@ -1791,7 +1795,7 @@ class Cube(object):
                                 and (self.wave.get_step() !=
                                      other.wave.get_step()):
                                 d = {'class': 'Cube', 'method': '__setitem__'}
-                                logger.warning('cube & spectrum with '
+                                self.logger.warning('cube & spectrum with '
                                                'different steps', extra=d)
                             self.data[key] = other.data \
                                 * np.double(other.fscale / self.fscale)
@@ -1816,12 +1820,12 @@ class Cube(object):
                 and (wcs.naxis1 != self.shape[2]
                      or wcs.naxis2 != self.shape[1]):
                 d = {'class': 'Cube', 'method': 'set_wcs'}
-                logger.warning('world coordinates and data have not the same '
+                self.logger.warning('world coordinates and data have not the same '
                                'dimensions', extra=d)
         if wave is not None:
             if wave.shape is not None and wave.shape != self.shape[0]:
                 d = {'class': 'Cube', 'method': 'set_wcs'}
-                logger.warning('wavelength coordinates and data have not '
+                self.logger.warning('wavelength coordinates and data have not '
                                'the same dimensions', extra=d)
             self.wave = wave
             self.wave.shape = self.shape[0]
@@ -2757,6 +2761,7 @@ class Cube(object):
         out : :class:`mpdaf.obj.Image` if f returns a number,
         out : np.array(dtype=object) in others cases.
         """
+        d = {'class': 'Cube', 'method': 'loop_spe_multiprocessing'}
         from mpdaf import CPU
         if cpu is not None and cpu < multiprocessing.cpu_count():
             cpu_count = cpu
@@ -2778,7 +2783,9 @@ class Cube(object):
         pool.close()
 
         if verbose:
-            print "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
+            msg = "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
+            self.logger.info(msg, extra=d)
+            
             import time
             import sys
             while (True):
@@ -2869,6 +2876,7 @@ class Cube(object):
         out : :class:`mpdaf.obj.Spectrum` if f returns a number,
         out : np.array(dtype=object) in others cases.
         """
+        d = {'class': 'Cube', 'method': 'loop_ima_multiprocessing'}
         from mpdaf import CPU
         if cpu is not None and cpu < multiprocessing.cpu_count():
             cpu_count = cpu
@@ -2892,7 +2900,9 @@ class Cube(object):
         pool.close()
 
         if verbose:
-            print "loop_ima_multiprocessing (%s): %i tasks" % (f, num_tasks)
+            msg = "loop_ima_multiprocessing (%s): %i tasks" % (f, num_tasks)
+            self.logger.info(msg, extra=d)
+            
             import time
             import sys
             while (True):
@@ -2959,10 +2969,12 @@ class Cube(object):
         is_sum : boolean
                 if True the sum is computes, otherwise this is the average.
         """
+        d = {'class': 'Cube', 'method': 'get_image'}
         l1, l2 = wave
         k1, k2 = self.wave.pixel(wave, nearest=True).astype(int)
         if verbose:
-            print 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2)
+            msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2)
+            self.logger.info(msg, extra=d)
         if is_sum:
             ima = self[k1:k2+1, :,:].sum(axis=0)
         else:
@@ -2980,6 +2992,7 @@ class Cube(object):
         radius : float
                 Radius of the aperture in arcsec.
         """
+        d = {'class': 'Spectrum', 'method': 'aperture'}
         center = self.wcs.sky2pix(center)[0]
         radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
         radius2 = radius * radius
@@ -3010,10 +3023,14 @@ class Cube(object):
                 var = None
             from spectrum import Spectrum
             spec = Spectrum(wave=self.wave, unit=self.unit, data=data.sum(axis=(1, 2)), var=var, fscale=self.fscale)
-            if verbose: print '%d spaxels summed' % (data.shape[1] * data.shape[2])
+            if verbose: 
+                msg = '%d spaxels summed' % (data.shape[1] * data.shape[2])
+                self.logger.info(msg, extra=d)
         else:
             spec = self[:, int(center[0] + 0.5), int(center[1] + 0.5)]
-            if verbose: print 'returning spectrum at nearest spaxel'
+            if verbose: 
+                msg = 'returning spectrum at nearest spaxel'
+                self.logger.info(msg, extra=d)
         return spec
 
 
@@ -3113,6 +3130,7 @@ class CubeDisk(object):
                    True if the noise Variance cube is not read (if it exists).
                    Use notnoise=True to create cube without variance extension.
         """
+        self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
         self.ima = {}
         if filename is not None:
@@ -3138,7 +3156,7 @@ class CubeDisk(object):
                     self.wcs = WCS(hdr)
                 except:
                     d = {'class': 'CubeDisk', 'method': '__init__'}
-                    logger.warning("wcs not copied", extra=d)
+                    self.logger.warning("wcs not copied", extra=d)
                     self.wcs = None
                 # Wavelength coordinates
                 if 'CRPIX3' not in hdr or 'CRVAL3' not in hdr:
@@ -3177,7 +3195,7 @@ class CubeDisk(object):
                     self.wcs = WCS(h)  # WCS object from data header
                 except:
                     d = {'class': 'CubeDisk', 'method': '__init__'}
-                    logger.warning("wcs not copied", extra=d)
+                    self.logger.warning("wcs not copied", extra=d)
                     self.wcs = None
                 # Wavelength coordinates
                 if 'CRPIX3' not in h or 'CRVAL3' not in h:
@@ -3229,13 +3247,16 @@ class CubeDisk(object):
 
     def info(self):
         """Prints information."""
+        d = {'class': 'CubeDisk', 'method': 'info'}
         if self.filename is None:
-            print '%i X %i X %i cube (no name)' % (self.shape[0],
+            msg = '%i X %i X %i cube (no name)' % (self.shape[0],
                                                    self.shape[1],
                                                    self.shape[2])
         else:
-            print '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],
+            msg = '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],
                                               self.shape[2], self.filename)
+        self.logger.info(msg, extra=d)
+        
         data = '.data(%i,%i,%i)' % (self.shape[0], self.shape[1],
                                     self.shape[2])
         if self.data is None:
@@ -3248,19 +3269,24 @@ class CubeDisk(object):
             unit = 'no unit'
         else:
             unit = self.unit
-        print '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
+        msg = '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
+        self.logger.info(msg, extra=d)
+        
         if self.wcs is None:
-            print 'no world coordinates for spatial direction'
+            msg = 'no world coordinates for spatial direction'
+            self.logger.info(msg, extra=d)
         else:
             self.wcs.info()
         if self.wave is None:
-            print 'no world coordinates for spectral direction'
+            msg = 'no world coordinates for spectral direction'
+            self.logger.info(msg, extra=d)
         else:
             self.wave.info()
-        print ".ima: ",
+            
+        msg = ".ima:",
         for k in self.ima.keys():
-            print k,
-        print '\n'
+            msg += " %s,"%k
+        self.logger.info(msg, extra=d)
 
     def __getitem__(self, item):
         """Returns the corresponding object:

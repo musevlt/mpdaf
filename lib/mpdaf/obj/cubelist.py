@@ -3,6 +3,7 @@
 import numpy as np
 from .cube import CubeDisk
 from .objs import is_float, is_int
+import logging
 
 
 class CubeList(object):
@@ -39,6 +40,7 @@ class CubeList(object):
         files : list of strings
                 List of cubes fits filenames
         """
+        self.logger = logging.getLogger('mpdaf corelib')
         self.files = files
         self.nfiles = len(files)
         self.cubes = [CubeDisk(f) for f in self.files]
@@ -65,14 +67,16 @@ class CubeList(object):
 
     def check_dim(self):
         """Checks if all cubes have same dimensions."""
+        d = {'class': 'CubeList', 'method': 'check_dim'}
         shapes = np.array([cube.shape for cube in self.cubes])
 
         if not np.all(shapes == shapes[0]):
-            print 'all cubes have not same dimensions'
+            msg = 'all cubes have not same dimensions'
+            self.logger.info(msg, extra=d)
             for i in range(self.nfiles):
-                print '%i X %i X %i cube (%s)' % (shapes[i, 0], shapes[i, 1],
+                msg = '%i X %i X %i cube (%s)' % (shapes[i, 0], shapes[i, 1],
                                                   shapes[i, 2], self.files[i])
-            print ''
+                self.logger.info(msg, extra=d)
             return False
         else:
             self.shape = shapes[0, :]
@@ -80,6 +84,7 @@ class CubeList(object):
 
     def check_wcs(self):
         """Checks if all cubes have same world coordinates."""
+        d = {'class': 'CubeList', 'method': 'check_wcs'}
         self.wcs = self.cubes[0].wcs
         self.wave = self.cubes[0].wave
 
@@ -87,38 +92,38 @@ class CubeList(object):
             if not cube.wcs.isEqual(self.wcs) or \
                     not cube.wave.isEqual(self.wave):
                 if not cube.wcs.isEqual(self.wcs):
-                    print 'all cubes have not same spatial coordinates'
-                    print self.files[0]
+                    msg = 'all cubes have not same spatial coordinates'
+                    self.logger.info(msg, extra=d)
+                    self.logger.info(self.files[0], extra=d)
                     self.wcs.info()
-                    print ''
-                    print f
+                    self.logger.info(f, extra=d)
                     cube.wcs.info()
-                    print ''
                     self.wcs = None
                 if not cube.wave.isEqual(self.wave):
-                    print 'all cubes have not same spectral coordinates'
-                    print self.files[0]
+                    msg = 'all cubes have not same spectral coordinates'
+                    self.logger.info(msg, extra=d)
+                    self.logger.info(self.files[0], extra=d)
                     self.wave.info()
-                    print ''
-                    print f
+                    self.logger.info(f, extra=d)
                     cube.wave.info()
-                    print ''
                     self.wave = None
                 return False
         return True
 
     def check_fscale(self):
         """Checks if all cubes have same scale factor."""
+        d = {'class': 'CubeList', 'method': 'check_fscale'}
         fscale = np.array([cube.fscale for cube in self.cubes])
 
         if len(np.unique(fscale)) == 1:
             self.fscale = fscale[0]
             return True
         else:
-            print 'all cubes have not same scale factor'
+            msg = 'all cubes have not same scale factor'
+            self.logger.info(msg, extra=d)
             for i in range(self.nfiles):
-                print 'fscale=%g (%s)' % (fscale[i], self.files[i])
-            print ''
+                msg = 'fscale=%g (%s)' % (fscale[i], self.files[i])
+                self.logger.info(msg, extra=d)
             return False
 
     def check_compatibility(self):

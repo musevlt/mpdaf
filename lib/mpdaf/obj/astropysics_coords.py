@@ -75,18 +75,19 @@ class AstropysicsAngularCoordinate(object):
             thenumerical parts will be treated as hours,minutes, and seconds,
             and if `sghms` evaluates to False, degrees,minutes, and seconds.
 
-        :param inpt: The coordinate value -- valid forms are described above.
-        :param sghms:
-            If True, ambiguous sexigesimal inputs should be hours, minutes,
-            and seconds instead of degrees,arcmin, and arcsec
-        :type sghms: boolean
-        :param range:
-            Sets the valid range of coordinates.  Either a
-            2-sequence (lowerdegrees,upperdegrees) or None (for no limit)
-        :param radians:
-            If True, ambiguous inputs are treated as radians rather than
-            degrees.
-        :type radians: boolean
+Parameters
+----------
+inpt    : float
+          The coordinate value -- valid forms are described above.
+sghms   : boolean       
+          If True, ambiguous sexigesimal inputs should be hours, minutes,
+          and seconds instead of degrees,arcmin, and arcsec
+range   : (float, float)
+          Sets the valid range of coordinates.  Either a
+          2-sequence (lowerdegrees,upperdegrees) or None (for no limit)
+radians : boolean
+          If True, ambiguous inputs are treated as radians rather than
+        degrees.
 
         **Examples**
 
@@ -374,12 +375,11 @@ class AstropysicsAngularCoordinate(object):
         return res
 
     def __sub__(self, other):
-
-        if isinstance(other, AstropysicsAngularCoordinate):
-            from math import degrees
-            res = AngularSeparation(degrees(other._decval), degrees(self._decval))
+        if hasattr(other, '_decval'):
+            res = self.__class__()
+            res._decval = self._decval - other._decval
         else:
-            res = AstropysicsAngularCoordinate()
+            res = self.__class__()
             res._decval = self._decval - other
         return res
 
@@ -472,12 +472,14 @@ class AstropysicsAngularCoordinate(object):
         this AstropysicsAngularCoordinate as hours,
         minutes, and seconds.
 
-        :param secform: a formatter for the seconds component
-        :type secform: string
-        :param sep:
-            The seperator between components - defaults to 'h', 'm', and 's'.
-        :type sep: string or 3-tuple of strings
-        :param canonical: forces [+/-]dd:mm:ss.ss , overriding other arguments
+        Parameters
+        ----------
+        secform   : string
+                    a formatter for the seconds component
+        sep       : string or 3-tuple of strings
+                    The seperator between components - defaults to 'h', 'm', and 's'.
+        canonical : boolean
+                    Forces [+/-]dd:mm:ss.ss , overriding other arguments
 
         :returns: String representation of this object.
         """

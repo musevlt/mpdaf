@@ -1,6 +1,7 @@
 """coords.py Manages coordinates."""
 import numpy as np
 import astropy.wcs as pywcs
+import logging
 
 
 def deg2sexa(x):
@@ -208,6 +209,7 @@ class WCS(object):
         shape : integer or (integer,integer)
                 Dimensions. No mandatory.
         """
+        self.logger = logging.getLogger('mpdaf corelib')
         if hdr != None:
             self.wcs = pywcs.WCS(hdr, naxis=2)  # WCS object from data header
             self.naxis1 = hdr['NAXIS1']
@@ -285,15 +287,17 @@ class WCS(object):
     def info(self):
         """Prints information."""
         # self.wcs.printwcs()
+        d = {'class': 'WCS', 'method': 'info'}
         if not self.is_deg():
             pixcrd = [[0, 0], [self.naxis2 - 1, self.naxis1 - 1]]
             pixsky = self.pix2sky(pixcrd)
             cdelt = self.get_step()
-            print 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '\
+            msg = 'spatial coord: min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '\
                 'step:(%0.1f,%0.1f) rot:%0.1f' % (pixsky[0, 0], pixsky[0, 1],
                                                   pixsky[1, 0], pixsky[1, 1],
                                                   cdelt[0], cdelt[1],
                                                   self.get_rot())
+            self.logger.info(msg, extra=d)
         else:
             # center in sexadecimal
             xc = (self.naxis1 - 1) / 2.
@@ -308,11 +312,13 @@ class WCS(object):
             dx = np.abs(cdelt[1] * 3600)
             sizex = self.naxis1 * dx
             sizey = self.naxis2 * dy
-            print 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '\
+            msg = 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '\
                 'step in arcsec:(%0.3f,%0.3f) rot:%0.1f' % (dec, ra,
                                                             sizey, sizex,
                                                             dy, dx,
                                                             self.get_rot())
+            self.logger.info(msg, extra=d)
+            
 
     def to_header(self):
         """Generates a pyfits header object with the WCS information."""
@@ -768,6 +774,7 @@ class WaveCoord(object):
         shape : integer or None
                 Size of spectrum (no mandatory).
         """
+        self.logger = logging.getLogger('mpdaf corelib')
         self.shape = shape
         self.crpix = crpix
         self.cdelt = cdelt
@@ -786,14 +793,16 @@ class WaveCoord(object):
 
     def info(self):
         """Prints information."""
+        d = {'class': 'WaveCoord', 'method': 'info'}
         if self.shape is None:
             m = (1 - self.crpix) * self.cdelt + self.crval
-            print 'wavelength: min:%0.2f step:%0.2f %s' % (m, self.cdelt,
+            msg = 'wavelength: min:%0.2f step:%0.2f %s' % (m, self.cdelt,
                                                            self.cunit)
         else:
-            print 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % \
+            msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % \
                 (self.__getitem__(0), self.__getitem__(self.shape - 1),
                  self.cdelt, self.cunit)
+        self.logger.info(msg, extra=d)
 
     def isEqual(self, other):
         """Returns True if other and self have the same attributes."""

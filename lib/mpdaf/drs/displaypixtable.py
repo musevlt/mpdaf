@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpdaf.obj import plt_zscale
 import matplotlib.cm as cm
+import logging
 
 
 class DisplayPixTable(object):
@@ -12,21 +13,20 @@ class DisplayPixTable(object):
     """DisplayPixTable class.
 
     This class displays MUSE pixel table files
-
-    :param pixtable: The FITS file name of MUSE pixel table.
-    :type pixtable: string.
-
-    :param cube: The FITS file name of MUSE cube.
-    :type cube: string.
+    
+    Parameters
+    ----------
+    pixtable : string
+               The FITS file name of MUSE pixel table.
+    cube     : string
+               The FITS file name of MUSE cube.
 
     Attributes
     ----------
-
     pixtable : string
-    The FITS file name of MUSE pixel table.
-
-    cube : string
-    The FITS file name of MUSE cube.
+               The FITS file name of MUSE pixel table.
+    cube     : string
+               The FITS file name of MUSE cube.
     """
 
     def __init__(self, pixtable, cube):
@@ -35,6 +35,7 @@ class DisplayPixTable(object):
 
         self.pixtable = pixtable
         self.cube = cube
+        self.logger = logging.getLogger('mpdaf corelib')
 
     def info(self):
         """Prints information."""
@@ -49,49 +50,46 @@ class DisplayPixTable(object):
                      det_vmin, det_vmax):
         """display in detector mode for one exposure.
 
-        :param exp: exposure number.
-        :type sky: integer or None
-
-        :param sky: (y, x, size, shape) extract an aperture on the sky,
-        defined by a center in degrees (y, x), a shape
-        ('C' for circular, 'S' for square) and size in arcsec
-        (radius or half side length).
-        :type sky: (float, float, float, char)
-
-        :param lbda: (min, max) wavelength range in Angstrom.
-        :type lbda: (float, float)
-
-        :param sky_scale: The stretch function to use for the scaling
-        of the sky image (default is 'linear').
-        :type sky_scale: 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-
-        :param sky_cmap: color map used for the white image on the sky
-        :type sky_cmap: `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
-
-        :param det_scale: The stretch function to use for the scaling
-        of the detector images (default is 'linear').
-        :type det_scale: 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-
-        :param det_cmap: color map used for the detectors images
-        :type det_cmap: `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
-
-        :param det_vmin: Minimum pixel value to use
-        for the scaling of the detector images.
-        If None, det_vmin is set with the IRAF zscale algorithm.
-        :type det_vmin: float
-
-        :param det_vmax: Maximum pixel value to use
-        for the scaling of the detector images.
-        If None, det_vmax is set with the IRAF zscale algorithm.
-        :type det_vmax: float
+Parameters
+----------
+exp       : integer or None
+            exposure number.
+sky       : (float, float, float, char)
+            (y, x, size, shape) extract an aperture on the sky,
+            defined by a center in degrees (y, x), a shape
+            ('C' for circular, 'S' for square) and size in arcsec
+            (radius or half side length).
+lbda      : (float, float)
+            (min, max) wavelength range in Angstrom.
+sky_scale : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+            The stretch function to use for the scaling
+            of the sky image (default is 'linear').
+sky_cmap  : `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
+            color map used for the white image on the sky
+det_scale : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+            The stretch function to use for the scaling
+            of the detector images (default is 'linear').
+det_cmap  : `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
+             color map used for the detectors images
+det_vmin  : float
+            Minimum pixel value to use
+            for the scaling of the detector images.
+            If None, det_vmin is set with the IRAF zscale algorithm.
+det_vmax  : float
+            Maximum pixel value to use
+            for the scaling of the detector images.
+            If None, det_vmax is set with the IRAF zscale algorithm.
         """
+        d = {'class': 'DisplayPixTable', 'method': '_det_display'}
         plt.figure()
         plt.figtext(0.1, 0.05, 'Pixtable %s %s' % (self.pixtable, date),
                     fontsize=10)
         plt.figtext(0.1, 0.03, 'Cube %s %s' % (self.cube, date), fontsize=10)
 
         # number of ifus in the aperture
-        print 'extract sub-pixel table ...'
+        msg = 'extract sub-pixel table ...'
+        self.logger.info(msg, extra=d)
+        
         subpix = pix.extract(lbda=lbda, sky=sky, exp=exp)
         if subpix is None:
             raise ValueError('pixel table extraction is not valid')
@@ -111,7 +109,8 @@ class DisplayPixTable(object):
         list_vmin = []
         list_vmax = []
         for ifu in list_ifu:
-            print 'plot detector image of the CHAN%02d ...' % ifu
+            msg = 'plot detector image of the CHAN%02d ...' % ifu
+            self.logger.info(msg, extra=d)
             subsubpix = subpix.extract(ifu=ifu)
             detima = subsubpix.reconstruct_det_image(ystart=ystart,
                                                      ystop=ystop)
@@ -150,7 +149,8 @@ class DisplayPixTable(object):
         plt.colorbar(im, orientation='horizontal')
 
         # plot corresponding white image and spectrum
-        print 'plot corresponding white image ...'
+        msg = 'plot corresponding white image ...'
+        self.logger.info(msg, extra=d)
         if (nplots % 2 == 0):
             colspan_ima = nplots / 2
         else:
@@ -168,7 +168,8 @@ class DisplayPixTable(object):
                          xycoords='data', textcoords='data', color='b')
         im = ima.plot(colorbar='h', scale=sky_scale, cmap=sky_cmap)
         im.get_axes().set_axis_off()
-        print 'plot corresponding spectrum ...'
+        msg = 'plot corresponding spectrum ...'
+        self.logger.info(msg, extra=d)
         plt.subplot2grid((5, nplots), (0, colspan_ima),
                          rowspan=2, colspan=int(nplots / 2))
         spe.plot()
@@ -179,39 +180,35 @@ class DisplayPixTable(object):
                     det_vmin=None, det_vmax=None):
         """display in detector mode.
 
-        :param sky: (y, x, size, shape) extract an aperture on the sky,
-        defined by a center in degrees (y, x), a shape
-        ('C' for circular, 'S' for square) and size in arcsec
-        (radius or half side length).
-        :type sky: (float, float, float, char)
-
-        :param lbda: (min, max) wavelength range in Angstrom.
-        :type lbda: (float, float)
-
-        :param sky_scale: The stretch function to use for the scaling
-        of the sky image (default is 'linear').
-        :type sky_scale: 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-
-        :param sky_cmap: color map used for the white image on the sky
-        :type sky_cmap: `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
-
-        :param det_scale: The stretch function to use for the scaling
-        of the detector images (default is 'linear').
-        :type det_scale: 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-
-        :param det_cmap: color map used for the detectors images
-        :type det_cmap: `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
-
-        :param det_vmin: Minimum pixel value to use for the scaling
-        of the detector images.
-        If None, det_vmin is set with the IRAF zscale algorithm.
-        :type det_vmin: float
-
-        :param det_vmax: Maximum pixel value to use for the scaling
-        of the detector images.
-        If None, det_vmax is set with the IRAF zscale algorithm.
-        :type det_vmax: float
+Parameters
+----------
+sky      :  (float, float, float, char)
+            (y, x, size, shape) extract an aperture on the sky,
+            defined by a center in degrees (y, x), a shape
+            ('C' for circular, 'S' for square) and size in arcsec
+            (radius or half side length).
+lbda      : (float, float)
+            (min, max) wavelength range in Angstrom.
+sky_scale : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+            The stretch function to use for the scaling
+            of the sky image (default is 'linear').
+sky_cmap  : `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
+            color map used for the white image on the sky
+det_scale : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+            The stretch function to use for the scaling
+            of the detector images (default is 'linear').
+det_cmap  : `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
+            color map used for the detectors images
+det_vmin  : float
+            Minimum pixel value to use for the scaling
+            of the detector images.
+            If None, det_vmin is set with the IRAF zscale algorithm.
+det_vmax  : float
+            Maximum pixel value to use for the scaling
+            of the detector images.
+            If None, det_vmax is set with the IRAF zscale algorithm.
         """
+        d = {'class': 'DisplayPixTable', 'method': 'det_display'}
         pix = PixTable(self.pixtable)
         cub = CubeDisk(self.cube)
         date = cub.primary_header['DATE-OBS'].split('T')[0]
@@ -270,7 +267,8 @@ class DisplayPixTable(object):
             col_exp = pix.get_exp()
             exposures = np.unique(col_exp)
             for exp in exposures:
-                print 'exposure %02d' % exp
+                msg = 'exposure %02d' % exp
+                self.logger.info(msg, extra=d)
                 self._det_display(date, pix, ima, spe, ifu_limits, l, exp,
                                   sky, lbda, sky_scale, sky_cmap, det_scale,
                                   det_cmap, det_vmin, det_vmax)
@@ -285,44 +283,15 @@ class DisplayPixTable(object):
                        slice_cmap, slice_vmin, slice_vmax):
         """display in slice mode.
 
-        :param exp: exposure number.
-        :type sky: integer or None
+Parameters
+----------
 
-        :param sky: (y, x, size, shape) extract an aperture on the sky,
-        defined by a center in degrees (y, x), a shape
-        ('C' for circular, 'S' for square) and size in arcsec
-        (radius or half side length).
-        :type sky: (float, float, float, char)
-
-        :param lbda: (min, max) wavelength range in Angstrom.
-        :type lbda: (float, float)
-
-        :param sky_scale: The stretch function to use for the scaling
-        of the sky image (default is 'linear').
-        :type sky_scale: 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-
-        :param sky_cmap: color map used for the white image on the sky.
-        :type sky_cmap: `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
-
-        :param slice_scale: The stretch function to use
-        for the scaling of the slice images (default is 'linear').
-        :type slice_scale: 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-
-        :param slice_cmap: color map used for the slices images.
-        :type slice_cmap: `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
-
-        :param slice_vmin: Minimum pixel value to use
-        for the scaling of the slice images.
-        If None, det_vmin is set with the IRAF zscale algorithm.
-        :type slice_vmin: float
-
-        :param slice_vmax: Maximum pixel value to use
-        for the scaling of the slice images.
-        If None, det_vmax is set with the IRAF zscale algorithm.
-        :type slice_vmax: float
+ 
         """
+        d = {'class': 'DisplayPixTable', 'method': '_slice_display'}
         # number of ifus
-        print 'extract sub-pixel table ...'
+        msg = 'extract sub-pixel table ...'
+        self.logger.info(msg, extra=d)
         subpix = pix.extract(lbda=lbda, sky=sky, exp=exp)
         if subpix is None:
             raise ValueError('Pixel table extraction is not valid')
@@ -355,7 +324,8 @@ class DisplayPixTable(object):
         nplots = len(distance)
         distance = np.array(distance)
 
-        print 'plot corresponding white image ...'
+        msg = 'plot corresponding white image ...'
+        self.logger.info(msg, extra=d)
         if (nplots % 2 == 0):
             colspan_ima = nplots / 2
         else:
@@ -388,7 +358,8 @@ class DisplayPixTable(object):
         im.get_axes().set_axis_off()
 
         # plot corresponding spectrum
-        print 'plot corresponding spectrum ...'
+        msg = 'plot corresponding spectrum ...'
+        self.logger.info(msg, extra=d)
         plt.subplot2grid((9, nplots), (0, colspan_ima),
                          rowspan=3, colspan=nplots - colspan_ima)
         spe.plot()
@@ -399,7 +370,8 @@ class DisplayPixTable(object):
         list_vmax = []
         list_sliceima = []
         for ifu, sli in zip(distance[:, 1], distance[:, 2]):
-            print 'plot slice image ifu=%02d slice=%02d ...' % (ifu, sli)
+            msg = 'plot slice image ifu=%02d slice=%02d ...' % (ifu, sli)
+            self.logger.info(msg, extra=d)
             pixslice = subpix.extract(ifu=ifu, sl=sli)
             sli = Slicer.ccd2sky(sli)
             sliceima = pixslice.reconstruct_det_image(ystart=ystart, ystop=ystop)
@@ -444,38 +416,33 @@ class DisplayPixTable(object):
                       slice_cmap=cm.copper, slice_vmin=None, slice_vmax=None):
         """display in slice mode.
 
-        :param sky: (y, x, size, shape) extract an aperture on the sky,
-        defined by a center in degrees (y, x), a shape
-        ('C' for circular, 'S' for square) and size in arcsec
-        (radius or half side length).
-        :type sky: (float, float, float, char)
-
-        :param lbda: (min, max) wavelength range in Angstrom.
-        :type lbda: (float, float)
-
-        :param sky_scale: The stretch function to use
-        for the scaling of the sky image (default is 'linear').
-        :type sky_scale: 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-
-        :param sky_cmap: color map used for the white image on the sky
-        :type sky_cmap: `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
-
-        :param slice_scale: The stretch function to use
-        for the scaling of the slice images (default is 'linear').
-        :type slice_scale: 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-
-        :param slice_cmap: color map used for the slices images.
-        :type slice_cmap: `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
-
-        :param slice_vmin: Minimum pixel value to use for the scaling
-        of the slice images. If None, det_vmin is set
-        with the IRAF zscale algorithm.
-        :type slice_vmin: float
-
-        :param slice_vmax: Maximum pixel value to use
-        for the scaling of the slice images.
-        If None, det_vmax is set with the IRAF zscale algorithm.
-        :type slice_vmax: float
+Parameters
+----------
+sky         : (float, float, float, char)
+              (y, x, size, shape) extract an aperture on the sky,
+              defined by a center in degrees (y, x), a shape
+              ('C' for circular, 'S' for square) and size in arcsec
+              (radius or half side length).
+lbda        : (float, float)
+              (min, max) wavelength range in Angstrom.
+sky_scale   : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+              The stretch function to use
+              for the scaling of the sky image (default is 'linear').
+sky_cmap    : `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
+              color map used for the white image on the sky
+slice_scale : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+              The stretch function to use
+              for the scaling of the slice images (default is 'linear').
+slice_cmap  : `matplotlib.cm <http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
+              color map used for the slices images.
+slice_vmin  : float
+              Minimum pixel value to use for the scaling
+              of the slice images. If None, det_vmin is set
+              with the IRAF zscale algorithm.
+slice_vmax  : float
+              Maximum pixel value to use
+              for the scaling of the slice images.
+              If None, det_vmax is set with the IRAF zscale algorithm.
         """
         cub = CubeDisk(self.cube)
         pix = PixTable(self.pixtable)

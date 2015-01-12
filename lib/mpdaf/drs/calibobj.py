@@ -2,29 +2,32 @@
 MASTER_FLAT OBJECT_RESAMPLED."""
 import numpy as np
 from astropy.io import fits as pyfits
-import pylab
 import datetime
 import os
 import tempfile
 import multiprocessing
 import sys
 from mpdaf import obj
+import logging
+
 
 
 class CalibFile(object):
 
     """CalibFile class manages input/output for the calibration files.
 
-    :param filename: The FITS file name.
-    None by default (in this case, an empty object is created).
+    Parameters
+    ----------
+    filename : string
+               The FITS file name.
+               None by default (in this case, an empty object is created).
 
-            The FITS file is opened with memory mapping.
+               The FITS file is opened with memory mapping.
 
-            Just the primary header and array dimensions are loaded.
+               Just the primary header and array dimensions are loaded.
 
-            Methods get_data, get_dq and get_stat must be used
-            to get array extensions.
-    :type filename: string
+               Methods get_data, get_dq and get_stat must be used
+               to get array extensions.
 
     Attributes
     ----------
@@ -54,17 +57,20 @@ class CalibFile(object):
     def __init__(self, filename=None):
         """creates a CalibFile object.
 
-        :param filename: The FITS file name.
-        None by default (in this case, an empty object is created).
+Parameters
+----------
+filename : string
+           The FITS file name.
+           None by default (in this case, an empty object is created).
 
-            The FITS file is opened with memory mapping.
+           The FITS file is opened with memory mapping.
 
-            Just the primary header and array dimensions are loaded.
+           Just the primary header and array dimensions are loaded.
 
-            Methods get_data, get_dq and get_stat must be used
-            to get array extensions.
-        :type filename: string
+           Methods get_data, get_dq and get_stat must be used
+           to get array extensions.
         """
+        self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
         self.data = None
         self.dq = None
@@ -148,16 +154,18 @@ class CalibFile(object):
 
     def info(self):
         """Prints information."""
+        d = {'class': 'CalibFile', 'method': 'info'}
         if self.filename != None:
             hdulist = pyfits.open(self.filename, memmap=1)
-            print hdulist.info()
+            self.logger.info(hdulist.info(), extra=d)
             hdulist.close()
         else:
-            print 'No\tName\tType\tDim'
-            print '0\tPRIMARY\tcard\t()'
-            print "1\tDATA\timage\t(%i,%i)" % (self.nx, self.ny)
-            print "2\tDQ\timage\t(%i,%i)" % (self.nx, self.ny)
-            print "3\tSTAT\timage\t(%i,%i)" % (self.nx, self.ny)
+            msg = 'No\tName\tType\tDim\n'
+            msg += '0\tPRIMARY\tcard\t()\n'
+            msg += "1\tDATA\timage\t(%i,%i)\n" % (self.nx, self.ny)
+            msg += "2\tDQ\timage\t(%i,%i)\n" % (self.nx, self.ny)
+            msg += "3\tSTAT\timage\t(%i,%i)\n" % (self.nx, self.ny)
+            self.logger.info(msg, extra=d)
 
     def get_data(self):
         """Opens the FITS file with memory mapping, loads the data array and
@@ -210,7 +218,9 @@ class CalibFile(object):
     def get_image(self):
         """Returns an Image object.
 
-        :rtype: :class:`mpdaf.obj.Image`
+Returns
+-------
+out : :class:`mpdaf.obj.Image`
         """
         wcs = obj.WCS(self.data_header)
         ima = obj.Image(wcs=wcs, data=self.get_data())
@@ -219,8 +229,10 @@ class CalibFile(object):
     def write(self, filename):
         """Saves the object in a FITS file.
 
-        :param filename: the FITS filename.
-        :type filename: string
+Parameters
+----------
+filename : string
+           The FITS filename.
         """
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -487,14 +499,15 @@ class CalibDir(object):
 
     """CalibDir class manages input/output for a repository containing
     calibration files (one per ifu).
-
-    :param type: Type of calibration files that appears in filenames
-    (<type>_<ifu id>.fits)
-    :type type: string
-    :param dirname: The repository name.
-
-            This repository must contain files labeled <type>_<ifu id>.fits
-    :type dirname: string
+    
+    Parameters
+    ----------
+    typ     : string
+          Type of calibration files that appears in filenames
+          (<type>_<ifu id>.fits)
+    dirname : string
+          The repository name.
+          This repository must contain files labeled <type>_<ifu id>.fits
 
     Attributes
     ----------
@@ -512,25 +525,27 @@ class CalibDir(object):
     If True, progress of multiprocessing tasks are displayed. True by default.
     """
 
-    def __init__(self, type, dirname=None):
+    def __init__(self, typ, dirname=None):
         """Creates a CalibDir object.
 
-        :param type: Type of calibration files that appears in filenames
-        (<type>_<ifu id>.fits)
-        :type type: string
-        :param dirname: The repository name.
-
-            This repository must contain files labeled <type>_<ifu id>.fits
-        :type dirname: string
+Parameters
+----------
+typ     : string
+          Type of calibration files that appears in filenames
+          (<type>_<ifu id>.fits)
+dirname : string
+          The repository name.
+          This repository must contain files labeled <type>_<ifu id>.fits
         """
+        self.logger = logging.getLogger('mpdaf corelib')
         self.dirname = dirname
         self.progress = True
-        self.type = type
+        self.type = typ
         self.files = dict()
         if dirname != None:
             for i in range(24):
                 ifu = i + 1
-                filename = "%s/%s_%02d.fits" % (dirname, type, ifu)
+                filename = "%s/%s_%02d.fits" % (dirname, typ, ifu)
                 if os.path.exists(filename):
                     fileobj = CalibFile(filename)
                     self.files[ifu] = fileobj
@@ -545,9 +560,13 @@ class CalibDir(object):
 
     def info(self):
         """Prints information."""
-        print '%i %s files' % (len(self.files), self.type)
+        d = {'class': 'CalibDir', 'method': 'info'}
+        msg = '%i %s files' % (len(self.files), self.type)
+        self.logger.info(msg, extra=d)
+        
         for ifu, fileobj in self.files.items():
-            print 'ifu %i' % ifu
+            msg = 'ifu %i' % ifu
+            self.logger.info(msg, extra=d)
             fileobj.info()
 
     def _check(self, other):
@@ -696,10 +715,11 @@ class CalibDir(object):
     def __getitem__(self, key):
         """Returns the CalibFile object.
 
-        :param key: Ifu id.
-        :type key: integer
+Parameters
+----------
+key : integer
+      Ifu id.
         """
-        extname = "CHAN%02d" % key
         if key in self.files:
             return self.files[key]
         else:
@@ -708,10 +728,12 @@ class CalibDir(object):
     def __setitem__(self, key, value):
         """Sets the corresponding CalibFile with value.
 
-        :param key: Ifu id.
-        :type key: integer
-        :param value: CalibFile object.
-        :type value: CalibFile
+Parameters
+----------
+key   : integer
+        Ifu id.
+value : CalibFile
+        CalibFile object.
         """
         if isinstance(value, CalibFile):
             self.files[key] = value
