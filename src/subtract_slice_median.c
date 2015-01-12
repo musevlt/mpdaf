@@ -7,7 +7,7 @@
 #include <omp.h>
 
 
-void mpdaf_slice_correction(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int* mask, int skysub)
+void mpdaf_old_subtract_slice_median(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int* mask, int skysub)
 {
     int n,chan;
     double med[24 * 48];
@@ -68,22 +68,24 @@ void mpdaf_slice_correction(double* result, int* ifu, int* sli, double* data, do
     }
 }
 
-void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin, double lmax, double dl, int n, int nmax, double nclip_low, double nclip_up, int nstop, double* result)
+void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin, double dl, int n, int nmax, double nclip_low, double nclip_up, int nstop, double* result)
 {
   int l;
-  double l0, l1;
-  l0 = lmin;
-  l1 = l0 + dl;
+  
 
-  #pragma omp parallel shared(npix, mask, data, lbda, l0, l1, dl, n, nmax, nclip_low, nclip_up, nstop, result) private(l)
+#pragma omp parallel shared(npix, mask, data, lbda, dl, lmin, nmax, nclip_low, nclip_up, nstop, result) private(l)
   {
     #pragma omp for
     for (l=0; l<n; l++)
     {
       double x[3];
+      //double med;
       int i, count;
       double *temp;
-
+      double l0, l1;
+      l0 = lmin + l*dl;
+      l1 = l0 + dl;
+      
       temp = (double *) malloc(npix * sizeof(double));
       count = 0;
       for (i=0; i<npix; i++)
@@ -94,29 +96,22 @@ void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin,
 	      count += 1;
 	  }
       }
+
       mpdaf_median_sigma_clip(temp, count, x, nmax, nclip_low, nclip_up, nstop);
-      #pragma omp atomic write
-      result[l] = x[0];
-      l0 = l1;
-      l1 = l0+ dl;
-
+      //med = mpdaf_median(temp, count);
       free(temp);
+      
+      #pragma omp critical //#pragma omp atomic write
+      {
+	//printf("%g %g %i %g \n",l0,l1,count,med);
+	//result[l] = med;
+	result[l] = x[0];
+       }
     }
-  }
+   }
 }
 
-void test(double* skyref_flux, double* skyref_lbda, int skyref_n)
-{
-  int l;
-  double lbda;
-  for (l=0; l<skyref_n; l=l+100)
-    {
-      lbda = skyref_lbda[l]+1.3;
-      printf("%g %g \n",lbda, mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda));
-    }
-}
-
-void mpdaf_slice_correction_skyref(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n)
+void mpdaf_subtract_slice_median(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n)
 {
     int n,chan;
     double med[24 * 48];
@@ -164,6 +159,59 @@ void mpdaf_slice_correction_skyref(double* result, int* ifu, int* sli, double* d
           {
 	     skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[n]);
              result[n] =  data[n] - med[48*(ifu[n]-1)+sli[n]-1] + skyref;
+	  }
+    }
+}
+
+
+void mpdaf_divide_slice_median(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n)
+{
+    int n,chan;
+    double med[24 * 48];
+    double skyref;
+
+    //omp_set_num_threads
+
+    #pragma omp parallel shared(ifu,sli,data,npix,med,mask) private(chan)
+    {
+         #pragma omp for 
+         for (chan=1; chan<=24; chan++)
+         {
+            int sl, i, count;
+            double m;
+            double *temp;
+	    temp = (double *) malloc(npix * sizeof(double));
+	    for (sl=1; sl<=48; sl++)
+	    {
+	        count = 0;
+                for (i=0; i<npix; i++)
+	        {
+		  if ((mask[i]==0) && (ifu[i]==chan) && (sli[i]==sl) && (lbda[i] > 4800) && (lbda[i] < 9300))
+		     {
+			  temp[count] = data[i];
+			  count += 1;
+		     }
+	        }
+	        m = mpdaf_median(temp,count);
+                #pragma omp critical //#pragma omp atomic write
+		{
+                     med[48*(chan-1)+sl-1] = m;
+	             //printf("%i %i %i %g \n",chan,sl,count,m);
+	        }
+	    }
+	    free(temp);
+        }
+    }
+
+    #pragma omp barrier
+
+    #pragma omp parallel shared(ifu,sli,data,npix,med, result) private(n)
+    {
+          #pragma omp for
+          for(n=0; n<npix; n++)
+          {
+	     skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[n]);
+             result[n] =  data[n] / med[48*(ifu[n]-1)+sli[n]-1] * skyref;
 	  }
     }
 }
