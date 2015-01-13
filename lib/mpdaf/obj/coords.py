@@ -1,7 +1,8 @@
 """coords.py Manages coordinates."""
-import numpy as np
+
 import astropy.wcs as pywcs
 import logging
+import numpy as np
 
 
 def deg2sexa(x):
@@ -64,14 +65,14 @@ def deg2hms(x):
     """Transforms a degree value to a string representation
     of the coordinate as hours:minutes:seconds.
 
-Parameters
-----------
-x : float
-    degree value.
+    Parameters
+    ----------
+    x : float
+        degree value.
 
-Returns
--------
-out : string
+    Returns
+    -------
+    out : string
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -83,14 +84,14 @@ def hms2deg(x):
     """Transforms a string representation of the coordinate
     as hours:minutes:seconds to a float degree value.
 
-Parameters
-----------
-x : string
-    hours:minutes:seconds
+    Parameters
+    ----------
+    x : string
+        hours:minutes:seconds
 
-Returns
--------
-out : float
+    Returns
+    -------
+    out : float
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='hour')
@@ -102,14 +103,14 @@ def deg2dms(x):
     """Transforms a degree value to a string representation
     of the coordinate as degrees:arcminutes:arcseconds.
 
-Parameters
-----------
-x : float
-    degree value.
+    Parameters
+    ----------
+    x : float
+        degree value.
 
-Returns
--------
-out : string
+    Returns
+    -------
+    out : string
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -121,14 +122,14 @@ def dms2deg(x):
     """Transforms a string representation of the coordinate
     as degrees:arcminutes:arcseconds to a float degree value.
 
-Parameters
-----------
-x : string
-    degrees:arcminutes:arcseconds
+    Parameters
+    ----------
+    x : string
+        degrees:arcminutes:arcseconds
 
-Returns
--------
-out : float
+    Returns
+    -------
+    out : float
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -184,8 +185,8 @@ class WCS(object):
         ----------
         hdr   : pyfits.CardList
                 A FITS header.
-                If hdr is not equal to None, WCS object is created from data header
-                and other parameters are not used.
+                If hdr is not equal to None, WCS object is created from data
+                header and other parameters are not used.
         crpix : float or (float,float)
                 Reference pixel coordinates.
 
@@ -265,11 +266,13 @@ class WCS(object):
                 self.wcs.wcs.ctype = ['LINEAR', 'LINEAR']
                 self.wcs.wcs.cunit = ['pixel', 'pixel']
                 self.wcs.wcs.cd = np.array([[cdelt[1], 0], [0, cdelt[0]]])
+
             # rotation
             self.wcs.rotateCD(-rot)
             self.wcs.wcs.set()
+
             # dimensions
-            if shape != None:
+            if shape is not None:
                 self.naxis1 = shape[1]
                 self.naxis2 = shape[0]
             else:
@@ -318,7 +321,7 @@ class WCS(object):
                                                             dy, dx,
                                                             self.get_rot())
             self.logger.info(msg, extra=d)
-            
+
 
     def to_header(self):
         """Generates a pyfits header object with the WCS information."""
@@ -326,19 +329,20 @@ class WCS(object):
 
     def sky2pix(self, x, nearest=False):
         """Converts world coordinates (dec,ra) to pixel coordinates.
-If nearest=True; returns the nearest integer pixel.
 
-Parameters
-----------
-x       : array
-          An (n,2) array of dec- and ra- world coordinates.
-nearest : bool
-          If nearest is True returns the nearest integer pixel
-          in place of the decimal pixel.
+        If nearest=True; returns the nearest integer pixel.
 
-Returns
--------
-out : (n,2) array of pixel coordinates.
+        Parameters
+        ----------
+        x       : array
+                An (n,2) array of dec- and ra- world coordinates.
+        nearest : bool
+                If nearest is True returns the nearest integer pixel
+                in place of the decimal pixel.
+
+        Returns
+        -------
+        out : (n,2) array of pixel coordinates.
         """
         x = np.array(x, np.float_)
         if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
@@ -532,9 +536,9 @@ out : (n,2) array of pixel coordinates.
             return self.wcs.wcs.cd
         except:
             try:
-                #cd = self.wcs.wcs.pc
-                #cd[0,:] *= self.wcs.wcs.cdelt[0]
-                #cd[1,:] *= self.wcs.wcs.cdelt[1]
+                # cd = self.wcs.wcs.pc
+                # cd[0,:] *= self.wcs.wcs.cdelt[0]
+                # cd[1,:] *= self.wcs.wcs.cdelt[1]
                 cdelt = self.wcs.wcs.get_cdelt()
                 cd = self.wcs.wcs.get_pc().__copy__()
                 cd[0, :] *= cdelt[0]
@@ -614,7 +618,7 @@ out : (n,2) array of pixel coordinates.
             self.wcs.wcs.set()
         except:
             try:
-                #new_pc = np.dot(self.wcs.wcs.pc, _mrot)
+                # new_pc = np.dot(self.wcs.wcs.pc, _mrot)
                 new_pc = np.dot(self.wcs.wcs.get_pc(), _mrot)
                 self.wcs.wcs.pc = new_pc
                 self.wcs.wcs.set()
@@ -636,7 +640,7 @@ out : (n,2) array of pixel coordinates.
         -------
         out : WCS
         """
-        if start == None:
+        if start is None:
             xc = 0
             yc = 0
             pixsky = self.pix2sky([xc, yc])
@@ -744,8 +748,8 @@ class WaveCoord(object):
     dim   : integer
             Size of spectrum.
     crpix : float
-            Reference pixel coordinates. Note that for crpix
-            definition, the first pixel in the spectrum has pixel coordinates 1.0.
+            Reference pixel coordinates. Note that for crpix definition, the
+            first pixel in the spectrum has pixel coordinates 1.0.
     crval : float
             Coordinates of the reference pixel.
     cdelt : float
@@ -842,19 +846,20 @@ class WaveCoord(object):
 
     def pixel(self, lbda, nearest=False):
         """ Returns the decimal pixel corresponding to the wavelength lbda.
-If nearest=True; returns the nearest integer pixel.
 
-Parameters
-----------
-lbda    : float
-          wavelength value.
-nearest : bool
-          If nearest is True returns the nearest integer pixel
-          in place of the decimal pixel.
+        If nearest=True; returns the nearest integer pixel.
 
-Returns
--------
-out : float or integer
+        Parameters
+        ----------
+        lbda    : float
+                wavelength value.
+        nearest : bool
+                If nearest is True returns the nearest integer pixel
+                in place of the decimal pixel.
+
+        Returns
+        -------
+        out : float or integer
         """
         lbda = np.array(lbda)
         pix = (lbda - self.crval) / self.cdelt + self.crpix - 1
@@ -910,7 +915,7 @@ out : float or integer
         lbda = (pix - self.crpix + 1) * self.cdelt + self.crval \
             - 0.5 * self.cdelt
         # vector of new pixel positions
-        if start == None:
+        if start is None:
             start = lbda[0] + step * 0.5
         # pixel number necessary to cover old range
         dim = np.ceil((lbda[-1] + self.cdelt - (start - step * 0.5)) / step)
