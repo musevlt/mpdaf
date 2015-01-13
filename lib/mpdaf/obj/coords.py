@@ -339,22 +339,16 @@ class WCS(object):
         out : (n,2) array of pixel coordinates.
         """
         x = np.array(x, np.float_)
-        if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
-            pixsky = np.array([[x[1], x[0]]])
-        elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
-            pixsky = np.zeros(np.shape(x))
-            pixsky[:, 0] = x[:, 1]
-            pixsky[:, 1] = x[:, 0]
-        else:
+        if x.shape == (2,):
+            x = x.reshape(1, 2)
+        elif len(x.shape) != 2 or x.shape[1] != 2:
             raise IOError('invalid input coordinates for sky2pix')
-        pixcrd = self.wcs.wcs_world2pix(pixsky, 0)
-        res = np.array(pixcrd)
+
+        ax, ay = self.wcs.wcs_world2pix(x[:, 1], x[:, 0], 0)
+        res = np.array([ay, ax]).T
+
         if nearest:
-            res[:, 0] = (pixcrd[:, 1] + 0.5).astype(int)
-            res[:, 1] = (pixcrd[:, 0] + 0.5).astype(int)
-        else:
-            res[:, 0] = pixcrd[:, 1]
-            res[:, 1] = pixcrd[:, 0]
+            res = (res + 0.5).astype(int)
         return res
 
     def pix2sky(self, x):
@@ -370,19 +364,13 @@ class WCS(object):
         out : (n,2) array of dec- and ra- world coordinates.
         """
         x = np.array(x, np.float_)
-        if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
-            pixcrd = np.array([[x[1], x[0]]])
-        elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
-            pixcrd = np.zeros(np.shape(x))
-            pixcrd[:, 0] = x[:, 1]
-            pixcrd[:, 1] = x[:, 0]
-        else:
+        if x.shape == (2,):
+            x = x.reshape(1, 2)
+        elif len(x.shape) != 2 or x.shape[1] != 2:
             raise IOError('invalid input coordinates for pix2sky')
-        pixsky = self.wcs.wcs_pix2world(pixcrd, 0)
-        res = np.array(pixsky)
-        res[:, 0] = pixsky[:, 1]
-        res[:, 1] = pixsky[:, 0]
-        return res
+
+        ra, dec = self.wcs.wcs_pix2world(x[:, 1], x[:, 0], 0)
+        return np.array([dec, ra]).T
 
     def isEqual(self, other):
         """Returns True if other and self have the same attributes."""
