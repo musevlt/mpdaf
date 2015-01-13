@@ -210,43 +210,36 @@ class WCS(object):
         shape : integer or (integer,integer)
                 Dimensions. No mandatory.
         """
+
         self.logger = logging.getLogger('mpdaf corelib')
-        if hdr != None:
+        if hdr is not None:
             self.wcs = pywcs.WCS(hdr, naxis=2)  # WCS object from data header
             self.naxis1 = hdr['NAXIS1']
             self.naxis2 = hdr['NAXIS2']
             # bug if naxis=3
             # http://mail.scipy.org/pipermail/astropy/2011-April/001242.html
         else:
-            # check attribute dimensions
-            if isinstance(crval, int) or isinstance(crval, float):
-                crval = (crval, crval)
-            elif len(crval) == 2:
-                pass
-            else:
-                raise ValueError('crval with dimension > 2')
-            if isinstance(cdelt, int) or isinstance(cdelt, float):
-                cdelt = (cdelt, cdelt)
-            elif len(cdelt) == 2:
-                pass
-            else:
-                raise ValueError('cdelt with dimension > 2')
+            def check_attrs(val, types=(int, float)):
+                """check attribute dimensions"""
+                if isinstance(val, types):
+                    return (val, val)
+                elif len(val) > 2:
+                    raise ValueError('dimension > 2')
+                else:
+                    return val
+
+            crval = check_attrs(crval)
+            cdelt = check_attrs(cdelt)
+
             if crpix is not None:
-                if isinstance(crpix, int) or isinstance(crpix, float):
-                    crpix = (crpix, crpix)
-                elif len(crpix) == 2:
-                    pass
-                else:
-                    raise ValueError('crpix with dimension > 2')
+                crpix = check_attrs(crpix)
+
             if shape is not None:
-                if isinstance(shape, int):
-                    shape = (shape, shape)
-                elif len(shape) == 2:
-                    pass
-                else:
-                    raise ValueError('shape with dimension > 2')
+                shape = check_attrs(shape, types=int)
+
             # create pywcs object
             self.wcs = pywcs.WCS(naxis=2)
+
             # reference pixel
             if crpix is not None:
                 self.wcs.wcs.crpix = np.array([crpix[1], crpix[0]])
@@ -256,6 +249,7 @@ class WCS(object):
                 else:
                     self.wcs.wcs.crpix = \
                         (np.array([shape[1], shape[0]]) + 1) / 2.
+
             # value of reference pixel
             self.wcs.wcs.crval = np.array([crval[1], crval[0]])
             if deg:  # in decimal degree
