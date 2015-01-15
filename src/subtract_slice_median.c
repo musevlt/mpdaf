@@ -4,7 +4,9 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 
 void mpdaf_old_subtract_slice_median(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int* mask, int skysub)
@@ -71,9 +73,8 @@ void mpdaf_old_subtract_slice_median(double* result, int* ifu, int* sli, double*
 void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin, double dl, int n, int nmax, double nclip_low, double nclip_up, int nstop, double* result)
 {
   int l;
-  
 
-#pragma omp parallel shared(npix, mask, data, lbda, dl, lmin, nmax, nclip_low, nclip_up, nstop, result) private(l)
+  #pragma omp parallel shared(npix, mask, data, lbda, dl, lmin, nmax, nclip_low, nclip_up, nstop, result) private(l)
   {
     #pragma omp for
     for (l=0; l<n; l++)

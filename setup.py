@@ -116,8 +116,14 @@ def options(*packages, **kw):
             kw.setdefault('extra_link_args', []).append(token)
 
     kw.setdefault('libraries', []).append('m')
-    kw.setdefault('extra_link_args', []).append('-fopenmp')
-    kw.setdefault('extra_compile_args', []).append('-fopenmp')
+    
+    # Use OpenMP if directed or not on a Mac
+    if os.environ.get('USEOPENMP') or not sys.platform.startswith('darwin'):
+        kw.setdefault('extra_link_args', []).append('-lgomp')
+        kw.setdefault('extra_compile_args', []).append('-fopenmp')
+    else:
+        raise Warning("Unable to find OPENMP")
+
 
     for k, v in kw.iteritems():  # remove duplicated
         kw[k] = list(set(v))
@@ -133,7 +139,7 @@ setup(name='mpdaf',
                 'nose', 'PIL'],
       package_dir=package_dir,
       packages=packages,
-      package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits']},
+      package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz']},
       maintainer='Laure Piqueras',
       maintainer_email='laure.piqueras@univ-lyon1.fr',
       platforms='any',
