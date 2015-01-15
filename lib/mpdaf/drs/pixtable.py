@@ -10,6 +10,41 @@ import datetime
 import warnings
 import logging
 
+class PixTableMask(object):
+
+    """PixTableMask class.
+
+    This class manages input/output for MUSE pixel table files
+
+    Parameters
+    ----------
+    filename : string
+               The mask file name.
+    mask     : array of boolean
+               pixtable column corresponding to the mask
+
+    Attributes
+    ----------
+    filename : string
+               The mask file name.
+    mask     : array of boolean
+               pixtable column corresponding to the mask
+    """
+
+    def __init__(self, maskfile, maskcol):
+        """creates a PixTable object.
+
+        Parameters
+        ----------
+        filename : string
+                   The mask file name.
+        mask     : array of boolean
+                   pixtable column corresponding to the mask
+        """
+        self.maskfile = maskfile
+        self.maskcol = maskcol
+    
+
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
           primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom'):
     """Saves the object in a FITS file.
@@ -1068,6 +1103,12 @@ class PixTable(object):
 
         # weight
         weight = self.get_weight(ksel)
+        
+        #mask column
+        if self.maskcol is None:
+            maskcol = None
+        else:
+            maskcol = self.maskcol[ksel]
 
         # combined exposures
         selfexp = self.get_exp()
@@ -1322,6 +1363,12 @@ class PixTable(object):
 
         # weight
         weight = self.get_weight(ksel)
+        
+        #mask column
+        if self.maskcol is None:
+            maskcol = None
+        else:
+            maskcol = self.maskcol[ksel]
 
         # combined exposures
         selfexp = self.get_exp()
@@ -1857,7 +1904,7 @@ class PixTable(object):
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
     
-    def mask_column(self, maskfile=None):
+    def mask_column(self, maskfile=None, verbose=True):
         """Computes the mask column correcponding to a mask file
 
         Parameters
@@ -1865,10 +1912,12 @@ class PixTable(object):
         maskfile : string
                    mask file to mask out all bright
                    continuum objects present in the FoV
+        verbose : boolean
+                  If True, progression is printed.
                    
         Returns
         -------
-        out : array of boolean
+        out : :class:`mpdaf.drs.PixTableMask`
         """
         d = {'class': 'PixTable', 'method': 'mask_column'}
         mask = np.zeros(self.nrows).astype('bool')
@@ -1877,7 +1926,6 @@ class PixTable(object):
             ypos = self.get_ypos()
             xpos_sky, ypos_sky = self.get_pos_sky(xpos=xpos, ypos=ypos)
             del xpos, ypos
-            from mpdaf.obj import Image
             ima_mask = Image(maskfile)
             from scipy import ndimage
             label = ndimage.measurements.label(ima_mask.data.data)[0]
@@ -1885,39 +1933,50 @@ class PixTable(object):
                 if i != 0:
                     try:
                         ksel = np.where(label == i)
-                        item = (slice(min(ksel[0]), max(ksel[0]) + 1, None), slice(min(ksel[1]), max(ksel[1]) + 1, None))
+                        item = (slice(min(ksel[0]), max(ksel[0]) + 1, None), \
+                                slice(min(ksel[1]), max(ksel[1]) + 1, None))
                         coord = ima_mask.wcs[item].get_range()
-                        x0 = min(coord[0][1], coord[1][1])
-                        x1 = max(coord[0][1], coord[1][1])
-                        y0 = min(coord[0][0], coord[1][0])
-                        y1 = max(coord[0][0], coord[1][0])
-                        ksel = np.where((xpos_sky>x0) & (xpos_sky<x1) & (ypos_sky>y0) & (ypos_sky<y1))
-                        pix = np.array(ima_mask.wcs.sky2pix(zip(ypos_sky[ksel], xpos_sky[ksel]), nearest=True), dtype=int)
+                        step = ima_mask.wcs[item].get_step()
+                        x0 = min(coord[0][1] - step[1]/2, coord[1][1] - step[1]/2)
+                        x1 = max(coord[0][1] + step[1]/2, coord[1][1] + step[1]/2)
+                        y0 = min(coord[0][0] - step[0]/2, coord[1][0] - step[0]/2)
+                        y1 = max(coord[0][0] + step[0]/2, coord[1][0] + step[0]/2)
+                        ksel = np.where((xpos_sky>x0) & (xpos_sky <x1) & \
+                                        (ypos_sky>y0) & (ypos_sky<y1))
+                        if verbose:
+                            msg = 'masking object %i %g<x<%g %g<y<%g (%i pixels)' \
+                            % (i,x0, x1, y0, y1, len(ksel[0]))
+                            self.logger.info(msg, extra=d)
+                        pix = np.array(ima_mask.wcs.sky2pix(\
+                              zip(ypos_sky[ksel], xpos_sky[ksel]), \
+                              nearest=True), dtype=int)
                         imask = [ima_mask[p[0],p[1]]!=0 for p in pix]
                         mask[ksel] = np.logical_or(mask[ksel], imask)        
                     except:
-                        msg = 'masking object %i failed' % i
-                        self.logger.info(msg, extra=d)
+                        pass
             del ima_mask
-        return mask
+        return PixTableMask(maskfile, mask)
 
-    def old_subtract_slice_median(self, maskfile=None, norm='sky'):
+    def old_subtract_slice_median(self, mask=None, norm='sky'):
         """Computes the median value for all slices and applies in place a
         correction to each slice to bring all slices to the same median value.
 
         Parameters
         ----------
-        maskfile : string
-                   mask file to mask out all bright
-                   continuum objects present in the FoV
-        norm     : string
-                   Option for sky subtraction 'sky' or 'zero' 
+        mask : :class:`mpdaf.drs.PixTableMask`
+               column corresponding to a mask file
+               (previously computed by mask_column)
+        norm : string
+               Option for sky subtraction 'sky' or 'zero' 
         """
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
 
-        mask = self.mask_column(maskfile)
+        if mask is None:
+            mask = np.zeros(self.nrows).astype('bool')
+        else:
+            mask = mask.maskcol
 
         import mpdaf
         import ctypes
@@ -1967,36 +2026,34 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         del libCmethods
         
-    def sky_ref(self, maskfile=None, dlbda = 1.0, nmax=2, nclip=5.0, nstop=2, mask_col=None): #25min
+    def sky_ref(self, mask=None, dlbda = 1.0, nmax=2, nclip=5.0, nstop=2):
         """Computes the reference sky spectrum using sigma clipped median.
         
         Parameters
         ----------
-        maskfile : string
-                   mask file to mask out all bright
-                   continuum objects present in the FoV
-        dlbda    : double
+        mask  : :class:`mpdaf.drs.PixTableMask`
+                column corresponding to a mask file
+                (previously computed by mask_column)
+        dlbda : double
                    wavelength step
-        nmax     : integer
-                   maximum number of clipping iterations
-        nclip    : float or (float,float)
-                   Number of sigma at which to clip.
-                   Single clipping parameter or lower / upper clipping parameters
-        nstop    : integer
-                   If the number of not rejected pixels is less
-                   than this number, the clipping iterations stop.
-        mask_col : array of boolean
-                   column corresponding to a mask file (previously computed by mask_column)
-                   if None, mask_column is computed
+        nmax  : integer
+                maximum number of clipping iterations
+        nclip : float or (float,float)
+                Number of sigma at which to clip.
+                Single clipping parameter or lower/upper clipping parameters
+        nstop : integer
+                If the number of not rejected pixels is less
+                than this number, the clipping iterations stop.
         Returns
         -------
         out : :class:`mpdaf.obj.Spectrum`
         """
         # mask
-        if mask_col is None:
-            mask = self.mask_column(maskfile)
+        if mask is None:
+            mask = np.zeros(self.nrows).astype('bool')
         else:
-            mask = mask_col
+            mask = mask.maskcol
+            
         # sigma clipped parameters
         import mpdaf
         import ctypes
@@ -2041,25 +2098,36 @@ class PixTable(object):
                                   np.float64(dlbda), n, nmax, \
                                   np.float64(nclip_low), \
                                   np.float64(nclip_up), nstop, result)
-        wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda), cunit='Angstrom', shape=n)
+        wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda), \
+                         cunit='Angstrom', shape=n)
+        
+        'HIERARCH MPDAF METH'
         return Spectrum(shape=n, data=result, wave=wave)
     
-    def subtract_slice_median(self, sky_ref, mask_col):
+    # def subtract_slice_median(self, skyref, maskfile)
+    def subtract_slice_median(self, skyref, mask):
         """Computes the median value for all slices and applies in place a
         correction to each slice to bring all slices to the same median value.
 
         Parameters
         ----------
-        sky_ref  : string
-                   FITS file containig the reference sky spectrum
-        mask_col : array of boolean
-                   column corresponding to a mask file (previously computed by mask_column)
+        skyref : string
+                 FITS file containig the reference sky spectrum
+        mask   : :class:`mpdaf.drs.PixTableMask`
+                 column corresponding to a mask file
+                 (previously computed by mask_column)
         """
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
         
-        spe_skyref = Spectrum(sky_ref)
+        spe_skyref = Spectrum(skyref)
+        
+        # mask
+        if mask is None:
+            mask_col = np.zeros(self.nrows).astype('bool')
+        else:
+            mask_col = mask.maskcol
 
         import mpdaf
         import ctypes
@@ -2109,22 +2177,30 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         del libCmethods
         
-    def divide_slice_median(self, sky_ref, mask_col):
+    #def divide_slice_median(self, skyref, maskfile):
+    def divide_slice_median(self, skyref, mask):
         """Computes the median value for all slices and applies in place a
         correction to each slice to bring all slices to the same median value.
 
         Parameters
         ----------
-        sky_ref  : string
-                   FITS file containig the reference sky spectrum
-        mask_col : array of boolean
-                   column corresponding to a mask file (previously computed by mask_column)
+        skyref : string
+                 FITS file containig the reference sky spectrum
+        mask   : :class:`mpdaf.drs.PixTableMask`
+                 column corresponding to a mask file
+                 (previously computed by mask_column)
         """
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
         
-        spe_skyref = Spectrum(sky_ref)
+        spe_skyref = Spectrum(skyref)
+        
+        # mask
+        if mask is None:
+            mask_col = np.zeros(self.nrows).astype('bool')
+        else:
+            mask_col = mask.maskcol
 
         import mpdaf
         import ctypes

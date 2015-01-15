@@ -53,4 +53,5 @@ from rawobj import RawFile_median
 from calibobj import CalibFile
 from calibobj import CalibDir
 from pixtable import PixTable
+from pixtable import PixTableMask
 from displaypixtable import DisplayPixTable
