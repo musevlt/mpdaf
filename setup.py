@@ -101,6 +101,9 @@ def options(*packages, **kw):
         subprocess.check_output(["pkg-config", "--version"])
     except subprocess.CalledProcessError as e:
         sys.exit(e.output)
+    except OSError as e:
+        print 'pkg-config not installed ?'
+        sys.exit(e)
 
     for package in packages:
         try:
