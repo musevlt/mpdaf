@@ -119,13 +119,13 @@ def options(*packages, **kw):
             kw.setdefault('extra_link_args', []).append(token)
 
     kw.setdefault('libraries', []).append('m')
-    
+
     # Use OpenMP if directed or not on a Mac
     if os.environ.get('USEOPENMP') or not sys.platform.startswith('darwin'):
         kw.setdefault('extra_link_args', []).append('-lgomp')
         kw.setdefault('extra_compile_args', []).append('-fopenmp')
     else:
-        raise Warning("Unable to find OPENMP")
+        print "Unable to find OPENMP"
 
 
     for k, v in kw.iteritems():  # remove duplicated
