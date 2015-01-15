@@ -33,8 +33,3 @@ steam_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('[%(levelname)s] %(message)s')
 steam_handler.setFormatter(formatter)
 logger.addHandler(steam_handler)
- 
-# Après 3 heures, on peut enfin logguer
-# Il est temps de spammer votre code avec des logs partout :
-#logger.info('Hello')
-#logger.warning('Testing %s', 'foo')
