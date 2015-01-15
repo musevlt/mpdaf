@@ -14,24 +14,25 @@ except:
 import logging
 from logging.handlers import RotatingFileHandler
 
-# FORMAT = "WARNING mpdaf corelib %(class)s.%(method)s: %(message)s"
-# logging.basicConfig(format=FORMAT)
-# logger = logging.getLogger('mpdaf corelib')
-
+# cpu numbers
 CPU = 0
 
-#
-logger = logging.getLogger('mpdaf corelib')
-logger.setLevel(logging.DEBUG)
+# logging
 
-formatter = logging.Formatter('%(asctime)s [%(levelname)s] {mpdaf corelib %(class)s.%(method)s} %(message)s')
-file_handler = RotatingFileHandler('mpdaf.log', 'a', 1000000, 1)
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+def setup_logging(level, logfile):
+    logger = logging.getLogger('mpdaf corelib')
+    logger.setLevel(logging.DEBUG)
 
-steam_handler = logging.StreamHandler()
-steam_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('[%(levelname)s] %(message)s')
-steam_handler.setFormatter(formatter)
-logger.addHandler(steam_handler)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] {mpdaf corelib %(class)s.%(method)s} %(message)s')
+    file_handler = RotatingFileHandler(logfile, 'a', 1000000, 1)
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    steam_handler = logging.StreamHandler()
+    steam_handler.setLevel(level)
+    formatter = logging.Formatter('[%(levelname)s] %(message)s')
+    steam_handler.setFormatter(formatter)
+    logger.addHandler(steam_handler)
+
+setup_logging(logging.DEBUG, 'mpdaf.log')
