@@ -1,7 +1,8 @@
 """coords.py Manages coordinates."""
-import numpy as np
+
 import astropy.wcs as pywcs
 import logging
+import numpy as np
 
 
 def deg2sexa(x):
@@ -64,14 +65,14 @@ def deg2hms(x):
     """Transforms a degree value to a string representation
     of the coordinate as hours:minutes:seconds.
 
-Parameters
-----------
-x : float
-    degree value.
+    Parameters
+    ----------
+    x : float
+        degree value.
 
-Returns
--------
-out : string
+    Returns
+    -------
+    out : string
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -83,14 +84,14 @@ def hms2deg(x):
     """Transforms a string representation of the coordinate
     as hours:minutes:seconds to a float degree value.
 
-Parameters
-----------
-x : string
-    hours:minutes:seconds
+    Parameters
+    ----------
+    x : string
+        hours:minutes:seconds
 
-Returns
--------
-out : float
+    Returns
+    -------
+    out : float
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='hour')
@@ -102,14 +103,14 @@ def deg2dms(x):
     """Transforms a degree value to a string representation
     of the coordinate as degrees:arcminutes:arcseconds.
 
-Parameters
-----------
-x : float
-    degree value.
+    Parameters
+    ----------
+    x : float
+        degree value.
 
-Returns
--------
-out : string
+    Returns
+    -------
+    out : string
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -121,14 +122,14 @@ def dms2deg(x):
     """Transforms a string representation of the coordinate
     as degrees:arcminutes:arcseconds to a float degree value.
 
-Parameters
-----------
-x : string
-    degrees:arcminutes:arcseconds
+    Parameters
+    ----------
+    x : string
+        degrees:arcminutes:arcseconds
 
-Returns
--------
-out : float
+    Returns
+    -------
+    out : float
     """
     from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
@@ -184,8 +185,8 @@ class WCS(object):
         ----------
         hdr   : pyfits.CardList
                 A FITS header.
-                If hdr is not equal to None, WCS object is created from data header
-                and other parameters are not used.
+                If hdr is not equal to None, WCS object is created from data
+                header and other parameters are not used.
         crpix : float or (float,float)
                 Reference pixel coordinates.
 
@@ -209,43 +210,36 @@ class WCS(object):
         shape : integer or (integer,integer)
                 Dimensions. No mandatory.
         """
+
         self.logger = logging.getLogger('mpdaf corelib')
-        if hdr != None:
+        if hdr is not None:
             self.wcs = pywcs.WCS(hdr, naxis=2)  # WCS object from data header
             self.naxis1 = hdr['NAXIS1']
             self.naxis2 = hdr['NAXIS2']
             # bug if naxis=3
             # http://mail.scipy.org/pipermail/astropy/2011-April/001242.html
         else:
-            # check attribute dimensions
-            if isinstance(crval, int) or isinstance(crval, float):
-                crval = (crval, crval)
-            elif len(crval) == 2:
-                pass
-            else:
-                raise ValueError('crval with dimension > 2')
-            if isinstance(cdelt, int) or isinstance(cdelt, float):
-                cdelt = (cdelt, cdelt)
-            elif len(cdelt) == 2:
-                pass
-            else:
-                raise ValueError('cdelt with dimension > 2')
+            def check_attrs(val, types=(int, float)):
+                """check attribute dimensions"""
+                if isinstance(val, types):
+                    return (val, val)
+                elif len(val) > 2:
+                    raise ValueError('dimension > 2')
+                else:
+                    return val
+
+            crval = check_attrs(crval)
+            cdelt = check_attrs(cdelt)
+
             if crpix is not None:
-                if isinstance(crpix, int) or isinstance(crpix, float):
-                    crpix = (crpix, crpix)
-                elif len(crpix) == 2:
-                    pass
-                else:
-                    raise ValueError('crpix with dimension > 2')
+                crpix = check_attrs(crpix)
+
             if shape is not None:
-                if isinstance(shape, int):
-                    shape = (shape, shape)
-                elif len(shape) == 2:
-                    pass
-                else:
-                    raise ValueError('shape with dimension > 2')
+                shape = check_attrs(shape, types=int)
+
             # create pywcs object
             self.wcs = pywcs.WCS(naxis=2)
+
             # reference pixel
             if crpix is not None:
                 self.wcs.wcs.crpix = np.array([crpix[1], crpix[0]])
@@ -255,6 +249,7 @@ class WCS(object):
                 else:
                     self.wcs.wcs.crpix = \
                         (np.array([shape[1], shape[0]]) + 1) / 2.
+
             # value of reference pixel
             self.wcs.wcs.crval = np.array([crval[1], crval[0]])
             if deg:  # in decimal degree
@@ -265,11 +260,13 @@ class WCS(object):
                 self.wcs.wcs.ctype = ['LINEAR', 'LINEAR']
                 self.wcs.wcs.cunit = ['pixel', 'pixel']
                 self.wcs.wcs.cd = np.array([[cdelt[1], 0], [0, cdelt[0]]])
+
             # rotation
             self.wcs.rotateCD(-rot)
             self.wcs.wcs.set()
+
             # dimensions
-            if shape != None:
+            if shape is not None:
                 self.naxis1 = shape[1]
                 self.naxis2 = shape[0]
             else:
@@ -318,7 +315,7 @@ class WCS(object):
                                                             dy, dx,
                                                             self.get_rot())
             self.logger.info(msg, extra=d)
-            
+
 
     def to_header(self):
         """Generates a pyfits header object with the WCS information."""
@@ -326,37 +323,32 @@ class WCS(object):
 
     def sky2pix(self, x, nearest=False):
         """Converts world coordinates (dec,ra) to pixel coordinates.
-If nearest=True; returns the nearest integer pixel.
 
-Parameters
-----------
-x       : array
-          An (n,2) array of dec- and ra- world coordinates.
-nearest : bool
-          If nearest is True returns the nearest integer pixel
-          in place of the decimal pixel.
+        If nearest=True; returns the nearest integer pixel.
 
-Returns
--------
-out : (n,2) array of pixel coordinates.
+        Parameters
+        ----------
+        x       : array
+                An (n,2) array of dec- and ra- world coordinates.
+        nearest : bool
+                If nearest is True returns the nearest integer pixel
+                in place of the decimal pixel.
+
+        Returns
+        -------
+        out : (n,2) array of pixel coordinates.
         """
         x = np.array(x, np.float_)
-        if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
-            pixsky = np.array([[x[1], x[0]]])
-        elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
-            pixsky = np.zeros(np.shape(x))
-            pixsky[:, 0] = x[:, 1]
-            pixsky[:, 1] = x[:, 0]
-        else:
+        if x.shape == (2,):
+            x = x.reshape(1, 2)
+        elif len(x.shape) != 2 or x.shape[1] != 2:
             raise IOError('invalid input coordinates for sky2pix')
-        pixcrd = self.wcs.wcs_world2pix(pixsky, 0)
-        res = np.array(pixcrd)
+
+        ax, ay = self.wcs.wcs_world2pix(x[:, 1], x[:, 0], 0)
+        res = np.array([ay, ax]).T
+
         if nearest:
-            res[:, 0] = (pixcrd[:, 1] + 0.5).astype(int)
-            res[:, 1] = (pixcrd[:, 0] + 0.5).astype(int)
-        else:
-            res[:, 0] = pixcrd[:, 1]
-            res[:, 1] = pixcrd[:, 0]
+            res = (res + 0.5).astype(int)
         return res
 
     def pix2sky(self, x):
@@ -372,19 +364,13 @@ out : (n,2) array of pixel coordinates.
         out : (n,2) array of dec- and ra- world coordinates.
         """
         x = np.array(x, np.float_)
-        if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
-            pixcrd = np.array([[x[1], x[0]]])
-        elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
-            pixcrd = np.zeros(np.shape(x))
-            pixcrd[:, 0] = x[:, 1]
-            pixcrd[:, 1] = x[:, 0]
-        else:
+        if x.shape == (2,):
+            x = x.reshape(1, 2)
+        elif len(x.shape) != 2 or x.shape[1] != 2:
             raise IOError('invalid input coordinates for pix2sky')
-        pixsky = self.wcs.wcs_pix2world(pixcrd, 0)
-        res = np.array(pixsky)
-        res[:, 0] = pixsky[:, 1]
-        res[:, 1] = pixsky[:, 0]
-        return res
+
+        ra, dec = self.wcs.wcs_pix2world(x[:, 1], x[:, 0], 0)
+        return np.array([dec, ra]).T
 
     def isEqual(self, other):
         """Returns True if other and self have the same attributes."""
@@ -532,9 +518,9 @@ out : (n,2) array of pixel coordinates.
             return self.wcs.wcs.cd
         except:
             try:
-                #cd = self.wcs.wcs.pc
-                #cd[0,:] *= self.wcs.wcs.cdelt[0]
-                #cd[1,:] *= self.wcs.wcs.cdelt[1]
+                # cd = self.wcs.wcs.pc
+                # cd[0,:] *= self.wcs.wcs.cdelt[0]
+                # cd[1,:] *= self.wcs.wcs.cdelt[1]
                 cdelt = self.wcs.wcs.get_cdelt()
                 cd = self.wcs.wcs.get_pc().__copy__()
                 cd[0, :] *= cdelt[0]
@@ -614,7 +600,7 @@ out : (n,2) array of pixel coordinates.
             self.wcs.wcs.set()
         except:
             try:
-                #new_pc = np.dot(self.wcs.wcs.pc, _mrot)
+                # new_pc = np.dot(self.wcs.wcs.pc, _mrot)
                 new_pc = np.dot(self.wcs.wcs.get_pc(), _mrot)
                 self.wcs.wcs.pc = new_pc
                 self.wcs.wcs.set()
@@ -636,7 +622,7 @@ out : (n,2) array of pixel coordinates.
         -------
         out : WCS
         """
-        if start == None:
+        if start is None:
             xc = 0
             yc = 0
             pixsky = self.pix2sky([xc, yc])
@@ -744,8 +730,8 @@ class WaveCoord(object):
     dim   : integer
             Size of spectrum.
     crpix : float
-            Reference pixel coordinates. Note that for crpix
-            definition, the first pixel in the spectrum has pixel coordinates 1.0.
+            Reference pixel coordinates. Note that for crpix definition, the
+            first pixel in the spectrum has pixel coordinates 1.0.
     crval : float
             Coordinates of the reference pixel.
     cdelt : float
@@ -842,19 +828,20 @@ class WaveCoord(object):
 
     def pixel(self, lbda, nearest=False):
         """ Returns the decimal pixel corresponding to the wavelength lbda.
-If nearest=True; returns the nearest integer pixel.
 
-Parameters
-----------
-lbda    : float
-          wavelength value.
-nearest : bool
-          If nearest is True returns the nearest integer pixel
-          in place of the decimal pixel.
+        If nearest=True; returns the nearest integer pixel.
 
-Returns
--------
-out : float or integer
+        Parameters
+        ----------
+        lbda    : float
+                wavelength value.
+        nearest : bool
+                If nearest is True returns the nearest integer pixel
+                in place of the decimal pixel.
+
+        Returns
+        -------
+        out : float or integer
         """
         lbda = np.array(lbda)
         pix = (lbda - self.crval) / self.cdelt + self.crpix - 1
@@ -910,7 +897,7 @@ out : float or integer
         lbda = (pix - self.crpix + 1) * self.cdelt + self.crval \
             - 0.5 * self.cdelt
         # vector of new pixel positions
-        if start == None:
+        if start is None:
             start = lbda[0] + step * 0.5
         # pixel number necessary to cover old range
         dim = np.ceil((lbda[-1] + self.cdelt - (start - step * 0.5)) / step)

@@ -31,8 +31,8 @@
 #
 
 import os
-import commands
 import subprocess
+import sys
 # import setuptools
 
 from distutils.core import setup, Command, Extension
@@ -97,19 +97,22 @@ for path in os.listdir('mpdaf_user'):
 def options(*packages, **kw):
     flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
 
-    err = commands.getstatusoutput("pkg-config --version")
-    if err[0] != 0:
-        raise ImportError(err[1])
+    try:
+        subprocess.check_output(["pkg-config", "--version"])
+    except subprocess.CalledProcessError as e:
+        sys.exit(e.output)
 
     for package in packages:
-        err = commands.getstatusoutput("pkg-config %s" % package)
-        if err[0] != 0:
-            raise ImportError(err[1])
+        try:
+            subprocess.check_call(["pkg-config", package])
+        except subprocess.CalledProcessError as e:
+            sys.exit("package '{}' not found.".format(package))
 
-    for token in commands.getoutput("pkg-config --libs --cflags %s" % ' '.join(packages)).split():
-        if flag_map.has_key(token[:2]):
+    for token in subprocess.check_output(["pkg-config", "--libs", "--cflags",
+                                          ' '.join(packages)]).split():
+        if token[:2] in flag_map:
             kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
-        else: # throw others to extra_link_args
+        else:  # throw others to extra_link_args
             kw.setdefault('extra_link_args', []).append(token)
 
     kw.setdefault('libraries', []).append('m')
@@ -136,5 +139,9 @@ setup(name='mpdaf',
       platforms='any',
       cmdclass={'test': UnitTest, 'fusion': MakeFusion},
       ext_package='mpdaf',
-      ext_modules=[Extension('libCmethods', ['src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'], **options('cfitsio'))],
+      ext_modules=[Extension(
+          'libCmethods',
+          ['src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
+          **options('cfitsio')
+      )],
       )
