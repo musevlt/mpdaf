@@ -115,11 +115,10 @@ void mpdaf_subtract_slice_median(double* result, int* ifu, int* sli, double* dat
 {
     int n,chan;
     double med[24 * 48];
-    double skyref;
 
     //omp_set_num_threads
 
-    #pragma omp parallel shared(ifu,sli,data,npix,med,mask) private(chan)
+    #pragma omp parallel shared(ifu,sli,data,npix,med,mask,lbda,skyref_lbda,skyref_flux,skyref_n) private(chan)
     {
          #pragma omp for 
          for (chan=1; chan<=24; chan++)
@@ -127,6 +126,7 @@ void mpdaf_subtract_slice_median(double* result, int* ifu, int* sli, double* dat
             int sl, i, count;
             double m;
             double *temp;
+            double skyref;
 	    temp = (double *) malloc(npix * sizeof(double));
 	    for (sl=1; sl<=48; sl++)
 	    {
@@ -135,7 +135,8 @@ void mpdaf_subtract_slice_median(double* result, int* ifu, int* sli, double* dat
 	        {
 		  if ((mask[i]==0) && (ifu[i]==chan) && (sli[i]==sl) && (lbda[i] > 4800) && (lbda[i] < 9300))
 		     {
-			  temp[count] = data[i];
+		          skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[i]);
+			  temp[count] = skyref - data[i];
 			  count += 1;
 		     }
 	        }
@@ -152,13 +153,12 @@ void mpdaf_subtract_slice_median(double* result, int* ifu, int* sli, double* dat
 
     #pragma omp barrier
 
-    #pragma omp parallel shared(ifu,sli,data,npix,med, result) private(n)
+    #pragma omp parallel shared(ifu,sli,data,npix,med,result) private(n)
     {
           #pragma omp for
           for(n=0; n<npix; n++)
           {
-	     skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[n]);
-             result[n] =  data[n] - med[48*(ifu[n]-1)+sli[n]-1] + skyref;
+             result[n] =  data[n] + med[48*(ifu[n]-1)+sli[n]-1];
 	  }
     }
 }
@@ -168,11 +168,10 @@ void mpdaf_divide_slice_median(double* result, int* ifu, int* sli, double* data,
 {
     int n,chan;
     double med[24 * 48];
-    double skyref;
 
     //omp_set_num_threads
 
-    #pragma omp parallel shared(ifu,sli,data,npix,med,mask) private(chan)
+#pragma omp parallel shared(ifu,sli,data,npix,med,mask,lbda,skyref_lbda,skyref_flux,skyref_n) private(chan)
     {
          #pragma omp for 
          for (chan=1; chan<=24; chan++)
@@ -180,6 +179,7 @@ void mpdaf_divide_slice_median(double* result, int* ifu, int* sli, double* data,
             int sl, i, count;
             double m;
             double *temp;
+            double skyref;
 	    temp = (double *) malloc(npix * sizeof(double));
 	    for (sl=1; sl<=48; sl++)
 	    {
@@ -188,7 +188,8 @@ void mpdaf_divide_slice_median(double* result, int* ifu, int* sli, double* data,
 	        {
 		  if ((mask[i]==0) && (ifu[i]==chan) && (sli[i]==sl) && (lbda[i] > 4800) && (lbda[i] < 9300))
 		     {
-			  temp[count] = data[i];
+		          skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[n]);
+			  temp[count] = data[i] / skyref;
 			  count += 1;
 		     }
 	        }
@@ -210,8 +211,7 @@ void mpdaf_divide_slice_median(double* result, int* ifu, int* sli, double* data,
           #pragma omp for
           for(n=0; n<npix; n++)
           {
-	     skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[n]);
-             result[n] =  data[n] / med[48*(ifu[n]-1)+sli[n]-1] * skyref;
+	     result[n] =  data[n] / med[48*(ifu[n]-1)+sli[n]-1];
 	  }
     }
 }
