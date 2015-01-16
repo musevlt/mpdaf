@@ -59,19 +59,14 @@ class TestWCS():
     @attr(speed='fast')
     def test_get(self):
         """WCS class: tests getters"""
-        nose.tools.assert_equal(self.wcs.get_step()[0], 1.0)
-        nose.tools.assert_equal(self.wcs.get_step()[1], 1.0)
-        nose.tools.assert_equal(self.wcs.get_start()[0], 0.0)
-        nose.tools.assert_equal(self.wcs.get_start()[1], 0.0)
-        nose.tools.assert_equal(self.wcs.get_end()[0], 4.0)
-        nose.tools.assert_equal(self.wcs.get_end()[1], 5.0)
+        assert_array_equal(self.wcs.get_step(), [1.0, 1.0])
+        assert_array_equal(self.wcs.get_start(), [0.0, 0.0])
+        assert_array_equal(self.wcs.get_end(), [4.0, 5.0])
+
         wcs2 = WCS(crval=(0, 0), shape=(5, 6))
-        nose.tools.assert_equal(wcs2.get_step()[0], 1.0)
-        nose.tools.assert_equal(wcs2.get_step()[1], 1.0)
-        nose.tools.assert_equal(wcs2.get_start()[0], -2.0)
-        nose.tools.assert_equal(wcs2.get_start()[1], -2.5)
-        nose.tools.assert_equal(wcs2.get_end()[0], 2.0)
-        nose.tools.assert_equal(wcs2.get_end()[1], 2.5)
+        assert_array_equal(wcs2.get_step(), [1.0, 1.0])
+        assert_array_equal(wcs2.get_start(), [-2.0, -2.5])
+        assert_array_equal(wcs2.get_end(), [2.0, 2.5])
 
 
 class TestWaveCoord():

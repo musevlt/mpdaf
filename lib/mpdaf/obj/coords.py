@@ -338,7 +338,7 @@ class WCS(object):
         -------
         out : (n,2) array of pixel coordinates.
         """
-        x = np.array(x, np.float_)
+        x = np.asarray(x, dtype=np.float64)
         if x.shape == (2,):
             x = x.reshape(1, 2)
         elif len(x.shape) != 2 or x.shape[1] != 2:
@@ -363,7 +363,7 @@ class WCS(object):
         -------
         out : (n,2) array of dec- and ra- world coordinates.
         """
-        x = np.array(x, np.float_)
+        x = np.asarray(x, dtype=np.float64)
         if x.shape == (2,):
             x = x.reshape(1, 2)
         elif len(x.shape) != 2 or x.shape[1] != 2:
@@ -451,25 +451,13 @@ class WCS(object):
     def get_step(self):
         """Returns [dDec,dRa]."""
         try:
-            dx = np.sqrt(self.wcs.wcs.cd[0, 0] * self.wcs.wcs.cd[0, 0]
-                         + self.wcs.wcs.cd[0, 1] * self.wcs.wcs.cd[0][1])
-            dy = np.sqrt(self.wcs.wcs.cd[1, 0] * self.wcs.wcs.cd[1, 0]
-                         + self.wcs.wcs.cd[1, 1] * self.wcs.wcs.cd[1][1])
-            return np.array([dy, dx])
+            return np.sqrt(np.sum(cd ** 2, axis=1))[::-1]
         except:
             try:
                 cdelt = self.wcs.wcs.get_cdelt()
                 pc = self.wcs.wcs.get_pc()
-                dx = cdelt[0] \
-                    * np.sqrt(pc[0, 0] ** 2 + pc[0, 1] ** 2)
-                dy = cdelt[1] \
-                    * np.sqrt(pc[1, 0] ** 2 + pc[1, 1] ** 2)
-#                 dx = self.wcs.wcs.cdelt[0] \
-#                 * np.sqrt(self.wcs.wcs.pc[0, 0] * self.wcs.wcs.pc[0, 0] \
-#                           + self.wcs.wcs.pc[0, 1] * self.wcs.wcs.pc[0][1])
-#                 dy = self.wcs.wcs.cdelt[1] \
-#                 * np.sqrt(self.wcs.wcs.pc[1, 0] * self.wcs.wcs.pc[1, 0] \
-#                           + self.wcs.wcs.pc[1, 1] * self.wcs.wcs.pc[1][1])
+                dx = cdelt[0] * np.sqrt(pc[0, 0] ** 2 + pc[0, 1] ** 2)
+                dy = cdelt[1] * np.sqrt(pc[1, 0] ** 2 + pc[1, 1] ** 2)
                 return np.array([dy, dx])
             except:
                 raise IOError('No standard WCS')
@@ -479,11 +467,7 @@ class WCS(object):
         pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1],
                   [self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd)
-        dec_min = np.min(pixsky[:, 0])
-        ra_min = np.min(pixsky[:, 1])
-        dec_max = np.max(pixsky[:, 0])
-        ra_max = np.max(pixsky[:, 1])
-        return np.array([[dec_min, ra_min], [dec_max, ra_max]])
+        return np.vstack([pixsky.min(axis=0), pixsky.max(axis=0)])
 
     def get_start(self):
         """Returns [dec,ra] corresponding to pixel (0,0)."""
@@ -492,8 +476,7 @@ class WCS(object):
         return np.array([pixsky[0, 0], pixsky[0, 1]])
 
     def get_end(self):
-        """Returns [dec,ra] corresponding to pixel (-1,-1).
-        """
+        """Returns [dec,ra] corresponding to pixel (-1,-1)."""
         pixcrd = [[self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd)
         return np.array([pixsky[0, 0], pixsky[0, 1]])
