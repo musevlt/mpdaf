@@ -1,14 +1,19 @@
 """pixtable.py Manages MUSE pixel table files."""
-from mpdaf.obj import Image
-from mpdaf.obj import WCS
-from mpdaf.obj import Spectrum
-from mpdaf.obj import WaveCoord
-from mpdaf.obj.objs import is_float, is_int
-import numpy as np
-from astropy.io import fits as pyfits
+
 import datetime
-import warnings
 import logging
+import numpy as np
+import warnings
+from astropy.io import fits as pyfits
+from scipy import interpolate, ndimage
+
+from ..obj import Image, Spectrum, WaveCoord, WCS
+from ..obj.objs import is_float, is_int
+
+try:
+    import numexpr
+except:
+    numexpr = False
 
 class PixTableMask(object):
 
@@ -43,7 +48,7 @@ class PixTableMask(object):
         """
         self.maskfile = maskfile
         self.maskcol = maskcol
-    
+
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
           primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom'):
@@ -171,9 +176,11 @@ class PixTable(object):
                      instead of FITS binary table.
     """
 
-    def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None, dq=None, stat=None, origin=None, weight=None,
-                 primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom'):
-        """creates a PixTable object.
+    def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None,
+                 dq=None, stat=None, origin=None, weight=None,
+                 primary_header=None, save_as_ima=True, wcs='pix',
+                 wave='Angstrom'):
+        """Creates a PixTable object.
 
         Parameters
         ----------
@@ -204,7 +211,7 @@ class PixTable(object):
         self.skysub = False
         self.fluxcal = False
 
-        if xpos is None and filename != None:
+        if xpos is None and filename is not None:
             try:
                 self.hdulist = pyfits.open(self.filename, memmap=1)
                 self.primary_header = self.hdulist[0].header
@@ -1103,7 +1110,7 @@ class PixTable(object):
 
         # weight
         weight = self.get_weight(ksel)
-        
+
         #mask column
         if self.maskcol is None:
             maskcol = None
@@ -1161,7 +1168,6 @@ class PixTable(object):
 
     def _extract_numexpr(self, filename=None, sky=None, lbda=None, ifu=None,
                          sl=None, xpix=None, ypix=None, exp=None):
-        import numexpr
         # type of coordinates
         primary_header = self.primary_header.copy()
         if self.nrows == 0:
@@ -1363,7 +1369,7 @@ class PixTable(object):
 
         # weight
         weight = self.get_weight(ksel)
-        
+
         #mask column
         if self.maskcol is None:
             maskcol = None
@@ -1464,12 +1470,7 @@ class PixTable(object):
         -------
         out : PixTable
         """
-        ok_numexpr = True
-        try:
-            import numexpr
-        except:
-            ok_numexpr = False
-        if ok_numexpr:
+        if numexpr:
             return self._extract(filename, sky, lbda, ifu, sl,
                                  xpix, ypix, exp)
         else:
@@ -1605,7 +1606,6 @@ class PixTable(object):
         return xpos_sky, ypos_sky
 
     def _get_pos_sky_numexpr(self, xpos, ypos):
-        import numexpr
         try:
             spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
         except:
@@ -1660,12 +1660,7 @@ class PixTable(object):
             xpos = self.get_xpos()
         if ypos is None:
             ypos = self.get_ypos()
-        ok_numexpr = True
-        try:
-            import numexpr
-        except:
-            ok_numexpr = False
-        if ok_numexpr:
+        if numexpr:
             return self._get_pos_sky_numexpr(xpos, ypos)
         else:
             return self._get_pos_sky(xpos, ypos)
@@ -1763,7 +1758,6 @@ class PixTable(object):
         """
         # TODO replace by DRS
         # step in arcsec
-        from scipy import interpolate
 
         if step is None:
             step = self.get_keywords('HIERARCH ESO OCS IPS PIXSCALE')
@@ -1817,7 +1811,6 @@ class PixTable(object):
                                         np.meshgrid(grid_y, grid_x),
                                         method='linear').T
 
-        from mpdaf.obj import Image, WCS
         wcs = WCS(crpix=(1.0, 1.0), crval=(ymin, xmax),
                   cdelt=(ystep, xstep), shape=shape)
         ima = Image(data=new_data, wcs=wcs)
@@ -1903,7 +1896,7 @@ class PixTable(object):
         wcs = WCS(crval=(ystart, xstart))
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
-    
+
     def mask_column(self, maskfile=None, verbose=True):
         """Computes the mask column correcponding to a mask file
 
@@ -1914,7 +1907,7 @@ class PixTable(object):
                    continuum objects present in the FoV
         verbose : boolean
                   If True, progression is printed.
-                   
+
         Returns
         -------
         out : :class:`mpdaf.drs.PixTableMask`
@@ -1951,7 +1944,7 @@ class PixTable(object):
                               zip(ypos_sky[ksel], xpos_sky[ksel]), \
                               nearest=True), dtype=int)
                         imask = [ima_mask[p[0],p[1]]!=0 for p in pix]
-                        mask[ksel] = np.logical_or(mask[ksel], imask)        
+                        mask[ksel] = np.logical_or(mask[ksel], imask)
                     except:
                         pass
             del ima_mask
@@ -1967,7 +1960,7 @@ class PixTable(object):
                column corresponding to a mask file
                (previously computed by mask_column)
         norm : string
-               Option for sky subtraction 'sky' or 'zero' 
+               Option for sky subtraction 'sky' or 'zero'
         """
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
@@ -1980,16 +1973,15 @@ class PixTable(object):
 
         import mpdaf
         import ctypes
-        #global libCmethods
 
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods", \
+        libCmethods = np.ctypeslib.load_library("libCmethods",
                                                 mpdaf.__path__[0])
-        
+
         # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
                                                  flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
                                               flags='CONTIGUOUS')
 
         # setup the return types and argument types
@@ -2009,7 +2001,7 @@ class PixTable(object):
         if norm == 'sky':
             skysub = 1
         else:
-            skysub = 0 
+            skysub = 0
         skysub = np.int32(skysub)
 
         libCmethods.mpdaf_old_subtract_slice_median(result, ifu, sli, data, lbda, \
@@ -2025,10 +2017,10 @@ class PixTable(object):
         #libCmethods._name = None
         #libCmethods._FuncPtr = None
         del libCmethods
-        
+
     def sky_ref(self, mask=None, dlbda = 1.0, nmax=2, nclip=5.0, nstop=2):
         """Computes the reference sky spectrum using sigma clipped median.
-        
+
         Parameters
         ----------
         mask  : :class:`mpdaf.drs.PixTableMask`
@@ -2053,7 +2045,7 @@ class PixTable(object):
             mask = np.zeros(self.nrows).astype('bool')
         else:
             mask = mask.maskcol
-            
+
         # sigma clipped parameters
         import mpdaf
         import ctypes
@@ -2083,12 +2075,12 @@ class PixTable(object):
          ctypes.c_double, ctypes.c_double, ctypes.c_int, \
          ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int, \
          array_1d_double]
-        
+
         # setup return type
         libCmethods.mpdaf_sky_ref.restype = None
-        
+
         data = self.get_data()
-        data = data.astype(np.float64) 
+        data = data.astype(np.float64)
         lbda = lbda.astype(np.float64)
         mask = mask.astype(np.int32)
         result = np.empty(n).astype(np.float64)
@@ -2100,10 +2092,10 @@ class PixTable(object):
                                   np.float64(nclip_up), nstop, result)
         wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda), \
                          cunit='Angstrom', shape=n)
-        
+
         'HIERARCH MPDAF METH'
         return Spectrum(shape=n, data=result, wave=wave)
-    
+
     # def subtract_slice_median(self, skyref, maskfile)
     def subtract_slice_median(self, skyref, mask):
         """Computes the median value for all slices and applies in place a
@@ -2120,9 +2112,9 @@ class PixTable(object):
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
-        
+
         spe_skyref = Spectrum(skyref)
-        
+
         # mask
         if mask is None:
             mask_col = np.zeros(self.nrows).astype('bool')
@@ -2136,13 +2128,13 @@ class PixTable(object):
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods", \
                                                 mpdaf.__path__[0])
-        
+
         # define argument types
         array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
                                                  flags='CONTIGUOUS')
         array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
                                               flags='CONTIGUOUS')
-        
+
         # setup the return types and argument types
         libCmethods.mpdaf_subtract_slice_median.restype = None
         libCmethods.mpdaf_subtract_slice_median.argtypes = \
@@ -2176,7 +2168,7 @@ class PixTable(object):
         #libCmethods._name = None
         #libCmethods._FuncPtr = None
         del libCmethods
-        
+
     #def divide_slice_median(self, skyref, maskfile):
     def divide_slice_median(self, skyref, mask):
         """Computes the median value for all slices and applies in place a
@@ -2193,9 +2185,9 @@ class PixTable(object):
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
-        
+
         spe_skyref = Spectrum(skyref)
-        
+
         # mask
         if mask is None:
             mask_col = np.zeros(self.nrows).astype('bool')
@@ -2209,13 +2201,13 @@ class PixTable(object):
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods", \
                                                 mpdaf.__path__[0])
-        
+
         # define argument types
         array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
                                                  flags='CONTIGUOUS')
         array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
                                               flags='CONTIGUOUS')
-        
+
         # setup the return types and argument types
         libCmethods.mpdaf_divide_slice_median.restype = None
         libCmethods.mpdaf_divide_slice_median.argtypes = \
@@ -2249,4 +2241,3 @@ class PixTable(object):
         #libCmethods._name = None
         #libCmethods._FuncPtr = None
         del libCmethods
-        
