@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 
+
 // Compare two elements
 static int qsort_compare (const void * a, const void * b)
 {
@@ -29,11 +30,12 @@ void mpdaf_mean(double* data, int n, double x[3])
 }
 
 // Compute the median
-double mpdaf_median(double* data, int n)
+double mpdaf_median(double* data, int n) // passer en index
 {
   qsort(data, n, sizeof(double), qsort_compare);
   return data[n / 2];
 }
+
 
 // Iterative sigma-clipping of array elements
 // return x[0]=mean, x[1]=std, x[2]=n, id
@@ -103,7 +105,7 @@ void mpdaf_median_sigma_clip(double* data, int n, double x[3], int nmax, double 
    }
 }
 
-// Given a value x, return a value j such that x is in the subrange data[j,j+1]
+// Given a value x, return a value j such that x is in the subrange xx[j,j+1]
 // data must be increasing
 int mpdaf_locate(double* xx, int n, double x)
 {

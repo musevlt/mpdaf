@@ -41,7 +41,8 @@ void mpdaf_old_subtract_slice_median(double* result, int* ifu, int* sli, double*
                 #pragma omp critical //#pragma omp atomic write
 		{
                      med[48*(chan-1)+sl-1] = m;
-	             //printf("%i %i %i %g \n",chan,sl,count,m);
+	             if ((chan==1) && (sl==1))
+		         printf("%i %i %i %g \n",chan,sl,count,m);
 	        }
 	    }
 	    free(temp);
@@ -56,8 +57,13 @@ void mpdaf_old_subtract_slice_median(double* result, int* ifu, int* sli, double*
     }
     else
     {
-        median = mpdaf_median(med, 24*48);
+        double* cpy;
+        cpy = (double *) malloc(24*48 * sizeof(double));
+	memcpy(cpy, med, 24*48 * sizeof(double));
+        median = mpdaf_median(cpy, 24*48);
+	free(cpy);
     }
+    printf("median %g \n",median);
 
     #pragma omp parallel shared(ifu,sli,data,npix,med, result) private(n)
     {
@@ -65,6 +71,8 @@ void mpdaf_old_subtract_slice_median(double* result, int* ifu, int* sli, double*
           for(n=0; n<npix; n++)
           {
              result[n] =  data[n] - med[48*(ifu[n]-1)+sli[n]-1] + median;
+             if (n==0)
+	       printf("%d %d %g = %g - %g + %g",ifu[n],sli[n],result[n],data[n],med[48*(ifu[n]-1)+sli[n]-1],median);
 	     //result[i] =  data[i] - med[48*(((origin[i] >> 6) & 0x1f)-1)+(origin[i] & 0x3f)-1];
 	  }
     }
