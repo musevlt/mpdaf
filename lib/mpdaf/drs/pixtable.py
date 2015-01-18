@@ -4,11 +4,13 @@ from mpdaf.obj import WCS
 from mpdaf.obj import Spectrum
 from mpdaf.obj import WaveCoord
 from mpdaf.obj.objs import is_float, is_int
+from mpdaf.tools.fits import add_mpdaf_method_keywords
 import numpy as np
 from astropy.io import fits as pyfits
 import datetime
 import warnings
 import logging
+import os.path
 
 class PixTableMask(object):
 
@@ -1959,7 +1961,10 @@ class PixTable(object):
 
     def old_subtract_slice_median(self, mask=None, norm='sky'):
         """Computes the median value for all slices and applies in place a
-        correction to each slice to bring all slices to the same median value.
+        subtractive correction to each slice to bring all slices to the same
+        median value.
+        
+        pix(x,y,lbda) -= < pix(x,y,lbda) >_slice (+ < pix(x,y,lbda) >_all)
 
         Parameters
         ----------
@@ -1974,8 +1979,10 @@ class PixTable(object):
         sli = self.origin2slice(origin)
 
         if mask is None:
+            maskfile = ''
             mask = np.zeros(self.nrows).astype('bool')
         else:
+            maskfile = os.path.basename(mask.maskfile)
             mask = mask.maskcol
 
         import mpdaf
@@ -2017,6 +2024,12 @@ class PixTable(object):
 
         # set pixtable data
         self.set_data(result)
+        add_mpdaf_method_keywords(self.primary_header, \
+                                  "drs.pixtable.old_subtract_slice_median", \
+                                  ['mask', 'norm'], \
+                                  [maskfile, norm], \
+                                  ['file to mask out all bright objects', \
+                                  'Option for sky subtraction'])
 
         # close libray
         #import _ctypes
@@ -2050,8 +2063,10 @@ class PixTable(object):
         """
         # mask
         if mask is None:
+            maskfile = ''
             mask = np.zeros(self.nrows).astype('bool')
         else:
+            maskfile = os.path.basename(mask.maskfile)
             mask = mask.maskcol
             
         # sigma clipped parameters
@@ -2102,12 +2117,28 @@ class PixTable(object):
                          cunit='Angstrom', shape=n)
         
         'HIERARCH MPDAF METH'
-        return Spectrum(shape=n, data=result, wave=wave)
+        spe = Spectrum(shape=n, data=result, wave=wave)
+        add_mpdaf_method_keywords(spe.primary_header, \
+                                  "drs.pixtable.sky_ref", \
+                                  ['pixtable','mask','dlbda','nmax',\
+                                   'nclip_low', 'nclip_up', 'nstop'], \
+                                  [os.path.basename(self.filename), maskfile, \
+                                   dlbda, nmax, nclip_low, nclip_up, nstop], \
+                                  ['pixtable', \
+                                   'file to mask out all bright objects', \
+                                  'wavelength step', \
+                                  'max number of clippinp iterations', \
+                                  'lower clipping parameter', \
+                                  'upper clipping parameter', \
+                                  'clipping minimum number'])
+        return spe
     
-    # def subtract_slice_median(self, skyref, maskfile)
     def subtract_slice_median(self, skyref, mask):
         """Computes the median value for all slices and applies in place a
-        correction to each slice to bring all slices to the same median value.
+        subtractive correction to each slice to bring all slices to the same
+        median value.
+        
+        pix(x,y,lbda) += < skyref(lbda) - pix(x,y,lbda) >_slice
 
         Parameters
         ----------
@@ -2168,6 +2199,13 @@ class PixTable(object):
 
         # set pixtable data
         self.set_data(result)
+        # store parameters of the method in FITS keywords
+        add_mpdaf_method_keywords(self.primary_header, \
+                                  "drs.pixtable.subtract_slice_median", \
+                                  ['mask', 'skyref'], \
+                                  [mask.maskfile, os.path.basename(skyref)], \
+                                  ['file to mask out all bright objects', \
+                                  'reference sky spectrum'])
 
         # close libray
         #import _ctypes
@@ -2177,10 +2215,10 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         del libCmethods
         
-    #def divide_slice_median(self, skyref, maskfile):
     def divide_slice_median(self, skyref, mask):
         """Computes the median value for all slices and applies in place a
         correction to each slice to bring all slices to the same median value.
+        pix(x,y,lbda) /= < pix(x,y,lbda) / skyref(lbda) >_slice
 
         Parameters
         ----------
@@ -2241,6 +2279,12 @@ class PixTable(object):
 
         # set pixtable data
         self.set_data(result)
+        add_mpdaf_method_keywords(self.primary_header, \
+                                  "drs.pixtable.divide_slice_median", \
+                                  ['mask', 'skyref'], \
+                                  [mask.maskfile, os.path.basename(skyref)], \
+                                  ['file to mask out all bright objects', \
+                                  'reference sky spectrum'])
 
         # close libray
         #import _ctypes
