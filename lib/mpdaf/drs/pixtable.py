@@ -1948,7 +1948,6 @@ class PixTable(object):
                     self.logger.info(msg, extra=d)
                 if len(ksel[0])!=0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
-                    print len(ksel[0]), len(pix)
                     mask[ksel] |= (ima_mask.data.data[pix[:,0], pix[:,1]] != 0)
             except Exception as e:
                 self.logger.warning('masking object %i failed', i, extra=d)
