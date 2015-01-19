@@ -54,6 +54,7 @@ class TestWCS():
         assert_allclose(wcs.wcs.wcs_pix2world(pix, 0), ref, rtol=1e-4)
         assert_allclose(sky, ref2, rtol=1e-4)
         assert_allclose(wcs.sky2pix(wcs.pix2sky(pix2)), pix2)
+        print wcs.sky2pix(sky, nearest=True), pixint
         assert_allclose(wcs.sky2pix(sky, nearest=True), pixint)
 
     @attr(speed='fast')

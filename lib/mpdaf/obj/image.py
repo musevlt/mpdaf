@@ -1790,14 +1790,14 @@ class Image(object):
         if mask:
             # mask outside pixels 
             grid = np.meshgrid(np.arange(0,self.shape[0]), \
-                                np.arange(0,self.shape[1]), indexing='ij')
+                               np.arange(0,self.shape[1]), indexing='ij')
             shape = grid[1].shape
             pixcrd = np.array([[p, q] for p,q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
             skycrd = np.array(self.wcs.pix2sky(pixcrd))
             x = skycrd[:, 1].reshape(shape)
             y = skycrd[:, 0].reshape(shape)
-            test_x = np.logical_or(x <= x_min, x > x_max)
-            test_y = np.logical_or(y <= y_min, y > y_max)
+            test_x = np.logical_or(x < x_min, x > x_max)
+            test_y = np.logical_or(y < y_min, y > y_max)
             test = np.logical_or(test_x, test_y)
             self.data.mask = np.logical_or(self.data.mask, test)
             self.resize()

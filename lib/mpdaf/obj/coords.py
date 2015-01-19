@@ -270,8 +270,8 @@ class WCS(object):
                 self.naxis1 = shape[1]
                 self.naxis2 = shape[0]
             else:
-                self.naxis1 = 1
-                self.naxis2 = 1
+                self.naxis1 = 0
+                self.naxis2 = 0
 
     def copy(self):
         """Copies WCS object in a new one and returns it."""
@@ -348,7 +348,10 @@ class WCS(object):
         res = np.array([ay, ax]).T
 
         if nearest:
-            res = np.maximum(np.minimum((res + 0.5).astype(int),[self.naxis2-1, self.naxis1-1]),[0,0])
+            if self.naxis1 != 0 and self.naxis2 != 0:
+                res = np.maximum(np.minimum((res + 0.5).astype(int),[self.naxis2-1, self.naxis1-1]),[0,0])
+            else:
+                res = (res + 0.5).astype(int)
         return res
 
     def pix2sky(self, x):

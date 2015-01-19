@@ -124,7 +124,7 @@ class TestImage():
         """Image class: tests truncation"""
         wcs = WCS(crval=(0,0))
         data = np.ones(shape=(6,5))*2
-        image1 = Image(shape=(6,5),data=data,wcs=wcs)
+        image1 = Image(shape=(6,5), data=data, wcs=wcs)
         image1 = image1.truncate(0,1,1,3)
         nose.tools.assert_equal(image1.shape[0],2)
         nose.tools.assert_equal(image1.shape[1],3)
@@ -158,12 +158,12 @@ class TestImage():
         wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
         ima = gauss_image(wcs=wcs,fwhm=(2,1),factor=1, rot = 60, cont = 2.0)
         #ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
-        gauss = ima.gauss_fit(cont=2.0, fit_back=False)
+        gauss = ima.gauss_fit(cont=2.0, fit_back=False, verbose=False)
         nose.tools.assert_almost_equal(gauss.center[0], 8.5)
         nose.tools.assert_almost_equal(gauss.center[1], 12)
         nose.tools.assert_almost_equal(gauss.flux, 1)
         ima += 10.3
-        gauss2 = ima.gauss_fit(cont=2.0+10.3,fit_back=True)
+        gauss2 = ima.gauss_fit(cont=2.0+10.3,fit_back=True, verbose=False)
         nose.tools.assert_almost_equal(gauss2.center[0], 8.5)
         nose.tools.assert_almost_equal(gauss2.center[1], 12)
         nose.tools.assert_almost_equal(gauss2.flux, 1)
@@ -173,7 +173,7 @@ class TestImage():
     def test_moffat_Image(self):
         """Image class: tests Moffat fit"""
         ima = moffat_image(wcs=WCS(crval=(0,0)),flux=12.3, fwhm=(1.8,1.8), n=1.6, rot = 0., cont=8.24)
-        moffat = ima.moffat_fit(fit_back=True)
+        moffat = ima.moffat_fit(fit_back=True, verbose=False)
         nose.tools.assert_almost_equal(moffat.center[0], 50.)
         nose.tools.assert_almost_equal(moffat.center[1], 50.)
         nose.tools.assert_almost_equal(moffat.flux, 12.3)
