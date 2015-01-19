@@ -348,7 +348,7 @@ class WCS(object):
         res = np.array([ay, ax]).T
 
         if nearest:
-            res = (res + 0.5).astype(int)
+            res = np.maximum(np.minimum((res + 0.5).astype(int),[self.naxis2-1, self.naxis1-1]),[0,0])
         return res
 
     def pix2sky(self, x):
@@ -451,7 +451,7 @@ class WCS(object):
     def get_step(self):
         """Returns [dDec,dRa]."""
         try:
-            return np.sqrt(np.sum(cd ** 2, axis=1))[::-1]
+            return np.sqrt(np.sum(self.wcs.wcs.cd ** 2, axis=1))[::-1]
         except:
             try:
                 cdelt = self.wcs.wcs.get_cdelt()

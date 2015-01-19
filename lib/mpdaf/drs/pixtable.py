@@ -1899,7 +1899,6 @@ class PixTable(object):
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
     
-
     def mask_column(self, maskfile=None, verbose=True):
         """Computes the mask column correcponding to a mask file
 
