@@ -1898,6 +1898,45 @@ class PixTable(object):
         wcs = WCS(crval=(ystart, xstart))
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
+    
+    def old_mask_column(self, maskfile=None, verbose=True):    
+        d = {'class': 'PixTable', 'method': 'mask_column'}
+        mask = np.zeros(self.nrows).astype('bool')
+        if maskfile is not None:
+            xpos = self.get_xpos()
+            ypos = self.get_ypos()
+            xpos_sky, ypos_sky = self.get_pos_sky(xpos=xpos, ypos=ypos)
+            del xpos, ypos
+            ima_mask = Image(maskfile)
+            from scipy import ndimage
+            label = ndimage.measurements.label(ima_mask.data.data)[0]
+            for i in np.unique(label):
+                if i != 0:
+                    try:
+                        ksel = np.where(label == i)
+                        item = (slice(min(ksel[0]), max(ksel[0]) + 1, None), \
+                                slice(min(ksel[1]), max(ksel[1]) + 1, None))
+                        coord = ima_mask.wcs[item].get_range()
+                        step = ima_mask.wcs[item].get_step()
+                        x0 = min(coord[0][1] - step[1]/2, coord[1][1] - step[1]/2)
+                        x1 = max(coord[0][1] + step[1]/2, coord[1][1] + step[1]/2)
+                        y0 = min(coord[0][0] - step[0]/2, coord[1][0] - step[0]/2)
+                        y1 = max(coord[0][0] + step[0]/2, coord[1][0] + step[0]/2)
+                        ksel = np.where((xpos_sky>x0) & (xpos_sky <x1) & \
+                                        (ypos_sky>y0) & (ypos_sky<y1))
+                        if verbose:
+                            msg = 'masking object %i %g<x<%g %g<y<%g (%i pixels)' \
+                            % (i,x0, x1, y0, y1, len(ksel[0]))
+                            self.logger.info(msg, extra=d)
+                        pix = np.array(ima_mask.wcs.sky2pix(\
+                              zip(ypos_sky[ksel], xpos_sky[ksel]), \
+                              nearest=True), dtype=int)
+                        imask = [ima_mask[p[0],p[1]]!=0 for p in pix]
+                        mask[ksel] = np.logical_or(mask[ksel], imask)        
+                    except Exception as e:
+                        self.logger.warning('masking object %i failed', i, extra=d)
+            del ima_mask
+
 
     def mask_column(self, maskfile=None, verbose=True):
         """Computes the mask column correcponding to a mask file
@@ -1930,7 +1969,7 @@ class PixTable(object):
         ulabel = ulabel[ulabel > 0]
 
         for i in ulabel:
-            try:
+            #try:
                 ksel = np.where(label == i)
                 item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),
                         slice(min(ksel[1]), max(ksel[1]) + 1, None))
@@ -1945,10 +1984,12 @@ class PixTable(object):
                     msg = 'masking object %i %g<x<%g %g<y<%g (%i pixels)' % (
                         i, x0, x1, y0, y1, len(ksel[0]))
                     self.logger.info(msg, extra=d)
-                pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
-                mask[ksel] |= (ima_mask.data.data[pix[:,0], pix[:,1]] != 0)
-            except Exception as e:
-                self.logger.warning('masking object %i failed', i, extra=d)
+                if len(ksel[0])!=0:
+                    pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
+                    print len(ksel[0]), len(pix)
+                    mask[ksel] |= (ima_mask.data.data[pix[:,0], pix[:,1]] != 0)
+            #except Exception as e:
+            #    self.logger.warning('masking object %i failed', i, extra=d)
 
         return PixTableMask(maskfile, mask)
 
@@ -2149,9 +2190,11 @@ class PixTable(object):
 
         # mask
         if mask is None:
-            mask_col = np.zeros(self.nrows).astype('bool')
+            maskfile = ''
+            maskcol = np.zeros(self.nrows).astype('bool')
         else:
-            mask_col = mask.maskcol
+            maskfile = os.path.basename(mask.maskfile)
+            maskcol = mask.maskcol
 
         import mpdaf
         import ctypes
@@ -2181,7 +2224,7 @@ class PixTable(object):
         data = data.astype(np.float64)
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
-        mask = mask_col.astype(np.int32)
+        mask = maskcol.astype(np.int32)
         skyref_flux = spe_skyref.data.data.astype(np.float64)
         skyref_lbda = spe_skyref.wave.coord()
         skyref_n = spe_skyref.shape
@@ -2196,7 +2239,7 @@ class PixTable(object):
         add_mpdaf_method_keywords(self.primary_header, \
                                   "drs.pixtable.subtract_slice_median", \
                                   ['mask', 'skyref'], \
-                                  [mask.maskfile, os.path.basename(skyref)], \
+                                  [maskfile, os.path.basename(skyref)], \
                                   ['file to mask out all bright objects', \
                                   'reference sky spectrum'])
 
@@ -2229,9 +2272,11 @@ class PixTable(object):
 
         # mask
         if mask is None:
-            mask_col = np.zeros(self.nrows).astype('bool')
+            maskfile = ''
+            maskcol = np.zeros(self.nrows).astype('bool')
         else:
-            mask_col = mask.maskcol
+            maskfile = os.path.basename(mask.maskfile)
+            maskcol = mask.maskcol
 
         import mpdaf
         import ctypes
@@ -2261,7 +2306,7 @@ class PixTable(object):
         data = data.astype(np.float64)
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
-        mask = mask_col.astype(np.int32)
+        mask = maskcol.astype(np.int32)
         skyref_flux = spe_skyref.data.data.astype(np.float64)
         skyref_lbda = spe_skyref.wave.coord()
         skyref_n = spe_skyref.shape
@@ -2275,7 +2320,7 @@ class PixTable(object):
         add_mpdaf_method_keywords(self.primary_header, \
                                   "drs.pixtable.divide_slice_median", \
                                   ['mask', 'skyref'], \
-                                  [mask.maskfile, os.path.basename(skyref)], \
+                                  [maskfile, os.path.basename(skyref)], \
                                   ['file to mask out all bright objects', \
                                   'reference sky spectrum'])
 
