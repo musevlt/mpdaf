@@ -236,30 +236,44 @@ Reference
 :func:`mpdaf.drs.PixTable.reconstruct_sky_image <mpdaf.drs.PixTable.reconstruct_sky_image>` reconstructs the image on the sky from the pixtable.
 
 
-Getters
--------
+Getters and setters
+-------------------
 
 :func:`mpdaf.drs.PixTable.get_xpos <mpdaf.drs.PixTable.get_xpos>` gets the xpos column.
 
+:func:`mpdaf.drs.PixTable.set_xpos <mpdaf.drs.PixTable.set_xpos>` sets the xpos column.
+
 :func:`mpdaf.drs.PixTable.get_ypos <mpdaf.drs.PixTable.get_ypos>` gets the ypos column.
 
-:func:`mpdaf.drs.PixTable.get_xpos_sky <mpdaf.drs.PixTable.get_xpos_sky>` gets the x absolute position on the sky.
-
-:func:`mpdaf.drs.PixTable.get_ypos_sky <mpdaf.drs.PixTable.get_ypos_sky>` gets the y absolute position on the sky.
+:func:`mpdaf.drs.PixTable.set_ypos <mpdaf.drs.PixTable.set_ypos>` sets the ypos column.
 
 :func:`mpdaf.drs.PixTable.get_lambda <mpdaf.drs.PixTable.get_lambda>` gets the lambda column.
 
+:func:`mpdaf.drs.PixTable.set_lambda <mpdaf.drs.PixTable.set_lambda>` sets the lambda column.
+
 :func:`mpdaf.drs.PixTable.get_data <mpdaf.drs.PixTable.get_data>` gets the data column.
+
+:func:`mpdaf.drs.PixTable.set_data <mpdaf.drs.PixTable.set_data>` sets the data column.
 
 :func:`mpdaf.drs.PixTable.get_stat <mpdaf.drs.PixTable.get_stat>` gets the stat column.
 
+:func:`mpdaf.drs.PixTable.set_stat <mpdaf.drs.PixTable.set_stat>` sets the stat column.
+
 :func:`mpdaf.drs.PixTable.get_dq <mpdaf.drs.PixTable.get_dq>` gets the dq column.
+
+:func:`mpdaf.drs.PixTable.set_dq <mpdaf.drs.PixTable.set_dq>` sets the dq column.
 
 :func:`mpdaf.drs.PixTable.get_origin <mpdaf.drs.PixTable.get_origin>` gets the origin column.
 
+:func:`mpdaf.drs.PixTable.set_origin <mpdaf.drs.PixTable.set_origin>` sets the origin column.
+
 :func:`mpdaf.drs.PixTable.get_weight <mpdaf.drs.PixTable.get_weight>` gets the weight column.
 
+:func:`mpdaf.drs.PixTable.set_weight <mpdaf.drs.PixTable.set_weight>` sets the weight column.
+
 :func:`mpdaf.drs.PixTable.get_exp <mpdaf.drs.PixTable.get_exp>` gets the exposure numbers.
+
+:func:`mpdaf.drs.PixTable.get_pos_sky <mpdaf.drs.PixTable.get_pos_sky>` gets the absolute position on the sky.
 
 :func:`mpdaf.drs.PixTable.get_slices <mpdaf.drs.PixTable.get_slices>` returns slices dictionary.
 
@@ -280,3 +294,15 @@ Get information from origin array
 :func:`mpdaf.drs.PixTable.origin2xpix <mpdaf.drs.PixTable.origin2xpix>` converts the origin value and returns the x coordinates.
 
 :func:`mpdaf.drs.PixTable.origin2coords <mpdaf.drs.PixTable.origin2coords>` converts the origin value and returns (ifu, slice, ypix, xpix).
+
+
+Transformations
+---------------
+
+:func:`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` computes the mask column correcponding to a mask file.
+
+:func:`mpdaf.drs.PixTable.sky_ref <mpdaf.drs.PixTable.sky_ref>` computes the reference sky spectrum.
+
+:func:`mpdaf.drs.PixTable.subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` computes the median value for all slices and subtracts this correction to each slice to bring all slices to the same median value.
+
+:func:`mpdaf.drs.PixTable.divide_slice_median <mpdaf.drs.PixTable.divide_slice_median>` computes the median value for all slices and divides each slice by this correction to bring all slices to the same median value.

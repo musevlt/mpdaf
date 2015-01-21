@@ -275,6 +275,8 @@ Mask
 
 :func:`mpdaf.obj.Image.mask <mpdaf.obj.Image.mask>` masks values inside/outside the described region (in place).
 
+:func:`mpdaf.obj.Image.mask_ellipse <mpdaf.obj.Image.mask_ellipse>` masks values inside/outside the described region. Uses an elliptical shape.
+
 :func:`mpdaf.obj.Image.unmask <mpdaf.obj.Image.unmask>` unmasks the image (just invalid data (nan,inf) are masked) (in place).
 
 :func:`mpdaf.obj.Image.mask_variance <mpdaf.obj.Image.mask_variance>` masks pixels with a variance upper than threshold value.
@@ -407,3 +409,5 @@ Functions to create a new image
 :func:`mpdaf.obj.make_image <mpdaf.obj.make_image>` interpolates z(x,y) and returns an image.
 
 :func:`mpdaf.obj.composite_image <mpdaf.obj.composite_image>` builds composite image from a list of image and colors.
+
+:func:`mpdaf.obj.mask_image <mpdaf.obj.mask_image>` creates a new image from a table of sky apertures.

@@ -31,6 +31,9 @@ mpdaf contains user packages:
 | mpdaf_user.zap    | mpdaf_user/zap     | sky subtraction tool                                                  |
 |                   |                    | `zap doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/ZapWiki>`_          |                                              
 +-------------------+--------------------+-----------------------------------------------------------------------+
+| mpdaf_user.galpak | mpdaf_user/galpak  | galaxy parameters and kinematics extraction tool                      |
+|                   |                    | `galpak doc <http://galpak.irap.omp.eu>`_                             |                                              
++-------------------+--------------------+-----------------------------------------------------------------------+
 
 These user packages are included in the mpdaf tarball.
 
@@ -67,10 +70,16 @@ The various software required are:
  * numpy (version 1.6.2 or above)
  * scipy (version 0.10.1 or above)
  * matplotlib (version 1.1.0 or above)
- * pyfits (version 3.1 or astropy)
- * pywcs (version 1.11-4.7 or astropy)
+ * astropy (version 0.4 or above)
  * nose
  * PIL
+ * numexpr
+ * python-development package
+ * pkg-config tool
+ * C numerics library
+ * C CFITSIO library
+ * C OpenMP library (optional)
+
 
 .. _installation-label:
 
@@ -80,10 +89,16 @@ Installation
 To install the mpdaf package, you first run the *setup.py build* command to build everything needed to install::
 
   /mpdaf$ python setup.py build
+  
+The setup script tries to use pkg-config to find the correct compiler flags and library flags.
 
+Note that on MAC OS, openmp is not used by default because clang doesn't support OpenMp.
+To force it, the USEOPENMP environment variable can be set to anything except an empty string::
 
-Then, you lof as root and install everything from build directory::
+ /mpdaf$ sudo USEOPENMP=0 CC=<local path of gcc> python setup.py build
+ 
 
+After building everything, you log as root and install everything from build directory::
 
   root:/mpdaf$ python setup.py install
 

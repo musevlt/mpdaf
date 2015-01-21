@@ -16,7 +16,3 @@ World coordinates conversions
 .. autofunction:: mpdaf.obj.deg2dms
 
 .. autofunction:: mpdaf.obj.dms2deg
-
-.. autofunction:: mpdaf.obj.deg2rad
-
-.. autofunction:: mpdaf.obj.rad2deg

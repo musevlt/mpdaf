@@ -476,11 +476,13 @@ Transformation
 
 :func:`mpdaf.obj.Cube.truncate <mpdaf.obj.Cube.truncate>` extracts a sub-cube.
 
+:func:`mpdaf.obj.Cube.aperture <mpdaf.obj.Cube.aperture>` extracts a spectra from an aperture of fixed radius.
+
+:func:`mpdaf.obj.Cube.get_image <mpdaf.obj.Cube.get_image>` extracts an image from the datacube.
+
 :func:`mpdaf.obj.Cube.rebin_factor <mpdaf.obj.Cube.rebin_factor>` shrinks the size of the cube by factor.
 
 :func:`mpdaf.obj.Cube.rebin_median <mpdaf.obj.Cube.rebin_median>` rebins the cube using median values.
-
-:func:`mpdaf.obj.Cube.aperture <mpdaf.obj.Cube.aperture>` extracts a spectra from an aperture of fixed radius.
 
 :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
 

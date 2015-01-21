@@ -39,14 +39,6 @@ Example of conversion::
   print ac
 
 
-Degree / radian conversion
-==========================
-
-:func:`mpdaf.obj.deg2rad` transforms a degree value to a radian value.
-
-:func:`mpdaf.obj.rad2deg` transforms a radian value to a degree value.
-
-
 World coordinates in spatial direction
 ======================================
 
