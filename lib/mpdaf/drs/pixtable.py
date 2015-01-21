@@ -1113,12 +1113,6 @@ class PixTable(object):
         # weight
         weight = self.get_weight(ksel)
 
-        #mask column
-        if self.maskcol is None:
-            maskcol = None
-        else:
-            maskcol = self.maskcol[ksel]
-
         # combined exposures
         selfexp = self.get_exp()
         if selfexp is not None:
@@ -1371,12 +1365,6 @@ class PixTable(object):
 
         # weight
         weight = self.get_weight(ksel)
-
-        #mask column
-        if self.maskcol is None:
-            maskcol = None
-        else:
-            maskcol = self.maskcol[ksel]
 
         # combined exposures
         selfexp = self.get_exp()
@@ -2050,6 +2038,7 @@ class PixTable(object):
         nstop : integer
                 If the number of not rejected pixels is less
                 than this number, the clipping iterations stop.
+        
         Returns
         -------
         out : :class:`mpdaf.obj.Spectrum`
