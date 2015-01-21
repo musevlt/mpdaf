@@ -30,6 +30,60 @@
 # DAMAGE.
 #
 
+# Prerequisites
+# =============
+# 
+# The various software required are:
+# 
+#  * Python (version 2.6 or 2.7)
+#  * IPython
+#  * numpy (version 1.6.2 or above)
+#  * scipy (version 0.10.1 or above)
+#  * matplotlib (version 1.1.0 or above)
+#  * astropy (version 0.4 or above)
+#  * nose
+#  * PIL
+#  * numexpr
+#  * python-development package
+#  * pkg-config tool
+#  * C numerics library
+#  * C CFITSIO library
+#  * C OpenMP library (optional)
+# 
+# Installation
+# ============
+# 
+# To install the mpdaf package, you first run the *setup.py build* command to build everything needed to install:
+# 
+#   /mpdaf$ python setup.py build
+#   
+# The setup script tries to use pkg-config to find the correct compiler flags and library flags.
+# 
+# Note that on MAC OS, openmp is not used by default because clang doesn't support OpenMp.
+# To force it, the USEOPENMP environment variable can be set to anything except an empty string:
+# 
+#  /mpdaf$ sudo USEOPENMP=0 CC=<local path of gcc> python setup.py build
+# 
+# 
+# After building everything, you log as root and install everything from build directory:
+# 
+#   root:/mpdaf$ python setup.py install
+# 
+# 
+# setup.py informs you that the fusion package is not found. But it's just a warning, it's not blocking and you can continue to install mpdaf.
+# 
+# To install the fusion submodule, log as root and run the *setup.py fusion* command::
+# 
+#  root:/mpdaf$ python setup.py fusion
+# 
+# Unit tests
+# ==========
+# 
+# The command *setup.py test* runs unit tests after in-place build::
+# 
+#   /mpdaf$ python setup.py test
+  
+
 import os
 import subprocess
 import sys
@@ -37,6 +91,8 @@ import sys
 
 from distutils.core import setup, Command, Extension
 
+
+#os.environ['DISTUTILS_DEBUG'] = '1'
 
 class UnitTest(Command):
     user_options = []

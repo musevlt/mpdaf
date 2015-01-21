@@ -40,8 +40,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 
 """
-__version__ = '1.1.13'
-__date__ = '2014/12/17'
+__version__ = '1.1.14'
+__date__ = '2015/01/21'
 
 
 """

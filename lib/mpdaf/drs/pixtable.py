@@ -2117,9 +2117,9 @@ class PixTable(object):
         return spe
 
     def subtract_slice_median(self, skyref, mask):
-        """Computes the median value for all slices and applies in place a
-        subtractive correction to each slice to bring all slices to the same
-        median value.
+        """Computes the median value for all slices
+        and subtracts this factor to each pixel
+        to bring all slices to the same median value.
         
         pix(x,y,lbda) += < skyref(lbda) - pix(x,y,lbda) >_slice
 
@@ -2201,8 +2201,9 @@ class PixTable(object):
         del libCmethods
 
     def divide_slice_median(self, skyref, mask):
-        """Computes the median value for all slices and applies in place a
-        correction to each slice to bring all slices to the same median value.
+        """Computes the median value for all slices and divides each pixel
+        by the corresponding factor to bring all slices
+        to the same median value.
         pix(x,y,lbda) /= < pix(x,y,lbda) / skyref(lbda) >_slice
 
         Parameters

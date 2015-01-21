@@ -5,14 +5,44 @@
 MPDAF is the MUSE Python Data Analysis Framework.
 Its goal is to develop a python framework in view of the analysis of MUSE data in the context of the GTO. 
 
+
 == Installation ==
 
-install the mpdaf package:
-./setup.py build
-./setup.py install
+The various software required are:
 
+ * Python (version 2.6 or 2.7)
+ * IPython
+ * numpy (version 1.6.2 or above)
+ * scipy (version 0.10.1 or above)
+ * matplotlib (version 1.1.0 or above)
+ * astropy (version 0.4 or above)
+ * nose
+ * PIL
+ * numexpr
+ * python-development package
+ * pkg-config tool
+ * C numerics library
+ * C CFITSIO library
+ * C OpenMP library (optional)
+ 
+
+To install the mpdaf package:
+python setup.py build
+python setup.py install
+
+
+setup.py tries to use pkg-config to find the correct compiler flags and library flags.
+Note that on MAC OS, OpenMP is not used by default because clang doesn't support OpenMp.
+To force it, the USEOPENMP environment variable can be set to anything except an empty string:
+sudo USEOPENMP=0 CC=<local path of gcc> python setup.py build 
+ 
+setup.py informs you that the fusion package is not found.
+But it's just a warning, it's not blocking and you can continue to install mpdaf.
+To install the fusion submodule: python setup.py fusion
+  
+  
 runs the test:
-  ./setup.py test
+python setup.py test
 
 
 == Version History ==
@@ -53,3 +83,5 @@ runs the test:
  1.1.13
   Pixel table setters and transformation methods
   CubeList class
+ 1.1.14
+  New method to correct slice effects on pixel tables
