@@ -17,6 +17,7 @@ try:
 except:
     numexpr = False
 
+
 class PixTableMask(object):
 
     """PixTableMask class.
@@ -1886,7 +1887,7 @@ class PixTable(object):
         wcs = WCS(crval=(ystart, xstart))
 
         return Image(shape=(image.shape), data=image, wcs=wcs)
-    
+
     def mask_column(self, maskfile=None, verbose=True):
         """Computes the mask column correcponding to a mask file
 
@@ -1933,9 +1934,9 @@ class PixTable(object):
                     msg = 'masking object %i %g<x<%g %g<y<%g (%i pixels)' % (
                         i, x0, x1, y0, y1, len(ksel[0]))
                     self.logger.info(msg, extra=d)
-                if len(ksel[0])!=0:
+                if len(ksel[0]) != 0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
-                    mask[ksel] |= (ima_mask.data.data[pix[:,0], pix[:,1]] != 0)
+                    mask[ksel] |= (ima_mask.data.data[pix[:, 0], pix[:, 1]] != 0)
             except Exception as e:
                 self.logger.warning('masking object %i failed', i, extra=d)
 
@@ -1945,7 +1946,7 @@ class PixTable(object):
         """Computes the median value for all slices and applies in place a
         subtractive correction to each slice to bring all slices to the same
         median value.
-        
+
         pix(x,y,lbda) -= < pix(x,y,lbda) >_slice (+ < pix(x,y,lbda) >_all)
 
         Parameters
@@ -1983,8 +1984,8 @@ class PixTable(object):
         # setup the return types and argument types
         libCmethods.mpdaf_old_subtract_slice_median.restype = None
         libCmethods.mpdaf_old_subtract_slice_median.argtypes = \
-        [array_1d_double, array_1d_int, array_1d_int, array_1d_double, \
-         array_1d_double, ctypes.c_int, array_1d_int, ctypes.c_int]
+            [array_1d_double, array_1d_int, array_1d_int, array_1d_double,
+             array_1d_double, ctypes.c_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
         result = np.empty_like(data).astype(np.float64)
@@ -2000,17 +2001,17 @@ class PixTable(object):
             skysub = 0
         skysub = np.int32(skysub)
 
-        libCmethods.mpdaf_old_subtract_slice_median(result, ifu, sli, data, lbda, \
-                                           data.shape[0], mask, skysub)
+        libCmethods.mpdaf_old_subtract_slice_median(result, ifu, sli, data, lbda,
+                                                    data.shape[0], mask, skysub)
 
         # set pixtable data
         self.set_data(result)
-        add_mpdaf_method_keywords(self.primary_header, \
-                                  "drs.pixtable.old_subtract_slice_median", \
-                                  ['mask', 'norm'], \
-                                  [maskfile, norm], \
-                                  ['file to mask out all bright objects', \
-                                  'Option for sky subtraction'])
+        add_mpdaf_method_keywords(self.primary_header,
+                                  "drs.pixtable.old_subtract_slice_median",
+                                  ['mask', 'norm'],
+                                  [maskfile, norm],
+                                  ['file to mask out all bright objects',
+                                   'Option for sky subtraction'])
 
         # close libray
         #import _ctypes
@@ -2020,7 +2021,7 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         del libCmethods
 
-    def sky_ref(self, mask=None, dlbda = 1.0, nmax=2, nclip=5.0, nstop=2):
+    def sky_ref(self, mask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
         """Computes the reference sky spectrum using sigma clipped median.
 
         Parameters
@@ -2038,7 +2039,7 @@ class PixTable(object):
         nstop : integer
                 If the number of not rejected pixels is less
                 than this number, the clipping iterations stop.
-        
+
         Returns
         -------
         out : :class:`mpdaf.obj.Spectrum`
@@ -2062,24 +2063,24 @@ class PixTable(object):
             nclip_up = nclip[1]
         # wavelength step
         lbda = self.get_lambda()
-        lmin = np.min(lbda) - dlbda/2.0
-        lmax = np.max(lbda) + dlbda/2.0
-        n = (int)((lmax-lmin) / dlbda);
+        lmin = np.min(lbda) - dlbda / 2.0
+        lmax = np.max(lbda) + dlbda / 2.0
+        n = (int)((lmax - lmin) / dlbda);
 
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods", \
+        libCmethods = np.ctypeslib.load_library("libCmethods",
                                                 mpdaf.__path__[0])
         # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
                                                  flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
                                               flags='CONTIGUOUS')
         # setup argument types
         libCmethods.mpdaf_sky_ref.argtypes = \
-        [array_1d_double, array_1d_double, array_1d_int, ctypes.c_int, \
-         ctypes.c_double, ctypes.c_double, ctypes.c_int, \
-         ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int, \
-         array_1d_double]
+            [array_1d_double, array_1d_double, array_1d_int, ctypes.c_int,
+             ctypes.c_double, ctypes.c_double, ctypes.c_int,
+             ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int,
+             array_1d_double]
 
         # setup return type
         libCmethods.mpdaf_sky_ref.restype = None
@@ -2090,37 +2091,37 @@ class PixTable(object):
         mask = mask.astype(np.int32)
         result = np.empty(n).astype(np.float64)
         # run C method
-        libCmethods.mpdaf_sky_ref(data, lbda, mask, data.shape[0], \
-                                  np.float64(lmin), \
-                                  np.float64(dlbda), n, nmax, \
-                                  np.float64(nclip_low), \
+        libCmethods.mpdaf_sky_ref(data, lbda, mask, data.shape[0],
+                                  np.float64(lmin),
+                                  np.float64(dlbda), n, nmax,
+                                  np.float64(nclip_low),
                                   np.float64(nclip_up), nstop, result)
-        wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda), \
+        wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda),
                          cunit='Angstrom', shape=n)
 
         'HIERARCH MPDAF METH'
 
         spe = Spectrum(shape=n, data=result, wave=wave)
-        add_mpdaf_method_keywords(spe.primary_header, \
-                                  "drs.pixtable.sky_ref", \
-                                  ['pixtable','mask','dlbda','nmax',\
-                                   'nclip_low', 'nclip_up', 'nstop'], \
-                                  [os.path.basename(self.filename), maskfile, \
-                                   dlbda, nmax, nclip_low, nclip_up, nstop], \
-                                  ['pixtable', \
-                                   'file to mask out all bright objects', \
-                                  'wavelength step', \
-                                  'max number of clippinp iterations', \
-                                  'lower clipping parameter', \
-                                  'upper clipping parameter', \
-                                  'clipping minimum number'])
+        add_mpdaf_method_keywords(spe.primary_header,
+                                  "drs.pixtable.sky_ref",
+                                  ['pixtable', 'mask', 'dlbda', 'nmax',
+                                   'nclip_low', 'nclip_up', 'nstop'],
+                                  [os.path.basename(self.filename), maskfile,
+                                   dlbda, nmax, nclip_low, nclip_up, nstop],
+                                  ['pixtable',
+                                   'file to mask out all bright objects',
+                                   'wavelength step',
+                                   'max number of clippinp iterations',
+                                   'lower clipping parameter',
+                                   'upper clipping parameter',
+                                   'clipping minimum number'])
         return spe
 
     def subtract_slice_median(self, skyref, mask):
         """Computes the median value for all slices
         and subtracts this factor to each pixel
         to bring all slices to the same median value.
-        
+
         pix(x,y,lbda) += < skyref(lbda) - pix(x,y,lbda) >_slice
 
         Parameters
@@ -2150,21 +2151,21 @@ class PixTable(object):
         #global libCmethods
 
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods", \
+        libCmethods = np.ctypeslib.load_library("libCmethods",
                                                 mpdaf.__path__[0])
 
         # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
                                                  flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
                                               flags='CONTIGUOUS')
 
         # setup the return types and argument types
         libCmethods.mpdaf_subtract_slice_median.restype = None
         libCmethods.mpdaf_subtract_slice_median.argtypes = \
-        [array_1d_double, array_1d_int, array_1d_int, array_1d_double, \
-         array_1d_double, ctypes.c_int, array_1d_int, array_1d_double, \
-         array_1d_double, ctypes.c_int]
+            [array_1d_double, array_1d_int, array_1d_int, array_1d_double,
+             array_1d_double, ctypes.c_int, array_1d_int, array_1d_double,
+             array_1d_double, ctypes.c_int]
 
         data = self.get_data()
         result = np.empty_like(data).astype(np.float64)
@@ -2178,19 +2179,19 @@ class PixTable(object):
         skyref_lbda = spe_skyref.wave.coord()
         skyref_n = spe_skyref.shape
 
-        libCmethods.mpdaf_subtract_slice_median(result, ifu, sli, data, lbda, \
-                                           data.shape[0], mask, skyref_flux, \
-                                           skyref_lbda, skyref_n)
+        libCmethods.mpdaf_subtract_slice_median(result, ifu, sli, data, lbda,
+                                                data.shape[0], mask, skyref_flux,
+                                                skyref_lbda, skyref_n)
 
         # set pixtable data
         self.set_data(result)
         # store parameters of the method in FITS keywords
-        add_mpdaf_method_keywords(self.primary_header, \
-                                  "drs.pixtable.subtract_slice_median", \
-                                  ['mask', 'skyref'], \
-                                  [maskfile, os.path.basename(skyref)], \
-                                  ['file to mask out all bright objects', \
-                                  'reference sky spectrum'])
+        add_mpdaf_method_keywords(self.primary_header,
+                                  "drs.pixtable.subtract_slice_median",
+                                  ['mask', 'skyref'],
+                                  [maskfile, os.path.basename(skyref)],
+                                  ['file to mask out all bright objects',
+                                   'reference sky spectrum'])
 
         # close libray
         #import _ctypes
@@ -2233,21 +2234,21 @@ class PixTable(object):
         #global libCmethods
 
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods", \
+        libCmethods = np.ctypeslib.load_library("libCmethods",
                                                 mpdaf.__path__[0])
 
         # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1, \
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
                                                  flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, \
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
                                               flags='CONTIGUOUS')
 
         # setup the return types and argument types
         libCmethods.mpdaf_divide_slice_median.restype = None
         libCmethods.mpdaf_divide_slice_median.argtypes = \
-        [array_1d_double, array_1d_int, array_1d_int, array_1d_double, \
-         array_1d_double, ctypes.c_int, array_1d_int, array_1d_double, \
-         array_1d_double, ctypes.c_int]
+            [array_1d_double, array_1d_int, array_1d_int, array_1d_double,
+             array_1d_double, ctypes.c_int, array_1d_int, array_1d_double,
+             array_1d_double, ctypes.c_int]
 
         data = self.get_data()
         result = np.empty_like(data).astype(np.float64)
@@ -2261,18 +2262,18 @@ class PixTable(object):
         skyref_lbda = spe_skyref.wave.coord()
         skyref_n = spe_skyref.shape
 
-        libCmethods.mpdaf_divide_slice_median(result, ifu, sli, data, lbda, \
-                                           data.shape[0], mask, skyref_flux, \
-                                           skyref_lbda, skyref_n)
+        libCmethods.mpdaf_divide_slice_median(result, ifu, sli, data, lbda,
+                                              data.shape[0], mask, skyref_flux,
+                                              skyref_lbda, skyref_n)
 
         # set pixtable data
         self.set_data(result)
-        add_mpdaf_method_keywords(self.primary_header, \
-                                  "drs.pixtable.divide_slice_median", \
-                                  ['mask', 'skyref'], \
-                                  [maskfile, os.path.basename(skyref)], \
-                                  ['file to mask out all bright objects', \
-                                  'reference sky spectrum'])
+        add_mpdaf_method_keywords(self.primary_header,
+                                  "drs.pixtable.divide_slice_median",
+                                  ['mask', 'skyref'],
+                                  [maskfile, os.path.basename(skyref)],
+                                  ['file to mask out all bright objects',
+                                   'reference sky spectrum'])
 
         # close libray
         #import _ctypes
