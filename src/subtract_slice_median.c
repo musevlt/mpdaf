@@ -171,7 +171,7 @@ void mpdaf_subtract_slice_median(double* result, int* ifu, int* sli, double* dat
 
 void mpdaf_divide_slice_median(double* result, int* ifu, int* sli, double* data, double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n)
 {
-    int n,chan;
+    int n, chan;
     double med[24 * 48];
 
     //omp_set_num_threads
@@ -193,7 +193,7 @@ void mpdaf_divide_slice_median(double* result, int* ifu, int* sli, double* data,
 	        {
 		  if ((mask[i]==0) && (ifu[i]==chan) && (sli[i]==sl) && (lbda[i] > 4800) && (lbda[i] < 9300))
 		     {
-		          skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[n]);
+		          skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[i]);
 			  temp[count] = data[i] / skyref;
 			  count += 1;
 		     }
