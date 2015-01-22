@@ -11,6 +11,7 @@ from astropy.io import fits as pyfits
 from .coords import WCS, WaveCoord
 from .objs import is_float, is_int
 
+
 class iter_spe(object):
 
     def __init__(self, cube, index=False):
@@ -50,9 +51,9 @@ class iter_ima(object):
             raise StopIteration
         self.k -= 1
         if self.index is False:
-            return self.cube[self.k, :,:]
+            return self.cube[self.k, :, :]
         else:
-            return (self.cube[self.k, :,:], self.k)
+            return (self.cube[self.k, :, :], self.k)
 
     def __iter__(self):
         """Returns the iterator itself."""
@@ -182,9 +183,9 @@ class Cube(object):
                          wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('world coordinates and data have not'
-                                       ' the same dimensions: %s',
-                                       "shape of WCS object is modified",
-                                       extra=d)
+                                            ' the same dimensions: %s',
+                                            "shape of WCS object is modified",
+                                            extra=d)
                     self.wcs.naxis1 = self.shape[2]
                     self.wcs.naxis2 = self.shape[1]
                 # Wavelength coordinates
@@ -208,9 +209,9 @@ class Cube(object):
                     if wave.shape is not None and wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data have '
-                                       'not the same dimensions: %s',
-                                       'shape of WaveCoord object is '
-                                       'modified', extra=d)
+                                            'not the same dimensions: %s',
+                                            'shape of WaveCoord object is '
+                                            'modified', extra=d)
                     self.wave.shape = self.shape[0]
             else:
                 if ext is None:
@@ -240,9 +241,9 @@ class Cube(object):
                          wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('world coordinates and data have not '
-                                       'the same dimensions: %s',
-                                       'shape of WCS object is modified',
-                                       extra=d)
+                                            'the same dimensions: %s',
+                                            'shape of WCS object is modified',
+                                            extra=d)
                     self.wcs.naxis1 = self.shape[2]
                     self.wcs.naxis2 = self.shape[1]
                 # Wavelength coordinates
@@ -267,9 +268,9 @@ class Cube(object):
                             wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data have '
-                                       'not the same dimensions: %s',
-                                       'shape of WaveCoord object is '
-                                       'modified', extra=d)
+                                            'not the same dimensions: %s',
+                                            'shape of WaveCoord object is '
+                                            'modified', extra=d)
                     self.wave.shape = self.shape[0]
                 self.var = None
                 if not notnoise:
@@ -353,31 +354,31 @@ class Cube(object):
                          wcs.naxis2 != self.shape[1]):
                         d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('world coordinates and data have not '
-                                       'the same dimensions: %s',
-                                       'shape of WCS object is modified',
-                                       extra=d)
+                                            'the same dimensions: %s',
+                                            'shape of WCS object is modified',
+                                            extra=d)
                     self.wcs.naxis1 = self.shape[2]
                     self.wcs.naxis2 = self.shape[1]
             except:
                 self.wcs = None
                 d = {'class': 'Cube', 'method': '__init__'}
                 self.logger.warning("world coordinates not copied: %s",
-                               "wcs attribute is None", extra=d)
+                                    "wcs attribute is None", extra=d)
             try:
                 self.wave = wave
                 if wave is not None:
                     if wave.shape is not None and wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
-                                       'have not the same dimensions: %s',
-                                       'shape of WaveCoord object is '
-                                       'modified', extra=d)
+                                            'have not the same dimensions: %s',
+                                            'shape of WaveCoord object is '
+                                            'modified', extra=d)
                     self.wave.shape = self.shape[0]
             except:
                 self.wave = None
                 d = {'class': 'Cube', 'method': '__init__'}
                 self.logger.warning("wavelength solution not copied: %s",
-                               "wave attribute is None", extra=d)
+                                    "wave attribute is None", extra=d)
         # Mask an array where invalid values occur (NaNs or infs).
         if self.data is not None:
             self.data = np.ma.masked_invalid(self.data)
@@ -473,7 +474,7 @@ class Cube(object):
                     except:
                         d = {'class': 'Cube', 'method': 'write'}
                         self.logger.warning("%s not copied in primary header",
-                                       card.keyword, extra=d)
+                                            card.keyword, extra=d)
                         pass
         prihdu.header['date'] = \
             (str(datetime.datetime.now()), 'creation date')
@@ -507,7 +508,7 @@ class Cube(object):
                 except:
                     d = {'class': 'Cube', 'method': 'write'}
                     self.logger.warning("%s not copied in data header", card.keyword,
-                                   extra=d)
+                                        extra=d)
                     pass
         # add world coordinate
         cd = self.wcs.get_cd()
@@ -615,7 +616,7 @@ class Cube(object):
             msg = '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],
                                               self.shape[2], self.filename)
         self.logger.info(msg, extra=d)
-        
+
         data = '.data(%i,%i,%i)' % (self.shape[0], self.shape[1], self.shape[2])
         if self.data is None:
             data = 'no data'
@@ -628,13 +629,13 @@ class Cube(object):
             unit = self.unit
         msg = '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
         self.logger.info(msg, extra=d)
-        
+
         if self.wcs is None:
             msg = 'no world coordinates for spatial direction'
             self.logger.info(msg, extra=d)
         else:
             self.wcs.info()
-            
+
         if self.wave is None:
             msg = 'no world coordinates for spectral direction'
             self.logger.info(msg, extra=d)
@@ -642,7 +643,7 @@ class Cube(object):
             self.wave.info()
         msg = ".ima:",
         for k in self.ima.keys():
-            msg += " %s,"%k
+            msg += " %s," % k
         self.logger.info(msg, extra=d)
 
     def __le__(self, item):
@@ -723,14 +724,14 @@ class Cube(object):
                     self.wcs = None
                     d = {'class': 'Cube', 'method': 'resize'}
                     self.logger.warning("wcs not copied: %s",
-                                   "wcs attribute is None", extra=d)
+                                        "wcs attribute is None", extra=d)
                 try:
                     self.wave = self.wave[item[0]]
                 except:
                     self.wave = None
                     d = {'class': 'Cube', 'method': 'resize'}
                     self.logger.warning("wavelength solution not copied: %s",
-                                   "wave attribute is None", extra=d)
+                                        "wave attribute is None", extra=d)
             except:
                 pass
 
@@ -868,7 +869,7 @@ class Cube(object):
                             raise IOError('Operation forbidden for objects '
                                           'with different world coordinates')
                         # data
-                        res.data = self.data + (other.data[np.newaxis, :,:] *
+                        res.data = self.data + (other.data[np.newaxis, :, :] *
                                                 np.double(other.fscale /
                                                           self.fscale))
                         # variance
@@ -876,14 +877,14 @@ class Cube(object):
                             res.var = None
                         elif self.var is None:
                             res.var = np.ones(self.shape) \
-                            * other.var[np.newaxis, :,:] \
+                                * other.var[np.newaxis, :, :] \
                                 * np.double(other.fscale
                                             * other.fscale / self.fscale
                                             / self.fscale)
                         elif other.var is None:
                             res.var = self.var
                         else:
-                            res.var = self.var + other.var[np.newaxis, :,:] \
+                            res.var = self.var + other.var[np.newaxis, :, :] \
                                 * np.double(other.fscale * other.fscale
                                             / self.fscale / self.fscale)
                         # unit
@@ -1051,7 +1052,7 @@ class Cube(object):
                             raise IOError('Operation forbidden for objects '
                                           'with different world coordinates')
                         # data
-                        res.data = self.data - (other.data[np.newaxis, :,:]
+                        res.data = self.data - (other.data[np.newaxis, :, :]
                                                 * np.double(other.fscale
                                                             / self.fscale))
                         # variance
@@ -1059,13 +1060,13 @@ class Cube(object):
                             res.var = None
                         elif self.var is None:
                             res.var = np.ones(self.shape) \
-                            * other.var[np.newaxis, :,:] \
+                                * other.var[np.newaxis, :, :] \
                                 * np.double(other.fscale * other.fscale
                                             / self.fscale / self.fscale)
                         elif other.var is None:
                             res.var = self.var
                         else:
-                            res.var = self.var + other.var[np.newaxis, :,:] \
+                            res.var = self.var + other.var[np.newaxis, :, :] \
                                 * np.double(other.fscale * other.fscale
                                             / self.fscale / self.fscale)
                         # unit
@@ -1254,24 +1255,24 @@ class Cube(object):
                             raise IOError('Operation forbidden for objects '
                                           'with different world coordinates')
                         # data
-                        res.data = self.data * other.data[np.newaxis, :,:] \
+                        res.data = self.data * other.data[np.newaxis, :, :] \
                                              * other.fscale
                         # variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = other.var[np.newaxis, :,:] \
+                            res.var = other.var[np.newaxis, :, :] \
                                 * self.data * self.data \
                                 * other.fscale * other.fscale
                         elif other.var is None:
-                            res.var = self.var * other.data[np.newaxis, :,:] \
-                            * other.data[np.newaxis, :,:] \
+                            res.var = self.var * other.data[np.newaxis, :, :] \
+                                * other.data[np.newaxis, :, :] \
                                 * other.fscale * other.fscale
                         else:
-                            res.var = (other.var[np.newaxis, :,:]
+                            res.var = (other.var[np.newaxis, :, :]
                                        * self.data * self.data
-                            + self.var * other.data[np.newaxis, :,:]
-                            * other.data[np.newaxis, :,:]) \
+                                       + self.var * other.data[np.newaxis, :, :]
+                                       * other.data[np.newaxis, :, :]) \
                                 * other.fscale * other.fscale
                         # unit
                         if self.unit == other.unit:
@@ -1442,28 +1443,28 @@ class Cube(object):
                             raise IOError('Operation forbidden for objects '
                                           'with different world coordinates')
                         # data
-                        res.data = self.data / other.data[np.newaxis, :,:] \
+                        res.data = self.data / other.data[np.newaxis, :, :] \
                                              / other.fscale
                         # variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = other.var[np.newaxis, :,:] \
+                            res.var = other.var[np.newaxis, :, :] \
                                 * self.data * self.data \
-                            / (other.data[np.newaxis, :,:] ** 4) \
+                                / (other.data[np.newaxis, :, :] ** 4) \
                                 / other.fscale / other.fscale
                         elif other.var is None:
-                            res.var = self.var * other.data[np.newaxis, :,:] \
-                            * other.data[np.newaxis, :,:] \
-                            / (other.data[np.newaxis, :,:] ** 4) \
+                            res.var = self.var * other.data[np.newaxis, :, :] \
+                                * other.data[np.newaxis, :, :] \
+                                / (other.data[np.newaxis, :, :] ** 4) \
                                 / other.fscale / other.fscale
                         else:
-                            res.var = (other.var[np.newaxis, :,:]
+                            res.var = (other.var[np.newaxis, :, :]
                                        * self.data * self.data + self.var
-                                       * other.data[np.newaxis, :,:]
-                                       * other.data[np.newaxis, :,:]) \
-                                       / (other.data[np.newaxis, :,:] ** 4) \
-                                       / other.fscale / other.fscale
+                                       * other.data[np.newaxis, :, :]
+                                       * other.data[np.newaxis, :, :]) \
+                                / (other.data[np.newaxis, :, :] ** 4) \
+                                / other.fscale / other.fscale
                         # unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -1702,9 +1703,9 @@ class Cube(object):
             pix_min = max(0, int(self.wave.pixel(lbda_min)))
             pix_max = min(self.shape[0], int(self.wave.pixel(lbda_max)) + 1)
             if (pix_min + 1) == pix_max:
-                return self.data[pix_min, :,:] * self.fscale
+                return self.data[pix_min, :, :] * self.fscale
             else:
-                return self[pix_min:pix_max, :,:]
+                return self[pix_min:pix_max, :, :]
 
     def get_step(self):
         """Returns the cube steps [dlbda,dy,dx]."""
@@ -1764,7 +1765,7 @@ class Cube(object):
                                      other.wave.get_step())):
                             d = {'class': 'Cube', 'method': '__setitem__'}
                             self.logger.warning("cubes with different steps",
-                                           extra=d)
+                                                extra=d)
                         self.data[key] = other.data \
                             * np.double(other.fscale / self.fscale)
                     except:
@@ -1796,7 +1797,7 @@ class Cube(object):
                                      other.wave.get_step()):
                                 d = {'class': 'Cube', 'method': '__setitem__'}
                                 self.logger.warning('cube & spectrum with '
-                                               'different steps', extra=d)
+                                                    'different steps', extra=d)
                             self.data[key] = other.data \
                                 * np.double(other.fscale / self.fscale)
                     except:
@@ -1821,12 +1822,12 @@ class Cube(object):
                      or wcs.naxis2 != self.shape[1]):
                 d = {'class': 'Cube', 'method': 'set_wcs'}
                 self.logger.warning('world coordinates and data have not the same '
-                               'dimensions', extra=d)
+                                    'dimensions', extra=d)
         if wave is not None:
             if wave.shape is not None and wave.shape != self.shape[0]:
                 d = {'class': 'Cube', 'method': 'set_wcs'}
                 self.logger.warning('wavelength coordinates and data have not '
-                               'the same dimensions', extra=d)
+                                    'the same dimensions', extra=d)
             self.wave = wave
             self.wave.shape = self.shape[0]
 
@@ -2062,7 +2063,7 @@ class Cube(object):
             wave = self.wave[kmin:kmax]
         except:
             wave = None
-            
+
         res = Cube(shape=shape, wcs=wcs, wave=wave,
                    unit=self.unit, fscale=self.fscale)
         res.data = data
@@ -2070,17 +2071,17 @@ class Cube(object):
 
         if mask:
             # mask outside pixels
-            grid = np.meshgrid(np.arange(0, res.shape[1]), \
-                                np.arange(0, res.shape[2]), indexing='ij')
+            grid = np.meshgrid(np.arange(0, res.shape[1]),
+                               np.arange(0, res.shape[2]), indexing='ij')
             shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p,q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
+            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
             skycrd = np.array(res.wcs.pix2sky(pixcrd))
             x = skycrd[:, 1].reshape(shape)
             y = skycrd[:, 0].reshape(shape)
             test_x = np.logical_or(x <= x_min, x > x_max)
             test_y = np.logical_or(y <= y_min, y > y_max)
             test = np.logical_or(test_x, test_y)
-            res.data.mask = np.logical_or(res.data.mask, np.tile(test,[res.shape[0],1,1]))
+            res.data.mask = np.logical_or(res.data.mask, np.tile(test, [res.shape[0], 1, 1]))
             res.resize()
 
         return res
@@ -2785,7 +2786,7 @@ class Cube(object):
         if verbose:
             msg = "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
             self.logger.info(msg, extra=d)
-            
+
             import time
             import sys
             while (True):
@@ -2902,7 +2903,7 @@ class Cube(object):
         if verbose:
             msg = "loop_ima_multiprocessing (%s): %i tasks" % (f, num_tasks)
             self.logger.info(msg, extra=d)
-            
+
             import time
             import sys
             while (True):
@@ -2949,7 +2950,7 @@ class Cube(object):
                                               unit=self.unit,
                                               fscale=self.fscale)
                             init = False
-                        result[k, :,:] = out
+                        result[k, :, :] = out
                 except:
                     # f returns dtype -> iterator returns an array of dtype
                     if init:
@@ -2976,9 +2977,9 @@ class Cube(object):
             msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2)
             self.logger.info(msg, extra=d)
         if is_sum:
-            ima = self[k1:k2+1, :,:].sum(axis=0)
+            ima = self[k1:k2 + 1, :, :].sum(axis=0)
         else:
-            ima = self[k1:k2+1, :,:].mean(axis=0)
+            ima = self[k1:k2 + 1, :, :].mean(axis=0)
         return ima
 
     def aperture(self, center, radius, verbose=True):
@@ -3012,23 +3013,23 @@ class Cube(object):
                 pixcrd[:, 0] -= center[0]
                 pixcrd[:, 1] -= center[1]
                 m[:, i_in, :] = ((np.array(pixcrd[:, 0])
-                                 * np.array(pixcrd[:, 0])
-                                 + np.array(pixcrd[:, 1])
-                                 * np.array(pixcrd[:, 1])) < radius2)
+                                  * np.array(pixcrd[:, 0])
+                                  + np.array(pixcrd[:, 1])
+                                  * np.array(pixcrd[:, 1])) < radius2)
             m = np.ma.mask_or(m, np.ma.getmask(data))
-            data.mask[:, :,:] = m
+            data.mask[:, :, :] = m
             if self.var is not None:
                 var = (np.ma.sum(np.ma.masked_invalid(self.var[:, imin:imax, jmin:jmax]), axis=(1, 2))).filled(np.NaN)
             else:
                 var = None
             from spectrum import Spectrum
             spec = Spectrum(wave=self.wave, unit=self.unit, data=data.sum(axis=(1, 2)), var=var, fscale=self.fscale)
-            if verbose: 
+            if verbose:
                 msg = '%d spaxels summed' % (data.shape[1] * data.shape[2])
                 self.logger.info(msg, extra=d)
         else:
             spec = self[:, int(center[0] + 0.5), int(center[1] + 0.5)]
-            if verbose: 
+            if verbose:
                 msg = 'returning spectrum at nearest spaxel'
                 self.logger.info(msg, extra=d)
         return spec
@@ -3256,7 +3257,7 @@ class CubeDisk(object):
             msg = '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],
                                               self.shape[2], self.filename)
         self.logger.info(msg, extra=d)
-        
+
         data = '.data(%i,%i,%i)' % (self.shape[0], self.shape[1],
                                     self.shape[2])
         if self.data is None:
@@ -3271,7 +3272,7 @@ class CubeDisk(object):
             unit = self.unit
         msg = '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
         self.logger.info(msg, extra=d)
-        
+
         if self.wcs is None:
             msg = 'no world coordinates for spatial direction'
             self.logger.info(msg, extra=d)
@@ -3282,10 +3283,10 @@ class CubeDisk(object):
             self.logger.info(msg, extra=d)
         else:
             self.wave.info()
-            
+
         msg = ".ima:",
         for k in self.ima.keys():
-            msg += " %s,"%k
+            msg += " %s," % k
         self.logger.info(msg, extra=d)
 
     def __getitem__(self, item):
@@ -3431,19 +3432,18 @@ class CubeDisk(object):
 
         if mask:
             # mask outside pixels
-            grid = np.meshgrid(np.arange(0, res.shape[1]), \
-                                np.arange(0, res.shape[2]), indexing='ij')
+            grid = np.meshgrid(np.arange(0, res.shape[1]),
+                               np.arange(0, res.shape[2]), indexing='ij')
             shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p,q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
+            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
             skycrd = np.array(res.wcs.pix2sky(pixcrd))
             x = skycrd[:, 1].reshape(shape)
             y = skycrd[:, 0].reshape(shape)
             test_x = np.logical_or(x <= x_min, x > x_max)
             test_y = np.logical_or(y <= y_min, y > y_max)
             test = np.logical_or(test_x, test_y)
-            res.data.mask = np.logical_or(res.data.mask, np.tile(test,[res.shape[0],1,1]))
+            res.data.mask = np.logical_or(res.data.mask, np.tile(test, [res.shape[0], 1, 1]))
             res.resize()
-            
 
         return res
 

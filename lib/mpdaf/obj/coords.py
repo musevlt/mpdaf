@@ -316,7 +316,6 @@ class WCS(object):
                                                             self.get_rot())
             self.logger.info(msg, extra=d)
 
-
     def to_header(self):
         """Generates a pyfits header object with the WCS information."""
         return self.wcs.to_header()
@@ -349,7 +348,7 @@ class WCS(object):
 
         if nearest:
             if self.naxis1 != 0 and self.naxis2 != 0:
-                res = np.maximum(np.minimum((res + 0.5).astype(int),[self.naxis2-1, self.naxis1-1]),[0,0])
+                res = np.maximum(np.minimum((res + 0.5).astype(int), [self.naxis2 - 1, self.naxis1 - 1]), [0, 0])
             else:
                 res = (res + 0.5).astype(int)
         return res

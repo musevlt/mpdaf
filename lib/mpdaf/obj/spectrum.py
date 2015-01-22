@@ -86,7 +86,7 @@ class SpectrumClicks:  # Object used to save click on spectrum plot.
             coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
             tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
             tbhdu.writeto(self.filename, clobber=True)
-            
+
             msg = 'printing coordinates in fits table %s' % self.filename
             d = {'class': 'SpectrumClicks', 'method': 'write_fits'}
             self.logger.info(msg, extra=d)
@@ -96,7 +96,7 @@ class SpectrumClicks:  # Object used to save click on spectrum plot.
         msg = "disconnecting console coordinate printout..."
         d = {'class': 'SpectrumClicks', 'method': 'clear'}
         self.logger.info(msg, extra=d)
-        
+
         plt.disconnect(self.binding_id)
         nlines = len(self.id_lines)
         for i in range(nlines):
@@ -154,21 +154,21 @@ class Gauss1D:
     def print_param(self):
         """Prints Gaussian parameters."""
         d = {'class': 'Gauss1D', 'method': 'print_param'}
-        
+
         msg = 'Gaussian center = %g (error:%g)' % (self.lpeak, self.err_lpeak)
         self.logger.info(msg, extra=d)
-        
+
         msg = 'Gaussian integrated flux = %g (error:%g)' % \
             (self.flux, self.err_flux)
         self.logger.info(msg, extra=d)
-        
+
         msg = 'Gaussian peak value = %g (error:%g)' % \
             (self.peak, self.err_peak)
         self.logger.info(msg, extra=d)
-        
+
         msg = 'Gaussian fwhm = %g (error:%g)' % (self.fwhm, self.err_fwhm)
         self.logger.info(msg, extra=d)
-        
+
         msg = 'Gaussian continuum = %g' % self.cont
         self.logger.info(msg, extra=d)
 
@@ -296,9 +296,9 @@ class Spectrum(object):
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
-                                       'have not the same dimension: %s',
-                                       'shape of WaveCoord object'
-                                       ' is modified', extra=d)
+                                            'have not the same dimension: %s',
+                                            'shape of WaveCoord object'
+                                            ' is modified', extra=d)
                     self.wave.shape = self.shape
             else:
                 self.primary_header = hdr
@@ -340,9 +340,9 @@ class Spectrum(object):
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
-                                       'have not the same dimension: %s',
-                                       'shape of WaveCoord object '
-                                       'is modified', extra=d)
+                                            'have not the same dimension: %s',
+                                            'shape of WaveCoord object '
+                                            'is modified', extra=d)
                     self.wave.shape = self.shape
                 # STAT extension
                 self.var = None
@@ -400,9 +400,9 @@ class Spectrum(object):
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
-                                       'have not the same dimension: %s',
-                                       'shape of WaveCoord object '
-                                       'is modified', extra=d)
+                                            'have not the same dimension: %s',
+                                            'shape of WaveCoord object '
+                                            'is modified', extra=d)
                     self.wave.shape = self.shape
             except:
                 self.wave = None
@@ -497,7 +497,7 @@ class Spectrum(object):
                     except:
                         d = {'class': 'Spectrum', 'method': 'write'}
                         self.logger.warning("%s not copied in primary header",
-                                       card.keyword, extra=d)
+                                            card.keyword, extra=d)
                         pass
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
@@ -519,7 +519,7 @@ class Spectrum(object):
                 except:
                     d = {'class': 'Spectrum', 'method': 'write'}
                     self.logger.warning("%s not copied in data header",
-                                   card.keyword, extra=d)
+                                        card.keyword, extra=d)
                     pass
         tbhdu.header['CRVAL1'] = \
             (self.wave.crval, 'Start in world coordinate')
@@ -565,7 +565,7 @@ class Spectrum(object):
         warnings.simplefilter("default")
 
         self.filename = filename
-            
+
     def info(self):
         """Prints information."""
         d = {'class': 'Spectrum', 'method': 'info'}
@@ -574,7 +574,7 @@ class Spectrum(object):
         else:
             msg = 'spectrum of %i elements (no name)' % self.shape
         self.logger.info(msg, extra=d)
-        
+
         data = '.data'
         if self.data is None:
             data = 'no data'
@@ -587,7 +587,7 @@ class Spectrum(object):
             unit = self.unit
         msg = '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
         self.logger.info(msg, extra=d)
-        
+
         if self.wave is None:
             msg = 'No wavelength solution'
             self.logger.info(msg, extra=d)
@@ -1334,7 +1334,7 @@ out : float or Spectrum
                             and (self.wave.get_step() != other.wave.get_step()):
                         d = {'class': 'Spectrum', 'method': '__setitem__'}
                         self.logger.warning("spectra with different steps",
-                                       extra=d)
+                                            extra=d)
                     self.data[key] = other.data \
                         * np.double(other.fscale / self.fscale)
             except:
@@ -1351,7 +1351,7 @@ out : float or Spectrum
         if wave.shape is not None and wave.shape != self.shape:
             d = {'class': 'Spectrum', 'method': 'set_wcs'}
             self.logger.warning('wavelength coordinates and data have '
-                           'not the same dimensions', extra=d)
+                                'not the same dimensions', extra=d)
         self.wave = wave
         self.wave.shape = self.shape
 
@@ -1981,7 +1981,7 @@ out : Spectrum
                 err = d[ind] - np.polynomial.polynomial.polyval(w[ind], p)
                 sig = np.std(err)
                 n_p = len(ind[0])
-                
+
                 if verbose:
                     d = {'class': 'Spectrum', 'method': 'poly_fit'}
                     msg = 'Number of iteration: '\

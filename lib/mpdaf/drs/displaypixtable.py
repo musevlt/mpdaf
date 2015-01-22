@@ -13,7 +13,7 @@ class DisplayPixTable(object):
     """DisplayPixTable class.
 
     This class displays MUSE pixel table files
-    
+
     Parameters
     ----------
     pixtable : string
@@ -89,7 +89,7 @@ det_vmax  : float
         # number of ifus in the aperture
         msg = 'extract sub-pixel table ...'
         self.logger.info(msg, extra=d)
-        
+
         subpix = pix.extract(lbda=lbda, sky=sky, exp=exp)
         if subpix is None:
             raise ValueError('pixel table extraction is not valid')
@@ -286,7 +286,7 @@ det_vmax  : float
 Parameters
 ----------
 
- 
+
         """
         d = {'class': 'DisplayPixTable', 'method': '_slice_display'}
         # number of ifus

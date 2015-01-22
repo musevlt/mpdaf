@@ -19,6 +19,7 @@ CPU = 0
 
 # logging
 
+
 def setup_logging(level, logfile):
     logger = logging.getLogger('mpdaf corelib')
     logger.setLevel(logging.DEBUG)

@@ -2065,7 +2065,7 @@ class PixTable(object):
         lbda = self.get_lambda()
         lmin = np.min(lbda) - dlbda / 2.0
         lmax = np.max(lbda) + dlbda / 2.0
-        n = (int)((lmax - lmin) / dlbda);
+        n = (int)((lmax - lmin) / dlbda)
 
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods",

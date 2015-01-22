@@ -397,8 +397,8 @@ class Image(object):
                             and (wcs.naxis1 != self.shape[1]
                                  or wcs.naxis2 != self.shape[0]):
                             self.logger.warning('world coordinates and data have '
-                                           'not the same dimensions: %s',
-                                           "shape of WCS object is modified", extra=d)
+                                                'not the same dimensions: %s',
+                                                "shape of WCS object is modified", extra=d)
                 else:
                     if ext is None:
                         try:
@@ -437,9 +437,9 @@ class Image(object):
                             and (wcs.naxis1 != self.shape[1]
                                  or wcs.naxis2 != self.shape[0]):
                             self.logger.warning('world coordinates and data have '
-                                           'not the same dimensions: %s',
-                                           "shape of WCS object is modified",
-                                           extra=d)
+                                                'not the same dimensions: %s',
+                                                "shape of WCS object is modified",
+                                                extra=d)
                     self.var = None
                     if not notnoise:
                         if ext is None:
@@ -499,9 +499,9 @@ class Image(object):
                         and (wcs.naxis1 != self.shape[1]
                              or wcs.naxis2 != self.shape[0]):
                         self.logger.warning('world coordinates and data have '
-                                       'not the same dimensions: %s',
-                                       "shape of WCS object is modified",
-                                       extra=d)
+                                            'not the same dimensions: %s',
+                                            "shape of WCS object is modified",
+                                            extra=d)
         else:
             # possible data unit type
             self.unit = unit
@@ -535,8 +535,8 @@ class Image(object):
                         and (wcs.naxis1 != self.shape[1]
                              or wcs.naxis2 != self.shape[0]):
                         self.logger.warning("world coordinates and data have not "
-                                       "the same dimensions: %s",
-                                       "shape of WCS object is modified", extra=d)
+                                            "the same dimensions: %s",
+                                            "shape of WCS object is modified", extra=d)
             except:
                 self.wcs = None
                 self.logger.warning("wcs not copied", extra=d)
@@ -625,7 +625,7 @@ class Image(object):
                     except:
                         d = {'class': 'Image', 'method': 'write'}
                         self.logger.warning("%s not copied in primary header",
-                                       card.keyword, extra=d)
+                                            card.keyword, extra=d)
                         pass
         prihdu.header['date'] = \
             (str(datetime.datetime.now()), 'creation date')
@@ -658,7 +658,7 @@ class Image(object):
                 except:
                     d = {'class': 'Image', 'method': 'write'}
                     self.logger.warning("%s not copied in data header",
-                                   card.keyword, extra=d)
+                                        card.keyword, extra=d)
                     pass
 
         cd = self.wcs.get_cd()
@@ -1038,13 +1038,13 @@ class Image(object):
                                             / self.fscale / self.fscale)
                         elif other.var is None:
                             res.var = np.ones(res.shape) \
-                                * self.var[np.newaxis, :,:]
+                                * self.var[np.newaxis, :, :]
                         else:
-                            res.var = self.var[np.newaxis, :,:] + other.var \
+                            res.var = self.var[np.newaxis, :, :] + other.var \
                                 * np.double(other.fscale * other.fscale
                                             / self.fscale / self.fscale)
                         # data
-                        res.data = self.data[np.newaxis, :,:] \
+                        res.data = self.data[np.newaxis, :, :] \
                             - (other.data * np.double(other.fscale / self.fscale))
                         # unit
                         if self.unit == other.unit:
@@ -1177,7 +1177,7 @@ class Image(object):
                                        wcs=self.wcs,
                                        fscale=self.fscale)
                             # data
-                            res.data = self.data[np.newaxis, :,:] \
+                            res.data = self.data[np.newaxis, :, :] \
                                 * other.data[:, np.newaxis, np.newaxis] \
                                 * other.fscale
                             # variance
@@ -1190,7 +1190,7 @@ class Image(object):
                                     * other.fscale * other.fscale
                             elif other.var is None:
                                 res.var = np.ones(res.shape) \
-                                    * self.var[np.newaxis, :,:] \
+                                    * self.var[np.newaxis, :, :] \
                                     * other.data * other.data \
                                     * other.fscale * other.fscale
                             else:
@@ -1198,7 +1198,7 @@ class Image(object):
                                            * other.var[:, np.newaxis, np.newaxis]
                                            * self.data * self.data
                                            + np.ones(res.shape)
-                                           * self.var[np.newaxis, :,:]
+                                           * self.var[np.newaxis, :, :]
                                            * other.data * other.data) \
                                     * other.fscale * other.fscale
                             # unit
@@ -1313,22 +1313,22 @@ class Image(object):
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = other.var * self.data[np.newaxis, :,:]\
-                                * self.data[np.newaxis, :,:] \
+                            res.var = other.var * self.data[np.newaxis, :, :]\
+                                * self.data[np.newaxis, :, :] \
                                 / (other.data ** 4) / (other.fscale ** 2)
                         elif other.var is None:
-                            res.var = self.var[np.newaxis, :,:] \
+                            res.var = self.var[np.newaxis, :, :] \
                                 * other.data * other.data \
                                 / (other.data ** 4) / (other.fscale ** 2)
                         else:
                             res.var = \
-                                (other.var * self.data[np.newaxis, :,:]
-                                 * self.data[np.newaxis, :,:]
-                                 + self.var[np.newaxis, :,:]
+                                (other.var * self.data[np.newaxis, :, :]
+                                 * self.data[np.newaxis, :, :]
+                                 + self.var[np.newaxis, :, :]
                                  * other.data * other.data) \
                                 / (other.data ** 4) / (other.fscale ** 2)
                             # data
-                        res.data = self.data[np.newaxis, :,:] / other.data \
+                        res.data = self.data[np.newaxis, :, :] / other.data \
                             / other.fscale
                         # unit
                         if self.unit == other.unit:
@@ -1572,7 +1572,7 @@ class Image(object):
                  or wcs.naxis2 != self.shape[0]):
             d = {'class': 'Image', 'method': 'set_wcs'}
             self.logger.warning('world coordinates and data have not '
-                           'the same dimensions', extra=d)
+                                'the same dimensions', extra=d)
 
     def set_var(self, var):
         """Sets the variance array.
@@ -1634,22 +1634,22 @@ class Image(object):
         if inside and not circular:
             self.data.mask[imin:imax, jmin:jmax] = 1
         elif inside and circular:
-        
-            grid = np.meshgrid(np.arange(imin,imax)-center[0], \
-                               np.arange(jmin,jmax)-center[1], indexing='ij')
+
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1], indexing='ij')
             self.data.mask[imin:imax, jmin:jmax] = \
-            np.logical_or(self.data.mask[imin:imax, jmin:jmax],\
-                          (grid[0]**2 + grid[1]**2) < radius2)
+                np.logical_or(self.data.mask[imin:imax, jmin:jmax],
+                              (grid[0] ** 2 + grid[1] ** 2) < radius2)
         elif not inside and circular:
             self.data.mask[0:imin, :] = 1
             self.data.mask[imax:, :] = 1
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
-            grid = np.meshgrid(np.arange(imin,imax)-center[0], \
-                               np.arange(jmin,jmax)-center[1], indexing='ij')
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1], indexing='ij')
             self.data.mask[imin:imax, jmin:jmax] = \
-            np.logical_or(self.data.mask[imin:imax, jmin:jmax],\
-                          (grid[0]**2 + grid[1]**2) > radius2)
+                np.logical_or(self.data.mask[imin:imax, jmin:jmax],
+                              (grid[0] ** 2 + grid[1] ** 2) > radius2)
         else:
             self.data.mask[0:imin, :] = 1
             self.data.mask[imax:, :] = 1
@@ -1694,25 +1694,25 @@ class Image(object):
         sinpa = np.sin(np.radians(posangle))
 
         if inside:
-            grid = np.meshgrid(np.arange(imin,imax)-center[0], \
-                               np.arange(jmin,jmax)-center[1], indexing='ij')
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1], indexing='ij')
             self.data.mask[imin:imax, jmin:jmax] = \
-            np.logical_or(self.data.mask[imin:imax, jmin:jmax],\
-                          ((grid[1]*cospa+grid[0]*sinpa)/radius[0])**2 \
-                          + ((grid[0] * cospa - grid[1] * sinpa) \
-                             / radius[1]) ** 2 < 1)
+                np.logical_or(self.data.mask[imin:imax, jmin:jmax],
+                              ((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
+                              + ((grid[0] * cospa - grid[1] * sinpa)
+                                 / radius[1]) ** 2 < 1)
         if not inside:
             self.data.mask[0:imin, :] = 1
             self.data.mask[imax:, :] = 1
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
-            grid = np.meshgrid(np.arange(imin,imax)-center[0], \
-                               np.arange(jmin,jmax)-center[1], indexing='ij')
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1], indexing='ij')
             self.data.mask[imin:imax, jmin:jmax] = \
-            np.logical_or(self.data.mask[imin:imax, jmin:jmax],\
-                          ((grid[1]*cospa+grid[0]*sinpa)/radius[0])**2 \
-                          + ((grid[0] * cospa - grid[1] * sinpa) \
-                             / radius[1]) ** 2 > 1)
+                np.logical_or(self.data.mask[imin:imax, jmin:jmax],
+                              ((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
+                              + ((grid[0] * cospa - grid[1] * sinpa)
+                                 / radius[1]) ** 2 > 1)
 
     def unmask(self):
         """Unmasks the image (just invalid data (nan,inf) are masked)."""
@@ -1777,7 +1777,7 @@ class Image(object):
         jmax = int(np.max(pixcrd[:, 1])) + 1
         if jmax > self.shape[1]:
             jmax = self.shape[1]
-            
+
         self.data = self.data[imin:imax, jmin:jmax]
         self.shape = np.array((self.data.shape[0], self.data.shape[1]))
         if self.var is not None:
@@ -1788,11 +1788,11 @@ class Image(object):
             self.wcs = None
 
         if mask:
-            # mask outside pixels 
-            grid = np.meshgrid(np.arange(0,self.shape[0]), \
-                               np.arange(0,self.shape[1]), indexing='ij')
+            # mask outside pixels
+            grid = np.meshgrid(np.arange(0, self.shape[0]),
+                               np.arange(0, self.shape[1]), indexing='ij')
             shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p,q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
+            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
             skycrd = np.array(self.wcs.pix2sky(pixcrd))
             x = skycrd[:, 1].reshape(shape)
             y = skycrd[:, 0].reshape(shape)
@@ -3376,7 +3376,7 @@ class Image(object):
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[0:-1, :] = ima.var
-                    var[-1, :] = self.var[-n0:,:].sum(axis=0)\
+                    var[-1, :] = self.var[-n0:, :].sum(axis=0)\
                         .reshape(ima.shape[1], factor[1]).sum(1) \
                         / factor[0] / factor[1]
                 wcs = ima.wcs
@@ -3405,10 +3405,10 @@ class Image(object):
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[1:-1, :] = ima.var
-                    var[0, :] = self.var[0:n_left,:].sum(axis=0)\
+                    var[0, :] = self.var[0:n_left, :].sum(axis=0)\
                         .reshape(ima.shape[1], factor[1]).sum(1) \
                         / factor[0] / factor[1] / factor[0] / factor[1]
-                    var[-1, :] = self.var[n_right:,:].sum(axis=0)\
+                    var[-1, :] = self.var[n_right:, :].sum(axis=0)\
                         .reshape(ima.shape[1], factor[1]).sum(1) \
                         / factor[0] / factor[1] / factor[0] / factor[1]
                 wcs = ima.wcs
@@ -4608,7 +4608,7 @@ class Image(object):
                 normalpha = matplotlib.colors.Normalize(wght.min(), wght.max())
 
                 img_array = plt.get_cmap('jet')(norm(f))
-                img_array[:, :, 3] = 1 - normalpha(wght)/2
+                img_array[:, :, 3] = 1 - normalpha(wght) / 2
                 cax = plt.imshow(img_array, interpolation='nearest', origin='lower',
                                  norm=norm, **kargs)
             else:
@@ -5017,7 +5017,7 @@ class Image(object):
         d = {'class': 'Image', 'method': 'igauss_fit'}
         msg = 'Use left mouse button to define the box.'
         self.logger.info(msg, extra=d)
-        msg ='To quit the interactive mode, click on the right mouse button.'
+        msg = 'To quit the interactive mode, click on the right mouse button.'
         self.logger.info(msg, extra=d)
         msg = 'The parameters of the last gaussian are saved in self.gauss.'
         self.logger.info(msg, extra=d)
@@ -5543,11 +5543,10 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
     else:
         return p1
 
+
 def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
     """Creates a new image from a table of apertures.
-    
     ra(deg), dec(deg) and radius(arcsec).
-
     Parameters
     ----------
     shape  : integer or (integer,integer)
@@ -5561,17 +5560,14 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
                (y, x, size) describes an aperture on the sky,
                    defined by a center (y, x) in degrees,
                    and size (radius) in arcsec.
-                 
     Returns
     -------
     out : obj.Image object (`Image class`_)
     center, radius, pix=False, inside=True):
     """
-    
     if is_int(shape):
         shape = (shape, shape)
     shape = np.array(shape)
-
     if wcs.naxis1 == 1. and wcs.naxis2 == 1.:
         wcs.naxis1 = shape[1]
         wcs.naxis2 = shape[0]
@@ -5579,20 +5575,15 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
         if wcs.naxis1 != 0. or wcs.naxis2 != 0.:
             shape[1] = wcs.naxis1
             shape[0] = wcs.naxis2
-            
     data = np.zeros(shape)
-    
-    for y ,x , r in objects:        
-        center = wcs.sky2pix([y,x])[0]
+    for y, x, r in objects:
+        center = wcs.sky2pix([y, x])[0]
         r = r / np.abs(wcs.get_step()) / 3600.
         r2 = r[0] * r[1]
-
         imin = max(0, center[0] - r[0])
         imax = min(center[0] + r[0] + 1, shape[0])
         jmin = max(0, center[1] - r[1])
         jmax = min(center[1] + r[1] + 1, shape[1])
-        
-        grid = np.meshgrid(np.arange(imin,imax)-center[0], np.arange(jmin,jmax)-center[1], indexing='ij')
-        data[imin:imax, jmin:jmax] = np.array((grid[0]**2 + grid[1]**2) < r2, dtype =int)
-        
+        grid = np.meshgrid(np.arange(imin, imax) - center[0], np.arange(jmin, jmax) - center[1], indexing='ij')
+        data[imin:imax, jmin:jmax] = np.array((grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
     return Image(data=data, wcs=wcs)

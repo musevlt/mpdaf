@@ -11,7 +11,6 @@ from mpdaf import obj
 import logging
 
 
-
 class CalibFile(object):
 
     """CalibFile class manages input/output for the calibration files.
@@ -499,7 +498,7 @@ class CalibDir(object):
 
     """CalibDir class manages input/output for a repository containing
     calibration files (one per ifu).
-    
+
     Parameters
     ----------
     typ     : string
@@ -563,7 +562,7 @@ dirname : string
         d = {'class': 'CalibDir', 'method': 'info'}
         msg = '%i %s files' % (len(self.files), self.type)
         self.logger.info(msg, extra=d)
-        
+
         for ifu, fileobj in self.files.items():
             msg = 'ifu %i' % ifu
             self.logger.info(msg, extra=d)

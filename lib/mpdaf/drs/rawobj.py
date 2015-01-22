@@ -56,7 +56,7 @@ class Channel(object):
                       The extension name.
            filename : string
                       The raw FITS file name.
-        
+
         """
         self.logger = logging.getLogger('mpdaf corelib')
         self.extname = extname
@@ -338,7 +338,7 @@ det_out : integer in [1,4]
 bias    : boolean
           If True, median value of the overscanned pixels
           is subtracted
-          
+
 Returns
 -------
 out : :class:`mpdaf.obj.Image`
@@ -778,7 +778,7 @@ filename : string
            Just the primary header and the list of extension name are loaded.
            Method get_channel(extname) returns the corresponding channel
            Operator [extnumber] loads and returns the corresponding channel.
-        
+
         """
         self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
@@ -806,9 +806,9 @@ filename : string
                             if nx != self.nx and ny != self.ny:
                                 d = {'class': 'RawFile', 'method': '__init__'}
                                 self.logger.warning("image extensions %s not"
-                                               " considered "
-                                               "(different sizes)",
-                                               extname, extra=d)
+                                                    " considered "
+                                                    "(different sizes)",
+                                                    extname, extra=d)
                             else:
                                 self.channels[extname] = None
                         n = n + 1
