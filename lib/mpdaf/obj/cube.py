@@ -10,6 +10,7 @@ import types
 import warnings
 
 from astropy.io import fits as pyfits
+from functools import partial
 
 from .coords import WCS, WaveCoord
 from .objs import is_float, is_int
@@ -65,7 +66,38 @@ class iter_ima(object):
         return self
 
 
-class Cube(object):
+class CubeBase(object):
+    """Base class for cubes."""
+
+    def info(self):
+        """Prints information."""
+        d = {'class': self.__class__.__name__, 'method': 'info'}
+        log_info = partial(self.logger.info, extra=d)
+
+        log_info('{1} X {2} X {3} cube ({0})'.format(
+            self.filename or 'no name', *self.shape))
+
+        data = ('no data' if self.data is None
+                else '.data({},{},{})'.format(*self.shape))
+        noise = ('no noise' if self.var is None
+                 else '.var({},{},{})'.format(*self.shape))
+        unit = 'no unit' if self.unit is None else self.unit
+        log_info('%s (%s) fscale=%g, %s', data, unit, self.fscale, noise)
+
+        if self.wcs is None:
+            log_info('no world coordinates for spatial direction')
+        else:
+            self.wcs.info()
+
+        if self.wave is None:
+            log_info('no world coordinates for spectral direction')
+        else:
+            self.wave.info()
+
+        log_info('.ima: %s', ', '.join(self.ima.keys()))
+
+
+class Cube(CubeBase):
 
     """This class manages Cube objects.
 
@@ -556,12 +588,13 @@ class Cube(object):
 
         # create spectrum STAT extension
         if self.var is not None:
-            nbhdu = pyfits.ImageHDU(name='STAT', data=(self.var
-                                                       * np.double(self.fscale * self.fscale
-                                                                   / fscale / fscale)).astype(np.float32))
+            nbhdu = pyfits.ImageHDU(name='STAT', data=(
+                self.var * np.double(self.fscale * self.fscale / fscale / fscale)
+            ).astype(np.float32))
+
             # add world coordinate
-#            for card in wcs_cards:
-#                nbhdu.header.update(card.keyword, card.value, card.comment)
+            # for card in wcs_cards:
+            #     nbhdu.header.update(card.keyword, card.value, card.comment)
             nbhdu.header['CTYPE1'] = \
                 (wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
             nbhdu.header['CUNIT1'] = \
@@ -609,46 +642,6 @@ class Cube(object):
         warnings.simplefilter("default")
 
         self.filename = filename
-
-    def info(self):
-        """Prints information."""
-        d = {'class': 'Cube', 'method': 'info'}
-        if self.filename is None:
-            msg = '%i X %i X %i cube (no name)' % (self.shape[0],
-                                                   self.shape[1], self.shape[2])
-        else:
-            msg = '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],
-                                              self.shape[2], self.filename)
-        self.logger.info(msg, extra=d)
-
-        data = '.data(%i,%i,%i)' % (self.shape[0], self.shape[1], self.shape[2])
-        if self.data is None:
-            data = 'no data'
-        noise = '.var(%i,%i,%i)' % (self.shape[0], self.shape[1], self.shape[2])
-        if self.var is None:
-            noise = 'no noise'
-        if self.unit is None:
-            unit = 'no unit'
-        else:
-            unit = self.unit
-        msg = '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
-        self.logger.info(msg, extra=d)
-
-        if self.wcs is None:
-            msg = 'no world coordinates for spatial direction'
-            self.logger.info(msg, extra=d)
-        else:
-            self.wcs.info()
-
-        if self.wave is None:
-            msg = 'no world coordinates for spectral direction'
-            self.logger.info(msg, extra=d)
-        else:
-            self.wave.info()
-        msg = ".ima:",
-        for k in self.ima.keys():
-            msg += " %s," % k
-        self.logger.info(msg, extra=d)
 
     def __le__(self, item):
         """Masks data array where greater than a given value.
@@ -1082,7 +1075,7 @@ class Cube(object):
             except:
                 try:
                     # cube1 - spectrum = cube2
-                    #(cube2[k,j,i]=cube1[k,j,i]-spectrum[k])
+                    # (cube2[k,j,i]=cube1[k,j,i]-spectrum[k])
                     # The last dimension of cube1 must be equal
                     # to the spectrum dimension.
                     # If not equal to None, world coordinates
@@ -1287,7 +1280,7 @@ class Cube(object):
             except:
                 try:
                     # cube1 * spectrum = cube2
-                    #(cube2[k,j,i]=cube1[k,j,i]*spectrum[k])
+                    # (cube2[k,j,i]=cube1[k,j,i]*spectrum[k])
                     # The last dimension of cube1 must be equal
                     # to the spectrum dimension.
                     # If not equal to None, world coordinates
@@ -1478,7 +1471,7 @@ class Cube(object):
             except:
                 try:
                     # cube1 / spectrum = cube2
-                    #(cube2[k,j,i]=cube1[k,j,i]/spectrum[k])
+                    # (cube2[k,j,i]=cube1[k,j,i]/spectrum[k])
                     # The last dimension of cube1 must be equal
                     # to the spectrum dimension.
                     # If not equal to None, world coordinates
@@ -1500,7 +1493,7 @@ class Cube(object):
                                               'spectra with different '
                                               'world coordinates')
                             # data
-                            res.data = self.data  / other.fscale \
+                            res.data = self.data / other.fscale \
                                 / other.data[:, np.newaxis, np.newaxis]
                             # variance
                             if self.var is None and other.var is None:
@@ -1749,7 +1742,7 @@ class Cube(object):
 
     def __setitem__(self, key, other):
         """Sets the corresponding part of data."""
-        #self.data[key] = value
+        # self.data[key] = value
         if self.data is None:
             raise ValueError('empty data array')
         try:
@@ -1823,8 +1816,8 @@ class Cube(object):
                 and (wcs.naxis1 != self.shape[2]
                      or wcs.naxis2 != self.shape[1]):
                 d = {'class': 'Cube', 'method': 'set_wcs'}
-                self.logger.warning('world coordinates and data have not the same '
-                                    'dimensions', extra=d)
+                self.logger.warning('world coordinates and data have not the '
+                                    'same dimensions', extra=d)
         if wave is not None:
             if wave.shape is not None and wave.shape != self.shape[0]:
                 d = {'class': 'Cube', 'method': 'set_wcs'}
@@ -2115,7 +2108,7 @@ class Cube(object):
                 / factor[0] / factor[1] / factor[2] \
                 / factor[0] / factor[1] / factor[2]
         # coordinates
-        #cdelt = self.wcs.get_step()
+        # cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor[1:])
         crval = self.wave.coord()[0:factor[0]].sum() / factor[0]
         self.wave = WaveCoord(1, self.wave.cdelt * factor[0], crval,
@@ -2649,7 +2642,7 @@ class Cube(object):
         # variance
         self.var = None
         # coordinates
-        #cdelt = self.wcs.get_step()
+        # cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor[1:])
         crval = self.wave.coord()[0:factor[0]].sum() / factor[0]
         self.wave = WaveCoord(1, self.wave.cdelt * factor[0],
@@ -2661,15 +2654,16 @@ class Cube(object):
         Parameters
         ----------
         factor : integer or (integer,integer,integer)
-                Factor in z, y and x. Python notation: (nz,ny,nx).
+            Factor in z, y and x. Python notation: (nz,ny,nx).
+
         margin : 'center' or 'origin'
-                This parameters is used if new size is not an
-                integer multiple of the original size.
+            This parameters is used if new size is not an
+            integer multiple of the original size.
 
-                In 'center' case, cube is truncated on the left and on the right,
-                on the bottom and of the top of the cube.
+            In 'center' case, cube is truncated on the left and on the right,
+            on the bottom and of the top of the cube.
 
-                In 'origin'case, cube is truncatedat the end along each direction
+            In 'origin'case, cube is truncatedat the end along each direction
 
         Returns
         -------
@@ -3061,7 +3055,7 @@ def _process_ima(arglist):
             'for the image [%i,:,:]' % pos
 
 
-class CubeDisk(object):
+class CubeDisk(CubeBase):
 
     """Sometimes, MPDAF users may want to open fairly large datacubes (> 4 Gb
     or so). This can be difficult to handle with limited RAM. This class
@@ -3234,49 +3228,6 @@ class CubeDisk(object):
                             pass
             # DQ
             f.close()
-
-    def info(self):
-        """Prints information."""
-        d = {'class': 'CubeDisk', 'method': 'info'}
-        if self.filename is None:
-            msg = '%i X %i X %i cube (no name)' % (self.shape[0],
-                                                   self.shape[1],
-                                                   self.shape[2])
-        else:
-            msg = '%i X %i X %i cube (%s)' % (self.shape[0], self.shape[1],
-                                              self.shape[2], self.filename)
-        self.logger.info(msg, extra=d)
-
-        data = '.data(%i,%i,%i)' % (self.shape[0], self.shape[1],
-                                    self.shape[2])
-        if self.data is None:
-            data = 'no data'
-        noise = '.var(%i,%i,%i)' % (self.shape[0], self.shape[1],
-                                    self.shape[2])
-        if self.var == -1:
-            noise = 'no noise'
-        if self.unit is None:
-            unit = 'no unit'
-        else:
-            unit = self.unit
-        msg = '%s (%s) fscale=%g, %s' % (data, unit, self.fscale, noise)
-        self.logger.info(msg, extra=d)
-
-        if self.wcs is None:
-            msg = 'no world coordinates for spatial direction'
-            self.logger.info(msg, extra=d)
-        else:
-            self.wcs.info()
-        if self.wave is None:
-            msg = 'no world coordinates for spectral direction'
-            self.logger.info(msg, extra=d)
-        else:
-            self.wave.info()
-
-        msg = ".ima:",
-        for k in self.ima.keys():
-            msg += " %s," % k
-        self.logger.info(msg, extra=d)
 
     def __getitem__(self, item):
         """Returns the corresponding object:
