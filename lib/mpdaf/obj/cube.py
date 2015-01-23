@@ -4,12 +4,17 @@ import datetime
 import logging
 import multiprocessing
 import numpy as np
+import sys
+import time
 import types
 import warnings
+
 from astropy.io import fits as pyfits
 
 from .coords import WCS, WaveCoord
 from .objs import is_float, is_int
+from .image import Image
+from .spectrum import Spectrum
 
 
 class iter_spe(object):
@@ -304,7 +309,6 @@ class Cube(object):
                 except:
                     pass
                 if ima:
-                    from image import Image
                     for i in range(len(f)):
                         try:
                             hdr = f[i].header
@@ -1622,7 +1626,6 @@ class Cube(object):
                     return data * self.fscale
                 else:
                     # return an image
-                    from image import Image
                     if is_int(item[1]):
                         shape = (1, data.shape[0])
                     elif is_int(item[2]):
@@ -1643,7 +1646,6 @@ class Cube(object):
                     return res
             elif is_int(item[1]) and is_int(item[2]):
                 # return a spectrum
-                from spectrum import Spectrum
                 shape = data.shape[0]
                 var = None
                 if self.var is not None:
@@ -1872,7 +1874,6 @@ class Cube(object):
             return self.data.sum() * self.fscale
         elif axis == 0:
             # return an image
-            from image import Image
             data = np.ma.sum(self.data, axis)
             if self.var is not None:
                 var = (np.ma.sum(np.ma.masked_invalid(self.var), axis)).filled(np.NaN)
@@ -1885,7 +1886,6 @@ class Cube(object):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            from spectrum import Spectrum
             data = np.ma.sum(self.data, axis=1).sum(axis=1)
             if self.var is not None:
                 var = np.ma.sum(np.ma.masked_invalid(self.var), axis=1).sum(axis=1).filled(np.NaN)
@@ -1922,7 +1922,6 @@ class Cube(object):
             return self.data.mean() * self.fscale
         elif axis == 0:
             # return an image
-            from image import Image
             data = np.ma.mean(self.data, axis)
             if self.var is not None:
                 var = np.ma.mean(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
@@ -1935,7 +1934,6 @@ class Cube(object):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            from spectrum import Spectrum
             data = np.ma.mean(self.data, axis=1).mean(axis=1)
             if self.var is not None:
                 var = np.ma.mean(np.ma.masked_invalid(self.var), axis=1).mean(axis=1).filled(np.NaN)
@@ -1973,7 +1971,6 @@ class Cube(object):
             return self.data.median() * self.fscale
         elif axis == 0:
             # return an image
-            from image import Image
             data = np.ma.median(self.data, axis)
             if self.var is not None:
                 var = np.ma.median(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
@@ -1986,7 +1983,6 @@ class Cube(object):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            from spectrum import Spectrum
             data = np.ma.median(self.data, axis=1).median(axis=1)
             if self.var is not None:
                 var = np.ma.median(np.ma.masked_invalid(self.var), axis=1).median(axis=1).filled(np.NaN)
@@ -2787,8 +2783,6 @@ class Cube(object):
             msg = "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
             self.logger.info(msg, extra=d)
 
-            import time
-            import sys
             while (True):
                 time.sleep(5)
                 completed = processresult._index
@@ -2796,10 +2790,9 @@ class Cube(object):
                     output = ""
                     sys.stdout.write("\r\x1b[K" + output.__str__())
                     break
-                output = "\r Waiting for %i tasks to complete '\
-                '(%i%% done) ..." \
-                % (num_tasks - completed, float(completed)
-                   / float(num_tasks) * 100.0)
+                output = ("\r Waiting for %i tasks to complete (%i%% done) ..."
+                          % (num_tasks - completed, float(completed)
+                             / float(num_tasks) * 100.0))
                 sys.stdout.write("\r\x1b[K" + output.__str__())
                 sys.stdout.flush()
 
@@ -2808,7 +2801,6 @@ class Cube(object):
             if is_float(out) or is_int(out):
                 # f returns a number -> iterator returns an image
                 if init:
-                    from image import Image
                     result = Image(wcs=self.wcs.copy(),
                                    data=np.zeros(shape=(self.shape[1],
                                                         self.shape[2])),
@@ -2904,8 +2896,6 @@ class Cube(object):
             msg = "loop_ima_multiprocessing (%s): %i tasks" % (f, num_tasks)
             self.logger.info(msg, extra=d)
 
-            import time
-            import sys
             while (True):
                 time.sleep(5)
                 completed = processresult._index
@@ -2925,7 +2915,6 @@ class Cube(object):
             if is_float(out) or is_int(out):
                 # f returns a number -> iterator returns a spectrum
                 if init:
-                    from spectrum import Spectrum
                     result = Spectrum(wave=self.wave.copy(),
                                       data=np.zeros(shape=self.shape[0]),
                                       unit=self.unit)
@@ -3022,8 +3011,9 @@ class Cube(object):
                 var = (np.ma.sum(np.ma.masked_invalid(self.var[:, imin:imax, jmin:jmax]), axis=(1, 2))).filled(np.NaN)
             else:
                 var = None
-            from spectrum import Spectrum
-            spec = Spectrum(wave=self.wave, unit=self.unit, data=data.sum(axis=(1, 2)), var=var, fscale=self.fscale)
+            spec = Spectrum(wave=self.wave, unit=self.unit,
+                            data=data.sum(axis=(1, 2)), var=var,
+                            fscale=self.fscale)
             if verbose:
                 msg = '%d spaxels summed' % (data.shape[1] * data.shape[2])
                 self.logger.info(msg, extra=d)
@@ -3233,7 +3223,6 @@ class CubeDisk(object):
                     except:
                         self.var = -1
                 if ima:
-                    from image import Image
                     for i in range(len(f)):
                         try:
                             hdr = f[i].header
@@ -3314,7 +3303,6 @@ class CubeDisk(object):
                     return data * self.fscale
                 else:
                     # return an image
-                    from image import Image
                     if is_int(item[1]):
                         shape = (1, data.shape[0])
                     elif is_int(item[2]):
@@ -3330,7 +3318,6 @@ class CubeDisk(object):
                     return res
             elif is_int(item[1]) and is_int(item[2]):
                 # return a spectrum
-                from spectrum import Spectrum
                 shape = data.shape[0]
                 try:
                     wave = self.wave[item[0]]
@@ -3451,7 +3438,6 @@ class CubeDisk(object):
         """Performs a sum over the wavelength dimension and returns an
         image."""
         f = pyfits.open(self.filename, memmap=True)
-        from image import Image
         loop = True
         k = self.shape[0]
         while loop:
@@ -3480,6 +3466,5 @@ class CubeDisk(object):
 
         f.close()
 
-        res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit,
-                    fscale=self.fscale, data=data, var=var)
-        return res
+        return Image(shape=data.shape, wcs=self.wcs, unit=self.unit,
+                     fscale=self.fscale, data=data, var=var)
