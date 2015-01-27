@@ -1614,27 +1614,28 @@ class Image(object):
                  If inside is True, pixels inside the described region are masked.
                  If inside is False, pixels outside the described region are masked.
         """
+        center = np.array(center)
         if is_int(radius) or is_float(radius):
             circular = True
             radius2 = radius * radius
             radius = (radius, radius)
         else:
             circular = False
+        radius = np.array(radius)
 
         if not pix:
             center = self.wcs.sky2pix(center)[0]
             radius = radius / np.abs(self.wcs.get_step()) / 3600.
             radius2 = radius[0] * radius[1]
 
-        imin = max(0, center[0] - radius[0])
-        imax = min(center[0] + radius[0] + 1, self.shape[0])
-        jmin = max(0, center[1] - radius[1])
-        jmax = min(center[1] + radius[1] + 1, self.shape[1])
+        imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int), [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
+        imax, jmax = np.maximum(np.minimum((center + radius + 0.5).astype(int), [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
+        imax += 1
+        jmax += 1
 
         if inside and not circular:
             self.data.mask[imin:imax, jmin:jmax] = 1
         elif inside and circular:
-
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
             self.data.mask[imin:imax, jmin:jmax] = \
@@ -1679,17 +1680,20 @@ class Image(object):
         inside : boolean
                  If inside is True, pixels inside the described region are masked.
         """
+        center = np.array(center)
+        radius = np.array(radius)
+        
         if not pix:
             center = self.wcs.sky2pix(center)[0]
             radius = radius / np.abs(self.wcs.get_step()) / 3600.
 
         maxradius = max(radius[0], radius[1])
 
-        imin = max(0, center[0] - maxradius)
-        imax = min(center[0] + maxradius + 1, self.shape[0])
-        jmin = max(0, center[1] - maxradius)
-        jmax = min(center[1] + maxradius + 1, self.shape[0])
-
+        imin, jmin = np.maximum(np.minimum((center - maxradius + 0.5).astype(int), [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
+        imax, jmax = np.maximum(np.minimum((center + maxradius + 0.5).astype(int), [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
+        imax += 1
+        jmax += 1
+        
         cospa = np.cos(np.radians(posangle))
         sinpa = np.sin(np.radians(posangle))
 
