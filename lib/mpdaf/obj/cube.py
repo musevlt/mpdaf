@@ -736,6 +736,184 @@ class Cube(CubeBase):
         """Unmasks the cube (just invalid data (nan,inf) are masked)."""
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
+        
+    def mask(self, center, radius, lmin=None, lmax=None, pix=False, inside=True):
+        """Masks values inside/outside the described region.
+
+        Parameters
+        ----------
+        center : (float,float)
+                 Center of the explored region.
+                 If pix is False, center = (y,x) is in degrees.
+                 If pix is True, center = (p,q) is in pixels.
+        radius : float or (float,float)
+                 Radius defined the explored region.
+                 If radius is float, it defined a circular region.
+                 If radius is (float,float), it defined a rectangular region.
+                 If pix is False, radius = (dy/2, dx/2) is in arcsecs.
+                 If pix is True, radius = (dp,dq) is in pixels.
+        lmin   : float
+                 minimum wavelength.
+        lmax   : float
+                 maximum wavelength.
+        pix    : boolean
+                 If pix is False, center coordinates are in degrees
+                 radius in arcsecs and wavelength values in Angstrom.
+                 If pix is True, center, radius and wavelength are in pixels.
+        inside : boolean
+                 If inside is True, pixels inside the described region are masked.
+                 If inside is False, pixels outside the described region are masked.
+        """
+        center = np.array(center)
+        
+        if is_int(radius) or is_float(radius):
+            circular = True
+            radius2 = radius * radius
+            radius = (radius, radius)
+        else:
+            circular = False
+        
+        radius = np.array(radius)
+
+        if not pix:
+            center = self.wcs.sky2pix(center)[0]
+            radius = radius / np.abs(self.wcs.get_step()) / 3600.
+            radius2 = radius[0] * radius[1]
+            if lmin is None:
+                lmin = 0
+            else:
+                lmin = self.wave.pixel(lmin, nearest=True)
+            if lmax is None:
+                lmax = self.shape[0]
+            else:
+                lmax = self.wave.pixel(lmax, nearest=True)
+            
+        if lmin is None:
+            lmin = 0
+        if lmax is None:
+            lmax = self.shape[0]
+        
+        imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
+        imax, jmax = np.maximum(np.minimum((center + radius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
+        imax += 1
+        jmax += 1
+
+        if inside and not circular:
+            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = 1
+        elif inside and circular: 
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1],
+                               indexing='ij')
+            grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) < radius2,
+                               (lmax-lmin,imax-imin, jmax-jmin))
+            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
+                np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax],
+                              grid3d)
+        elif not inside and circular:
+            self.data.mask[:lmin, :, :] = 1
+            self.data.mask[lmax:, :, :] = 1
+            self.data.mask[:, :imin, :] = 1
+            self.data.mask[:, imax:, :] = 1
+            self.data.mask[:, :, :jmin] = 1
+            self.data.mask[:, :, jmax:] = 1
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1], indexing='ij')
+            grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
+                               (lmax-lmin,imax-imin, jmax-jmin))
+            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
+                np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax],
+                              grid3d)
+        else:
+            self.data.mask[:lmin, :, :] = 1
+            self.data.mask[lmax:, :, :] = 1
+            self.data.mask[:, :imin, :] = 1
+            self.data.mask[:, imax:, :] = 1
+            self.data.mask[:, :, :jmin] = 1
+            self.data.mask[:, :, jmax:] = 1
+
+    def mask_ellipse(self, center, radius, posangle, lmin=None, lmax=None, pix=False, inside=True):
+        """Masks values inside/outside the described region. Uses an elliptical
+        shape.
+
+        Parameters
+        ----------
+        center : (float,float)
+                 Center of the explored region.
+                 If pix is False, center = (y,x) is in degrees.
+                 If pix is True, center = (p,q) is in pixels.
+        radius : (float,float)
+                 Radius defined the explored region.
+                 radius is (float,float), it defines an elliptical region with semi-major and semi-minor axes.
+                 If pix is False, radius = (da, db) is in arcsecs.
+                 If pix is True, radius = (dp,dq) is in pixels.
+        posangle : float
+                 Position angle of the first axis. It is defined in degrees against the horizontal (q) axis of the image, counted counterclockwise.
+        lmin   : float
+                 minimum wavelength.
+        lmax   : float
+                 maximum wavelength.
+        pix    : boolean
+                 If pix is False, center and radius are in degrees and arcsecs.
+                 If pix is True, center and radius are in pixels.
+        inside : boolean
+                 If inside is True, pixels inside the described region are masked.
+        """
+        center = np.array(center)
+        radius = np.array(radius)
+        if not pix:
+            center = self.wcs.sky2pix(center)[0]
+            radius = radius / np.abs(self.wcs.get_step()) / 3600.
+            if lmin is None:
+                lmin = 0
+            else:
+                lmin = self.wave.pixel(lmin, nearest=True)
+            if lmax is None:
+                lmax = self.shape[0]
+            else:
+                lmax = self.wave.pixel(lmax, nearest=True)
+            
+        if lmin is None:
+            lmin = 0
+        if lmax is None:
+            lmax = self.shape[0]
+            
+        
+        maxradius = max(radius[0], radius[1])
+
+        imin, jmin = np.maximum(np.minimum((center - maxradius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
+        imax, jmax = np.maximum(np.minimum((center + maxradius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
+        imax += 1
+        jmax += 1
+        
+        cospa = np.cos(np.radians(posangle))
+        sinpa = np.sin(np.radians(posangle))
+        
+        if inside:
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1], indexing='ij')
+            grid3d = np.resize(((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
+                              + ((grid[0] * cospa - grid[1] * sinpa)
+                                 / radius[1]) ** 2 < 1,
+                               (lmax-lmin,imax-imin, jmax-jmin))
+            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
+                np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax], grid3d)
+        if not inside:
+            self.data.mask[:lmin, :, :] = 1
+            self.data.mask[lmax:, :, :] = 1
+            self.data.mask[:,:imin, :] = 1
+            self.data.mask[:,imax:, :] = 1
+            self.data.mask[:, :, :jmin] = 1
+            self.data.mask[:, :, jmax:] = 1
+            
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1], indexing='ij')
+            
+            grid3d = np.resize(((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
+                              + ((grid[0] * cospa - grid[1] * sinpa)
+                                 / radius[1]) ** 2 > 1,
+                               (lmax-lmin,imax-imin, jmax-jmin))
+            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
+                np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax], grid3d)
 
     def mask_variance(self, threshold):
         """Masks pixels with a variance upper than threshold value.
