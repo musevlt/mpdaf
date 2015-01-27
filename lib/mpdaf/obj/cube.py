@@ -2767,7 +2767,11 @@ class Cube(CubeBase):
             f = f.__name__
 
         for sp, pos in iter_spe(self, index=True):
-            processlist.append([sp, pos, f, kargs])
+            processlist.append([pos, f, sp.wave.crpix, sp.wave.cdelt,
+                                sp.wave.crval, sp.wave.cunit, sp.data.data,
+                                sp.data.mask, sp.var, sp.fscale, sp.unit,
+                                kargs])
+            #processlist.append([sp, pos, f, kargs])
         num_tasks = len(processlist)
 
         processresult = pool.imap_unordered(_process_spe, processlist)
@@ -2791,54 +2795,65 @@ class Cube(CubeBase):
                 sys.stdout.flush()
 
         init = True
-        for pos, out in processresult:
-            if is_float(out) or is_int(out):
-                # f returns a number -> iterator returns an image
+        for pos, dtype, out in processresult:
+            p, q = pos
+            if dtype == 'spectrum':
+                # f return a Spectrum -> iterator return a cube
+                crpix = out[0]
+                cdelt = out[1]
+                crval = out[2]
+                cunit = out[3]
+                data = out[4]
+                mask = out[5]
+                var = out[6]
+                fscale = out[7]
+                unit = out[8]
+                wave = WaveCoord(crpix, cdelt, crval, cunit, data.shape[0])
+                spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit, data=data, var=var, fscale=fscale)
+                spe.data.mask = mask
+                
                 if init:
-                    result = Image(wcs=self.wcs.copy(),
+                    if self.var is None:
+                        result = Cube(wcs=self.wcs.copy(),
+                                      wave=wave,
+                                      data=np.zeros(shape=(data.shape[0],
+                                                            self.shape[1],
+                                                            self.shape[2])),
+                                      unit=unit,
+                                      fscale=fscale)
+                    else:
+                        result = Cube(wcs=self.wcs.copy(),
+                                      wave=wave,
+                                      data=np.zeros(shape=(data.shape[0],
+                                                           self.shape[1],
+                                                           self.shape[2])),
+                                      var=np.zeros(shape=(data.shape[0],
+                                                          self.shape[1],
+                                                          self.shape[2])),
+                                      unit=unit,
+                                      fscale=fscale)
+                    init = False
+            
+                 
+                result[:, p, q] = spe
+                
+            else:
+                if is_float(out[0]) or is_int(out[0]):
+                    # f returns a number -> iterator returns an image
+                    if init:
+                        result = Image(wcs=self.wcs.copy(),
                                    data=np.zeros(shape=(self.shape[1],
                                                         self.shape[2])),
                                    unit=self.unit)
-                    init = False
-                p, q = pos
-                result[p, q] = out
-            else:
-                try:
-                    if out.spectrum:
-                        # f returns a spectrum -> iterator returns a cube
-                        if init:
-                            if self.var is None:
-                                result = Cube(wcs=self.wcs.copy(),
-                                              wave=out.wave.copy(),
-                                              data=np.zeros(shape=(out.shape,
-                                                                   self.shape[1],
-                                                                   self.shape[2])),
-                                              unit=self.unit,
-                                              fscale=out.fscale)
-                            else:
-                                result = Cube(wcs=self.wcs.copy(),
-                                              wave=out.wave.copy(),
-                                              data=np.zeros(
-                                              shape=(out.shape, self.shape[1],
-                                                     self.shape[2])),
-                                              var=np.zeros(
-                                              shape=(out.shape, self.shape[1],
-                                                     self.shape[2])),
-                                              unit=self.unit,
-                                              fscale=out.fscale)
-                            init = False
-                        p, q = pos
-                        result[:, p, q] = out
-
-                except:
+                        init = False
+                    result[p, q] = out[0]
+                else:
                     # f returns dtype -> iterator returns an array of dtype
                     if init:
-                        result = np.empty((self.shape[1], self.shape[2]),
-                                          dtype=type(out))
+                        result = np.empty((self.shape[1], self.shape[2]), dtype=type(out[0]))
                         init = False
-                    p, q = pos
-                    result[p, q] = out
-
+                    result[p, q] = out[0]
+            
         return result
 
     def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
@@ -2880,7 +2895,8 @@ class Cube(CubeBase):
 
         for ima, k in iter_ima(self, index=True):
             header = ima.wcs.to_header()
-            processlist.append([ima, k, f, header, kargs])
+            #processlist.append([ima, k, f, header, kargs])
+            processlist.append([k, f, header, ima.data.data, ima.data.mask, ima.var, ima.fscale, ima.unit, kargs])
         num_tasks = len(processlist)
 
         processresult = pool.imap_unordered(_process_ima, processlist)
@@ -2905,42 +2921,69 @@ class Cube(CubeBase):
                 sys.stdout.flush()
 
         init = True
-        for k, out in processresult:
-            if is_float(out) or is_int(out):
-                # f returns a number -> iterator returns a spectrum
+        for k, dtype, out in processresult:
+            if dtype == 'image':
+                # f returns an image -> iterator returns a cube
+                data = out[1]
+                mask = out[2]
+                var = out[3]
+                fscale = out[4]
                 if init:
-                    result = Spectrum(wave=self.wave.copy(),
-                                      data=np.zeros(shape=self.shape[0]),
-                                      unit=self.unit)
+                    header = out[0]
+                    unit = out[5]
+                    
+                    wcs = WCS(header, shape=data.shape)
+                    if self.var is None:
+                        result = Cube(wcs=wcs,
+                                  wave=self.wave.copy(),
+                                  data=np.zeros(shape=(self.shape[0], data.shape[0], data.shape[1])),
+                                  unit=unit,
+                                  fscale=fscale)
+                    else:
+                        result = Cube(wcs=wcs,
+                                      wave=self.wave.copy(),
+                                      data=np.zeros(shape=(self.shape[0], data.shape[0], data.shape[1])),
+                                      var=np.zeros(shape=(self.shape[0], data.shape[0], data.shape[1])),
+                                      unit=unit,
+                                      fscale=fscale)
                     init = False
-                result[k] = out
+                result.data.data[k, :, :] = data * fscale / result.fscale
+                result.data.mask[k, :, :] = mask
+                if self.var is not None:
+                    result.var[k, :, :] = var *fscale**2 / result.fscale**2
+            elif dtype == 'spectrum':
+                # f return a Spectrum -> iterator return a list of spectra
+                crpix = out[0]
+                cdelt = out[1]
+                crval = out[2]
+                cunit = out[3]
+                data = out[4]
+                mask = out[5]
+                var = out[6]
+                fscale = out[7]
+                unit = out[8]
+                wave = WaveCoord(crpix, cdelt, crval, cunit, data.shape[0])
+                spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit, data=data, var=var, fscale=fscale)
+                spe.data.mask = mask
+                if init:
+                    result = np.empty(self.shape[0], dtype=type(spe))
+                    init = False
+                result[k] = spe
             else:
-                try:
-                    if out.image:
-                        # f returns an image -> iterator returns a cube
-                        if init:
-                            if self.var is None:
-                                result = Cube(wcs=out.wcs,
-                                              wave=self.wave.copy(),
-                                              data=np.zeros(shape=(self.shape[0], out.shape[0], out.shape[1])),
-                                              unit=self.unit,
-                                              fscale=self.fscale)
-                            else:
-                                result = Cube(wcs=out.wcs,
-                                              wave=self.wave.copy(),
-                                              data=np.zeros(shape=(self.shape[0], out.shape[0], out.shape[1])),
-                                              var=np.zeros(shape=(self.shape[0], out.shape[0], out.shape[1])),
-                                              unit=self.unit,
-                                              fscale=self.fscale)
-                            init = False
-                        result[k, :, :] = out
-                except:
+                if is_float(out[0]) or is_int(out[0]):
+                    # f returns a number -> iterator returns a spectrum
+                    if init:
+                        result = Spectrum(wave=self.wave.copy(),
+                                       data=np.zeros(shape=self.shape[0]),
+                                       unit=self.unit)
+                        init = False
+                    result[k] = out[0]
+                else:
                     # f returns dtype -> iterator returns an array of dtype
                     if init:
-                        result = np.empty(self.shape[0], dtype=type(out))
+                        result = np.empty(self.shape[0], dtype=type(out[0]))
                         init = False
-                    result[k] = out
-
+                    result[k] = out[0]
         return result
 
     def get_image(self, wave, is_sum=False, verbose=True):
@@ -3021,16 +3064,35 @@ class Cube(CubeBase):
 
 def _process_spe(arglist):
     try:
-        pos = arglist[1]
-        obj = arglist[0]
-        f = arglist[2]
-        kargs = arglist[3]
+        pos = arglist[0]
+        f = arglist[1]
+        crpix = arglist[2]
+        cdelt = arglist[3]
+        crval = arglist[4]
+        cunit = arglist[5]
+        data = arglist[6]
+        mask = arglist[7]
+        var = arglist[8]
+        fscale = arglist[9]
+        unit = arglist[10]
+        kargs = arglist[11]
+        
+        wave = WaveCoord(crpix, cdelt, crval, cunit, data.shape[0])
+        spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit, data=data, var=var, fscale=fscale)
+        spe.data.mask = mask
+        
         if isinstance(f, types.FunctionType):
-            obj_result = f(obj, **kargs)
+            out = f(spe, **kargs)
         else:
-            obj_result = getattr(obj, f)(**kargs)
+            out = getattr(spe, f)(**kargs)
 
-        return (pos, obj_result)
+        try:
+            if out.spectrum:
+                return pos, 'spectrum', [out.wave.crpix, out.wave.cdelt, out.wave.crval, out.wave.cunit, out.data.data, out.data.mask, out.var, out.fscale, out.unit]
+        except:
+            # f returns dtype -> iterator returns an array of dtype
+            return pos, 'other',[out]
+            
     except Exception as inst:
         raise type(inst), str(inst) + \
             '\n The error occurred for the spectrum '\
@@ -3039,20 +3101,44 @@ def _process_spe(arglist):
 
 def _process_ima(arglist):
     try:
-        pos = arglist[1]
-        obj = arglist[0]
+        k = arglist[0]
+        f = arglist[1]
+        header = arglist[2]
+        data = arglist[3]
+        mask = arglist[4]
+        var = arglist[5]
+        fscale = arglist[6]
+        unit = arglist[7]
+        kargs = arglist[8] 
+        wcs = WCS(header, shape=data.shape)
+        obj = Image(shape=data.shape, wcs=wcs, unit=unit, data=data,
+                 var=var, fscale=fscale)
+        obj.data.mask = mask
 
-        f = arglist[2]
-        kargs = arglist[4]
         if isinstance(f, types.FunctionType):
-            obj_result = f(obj, **kargs)
+            out = f(obj, **kargs)
         else:
-            obj_result = getattr(obj, f)(**kargs)
+            out = getattr(obj, f)(**kargs)
+            
+        del obj
+        del wcs
+            
+        try:
+            if out.image:
+                # f returns an image -> iterator returns a cube
+                return k, 'image', [out.wcs.to_header(), out.data.data, out.data.mask, out.var, out.fscale, out.unit]
+        except:
+            try:
+                if out.spectrum:
+                    return k, 'spectrum', [out.wave.crpix, out.wave.cdelt, out.wave.crval, out.wave.cunit, out.data.data, out.data.mask, out.var, out.fscale, out.unit]
+            except:
+                # f returns dtype -> iterator returns an array of dtype
+                return k, 'other', [out]
 
-        return (pos, obj_result)
+        
     except Exception as inst:
         raise type(inst), str(inst) + '\n The error occurred '\
-            'for the image [%i,:,:]' % pos
+            'for the image [%i,:,:]' % k
 
 
 class CubeDisk(CubeBase):

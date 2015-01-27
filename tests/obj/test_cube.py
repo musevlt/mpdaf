@@ -157,3 +157,22 @@ class TestCube():
         self.cube1.resize()
         nose.tools.assert_equal(self.cube1.shape[0],9)
         
+    @attr(speed='fast')
+    def test_multiprocess(self):
+        """Cube class: tests multiprocess"""
+        f = Image.ee_curve
+        list_spe = self.cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False)
+        nose.tools.assert_equal(list_spe[8][1], self.cube1[8,:,:].ee_curve()[1])
+        f = Image.ee
+        ee = self.cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False)
+        nose.tools.assert_equal(ee[1], self.cube1[1,:,:].ee())
+        f = Image.rotate
+        cub2 = self.cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False, theta=20)
+        nose.tools.assert_equal(cub2[4,3,2], self.cube1[4,:,:].rotate(20)[3,2])
+        f = Spectrum.mean
+        out = self.cube1.loop_spe_multiprocessing(f, cpu=2, verbose=False)
+        nose.tools.assert_equal(out[2,3], self.cube1[:,2,3].mean())
+        f = Spectrum.rebin
+        out = self.cube1.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
+        nose.tools.assert_equal(out[8,3,2], self.cube1[:,3,2].rebin(step=1)[8])
+        

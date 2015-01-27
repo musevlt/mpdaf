@@ -210,12 +210,19 @@ class WCS(object):
         shape : integer or (integer,integer)
                 Dimensions. No mandatory.
         """
-
         self.logger = logging.getLogger('mpdaf corelib')
         if hdr is not None:
             self.wcs = pywcs.WCS(hdr, naxis=2)  # WCS object from data header
-            self.naxis1 = hdr['NAXIS1']
-            self.naxis2 = hdr['NAXIS2']
+            try:
+                self.naxis1 = hdr['NAXIS1']
+                self.naxis2 = hdr['NAXIS2']
+            except:
+                if shape is not None:
+                    self.naxis1 = shape[1]
+                    self.naxis2 = shape[0]
+                else:
+                    self.naxis1 = 0
+                    self.naxis2 = 0
             # bug if naxis=3
             # http://mail.scipy.org/pipermail/astropy/2011-April/001242.html
         else:
