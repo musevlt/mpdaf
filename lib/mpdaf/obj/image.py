@@ -2000,25 +2000,29 @@ class Image(object):
         if self.var is not None:
             self.var *= (norm * norm)
 
-    def background(self, niter=3):
-        """Computes the image background. Returns the background value and its
-        standard deviation.
+    def background(self, niter=3, sigma=3.0):
+        """Computes the image background with sigma-clipping.
+
+        Returns the background value and its standard deviation.
 
         Parameters
         ----------
         niter: integer
                Number of iterations.
+        sigma: float
+               Number of sigma used for the clipping.
 
         Returns
         -------
         out : 2-dim float array
         """
         tab = self.data
+        mean = np.ma.mean
+        std = np.ma.std
+
         for n in range(niter + 1):
-            ksel = np.where(tab <= (np.ma.mean(tab) + 3 * np.ma.std(tab)))
-            tab = tab[ksel]
-        return np.array([np.ma.mean(tab) * self.fscale,
-                         np.ma.std(tab) * self.fscale])
+            tab = tab[tab <= (mean(tab) + sigma * std(tab))]
+        return np.array([mean(tab), std(tab)]) * self.fscale
 
     def _struct(self, n):
         struct = np.zeros([n, n])
