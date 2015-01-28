@@ -7,6 +7,7 @@ import numpy as np
 import warnings
 from astropy.io import fits as pyfits
 from scipy import interpolate, ndimage
+import string
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
 from ..obj.objs import is_float, is_int
@@ -1957,6 +1958,8 @@ class PixTable(object):
         norm : string
                Option for sky subtraction 'sky' or 'zero'
         """
+        d = {'class': 'PixTable', 'method': 'old_subtract_slice_median'}
+
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
@@ -1984,11 +1987,11 @@ class PixTable(object):
         # setup the return types and argument types
         libCmethods.mpdaf_old_subtract_slice_median.restype = None
         libCmethods.mpdaf_old_subtract_slice_median.argtypes = \
-            [array_1d_double, array_1d_int, array_1d_int, array_1d_double,
+            [array_1d_double, array_1d_double, array_1d_int,
+             array_1d_int, array_1d_int, array_1d_double,
              array_1d_double, ctypes.c_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
-        result = np.empty_like(data).astype(np.float64)
         ifu = ifu.astype(np.int32)
         sli = sli.astype(np.int32)
         data = data.astype(np.float64)
@@ -2001,17 +2004,43 @@ class PixTable(object):
             skysub = 0
         skysub = np.int32(skysub)
 
-        libCmethods.mpdaf_old_subtract_slice_median(result, ifu, sli, data, lbda,
-                                                    data.shape[0], mask, skysub)
+        result = np.empty_like(data).astype(np.float64)
+        corr = np.empty(24 * 48).astype(np.float64)
+        npts = np.empty(24 * 48).astype(np.int32)
+
+        libCmethods.mpdaf_old_subtract_slice_median(result, corr, npts,
+                                                    ifu, sli, data, lbda,
+                                                    data.shape[0], mask,
+                                                    skysub)
 
         # set pixtable data
         self.set_data(result)
+
+        # write autocalib file
+        filename = 'autocalib_' + \
+            string.replace(os.path.basename(self.filename), '.fits', '.txt')
+
+        header = 'ifu number| slice number | number of remaining pixels | correction value\n'
+        header += 'drs.pixtable.old_subtract_slice_median\n'
+        header += '   file to mask out all bright objects: %s\n' % maskfile
+        header += '   option for sky subtraction: %s\n' % norm
+
+        np.savetxt(filename,
+                   zip(np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
+                       np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+                       npts, corr),
+                   fmt='%02d %02d %d %g', header=header)
+
+        # add keywords
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.old_subtract_slice_median",
                                   ['mask', 'norm'],
                                   [maskfile, norm],
                                   ['file to mask out all bright objects',
                                    'Option for sky subtraction'])
+
+        self.logger.info('pixtable %s updated' % os.path.basename(self.filename), extra=d)
+        self.logger.info('%s saved' % filename, extra=d)
 
         # close libray
         #import _ctypes
@@ -2099,8 +2128,6 @@ class PixTable(object):
         wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda),
                          cunit='Angstrom', shape=n)
 
-        'HIERARCH MPDAF METH'
-
         spe = Spectrum(shape=n, data=result, wave=wave)
         add_mpdaf_method_keywords(spe.primary_header,
                                   "drs.pixtable.sky_ref",
@@ -2132,6 +2159,8 @@ class PixTable(object):
                  column corresponding to a mask file
                  (previously computed by mask_column)
         """
+        d = {'class': 'PixTable', 'method': 'subtract_slice_median'}
+
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
@@ -2163,12 +2192,12 @@ class PixTable(object):
         # setup the return types and argument types
         libCmethods.mpdaf_subtract_slice_median.restype = None
         libCmethods.mpdaf_subtract_slice_median.argtypes = \
-            [array_1d_double, array_1d_int, array_1d_int, array_1d_double,
+            [array_1d_double, array_1d_double, array_1d_int,
+             array_1d_int, array_1d_int, array_1d_double,
              array_1d_double, ctypes.c_int, array_1d_int, array_1d_double,
              array_1d_double, ctypes.c_int]
 
         data = self.get_data()
-        result = np.empty_like(data).astype(np.float64)
         ifu = ifu.astype(np.int32)
         sli = sli.astype(np.int32)
         data = data.astype(np.float64)
@@ -2179,12 +2208,32 @@ class PixTable(object):
         skyref_lbda = spe_skyref.wave.coord()
         skyref_n = spe_skyref.shape
 
-        libCmethods.mpdaf_subtract_slice_median(result, ifu, sli, data, lbda,
+        result = np.empty_like(data).astype(np.float64)
+        corr = np.empty(24 * 48).astype(np.float64)
+        npts = np.empty(24 * 48).astype(np.int32)
+
+        libCmethods.mpdaf_subtract_slice_median(result, corr, npts, ifu, sli, data, lbda,
                                                 data.shape[0], mask, skyref_flux,
                                                 skyref_lbda, skyref_n)
 
         # set pixtable data
         self.set_data(result)
+
+        # write autocalib file
+        filename = 'autocalib_' + \
+            string.replace(os.path.basename(self.filename), '.fits', '.txt')
+
+        header = 'ifu number| slice number | number of remaining pixels | correction value\n'
+        header += 'drs.pixtable.subtract_slice_median\n'
+        header += '   file to mask out all bright objects: %s\n' % maskfile
+        header += '   reference sky spectrum: %s\n' % os.path.basename(skyref)
+
+        np.savetxt(filename,
+                   zip(np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
+                       np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+                       npts, corr),
+                   fmt='%02d %02d %d %g', header=header)
+
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.subtract_slice_median",
@@ -2192,6 +2241,9 @@ class PixTable(object):
                                   [maskfile, os.path.basename(skyref)],
                                   ['file to mask out all bright objects',
                                    'reference sky spectrum'])
+
+        self.logger.info('pixtable %s updated' % os.path.basename(self.filename), extra=d)
+        self.logger.info('%s saved' % filename, extra=d)
 
         # close libray
         #import _ctypes
@@ -2215,6 +2267,8 @@ class PixTable(object):
                  column corresponding to a mask file
                  (previously computed by mask_column)
         """
+        d = {'class': 'PixTable', 'method': 'divide_slice_median'}
+
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
@@ -2246,34 +2300,63 @@ class PixTable(object):
         # setup the return types and argument types
         libCmethods.mpdaf_divide_slice_median.restype = None
         libCmethods.mpdaf_divide_slice_median.argtypes = \
-            [array_1d_double, array_1d_int, array_1d_int, array_1d_double,
+            [array_1d_double, array_1d_double, array_1d_double, array_1d_int,
+             array_1d_int, array_1d_int, array_1d_double, array_1d_double,
              array_1d_double, ctypes.c_int, array_1d_int, array_1d_double,
              array_1d_double, ctypes.c_int]
 
         data = self.get_data()
-        result = np.empty_like(data).astype(np.float64)
         ifu = ifu.astype(np.int32)
         sli = sli.astype(np.int32)
         data = data.astype(np.float64)
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
+        stat = self.get_stat()
+        stat = stat.astype(np.float64)
         mask = maskcol.astype(np.int32)
         skyref_flux = spe_skyref.data.data.astype(np.float64)
         skyref_lbda = spe_skyref.wave.coord()
         skyref_n = spe_skyref.shape
 
-        libCmethods.mpdaf_divide_slice_median(result, ifu, sli, data, lbda,
+        result = np.empty_like(data).astype(np.float64)
+        result_stat = np.empty_like(stat).astype(np.float64)
+        corr = np.empty(24 * 48).astype(np.float64)
+        npts = np.empty(24 * 48).astype(np.int32)
+
+        libCmethods.mpdaf_divide_slice_median(result, result_stat, corr, npts,
+                                              ifu, sli, data, stat, lbda,
                                               data.shape[0], mask, skyref_flux,
                                               skyref_lbda, skyref_n)
 
         # set pixtable data
         self.set_data(result)
+        self.set_stat(result_stat)
+
+        # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.divide_slice_median",
                                   ['mask', 'skyref'],
                                   [maskfile, os.path.basename(skyref)],
                                   ['file to mask out all bright objects',
                                    'reference sky spectrum'])
+
+        # write autocalib file
+        filename = 'autocalib_' + \
+            string.replace(os.path.basename(self.filename), '.fits', '.txt')
+
+        header = 'ifu number| slice number | number of remaining pixels | correction value\n'
+        header += 'drs.pixtable.divide_slice_median\n'
+        header += '   file to mask out all bright objects: %s\n' % maskfile
+        header += '   reference sky spectrum: %s\n' % os.path.basename(skyref)
+
+        np.savetxt(filename,
+                   zip(np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
+                       np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+                       npts, corr),
+                   fmt='%02d %02d %d %g', header=header)
+
+        self.logger.info('pixtable %s updated' % os.path.basename(self.filename), extra=d)
+        self.logger.info('%s saved' % filename, extra=d)
 
         # close libray
         #import _ctypes
