@@ -40,7 +40,7 @@ class PixTableMask(object):
                pixtable column corresponding to the mask
     """
 
-    def __init__(self, maskfile, maskcol):
+    def __init__(self, filename=None, maskfile=None, maskcol=None, pixtable=None):
         """creates a PixTable object.
 
         Parameters
@@ -50,12 +50,43 @@ class PixTableMask(object):
         mask     : array of boolean
                    pixtable column corresponding to the mask
         """
-        self.maskfile = maskfile
-        self.maskcol = maskcol
+        if filename is None:
+            self.maskfile = maskfile
+            self.maskcol = maskcol
+            self.pixtable = pixtable
+        else:
+            hdulist = pyfits.open(filename)
+            self.maskfile = hdulist[0].header['mask']
+            self.pixtable = hdulist[0].header['pixtable']
+            self.maskcol = np.bool_(hdulist['maskcol'].data[:, 0])
+        
+    def write(self, filename):
+        """Saves the object in a FITS file.
 
+        Parameters
+        ----------
+        filename    : string
+                      The FITS filename.
+        """
+        prihdu = pyfits.PrimaryHDU()
+        prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
+        prihdu.header['author'] = ('MPDAF', 'origin of the file')
+        add_mpdaf_method_keywords(prihdu.header, 'mpdaf.drs.pixtable.mask_column',
+                                  [],[],[])
+        prihdu.header['pixtable'] = (os.path.basename(self.pixtable), 'pixtable')
+        prihdu.header['mask'] = (os.path.basename(self.maskfile), 'file to mask out all bright obj')
+        hdulist = [prihdu]
+        nrows = self.maskcol.shape[0]
+        hdulist.append(pyfits.ImageHDU(name='maskcol',
+                                       data=np.int32(self.maskcol.reshape((nrows, 1)))))
+        hdu = pyfits.HDUList(hdulist)
+        hdu[1].header['BUNIT'] = 'boolean'
+        hdu.writeto(filename, clobber=True, output_verify='fix')
+        
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
-          primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom'):
+          primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom',
+          unit_data='count', unit_stat='count**2'):
     """Saves the object in a FITS file.
 
     Parameters
@@ -116,10 +147,10 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
         hdu[1].header['BUNIT'] = wcs
         hdu[2].header['BUNIT'] = wcs
         hdu[3].header['BUNIT'] = wave
-        hdu[4].header['BUNIT'] = 'count'
-        hdu[6].header['BUNIT'] = 'count**2'
+        hdu[4].header['BUNIT'] = unit_data
+        hdu[6].header['BUNIT'] = unit_stat
         if weight is not None:
-            hdu[8].header['BUNIT'] = 'count'
+            hdu[8].header['BUNIT'] = unit_data
         hdu.writeto(filename, clobber=True, output_verify='fix')
     else:
         cols = []
@@ -129,15 +160,15 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
                                   array=np.float32(ypos)))
         cols.append(pyfits.Column(name='lambda', format='1E',
                                   unit='Angstrom', array=lbda))
-        cols.append(pyfits.Column(name='data', format='1E', unit='count',
+        cols.append(pyfits.Column(name='data', format='1E', unit=unit_data,
                                   array=np.float32(data)))
         cols.append(pyfits.Column(name='dq', format='1J', array=np.int32(dq)))
-        cols.append(pyfits.Column(name='stat', format='1E', unit='count**2',
+        cols.append(pyfits.Column(name='stat', format='1E', unit=unit_stat,
                                   array=np.float32(stat)))
         cols.append(pyfits.Column(name='origin', format='1J', array=np.int32(origin)))
         if weight is not None:
             cols.append(pyfits.Column(name='weight', format='1E',
-                                      unit='count', array=np.float32(weight)))
+                                      unit=unit_data, array=np.float32(weight)))
         coltab = pyfits.ColDefs(cols)
         #tbhdu = pyfits.new_table(coltab)
         tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
@@ -183,7 +214,7 @@ class PixTable(object):
     def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None,
                  dq=None, stat=None, origin=None, weight=None,
                  primary_header=None, save_as_ima=True, wcs='pix',
-                 wave='Angstrom'):
+                 wave='Angstrom', unit_data = 'count', unit_stat = 'count**2'):
         """Creates a PixTable object.
 
         Parameters
@@ -214,6 +245,8 @@ class PixTable(object):
         self.nifu = 0
         self.skysub = False
         self.fluxcal = False
+        self.unit_data = unit_data
+        self.unit_stat = unit_stat
 
         if xpos is None and filename is not None:
             try:
@@ -225,9 +258,13 @@ class PixTable(object):
                 if self.ima:
                     self.wcs = self.hdulist['xpos'].header['BUNIT']
                     self.wave = self.hdulist['lambda'].header['BUNIT']
+                    self.unit_data = self.hdulist['data'].header['BUNIT']
+                    self.unit_stat = self.hdulist['stat'].header['BUNIT']
                 else:
                     self.wcs = self.hdulist[1].header['TUNIT1']
                     self.wave = self.hdulist[1].header['TUNIT3']
+                    self.unit_data = self.hdulist[1].header['TUNIT4']
+                    self.unit_stat = self.hdulist[1].header['TUNIT6']
             except IOError:
                 raise IOError('file %s not found' % filename)
         else:
@@ -310,6 +347,8 @@ class PixTable(object):
         result.fluxcal = self.fuxcal
         result.wcs = self.wcs
         result.wave = self.wave
+        result.unit_data = self.unit_data
+        result.unit_stat = self.unit_stat
         result.ima = self.ima
         result.primary_header = pyfits.Header(self.primary_header)
         result.xpos = self.xpos
@@ -372,7 +411,8 @@ class PixTable(object):
         write(filename, self.get_xpos(), self.get_ypos(),
               self.get_lambda(), self.get_data(), self.get_dq(),
               self.get_stat(), self.get_origin(), self.get_weight(),
-              self.primary_header, save_as_ima, self.wcs, self.wave)
+              self.primary_header, save_as_ima, self.wcs, self.wave,
+              self.unit_data, self.unit_stat)
 
         self.filename = filename
         self.ima = save_as_ima
@@ -1918,6 +1958,8 @@ class PixTable(object):
         label = ndimage.measurements.label(ima_mask.data.data)[0]
         ulabel = np.unique(label)
         ulabel = ulabel[ulabel > 0]
+        
+        n= len(ulabel)
 
         for i in ulabel:
             try:
@@ -1932,8 +1974,8 @@ class PixTable(object):
                 ksel = np.where((xpos_sky > x0) & (xpos_sky < x1) &
                                 (ypos_sky > y0) & (ypos_sky < y1))
                 if verbose:
-                    msg = 'masking object %i %g<x<%g %g<y<%g (%i pixels)' % (
-                        i, x0, x1, y0, y1, len(ksel[0]))
+                    msg = 'masking object %i/%i %g<x<%g %g<y<%g (%i pixels)' % (
+                        i, n, x0, x1, y0, y1, len(ksel[0]))
                     self.logger.info(msg, extra=d)
                 if len(ksel[0]) != 0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
@@ -1941,9 +1983,9 @@ class PixTable(object):
             except Exception as e:
                 self.logger.warning('masking object %i failed', i, extra=d)
 
-        return PixTableMask(maskfile, mask)
+        return PixTableMask(maskfile=maskfile, maskcol=mask, pixtable=self.filename)
 
-    def old_subtract_slice_median(self, mask=None, norm='sky'):
+    def old_subtract_slice_median(self, pixmask=None, norm='sky'):
         """Computes the median value for all slices and applies in place a
         subtractive correction to each slice to bring all slices to the same
         median value.
@@ -1952,11 +1994,11 @@ class PixTable(object):
 
         Parameters
         ----------
-        mask : :class:`mpdaf.drs.PixTableMask`
-               column corresponding to a mask file
-               (previously computed by mask_column)
-        norm : string
-               Option for sky subtraction 'sky' or 'zero'
+        pixmask : :class:`mpdaf.drs.PixTableMask`
+                  column corresponding to a mask file
+                  (previously computed by mask_column)
+        norm    : string
+                  Option for sky subtraction 'sky' or 'zero'
         """
         d = {'class': 'PixTable', 'method': 'old_subtract_slice_median'}
 
@@ -1964,12 +2006,12 @@ class PixTable(object):
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
 
-        if mask is None:
+        if pixmask is None:
             maskfile = ''
             mask = np.zeros(self.nrows).astype('bool')
         else:
-            maskfile = os.path.basename(mask.maskfile)
-            mask = mask.maskcol
+            maskfile = os.path.basename(pixmask.maskfile)
+            mask = pixmask.maskcol
 
         import mpdaf
         import ctypes
@@ -2050,36 +2092,36 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         del libCmethods
 
-    def sky_ref(self, mask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
+    def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
         """Computes the reference sky spectrum using sigma clipped median.
 
         Parameters
         ----------
-        mask  : :class:`mpdaf.drs.PixTableMask`
-                column corresponding to a mask file
-                (previously computed by mask_column)
-        dlbda : double
+        pixmask  : :class:`mpdaf.drs.PixTableMask`
+                   column corresponding to a mask file
+                   (previously computed by mask_column)
+        dlbda    : double
                    wavelength step
-        nmax  : integer
-                maximum number of clipping iterations
-        nclip : float or (float,float)
-                Number of sigma at which to clip.
-                Single clipping parameter or lower/upper clipping parameters
-        nstop : integer
-                If the number of not rejected pixels is less
-                than this number, the clipping iterations stop.
+        nmax     : integer
+                   maximum number of clipping iterations
+        nclip    : float or (float,float)
+                   Number of sigma at which to clip.
+                   Single clipping parameter or lower/upper clipping parameters
+        nstop    : integer
+                   If the number of not rejected pixels is less
+                   than this number, the clipping iterations stop.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Spectrum`
         """
         # mask
-        if mask is None:
+        if pixmask is None:
             maskfile = ''
             mask = np.zeros(self.nrows).astype('bool')
         else:
-            maskfile = os.path.basename(mask.maskfile)
-            mask = mask.maskcol
+            maskfile = os.path.basename(pixmask.maskfile)
+            mask = pixmask.maskcol
 
         # sigma clipped parameters
         import mpdaf
@@ -2144,7 +2186,7 @@ class PixTable(object):
                                    'clipping minimum number'])
         return spe
 
-    def subtract_slice_median(self, skyref, mask):
+    def subtract_slice_median(self, skyref, pixmask):
         """Computes the median value for all slices
         and subtracts this factor to each pixel
         to bring all slices to the same median value.
@@ -2153,11 +2195,11 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref : string
-                 FITS file containig the reference sky spectrum
-        mask   : :class:`mpdaf.drs.PixTableMask`
-                 column corresponding to a mask file
-                 (previously computed by mask_column)
+        skyref  : string
+                  FITS file containig the reference sky spectrum
+        pixmask : :class:`mpdaf.drs.PixTableMask`
+                  column corresponding to a mask file
+                  (previously computed by mask_column)
         """
         d = {'class': 'PixTable', 'method': 'subtract_slice_median'}
 
@@ -2168,12 +2210,12 @@ class PixTable(object):
         spe_skyref = Spectrum(skyref)
 
         # mask
-        if mask is None:
+        if pixmask is None:
             maskfile = ''
             maskcol = np.zeros(self.nrows).astype('bool')
         else:
-            maskfile = os.path.basename(mask.maskfile)
-            maskcol = mask.maskcol
+            maskfile = os.path.basename(pixmask.maskfile)
+            maskcol = pixmask.maskcol
 
         import mpdaf
         import ctypes
@@ -2253,7 +2295,7 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         del libCmethods
 
-    def divide_slice_median(self, skyref, mask):
+    def divide_slice_median(self, skyref, pixmask):
         """Computes the median value for all slices and divides each pixel
         by the corresponding factor to bring all slices
         to the same median value.
@@ -2261,11 +2303,11 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref : string
-                 FITS file containig the reference sky spectrum
-        mask   : :class:`mpdaf.drs.PixTableMask`
-                 column corresponding to a mask file
-                 (previously computed by mask_column)
+        skyref  : string
+                  FITS file containig the reference sky spectrum
+        pixmask : :class:`mpdaf.drs.PixTableMask`
+                  column corresponding to a mask file
+                  (previously computed by mask_column)
         """
         d = {'class': 'PixTable', 'method': 'divide_slice_median'}
 
@@ -2276,12 +2318,12 @@ class PixTable(object):
         spe_skyref = Spectrum(skyref)
 
         # mask
-        if mask is None:
+        if pixmask is None:
             maskfile = ''
             maskcol = np.zeros(self.nrows).astype('bool')
         else:
-            maskfile = os.path.basename(mask.maskfile)
-            maskcol = mask.maskcol
+            maskfile = os.path.basename(pixmask.maskfile)
+            maskcol = pixmask.maskcol
 
         import mpdaf
         import ctypes
