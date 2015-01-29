@@ -145,9 +145,19 @@ class CubeList(object):
                       for the combination of each pixel.
         output_path : string
                       Output path where resulted cubes are stored.
+                      
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Cube`
         """
         import mpdaf
         import ctypes
+        
+        try:
+            os.remove(output_path + '/DATACUBE_' + output + '.fits')
+            os.remove(output_path + '/EXPMAP_' + output + '.fits')
+        except OSError:
+            pass
 
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods", mpdaf.__path__[0])
@@ -156,7 +166,19 @@ class CubeList(object):
         # setup argument types
         libCmethods.mpdaf_merging_median.argtypes = [charptr, charptr]
         # run C method
-        libCmethods.mpdaf_merging_median(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path))
+        libCmethods.mpdaf_merging_median(ctypes.c_char_p('\n'.join(self.files)),
+                                         ctypes.c_char_p(output),
+                                         ctypes.c_char_p(output_path))
+        
+        # update header
+        cub = Cube(output_path + '/DATACUBE_' + output + '.fits')
+        cub.fscale = self.fscale
+        add_mpdaf_method_keywords(cub.primary_header,
+                                  "obj.cubelist.median",
+                                  [], [], [])
+        cub.write(output_path + '/DATACUBE_' + output + '.fits')
+        
+        return cub
 
     def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var_mean=True):
         """merges cubes in a single data cube using sigma clipped mean.
@@ -190,6 +212,10 @@ class CubeList(object):
                       False: the variance of each combined pixel is computed
                       as the variance derived from the comparison of the
                       N individual exposures.
+                      
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Cube`
         """
         import mpdaf
         import ctypes
@@ -212,12 +238,18 @@ class CubeList(object):
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
         # setup argument types
-        libCmethods.mpdaf_merging_sigma_clipping.argtypes = [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int]
+        libCmethods.mpdaf_merging_sigma_clipping.argtypes = \
+        [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double, \
+         ctypes.c_double, ctypes.c_int, ctypes.c_int]
         # run C method
-        libCmethods.mpdaf_merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), ctypes.c_char_p(output), ctypes.c_char_p(output_path), nmax, np.float64(nclip_low), np.float64(nclip_up), nstop, np.int32(var_mean))
+        libCmethods.mpdaf_merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)), 
+                                                 ctypes.c_char_p(output),
+                                                 ctypes.c_char_p(output_path),
+                                                 nmax, np.float64(nclip_low),
+                                                 np.float64(nclip_up),
+                                                 nstop, np.int32(var_mean))
 
         # update header
-        print output_path + '/DATACUBE_' + output + '.fits'
         cub = Cube(output_path + '/DATACUBE_' + output + '.fits')
         cub.fscale = self.fscale
         add_mpdaf_method_keywords(cub.primary_header,
@@ -230,3 +262,5 @@ class CubeList(object):
                                    'clipping minimum number',
                                    'variance divided or not by N-1'])
         cub.write(output_path + '/DATACUBE_' + output + '.fits')
+        
+        return cub
