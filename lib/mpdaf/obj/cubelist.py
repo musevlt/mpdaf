@@ -32,6 +32,8 @@ class CubeList(object):
              World coordinates.
     wave   : :class:`mpdaf.obj.WaveCoord`
              Wavelength coordinates
+    unit   : string
+             Possible data unit type. None by default.
     """
 
     def __init__(self, files):
@@ -50,6 +52,7 @@ class CubeList(object):
         self.fscale = None
         self.wcs = None
         self.wave = None
+        self.unit = None
         self.check_compatibility()
 
     def __getitem__(self, item):
@@ -113,19 +116,28 @@ class CubeList(object):
         return True
 
     def check_fscale(self):
-        """Checks if all cubes have same scale factor."""
+        """Checks if all cubes have same unit and same scale factor."""
         d = {'class': 'CubeList', 'method': 'check_fscale'}
         fscale = np.array([cube.fscale for cube in self.cubes])
+        unit = np.array([cube.unit for cube in self.cubes])
 
-        if len(np.unique(fscale)) == 1:
+        if len(np.unique(fscale)) == 1 and len(np.unique(unit)):
             self.fscale = fscale[0]
+            self.unit = unit[0]
             return True
         else:
-            msg = 'all cubes have not same scale factor'
-            self.logger.info(msg, extra=d)
-            for i in range(self.nfiles):
-                msg = 'fscale=%g (%s)' % (fscale[i], self.files[i])
+            if len(np.unique(fscale)) > 1:
+                msg = 'all cubes have not same scale factor'
                 self.logger.info(msg, extra=d)
+                for i in range(self.nfiles):
+                    msg = 'FSCALE=%g (%s)' % (fscale[i], self.files[i])
+                    self.logger.info(msg, extra=d)
+            if len(np.unique(unit)) > 1:
+                msg = 'all cubes have not same unit'
+                self.logger.info(msg, extra=d)
+                for i in range(self.nfiles):
+                    msg = 'BUNIT=%g (%s)' % (unit[i], self.files[i])
+                    self.logger.info(msg, extra=d)
             return False
 
     def check_compatibility(self):
