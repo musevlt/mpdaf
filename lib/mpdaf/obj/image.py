@@ -4655,7 +4655,7 @@ class Image(object):
     def _on_move(self, event):
         """prints y,x,p,q and data in the figure toolbar."""
         if event.inaxes is not None:
-            j, i = event.xdata, event.ydata
+            j, i = int(event.xdata), int(event.ydata)
             try:
                 pixsky = self.wcs.pix2sky([i, j])
                 yc = pixsky[0][0]
