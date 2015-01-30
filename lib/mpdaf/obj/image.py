@@ -1682,7 +1682,7 @@ class Image(object):
         """
         center = np.array(center)
         radius = np.array(radius)
-        
+
         if not pix:
             center = self.wcs.sky2pix(center)[0]
             radius = radius / np.abs(self.wcs.get_step()) / 3600.
@@ -1693,7 +1693,7 @@ class Image(object):
         imax, jmax = np.maximum(np.minimum((center + maxradius + 0.5).astype(int), [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
         imax += 1
         jmax += 1
-        
+
         cospa = np.cos(np.radians(posangle))
         sinpa = np.sin(np.radians(posangle))
 
@@ -2016,13 +2016,11 @@ class Image(object):
         -------
         out : 2-dim float array
         """
-        tab = self.data
-        mean = np.ma.mean
-        std = np.ma.std
+        tab = self.data.compressed()
 
         for n in range(niter + 1):
-            tab = tab[tab <= (mean(tab) + sigma * std(tab))]
-        return np.array([mean(tab), std(tab)]) * self.fscale
+            tab = tab[tab <= (tab.mean() + sigma * tab.std())]
+        return np.array([tab.mean(), tab.std()]) * self.fscale
 
     def _struct(self, n):
         struct = np.zeros([n, n])
