@@ -1,13 +1,16 @@
 """pixtable.py Manages MUSE pixel table files."""
 
+import ctypes
 import datetime
 import logging
 import os.path
 import numpy as np
-import warnings
-from astropy.io import fits as pyfits
-from scipy import interpolate, ndimage
 import string
+import warnings
+
+from astropy.io import fits as pyfits
+from astropy.io.fits import Column, ImageHDU
+from scipy import interpolate, ndimage
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
 from ..obj.objs import is_float, is_int
@@ -59,7 +62,7 @@ class PixTableMask(object):
             self.maskfile = hdulist[0].header['mask']
             self.pixtable = hdulist[0].header['pixtable']
             self.maskcol = np.bool_(hdulist['maskcol'].data[:, 0])
-        
+
     def write(self, filename):
         """Saves the object in a FITS file.
 
@@ -71,18 +74,21 @@ class PixTableMask(object):
         prihdu = pyfits.PrimaryHDU()
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
-        add_mpdaf_method_keywords(prihdu.header, 'mpdaf.drs.pixtable.mask_column',
-                                  [],[],[])
-        prihdu.header['pixtable'] = (os.path.basename(self.pixtable), 'pixtable')
-        prihdu.header['mask'] = (os.path.basename(self.maskfile), 'file to mask out all bright obj')
+        add_mpdaf_method_keywords(prihdu.header,
+                                  'mpdaf.drs.pixtable.mask_column',
+                                  [], [], [])
+        prihdu.header['pixtable'] = (os.path.basename(self.pixtable),
+                                     'pixtable')
+        prihdu.header['mask'] = (os.path.basename(self.maskfile),
+                                 'file to mask out all bright obj')
         hdulist = [prihdu]
         nrows = self.maskcol.shape[0]
-        hdulist.append(pyfits.ImageHDU(name='maskcol',
-                                       data=np.int32(self.maskcol.reshape((nrows, 1)))))
+        hdulist.append(ImageHDU(name='maskcol',
+                                data=np.int32(self.maskcol.reshape((nrows, 1)))))
         hdu = pyfits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = 'boolean'
         hdu.writeto(filename, clobber=True, output_verify='fix')
-        
+
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
           primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom',
@@ -123,26 +129,20 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
     prihdu.header['author'] = ('MPDAF', 'origin of the file')
 
     if save_as_ima:
-        hdulist = [prihdu]
         nrows = xpos.shape[0]
-        hdulist.append(pyfits.ImageHDU(name='xpos',
-                                       data=np.float32(xpos.reshape((nrows, 1)))))
-        hdulist.append(pyfits.ImageHDU(name='ypos',
-                                       data=np.float32(ypos.reshape((nrows, 1)))))
-        hdulist.append(pyfits.ImageHDU(name='lambda',
-                                       data=np.float32(lbda.reshape((nrows, 1)))))
-        hdulist.append(pyfits.ImageHDU(name='data',
-                                       data=np.float32(data.reshape((nrows, 1)))))
-        hdulist.append(pyfits.ImageHDU(name='dq',
-                                       data=np.int32(dq.reshape((nrows, 1)))))
-        hdulist.append(pyfits.ImageHDU(name='stat',
-                                       data=np.float32(stat.reshape((nrows, 1)))))
-        hdulist.append(pyfits.ImageHDU(name='origin',
-                                       data=np.int32(origin.reshape((nrows,
-                                                                     1)))))
+        hdulist = [
+            prihdu,
+            ImageHDU(name='xpos', data=np.float32(xpos.reshape((nrows, 1)))),
+            ImageHDU(name='ypos', data=np.float32(ypos.reshape((nrows, 1)))),
+            ImageHDU(name='lambda', data=np.float32(lbda.reshape((nrows, 1)))),
+            ImageHDU(name='data', data=np.float32(data.reshape((nrows, 1)))),
+            ImageHDU(name='dq', data=np.int32(dq.reshape((nrows, 1)))),
+            ImageHDU(name='stat', data=np.float32(stat.reshape((nrows, 1)))),
+            ImageHDU(name='origin', data=np.int32(origin.reshape((nrows, 1)))),
+        ]
         if weight is not None:
-            hdulist.append(pyfits.ImageHDU(name='weight',
-                                           data=np.float32(weight.reshape((nrows, 1)))))
+            hdulist.append(ImageHDU(name='weight',
+                                    data=np.float32(weight.reshape((nrows, 1)))))
         hdu = pyfits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = wcs
         hdu[2].header['BUNIT'] = wcs
@@ -151,29 +151,31 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
         hdu[6].header['BUNIT'] = unit_stat
         if weight is not None:
             hdu[8].header['BUNIT'] = unit_data
-        hdu.writeto(filename, clobber=True, output_verify='fix')
     else:
-        cols = []
-        cols.append(pyfits.Column(name='xpos', format='1E', unit=wcs,
-                                  array=np.float32(xpos)))
-        cols.append(pyfits.Column(name='ypos', format='1E', unit=wcs,
-                                  array=np.float32(ypos)))
-        cols.append(pyfits.Column(name='lambda', format='1E',
-                                  unit='Angstrom', array=lbda))
-        cols.append(pyfits.Column(name='data', format='1E', unit=unit_data,
-                                  array=np.float32(data)))
-        cols.append(pyfits.Column(name='dq', format='1J', array=np.int32(dq)))
-        cols.append(pyfits.Column(name='stat', format='1E', unit=unit_stat,
-                                  array=np.float32(stat)))
-        cols.append(pyfits.Column(name='origin', format='1J', array=np.int32(origin)))
+        cols = [
+            Column(name='xpos', format='1E', unit=wcs,
+                   array=np.float32(xpos)),
+            Column(name='ypos', format='1E', unit=wcs,
+                   array=np.float32(ypos)),
+            Column(name='lambda', format='1E', unit='Angstrom',
+                   array=lbda),
+            Column(name='data', format='1E', unit=unit_data,
+                   array=np.float32(data)),
+            Column(name='dq', format='1J', array=np.int32(dq)),
+            Column(name='stat', format='1E', unit=unit_stat,
+                   array=np.float32(stat)),
+            Column(name='origin', format='1J',
+                   array=np.int32(origin)),
+        ]
+
         if weight is not None:
-            cols.append(pyfits.Column(name='weight', format='1E',
-                                      unit=unit_data, array=np.float32(weight)))
+            cols.append(Column(name='weight', format='1E',
+                               unit='count', array=np.float32(weight)))
         coltab = pyfits.ColDefs(cols)
-        #tbhdu = pyfits.new_table(coltab)
         tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
-        thdulist = pyfits.HDUList([prihdu, tbhdu])
-        thdulist.writeto(filename, clobber=True, output_verify='fix')
+        hdu = pyfits.HDUList([prihdu, tbhdu])
+
+    hdu.writeto(filename, clobber=True, output_verify='fix')
 
     warnings.simplefilter("default")
 
@@ -214,7 +216,7 @@ class PixTable(object):
     def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None,
                  dq=None, stat=None, origin=None, weight=None,
                  primary_header=None, save_as_ima=True, wcs='pix',
-                 wave='Angstrom', unit_data = 'count', unit_stat = 'count**2'):
+                 wave='Angstrom', unit_data='count', unit_stat='count**2'):
         """Creates a PixTable object.
 
         Parameters
@@ -951,14 +953,14 @@ class PixTable(object):
             return None
 
         # To start select the whole pixtable
-        kmask = np.ones(self.nrows).astype('bool')
+        kmask = np.ones(self.nrows, dtype=bool)
 
         # Do the selection on the sky
         if sky is not None:
             xpos, ypos = self.get_pos_sky(self.get_xpos(), self.get_ypos())
             if (isinstance(sky, tuple)):
                 sky = [sky]
-            mask = np.zeros(self.nrows).astype('bool')
+            mask = np.zeros(self.nrows, dtype=bool)
             for y0, x0, size, shape in sky:
                 if shape == 'C':
                     if self.wcs == 'deg':
@@ -1001,7 +1003,7 @@ class PixTable(object):
             col_lambda = self.get_lambda()
             if (isinstance(lbda, tuple)):
                 lbda = [lbda]
-            mask = np.zeros(self.nrows).astype('bool')
+            mask = np.zeros(self.nrows, dtype=bool)
             for l1, l2 in lbda:
                 mask |= (col_lambda >= l1) & (col_lambda < l2)
             kmask &= mask
@@ -1014,7 +1016,7 @@ class PixTable(object):
             col_origin = self.get_origin()
             if sl is not None:
                 if hasattr(sl, '__iter__'):
-                    mask = np.zeros(self.nrows).astype('bool')
+                    mask = np.zeros(self.nrows, dtype=bool)
                     for s in sl:
                         mask |= (self.origin2slice(col_origin) == s)
                     kmask &= mask
@@ -1023,7 +1025,7 @@ class PixTable(object):
                     kmask &= (self.origin2slice(col_origin) == sl)
             if ifu is not None:
                 if hasattr(ifu, '__iter__'):
-                    mask = np.zeros(self.nrows).astype('bool')
+                    mask = np.zeros(self.nrows, dtype=bool)
                     for i in ifu:
                         mask |= (self.origin2ifu(col_origin) == i)
                     kmask &= mask
@@ -1033,7 +1035,7 @@ class PixTable(object):
             if xpix is not None:
                 col_xpix = self.origin2xpix(col_origin)
                 if hasattr(xpix, '__iter__'):
-                    mask = np.zeros(self.nrows).astype('bool')
+                    mask = np.zeros(self.nrows, dtype=bool)
                     for x1, x2 in xpix:
                         mask |= (col_xpix >= x1) & (col_xpix < x2)
                     kmask &= mask
@@ -1045,7 +1047,7 @@ class PixTable(object):
             if ypix is not None:
                 col_ypix = self.origin2ypix(col_origin)
                 if hasattr(ypix, '__iter__'):
-                    mask = np.zeros(self.nrows).astype('bool')
+                    mask = np.zeros(self.nrows, dtype=bool)
                     for y1, y2 in ypix:
                         mask |= (col_ypix >= y1) & (col_ypix < y2)
                     kmask &= mask
@@ -1060,7 +1062,7 @@ class PixTable(object):
         if exp is not None:
             col_exp = self.get_exp()
             if col_exp is not None:
-                mask = np.zeros(self.nrows).astype('bool')
+                mask = np.zeros(self.nrows, dtype=bool)
                 for iexp in exp:
                     mask |= (col_exp == iexp)
                 kmask &= mask
@@ -1212,7 +1214,7 @@ class PixTable(object):
             return None
 
         # To start select the whole pixtable
-        kmask = np.ones(self.nrows).astype('bool')
+        kmask = np.ones(self.nrows, dtype=bool)
 
         # Do the selection on the sky
         if sky is not None:
@@ -1220,7 +1222,7 @@ class PixTable(object):
             pi = np.pi
             if (isinstance(sky, tuple)):
                 sky = [sky]
-            mask = np.zeros(self.nrows).astype('bool')
+            mask = np.zeros(self.nrows, dtype=bool)
             for y0, x0, size, shape in sky:
                 if shape == 'C':
                     if self.wcs == 'deg':
@@ -1248,7 +1250,7 @@ class PixTable(object):
             col_lambda = self.get_lambda()
             if (isinstance(lbda, tuple)):
                 lbda = [lbda]
-            mask = np.zeros(self.nrows).astype('bool')
+            mask = np.zeros(self.nrows, dtype=bool)
             for l1, l2 in lbda:
                 mask |= numexpr.evaluate('(col_lambda >= l1) & (col_lambda < l2)')
             kmask &= mask
@@ -1261,7 +1263,7 @@ class PixTable(object):
             col_origin = self.get_origin()
             if sl is not None:
                 if hasattr(sl, '__iter__'):
-                    mask = np.zeros(self.nrows).astype('bool')
+                    mask = np.zeros(self.nrows, dtype=bool)
                     sli = self.origin2slice(col_origin)
                     for s in sl:
                         mask |= numexpr.evaluate('sli == s')
@@ -1273,7 +1275,7 @@ class PixTable(object):
                     del sli
             if ifu is not None:
                 if hasattr(ifu, '__iter__'):
-                    mask = np.zeros(self.nrows).astype('bool')
+                    mask = np.zeros(self.nrows, dtype=bool)
                     _i = self.origin2ifu(col_origin)
                     for i in ifu:
                         mask |= numexpr.evaluate('_i == i')
@@ -1286,7 +1288,7 @@ class PixTable(object):
             if xpix is not None:
                 col_xpix = self.origin2xpix(col_origin)
                 if hasattr(xpix, '__iter__'):
-                    mask = np.zeros(self.nrows).astype('bool')
+                    mask = np.zeros(self.nrows, dtype=bool)
                     for x1, x2 in xpix:
                         mask |= numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
                     kmask &= mask
@@ -1298,7 +1300,7 @@ class PixTable(object):
             if ypix is not None:
                 col_ypix = self.origin2ypix(col_origin)
                 if hasattr(ypix, '__iter__'):
-                    mask = np.zeros(self.nrows).astype('bool')
+                    mask = np.zeros(self.nrows, dtype=bool)
                     for y1, y2 in ypix:
                         mask |= numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
                     kmask &= mask
@@ -1313,7 +1315,7 @@ class PixTable(object):
         if exp is not None:
             col_exp = self.get_exp()
             if col_exp is not None:
-                mask = np.zeros(self.nrows).astype('bool')
+                mask = np.zeros(self.nrows, dtype=bool)
                 for iexp in exp:
                     mask |= numexpr.evaluate('col_exp == iexp')
                 kmask &= mask
@@ -1946,7 +1948,7 @@ class PixTable(object):
         """
         d = {'class': 'PixTable', 'method': 'mask_column'}
 
-        mask = np.zeros(self.nrows, dtype=np.bool)
+        mask = np.zeros(self.nrows, dtype=bool)
         if maskfile is None:
             return mask
 
@@ -1958,8 +1960,8 @@ class PixTable(object):
         label = ndimage.measurements.label(ima_mask.data.data)[0]
         ulabel = np.unique(label)
         ulabel = ulabel[ulabel > 0]
-        
-        n= len(ulabel)
+
+        n = len(ulabel)
 
         for i in ulabel:
             try:
@@ -1980,10 +1982,11 @@ class PixTable(object):
                 if len(ksel[0]) != 0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
                     mask[ksel] |= (ima_mask.data.data[pix[:, 0], pix[:, 1]] != 0)
-            except Exception as e:
+            except Exception:
                 self.logger.warning('masking object %i failed', i, extra=d)
 
-        return PixTableMask(maskfile=maskfile, maskcol=mask, pixtable=self.filename)
+        return PixTableMask(maskfile=maskfile, maskcol=mask,
+                            pixtable=self.filename)
 
     def old_subtract_slice_median(self, pixmask=None, norm='sky'):
         """Computes the median value for all slices and applies in place a
@@ -2008,13 +2011,12 @@ class PixTable(object):
 
         if pixmask is None:
             maskfile = ''
-            mask = np.zeros(self.nrows).astype('bool')
+            mask = np.zeros(self.nrows, dtype=bool)
         else:
             maskfile = os.path.basename(pixmask.maskfile)
             mask = pixmask.maskcol
 
         import mpdaf
-        import ctypes
 
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods",
@@ -2046,14 +2048,13 @@ class PixTable(object):
             skysub = 0
         skysub = np.int32(skysub)
 
-        result = np.empty_like(data).astype(np.float64)
-        corr = np.empty(24 * 48).astype(np.float64)
-        npts = np.empty(24 * 48).astype(np.int32)
+        result = np.empty_like(data, dtype=np.float64)
+        corr = np.empty(24 * 48, dtype=np.float64)
+        npts = np.empty(24 * 48, dtype=np.int32)
 
-        libCmethods.mpdaf_old_subtract_slice_median(result, corr, npts,
-                                                    ifu, sli, data, lbda,
-                                                    data.shape[0], mask,
-                                                    skysub)
+        libCmethods.mpdaf_old_subtract_slice_median(
+            result, corr, npts, ifu, sli, data, lbda,
+            data.shape[0], mask, skysub)
 
         # set pixtable data
         self.set_data(result)
@@ -2081,8 +2082,9 @@ class PixTable(object):
                                   ['file to mask out all bright objects',
                                    'Option for sky subtraction'])
 
-        self.logger.info('pixtable %s updated' % os.path.basename(self.filename), extra=d)
-        self.logger.info('%s saved' % filename, extra=d)
+        self.logger.info('pixtable %s updated',
+                         os.path.basename(self.filename), extra=d)
+        self.logger.info('%s saved', filename, extra=d)
 
         # close libray
         #import _ctypes
@@ -2118,14 +2120,13 @@ class PixTable(object):
         # mask
         if pixmask is None:
             maskfile = ''
-            mask = np.zeros(self.nrows).astype('bool')
+            mask = np.zeros(self.nrows, dtype=bool)
         else:
             maskfile = os.path.basename(pixmask.maskfile)
             mask = pixmask.maskcol
 
         # sigma clipped parameters
         import mpdaf
-        import ctypes
         if is_int(nclip) or is_float(nclip):
             nclip_low = nclip
             nclip_up = nclip
@@ -2160,7 +2161,7 @@ class PixTable(object):
         data = data.astype(np.float64)
         lbda = lbda.astype(np.float64)
         mask = mask.astype(np.int32)
-        result = np.empty(n).astype(np.float64)
+        result = np.empty(n, dtype=np.float64)
         # run C method
         libCmethods.mpdaf_sky_ref(data, lbda, mask, data.shape[0],
                                   np.float64(lmin),
@@ -2212,14 +2213,12 @@ class PixTable(object):
         # mask
         if pixmask is None:
             maskfile = ''
-            maskcol = np.zeros(self.nrows).astype('bool')
+            maskcol = np.zeros(self.nrows, dtype=bool)
         else:
             maskfile = os.path.basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
 
         import mpdaf
-        import ctypes
-        #global libCmethods
 
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods",
@@ -2250,13 +2249,13 @@ class PixTable(object):
         skyref_lbda = spe_skyref.wave.coord()
         skyref_n = spe_skyref.shape
 
-        result = np.empty_like(data).astype(np.float64)
-        corr = np.empty(24 * 48).astype(np.float64)
-        npts = np.empty(24 * 48).astype(np.int32)
+        result = np.empty_like(data, dtype=np.float64)
+        corr = np.empty(24 * 48, dtype=np.float64)
+        npts = np.empty(24 * 48, dtype=np.int32)
 
-        libCmethods.mpdaf_subtract_slice_median(result, corr, npts, ifu, sli, data, lbda,
-                                                data.shape[0], mask, skyref_flux,
-                                                skyref_lbda, skyref_n)
+        libCmethods.mpdaf_subtract_slice_median(
+            result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
+            skyref_flux, skyref_lbda, skyref_n)
 
         # set pixtable data
         self.set_data(result)
@@ -2284,8 +2283,9 @@ class PixTable(object):
                                   ['file to mask out all bright objects',
                                    'reference sky spectrum'])
 
-        self.logger.info('pixtable %s updated' % os.path.basename(self.filename), extra=d)
-        self.logger.info('%s saved' % filename, extra=d)
+        self.logger.info('pixtable %s updated',
+                         os.path.basename(self.filename), extra=d)
+        self.logger.info('%s saved', filename, extra=d)
 
         # close libray
         #import _ctypes
@@ -2320,14 +2320,12 @@ class PixTable(object):
         # mask
         if pixmask is None:
             maskfile = ''
-            maskcol = np.zeros(self.nrows).astype('bool')
+            maskcol = np.zeros(self.nrows, dtype=bool)
         else:
             maskfile = os.path.basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
 
         import mpdaf
-        import ctypes
-        #global libCmethods
 
         # load the library, using numpy mechanisms
         libCmethods = np.ctypeslib.load_library("libCmethods",
@@ -2360,15 +2358,14 @@ class PixTable(object):
         skyref_lbda = spe_skyref.wave.coord()
         skyref_n = spe_skyref.shape
 
-        result = np.empty_like(data).astype(np.float64)
-        result_stat = np.empty_like(stat).astype(np.float64)
-        corr = np.empty(24 * 48).astype(np.float64)
-        npts = np.empty(24 * 48).astype(np.int32)
+        result = np.empty_like(data, dtype=np.float64)
+        result_stat = np.empty_like(stat, dtype=np.float64)
+        corr = np.empty(24 * 48, dtype=np.float64)
+        npts = np.empty(24 * 48, dtype=np.int32)
 
-        libCmethods.mpdaf_divide_slice_median(result, result_stat, corr, npts,
-                                              ifu, sli, data, stat, lbda,
-                                              data.shape[0], mask, skyref_flux,
-                                              skyref_lbda, skyref_n)
+        libCmethods.mpdaf_divide_slice_median(
+            result, result_stat, corr, npts, ifu, sli, data, stat, lbda,
+            data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n)
 
         # set pixtable data
         self.set_data(result)
@@ -2397,8 +2394,9 @@ class PixTable(object):
                        npts, corr),
                    fmt='%02d %02d %d %g', header=header)
 
-        self.logger.info('pixtable %s updated' % os.path.basename(self.filename), extra=d)
-        self.logger.info('%s saved' % filename, extra=d)
+        self.logger.info('pixtable %s updated',
+                         os.path.basename(self.filename), extra=d)
+        self.logger.info('%s saved', filename, extra=d)
 
         # close libray
         #import _ctypes
