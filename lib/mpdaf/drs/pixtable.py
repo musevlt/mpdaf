@@ -26,32 +26,50 @@ class PixTableMask(object):
 
     """PixTableMask class.
 
-    This class manages input/output for MUSE pixel table files
+    This class manages input/output for MUSE pixel mask files
 
     Parameters
     ----------
-    filename : string
-               The mask file name.
-    mask     : array of boolean
-               pixtable column corresponding to the mask
+    filename : string or None
+               Name of the FITS table containing the masked column.
+               If PixTableMask object is loaded from a FITS file,
+               the others parameters are not read but loaded from
+               the FITS file.
+    maskfile : string or None
+               Name of the FITS image masking some objects.
+    maskcol  : array of boolean or None
+               pixtable's column corresponding to the mask
+    pixtable : string or None
+               Name of the corresponding pixel table.
 
     Attributes
     ----------
     filename : string
-               The mask file name.
-    mask     : array of boolean
-               pixtable column corresponding to the mask
+               Name of the FITS table containing the masked column.
+    maskfile : string
+               Name of the FITS image masking some objects.
+    maskcol  : array of boolean
+               pixtable's column corresponding to the mask
+    pixtable : string
+               Name of the corresponding pixel table.
     """
 
     def __init__(self, filename=None, maskfile=None, maskcol=None, pixtable=None):
-        """creates a PixTable object.
+        """creates a PixTableMask object.
 
         Parameters
         ----------
-        filename : string
-                   The mask file name.
-        mask     : array of boolean
-                   pixtable column corresponding to the mask
+        filename : string or None
+                   Name of the FITS table containing the masked column.
+                   If PixTableMask object is loaded from a FITS file,
+                   the others parameters are not read but loaded from
+                   the FITS file.
+        maskfile : string or None
+                   Name of the FITS image masking some objects.
+        maskcol  : array of boolean or None
+                   pixtable's column corresponding to the mask
+        pixtable : string or None
+                   Name of the corresponding pixel table.
         """
         if filename is None:
             self.maskfile = maskfile
@@ -88,6 +106,138 @@ class PixTableMask(object):
         hdu = pyfits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = 'boolean'
         hdu.writeto(filename, clobber=True, output_verify='fix')
+
+
+class PixTableAutoCalib(object):
+
+    """PixTableAutoCalib class.
+
+    This class manages input/output for file
+    containing auto calibration results
+    of MUSE pixel table files
+
+    Parameters
+    ----------
+    filename : string
+               The FITS file name.
+               If PixTableAutoCalib object is loaded from a FITS file,
+               the others parameters are not read but loaded from
+               the FITS file.
+    method   : string or None
+               Name of the auto calibration method.
+    maskfile : string or None
+               Name of the FITS image masking some objects.
+    skyref   : string or None
+               sky reference spectrum.
+    pixtable : string or None
+               Name of the corresponding pixel table.
+    ifu      : array of integer or None
+               channel numbers.
+    sli      : array of integer or None
+               slice numbers.
+    npts     : array of integer or None
+               number of remaining pixels.
+    corr     : array of float or None
+               correction value.
+
+    Attributes
+    ----------
+    filename : string
+               The FITS file name.
+    method   : string
+               Name of the auto calibration method.
+    maskfile : string
+               Name of the FITS image masking some objects.
+    skyref   : string
+               sky reference spectrum.
+    pixtable : string
+               Name of the corresponding pixel table.
+    ifu      : array of integer
+               channel numbers.
+    sli      : array of integer
+               slice numbers.
+    npts     : array of integer
+               number of remaining pixels.
+    corr     : array of float
+               correction value.
+    
+    """
+
+    def __init__(self, filename=None, method=None, maskfile=None, skyref=None, pixtable=None,
+                 ifu=None, sli=None, npts=None, corr=None):
+        """creates a PixTableAutoCalib object.
+        
+        Parameters
+        ----------
+        filename : string
+                   The FITS file name.
+                   If PixTableAutoCalib object is loaded from a FITS file,
+                   the others parameters are not read but loaded from
+                   the FITS file.
+        method   : string or None
+                   Name of the auto calibration method.
+        maskfile : string or None
+                   Name of the FITS image masking some objects.
+        skyref   : string or None
+                   sky reference spectrum.
+        pixtable : string or None
+                   Name of the corresponding pixel table.
+        ifu      : array of integer or None
+                   channel numbers.
+        sli      : array of integer or None
+                   slice numbers.
+        npts     : array of integer or None
+                   number of remaining pixels.
+        corr     : array of float or None
+                   correction value.
+        """
+        if filename is None:
+            self.method = method
+            self.maskfile = maskfile
+            self.skyref = skyref
+            self.pixtable = pixtable
+            self.ifu = ifu
+            self.sli = sli
+            self.npts = npts
+            self.corr = corr
+        else:
+            hdulist = pyfits.open(filename)
+            self.method = hdulist[0].header['method']
+            self.maskfile = hdulist[0].header['mask']
+            self.skyref = hdulist[0].header['skyref']
+            self.pixtable = hdulist[0].header['pixtable']
+            self.ifu = hdulist['ifu'].data[:, 0]
+            self.sli = hdulist['sli'].data[:, 0]
+            self.npts = hdulist['npts'].data[:, 0]
+            self.corr = hdulist['corr'].data[:, 0]
+
+    def write(self, filename):
+        """Saves the object in a FITS file.
+        """
+        prihdu = pyfits.PrimaryHDU()
+        prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
+        prihdu.header['author'] = ('MPDAF', 'origin of the file')
+        add_mpdaf_method_keywords(prihdu.header,
+                                  'mpdaf.drs.PixTableAutoCalib.write',
+                                  [], [], [])
+        prihdu.header['method'] = (self.method, 'auto calib method')
+        prihdu.header['pixtable'] = (os.path.basename(self.pixtable),
+                                     'pixtable')
+        prihdu.header['mask'] = (os.path.basename(self.maskfile),
+                                 'file to mask out all bright obj')
+        prihdu.header['skyref'] = (os.path.basename(self.skyref),
+                                 'reference sky spectrum')
+        
+        nrows = self.corr.shape[0]
+        hdulist = [
+            prihdu,
+            ImageHDU(name='ifu', data=np.int32(self.ifu.reshape((nrows, 1)))),
+            ImageHDU(name='sli', data=np.int32(self.sli.reshape((nrows, 1)))),
+            ImageHDU(name='npts', data=np.int32(self.npts.reshape((nrows, 1)))),
+            ImageHDU(name='corr', data=np.float64(self.corr.reshape((nrows, 1))))]
+        hdu = pyfits.HDUList(hdulist)
+        hdu.writeto(filename, clobber=True, output_verify='fix')
+
 
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
@@ -2002,6 +2152,10 @@ class PixTable(object):
                   (previously computed by mask_column)
         norm    : string
                   Option for sky subtraction 'sky' or 'zero'
+                  
+        Returns
+        -------
+        out : :class:`mpdaf.drs.PixTableAutoCalib`
         """
         d = {'class': 'PixTable', 'method': 'old_subtract_slice_median'}
 
@@ -2059,21 +2213,13 @@ class PixTable(object):
         # set pixtable data
         self.set_data(result)
 
-        # write autocalib file
-        filename = 'autocalib_' + \
-            string.replace(os.path.basename(self.filename), '.fits', '.txt')
-
-        header = 'ifu number| slice number | number of remaining pixels | correction value\n'
-        header += 'drs.pixtable.old_subtract_slice_median\n'
-        header += '   file to mask out all bright objects: %s\n' % maskfile
-        header += '   option for sky subtraction: %s\n' % norm
-
-        np.savetxt(filename,
-                   zip(np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
-                       np.ravel(np.resize(np.arange(1, 49), (24, 48))),
-                       npts, corr),
-                   fmt='%02d %02d %d %g', header=header)
-
+        # autocalib file
+        autocalib = PixTableAutoCalib(method='drs.pixtable.old_subtract_slice_median',
+                                      maskfile=maskfile, skyref=norm,
+                                      pixtable=os.path.basename(self.filename),
+                                      ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
+                                      sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+                                      npts=npts, corr=corr)
         # add keywords
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.old_subtract_slice_median",
@@ -2084,15 +2230,16 @@ class PixTable(object):
 
         self.logger.info('pixtable %s updated',
                          os.path.basename(self.filename), extra=d)
-        self.logger.info('%s saved', filename, extra=d)
-
+        
         # close libray
         #import _ctypes
         #_ctypes.dlclose(libCmethods._handle)
         #libCmethods._handle = None
         #libCmethods._name = None
         #libCmethods._FuncPtr = None
-        del libCmethods
+        #del libCmethods
+        return autocalib
+        
 
     def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
         """Computes the reference sky spectrum using sigma clipped median.
@@ -2201,6 +2348,9 @@ class PixTable(object):
         pixmask : :class:`mpdaf.drs.PixTableMask`
                   column corresponding to a mask file
                   (previously computed by mask_column)
+        Returns
+        -------
+        out : :class:`mpdaf.drs.PixTableAutoCalib` 
         """
         d = {'class': 'PixTable', 'method': 'subtract_slice_median'}
 
@@ -2260,20 +2410,13 @@ class PixTable(object):
         # set pixtable data
         self.set_data(result)
 
-        # write autocalib file
-        filename = 'autocalib_' + \
-            string.replace(os.path.basename(self.filename), '.fits', '.txt')
-
-        header = 'ifu number| slice number | number of remaining pixels | correction value\n'
-        header += 'drs.pixtable.subtract_slice_median\n'
-        header += '   file to mask out all bright objects: %s\n' % maskfile
-        header += '   reference sky spectrum: %s\n' % os.path.basename(skyref)
-
-        np.savetxt(filename,
-                   zip(np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
-                       np.ravel(np.resize(np.arange(1, 49), (24, 48))),
-                       npts, corr),
-                   fmt='%02d %02d %d %g', header=header)
+        # autocalib file
+        autocalib = PixTableAutoCalib(method='drs.pixtable.subtract_slice_median',
+                                      maskfile=maskfile, skyref=os.path.basename(skyref),
+                                      pixtable=os.path.basename(self.filename),
+                                      ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
+                                      sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+                                      npts=npts, corr=corr)
 
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,
@@ -2285,7 +2428,6 @@ class PixTable(object):
 
         self.logger.info('pixtable %s updated',
                          os.path.basename(self.filename), extra=d)
-        self.logger.info('%s saved', filename, extra=d)
 
         # close libray
         #import _ctypes
@@ -2293,7 +2435,8 @@ class PixTable(object):
         #libCmethods._handle = None
         #libCmethods._name = None
         #libCmethods._FuncPtr = None
-        del libCmethods
+        #del libCmethods
+        return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
         """Computes the median value for all slices and divides each pixel
@@ -2308,6 +2451,9 @@ class PixTable(object):
         pixmask : :class:`mpdaf.drs.PixTableMask`
                   column corresponding to a mask file
                   (previously computed by mask_column)
+        Returns
+        -------
+        out : :class:`mpdaf.drs.PixTableAutoCalib`
         """
         d = {'class': 'PixTable', 'method': 'divide_slice_median'}
 
@@ -2379,24 +2525,16 @@ class PixTable(object):
                                   ['file to mask out all bright objects',
                                    'reference sky spectrum'])
 
-        # write autocalib file
-        filename = 'autocalib_' + \
-            string.replace(os.path.basename(self.filename), '.fits', '.txt')
-
-        header = 'ifu number| slice number | number of remaining pixels | correction value\n'
-        header += 'drs.pixtable.divide_slice_median\n'
-        header += '   file to mask out all bright objects: %s\n' % maskfile
-        header += '   reference sky spectrum: %s\n' % os.path.basename(skyref)
-
-        np.savetxt(filename,
-                   zip(np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
-                       np.ravel(np.resize(np.arange(1, 49), (24, 48))),
-                       npts, corr),
-                   fmt='%02d %02d %d %g', header=header)
+        # autocalib file
+        autocalib = PixTableAutoCalib(method='drs.pixtable.divide_slice_median',
+                                      maskfile=maskfile, skyref=os.path.basename(skyref),
+                                      pixtable=os.path.basename(self.filename),
+                                      ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
+                                      sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+                                      npts=npts, corr=corr)
 
         self.logger.info('pixtable %s updated',
                          os.path.basename(self.filename), extra=d)
-        self.logger.info('%s saved', filename, extra=d)
 
         # close libray
         #import _ctypes
@@ -2404,4 +2542,5 @@ class PixTable(object):
         #libCmethods._handle = None
         #libCmethods._name = None
         #libCmethods._FuncPtr = None
-        del libCmethods
+        #del libCmethods
+        return autocalib
