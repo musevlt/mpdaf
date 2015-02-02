@@ -1873,7 +1873,7 @@ out : Spectrum
         return flux
 
     def sum(self, lmin=None, lmax=None, weight=True, spline=False):
-        """Computes the flux value over [lmin,lmax].
+        """Sums the flux value over [lmin,lmax].
 
         Parameters
         ----------
@@ -1911,8 +1911,40 @@ out : Spectrum
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
             flux = (i2 - i1) * np.average(data[i1:i2], weights=weights) * self.fscale
         else:
+            print i1,i2
             flux = data[i1:i2].sum() * self.fscale
         return flux
+    
+    def integrate(self, lmin=None, lmax=None, spline=False):
+        """Integrates the flux value over [lmin,lmax].
+
+        Parameters
+        ----------
+        lmin   : float
+                 Minimum wavelength.
+        lmax   : float
+                 Maximum wavelength.
+        spline : boolean
+                 Linear/spline interpolation
+                 to interpolate masked values.
+
+        Returns
+        -------
+        out : float
+        """
+        l1 = self.wave.pixel(lmin, False)
+        i1 = max(0, int(l1))
+        l2 = self.wave.pixel(lmax, False)
+        i2 = min(self.shape, int(l2)+1)
+        
+        d = self.wave.coord(np.arange(i1, i2+1))
+        d[0] = lmin
+        d[-1] = lmax
+        
+        # replace masked values by interpolated values
+        data = self._interp_data(spline)
+        
+        return (data[i1:i2] * np.diff(d)).sum() * self.fscale
 
     def poly_fit(self, deg, weight=True, maxiter=0,
                  nsig=(-3.0, 3.0), verbose=False):
