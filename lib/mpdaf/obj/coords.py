@@ -390,8 +390,8 @@ class WCS(object):
             x2 = other.pix2sky([0, 0])[0]
             if self.naxis1 == other.naxis1 and \
                 self.naxis2 == other.naxis2 and \
-               np.abs(x1[0] - x2[0]) < 1E-16 and \
-               np.abs(x1[1] - x2[1]) < 1E-16 and\
+               np.abs(x1[0] - x2[0]) < 1E-3 and \
+               np.abs(x1[1] - x2[1]) < 1E-3 and\
                (cdelt1 == cdelt2).all() and self.get_rot() == other.get_rot():
                 return True
             else:
