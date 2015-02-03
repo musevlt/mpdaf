@@ -1911,7 +1911,6 @@ out : Spectrum
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
             flux = (i2 - i1) * np.average(data[i1:i2], weights=weights) * self.fscale
         else:
-            print i1,i2
             flux = data[i1:i2].sum() * self.fscale
         return flux
     
