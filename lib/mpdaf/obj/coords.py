@@ -383,21 +383,18 @@ class WCS(object):
 
     def isEqual(self, other):
         """Returns True if other and self have the same attributes."""
-        if isinstance(other, WCS):
-            cdelt1 = self.get_step()
-            cdelt2 = other.get_step()
-            x1 = self.pix2sky([0, 0])[0]
-            x2 = other.pix2sky([0, 0])[0]
-            if self.naxis1 == other.naxis1 and \
-                self.naxis2 == other.naxis2 and \
-               np.abs(x1[0] - x2[0]) < 1E-3 and \
-               np.abs(x1[1] - x2[1]) < 1E-3 and\
-               (cdelt1 == cdelt2).all() and self.get_rot() == other.get_rot():
-                return True
-            else:
-                return False
-        else:
+        if not isinstance(other, WCS):
             return False
+
+        cdelt1 = self.get_step()
+        cdelt2 = other.get_step()
+        x1 = self.pix2sky([0, 0])[0]
+        x2 = other.pix2sky([0, 0])[0]
+        return (self.naxis1 == other.naxis1 and
+                self.naxis2 == other.naxis2 and
+                np.allclose(x1, x2, atol=1E-3, rtol=0) and
+                np.allclose(cdelt1, cdelt2) and
+                self.get_rot() == other.get_rot())
 
     def __getitem__(self, item):
         """Returns the corresponding WCS."""
