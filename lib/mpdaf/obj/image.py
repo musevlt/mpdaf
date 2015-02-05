@@ -588,17 +588,19 @@ class Image(object):
                         var=np.zeros(shape=self.shape), unit=self.unit)
         return ima
 
-    def write(self, filename, fscale=None, savemask=True):
+    def write(self, filename, fscale=None, savemask='dq'):
         """Saves the object in a FITS file.
 
         Parameters
         ----------
         filename : string
-                The FITS filename.
+                   The FITS filename.
         fscale   : float
-                Flux scaling factor.
-        savemask : boolean
-                If True, Image mask is saved in DQ extension
+                   Flux scaling factor.
+        savemask : string
+                   If 'dq', the mask array is saved in DQ extension.
+                   If 'nan', masked data are replaced by nan in DATA extension.
+                   If 'none', masked array is not saved.
         """
         # update fscale
         if fscale is None:
@@ -636,7 +638,11 @@ class Image(object):
         wcs_cards = self.wcs.to_header().cards
 
         # create spectrum DATA extension
-        tbhdu = pyfits.ImageHDU(name='DATA', data=(self.data.data
+        if savemask == 'nan':
+            data = self.data.filled(fill_value=np.nan)
+        else:
+            data = self.data.data
+        tbhdu = pyfits.ImageHDU(name='DATA', data=(data
                                                    * np.double(self.fscale / fscale))
                                 .astype(np.float32))
         for card in self.data_header.cards:
@@ -704,7 +710,7 @@ class Image(object):
             hdulist.append(nbhdu)
 
         # create DQ extension
-        if savemask and np.ma.count_masked(self.data) != 0:
+        if savemask=='dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
             for card in wcs_cards:
                 dqhdu.header[card.keyword] = (card.value, card.comment)

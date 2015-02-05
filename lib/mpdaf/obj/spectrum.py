@@ -456,7 +456,7 @@ class Spectrum(object):
                            var=np.zeros(shape=self.shape), unit=self.unit)
         return spe
 
-    def write(self, filename, fscale=None, savemask=True):
+    def write(self, filename, fscale=None, savemask='dq'):
         """Saves the object in a FITS file.
 
         Parameters
@@ -465,8 +465,10 @@ class Spectrum(object):
                    The FITS filename.
         fscale   : float
                    Flux scaling factor.
-        savemask : boolean
-                   If True, Spectrum mask is saved in DQ extension
+        savemask : string
+                   If 'dq', the mask array is saved in DQ extension.
+                   If 'nan', masked data are replaced by nan in DATA extension.
+                   If 'none', masked array is not saved.
         """
 
         assert self.data is not None
@@ -504,8 +506,12 @@ class Spectrum(object):
         hdulist = [prihdu]
 
         # create spectrum DATA extension
-        tbhdu = pyfits.ImageHDU(name='DATA', data=(self.data.data
-                                                   * np.double(self.fscale / fscale)).astype(np.float32))
+        if savemask == 'nan':
+            data = self.data.filled(fill_value=np.nan)
+        else:
+            data = self.data.data
+        tbhdu = pyfits.ImageHDU(name='DATA', data=(data
+                                * np.double(self.fscale / fscale)).astype(np.float32))
         for card in self.data_header.cards:
             try:
                 if tbhdu.header.keys().count(card.keyword) == 0:
@@ -547,7 +553,7 @@ class Spectrum(object):
             hdulist.append(nbhdu)
 
         # create spectrum DQ extension
-        if savemask and np.ma.count_masked(self.data) != 0:
+        if savemask=='dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
             dqhdu.header['CRVAL1'] = \
                 (self.wave.crval, 'Start in world coordinate')
