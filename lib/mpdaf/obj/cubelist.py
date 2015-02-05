@@ -77,11 +77,11 @@ class CubeList(object):
 
         if not np.all(shapes == shapes[0]):
             msg = 'all cubes have not same dimensions'
-            self.logger.info(msg, extra=d)
+            self.logger.warning(msg, extra=d)
             for i in range(self.nfiles):
                 msg = '%i X %i X %i cube (%s)' % (shapes[i, 0], shapes[i, 1],
                                                   shapes[i, 2], self.files[i])
-                self.logger.info(msg, extra=d)
+                self.logger.warning(msg, extra=d)
             return False
         else:
             self.shape = shapes[0, :]
@@ -98,7 +98,7 @@ class CubeList(object):
                     not cube.wave.isEqual(self.wave):
                 if not cube.wcs.isEqual(self.wcs):
                     msg = 'all cubes have not same spatial coordinates'
-                    self.logger.info(msg, extra=d)
+                    self.logger.warning(msg, extra=d)
                     self.logger.info(self.files[0], extra=d)
                     self.wcs.info()
                     self.logger.info(f, extra=d)
@@ -106,7 +106,7 @@ class CubeList(object):
                     self.wcs = None
                 if not cube.wave.isEqual(self.wave):
                     msg = 'all cubes have not same spectral coordinates'
-                    self.logger.info(msg, extra=d)
+                    self.logger.warning(msg, extra=d)
                     self.logger.info(self.files[0], extra=d)
                     self.wave.info()
                     self.logger.info(f, extra=d)
