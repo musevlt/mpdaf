@@ -68,3 +68,5 @@ from cube import iter_spe
 from cube import iter_ima
 import plt_zscale
 from cubelist import CubeList
+from source_detect import SourceCatalog
+from source_detect import SourceDetect3D
