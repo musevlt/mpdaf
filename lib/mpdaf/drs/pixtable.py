@@ -5,7 +5,6 @@ import datetime
 import logging
 import os.path
 import numpy as np
-import string
 import warnings
 
 from astropy.io import fits as pyfits
@@ -215,6 +214,7 @@ class PixTableAutoCalib(object):
         """Saves the object in a FITS file.
         """
         prihdu = pyfits.PrimaryHDU()
+        warnings.simplefilter("ignore")
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         add_mpdaf_method_keywords(prihdu.header,
@@ -237,6 +237,7 @@ class PixTableAutoCalib(object):
             ImageHDU(name='corr', data=np.float64(self.corr.reshape((nrows, 1))))]
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True, output_verify='fix')
+        warnings.simplefilter("default")
 
 
 
@@ -307,7 +308,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
                    array=np.float32(xpos)),
             Column(name='ypos', format='1E', unit=wcs,
                    array=np.float32(ypos)),
-            Column(name='lambda', format='1E', unit='Angstrom',
+            Column(name='lambda', format='1E', unit=wave,
                    array=lbda),
             Column(name='data', format='1E', unit=unit_data,
                    array=np.float32(data)),
@@ -356,8 +357,10 @@ class PixTable(object):
     fluxcal        : boolean
                      If True, this pixel table was flux-calibrated.
     wcs            : string
-                     Type of coordinates of this pixel table
+                     Type of spatial coordinates of this pixel table
                      ('pix', 'deg' or 'rad')
+    wave           : string
+                     Type of spectral coordinates of this pixel table
     ima            : boolean
                      If True, pixtable is saved as multi-extension FITS image
                      instead of FITS binary table.
@@ -2243,6 +2246,8 @@ class PixTable(object):
 
     def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
         """Computes the reference sky spectrum using sigma clipped median.
+        
+        Algorithm from Kurt Soto (kurt.soto@phys.ethz.ch)
 
         Parameters
         ----------
@@ -2443,6 +2448,8 @@ class PixTable(object):
         by the corresponding factor to bring all slices
         to the same median value.
         pix(x,y,lbda) /= < pix(x,y,lbda) / skyref(lbda) >_slice
+        
+        Algorithm from Kurt Soto (kurt.soto@phys.ethz.ch)
 
         Parameters
         ----------
