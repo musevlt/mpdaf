@@ -3173,6 +3173,10 @@ class Cube(CubeBase):
             (lbda1,lbda2) interval of wavelength.
         is_sum : boolean
                 if True the sum is computes, otherwise this is the average.
+                
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
         """
         d = {'class': 'Cube', 'method': 'get_image'}
         l1, l2 = wave
@@ -3196,8 +3200,12 @@ class Cube(CubeBase):
                 (dec,ra) is in degrees.
         radius : float
                 Radius of the aperture in arcsec.
+        
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Spectrum`
         """
-        d = {'class': 'Spectrum', 'method': 'aperture'}
+        d = {'class': 'Cube', 'method': 'aperture'}
         center = self.wcs.sky2pix(center)[0]
         radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
         radius2 = radius * radius
@@ -3238,7 +3246,9 @@ class Cube(CubeBase):
                 msg = 'returning spectrum at nearest spaxel'
                 self.logger.info(msg, extra=d)
         return spec
+    
 
+        
 
 def _process_spe(arglist):
     try:
