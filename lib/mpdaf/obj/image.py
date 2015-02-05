@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-import matplotlib.colors
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -4550,7 +4550,8 @@ class Image(object):
             raise IOError('Operation forbidden')
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
-             zscale=False, colorbar=None, var=False, **kargs):
+             zscale=False, colorbar=None, var=False, show_xlabel=True,
+             show_ylabel=True,  **kwargs):
         """Plots the image.
 
         Parameters
@@ -4574,8 +4575,8 @@ class Image(object):
         var      : boolean
                 If var is True, the inverse of variance
                 is overplotted.
-        kargs    : matplotlib.artist.Artist
-                kargs can be used to set additional Artist properties.
+        kwargs   : matplotlib.artist.Artist
+                kwargs can be used to set additional Artist properties.
 
         Returns
         -------
@@ -4583,27 +4584,26 @@ class Image(object):
         """
 
         f = self.data * self.fscale
-        xaxis = np.arange(self.shape[1], dtype=np.float)
-        yaxis = np.arange(self.shape[0], dtype=np.float)
-        xunit = 'pixel'
-        yunit = 'pixel'
+        xunit = yunit = 'pixel'
+        xlabel = 'q (%s)' % xunit
+        ylabel = 'p (%s)' % yunit
 
-        if np.shape(xaxis)[0] == 1:
-            # plot a  column
+        if self.shape[1] == 1:
+            # plot a column
+            yaxis = np.arange(self.shape[0], dtype=np.float)
             plt.plot(yaxis, f)
-            plt.xlabel('p (%s)' % yunit)
-            plt.ylabel(self.unit)
-        elif np.shape(yaxis)[0] == 1:
+            xlabel = 'p (%s)' % yunit
+            ylabel = self.unit
+        elif self.shape[0] == 1:
             # plot a line
+            xaxis = np.arange(self.shape[1], dtype=np.float)
             plt.plot(xaxis, f)
-            plt.xlabel('q (%s)' % xunit)
-            plt.ylabel(self.unit)
+            ylabel = self.unit
         else:
             if zscale:
                 vmin, vmax = plt_zscale.zscale(self.data.filled(0))
             if scale == 'log':
-                from matplotlib.colors import LogNorm
-                norm = LogNorm(vmin=vmin, vmax=vmax)
+                norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
             elif scale == 'arcsinh':
                 norm = plt_norm.ArcsinhNorm(vmin=vmin, vmax=vmax)
             elif scale == 'power':
@@ -4611,24 +4611,21 @@ class Image(object):
             elif scale == 'sqrt':
                 norm = plt_norm.SqrtNorm(vmin=vmin, vmax=vmax)
             else:
-                norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+                norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
 
-            if self.var is not None and var:
+            if var and self.var is not None:
                 wght = 1.0 / (self.var * self.fscale * self.fscale)
                 np.ma.fix_invalid(wght, copy=False, fill_value=0)
 
-                normalpha = matplotlib.colors.Normalize(wght.min(), wght.max())
+                normalpha = mpl.colors.Normalize(wght.min(), wght.max())
 
                 img_array = plt.get_cmap('jet')(norm(f))
                 img_array[:, :, 3] = 1 - normalpha(wght) / 2
-                cax = plt.imshow(img_array, interpolation='nearest', origin='lower',
-                                 norm=norm, **kargs)
+                cax = plt.imshow(img_array, interpolation='nearest',
+                                 origin='lower', norm=norm, **kwargs)
             else:
                 cax = plt.imshow(f, interpolation='nearest', origin='lower',
-                                 norm=norm, **kargs)
-
-            plt.xlabel('q (%s)' % xunit)
-            plt.ylabel('p (%s)' % yunit)
+                                 norm=norm, **kwargs)
 
             # create colorbar
             ax = plt.gca()
@@ -4644,11 +4641,13 @@ class Image(object):
             elif colorbar == "v":
                 cax2 = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(cax, cax=cax2)
-            else:
-                pass
 
             self._ax = cax
 
+        if show_xlabel:
+            plt.xlabel(xlabel)
+        if show_ylabel:
+            plt.ylabel(ylabel)
         if title is not None:
             plt.title(title)
 
