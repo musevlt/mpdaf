@@ -10,8 +10,8 @@ from scipy.stats import t
 from scipy import ndimage
 import os.path
 
-from ..obj import Cube, Image
-from ..tools.fits import add_mpdaf_method_keywords
+from ...obj import Cube, Image
+from ...tools.fits import add_mpdaf_method_keywords
 
 
 class SourceCatalog(object):
@@ -161,7 +161,7 @@ class SourceDetect3D(object):
         cube_w = np.nan_to_num(cube_w)
 
         # Compute the p-values with student cumulative distribution function with exposures-1 degrees of freedom
-        msg = 'Compute the p-values with student cumulative distribution function with expmap-1 degrees of freedom'
+        msg = 'Computing the p-values using student cumulative distribution function with expmap-1 degrees of freedom'
         self.logger.info(msg, extra=d)
         self.logger.info('Please note that it takes some time ...', extra=d)
 
@@ -202,7 +202,7 @@ class SourceDetect3D(object):
         cube = self.cube.data.data
 
         # Weighted cube
-        self.logger.info('Compute weighted cube', extra=d)
+        self.logger.info('Computing weighted cube', extra=d)
         if self.cube.var is not None:
             cube_w = cube/np.sqrt(self.cube.var)
         else:
@@ -215,15 +215,15 @@ class SourceDetect3D(object):
         # column
         Ny = self.cube.shape[1]
 
-        # Filter to remove the aberrant pixels
-        self.logger.info('Filter to remove the aberrant pixels', extra=d)
+        # Filter to remove deviant pixels
+        self.logger.info('Filtering to remove deviant pixels', extra=d)
         cartemin = np.amin(cube_w,axis=0)
         cartemax = np.amax(cube_w,axis=0)
 
         # p_values
         pval_t = Cube(p_values).data.data
 
-        self.logger.info('Detect where p-values<%g'%p0, extra=d)
+        self.logger.info('Detecting where p-values<%g'%p0, extra=d)
         # Find the minimum of the p-values 
         pval_inf_t = np.amin(pval_t, axis=0)
         lambda_cube =  np.argmax(cube_w, axis=0)
@@ -235,7 +235,7 @@ class SourceDetect3D(object):
         detect = np.zeros((Ny,Nx))
         detect[filtre] = wavelength[filtre]
 
-        self.logger.info('Find the 8 connected components', extra=d)
+        self.logger.info('Finding the 8 connected components', extra=d)
         # Count the objects detected
         # Find the 8 connected components in binary image
         structure = ndimage.morphology.generate_binary_structure(2, 8)

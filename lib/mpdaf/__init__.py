@@ -6,6 +6,7 @@ __date__ = '2015/01/21'
 import tools
 import obj
 import drs
+import sdetect
 import MUSE
 try:
     import fusion
