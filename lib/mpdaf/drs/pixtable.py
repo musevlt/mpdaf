@@ -2348,8 +2348,8 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref  : string
-                  FITS file containig the reference sky spectrum
+        skyref  : :class:`mpdaf.obj.Spectrum`
+                  Reference sky spectrum
         pixmask : :class:`mpdaf.drs.PixTableMask`
                   column corresponding to a mask file
                   (previously computed by mask_column)
@@ -2362,8 +2362,6 @@ class PixTable(object):
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
-
-        spe_skyref = Spectrum(skyref)
 
         # mask
         if pixmask is None:
@@ -2400,9 +2398,9 @@ class PixTable(object):
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
         mask = maskcol.astype(np.int32)
-        skyref_flux = spe_skyref.data.data.astype(np.float64)
-        skyref_lbda = spe_skyref.wave.coord()
-        skyref_n = spe_skyref.shape
+        skyref_flux = skyref.data.data.astype(np.float64)
+        skyref_lbda = skyref.wave.coord()
+        skyref_n = skyref.shape
 
         result = np.empty_like(data, dtype=np.float64)
         corr = np.empty(24 * 48, dtype=np.float64)
@@ -2416,8 +2414,13 @@ class PixTable(object):
         self.set_data(result)
 
         # autocalib file
+        if skyref.filename is None:
+            skyref_file = ''
+        else:
+            skyref_file=os.path.basename(skyref.filename)
+            
         autocalib = PixTableAutoCalib(method='drs.pixtable.subtract_slice_median',
-                                      maskfile=maskfile, skyref=os.path.basename(skyref),
+                                      maskfile=maskfile, skyref=skyref_file,
                                       pixtable=os.path.basename(self.filename),
                                       ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
                                       sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
@@ -2427,7 +2430,7 @@ class PixTable(object):
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.subtract_slice_median",
                                   ['mask', 'skyref'],
-                                  [maskfile, os.path.basename(skyref)],
+                                  [maskfile, skyref_file],
                                   ['file to mask out all bright objects',
                                    'reference sky spectrum'])
 
@@ -2453,8 +2456,8 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref  : string
-                  FITS file containig the reference sky spectrum
+        skyref  : :class:`mpdaf.obj.Spectrum`
+                  Reference sky spectrum
         pixmask : :class:`mpdaf.drs.PixTableMask`
                   column corresponding to a mask file
                   (previously computed by mask_column)
@@ -2467,8 +2470,6 @@ class PixTable(object):
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
-
-        spe_skyref = Spectrum(skyref)
 
         # mask
         if pixmask is None:
@@ -2507,9 +2508,9 @@ class PixTable(object):
         stat = self.get_stat()
         stat = stat.astype(np.float64)
         mask = maskcol.astype(np.int32)
-        skyref_flux = spe_skyref.data.data.astype(np.float64)
-        skyref_lbda = spe_skyref.wave.coord()
-        skyref_n = spe_skyref.shape
+        skyref_flux = skyref.data.data.astype(np.float64)
+        skyref_lbda = skyref.wave.coord()
+        skyref_n = skyref.shape
 
         result = np.empty_like(data, dtype=np.float64)
         result_stat = np.empty_like(stat, dtype=np.float64)
@@ -2523,18 +2524,23 @@ class PixTable(object):
         # set pixtable data
         self.set_data(result)
         self.set_stat(result_stat)
+        
+        if skyref.filename is None:
+            skyref_file = ''
+        else:
+            skyref_file=os.path.basename(skyref.filename)
 
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.divide_slice_median",
                                   ['mask', 'skyref'],
-                                  [maskfile, os.path.basename(skyref)],
+                                  [maskfile, skyref_file],
                                   ['file to mask out all bright objects',
                                    'reference sky spectrum'])
 
         # autocalib file
         autocalib = PixTableAutoCalib(method='drs.pixtable.divide_slice_median',
-                                      maskfile=maskfile, skyref=os.path.basename(skyref),
+                                      maskfile=maskfile, skyref=skyref_file,
                                       pixtable=os.path.basename(self.filename),
                                       ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
                                       sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
