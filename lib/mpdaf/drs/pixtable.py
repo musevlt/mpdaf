@@ -159,13 +159,13 @@ class PixTableAutoCalib(object):
                number of remaining pixels.
     corr     : array of float
                correction value.
-    
+
     """
 
     def __init__(self, filename=None, method=None, maskfile=None, skyref=None, pixtable=None,
                  ifu=None, sli=None, npts=None, corr=None):
         """creates a PixTableAutoCalib object.
-        
+
         Parameters
         ----------
         filename : string
@@ -226,8 +226,8 @@ class PixTableAutoCalib(object):
         prihdu.header['mask'] = (os.path.basename(self.maskfile),
                                  'file to mask out all bright obj')
         prihdu.header['skyref'] = (os.path.basename(self.skyref),
-                                 'reference sky spectrum')
-        
+                                   'reference sky spectrum')
+
         nrows = self.corr.shape[0]
         hdulist = [
             prihdu,
@@ -238,7 +238,6 @@ class PixTableAutoCalib(object):
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True, output_verify='fix')
         warnings.simplefilter("default")
-
 
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
@@ -2155,7 +2154,7 @@ class PixTable(object):
                   (previously computed by mask_column)
         norm    : string
                   Option for sky subtraction 'sky' or 'zero'
-                  
+
         Returns
         -------
         out : :class:`mpdaf.drs.PixTableAutoCalib`
@@ -2233,7 +2232,7 @@ class PixTable(object):
 
         self.logger.info('pixtable %s updated',
                          os.path.basename(self.filename), extra=d)
-        
+
         # close libray
         #import _ctypes
         #_ctypes.dlclose(libCmethods._handle)
@@ -2242,11 +2241,10 @@ class PixTable(object):
         #libCmethods._FuncPtr = None
         #del libCmethods
         return autocalib
-        
 
     def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
         """Computes the reference sky spectrum using sigma clipped median.
-        
+
         Algorithm from Kurt Soto (kurt.soto@phys.ethz.ch)
 
         Parameters
@@ -2417,8 +2415,8 @@ class PixTable(object):
         if skyref.filename is None:
             skyref_file = ''
         else:
-            skyref_file=os.path.basename(skyref.filename)
-            
+            skyref_file = os.path.basename(skyref.filename)
+
         autocalib = PixTableAutoCalib(method='drs.pixtable.subtract_slice_median',
                                       maskfile=maskfile, skyref=skyref_file,
                                       pixtable=os.path.basename(self.filename),
@@ -2451,7 +2449,7 @@ class PixTable(object):
         by the corresponding factor to bring all slices
         to the same median value.
         pix(x,y,lbda) /= < pix(x,y,lbda) / skyref(lbda) >_slice
-        
+
         Algorithm from Kurt Soto (kurt.soto@phys.ethz.ch)
 
         Parameters
@@ -2524,11 +2522,11 @@ class PixTable(object):
         # set pixtable data
         self.set_data(result)
         self.set_stat(result_stat)
-        
+
         if skyref.filename is None:
             skyref_file = ''
         else:
-            skyref_file=os.path.basename(skyref.filename)
+            skyref_file = os.path.basename(skyref.filename)
 
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,

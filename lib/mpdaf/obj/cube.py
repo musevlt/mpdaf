@@ -67,6 +67,7 @@ class iter_ima(object):
 
 
 class CubeBase(object):
+
     """Base class for cubes."""
 
     def info(self):
@@ -529,7 +530,7 @@ class Cube(CubeBase):
         else:
             data = self.data.data
         tbhdu = pyfits.ImageHDU(name='DATA', data=(data
-                                * np.double(self.fscale / fscale))
+                                                   * np.double(self.fscale / fscale))
                                 .astype(np.float32))
         for card in self.data_header.cards:
             try:
@@ -635,7 +636,7 @@ class Cube(CubeBase):
             hdulist.append(nbhdu)
 
         # create DQ extension
-        if savemask=='dq' and np.ma.count_masked(self.data) != 0:
+        if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
             for card in wcs_cards:
                 dqhdu.header[card.keyword] = (card.value, card.comment)
@@ -742,7 +743,7 @@ class Cube(CubeBase):
         """Unmasks the cube (just invalid data (nan,inf) are masked)."""
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
-        
+
     def mask(self, center, radius, lmin=None, lmax=None, pix=False, inside=True):
         """Masks values inside/outside the described region.
 
@@ -771,14 +772,14 @@ class Cube(CubeBase):
                  If inside is False, pixels outside the described region are masked.
         """
         center = np.array(center)
-        
+
         if is_int(radius) or is_float(radius):
             circular = True
             radius2 = radius * radius
             radius = (radius, radius)
         else:
             circular = False
-        
+
         radius = np.array(radius)
 
         if not pix:
@@ -793,12 +794,12 @@ class Cube(CubeBase):
                 lmax = self.shape[0]
             else:
                 lmax = self.wave.pixel(lmax, nearest=True)
-            
+
         if lmin is None:
             lmin = 0
         if lmax is None:
             lmax = self.shape[0]
-        
+
         imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
         imax, jmax = np.maximum(np.minimum((center + radius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
         imax += 1
@@ -806,12 +807,12 @@ class Cube(CubeBase):
 
         if inside and not circular:
             self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = 1
-        elif inside and circular: 
+        elif inside and circular:
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1],
                                indexing='ij')
             grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) < radius2,
-                               (lmax-lmin,imax-imin, jmax-jmin))
+                               (lmax - lmin, imax - imin, jmax - jmin))
             self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
                 np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax],
                               grid3d)
@@ -825,7 +826,7 @@ class Cube(CubeBase):
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
             grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
-                               (lmax-lmin,imax-imin, jmax-jmin))
+                               (lmax - lmin, imax - imin, jmax - jmin))
             self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
                 np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax],
                               grid3d)
@@ -877,47 +878,46 @@ class Cube(CubeBase):
                 lmax = self.shape[0]
             else:
                 lmax = self.wave.pixel(lmax, nearest=True)
-            
+
         if lmin is None:
             lmin = 0
         if lmax is None:
             lmax = self.shape[0]
-            
-        
+
         maxradius = max(radius[0], radius[1])
 
         imin, jmin = np.maximum(np.minimum((center - maxradius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
         imax, jmax = np.maximum(np.minimum((center + maxradius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
         imax += 1
         jmax += 1
-        
+
         cospa = np.cos(np.radians(posangle))
         sinpa = np.sin(np.radians(posangle))
-        
+
         if inside:
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
             grid3d = np.resize(((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
-                              + ((grid[0] * cospa - grid[1] * sinpa)
-                                 / radius[1]) ** 2 < 1,
-                               (lmax-lmin,imax-imin, jmax-jmin))
+                               + ((grid[0] * cospa - grid[1] * sinpa)
+                                  / radius[1]) ** 2 < 1,
+                               (lmax - lmin, imax - imin, jmax - jmin))
             self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
                 np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax], grid3d)
         if not inside:
             self.data.mask[:lmin, :, :] = 1
             self.data.mask[lmax:, :, :] = 1
-            self.data.mask[:,:imin, :] = 1
-            self.data.mask[:,imax:, :] = 1
+            self.data.mask[:, :imin, :] = 1
+            self.data.mask[:, imax:, :] = 1
             self.data.mask[:, :, :jmin] = 1
             self.data.mask[:, :, jmax:] = 1
-            
+
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
-            
+
             grid3d = np.resize(((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
-                              + ((grid[0] * cospa - grid[1] * sinpa)
-                                 / radius[1]) ** 2 > 1,
-                               (lmax-lmin,imax-imin, jmax-jmin))
+                               + ((grid[0] * cospa - grid[1] * sinpa)
+                                  / radius[1]) ** 2 > 1,
+                               (lmax - lmin, imax - imin, jmax - jmin))
             self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
                 np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax], grid3d)
 
@@ -2995,14 +2995,14 @@ class Cube(CubeBase):
                 wave = WaveCoord(crpix, cdelt, crval, cunit, data.shape[0])
                 spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit, data=data, var=var, fscale=fscale)
                 spe.data.mask = mask
-                
+
                 if init:
                     if self.var is None:
                         result = Cube(wcs=self.wcs.copy(),
                                       wave=wave,
                                       data=np.zeros(shape=(data.shape[0],
-                                                            self.shape[1],
-                                                            self.shape[2])),
+                                                           self.shape[1],
+                                                           self.shape[2])),
                                       unit=unit,
                                       fscale=fscale)
                     else:
@@ -3017,18 +3017,17 @@ class Cube(CubeBase):
                                       unit=unit,
                                       fscale=fscale)
                     init = False
-            
-                 
+
                 result[:, p, q] = spe
-                
+
             else:
                 if is_float(out[0]) or is_int(out[0]):
                     # f returns a number -> iterator returns an image
                     if init:
                         result = Image(wcs=self.wcs.copy(),
-                                   data=np.zeros(shape=(self.shape[1],
-                                                        self.shape[2])),
-                                   unit=self.unit)
+                                       data=np.zeros(shape=(self.shape[1],
+                                                            self.shape[2])),
+                                       unit=self.unit)
                         init = False
                     result[p, q] = out[0]
                 else:
@@ -3037,7 +3036,7 @@ class Cube(CubeBase):
                         result = np.empty((self.shape[1], self.shape[2]), dtype=type(out[0]))
                         init = False
                     result[p, q] = out[0]
-            
+
         return result
 
     def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
@@ -3115,14 +3114,14 @@ class Cube(CubeBase):
                 if init:
                     header = out[0]
                     unit = out[5]
-                    
+
                     wcs = WCS(header, shape=data.shape)
                     if self.var is None:
                         result = Cube(wcs=wcs,
-                                  wave=self.wave.copy(),
-                                  data=np.zeros(shape=(self.shape[0], data.shape[0], data.shape[1])),
-                                  unit=unit,
-                                  fscale=fscale)
+                                      wave=self.wave.copy(),
+                                      data=np.zeros(shape=(self.shape[0], data.shape[0], data.shape[1])),
+                                      unit=unit,
+                                      fscale=fscale)
                     else:
                         result = Cube(wcs=wcs,
                                       wave=self.wave.copy(),
@@ -3134,7 +3133,7 @@ class Cube(CubeBase):
                 result.data.data[k, :, :] = data * fscale / result.fscale
                 result.data.mask[k, :, :] = mask
                 if self.var is not None:
-                    result.var[k, :, :] = var *fscale**2 / result.fscale**2
+                    result.var[k, :, :] = var * fscale ** 2 / result.fscale ** 2
             elif dtype == 'spectrum':
                 # f return a Spectrum -> iterator return a list of spectra
                 crpix = out[0]
@@ -3158,8 +3157,8 @@ class Cube(CubeBase):
                     # f returns a number -> iterator returns a spectrum
                     if init:
                         result = Spectrum(wave=self.wave.copy(),
-                                       data=np.zeros(shape=self.shape[0]),
-                                       unit=self.unit)
+                                          data=np.zeros(shape=self.shape[0]),
+                                          unit=self.unit)
                         init = False
                     result[k] = out[0]
                 else:
@@ -3179,7 +3178,7 @@ class Cube(CubeBase):
             (lbda1,lbda2) interval of wavelength.
         is_sum : boolean
                 if True the sum is computes, otherwise this is the average.
-                
+
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
@@ -3206,7 +3205,7 @@ class Cube(CubeBase):
                 (dec,ra) is in degrees.
         radius : float
                 Radius of the aperture in arcsec.
-        
+
         Returns
         -------
         out : :class:`mpdaf.obj.Spectrum`
@@ -3252,9 +3251,7 @@ class Cube(CubeBase):
                 msg = 'returning spectrum at nearest spaxel'
                 self.logger.info(msg, extra=d)
         return spec
-    
 
-        
 
 def _process_spe(arglist):
     try:
@@ -3270,11 +3267,11 @@ def _process_spe(arglist):
         fscale = arglist[9]
         unit = arglist[10]
         kargs = arglist[11]
-        
+
         wave = WaveCoord(crpix, cdelt, crval, cunit, data.shape[0])
         spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit, data=data, var=var, fscale=fscale)
         spe.data.mask = mask
-        
+
         if isinstance(f, types.FunctionType):
             out = f(spe, **kargs)
         else:
@@ -3285,8 +3282,8 @@ def _process_spe(arglist):
                 return pos, 'spectrum', [out.wave.crpix, out.wave.cdelt, out.wave.crval, out.wave.cunit, out.data.data, out.data.mask, out.var, out.fscale, out.unit]
         except:
             # f returns dtype -> iterator returns an array of dtype
-            return pos, 'other',[out]
-            
+            return pos, 'other', [out]
+
     except Exception as inst:
         raise type(inst), str(inst) + \
             '\n The error occurred for the spectrum '\
@@ -3303,20 +3300,20 @@ def _process_ima(arglist):
         var = arglist[5]
         fscale = arglist[6]
         unit = arglist[7]
-        kargs = arglist[8] 
+        kargs = arglist[8]
         wcs = WCS(header, shape=data.shape)
         obj = Image(shape=data.shape, wcs=wcs, unit=unit, data=data,
-                 var=var, fscale=fscale)
+                    var=var, fscale=fscale)
         obj.data.mask = mask
 
         if isinstance(f, types.FunctionType):
             out = f(obj, **kargs)
         else:
             out = getattr(obj, f)(**kargs)
-            
+
         del obj
         del wcs
-            
+
         try:
             if out.image:
                 # f returns an image -> iterator returns a cube
@@ -3329,7 +3326,6 @@ def _process_ima(arglist):
                 # f returns dtype -> iterator returns an array of dtype
                 return k, 'other', [out]
 
-        
     except Exception as inst:
         raise type(inst), str(inst) + '\n The error occurred '\
             'for the image [%i,:,:]' % k

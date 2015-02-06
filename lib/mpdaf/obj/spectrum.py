@@ -512,7 +512,7 @@ class Spectrum(object):
         else:
             data = self.data.data
         tbhdu = pyfits.ImageHDU(name='DATA', data=(data
-                                * np.double(self.fscale / fscale)).astype(np.float32))
+                                                   * np.double(self.fscale / fscale)).astype(np.float32))
         for card in self.data_header.cards:
             try:
                 if tbhdu.header.keys().count(card.keyword) == 0:
@@ -554,7 +554,7 @@ class Spectrum(object):
             hdulist.append(nbhdu)
 
         # create spectrum DQ extension
-        if savemask=='dq' and np.ma.count_masked(self.data) != 0:
+        if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
             dqhdu.header['CRVAL1'] = \
                 (self.wave.crval, 'Start in world coordinate')
@@ -1919,7 +1919,7 @@ out : Spectrum
         else:
             flux = data[i1:i2].sum() * self.fscale
         return flux
-    
+
     def integrate(self, lmin=None, lmax=None, spline=False):
         """Integrates the flux value over [lmin,lmax].
 
@@ -1940,15 +1940,15 @@ out : Spectrum
         l1 = self.wave.pixel(lmin, False)
         i1 = max(0, int(l1))
         l2 = self.wave.pixel(lmax, False)
-        i2 = min(self.shape, int(l2)+1)
-        
-        d = self.wave.coord(np.arange(i1, i2+1))
+        i2 = min(self.shape, int(l2) + 1)
+
+        d = self.wave.coord(np.arange(i1, i2 + 1))
         d[0] = lmin
         d[-1] = lmax
-        
+
         # replace masked values by interpolated values
         data = self._interp_data(spline)
-        
+
         return (data[i1:i2] * np.diff(d)).sum() * self.fscale
 
     def poly_fit(self, deg, weight=True, maxiter=0,

@@ -711,7 +711,7 @@ class Image(object):
             hdulist.append(nbhdu)
 
         # create DQ extension
-        if savemask=='dq' and np.ma.count_masked(self.data) != 0:
+        if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
             for card in wcs_cards:
                 dqhdu.header[card.keyword] = (card.value, card.comment)
