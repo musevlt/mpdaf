@@ -354,10 +354,10 @@ class WCS(object):
         res = np.array([ay, ax]).T
 
         if nearest:
+            res = (res + 0.5).astype(int)
             if self.naxis1 != 0 and self.naxis2 != 0:
-                res = np.maximum(np.minimum((res + 0.5).astype(int), [self.naxis2 - 1, self.naxis1 - 1]), [0, 0])
-            else:
-                res = (res + 0.5).astype(int)
+                np.minimum(res, [self.naxis2 - 1, self.naxis1 - 1], out=res)
+                np.maximum(res, [0, 0], out=res)
         return res
 
     def pix2sky(self, x):
@@ -685,11 +685,7 @@ class WCS(object):
         (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
         """
         try:
-            if self.wcs.wcs.ctype[0] == 'LINEAR' \
-                    or self.wcs.wcs.ctype[0] == 'PIXEL':
-                return False
-            else:
-                return True
+            return self.wcs.wcs.ctype[0] not in ('LINEAR', 'PIXEL')
         except:
             return True
 
@@ -758,13 +754,8 @@ class WaveCoord(object):
 
     def copy(self):
         """Copies WaveCoord object in a new one and returns it."""
-        out = WaveCoord()
-        out.shape = self.shape
-        out.crpix = self.crpix
-        out.cdelt = self.cdelt
-        out.crval = self.crval
-        out.cunit = self.cunit
-        return out
+        return WaveCoord(shape=self.shape, crpix=self.crpix, cdelt=self.cdelt,
+                         crval=self.crval, cunit=self.cunit)
 
     def info(self):
         """Prints information."""
@@ -781,15 +772,11 @@ class WaveCoord(object):
 
     def isEqual(self, other):
         """Returns True if other and self have the same attributes."""
-        if isinstance(other, WaveCoord):
-            if self.crpix == other.crpix and self.cdelt == other.cdelt and \
-               self.crval == other.crval and self.cunit == other.cunit and \
-               self.shape == other.shape:
-                return True
-            else:
-                return False
-        else:
+        if not isinstance(other, WaveCoord):
             return False
+        return (self.crpix == other.crpix and self.cdelt == other.cdelt and
+                self.crval == other.crval and self.cunit == other.cunit and
+                self.shape == other.shape)
 
     def coord(self, pixel=None):
         """Returns the coordinate corresponding to pixel. If pixel is None
@@ -797,23 +784,19 @@ class WaveCoord(object):
 
         Parameters
         ----------
-        pixel : integer or None.
+        pixel : integer, array or None.
                 pixel value.
 
         Returns
         -------
         out : float or array of float
         """
-        if pixel is None:
-            if self.shape is None:
-                raise IOError("wavelength coordinates without dimension")
-            else:
-                pix = np.arange(self.shape, dtype=np.float)
-                lbda = (pix - self.crpix + 1) * self.cdelt + self.crval
-                return lbda
-        else:
-            pixel = np.array(pixel)
-            return (pixel - self.crpix + 1) * self.cdelt + self.crval
+        if pixel is None and self.shape is None:
+            raise IOError("wavelength coordinates without dimension")
+
+        pixel = (np.asarray(pixel) if pixel is not None
+                 else np.arange(self.shape, dtype=float))
+        return (pixel - self.crpix + 1) * self.cdelt + self.crval
 
     def pixel(self, lbda, nearest=False):
         """ Returns the decimal pixel corresponding to the wavelength lbda.
@@ -822,7 +805,7 @@ class WaveCoord(object):
 
         Parameters
         ----------
-        lbda    : float
+        lbda    : float or array
                 wavelength value.
         nearest : bool
                 If nearest is True returns the nearest integer pixel
@@ -832,18 +815,16 @@ class WaveCoord(object):
         -------
         out : float or integer
         """
-        lbda = np.array(lbda)
-        pix = (lbda - self.crval) / self.cdelt + self.crpix - 1
+
+        lbdarr = np.asarray([lbda] if isinstance(lbda, (int, float)) else lbda)
+        pix = (lbdarr - self.crval) / self.cdelt + self.crpix - 1
         if nearest:
+            pix = (pix + 0.5).astype(int)
+            np.maximum(pix, 0, out=pix)
             if self.shape is None:
-                pix = max(int(pix + 0.5), 0)
-            else:
-                try:
-                    pix = min(max(int(pix + 0.5), 0), self.shape - 1)
-                except:
-                    for i in range(len(pix)):
-                        pix[i] = min(max(int(pix[i] + 0.5), 0), self.shape - 1)
-        return pix
+                np.minimum(pix, self.shape - 1, out=pix)
+
+        return pix[0] if isinstance(lbda, (int, float)) else pix
 
     def __getitem__(self, item):
         """Returns the coordinate corresponding to pixel if item is an integer
@@ -851,8 +832,8 @@ class WaveCoord(object):
         if self.shape is None:
             raise ValueError('wavelength coordinates without dimension')
         else:
-            lbda = (np.arange(self.shape, dtype=np.float) - self.crpix + 1)\
-                * self.cdelt + self.crval
+            lbda = self.coord()
+
         if isinstance(item, int):
             return lbda[item]
         elif isinstance(item, slice):
@@ -861,9 +842,8 @@ class WaveCoord(object):
             if dim < 2:
                 raise ValueError('Spectrum with dim < 2')
             cdelt = newlbda[1] - newlbda[0]
-            res = WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0],
-                            cunit=self.cunit, shape=dim)
-            return res
+            return WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0],
+                             cunit=self.cunit, shape=dim)
         else:
             raise ValueError('Operation forbidden')
 

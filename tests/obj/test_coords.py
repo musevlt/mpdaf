@@ -9,7 +9,7 @@ from mpdaf.obj import WCS, WaveCoord, deg2sexa, sexa2deg
 from numpy.testing import assert_allclose, assert_array_equal
 
 
-class TestWCS():
+class TestWCS(object):
 
     def setUp(self):
         self.wcs = WCS(crval=(0, 0))
@@ -70,7 +70,7 @@ class TestWCS():
         assert_array_equal(wcs2.get_end(), [2.0, 2.5])
 
 
-class TestWaveCoord():
+class TestWaveCoord(object):
 
     def setUp(self):
         self.wave = WaveCoord(crval=0)
@@ -83,11 +83,17 @@ class TestWaveCoord():
         nose.tools.assert_true(self.wave.isEqual(wave2))
 
     @attr(speed='fast')
-    def test_coordTransform(self):
+    def test_coord_transform(self):
         """WaveCoord class: tests coordinates transformations"""
-        value = self.wave.coord(5)
-        pixel = self.wave.pixel(value, nearest=True)
+        pixel = self.wave.pixel(self.wave.coord(5), nearest=True)
         nose.tools.assert_equal(pixel, 5)
+
+        wave = np.arange(10)
+        pixel = self.wave.pixel(self.wave.coord(wave), nearest=True)
+        np.testing.assert_array_equal(pixel, wave)
+
+        pix = np.arange(self.wave.shape, dtype=np.float)
+        np.testing.assert_allclose(self.wave.pixel(self.wave.coord()), pix)
 
     @attr(speed='fast')
     def test_get(self):
@@ -97,7 +103,7 @@ class TestWaveCoord():
         nose.tools.assert_equal(self.wave.get_end(), 9.0)
 
 
-class TestCoord():
+class TestCoord(object):
 
     @attr(speed='fast')
     def test_deg_sexa(self):
