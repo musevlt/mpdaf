@@ -186,8 +186,8 @@ class SourceDetect3D(object):
 
         Parameters
         ----------
-        p_values : string
-                   FITS file containing the corresponding p_values
+        p_values : :class:`mpdaf.obj.Cube`
+                   Cube object containing the corresponding p_values
         p0       : float
                    threshold in the p-value domain
 
@@ -223,7 +223,7 @@ class SourceDetect3D(object):
         cartemax = np.amax(cube_w, axis=0)
 
         # p_values
-        pval_t = Cube(p_values).data.data
+        pval_t = p_values.data.data
 
         self.logger.info('Detecting where p-values<%g' % p0, extra=d)
         # Find the minimum of the p-values
@@ -272,13 +272,18 @@ class SourceDetect3D(object):
         except:
             wcs = ''
             wave = ''
+            
+        if p_values.filename is None:
+            pval_file = ''
+        else:
+            pval_file = os.path.basename(p_values)
 
         cat = SourceCatalog(catalog, wcs, wave,
                             "obj.SourceDetect3D.quick_detection",
                             ['cube', 'expmap', 'pvalues', 'p0'],
                             [os.path.basename(self.cube.filename),
                              os.path.basename(self.expmap),
-                             os.path.basename(p_values), p0],
+                             pval_file, p0],
                             ['cube', 'expmpa', 'pvalues', 'p0'])
 
         return imaobj, cat
