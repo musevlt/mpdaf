@@ -138,9 +138,10 @@ class SourceDetect3D(object):
         self.expmap = expmap
 
     def p_values(self):
-        """ False detection cube computed from Student cumulative
-        distribution function with number expmap-1 degrees of freedom
-
+        """ computes the false detection probability cube.
+        The Student cumulative distribution function
+        with expmap-1 degrees of freedom is used. 
+        
         Algorithm from Carole Clastre (carole.clastres@univ-lyon1.fr)
 
         Returns
