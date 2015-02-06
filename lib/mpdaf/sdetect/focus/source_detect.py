@@ -276,7 +276,7 @@ class SourceDetect3D(object):
         if p_values.filename is None:
             pval_file = ''
         else:
-            pval_file = os.path.basename(p_values)
+            pval_file = os.path.basename(p_values.filename)
 
         cat = SourceCatalog(catalog, wcs, wave,
                             "obj.SourceDetect3D.quick_detection",
