@@ -440,6 +440,10 @@ Mask
 
 :func:`mpdaf.obj.Cube.unmask <mpdaf.obj.Cube.unmask>` unmasks the cube (just invalid data (nan,inf) are masked) (in place).
 
+:func:`mpdaf.obj.Cube.mask <mpdaf.obj.Cube.mask>` masks values inside/outside the described region (in place).
+
+:func:`mpdaf.obj.Cube.mask_ellipse <mpdaf.obj.Cube.mask_ellipse>` masks values inside/outside the described region. Uses an elliptical shape.
+
 :func:`mpdaf.obj.Cube.mask_variance <mpdaf.obj.Cube.mask_variance>` masks pixels with a variance upper than threshold value.
 
 :func:`mpdaf.obj.Cube.mask_selection <mpdaf.obj.Cube.mask_selection>` masks pixels corresponding to a selection.

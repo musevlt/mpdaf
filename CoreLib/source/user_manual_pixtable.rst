@@ -216,6 +216,57 @@ OK, so now we can test it on our object pixtable::
  >>> res = fitgauss(y, x, data, data.max(), center, 0.7/3600.)
  >>> print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
  Peak: 1080.1060791 Center: [-30.0023  20.0015] Fwhm: 0.7
+
+ 
+Tutorial 3: self-calibration method for empty field
+---------------------------------------------------
+
+In this last tutorial, we will apply a self-calibration method on a single pixel table to bring all slices to the same median value. This will work on fields with small object, e.g. objects smaller than a slice length (15 arcsec).
+
+First we load a pixtable containing a MUSE exposure of HDFS. This is a reduced pixtable produced by scipost, without sky subtraction.::
+
+ >>> pix = PixTable('sub-PIXTABLE-MUSE.2014-07-27T04:22:08.024.fits') 
+ 
+We will mask out all bright continuum objects present in the FoV.
+We use a mask which has been produced by SExtractor on the corresponding white light image of this exposure.
+
+:func:`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` method returns a :class:`mpdaf.drs.PixTableMask` object containing the mask as a new column.
+We save this mask column as a FITS table::
+
+ >>> mask = pix.mask_column('Mask.fits')
+ [INFO] masking object 1/69 338.247<x<338.248 -60.5716<y<-60.5712 (3745 pixels)
+ [INFO] masking object 2/69 338.214<x<338.215 -60.5715<y<-60.5711 (2496 pixels)
+ [INFO] masking object 3/69 338.233<x<338.234 -60.5711<y<-60.5702 (14650 pixels)
+ [INFO] masking object 4/69 338.246<x<338.246 -60.571<y<-60.5706 (2299 pixels)
+  ...
+ [INFO] masking object 69/69 338.232<x<338.234 -60.5552<y<-60.5548 (7416 pixels)
+ >>> mask.write('maskcol.fits')
+
+Then, we estimat a reference sky spectrum from the masked pixel table::
+ 
+ >>> skyref = pix.sky_ref(pixmask=mask)
+ >>> skyref.write('skyref.fits')
+ 
+:func:`sky_ref <mpdaf.drs.PixTable.sky_ref>` returns a :class:`mpdaf.obj.Spectrum`. Let’s look to it::
+
+ >>> skyref.plot()
+ 
+.. image::  user_manual_pixtable_images/skyref.png
+ 
+This reference spectrum is used by the auto calibration method to normalise data values in each MUSE slice.
+In this example, we choose to use the additive correction::
+
+ >>> pix.subtract_slice_median(skyref, pixmask=mask)
+ 
+:func:`subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` is a python pixtable method but it has been coded in C for efficiency.
+
+Finaly, we save this corrected pixel table::
+
+ >>> pix.write('corr-PIXTABLE-MUSE.2014-07-27T04:22:08.024.fits')
+
+This non sky subtracted corrected pixtable can then be used to create a datacube with the appropriate pipeline recipe.
+Sky subtraction can then be perfomed with the zap software. 
+
  
 
 Reference
@@ -296,13 +347,18 @@ Get information from origin array
 :func:`mpdaf.drs.PixTable.origin2coords <mpdaf.drs.PixTable.origin2coords>` converts the origin value and returns (ifu, slice, ypix, xpix).
 
 
-Transformations
+Autocalibration
 ---------------
 
-:func:`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` computes the mask column correcponding to a mask file.
+:func:`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` computes the mask column corresponding to a mask file.
 
 :func:`mpdaf.drs.PixTable.sky_ref <mpdaf.drs.PixTable.sky_ref>` computes the reference sky spectrum.
 
 :func:`mpdaf.drs.PixTable.subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` computes the median value for all slices and subtracts this correction to each slice to bring all slices to the same median value.
 
 :func:`mpdaf.drs.PixTable.divide_slice_median <mpdaf.drs.PixTable.divide_slice_median>` computes the median value for all slices and divides each slice by this correction to bring all slices to the same median value.
+
+
+.. warning::
+
+   The use of OpenMP by MPDAF could hand an other process using OpenMP during the same python program. This problem only affects GCC; ICC is not affected. There is currently no workaround; the solution is to stop MPDAF before starting on other process using OpenMP.
