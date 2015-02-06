@@ -472,6 +472,7 @@ class Spectrum(object):
         """
 
         assert self.data is not None
+        warnings.simplefilter("ignore")
 
         # update fscale
         if fscale is None:
@@ -566,7 +567,6 @@ class Spectrum(object):
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
-        warnings.simplefilter("ignore")
         hdu.writeto(filename, clobber=True, output_verify='fix')
         warnings.simplefilter("default")
 

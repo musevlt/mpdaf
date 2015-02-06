@@ -602,6 +602,7 @@ class Image(object):
                    If 'nan', masked data are replaced by nan in DATA extension.
                    If 'none', masked array is not saved.
         """
+        warnings.simplefilter("ignore")
         # update fscale
         if fscale is None:
             fscale = self.fscale
@@ -718,7 +719,6 @@ class Image(object):
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
-        warnings.simplefilter("ignore")
         hdu.writeto(filename, clobber=True, output_verify='fix')
         warnings.simplefilter("default")
 
