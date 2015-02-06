@@ -514,9 +514,8 @@ class Cube(CubeBase):
                         d = {'class': 'Cube', 'method': 'write'}
                         self.logger.warning("%s not copied in primary header",
                                             card.keyword, extra=d)
-                        pass
-        prihdu.header['date'] = \
-            (str(datetime.datetime.now()), 'creation date')
+
+        prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
         warnings.simplefilter("default")
@@ -532,27 +531,24 @@ class Cube(CubeBase):
         tbhdu = pyfits.ImageHDU(name='DATA', data=(data
                                                    * np.double(self.fscale / fscale))
                                 .astype(np.float32))
+
         for card in self.data_header.cards:
+            to_copy = (card.keyword not in ('CD1_1', 'CD1_2', 'CD2_1', 'CD2_2',
+                                            'CDELT1', 'CDELT2')
+                       and card.keyword not in tbhdu.header)
             try:
-                if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' and \
-                        card.keyword != 'CD2_1' and card.keyword != 'CD2_2' and \
-                        card.keyword != 'CDELT1' and card.keyword != 'CDELT2' and \
-                        tbhdu.header.keys().count(card.keyword) == 0:
+                if to_copy:
                     tbhdu.header[card.keyword] = (card.value, card.comment)
             except:
                 try:
                     card.verify('fix')
-                    if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' and\
-                            card.keyword != 'CD2_1' and card.keyword != 'CD2_2' and \
-                            card.keyword != 'CDELT1' and card.keyword != 'CDELT2' and \
-                            tbhdu.header.keys().count(card.keyword) == 0:
-                        prihdu.header[card.keyword] = \
-                            (card.value, card.comment)
+                    if to_copy:
+                        prihdu.header[card.keyword] = (card.value, card.comment)
                 except:
                     d = {'class': 'Cube', 'method': 'write'}
-                    self.logger.warning("%s not copied in data header", card.keyword,
-                                        extra=d)
-                    pass
+                    self.logger.warning("%s not copied in data header",
+                                        card.keyword, extra=d)
+
         # add world coordinate
         cd = self.wcs.get_cd()
         tbhdu.header['CTYPE1'] = \
