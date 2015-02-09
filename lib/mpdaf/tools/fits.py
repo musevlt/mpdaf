@@ -1,5 +1,8 @@
+from astropy.io import fits
+
+
 def add_mpdaf_method_keywords(header, method, params, values, comments):
-    """adds keywords in a FITS header to describe the method
+    """Adds keywords in a FITS header to describe the method
     and the corresponding parameters.
 
     Parameters
@@ -25,3 +28,27 @@ def add_mpdaf_method_keywords(header, method, params, values, comments):
     for p in range(n):
         header['HIERARCH MPDAF METH%d PARAM%d NAME' % (i, p + 1)] = (params[p], comments[p])
         header['HIERARCH MPDAF METH%d PARAM%d VALUE' % (i, p + 1)] = values[p]
+
+
+def add_mpdaf_keywords_to_file(path, method, params, values, comments, ext=0):
+    """Adds keywords in a FITS file header to describe the method
+    and the corresponding parameters.
+
+    Parameters
+    ----------
+    path     : str
+               File path.
+    method   : string
+               MPDAF method identifier
+    params   : list of strings
+               Names of parameters
+    values   : list
+               Values of parameters
+    comments : list of strings
+               parameters description
+    """
+    hdu = fits.open(path, mode='update')
+    add_mpdaf_method_keywords(hdu[ext].header, method,
+                              params, values, comments)
+    hdu.flush()
+    hdu.close()

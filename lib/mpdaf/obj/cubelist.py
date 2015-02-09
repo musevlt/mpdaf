@@ -1,11 +1,13 @@
 """cube.py manages Cube objects."""
 
-import numpy as np
+import ctypes
 import logging
+import numpy as np
 import os
+
 from .cube import CubeDisk, Cube
 from .objs import is_float, is_int
-from ..tools.fits import add_mpdaf_method_keywords
+from ..tools.fits import add_mpdaf_keywords_to_file
 
 
 class CubeList(object):
@@ -163,10 +165,10 @@ class CubeList(object):
         out : :class:`mpdaf.obj.Cube`
         """
         import mpdaf
-        import ctypes
 
+        cubepath = output_path + '/DATACUBE_' + output + '.fits'
         try:
-            os.remove(output_path + '/DATACUBE_' + output + '.fits')
+            os.remove(cubepath)
             os.remove(output_path + '/EXPMAP_' + output + '.fits')
         except OSError:
             pass
@@ -183,14 +185,7 @@ class CubeList(object):
                                          ctypes.c_char_p(output_path))
 
         # update header
-        cub = Cube(output_path + '/DATACUBE_' + output + '.fits')
-        cub.fscale = self.fscale
-        add_mpdaf_method_keywords(cub.primary_header,
-                                  "obj.cubelist.median",
-                                  [], [], [])
-        cub.write(output_path + '/DATACUBE_' + output + '.fits')
-
-        return cub
+        add_mpdaf_keywords_to_file(cubepath, "obj.cubelist.median", [], [], [])
 
     def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var_mean=True):
         """merges cubes in a single data cube using sigma clipped mean.
@@ -230,7 +225,9 @@ class CubeList(object):
         out : :class:`mpdaf.obj.Cube`
         """
         import mpdaf
-        import ctypes
+
+        cubepath = output_path + '/DATACUBE_' + output + '.fits'
+
         if is_int(nclip) or is_float(nclip):
             nclip_low = nclip
             nclip_up = nclip
@@ -239,7 +236,7 @@ class CubeList(object):
             nclip_up = nclip[1]
 
         try:
-            os.remove(output_path + '/DATACUBE_' + output + '.fits')
+            os.remove(cubepath)
             os.remove(output_path + '/EXPMAP_' + output + '.fits')
             os.remove(output_path + '/NOVALID_' + output + '.txt')
         except OSError:
@@ -262,17 +259,12 @@ class CubeList(object):
                                                  nstop, np.int32(var_mean))
 
         # update header
-        cub = Cube(output_path + '/DATACUBE_' + output + '.fits')
-        cub.fscale = self.fscale
-        add_mpdaf_method_keywords(cub.primary_header,
-                                  "obj.cubelist.merging",
-                                  ['nmax', 'nclip_low', 'nclip_up', 'nstop', 'var_mean'],
-                                  [nmax, nclip_low, nclip_up, nstop, var_mean],
-                                  ['max number of clipping iterations',
-                                   'lower clipping parameter',
-                                   'upper clipping parameter',
-                                   'clipping minimum number',
-                                   'variance divided or not by N-1'])
-        cub.write(output_path + '/DATACUBE_' + output + '.fits')
-
-        return cub
+        add_mpdaf_keywords_to_file(
+            cubepath, "obj.cubelist.merging",
+            ['nmax', 'nclip_low', 'nclip_up', 'nstop', 'var_mean'],
+            [nmax, nclip_low, nclip_up, nstop, var_mean],
+            ['max number of clipping iterations',
+             'lower clipping parameter',
+             'upper clipping parameter',
+             'clipping minimum number',
+             'variance divided or not by N-1'])
