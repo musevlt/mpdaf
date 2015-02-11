@@ -5,9 +5,12 @@ import logging
 import numpy as np
 import os
 
+from astropy.io import fits
+from ctypes import c_char_p
+
 from .cube import CubeDisk, Cube
 from .objs import is_float, is_int
-from ..tools.fits import add_mpdaf_keywords_to_file
+from ..tools.fits import add_mpdaf_method_keywords
 
 
 class CubeList(object):
@@ -180,12 +183,20 @@ class CubeList(object):
         # setup argument types
         libCmethods.mpdaf_merging_median.argtypes = [charptr, charptr]
         # run C method
-        libCmethods.mpdaf_merging_median(ctypes.c_char_p('\n'.join(self.files)),
-                                         ctypes.c_char_p(output),
-                                         ctypes.c_char_p(output_path))
+        libCmethods.mpdaf_merging_median(c_char_p('\n'.join(self.files)),
+                                         c_char_p(output),
+                                         c_char_p(output_path))
 
         # update header
-        add_mpdaf_keywords_to_file(cubepath, "obj.cubelist.median", [], [], [])
+        hdu = fits.open(cubepath, mode='update')
+        add_mpdaf_method_keywords(hdu[0].header, "obj.cubelist.median",
+                                  [], [], [])
+        files = ','.join(os.path.basename(f) for f in self.files)
+        hdu[0].header['NFILES'] = (len(files),
+                                   'number of files merged in this cube')
+        hdu[0].header['FILES'] = (files, 'list of files merged in this cube')
+        hdu.flush()
+        hdu.close()
 
     def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var_mean=True):
         """merges cubes in a single data cube using sigma clipped mean.
@@ -247,24 +258,32 @@ class CubeList(object):
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
         # setup argument types
-        libCmethods.mpdaf_merging_sigma_clipping.argtypes = \
-            [charptr, charptr, charptr, ctypes.c_int, ctypes.c_double,
-             ctypes.c_double, ctypes.c_int, ctypes.c_int]
+        libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
+            charptr, charptr, charptr, ctypes.c_int, ctypes.c_double,
+            ctypes.c_double, ctypes.c_int, ctypes.c_int
+        ]
         # run C method
-        libCmethods.mpdaf_merging_sigma_clipping(ctypes.c_char_p('\n'.join(self.files)),
-                                                 ctypes.c_char_p(output),
-                                                 ctypes.c_char_p(output_path),
-                                                 nmax, np.float64(nclip_low),
-                                                 np.float64(nclip_up),
-                                                 nstop, np.int32(var_mean))
+        libCmethods.mpdaf_merging_sigma_clipping(
+            c_char_p('\n'.join(self.files)), c_char_p(output),
+            c_char_p(output_path), nmax, np.float64(nclip_low),
+            np.float64(nclip_up), nstop, np.int32(var_mean)
+        )
 
         # update header
-        add_mpdaf_keywords_to_file(
-            cubepath, "obj.cubelist.merging",
+        hdu = fits.open(cubepath, mode='update')
+        add_mpdaf_method_keywords(
+            hdu[0].header, "obj.cubelist.merging",
             ['nmax', 'nclip_low', 'nclip_up', 'nstop', 'var_mean'],
             [nmax, nclip_low, nclip_up, nstop, var_mean],
             ['max number of clipping iterations',
              'lower clipping parameter',
              'upper clipping parameter',
              'clipping minimum number',
-             'variance divided or not by N-1'])
+             'variance divided or not by N-1']
+        )
+        files = ','.join(os.path.basename(f) for f in self.files)
+        hdu[0].header['NFILES'] = (len(files),
+                                   'number of files merged in this cube')
+        hdu[0].header['FILES'] = (files, 'list of files merged in this cube')
+        hdu.flush()
+        hdu.close()
