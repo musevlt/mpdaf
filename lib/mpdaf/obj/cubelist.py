@@ -192,7 +192,7 @@ class CubeList(object):
         add_mpdaf_method_keywords(hdu[0].header, "obj.cubelist.median",
                                   [], [], [])
         files = ','.join(os.path.basename(f) for f in self.files)
-        hdu[0].header['NFILES'] = (len(files),
+        hdu[0].header['NFILES'] = (len(self.files),
                                    'number of files merged in this cube')
         hdu[0].header['FILES'] = (files, 'list of files merged in this cube')
         hdu.flush()
@@ -282,7 +282,7 @@ class CubeList(object):
              'variance divided or not by N-1']
         )
         files = ','.join(os.path.basename(f) for f in self.files)
-        hdu[0].header['NFILES'] = (len(files),
+        hdu[0].header['NFILES'] = (len(self.files),
                                    'number of files merged in this cube')
         hdu[0].header['FILES'] = (files, 'list of files merged in this cube')
         hdu.flush()
