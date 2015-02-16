@@ -968,6 +968,8 @@ out : Spectrum or Cube object.
             # (spectrum2[k]=spectrum1[k]*number)
             res = self.copy()
             res.data *= other
+            if self.var is not None:
+                res.var *= other**2
             return res
         try:
             # spectrum1 * spectrum2 = spectrum3
@@ -1059,6 +1061,8 @@ out : Spectrum or Cube object.
             # spectrum2 (spectrum2[k]=spectrum1[k]/number)
             res = self.copy()
             res.data /= other
+            if self.var is not None:
+                res.var /= other**2
             return res
         try:
             # spectrum1 / spectrum2 = spectrum3

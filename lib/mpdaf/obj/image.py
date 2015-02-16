@@ -1113,6 +1113,8 @@ class Image(object):
             # image1 * number = image2 (image2[j,i]=image1[j,i]*number)
             res = self.copy()
             res.data *= other
+            if self.var is not None:
+                res.var *= other**2
             return res
         try:
             # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
@@ -1247,6 +1249,8 @@ class Image(object):
             # image1 / number = image2 (image2[j,i]=image1[j,i]/number
             res = self.copy()
             res.data /= other
+            if self.var is not None:
+                res.var /= other**2
             return res
         try:
             # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
