@@ -2419,7 +2419,8 @@ out : :class:`mpdaf.obj.Gauss1D`
                 * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
         # 1d Gaussian fit
         if spec.var is not None and weight:
-            wght = 1 / spec.var
+            #wght = 1 / spec.var
+            wght = 1 / np.sqrt(np.abs(spec.var))
             np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
             wght = np.ones(spec.shape)
@@ -2435,6 +2436,7 @@ out : :class:`mpdaf.obj.Gauss1D`
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
+        #print chisq/dof
         if covar is not None:
             err = np.array([np.sqrt(np.abs(covar[i, i]))
                             * np.sqrt(np.abs(chisq / dof))

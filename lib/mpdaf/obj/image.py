@@ -2609,7 +2609,8 @@ class Image(object):
 
         # weight
         if ima.var is not None and weight:
-            wght = 1.0 / ima.var[ksel]
+            #wght = 1.0 / ima.var[ksel]
+            wght = 1.0 / np.sqrt(np.abs(ima.var[ksel]))
             np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
             wght = np.ones(np.shape(ksel[0])[0])
@@ -3000,7 +3001,8 @@ class Image(object):
 
         # weight
         if ima.var is not None and weight:
-            wght = 1.0 / ima.var[ksel]
+            #wght = 1.0 / ima.var[ksel]
+            wght = 1.0 / np.sqrt(np.abs(ima.var[ksel]))
             np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
             wght = np.ones(np.shape(ksel[0])[0])
