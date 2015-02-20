@@ -141,7 +141,7 @@ class SourceDetect3D(object):
         """ computes the false detection probability cube.
         The Student cumulative distribution function
         with expmap-1 degrees of freedom is used. 
-        
+
         Algorithm from Carole Clastre (carole.clastres@univ-lyon1.fr)
 
         Returns
@@ -273,7 +273,7 @@ class SourceDetect3D(object):
         except:
             wcs = ''
             wave = ''
-            
+
         if p_values.filename is None:
             pval_file = ''
         else:

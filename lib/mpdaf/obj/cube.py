@@ -1358,7 +1358,7 @@ class Cube(CubeBase):
             res = self.copy()
             res.data *= other
             if self.var is not None:
-                res.var *= other**2
+                res.var *= other ** 2
             return res
         try:
             # cube1 * cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]*cube2[k,j,i])
@@ -1544,7 +1544,7 @@ class Cube(CubeBase):
             res = self.copy()
             res.data /= other
             if self.var is not None:
-                res.var /= other**2
+                res.var /= other ** 2
             return res
         try:
             # cube1 / cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]/cube2[k,j,i])
@@ -2063,9 +2063,9 @@ class Cube(CubeBase):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.sum(self.data, axis=(1,2))
+            data = np.ma.sum(self.data, axis=(1, 2))
             if self.var is not None:
-                var = np.ma.sum(np.ma.masked_invalid(self.var), axis=(1,2)).filled(np.NaN)
+                var = np.ma.sum(np.ma.masked_invalid(self.var), axis=(1, 2)).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(shape=data.shape[0], wave=self.wave,
@@ -2111,9 +2111,9 @@ class Cube(CubeBase):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.mean(self.data, axis=(1,2))
+            data = np.ma.mean(self.data, axis=(1, 2))
             if self.var is not None:
-                var = np.ma.mean(np.ma.masked_invalid(self.var), axis=(1,2)).filled(np.NaN)
+                var = np.ma.mean(np.ma.masked_invalid(self.var), axis=(1, 2)).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(notnoise=True, shape=data.shape[0],
@@ -2160,9 +2160,9 @@ class Cube(CubeBase):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.median(self.data, axis=(1,2))
+            data = np.ma.median(self.data, axis=(1, 2))
             if self.var is not None:
-                var = np.ma.median(np.ma.masked_invalid(self.var), axis=(1,2)).filled(np.NaN)
+                var = np.ma.median(np.ma.masked_invalid(self.var), axis=(1, 2)).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(notnoise=True, shape=data.shape[0],

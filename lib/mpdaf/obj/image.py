@@ -1114,7 +1114,7 @@ class Image(object):
             res = self.copy()
             res.data *= other
             if self.var is not None:
-                res.var *= other**2
+                res.var *= other ** 2
             return res
         try:
             # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
@@ -1250,7 +1250,7 @@ class Image(object):
             res = self.copy()
             res.data /= other
             if self.var is not None:
-                res.var /= other**2
+                res.var /= other ** 2
             return res
         try:
             # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
@@ -2419,7 +2419,7 @@ class Image(object):
             if self.var is not None:
                 weight = np.empty(n, dtype=float)
                 for i in range(npoints):
-                    weight[i] = 1. / self.var[x[i], y[i]]
+                    weight[i] = 1. / np.sqrt(np.abs(self.var[x[i], y[i]]))
                 np.ma.fix_invalid(weight, copy=False, fill_value=0)
             else:
                 weight = None
@@ -3001,7 +3001,6 @@ class Image(object):
 
         # weight
         if ima.var is not None and weight:
-            #wght = 1.0 / ima.var[ksel]
             wght = 1.0 / np.sqrt(np.abs(ima.var[ksel]))
             np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
@@ -4557,7 +4556,7 @@ class Image(object):
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
-             show_ylabel=True,  **kwargs):
+             show_ylabel=True, **kwargs):
         """Plots the image.
 
         Parameters
