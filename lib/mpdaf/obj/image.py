@@ -831,8 +831,8 @@ class Image(object):
         if self.data is not None:
             ksel = np.where(self.data.mask == False)
             try:
-                item = (slice(ksel[0][0], ksel[0][-1] + 1, None),
-                        slice(ksel[1][0], ksel[1][-1] + 1, None))
+                item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),
+                        slice(min(ksel[1]), max(ksel[1]) + 1, None))
                 self.data = self.data[item]
                 if is_int(item[0]):
                     self.shape = np.array((1, self.data.shape[0]))
