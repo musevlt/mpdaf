@@ -494,24 +494,39 @@ class PixTable(object):
     def copy(self):
         """Copies PixTable object in a new one and returns it."""
         result = PixTable(self.filename)
+        result.wcs = self.wcs
+        result.wave = self.wave
+        result.ima = self.ima
+        
+        if self.xpos is not None:
+            result.xpos = self.xpos.__copy__()
+        if self.ypos is not None:
+            result.ypos = self.ypos.__copy__()
+        if self.lbda is not None:
+            result.lbda = self.lbda.__copy__()
+        if self.data is not None:
+            result.data = self.data.__copy__()
+        if self.stat is not None:
+            result.stat = self.stat.__copy__()
+        if self.dq is not None:
+            result.dq = self.dq.__copy__()
+        if self.origin is not None:
+            result.origin = self.origin.__copy__()
+        if self.weight is not None:
+            result.weight = self.weight.__copy__()
+        
         result.nrows = self.nrows
         result.nifu = self.nifu
         result.skysub = self.skysub
-        result.fluxcal = self.fuxcal
-        result.wcs = self.wcs
-        result.wave = self.wave
+        result.fluxcal = self.fluxcal
         result.unit_data = self.unit_data
         result.unit_stat = self.unit_stat
-        result.ima = self.ima
+        
         result.primary_header = pyfits.Header(self.primary_header)
-        result.xpos = self.xpos
-        result.ypos = self.ypos
-        result.lbda = self.lbda
-        result.data = self.data
-        result.stat = self.stat
-        result.dq = self.dq
-        result.origin = self.origin
-        result.weight = self.weight
+        
+        result.xc = self.xc
+        result.yc = self.yc
+        
         return result
 
     def info(self):
