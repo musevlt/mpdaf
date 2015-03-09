@@ -203,6 +203,7 @@ setup(name='mpdaf',
       maintainer_email='laure.piqueras@univ-lyon1.fr',
       platforms='any',
       cmdclass={'test': UnitTest, 'fusion': MakeFusion},
+      scripts=['lib/mpdaf/scripts/make_white_image.py'],
       ext_package='mpdaf',
       ext_modules=[Extension(
           'libCmethods',
