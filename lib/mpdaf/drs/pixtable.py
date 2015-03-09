@@ -493,8 +493,7 @@ class PixTable(object):
 
     def copy(self):
         """Copies PixTable object in a new one and returns it."""
-        result = PixTable()
-        result.filename = self.filename
+        result = PixTable(self.filename)
         result.nrows = self.nrows
         result.nifu = self.nifu
         result.skysub = self.skysub
