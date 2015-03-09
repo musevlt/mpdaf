@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
    
-mpdaf.drs package
-=================
+mpdaf.drs package: python interface for the MUSE pipeline's objects.
+====================================================================
 
-mpdaf.drs package contains python interface for the DRS objects.
+mpdaf.drs package contains python interface for the MUSE pipeline's objects.
 
 Memory mapping and multiprocessing is used.
 
