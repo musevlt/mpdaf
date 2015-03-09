@@ -750,7 +750,7 @@ class PixTable(object):
                 self.lbda = lbda
         else:
             if self.lbda is None:
-                self.lbda = self.get_lbda()
+                self.lbda = self.get_lambda()
             self.lbda[ksel] = lbda
         try:
             self.primary_header['HIERARCH ESO DRS MUSE '
