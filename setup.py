@@ -133,7 +133,7 @@ class MakeFusion(Command):
 
 package_dir = {'mpdaf': 'lib/mpdaf/', 'mpdaf_user': 'mpdaf_user/'}
 packages = ['mpdaf', 'mpdaf.tools', 'mpdaf.obj', 'mpdaf.drs', 'mpdaf.MUSE',
-            'mpdaf_user', 'mpdaf.sdetect', 'mpdaf.sdetect.focus']
+            'mpdaf_user', 'mpdaf.sdetect']
 if os.path.isfile('lib/mpdaf/fusion/__init__.py'):
     packages.append('mpdaf.fusion')
 
@@ -198,7 +198,7 @@ setup(name='mpdaf',
                 'nose', 'PIL'],
       package_dir=package_dir,
       packages=packages,
-      package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz']},
+      package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'], 'mpdaf.sdetect': ['muselet_data/*']},
       maintainer='Laure Piqueras',
       maintainer_email='laure.piqueras@univ-lyon1.fr',
       platforms='any',
