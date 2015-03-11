@@ -7,6 +7,25 @@ import shutil
 import subprocess
 import stat
 
+
+def catalog(nb, xline, yline, line):
+    if len(line[0][0]) == 2:
+        names= ('NUMBER', 'X_IMAGE', 'Y_IMAGE', 'LINE (LAMBDA, FLUX)')
+        t = Table([nb, xline, yline, line], names=names)
+        t['NUMBER'].format = '%04d'
+        t['X_IMAGE'].format = '%.1f'
+        t['Y_IMAGE'].format = '%.1f'
+        #t['LINE (LAMBDA, FLUX)'].format = lambda v : '%.2f %.2e'%(v[0][0], v[0][1])
+        return t
+    
+#t = Table.read('continuum_lines.cat', format='ascii.fixed_width_two_line')
+        #for line in t:
+        #    l = line['LINE (LAMBDA, FLUX)']
+        #    a = np.array(l.replace('[',' ').replace(']',' ').replace('(',' ').replace(')',' ').replace(',',' ').split(), dtype=np.float)
+        #    wl = a[::2]
+        #    flux = a[1::2]
+        
+
 def matchlines(nlines, wl, z, eml, eml2):
     """ try to match all the lines given : for each line computes the distance
      in Angstroms to the closest line. Add the errors
@@ -67,6 +86,7 @@ def crackz(nlines, wl, flux, eml, eml2):
                 # keep the brightest
                 ksel = np.argsort(flux)[-1]
                 return(1, "%f %f Lya z=%f or [OII] z=%f" % (wl[ksel], flux[ksel], wl[ksel] / 1216.0 - 1.0, wl[ksel] / 3727. - 1.0))
+
 
 
 def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0):
@@ -194,6 +214,10 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         tG = Table.read('G.cat', format='ascii.sextractor')
         tR = Table.read('R.cat', format='ascii.sextractor')
         
+        names= ('NUMBER', 'X_IMAGE', 'Y_IMAGE', 'MAG_APER_B', 'MAG_APER_G', 'MAG_APER_R')
+        tBGR = Table([tB['NUMBER'], tB['X_IMAGE'], tB['Y_IMAGE'], tB['MAG_APER'], tG['MAG_APER'], tR['MAG_APER']], names=names)
+        tBGR.write('BGR.cat', format='ascii.fixed_width_two_line')
+        
         os.remove('B.cat')
         os.remove('G.cat')
         os.remove('R.cat')
@@ -223,10 +247,21 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         wlmin = c.wave.crval
         dw = c.wave.cdelt
         nslices = c.shape[0]
+        
+        tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
         maxidc = 0
-        S = []
-        C = []
+        # C
+        C_ll = []
+        C_idmin = []
+        C_fline = []
+        C_xline = []
+        C_yline = []
+        # S
+        S_ll = []
+        S_fline = []
+        S_xline = []
+        S_yline = []
         for i in range(3, nslices - 14):
             ll = wlmin + dw * i
             slicename = "nb/nb%04d.cat" % i
@@ -239,160 +274,161 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
 
                 flag = 0
                 distmin = -1
-                distlist = (xline - tB['X_IMAGE']) ** 2.0 + (yline - tB['Y_IMAGE']) ** 2.0
+                distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
                 ksel = np.where(distlist < radius**2.0)
                 for j in ksel[0]:
                     if(fline > 5.0 * eline):
                         if((flag <= 0)or(distlist[j] < distmin)):
-                            idmin = tB['NUMBER'][j]
+                            idmin = tBGR['NUMBER'][j]
                             distmin = distlist[j]
                             flag = 1
                     else:
                         if(fline < -5 * eline):
-                            idmin = tB['NUMBER'][j]
+                            idmin = tBGR['NUMBER'][j]
                             distmin = distlist[j]
                             flag = -2
                         else:
                             flag = -1
                 if(flag == 1):
-                    C.append([ll, idmin, fline, xline, yline])
+                    C_ll.append(ll)
+                    C_idmin.append(idmin)
+                    C_fline.append(fline)
+                    C_xline.append(xline)
+                    C_yline.append(yline)
                     if(idmin > maxidc):
                         maxidc = idmin
-                if((flag == 0)and(ll < 9300.0)):
-                    S.append([ll, xline, yline, fline])
+                if (flag == 0) and (ll < 9300.0):
+                    S_ll.append(ll)
+                    S_fline.append(fline)
+                    S_xline.append(xline)
+                    S_yline.append(yline)
 
-        k = np.array(C).shape[0]
-        l = np.array(S).shape[0]
+        nC = len(C_ll)
+        nS = len(S_ll)
 
-        fout = open("continuum_lines.cat", 'w')
-        n = 0
-        x = 0
-        flags = np.ones(k)
-        for i in range(k):
+        # C2 -> continuum_lines
+        C2_id = []
+        C2_xline = []
+        C2_yline = []
+        C2_line = []
+     
+        flags = np.ones(nC)
+        for i in range(nC):
             fl = 0
-            for j in range(k):
-                if((i != j)and(C[i][1] == C[j][1])and(np.abs(C[j][0] - C[i][0]) < (3.00))):
-                    if(C[i][2] < C[j][2]):
+            for j in range(nC):
+                if( (i != j) and (C_idmin[i] == C_idmin[j]) and (np.abs(C_ll[j] - C_ll[i]) < (3.00))):
+                    if(C_fline[i] < C_fline[j]):
                         flags[i] = 0
                     fl = 1
             if(fl == 0):  # identification of single line emissions
                 flags[i] = 2
  
-        C2 = []
-        column = []
         for r in range(maxidc + 1):
-            firstline = 1
-            for i in range(k):
-                if((C[i][1] == r)and(flags[i] == 1)):
-                    if(firstline == 1):
-                        C2.append([r, C[i][3], C[i][4]]) #id, xpix, ypix
-                        firstline = 0
-                        fout.write("%d %f %f " % (r, C[i][3], C[i][4]))
-                    C2[n].append(C[i][0])
-                    C2[n].append(C[i][2])
-                    fout.write("%f %f " % (C[i][0], C[i][2])) #lline, fline
-                    x = x + 1  # index on the number of emission lines
-            if(firstline == 0):
-                column.append(x)
-                n = n + 1
-                x = 0
-                fout.write("\n")
-        fout.close()
+            lines = []
+            for i in range(nC):
+                if (C_idmin[i] == r) and (flags[i] == 1):
+                    if len(lines) == 0:
+                        C2_id.append(r)
+                        C2_xline.append(C_xline[i])
+                        C2_yline.append(C_yline[i])
+                    lines.append((round(C_ll[i],2), round(C_fline[i],4)))
+            if len(lines) > 0:
+                C2_line.append(lines)
+                
+             
+        # write continuum_lines.cat
+        t = catalog(C2_id, C2_xline, C2_yline, C2_line)
+        t.write('continuum_lines.cat', format='ascii.fixed_width_two_line')
 
-#         lid = []
-#         xpix = []
-#         ypix = []
-#         lline = []
-#         fline = []
-#     
-#         flags = np.ones(k)
-#         for i in range(k):
-#             fl = 0
-#             for j in range(k):
-#                 if((i != j)and(C[i][1] == C[j][1])and(np.abs(C[j][0] - C[i][0]) < (3.00))):
-#                     if(C[i][2] < C[j][2]):
-#                         flags[i] = 0
-#                     fl = 1
-#             if(fl == 0):  # identification des emissions spontanee isolee
-#                 flags[i] = 2
-# 
-#         for r in range(maxidc + 1):
-#             lbdas = []
-#             fluxes = []
-#             for i in range(k):
-#                 if((C[i][1] == r)and(flags[i] == 1)):
-#                     if len(lbdas) == 0:
-#                         lid.append(r)
-#                         xpix.append(C[i][3])
-#                         ypix.append(C[i][4])
-#                     lbdas.append(C[i][0])
-#                     fluxes.append(C[i][2])
-#             lline.append(lbdas)
-#             fline.append(fluxes)
-#             
-#         #write continuum_lines.cat
-#         print len(lid)
-#         print len(lline)
-#         t = Table([lid, xpix, ypix, lline, fline], names=('NUMBER', 'X_IMAGE', 'Y_IMAGE', 'LAMBDA', 'FLUX'))
-#         t.write('continuum_lines.dat', format='ascii')
+        #S2
+        singflags = np.ones(nS)
+        S2_ll = []
+        S2_fline = []
+        S2_xline = []
+        S2_yline = []
 
-        p = 0
-        nlines = l
-        singflags = np.ones(nlines)
-        S2 = []
-        S = np.array(S)
-
-        for i in range(nlines):
+        for i in range(nS):
             fl = 0
-            xref = S[i][1]
-            yref = S[i][2]
-            ksel = np.where((xref - S[:, 1]) ** 2.0 + (yref - S[:, 2]) ** 2.0 < (radius/2.0)**2.0)  # spatial distance
+            xref = S_xline[i]
+            yref = S_yline[i]
+            ksel = np.where((xref - S_xline) ** 2.0 + (yref - S_yline) ** 2.0 < (radius/2.0)**2.0)  # spatial distance
             for j in ksel[0]:
-                if((i != j)and(np.abs(S[j, 0] - S[i, 0]) < 3.0)):
-                    if(S[i, 3] < S[j, 3]):
+                if (i != j) and (np.abs(S_ll[j] - S_ll[i]) < 3.0):
+                    if S_fline[i] < S_fline[j]:
                         singflags[i] = 0
                     fl = 1
-            if(fl == 0):
+            if fl == 0:
                 singflags[i] = 2
-            if(singflags[i] == 1):
-                S2.append(S[i, 0:4])
-                p = p + 1
+            if singflags[i] == 1:
+                S2_ll.append(S_ll[i])
+                S2_fline.append(S_fline[i])
+                S2_xline.append(S_xline[i])
+                S2_yline.append(S_yline[i])
 
         # Merging single lines of the same object
-        fout = open("single_lines.dat", 'w')
 
-        nlines = p
-        pp = 0
-        x = 0
-
+        # S3
+        S3_xline = []
+        S3_yline = []
+        S3_line = []
+        
+        nlines = len(S2_ll)
         flags = np.zeros(nlines)
-
-        S3 = []
-        column = []
-
-        S2 = np.array(S2)
 
         for i in range(nlines):
             if(flags[i] == 0):
-                S3.append([S2[i][1], S2[i][2], S2[i][0], S2[i][3]])
-                column.append(1)
-                nobj = pp + 1
-                fout.write("%d %f %f %f %f " % (nobj, S3[pp][0], S3[pp][1], S3[pp][2], S3[pp][3]))
-                ksel = np.where(((S2[i, 1] - S2[:, 1]) ** 2.0 + (S2[i, 2] - S2[:, 2]) ** 2.0 < radius**2.0) & (flags == 0))
+                lines = []
+                S3_xline.append(S2_xline[i])
+                S3_yline.append(S2_yline[i])
+                lines.append((round(S2_ll[i],2), round(S2_fline[i],4)))
+                ksel = np.where(((S2_xline[i] - S2_xline) ** 2.0 + (S2_yline[i] - S2_yline) ** 2.0 < radius**2.0) & (flags == 0))
                 for j in ksel[0]:
                     if(j != i):
-                        x = x + 1
-                        S3[pp].append(S2[j, 0])
-                        S3[pp].append(S2[j, 3])
-                        column[pp] = column[pp] + 1
-                        fout.write("%f %f " % (S3[pp][2 + 2 * x], S3[pp][3 + 2 * x]))
+                        lines.append((round(S2_ll[j],2), round(S2_fline[j],4)))
                         flags[j] = 1
-                x = 0
-                pp = pp + 1
-                fout.write("\n")
+                S3_line.append(lines)
                 flags[i] = 1
-
-        fout.close()
+                
+        nS3 = len(S3_xline)
+        S3_id = range(1, nS3+1)
+        
+        t = catalog(S3_id, S3_xline, S3_yline, S3_line)
+        t.write('single_lines.cat', format='ascii.fixed_width_two_line')
+        
+#         # S3
+#         S3_xline = []
+#         S3_yline = []
+#         S3_lline = []
+#         S3_fline = []
+#         
+#         nlines = len(S2_ll)
+#         flags = np.zeros(nlines)
+# 
+#         for i in range(nlines):
+#             if(flags[i] == 0):
+#                 lbdas = []
+#                 fluxes = []
+#                 S3_xline.append(S2_xline[i])
+#                 S3_yline.append(S2_yline[i])
+#                 lbdas.append(S2_ll[i])
+#                 fluxes.append(S2_fline[i])
+#                 ksel = np.where(((S2_xline[i] - S2_xline) ** 2.0 + (S2_yline[i] - S2_yline) ** 2.0 < radius**2.0) & (flags == 0))
+#                 for j in ksel[0]:
+#                     if(j != i):
+#                         lbdas.append(S2_ll[j])
+#                         fluxes.append(S2_fline[j])
+#                         flags[j] = 1
+#                 S3_lline.append(np.array_str(np.array(lbdas), precision=1))
+#                 S3_fline.append(np.array_str(np.array(fluxes), precision=3))
+#                 flags[i] = 1
+#                 
+#         nS3 = len(S3_xline)
+#         S3_id = range(1, nS3+1)
+#         names= ('NUMBER', 'X_IMAGE', 'Y_IMAGE', 'LAMBDA', 'FLUX')
+#         t = Table([S3_id, S3_xline, S3_yline, S3_lline, S3_fline], names=names)
+#         t.write('single_lines_2.cat', format='ascii.fixed_width_two_line')    
+# 
+#     
 
         ########################################################################################################################
         # redshift of continuum objects
@@ -403,41 +439,26 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
             shutil.copy(path+'emlines_small', 'emlines_small')
         eml = np.loadtxt("emlines", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')})
         eml2 = np.loadtxt("emlines_small", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')})
-#        nem = np.size(eml['lambda'])
 
-        fout = open("continuum_lines_z.dat", 'w')
-
-        with open("continuum_lines.dat", 'r') as fin:
-            for line in fin.readlines():
-                line = line.strip()
-                Fld = line.split()
-                nlines = (np.size(Fld) - 3) / 2
-                if(nlines > 0):
-                    objid = int(float(Fld[0]))
-                    x = float(Fld[1])
-                    y = float(Fld[2])
-                    wl = np.array([float(i) for i in Fld[3::2]])
-                    flux = np.array([float(i) for i in Fld[4::2]])
-                    (flag, returnstr) = crackz(nlines, wl, flux, eml, eml2)
-                    if(flag > 0):
-                        fout.write("%d %f %f %s\n" % (objid, x, y, returnstr))
-        fin.close()
+        fout = open("continuum_lines_z.cat", 'w')
+        for i, x, y, line in zip(C2_id, C2_xline, C2_yline, C2_line):
+            line = np.array(line).ravel()
+            wl = line[::2]
+            flux = line[1::2]
+            (flag, returnstr) = crackz(len(wl), wl, flux, eml, eml2)
+            if(flag > 0):
+                fout.write("%d %f %f %s\n" % (i, x, y, returnstr))             
         fout.close()
 
-        fout = open("single_lines_z.dat", 'w')
 
-        with open("single_lines.dat", 'r') as fin:
-            for line in fin.readlines():
-                line = line.strip()
-                Fld = line.split()
-                objid = int(float(Fld[0]))
-                nlines = (np.size(Fld) - 3) / 2
-                if((nlines > 0) & (nlines < 20)):
-                    x = float(Fld[1])
-                    y = float(Fld[2])
-                    wl = np.array([float(i) for i in Fld[3::2]])
-                    flux = np.array([float(i) for i in Fld[4::2]])
-                    (flag, returnstr) = crackz(nlines, wl, flux, eml, eml2)
-                    if(flag > 0):
-                        fout.write("%d %f %f %s\n" % (objid, x, y, returnstr))
-        fin.close()
+        fout = open("single_lines_z.cat", 'w')
+        for i, x, y, line in zip(S3_id, S3_xline, S3_yline, S3_line):
+            line = np.array(line).ravel()
+            wl = line[::2]
+            flux = line[1::2]
+            nlines = len(wl)
+            if((nlines > 0) & (nlines < 20)):
+                (flag, returnstr) = crackz(nlines, wl, flux, eml, eml2)
+                if(flag > 0):
+                    fout.write("%d %f %f %s\n" % (i, x, y, returnstr))
+        fout.close()
