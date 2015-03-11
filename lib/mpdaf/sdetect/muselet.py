@@ -205,13 +205,13 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
             return
         # tests here if the files default.sex, default.conv, default.nnw and default.param exist. Otherwise copy them
         if not os.path.isfile('default.sex'):
-            shutil.copy(path+'default.sex', 'default.sex')
+            shutil.copy(path+'nb_default.sex', 'default.sex')
         if not os.path.isfile('default.conv'):
-            shutil.copy(path+'default.conv', 'default.conv')
+            shutil.copy(path+'nb_default.conv', 'default.conv')
         if not os.path.isfile('default.nnw'):
-            shutil.copy(path+'default.nnw', 'default.nnw')
+            shutil.copy(path+'nb_default.nnw', 'default.nnw')
         if not os.path.isfile('default.param'):
-            shutil.copy(path+'default.param', 'default.param')
+            shutil.copy(path+'nb_default.param', 'default.param')
         shutil.copy('../inv_variance.fits', 'inv_variance.fits')
         st = os.stat('dosex')
         os.chmod('dosex', st.st_mode | stat.S_IEXEC)
