@@ -69,7 +69,7 @@ def crackz(nlines, wl, flux, eml, eml2):
                 return(1, "%f %f Lya z=%f or [OII] z=%f" % (wl[ksel], flux[ksel], wl[ksel] / 1216.0 - 1.0, wl[ksel] / 3727. - 1.0))
 
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0):
     """
     delta : size of the two median continuum estimates near the emission line (in MUSE wavelength planes)
     fw: list of 5 floats
@@ -240,7 +240,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
                 flag = 0
                 distmin = -1
                 distlist = (xline - tB['X_IMAGE']) ** 2.0 + (yline - tB['Y_IMAGE']) ** 2.0
-                ksel = np.where(distlist < 16.0)
+                ksel = np.where(distlist < radius**2.0)
                 for j in ksel[0]:
                     if(fline > 5.0 * eline):
                         if((flag <= 0)or(distlist[j] < distmin)):
@@ -264,7 +264,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
         k = np.array(C).shape[0]
         l = np.array(S).shape[0]
 
-        fout = open("continuum_nb.lines_clean", 'w')
+        fout = open("continuum_lines.cat", 'w')
         n = 0
         x = 0
         flags = np.ones(k)
@@ -275,7 +275,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
                     if(C[i][2] < C[j][2]):
                         flags[i] = 0
                     fl = 1
-            if(fl == 0):  # identification des emissions spontanee isolee
+            if(fl == 0):  # identification of single line emissions
                 flags[i] = 2
  
         C2 = []
@@ -330,11 +330,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
 #             lline.append(lbdas)
 #             fline.append(fluxes)
 #             
-#         #write continuum_nb.lines_clean
+#         #write continuum_lines.cat
 #         print len(lid)
 #         print len(lline)
 #         t = Table([lid, xpix, ypix, lline, fline], names=('NUMBER', 'X_IMAGE', 'Y_IMAGE', 'LAMBDA', 'FLUX'))
-#         t.write('continuum_nb.lines_clean.dat', format='ascii')
+#         t.write('continuum_lines.dat', format='ascii')
 
         p = 0
         nlines = l
@@ -346,9 +346,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
             fl = 0
             xref = S[i][1]
             yref = S[i][2]
-            ksel = np.where((xref - S[:, 1]) ** 2.0 + (yref - S[:, 2]) ** 2.0 < 4.0)  # spatial distance
+            ksel = np.where((xref - S[:, 1]) ** 2.0 + (yref - S[:, 2]) ** 2.0 < (radius/2.0)**2.0)  # spatial distance
             for j in ksel[0]:
-                if((i != j)and(np.abs(S[j, 0] - S[i, 0]) < 2.50)):
+                if((i != j)and(np.abs(S[j, 0] - S[i, 0]) < 3.0)):
                     if(S[i, 3] < S[j, 3]):
                         singflags[i] = 0
                     fl = 1
@@ -359,7 +359,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
                 p = p + 1
 
         # Merging single lines of the same object
-        fout = open("single_nb.lines_clean", 'w')
+        fout = open("single_lines.dat", 'w')
 
         nlines = p
         pp = 0
@@ -378,7 +378,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
                 column.append(1)
                 nobj = pp + 1
                 fout.write("%d %f %f %f %f " % (nobj, S3[pp][0], S3[pp][1], S3[pp][2], S3[pp][3]))
-                ksel = np.where(((S2[i, 1] - S2[:, 1]) ** 2.0 + (S2[i, 2] - S2[:, 2]) ** 2.0 < 16) & (flags == 0))
+                ksel = np.where(((S2[i, 1] - S2[:, 1]) ** 2.0 + (S2[i, 2] - S2[:, 2]) ** 2.0 < radius**2.0) & (flags == 0))
                 for j in ksel[0]:
                     if(j != i):
                         x = x + 1
@@ -405,9 +405,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
         eml2 = np.loadtxt("emlines_small", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')})
 #        nem = np.size(eml['lambda'])
 
-        fout = open("continuum_nb.lines_clean2", 'w')
+        fout = open("continuum_lines_z.dat", 'w')
 
-        with open("continuum_nb.lines_clean", 'r') as fin:
+        with open("continuum_lines.dat", 'r') as fin:
             for line in fin.readlines():
                 line = line.strip()
                 Fld = line.split()
@@ -424,9 +424,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26]):
         fin.close()
         fout.close()
 
-        fout = open("single_nb.lines_clean2", 'w')
+        fout = open("single_lines_z.dat", 'w')
 
-        with open("single_nb.lines_clean", 'r') as fin:
+        with open("single_lines.dat", 'r') as fin:
             for line in fin.readlines():
                 line = line.strip()
                 Fld = line.split()
