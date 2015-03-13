@@ -37,27 +37,19 @@ mpdaf contains user packages:
 
 These user packages are included in the mpdaf tarball.
 
-However mpdaf contains also large packages that are not present in tarball:
+
+However mpdaf contains also a large package that is not present in tarball:
 
 +-------------------+--------------------+-----------------------------------------------------------------------+
 | Large packages    | Path               | Description                                                           |
 +===================+====================+=======================================================================+
-| fusion            | lib/mpdaf/fusion   | C++ code for the Bayesian fusion of hyperspectral astronomical images |
-|                   |                    | `fusion doc <user_manual_fusion.html>`_                               |
-+-------------------+--------------------+-----------------------------------------------------------------------+
 | quickViz          | lib/mpdaf/quickViz | vizualisation tool for MUSE cubes                                     |
 |                   |                    | `quickViz doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/DocQuickViz>`_ |                                        
 +-------------------+--------------------+-----------------------------------------------------------------------+
 
 
-The user has the choice to download or not download these packages, the sub-modules directories are there, but they're empty. Pulling down the submodules is a two-step process.
+The user can download this package from the wiki page `CoreLib <http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
 
-First download the submodules that you want used via the wiki page `CoreLib <http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
-
-Then, untar and move the repository::
-
-  $ tar -xzf fusion.tar.gz
-  $ mv fusion lib/mpdaf/
 
 
 Prerequisites
@@ -101,14 +93,6 @@ To force it, the USEOPENMP environment variable can be set to anything except an
 After building everything, you log as root and install everything from build directory::
 
   root:/mpdaf$ python setup.py install
-
-
-setup.py informs you that the fusion package is not found. But it's just a warning, it's not blocking and you can continue to install mpdaf.
-
-To install the fusion submodule, log as root and run the *setup.py fusion* command::
-
-  root:/mpdaf$ python setup.py fusion
-
 
 
 Unit tests

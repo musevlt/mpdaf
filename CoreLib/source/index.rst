@@ -21,7 +21,6 @@ Contents:
    obj
    drs
    muse
-   fusion
    tools
    sdetect
    dvper_manual
