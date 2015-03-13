@@ -8,7 +8,7 @@ import os
 from astropy.io import fits
 from ctypes import c_char_p
 
-from .cube import CubeDisk, Cube
+from .cube import CubeDisk
 from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords
 
@@ -167,8 +167,6 @@ class CubeList(object):
         -------
         out : :class:`mpdaf.obj.Cube`
         """
-        import mpdaf
-
         cubepath = output_path + '/DATACUBE_' + output + '.fits'
         try:
             os.remove(cubepath)
@@ -177,7 +175,8 @@ class CubeList(object):
             pass
 
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods", mpdaf.__path__[0])
+        path = os.path.dirname(__file__)[:-4]
+        libCmethods = np.ctypeslib.load_library("libCmethods", path)
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
         # setup argument types
@@ -235,8 +234,6 @@ class CubeList(object):
         -------
         out : :class:`mpdaf.obj.Cube`
         """
-        import mpdaf
-
         cubepath = output_path + '/DATACUBE_' + output + '.fits'
 
         if is_int(nclip) or is_float(nclip):
@@ -254,7 +251,8 @@ class CubeList(object):
             pass
 
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods", mpdaf.__path__[0])
+        path = os.path.dirname(__file__)[:-4]
+        libCmethods = np.ctypeslib.load_library("libCmethods", path)
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
         # setup argument types

@@ -2186,11 +2186,9 @@ class PixTable(object):
             maskfile = os.path.basename(pixmask.maskfile)
             mask = pixmask.maskcol
 
-        import mpdaf
-
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods",
-                                                mpdaf.__path__[0])
+        path = os.path.dirname(__file__)[:-4]
+        libCmethods = np.ctypeslib.load_library("libCmethods", path)
 
         # define argument types
         array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
@@ -2290,7 +2288,6 @@ class PixTable(object):
             mask = pixmask.maskcol
 
         # sigma clipped parameters
-        import mpdaf
         if is_int(nclip) or is_float(nclip):
             nclip_low = nclip
             nclip_up = nclip
@@ -2304,8 +2301,8 @@ class PixTable(object):
         n = (int)((lmax - lmin) / dlbda)
 
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods",
-                                                mpdaf.__path__[0])
+        path = os.path.dirname(__file__)[:-4]
+        libCmethods = np.ctypeslib.load_library("libCmethods", path)
         # define argument types
         array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
                                                  flags='CONTIGUOUS')
@@ -2383,11 +2380,9 @@ class PixTable(object):
             maskfile = os.path.basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
 
-        import mpdaf
-
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods",
-                                                mpdaf.__path__[0])
+        path = os.path.dirname(__file__)[:-4]
+        libCmethods = np.ctypeslib.load_library("libCmethods", path)
 
         # define argument types
         array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
@@ -2491,11 +2486,9 @@ class PixTable(object):
             maskfile = os.path.basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
 
-        import mpdaf
-
         # load the library, using numpy mechanisms
-        libCmethods = np.ctypeslib.load_library("libCmethods",
-                                                mpdaf.__path__[0])
+        path = os.path.dirname(__file__)[:-4]
+        libCmethods = np.ctypeslib.load_library("libCmethods", path)
 
         # define argument types
         array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,

@@ -10,6 +10,7 @@ import warnings
 from scipy import integrate
 import matplotlib.cm as cm
 import logging
+import os.path
 
 NB_SUBSLICERS = 4  # number of sub-slicers
 NB_SPEC_PER_SLICE = 75  # number of pixels per slice
@@ -1197,8 +1198,8 @@ out : :class:`mpdaf.drs.Channel`
         """
         d = {'class': 'RawFile', 'method': 'reconstruct_white_image'}
         if mask is None:
-            import mpdaf
-            mask = mpdaf.__path__[0] + '/drs/mumdatMask_1x1/PAE_July2013.fits.gz'
+            path = os.path.dirname(__file__)
+            mask = path + '/mumdatMask_1x1/PAE_July2013.fits.gz'
         raw_mask = RawFile(mask)
 
         white_ima = np.zeros((12 * 24, 300))
@@ -1350,9 +1351,8 @@ out : :class:`mpdaf.drs.Channel`
         :type mask: string
         """
         if mask is None:
-            import mpdaf
-            self.mask_file = mpdaf.__path__[0] + \
-                '/drs/mumdatMask_1x1/PAE_July2013.fits'
+            path = os.path.dirname(__file__)
+            self.mask_file = path + '/mumdatMask_1x1/PAE_July2013.fits'
         # create image
         self.whiteima = self.reconstruct_white_image(self.mask_file)
         # highlighted ifu
