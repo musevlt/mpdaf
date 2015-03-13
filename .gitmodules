@@ -1,6 +1,3 @@
-[submodule "lib/mpdaf/fusion"]
-	path = lib/mpdaf/fusion
-	url = urania1.univ-lyon1.fr:/git/fusion.git
 [submodule "lib/mpdaf/quickViz"]
 	path = lib/mpdaf/quickViz
 	url = urania1.univ-lyon1.fr:/git/quickViz.git

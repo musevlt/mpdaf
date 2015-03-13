@@ -70,12 +70,6 @@
 #   root:/mpdaf$ python setup.py install
 #
 #
-# setup.py informs you that the fusion package is not found. But it's just a warning, it's not blocking and you can continue to install mpdaf.
-#
-# To install the fusion submodule, log as root and run the *setup.py fusion* command::
-#
-#  root:/mpdaf$ python setup.py fusion
-#
 # Unit tests
 # ==========
 #
@@ -87,6 +81,7 @@
 import os
 import subprocess
 import sys
+import shutil
 # import setuptools
 
 from distutils.core import setup, Command, Extension
@@ -107,35 +102,20 @@ class UnitTest(Command):
         errno = subprocess.call(['nosetests', '-v', '-a speed=fast'])
         raise SystemExit(errno)
 
+# rm old focus directory
+try:
+    import mpdaf
+    d = mpdaf.__path__[0]+'/sdetect/focus'
+    if os.path.exists(d):
+        shutil.rmtree('build')
+        shutil.rmtree(mpdaf.__path__[0]+'/sdetect/focus')
+except:
+    pass
 
-class MakeFusion(Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        import shutil
-        import mpdaf.fusion
-        subprocess.call(['make', '-C', 'lib/mpdaf/fusion/'])
-        shutil.copy('lib/mpdaf/fusion/fusion_fit', '/usr/local/bin/fusion_fit')
-        shutil.copy('lib/mpdaf/fusion/fusion_FSF', '/usr/local/bin/fusion_FSF')
-        shutil.copy('lib/mpdaf/fusion/fusion_LSF', '/usr/local/bin/fusion_LSF')
-        shutil.copy('lib/mpdaf/fusion/fusion_residual', '/usr/local/bin/fusion_residual')
-        shutil.copy('lib/mpdaf/fusion/fusion_resampling', '/usr/local/bin/fusion_resampling')
-        shutil.copy('lib/mpdaf/fusion/fusion_variance', '/usr/local/bin/fusion_variance')
-        subprocess.call(['make', 'cleanall', '-C', 'lib/mpdaf/fusion/'])
-        path = os.path.abspath(os.path.dirname(mpdaf.fusion.__file__))
-        shutil.copy('lib/mpdaf/fusion/examples/LSF_V1.fits', path + '/LSF_V1.fits')
 
 package_dir = {'mpdaf': 'lib/mpdaf/', 'mpdaf_user': 'mpdaf_user/'}
 packages = ['mpdaf', 'mpdaf.tools', 'mpdaf.obj', 'mpdaf.drs', 'mpdaf.MUSE',
             'mpdaf_user', 'mpdaf.sdetect']
-if os.path.isfile('lib/mpdaf/fusion/__init__.py'):
-    packages.append('mpdaf.fusion')
 
 for path in os.listdir('mpdaf_user'):
     if os.path.isdir('mpdaf_user/' + path + '/lib/' + path):
@@ -202,7 +182,7 @@ setup(name='mpdaf',
       maintainer='Laure Piqueras',
       maintainer_email='laure.piqueras@univ-lyon1.fr',
       platforms='any',
-      cmdclass={'test': UnitTest, 'fusion': MakeFusion},
+      cmdclass={'test': UnitTest},
       scripts=['lib/mpdaf/scripts/make_white_image.py'],
       ext_package='mpdaf',
       ext_modules=[Extension(
