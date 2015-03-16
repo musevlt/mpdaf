@@ -10,6 +10,10 @@ import logging
 
 
 def catalog(idline, xline, yline, ra, dec, lline, fline, zline=None, errzline=None, lline_name=None):
+    """method to create an astropy Table from a list of IDs, positions (X,Y), WCS (RA,DEC), and a list of 
+wavelengths and fluxes for each object. Optionally includes the columns for redshift and redshift error 
+found for each source
+    """
     # number of rows
     nb = len(idline)
     # maximum number of lines
@@ -73,6 +77,11 @@ def catalog(idline, xline, yline, ra, dec, lline, fline, zline=None, errzline=No
 def matchlines(nlines, wl, z, eml, eml2):
     """ try to match all the lines given : for each line computes the distance
      in Angstroms to the closest line. Add the errors
+     nlines: number of emission lines
+     wl: table of wavelengths
+     z: redshift to test
+     eml: full catalog of lines to test redshift
+     eml2: smaller catalog containing only the brightest lines to test
     """
     jfound = np.zeros(nlines, dtype=np.int)
     if(nlines > 3):
@@ -91,6 +100,14 @@ def matchlines(nlines, wl, z, eml, eml2):
 
 
 def crackz(nlines, wl, flux, eml, eml2):
+    """
+     method to estimate the best redshift matching a list of emission lines
+     nlines: number of emission lines
+     wl: table of observed line wavelengths
+     flux: table of line fluxes
+     eml: full catalog of lines to test redshift
+     eml2: smaller catalog containing only the brightest lines to test
+    """
     errmin = 3.0
     zmin = 0.0
     zmax = 7.0
@@ -130,8 +147,10 @@ def crackz(nlines, wl, flux, eml, eml2):
 
 def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0):
     """
-    delta : size of the two median continuum estimates near the emission line (in MUSE wavelength planes)
-    fw: list of 5 floats
+    step : starting step for MUSELET to run. (1) produces the narrow-band images (2) runs SExtractor (3) merges catalogs and measure redshifts
+    delta : size of the two median continuum estimates to be taken on each side of the narrow-band image (in MUSE wavelength planes). Default is 20 planes, or 25 Angstroms.
+    fw: list of 5 floats to define the weights on the 5 central wavelength planes when estimated the line-profile-weighted flux in the narrow-band images
+    radius : radius in spatial pixels (default=4) within which emission lines are merged spatially into the same object.
     
     """
     logger = logging.getLogger('mpdaf corelib')
