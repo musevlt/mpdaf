@@ -2,23 +2,53 @@ from astropy.table import Table
 import numpy as np
 from ..obj import Cube, Image
 import os
-import sys
 import shutil
 import subprocess
 import stat
 import logging
 
 
-def catalog(idline, xline, yline, ra, dec, lline, fline, zline=None, errzline=None, lline_name=None):
-    """method to create an astropy Table from a list of IDs, positions (X,Y), WCS (RA,DEC), and a list of 
-wavelengths and fluxes for each object. Optionally includes the columns for redshift and redshift error 
-found for each source
+def catalog(idline, xline, yline, ra, dec, lline, fline, zline=None, 
+            errzline=None, lline_name=None):
+    """Method to create an astropy Table from a list of IDs,
+    positions (X,Y), WCS (RA,DEC), and a list of 
+    wavelengths and fluxes for each object. 
+    Optionally includes the columns for redshift and redshift error 
+    found for each source
+    
+    Parameters
+    ----------
+    idline     : list<int>
+                 List of IDs
+    xline      : list<double>
+                 List of X-positions in pixels
+    Yline      : list<double>
+                 List of Y-positions in pixels
+    ra         : list<double>
+                 List of right ascension values in degrees
+    dec        : list<double>
+                 List of declination values in degrees
+    lline      : list<double array>
+                 List of wavelengths arrays
+    fline      : list<double array>
+                 List of fluxes arrays
+    zline      : list<double>
+                 List of redshift values
+    errzline   : list<double>
+                 List of redshift error values
+    lline_name : list<string array>
+                 List of line names
+                 
+    Returns
+    -------
+    out : astropy.table
+          Astropy table
     """
     # number of rows
     nb = len(idline)
     # maximum number of lines
     nlines_max = max([len(x) for x in lline])
-    
+
     # columns names
     names = ['ID', 'X_IMAGE', 'Y_IMAGE', 'RA', 'DEC']
     if zline is not None:
@@ -26,36 +56,38 @@ found for each source
     if errzline is not None:
         names += ['Z_ERR']
     if lline_name is None:
-        names +=  sum([['LAMBDA%02d'%n, 'FLUX%02d'%n] for n in range(1, nlines_max + 1)], [])
+        names += sum([['LAMBDA%02d' % n, 'FLUX%02d' % n] \
+                      for n in range(1, nlines_max + 1)], [])
     else:
-        names +=  sum([['LAMBDA%02d'%n, 'FLUX%02d'%n, 'NAME%02d'%n] for n in range(1, nlines_max + 1)], [])
-    
+        names += sum([['LAMBDA%02d' % n, 'FLUX%02d' % n, 'NAME%02d' % n] \
+                      for n in range(1, nlines_max + 1)], [])
+
     # data
     flux = np.ones((nb, nlines_max)) * -1
-    lbda = np.ones((nb, nlines_max)) * -1    
+    lbda = np.ones((nb, nlines_max)) * -1
     lnames = np.zeros((nb, nlines_max), dtype=np.dtype('a20'))
-    for i,line in enumerate(lline):
+    for i, line in enumerate(lline):
         lbda[i, 0:len(line)] = line[0:len(line)]
-    for i,line in enumerate(fline):
+    for i, line in enumerate(fline):
         flux[i, 0:len(line)] = line[0:len(line)]
     if lline_name is not None:
-        for i,name in enumerate(lline_name):
+        for i, name in enumerate(lline_name):
             lnames[i, 0:len(name)] = name[0:len(name)]
-    
+
     data = [idline, xline, yline, ra, dec]
     if zline is not None:
         data.append(zline)
     if errzline is not None:
         data.append(errzline)
     for i in range(nlines_max):
-        data.append(lbda[:,i])
-        data.append(flux[:,i])
+        data.append(lbda[:, i])
+        data.append(flux[:, i])
         if lline_name is not None:
-            data.append(lnames[:,i])
-           
+            data.append(lnames[:, i])
+
     # create astropy table
     t = Table(data, names=names)
-    
+
     # output format
     t['ID'].format = '%d'
     t['X_IMAGE'].format = '%.1f'
@@ -66,22 +98,37 @@ found for each source
         t['Z'].format = '%.6f'
     if errzline is not None:
         t['Z_ERR'].format = '%.6f'
-    for n in range(1, nlines_max+1):
-        t['LAMBDA%02d'%n].format = lambda x: '%0.2f'%x if x!=-1 else ''
-        t['FLUX%02d'%n].format = lambda x: '%0.4f'%x if x!=-1 else ''
-        
+    for n in range(1, nlines_max + 1):
+        t['LAMBDA%02d' % n].format = lambda x: '%0.2f' % x if x != -1 else ''
+        t['FLUX%02d' % n].format = lambda x: '%0.4f' % x if x != -1 else ''
+
     # return the table
     return t
 
 
 def matchlines(nlines, wl, z, eml, eml2):
-    """ try to match all the lines given : for each line computes the distance
-     in Angstroms to the closest line. Add the errors
-     nlines: number of emission lines
-     wl: table of wavelengths
-     z: redshift to test
-     eml: full catalog of lines to test redshift
-     eml2: smaller catalog containing only the brightest lines to test
+    """ try to match all the lines given : 
+    for each line computes the distance in Angstroms to the closest line.
+    Add the errors
+     
+     Parameters
+     ----------
+     nlines : integer
+              Number of emission lines
+     wl     : array<double>
+              Table of wavelengths
+     z      : double
+              Redshift to test
+     eml    : dict
+              Full catalog of lines to test redshift
+     eml2   : dict
+              Smaller catalog containing only the brightest lines to test
+              
+    Returns
+    -------
+    out : (array<double>, array<double>)
+          (list of wavelengths, errors)
+              
     """
     jfound = np.zeros(nlines, dtype=np.int)
     if(nlines > 3):
@@ -100,21 +147,33 @@ def matchlines(nlines, wl, z, eml, eml2):
 
 
 def crackz(nlines, wl, flux, eml, eml2):
-    """
-     method to estimate the best redshift matching a list of emission lines
-     nlines: number of emission lines
-     wl: table of observed line wavelengths
-     flux: table of line fluxes
-     eml: full catalog of lines to test redshift
-     eml2: smaller catalog containing only the brightest lines to test
+    """Method to estimate the best redshift matching a list of emission lines
+     
+     Parameters
+     ----------
+     nlines : integer
+              Number of emission lines
+     wl     : array<double>
+              Table of observed line wavelengths
+     flux   : array<double>
+              Table of line fluxes
+     eml    : dict
+              Full catalog of lines to test redshift
+     eml2   : dict
+              Smaller catalog containing only the brightest lines to test
+              
+    Returns
+    -------
+    out : (float, float, integer, list<double>, list<double>, list<string>)
+          (redshift, redshift error, list of wavelengths, list of fluxes, list of lines names)
     """
     errmin = 3.0
     zmin = 0.0
     zmax = 7.0
     if(nlines == 0):
-        return -9999.0,-9999.0,0,[],[],[]
+        return -9999.0, -9999.0, 0, [], [], []
     if(nlines == 1):
-        return -9999.0,-9999.0,1,wl,flux,["Lya or [OII]"]
+        return -9999.0, -9999.0, 1, wl, flux, ["Lya or [OII]"]
     if(nlines > 1):
         found = 0
         if(nlines > 3):
@@ -130,7 +189,8 @@ def crackz(nlines, wl, flux, eml, eml2):
                 jfinal = jfound.copy()
         if(found == 1):
             jfinal = np.array(jfinal).astype(int)
-            return zfound,errmin / np.min(listwl['lambda'][jfinal]),nlines, wl, flux, list(listwl['lname'][jfinal[0:nlines]])
+            return zfound, errmin / np.min(listwl['lambda'][jfinal]), nlines, \
+                wl, flux, list(listwl['lname'][jfinal[0:nlines]])
         else:
             if(nlines > 3):
                 # keep the three brightest
@@ -143,19 +203,44 @@ def crackz(nlines, wl, flux, eml, eml2):
             if(nlines == 2):
                 # keep the brightest
                 ksel = np.argsort(flux)[-1]
-                return -9999.0, -9999.0, 1, [wl[ksel]], [flux[ksel]], ["Lya or [OII]"]
+                return -9999.0, -9999.0, 1, [wl[ksel]], [flux[ksel]], \
+                    ["Lya or [OII]"]
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0):
-    """
-    step : starting step for MUSELET to run. (1) produces the narrow-band images (2) runs SExtractor (3) merges catalogs and measure redshifts
-    delta : size of the two median continuum estimates to be taken on each side of the narrow-band image (in MUSE wavelength planes). Default is 20 planes, or 25 Angstroms.
-    fw: list of 5 floats to define the weights on the 5 central wavelength planes when estimated the line-profile-weighted flux in the narrow-band images
-    radius : radius in spatial pixels (default=4) within which emission lines are merged spatially into the same object.
+
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0):
+    """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
+    to detect emission lines in a datacube. It has been developed by Johan Richard
+    (johan.richard@univ-lyon1.fr)
     
+    Parameters
+    ----------
+    step   : integer in {1,2,3}
+             Starting step for MUSELET to run.
+             (1) produces the narrow-band images
+             (2) runs SExtractor
+             (3) merges catalogs and measure redshifts,
+    delta  : integer
+             Size of the two median continuum estimates to be taken 
+             on each side of the narrow-band image (in MUSE wavelength planes).
+             Default is 20 planes, or 25 Angstroms.
+    fw     : list of 5 floats
+             Define the weights on the 5 central wavelength planes
+             when estimated the line-profile-weighted flux
+             in the narrow-band images
+    radius : double
+             Radius in spatial pixels (default=4) within which emission lines
+             are merged spatially into the same object.
+             
+    Returns
+    -------
+    continuum_lines.cat   : ASCII file containing a list of continuum emission lines
+    single_lines.cat      : ASCII file containing a list of isolated emission lines
+    continuum_lines_z.cat : ASCII file containing a list of continuum emission lines with estimated redshift
+    single_lines_z.cat    : ASCII file containing a list of isolated emission lines with estimated redshift
     """
     logger = logging.getLogger('mpdaf corelib')
     d = {'class': '', 'method': 'muselet'}
-    
+
     if(step != 1 and step != 2 and step != 3):
         logger.error("ERROR: step must be 1, 2 or 3", extra=d)
         logger.error("STEP 1: creates images from cube", extra=d)
@@ -168,7 +253,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         fw = np.array(fw, dtype=np.float)
     except:
         logger.error('fw is not an array of float', extra=d)
-        
+
     try:
         subprocess.check_call(['sex'])
         cmd_sex = 'sex'
@@ -178,12 +263,12 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
             cmd_sex = 'sextractor'
         except OSError:
             raise OSError('SExtractor not found')
-           
-    path = os.path.dirname(__file__)+'/muselet_data/'    
-        
+
+    path = os.path.dirname(__file__) + '/muselet_data/'
+
     logger.info("Opening: " + cubename, extra=d)
     c = Cube(cubename)
-    
+
     imsum = c[0, :, :]
     size1 = c.shape[0]
     size2 = c.shape[1]
@@ -192,7 +277,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
     nsfilter = int(size1 / 3.0)
 
     if(step == 1):
-        logger.info( "STEP 1: creates white light, variance, RGB and narrow-band images", extra=d)
+        logger.info("STEP 1: creates white light, variance, RGB and narrow-band images", extra=d)
         weight_data = np.ma.average(c.data[1:size1 - 1, :, :], weights=1. / c.var[1:size1 - 1, :, :], axis=0)
         weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), shape=imsum.shape, fscale=imsum.fscale)
         weight.write('white.fits', savemask='nan')
@@ -211,7 +296,6 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         g.write('whiteg.fits', savemask='nan')
         b.write('whiteb.fits', savemask='nan')
 
-        
         fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
 
         try:
@@ -253,31 +337,31 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         logger.info("STEP 2: runs SExtractor on white light, RGB and narrow-band images", extra=d)
         # tests here if the files default.sex, default.conv, default.nnw and default.param exist. Otherwise copy them
         if not os.path.isfile('default.sex'):
-            shutil.copy(path+'default.sex', 'default.sex')
+            shutil.copy(path + 'default.sex', 'default.sex')
         if not os.path.isfile('default.conv'):
-            shutil.copy(path+'default.conv', 'default.conv')
+            shutil.copy(path + 'default.conv', 'default.conv')
         if not os.path.isfile('default.nnw'):
-            shutil.copy(path+'default.nnw', 'default.nnw')
+            shutil.copy(path + 'default.nnw', 'default.nnw')
         if not os.path.isfile('default.param'):
-            shutil.copy(path+'default.param', 'default.param')
-        
-        subprocess.Popen(cmd_sex +' white.fits', shell=True).wait()
+            shutil.copy(path + 'default.param', 'default.param')
+
+        subprocess.Popen(cmd_sex + ' white.fits', shell=True).wait()
         subprocess.Popen(cmd_sex + ' -CATALOG_NAME R.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiter.fits', shell=True).wait()
         subprocess.Popen(cmd_sex + ' -CATALOG_NAME G.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteg.fits', shell=True).wait()
         subprocess.Popen(cmd_sex + ' -CATALOG_NAME B.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteb.fits', shell=True).wait()
-        
+
         tB = Table.read('B.cat', format='ascii.sextractor')
         tG = Table.read('G.cat', format='ascii.sextractor')
         tR = Table.read('R.cat', format='ascii.sextractor')
-        
-        names= ('NUMBER', 'X_IMAGE', 'Y_IMAGE', 'MAG_APER_B', 'MAG_APER_G', 'MAG_APER_R')
+
+        names = ('NUMBER', 'X_IMAGE', 'Y_IMAGE', 'MAG_APER_B', 'MAG_APER_G', 'MAG_APER_R')
         tBGR = Table([tB['NUMBER'], tB['X_IMAGE'], tB['Y_IMAGE'], tB['MAG_APER'], tG['MAG_APER'], tR['MAG_APER']], names=names)
         tBGR.write('BGR.cat', format='ascii.fixed_width_two_line')
-        
+
         os.remove('B.cat')
         os.remove('G.cat')
         os.remove('R.cat')
-        
+
         try:
             os.chdir("nb")
         except:
@@ -285,13 +369,13 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
             return
         # tests here if the files default.sex, default.conv, default.nnw and default.param exist. Otherwise copy them
         if not os.path.isfile('default.sex'):
-            shutil.copy(path+'nb_default.sex', 'default.sex')
+            shutil.copy(path + 'nb_default.sex', 'default.sex')
         if not os.path.isfile('default.conv'):
-            shutil.copy(path+'nb_default.conv', 'default.conv')
+            shutil.copy(path + 'nb_default.conv', 'default.conv')
         if not os.path.isfile('default.nnw'):
-            shutil.copy(path+'nb_default.nnw', 'default.nnw')
+            shutil.copy(path + 'nb_default.nnw', 'default.nnw')
         if not os.path.isfile('default.param'):
-            shutil.copy(path+'nb_default.param', 'default.param')
+            shutil.copy(path + 'nb_default.param', 'default.param')
         shutil.copy('../inv_variance.fits', 'inv_variance.fits')
         st = os.stat('dosex')
         os.chmod('dosex', st.st_mode | stat.S_IEXEC)
@@ -303,7 +387,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         wlmin = c.wave.crval
         dw = c.wave.cdelt
         nslices = c.shape[0]
-        
+
         tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
         maxidc = 0
@@ -331,7 +415,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
                 flag = 0
                 distmin = -1
                 distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
-                ksel = np.where(distlist < radius**2.0)
+                ksel = np.where(distlist < radius ** 2.0)
                 for j in ksel[0]:
                     if(fline > 5.0 * eline):
                         if((flag <= 0)or(distlist[j] < distmin)):
@@ -368,18 +452,18 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         C2_yline = []
         C2_lline = []
         C2_fline = []
-     
+
         flags = np.ones(nC)
         for i in range(nC):
             fl = 0
             for j in range(nC):
-                if( (i != j) and (C_idmin[i] == C_idmin[j]) and (np.abs(C_ll[j] - C_ll[i]) < (3.00))):
+                if((i != j) and (C_idmin[i] == C_idmin[j]) and (np.abs(C_ll[j] - C_ll[i]) < (3.00))):
                     if(C_fline[i] < C_fline[j]):
                         flags[i] = 0
                     fl = 1
             if(fl == 0):  # identification of single line emissions
                 flags[i] = 2
- 
+
         for r in range(maxidc + 1):
             lbdas = []
             fluxes = []
@@ -394,20 +478,19 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
             if len(lbdas) > 0:
                 C2_lline.append(lbdas)
                 C2_fline.append(fluxes)
-                
-             
+
         # write continuum_lines.cat
-        pix_coord = np.empty((len(C2_xline),2))
-        pix_coord [:,0] = C2_yline           # a verifier avec Johan
-        pix_coord [:,1] = C2_xline
+        pix_coord = np.empty((len(C2_xline), 2))
+        pix_coord[:, 0] = C2_yline           # a verifier avec Johan
+        pix_coord[:, 1] = C2_xline
         sky_coord = c.wcs.pix2sky(pix_coord)
-        C2_ra = sky_coord[:,1]
-        C2_dec = sky_coord[:,0]
+        C2_ra = sky_coord[:, 1]
+        C2_dec = sky_coord[:, 0]
         t = catalog(C2_id, C2_xline, C2_yline, C2_ra, C2_dec, C2_lline, C2_fline)
         t.write('continuum_lines.cat', format='ascii')
         logger.info("continuum_lines.cat created", extra=d)
 
-        #S2
+        # S2
         singflags = np.ones(nS)
         S2_ll = []
         S2_fline = []
@@ -418,7 +501,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
             fl = 0
             xref = S_xline[i]
             yref = S_yline[i]
-            ksel = np.where((xref - S_xline) ** 2.0 + (yref - S_yline) ** 2.0 < (radius/2.0)**2.0)  # spatial distance
+            ksel = np.where((xref - S_xline) ** 2.0 + (yref - S_yline) ** 2.0 < (radius / 2.0) ** 2.0)  # spatial distance
             for j in ksel[0]:
                 if (i != j) and (np.abs(S_ll[j] - S_ll[i]) < 3.0):
                     if S_fline[i] < S_fline[j]:
@@ -439,7 +522,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         S3_yline = []
         S3_lline = []
         S3_fline = []
-        
+
         nlines = len(S2_ll)
         flags = np.zeros(nlines)
 
@@ -451,7 +534,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
                 S3_yline.append(S2_yline[i])
                 lbdas.append(S2_ll[i])
                 fluxes.append(S2_fline[i])
-                ksel = np.where(((S2_xline[i] - S2_xline) ** 2.0 + (S2_yline[i] - S2_yline) ** 2.0 < radius**2.0) & (flags == 0))
+                ksel = np.where(((S2_xline[i] - S2_xline) ** 2.0 + (S2_yline[i] - S2_yline) ** 2.0 < radius ** 2.0) & (flags == 0))
                 for j in ksel[0]:
                     if(j != i):
                         lbdas.append(S2_ll[j])
@@ -460,28 +543,27 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
                 S3_lline.append(lbdas)
                 S3_fline.append(fluxes)
                 flags[i] = 1
-                
+
         nS3 = len(S3_xline)
-        S3_id = range(1, nS3+1)
-        
-        pix_coord = np.empty((len(S3_xline),2))
-        pix_coord [:,0] = S3_yline      # a verifier avec Johan
-        pix_coord [:,1] = S3_xline
+        S3_id = range(1, nS3 + 1)
+
+        pix_coord = np.empty((len(S3_xline), 2))
+        pix_coord[:, 0] = S3_yline      # a verifier avec Johan
+        pix_coord[:, 1] = S3_xline
         sky_coord = c.wcs.pix2sky(pix_coord)
-        S3_ra = sky_coord[:,1]
-        S3_dec = sky_coord[:,0]
+        S3_ra = sky_coord[:, 1]
+        S3_dec = sky_coord[:, 0]
         t = catalog(S3_id, S3_xline, S3_yline, S3_ra, S3_dec, S3_lline, S3_fline)
         t.write('single_lines.cat', format='ascii')
         logger.info("single_lines.cat created", extra=d)
-        
 
         ########################################################################################################################
         # redshift of continuum objects
 
         if not os.path.isfile('emlines'):
-            shutil.copy(path+'emlines', 'emlines')
+            shutil.copy(path + 'emlines', 'emlines')
         if not os.path.isfile('emlines_small'):
-            shutil.copy(path+'emlines_small', 'emlines_small')
+            shutil.copy(path + 'emlines_small', 'emlines_small')
         eml = np.loadtxt("emlines", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')})
         eml2 = np.loadtxt("emlines_small", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')})
 
@@ -524,7 +606,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
         lline_name = []
         for i, x, y, ra, dec, wl, flux in zip(S3_id, S3_xline, S3_yline, S3_ra, S3_dec, S3_lline, S3_fline):
             z, errz, nlines, wl, flux, lnames = crackz(len(wl), np.array(wl), np.array(flux), eml, eml2)
-            if nlines>0 and nlines < 20:
+            if nlines > 0 and nlines < 20:
                 idline.append(i)
                 xline.append(x)
                 yline.append(y)
