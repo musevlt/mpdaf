@@ -56,17 +56,17 @@ Tutorials
 MUSELET is run through the following commands in mpdaf:
 
   >>> from mpdaf.sdetect import muselet
-  >>> muselet.muselet('DATACUBE.fits')
+  >>> muselet('DATACUBE.fits')
 
 Optionally, one can provide the starting step (2 or 3) in order to 
 only redo one part of the script.
 
-  >>> muselet.muselet('DATACUBE.fits',step=2) #will assume the narrow-band images are already created
+  >>> muselet('DATACUBE.fits',step=2) #will assume the narrow-band images are already created
 
 Optionally, one can provide the size of the continuum region to subtract on each side of the narrow-band 
 images.
 
-  >>> muselet.muselet('DATACUBE.fits',delta=15) #only 15 wavelength planes in continuum estimate
+  >>> muselet('DATACUBE.fits',delta=15) #only 15 wavelength planes in continuum estimate
 
 Reference
 =========
