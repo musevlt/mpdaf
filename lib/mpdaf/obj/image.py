@@ -709,7 +709,7 @@ class Image(object):
             for card in wcs_cards:
                 nbhdu.header[card.keyword] = (card.value, card.comment)
             hdulist.append(nbhdu)
-
+ 
         # create DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
@@ -1140,14 +1140,14 @@ class Image(object):
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * self.data * self.data \
+                        res.var = other.var * self.data.data * self.data.data \
                             * other.fscale * other.fscale
                     elif other.var is None:
-                        res.var = self.var * other.data * other.data \
+                        res.var = self.var * other.data.data * other.data.data \
                             * other.fscale * other.fscale
                     else:
-                        res.var = (other.var * self.data * self.data +
-                                   self.var * other.data * other.data) \
+                        res.var = (other.var * self.data.data * self.data.data +
+                                   self.var * other.data.data * other.data.data) \
                             * other.fscale * other.fscale
                     # data
                     res.data = self.data * other.data * other.fscale
@@ -1194,20 +1194,20 @@ class Image(object):
                             elif self.var is None:
                                 res.var = np.ones(res.shape) \
                                     * other.var[:, np.newaxis, np.newaxis] \
-                                    * self.data * self.data \
+                                    * self.data.data * self.data.data \
                                     * other.fscale * other.fscale
                             elif other.var is None:
                                 res.var = np.ones(res.shape) \
                                     * self.var[np.newaxis, :, :] \
-                                    * other.data * other.data \
+                                    * other.data.data * other.data.data \
                                     * other.fscale * other.fscale
                             else:
                                 res.var = (np.ones(res.shape)
                                            * other.var[:, np.newaxis, np.newaxis]
-                                           * self.data * self.data
+                                           * self.data.data * self.data.data
                                            + np.ones(res.shape)
                                            * self.var[np.newaxis, :, :]
-                                           * other.data * other.data) \
+                                           * other.data.data * other.data.data) \
                                     * other.fscale * other.fscale
                             # unit
                             if self.unit == other.unit:
@@ -1276,15 +1276,15 @@ class Image(object):
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * self.data * self.data \
-                            / (other.data ** 4) / other.fscale / other.fscale
+                        res.var = other.var * self.data.data * self.data.data \
+                            / (other.data.data ** 4) / other.fscale / other.fscale
                     elif other.var is None:
-                        res.var = self.var * other.data * other.data / \
-                            (other.data ** 4) / other.fscale / other.fscale
+                        res.var = self.var * other.data.data * other.data.data / \
+                            (other.data.data ** 4) / other.fscale / other.fscale
                     else:
-                        res.var = (other.var * self.data * self.data
-                                   + self.var * other.data * other.data) \
-                            / (other.data ** 4) / (other.fscale ** 2)
+                        res.var = (other.var * self.data.data * self.data.data
+                                   + self.var * other.data.data * other.data.data) \
+                            / (other.data.data ** 4) / (other.fscale ** 2)
                     # data
                     res.data = self.data / other.data / other.fscale
                     # unit
@@ -1323,20 +1323,20 @@ class Image(object):
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
-                            res.var = other.var * self.data[np.newaxis, :, :]\
-                                * self.data[np.newaxis, :, :] \
-                                / (other.data ** 4) / (other.fscale ** 2)
+                            res.var = other.var * self.data.data[np.newaxis, :, :]\
+                                * self.data.data[np.newaxis, :, :] \
+                                / (other.data.data ** 4) / (other.fscale ** 2)
                         elif other.var is None:
                             res.var = self.var[np.newaxis, :, :] \
-                                * other.data * other.data \
-                                / (other.data ** 4) / (other.fscale ** 2)
+                                * other.data.data * other.data.data \
+                                / (other.data.data ** 4) / (other.fscale ** 2)
                         else:
                             res.var = \
-                                (other.var * self.data[np.newaxis, :, :]
-                                 * self.data[np.newaxis, :, :]
+                                (other.var * self.data.data[np.newaxis, :, :]
+                                 * self.data.data[np.newaxis, :, :]
                                  + self.var[np.newaxis, :, :]
-                                 * other.data * other.data) \
-                                / (other.data ** 4) / (other.fscale ** 2)
+                                 * other.data.data * other.data.data) \
+                                / (other.data.data ** 4) / (other.fscale ** 2)
                             # data
                         res.data = self.data[np.newaxis, :, :] / other.data \
                             / other.fscale
@@ -1390,7 +1390,7 @@ class Image(object):
         if self.data is None:
             raise ValueError('empty data array')
         if self.var is not None:
-            self.var = 3 * self.var * self.fscale ** 4 / self.data ** 4
+            self.var = 3 * self.var * self.fscale ** 4 / self.data.data ** 4
         self.data = np.ma.sqrt(self.data) / np.sqrt(self.fscale)
 
     def sqrt(self):

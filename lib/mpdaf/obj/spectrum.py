@@ -1004,14 +1004,14 @@ out : Spectrum or Cube object.
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * self.data * self.data \
+                        res.var = other.var * self.data.data * self.data.data \
                             * other.fscale * other.fscale
                     elif other.var is None:
-                        res.var = self.var * other.data * other.data \
+                        res.var = self.var * other.data.data * other.data.data \
                             * other.fscale * other.fscale
                     else:
-                        res.var = (other.var * self.data * self.data
-                                   + self.var * other.data * other.data) \
+                        res.var = (other.var * self.data.data * self.data.data
+                                   + self.var * other.data.data * other.data.data) \
                             * other.fscale * other.fscale
                     # unit
                     if self.unit == other.unit:
@@ -1097,15 +1097,15 @@ out : Spectrum or Cube object.
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * self.data * self.data \
-                            / (other.data ** 4) / (other.fscale ** 2)
+                        res.var = other.var * self.data.data * self.data.data \
+                            / (other.data.data ** 4) / (other.fscale ** 2)
                     elif other.var is None:
-                        res.var = self.var * other.data * other.data \
-                            / (other.data ** 4) / (other.fscale ** 2)
+                        res.var = self.var * other.data.data * other.data.data \
+                            / (other.data.data ** 4) / (other.fscale ** 2)
                     else:
-                        res.var = (other.var * self.data * self.data
-                                   + self.var * other.data * other.data) \
-                            / (other.data ** 4) / (other.fscale ** 2)
+                        res.var = (other.var * self.data.data * self.data.data
+                                   + self.var * other.data.data * other.data.data) \
+                            / (other.data.data ** 4) / (other.fscale ** 2)
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -1144,20 +1144,20 @@ out : Spectrum or Cube object.
                             res.var = None
                         elif self.var is None:
                             res.var = other.var \
-                                * self.data[:, np.newaxis, np.newaxis] \
-                                * self.data[:, np.newaxis, np.newaxis] \
-                                / (other.data ** 4) / (other.fscale ** 2)
+                                * self.data.data[:, np.newaxis, np.newaxis] \
+                                * self.data.data[:, np.newaxis, np.newaxis] \
+                                / (other.data.data ** 4) / (other.fscale ** 2)
                         elif other.var is None:
                             res.var = self.var[:, np.newaxis, np.newaxis] \
-                                * other.data * other.data / (other.data ** 4) \
+                                * other.data.data * other.data.data / (other.data.data ** 4) \
                                 / (other.fscale ** 2)
                         else:
                             res.var = \
                                 (other.var
-                                 * self.data[:, np.newaxis, np.newaxis]
-                                 * self.data[:, np.newaxis, np.newaxis]
+                                 * self.data.data[:, np.newaxis, np.newaxis]
+                                 * self.data.data[:, np.newaxis, np.newaxis]
                                  + self.var[:, np.newaxis, np.newaxis]
-                                 * other.data * other.data) / (other.data ** 4) \
+                                 * other.data.data * other.data.data) / (other.data.data ** 4) \
                                 / (other.fscale ** 2)
                         # unit
                         if self.unit == other.unit:
@@ -1209,7 +1209,7 @@ out : Spectrum or Cube object.
         if self.data is None:
             raise ValueError('empty data array')
         if self.var is not None:
-            self.var = 3 * self.var * self.fscale ** 4 / self.data ** 4
+            self.var = 3 * self.var * self.fscale ** 4 / self.data.data ** 4
         self.data = np.ma.sqrt(self.data) / np.sqrt(self.fscale)
 
     def sqrt(self):
@@ -2589,7 +2589,7 @@ other : 1d-array or Spectrum
                                     mask=self.data.mask)
                     if self.var is not None:
                         self.var = signal.convolve(self.var,
-                                                   other.data * other.fscale, mode='same')
+                                                   other.data.data * other.fscale, mode='same')
         except IOError as e:
             raise e
         except:
@@ -2646,7 +2646,7 @@ other : 1d-array or Spectrum
                                     mask=self.data.mask)
                     if self.var is not None:
                         self.var = signal.fftconvolve(self.var,
-                                                      other.data * other.fscale,
+                                                      other.data.data * other.fscale,
                                                       mode='same')
         except IOError as e:
             raise e
@@ -2703,7 +2703,7 @@ other : 1d-array or Spectrum
                                     mask=self.data.mask)
                     if self.var is not None:
                         self.var = signal.correlate(self.var,
-                                                    other.data * other.fscale,
+                                                    other.data.data * other.fscale,
                                                     mode='same')
         except IOError as e:
             raise e

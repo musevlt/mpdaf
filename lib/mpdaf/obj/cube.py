@@ -1395,14 +1395,14 @@ class Cube(CubeBase):
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * self.data * self.data \
+                        res.var = other.var * self.data.data * self.data.data \
                             * other.fscale * other.fscale
                     elif other.var is None:
-                        res.var = self.var * other.data * other.data \
+                        res.var = self.var * other.data.data * other.data.data \
                             * other.fscale * other.fscale
                     else:
-                        res.var = (other.var * self.data * self.data
-                                   + self.var * other.data * other.data) \
+                        res.var = (other.var * self.data.data * self.data.data
+                                   + self.var * other.data.data * other.data.data) \
                             * other.fscale * other.fscale
                     # unit
                     if self.unit == other.unit:
@@ -1441,17 +1441,17 @@ class Cube(CubeBase):
                             res.var = None
                         elif self.var is None:
                             res.var = other.var[np.newaxis, :, :] \
-                                * self.data * self.data \
+                                * self.data.data * self.data.data \
                                 * other.fscale * other.fscale
                         elif other.var is None:
-                            res.var = self.var * other.data[np.newaxis, :, :] \
-                                * other.data[np.newaxis, :, :] \
+                            res.var = self.var * other.data.data[np.newaxis, :, :] \
+                                * other.data.data[np.newaxis, :, :] \
                                 * other.fscale * other.fscale
                         else:
                             res.var = (other.var[np.newaxis, :, :]
-                                       * self.data * self.data
-                                       + self.var * other.data[np.newaxis, :, :]
-                                       * other.data[np.newaxis, :, :]) \
+                                       * self.data.data * self.data.data
+                                       + self.var * other.data.data[np.newaxis, :, :]
+                                       * other.data.data[np.newaxis, :, :]) \
                                 * other.fscale * other.fscale
                         # unit
                         if self.unit == other.unit:
@@ -1491,18 +1491,18 @@ class Cube(CubeBase):
                                 res.var = None
                             elif self.var is None:
                                 res.var = other.var[:, np.newaxis, np.newaxis] \
-                                    * self.data * self.data  \
+                                    * self.data.data * self.data.data  \
                                     * other.fscale * other.fscale
                             elif other.var is None:
                                 res.var = self.var \
-                                    * other.data[:, np.newaxis, np.newaxis] \
-                                    * other.data[:, np.newaxis, np.newaxis] \
+                                    * other.data.data[:, np.newaxis, np.newaxis] \
+                                    * other.data.data[:, np.newaxis, np.newaxis] \
                                     * other.fscale * other.fscale
                             else:
                                 res.var = (other.var[:, np.newaxis, np.newaxis]
-                                           * self.data * self.data + self.var
-                                           * other.data[:, np.newaxis, np.newaxis]
-                                           * other.data[:, np.newaxis, np.newaxis]) \
+                                           * self.data.data * self.data.data + self.var
+                                           * other.data.data[:, np.newaxis, np.newaxis]
+                                           * other.data.data[:, np.newaxis, np.newaxis]) \
                                     * other.fscale * other.fscale
                             # unit
                             if self.unit == other.unit:
@@ -1582,17 +1582,17 @@ class Cube(CubeBase):
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
-                        res.var = other.var * self.data * self.data \
-                            / (other.data ** 4) \
+                        res.var = other.var * self.data.data * self.data.data \
+                            / (other.data.data ** 4) \
                             / other.fscale / other.fscale
                     elif other.var is None:
-                        res.var = self.var * other.data * other.data \
-                            / (other.data ** 4) \
+                        res.var = self.var * other.data.data * other.data.data \
+                            / (other.data.data ** 4) \
                             / other.fscale / other.fscale
                     else:
-                        res.var = (other.var * self.data * self.data
-                                   + self.var * other.data * other.data) \
-                            / (other.data ** 4) \
+                        res.var = (other.var * self.data.data * self.data.data
+                                   + self.var * other.data.data * other.data.data) \
+                            / (other.data.data ** 4) \
                             / other.fscale / other.fscale
                     # unit
                     if self.unit == other.unit:
@@ -1631,20 +1631,20 @@ class Cube(CubeBase):
                             res.var = None
                         elif self.var is None:
                             res.var = other.var[np.newaxis, :, :] \
-                                * self.data * self.data \
-                                / (other.data[np.newaxis, :, :] ** 4) \
+                                * self.data.data * self.data.data \
+                                / (other.data.data[np.newaxis, :, :] ** 4) \
                                 / other.fscale / other.fscale
                         elif other.var is None:
-                            res.var = self.var * other.data[np.newaxis, :, :] \
-                                * other.data[np.newaxis, :, :] \
-                                / (other.data[np.newaxis, :, :] ** 4) \
+                            res.var = self.var * other.data.data[np.newaxis, :, :] \
+                                * other.data.data[np.newaxis, :, :] \
+                                / (other.data.data[np.newaxis, :, :] ** 4) \
                                 / other.fscale / other.fscale
                         else:
                             res.var = (other.var[np.newaxis, :, :]
-                                       * self.data * self.data + self.var
-                                       * other.data[np.newaxis, :, :]
-                                       * other.data[np.newaxis, :, :]) \
-                                / (other.data[np.newaxis, :, :] ** 4) \
+                                       * self.data.data * self.data.data + self.var
+                                       * other.data.data[np.newaxis, :, :]
+                                       * other.data.data[np.newaxis, :, :]) \
+                                / (other.data.data[np.newaxis, :, :] ** 4) \
                                 / other.fscale / other.fscale
                         # unit
                         if self.unit == other.unit:
@@ -1684,23 +1684,23 @@ class Cube(CubeBase):
                                 res.var = None
                             elif self.var is None:
                                 res.var = other.var[:, np.newaxis, np.newaxis] \
-                                    * self.data * self.data \
-                                    / (other.data[:, np.newaxis, np.newaxis] ** 4) \
+                                    * self.data.data * self.data.data \
+                                    / (other.data.data[:, np.newaxis, np.newaxis] ** 4) \
                                     / other.fscale / other.fscale
                             elif other.var is None:
                                 res.var = self.var \
-                                    * other.data[:, np.newaxis, np.newaxis] \
-                                    * other.data[:, np.newaxis, np.newaxis] \
-                                    / (other.data[:, np.newaxis, np.newaxis] ** 4) \
+                                    * other.data.data[:, np.newaxis, np.newaxis] \
+                                    * other.data.data[:, np.newaxis, np.newaxis] \
+                                    / (other.data.data[:, np.newaxis, np.newaxis] ** 4) \
                                     / other.fscale / other.fscale
                             else:
                                 res.var = (other.var[:, np.newaxis, np.newaxis]
-                                           * self.data * self.data + self.var
-                                           * other.data[:, np.newaxis,
+                                           * self.data.data * self.data.data + self.var
+                                           * other.data.data[:, np.newaxis,
                                                         np.newaxis]
-                                           * other.data[:, np.newaxis,
+                                           * other.data.data[:, np.newaxis,
                                                         np.newaxis]) \
-                                    / (other.data[:, np.newaxis,
+                                    / (other.data.data[:, np.newaxis,
                                                   np.newaxis] ** 4) \
                                     / other.fscale / other.fscale
                             # unit
@@ -1764,7 +1764,7 @@ class Cube(CubeBase):
         if self.data is None:
             raise ValueError('empty data array')
         if self.var is not None:
-            self.var = 3 * self.var * self.fscale ** 4 / self.data ** 4
+            self.var = 3 * self.var * self.fscale ** 4 / self.data.data ** 4
         self.data = np.ma.sqrt(self.data) / np.sqrt(self.fscale)
 
     def sqrt(self):
