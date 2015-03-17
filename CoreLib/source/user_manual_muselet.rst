@@ -46,7 +46,9 @@ emission lines). These files are 2 columnes (name and wavelength) and can be adj
 
 
 Requirements:
-- MPDAF (v. XXXX)
+
+- MPDAF (v 1.1.16)
+
 - SExtractor ("sex" binary file in your $PATH).
 
 
@@ -71,3 +73,4 @@ images.
 Reference
 =========
 
+:func:`mpdaf.sdetect.muselet <mpdaf.sdetect.muselet>` runs MUSELET.
