@@ -18,7 +18,7 @@ from the isolated emission lines. It then tries to estimate the redshift from mu
 
 MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
 
--STEP 1: creation of white light, color and narrow band images.
+- STEP 1: creation of white light, color and narrow band images.
 MUSELET will first create a variance-weighted white light image as well as R,G,B images based on 1/3 of the 
 wavelength range each.
 The code will then go through the wavelength axis and create one narrow band image at each wavelength plane.
@@ -29,11 +29,11 @@ parameter delta (in number of wavelength planes, default=20).
 
 These narrow band images are created in the "nb/" directory. If not present it will be created.
 
--STEP 2: 
+- STEP 2: 
 MUSELET will run SExtractor using the default.sex,default.param,default.conv and default.nnw parameter files 
 in the current and nb/ directory. If not present default parameter files are created. 
 
--STEP 3:
+- STEP 3:
 The code will merge all SExtractor catalogs, separate emission lines linked with continuum objects from the rest, 
 and produce a list of continuum emission lines (continuum_lines.cat) and isolated emission lines (single_lines.cat).
 
@@ -42,7 +42,7 @@ the corresponding files continuum_lines_z.cat and single_lines_z.cat. Emission l
 source based on the "radius" parameter (in pixels, default radius=4).
 
 The redshifts are estimated from emission line catalogs emlines (all emission lines) and emlines_small (list of brightest 
-emission lines). These files are 2 columnes (name and wavelength) and can be adjusted to one's needs.
+emission lines). These files are 2 columns (name and wavelength) and can be adjusted to one's needs.
 
 
 Requirements:
