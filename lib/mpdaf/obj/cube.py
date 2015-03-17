@@ -2063,9 +2063,10 @@ class Cube(CubeBase):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.sum(self.data, axis=(1, 2))
+            data = np.ma.sum(np.ma.sum(self.data, axis=1), axis=1)
             if self.var is not None:
-                var = np.ma.sum(np.ma.masked_invalid(self.var), axis=(1, 2)).filled(np.NaN)
+                var = np.ma.sum(np.ma.sum(np.ma.masked_invalid(self.var),
+                                          axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(shape=data.shape[0], wave=self.wave,
@@ -2111,9 +2112,10 @@ class Cube(CubeBase):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.mean(self.data, axis=(1, 2))
+            data = np.ma.mean(np.ma.mean(self.data, axis=1), axis=1)
             if self.var is not None:
-                var = np.ma.mean(np.ma.masked_invalid(self.var), axis=(1, 2)).filled(np.NaN)
+                var = np.ma.mean(np.ma.mean(np.ma.masked_invalid(self.var),
+                                            axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(notnoise=True, shape=data.shape[0],
@@ -2160,9 +2162,10 @@ class Cube(CubeBase):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.median(self.data, axis=(1, 2))
+            data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
             if self.var is not None:
-                var = np.ma.median(np.ma.masked_invalid(self.var), axis=(1, 2)).filled(np.NaN)
+                var = np.ma.median(np.ma.median(np.ma.masked_invalid(self.var),
+                                                 axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(notnoise=True, shape=data.shape[0],
@@ -3236,11 +3239,13 @@ class Cube(CubeBase):
             m = np.ma.mask_or(m, np.ma.getmask(data))
             data.mask[:, :, :] = m
             if self.var is not None:
-                var = (np.ma.sum(np.ma.masked_invalid(self.var[:, imin:imax, jmin:jmax]), axis=(1, 2))).filled(np.NaN)
+                var = np.ma.sum(np.ma.sum(
+                      np.ma.masked_invalid(self.var[:, imin:imax, jmin:jmax]),
+                      axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
             spec = Spectrum(wave=self.wave, unit=self.unit,
-                            data=data.sum(axis=(1, 2)), var=var,
+                            data=data.sum(axis=1).sum(axis=1), var=var,
                             fscale=self.fscale)
             if verbose:
                 msg = '%d spaxels summed' % (data.shape[1] * data.shape[2])
