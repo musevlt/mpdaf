@@ -587,6 +587,132 @@ class Image(object):
             ima = Image(wcs=wcs, data=np.zeros(shape=self.shape),
                         var=np.zeros(shape=self.shape), unit=self.unit)
         return ima
+    
+    def get_data_hdu(self, name='DATA', fscale=None, savemask='dq'):
+        """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
+        
+        Parameters
+        ----------
+        name     : string
+                   Extension name.
+                   DATA by default
+        fscale   : float
+                   Flux scaling factor.
+        savemask : string
+                   If 'dq', the mask array is saved in DQ extension.
+                   If 'nan', masked data are replaced by nan in DATA extension.
+                   If 'none', masked array is not saved.
+                   
+        Returns
+        -------
+        out : astropy.io.fits.ImageHDU
+        """
+        # update fscale
+        if fscale is None:
+            fscale = self.fscale
+            
+        # world coordinates
+        wcs_cards = self.wcs.to_header().cards
+
+        # create spectrum DATA extension
+        if savemask == 'nan':
+            data = self.data.filled(fill_value=np.nan)
+        else:
+            data = self.data.data
+            
+        data *= np.double(self.fscale / fscale)
+        imahdu = pyfits.ImageHDU(name=name, data=data.astype(np.float32))
+        
+        for card in self.data_header.cards:
+            if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' \
+                and card.keyword != 'CD2_1' and card.keyword != 'CD2_2' \
+                and card.keyword != 'CDELT1' and card.keyword != 'CDELT2' \
+                and imahdu.header.keys().count(card.keyword) == 0:
+                try:
+                    card.verify('fix')
+                    imahdu.header[card.keyword] = \
+                            (card.value, card.comment)
+                except:
+                    try:
+                        if isinstance(card.value, str):
+                            n = 80 - len(card.keyword) - 14
+                            s = card.value[0: n]
+                            imahdu.header['hierarch %s' % card.keyword] = \
+                                (s, card.comment)
+                        else:
+                            imahdu.header['hierarch %s' % card.keyword] = \
+                                (card.value, card.comment)
+                    except:
+                        d = {'class': 'Image', 'method': 'write'}
+                        self.logger.warning("%s not copied in data header",
+                                        card.keyword, extra=d)
+
+        cd = self.wcs.get_cd()
+        imahdu.header['CTYPE1'] = \
+            (wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
+        imahdu.header['CUNIT1'] = \
+            (wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
+        imahdu.header['CRVAL1'] = \
+            (wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
+        imahdu.header['CRPIX1'] = \
+            (wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
+        imahdu.header['CD1_1'] = \
+            (cd[0, 0], 'partial of first axis coordinate w.r.t. x ')
+        imahdu.header['CD1_2'] = \
+            (cd[0, 1], 'partial of first axis coordinate w.r.t. y')
+        imahdu.header['CTYPE2'] = \
+            (wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
+        imahdu.header['CUNIT2'] = \
+            (wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
+        imahdu.header['CRVAL2'] = \
+            (wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
+        imahdu.header['CRPIX2'] = \
+            (wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
+        imahdu.header['CD2_1'] = \
+            (cd[1, 0], 'partial of second axis coordinate w.r.t. x')
+        imahdu.header['CD2_2'] = \
+            (cd[1, 1], 'partial of second axis coordinate w.r.t. y')
+
+        if self.unit is not None:
+            imahdu.header['BUNIT'] = (self.unit, 'data unit type')
+        imahdu.header['FSCALE'] = (fscale, 'Flux scaling factor')
+        
+        return imahdu
+    
+    def get_stat_hdu(self, name='STAT', fscale=None):
+        """ Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
+        
+        Parameters
+        ----------
+        name     : string
+                   Extension name.
+                   STAT by default
+        fscale   : float
+                   Flux scaling factor.
+                   
+        Returns
+        -------
+        out : astropy.io.fits.ImageHDU
+        """
+        if self.var is None:
+            return None
+        else:
+            # update fscale
+            if fscale is None:
+                fscale = self.fscale
+            
+            # world coordinates
+            wcs_cards = self.wcs.to_header().cards
+        
+            # create image STAT extension
+            var = (self.var * np.double(self.fscale * self.fscale
+                                     / fscale / fscale)).astype(np.float32)
+            imahdu = pyfits.ImageHDU(name=name, data=var)
+            for card in wcs_cards:
+                imahdu.header[card.keyword] = (card.value, card.comment)
+                
+            return imahdu
+        
 
     def write(self, filename, fscale=None, savemask='dq'):
         """Saves the object in a FITS file.
@@ -603,33 +729,27 @@ class Image(object):
                    If 'none', masked array is not saved.
         """
         warnings.simplefilter("ignore")
-        # update fscale
-        if fscale is None:
-            fscale = self.fscale
+        
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         for card in self.primary_header.cards:
             try:
+                card.verify('fix')
                 prihdu.header[card.keyword] = (card.value, card.comment)
             except:
                 try:
-                    card.verify('fix')
-                    prihdu.header[card.keyword] = (card.value, card.comment)
-                except:
-                    try:
-                        if isinstance(card.value, str):
-                            n = 80 - len(card.keyword) - 14
-                            s = card.value[0: n]
-                            prihdu.header['hierarch %s' % card.keyword] = \
+                    if isinstance(card.value, str):
+                        n = 80 - len(card.keyword) - 14
+                        s = card.value[0: n]
+                        prihdu.header['hierarch %s' % card.keyword] = \
                                 (s, card.comment)
-                        else:
-                            prihdu.header['hierarch %s' % card.keyword] = \
+                    else:
+                        prihdu.header['hierarch %s' % card.keyword] = \
                                 (card.value, card.comment)
-                    except:
-                        d = {'class': 'Image', 'method': 'write'}
-                        self.logger.warning("%s not copied in primary header",
+                except:
+                    d = {'class': 'Image', 'method': 'write'}
+                    self.logger.warning("%s not copied in primary header",
                                             card.keyword, extra=d)
-                        pass
         prihdu.header['date'] = \
             (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
@@ -639,76 +759,14 @@ class Image(object):
         wcs_cards = self.wcs.to_header().cards
 
         # create spectrum DATA extension
-        if savemask == 'nan':
-            data = self.data.filled(fill_value=np.nan)
-        else:
-            data = self.data.data
-        tbhdu = pyfits.ImageHDU(name='DATA', data=(data
-                                                   * np.double(self.fscale / fscale))
-                                .astype(np.float32))
-        for card in self.data_header.cards:
-            try:
-                if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' \
-                        and card.keyword != 'CD2_1' and card.keyword != 'CD2_2' \
-                        and card.keyword != 'CDELT1' and card.keyword != 'CDELT2' \
-                        and tbhdu.header.keys().count(card.keyword) == 0:
-                    tbhdu.header[card.keyword] = (card.value, card.comment)
-            except:
-                try:
-                    card.verify('fix')
-                    if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' \
-                            and card.keyword != 'CD2_1' and card.keyword != 'CD2_2' \
-                            and card.keyword != 'CDELT1' and card.keyword != 'CDELT2'\
-                            and tbhdu.header.keys().count(card.keyword) == 0:
-                        prihdu.header[card.keyword] = \
-                            (card.value, card.comment)
-                except:
-                    d = {'class': 'Image', 'method': 'write'}
-                    self.logger.warning("%s not copied in data header",
-                                        card.keyword, extra=d)
-                    pass
-
-        cd = self.wcs.get_cd()
-        tbhdu.header['CTYPE1'] = \
-            (wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
-        tbhdu.header['CUNIT1'] = \
-            (wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
-        tbhdu.header['CRVAL1'] = \
-            (wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
-        tbhdu.header['CRPIX1'] = \
-            (wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
-        tbhdu.header['CD1_1'] = \
-            (cd[0, 0], 'partial of first axis coordinate w.r.t. x ')
-        tbhdu.header['CD1_2'] = \
-            (cd[0, 1], 'partial of first axis coordinate w.r.t. y')
-        tbhdu.header['CTYPE2'] = \
-            (wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
-        tbhdu.header['CUNIT2'] = \
-            (wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
-        tbhdu.header['CRVAL2'] = \
-            (wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
-        tbhdu.header['CRPIX2'] = \
-            (wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
-        tbhdu.header['CD2_1'] = \
-            (cd[1, 0], 'partial of second axis coordinate w.r.t. x')
-        tbhdu.header['CD2_2'] = \
-            (cd[1, 1], 'partial of second axis coordinate w.r.t. y')
-
-        if self.unit is not None:
-            tbhdu.header['BUNIT'] = (self.unit, 'data unit type')
-        tbhdu.header['FSCALE'] = (fscale, 'Flux scaling factor')
-        hdulist.append(tbhdu)
-
-        self.wcs = WCS(tbhdu.header)
+        data_hdu = self.get_data_hdu('DATA', fscale, savemask)
+        hdulist.append(data_hdu)
+        self.wcs = WCS(data_hdu.header)
 
         # create image STAT extension
-        if self.var is not None:
-            nbhdu = pyfits.ImageHDU(name='STAT', data=(
-                self.var * np.double(self.fscale * self.fscale
-                                     / fscale / fscale)).astype(np.float32))
-            for card in wcs_cards:
-                nbhdu.header[card.keyword] = (card.value, card.comment)
-            hdulist.append(nbhdu)
+        stat_hdu = self.get_stat_hdu('STAT', fscale)
+        if stat_hdu is not None:
+            hdulist.append(stat_hdu)
  
         # create DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
