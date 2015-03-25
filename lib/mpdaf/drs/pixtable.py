@@ -260,6 +260,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
     if primary_header is not None:
         for card in primary_header.cards:
             try:
+                card.verify('fix')
                 prihdu.header[card.keyword] = (card.value, card.comment)
             except ValueError:
                 if isinstance(card.value, str):
