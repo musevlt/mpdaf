@@ -2909,7 +2909,7 @@ pix         : boolean
             return wave[ksel]
 
     def plot(self, max=None, title=None, noise=False,
-             lmin=None, lmax=None, **kargs):
+             lmin=None, lmax=None, ax=None, **kargs):
         """Plots the spectrum. By default, drawstyle is 'steps-mid'.
 
         Parameters
@@ -2925,11 +2925,16 @@ pix         : boolean
                 Minimum wavelength.
         lmax  : float
                 Maximum wavelength.
+        ax     : matplotlib.Axes
+                the Axes instance in which the spectrum is drawn
         kargs : matplotlib.lines.Line2D
                 kargs can be used to set line properties:
                 line label (for auto legends), linewidth,
                 anitialising, marker face color, etc.
         """
+        
+        if ax is None:
+            ax = plt.gca()
 
         res = self.copy()
         res.truncate(lmin, lmax)
@@ -2945,24 +2950,24 @@ pix         : boolean
         plotargs = dict(drawstyle='steps-mid')
         plotargs.update(kargs)
 
-        plt.plot(x, f, **plotargs)
+        ax.plot(x, f, **plotargs)
 
         if noise:
-            plt.fill_between(x, f + np.sqrt(res.var) * res.fscale,
+            ax.fill_between(x, f + np.sqrt(res.var) * res.fscale,
                              f - np.sqrt(res.var) * res.fscale,
                              color='0.75', facecolor='0.75', alpha=0.5)
         if title is not None:
-            plt.title(title)
+            ax.set_title(title)
         if res.wave.cunit is not None:
-            plt.xlabel(r'$\lambda$ (%s)' % res.wave.cunit)
+            ax.set_xlabel(r'$\lambda$ (%s)' % res.wave.cunit)
         if res.unit is not None:
-            plt.ylabel(res.unit)
+            ax.set_ylabel(res.unit)
         self._fig = plt.get_current_fig_manager()
         plt.connect('motion_notify_event', self._on_move)
         self._plot_id = len(plt.gca().lines) - 1
 
     def log_plot(self, max=None, title=None, noise=False,
-                 lmin=None, lmax=None, **kargs):
+                 lmin=None, lmax=None, ax=None, **kargs):
         """Plots the spectrum with y logarithmic scale.
 By default, drawstyle is 'steps-mid'.
 
@@ -2979,12 +2984,15 @@ lmin  : float
         Minimum wavelength.
 lmax  : float
         Maximum wavelength.
+ax     : matplotlib.Axes
+        the Axes instance in which the spectrum is drawn
 kargs : matplotlib.lines.Line2D
         kargs can be used to set line properties:
         line label (for auto legends), linewidth,
         anitialising, marker face color, etc.
         """
-        plt.ion()
+        if ax is None:
+            ax = plt.gca()
 
         res = self.copy()
         res.truncate(lmin, lmax)
@@ -3000,17 +3008,17 @@ kargs : matplotlib.lines.Line2D
         plotargs = dict(drawstyle='steps-mid')
         plotargs.update(kargs)
 
-        plt.semilogy(x, f, **plotargs)
+        ax.semilogy(x, f, **plotargs)
         if noise:
-            plt.fill_between(x, f + np.sqrt(res.var) * res.fscale,
+            ax.fill_between(x, f + np.sqrt(res.var) * res.fscale,
                              f - np.sqrt(res.var) * res.fscale,
                              color='0.75', facecolor='0.75', alpha=0.5)
         if title is not None:
-            plt.title(title)
+            ax.set_title(title)
         if res.wave.cunit is not None:
-            plt.xlabel(r'$\lambda$ (%s)' % res.wave.cunit)
+            ax.set_xlabel(r'$\lambda$ (%s)' % res.wave.cunit)
         if res.unit is not None:
-            plt.ylabel(res.unit)
+            ax.set_ylabel(res.unit)
 
         self._fig = plt.get_current_fig_manager()
         plt.connect('motion_notify_event', self._on_move)

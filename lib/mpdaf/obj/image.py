@@ -4614,7 +4614,7 @@ class Image(object):
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
-             show_ylabel=True, **kwargs):
+             show_ylabel=True, ax=None, **kwargs):
         """Plots the image.
 
         Parameters
@@ -4638,6 +4638,8 @@ class Image(object):
         var      : boolean
                 If var is True, the inverse of variance
                 is overplotted.
+        ax       : matplotlib.Axes
+                the Axes instance in which the image is drawn
         kwargs   : matplotlib.artist.Artist
                 kwargs can be used to set additional Artist properties.
 
@@ -4645,22 +4647,24 @@ class Image(object):
         -------
         out : matplotlib AxesImage
         """
-
+        if ax is None:
+            ax = plt.gca()
+        
         f = self.data * self.fscale
         xunit = yunit = 'pixel'
         xlabel = 'q (%s)' % xunit
         ylabel = 'p (%s)' % yunit
-
+ 
         if self.shape[1] == 1:
             # plot a column
             yaxis = np.arange(self.shape[0], dtype=np.float)
-            plt.plot(yaxis, f)
+            ax.plot(yaxis, f)
             xlabel = 'p (%s)' % yunit
             ylabel = self.unit
         elif self.shape[0] == 1:
             # plot a line
             xaxis = np.arange(self.shape[1], dtype=np.float)
-            plt.plot(xaxis, f)
+            ax.plot(xaxis, f)
             ylabel = self.unit
         else:
             if zscale:
@@ -4675,23 +4679,22 @@ class Image(object):
                 norm = plt_norm.SqrtNorm(vmin=vmin, vmax=vmax)
             else:
                 norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-
+ 
             if var and self.var is not None:
                 wght = 1.0 / (self.var * self.fscale * self.fscale)
                 np.ma.fix_invalid(wght, copy=False, fill_value=0)
-
+ 
                 normalpha = mpl.colors.Normalize(wght.min(), wght.max())
-
+ 
                 img_array = plt.get_cmap('jet')(norm(f))
                 img_array[:, :, 3] = 1 - normalpha(wght) / 2
-                cax = plt.imshow(img_array, interpolation='nearest',
+                cax = ax.imshow(img_array, interpolation='nearest',
                                  origin='lower', norm=norm, **kwargs)
             else:
-                cax = plt.imshow(f, interpolation='nearest', origin='lower',
+                cax = ax.imshow(f, interpolation='nearest', origin='lower',
                                  norm=norm, **kwargs)
-
+ 
             # create colorbar
-            ax = plt.gca()
             divider = make_axes_locatable(ax)
             if colorbar == "h":
                 cax2 = divider.append_axes("top", size="5%", pad=0.2)
@@ -4704,16 +4707,16 @@ class Image(object):
             elif colorbar == "v":
                 cax2 = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(cax, cax=cax2)
-
+ 
             self._ax = cax
-
+ 
         if show_xlabel:
-            plt.xlabel(xlabel)
+            ax.set_xlabel(xlabel)
         if show_ylabel:
-            plt.ylabel(ylabel)
+            ax.set_ylabel(ylabel)
         if title is not None:
-            plt.title(title)
-
+            ax.set_title(title)
+ 
         self._fig = plt.get_current_fig_manager()
         plt.connect('motion_notify_event', self._on_move)
         return cax
