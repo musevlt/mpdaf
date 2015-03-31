@@ -934,20 +934,16 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        if is_float(other) or is_int(other):
-            # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
-            res = self.copy()
-            res.data = self.data + (other / np.double(self.fscale))
-            return res
+        
         try:
             # image1 + image2 = image3 (image3[j,i]=image1[j,i]+image2[j,i])
             # Dimensions must be the same.
             # If not equal to None, world coordinates must be the same.
             if other.image:
                 if other.data is None or self.shape[0] != other.shape[0] \
-                        or self.shape[1] != other.shape[1]:
+                    or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
-                                  'with different sizes')
+                                      'with different sizes')
                 else:
                     res = Image(shape=self.shape, fscale=self.fscale)
                     # coordinates
@@ -957,7 +953,7 @@ class Image(object):
                         res.wcs = self.wcs
                     else:
                         raise IOError('Operation forbidden for images '
-                                      'with different world coordinates')
+                                        'with different world coordinates')
                     # var
                     if self.var is None and other.var is None:
                         res.var = None
@@ -970,10 +966,10 @@ class Image(object):
                     else:
                         res.var = self.var + other.var * \
                             np.double(other.fscale * other.fscale
-                                      / self.fscale / self.fscale)
+                                        / self.fscale / self.fscale)
                     # data
                     res.data = self.data + \
-                        (other.data * np.double(other.fscale / self.fscale))
+                            (other.data * np.double(other.fscale / self.fscale))
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -993,7 +989,13 @@ class Image(object):
             except IOError as e:
                 raise e
             except:
-                raise IOError('Operation forbidden')
+                try:
+                    # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
+                    res = self.copy()
+                    res.data = self.data + (other / np.double(self.fscale))
+                    return res
+                except:
+                    raise IOError('Operation forbidden')
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -1022,11 +1024,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        if is_float(other) or is_int(other):
-            # image1 - number = image2 (image2[j,i]=image1[j,i]-number)
-            res = self.copy()
-            res.data = self.data - (other / np.double(self.fscale))
-            return res
+        
         try:
             # image1 - image2 = image3 (image3[j,i]=image1[j,i]-image2[j,i])
             # Dimensions must be the same.
@@ -1035,7 +1033,7 @@ class Image(object):
                 if other.data is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
-                                  'with different sizes')
+                                      'with different sizes')
                 else:
                     res = Image(shape=self.shape, fscale=self.fscale)
                     # wcs
@@ -1045,23 +1043,23 @@ class Image(object):
                         res.wcs = self.wcs
                     else:
                         raise IOError('Operation forbidden for images with '
-                                      'different world coordinates')
+                                          'different world coordinates')
                     # variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
                         res.var = other.var \
-                            * np.double(other.fscale * other.fscale
-                                        / self.fscale / self.fscale)
+                                * np.double(other.fscale * other.fscale
+                                            / self.fscale / self.fscale)
                     elif other.var is None:
                         res.var = self.var
                     else:
                         res.var = self.var + other.var \
-                            * np.double(other.fscale * other.fscale
-                                        / self.fscale / self.fscale)
+                                * np.double(other.fscale * other.fscale
+                                            / self.fscale / self.fscale)
                     # data
                     res.data = self.data - \
-                        (other.data * np.double(other.fscale / self.fscale))
+                            (other.data * np.double(other.fscale / self.fscale))
                     # unit
                     if self.unit == other.unit:
                         res.unit = self.unit
@@ -1078,13 +1076,13 @@ class Image(object):
                 # in spatial directions must be the same.
                 if other.cube:
                     if other.data is None or self.shape[0] != other.shape[1] \
-                            or self.shape[1] != other.shape[2]:
+                                or self.shape[1] != other.shape[2]:
                         raise IOError('Operation forbidden for images '
-                                      'with different sizes')
+                                          'with different sizes')
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape, wave=other.wave,
-                                   fscale=self.fscale)
+                                       fscale=self.fscale)
                         # coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
@@ -1092,24 +1090,24 @@ class Image(object):
                             res.wcs = self.wcs
                         else:
                             raise IOError('Operation forbidden for objects '
-                                          'with different world coordinates')
+                                            'with different world coordinates')
                         # variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
                             res.var = other.var \
-                                * np.double(other.fscale * other.fscale
-                                            / self.fscale / self.fscale)
+                                    * np.double(other.fscale * other.fscale
+                                                / self.fscale / self.fscale)
                         elif other.var is None:
                             res.var = np.ones(res.shape) \
-                                * self.var[np.newaxis, :, :]
+                                    * self.var[np.newaxis, :, :]
                         else:
                             res.var = self.var[np.newaxis, :, :] + other.var \
-                                * np.double(other.fscale * other.fscale
-                                            / self.fscale / self.fscale)
+                                    * np.double(other.fscale * other.fscale
+                                                / self.fscale / self.fscale)
                         # data
                         res.data = self.data[np.newaxis, :, :] \
-                            - (other.data * np.double(other.fscale / self.fscale))
+                                - (other.data * np.double(other.fscale / self.fscale))
                         # unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -1117,16 +1115,19 @@ class Image(object):
             except IOError as e:
                 raise e
             except:
-                raise IOError('Operation forbidden')
-                return None
+                try:
+                    # image1 - number = image2 (image2[j,i]=image1[j,i]-number)
+                    res = self.copy()
+                    res.data = self.data - (other / np.double(self.fscale))
+                    return res
+                except:
+                    raise IOError('Operation forbidden')
+                    return None
 
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
-        if is_float(other) or is_int(other):
-            res = self.copy()
-            res.data = (other / np.double(self.fscale)) - self.data
-            return res
+        
         try:
             if other.image:
                 return other.__sub__(self)
@@ -1139,7 +1140,12 @@ class Image(object):
             except IOError as e:
                 raise e
             except:
-                raise IOError('Operation forbidden')
+                try:
+                    res = self.copy()
+                    res.data = (other / np.double(self.fscale)) - self.data
+                    return res
+                except:
+                    raise IOError('Operation forbidden')
 
     def __mul__(self, other):
         """Operator \*.
@@ -1167,13 +1173,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        if is_float(other) or is_int(other):
-            # image1 * number = image2 (image2[j,i]=image1[j,i]*number)
-            res = self.copy()
-            res.data *= other
-            if self.var is not None:
-                res.var *= other ** 2
-            return res
+        
         try:
             # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
             # Dimensions must be the same.
@@ -1182,10 +1182,10 @@ class Image(object):
                 if other.data is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
-                                  'with different sizes')
+                                      'with different sizes')
                 else:
                     res = Image(shape=self.shape,
-                                fscale=self.fscale)
+                                    fscale=self.fscale)
                     # coordinates
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
@@ -1193,20 +1193,20 @@ class Image(object):
                         res.wcs = self.wcs
                     else:
                         raise IOError('Operation forbidden for images '
-                                      'with different world coordinates')
+                                          'with different world coordinates')
                     # variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
                         res.var = other.var * self.data.data * self.data.data \
-                            * other.fscale * other.fscale
+                                * other.fscale * other.fscale
                     elif other.var is None:
                         res.var = self.var * other.data.data * other.data.data \
-                            * other.fscale * other.fscale
+                                * other.fscale * other.fscale
                     else:
                         res.var = (other.var * self.data.data * self.data.data +
-                                   self.var * other.data.data * other.data.data) \
-                            * other.fscale * other.fscale
+                                       self.var * other.data.data * other.data.data) \
+                                * other.fscale * other.fscale
                     # data
                     res.data = self.data * other.data * other.fscale
                     # unit
@@ -1235,38 +1235,38 @@ class Image(object):
                     if other.spectrum:
                         if other.data is None:
                             raise IOError('Operation forbidden '
-                                          'for empty data')
+                                              'for empty data')
                         else:
                             from cube import Cube
                             shape = (other.shape, self.shape[0], self.shape[1])
                             res = Cube(shape=shape, wave=other.wave,
-                                       wcs=self.wcs,
-                                       fscale=self.fscale)
+                                        wcs=self.wcs,
+                                        fscale=self.fscale)
                             # data
                             res.data = self.data[np.newaxis, :, :] \
-                                * other.data[:, np.newaxis, np.newaxis] \
-                                * other.fscale
+                                    * other.data[:, np.newaxis, np.newaxis] \
+                                    * other.fscale
                             # variance
                             if self.var is None and other.var is None:
                                 res.var = None
                             elif self.var is None:
                                 res.var = np.ones(res.shape) \
-                                    * other.var[:, np.newaxis, np.newaxis] \
-                                    * self.data.data * self.data.data \
-                                    * other.fscale * other.fscale
+                                        * other.var[:, np.newaxis, np.newaxis] \
+                                        * self.data.data * self.data.data \
+                                        * other.fscale * other.fscale
                             elif other.var is None:
                                 res.var = np.ones(res.shape) \
-                                    * self.var[np.newaxis, :, :] \
-                                    * other.data.data * other.data.data \
-                                    * other.fscale * other.fscale
+                                        * self.var[np.newaxis, :, :] \
+                                        * other.data.data * other.data.data \
+                                        * other.fscale * other.fscale
                             else:
                                 res.var = (np.ones(res.shape)
-                                           * other.var[:, np.newaxis, np.newaxis]
-                                           * self.data.data * self.data.data
-                                           + np.ones(res.shape)
-                                           * self.var[np.newaxis, :, :]
-                                           * other.data.data * other.data.data) \
-                                    * other.fscale * other.fscale
+                                               * other.var[:, np.newaxis, np.newaxis]
+                                               * self.data.data * self.data.data
+                                               + np.ones(res.shape)
+                                               * self.var[np.newaxis, :, :]
+                                               * other.data.data * other.data.data) \
+                                        * other.fscale * other.fscale
                             # unit
                             if self.unit == other.unit:
                                 res.unit = self.unit
@@ -1274,7 +1274,15 @@ class Image(object):
                 except IOError as e:
                     raise e
                 except:
-                    raise IOError('Operation forbidden')
+                    try:
+                        # image1 * number = image2 (image2[j,i]=image1[j,i]*number)
+                        res = self.copy()
+                        res.data *= other
+                        if self.var is not None:
+                            res.var *= other ** 2
+                        return res
+                    except:
+                        raise IOError('Operation forbidden')
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -1303,22 +1311,16 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        if is_float(other) or is_int(other):
-            # image1 / number = image2 (image2[j,i]=image1[j,i]/number
-            res = self.copy()
-            res.data /= other
-            if self.var is not None:
-                res.var /= other ** 2
-            return res
+        
         try:
             # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
             # Dimensions must be the same.
             # If not equal to None, world coordinates must be the same.
             if other.image:
                 if other.data is None or self.shape[0] != other.shape[0] \
-                        or self.shape[1] != other.shape[1]:
+                            or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden '
-                                  'for images with different sizes')
+                                    'for images with different sizes')
                 else:
                     res = Image(shape=self.shape,
                                 fscale=self.fscale)
@@ -1329,20 +1331,20 @@ class Image(object):
                         res.wcs = self.wcs
                     else:
                         raise IOError('Operation forbidden for images '
-                                      'with different world coordinates')
+                                        'with different world coordinates')
                     # variance
                     if self.var is None and other.var is None:
                         res.var = None
                     elif self.var is None:
                         res.var = other.var * self.data.data * self.data.data \
-                            / (other.data.data ** 4) / other.fscale / other.fscale
+                                / (other.data.data ** 4) / other.fscale / other.fscale
                     elif other.var is None:
                         res.var = self.var * other.data.data * other.data.data / \
-                            (other.data.data ** 4) / other.fscale / other.fscale
+                                (other.data.data ** 4) / other.fscale / other.fscale
                     else:
                         res.var = (other.var * self.data.data * self.data.data
-                                   + self.var * other.data.data * other.data.data) \
-                            / (other.data.data ** 4) / (other.fscale ** 2)
+                                       + self.var * other.data.data * other.data.data) \
+                                / (other.data.data ** 4) / (other.fscale ** 2)
                     # data
                     res.data = self.data / other.data / other.fscale
                     # unit
@@ -1363,11 +1365,11 @@ class Image(object):
                     if other.data is None or self.shape[0] != other.shape[1] \
                             or self.shape[1] != other.shape[2]:
                         raise ValueError('Operation forbidden for images '
-                                         'with different sizes')
+                                             'with different sizes')
                     else:
                         from cube import Cube
                         res = Cube(shape=other.shape, wave=other.wave,
-                                   fscale=self.fscale)
+                                    fscale=self.fscale)
                         # coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
@@ -1375,29 +1377,29 @@ class Image(object):
                             res.wcs = self.wcs
                         else:
                             raise ValueError('Operation forbidden '
-                                             'for objects with different'
-                                             ' world coordinates')
+                                            'for objects with different'
+                                            ' world coordinates')
                         # variance
                         if self.var is None and other.var is None:
                             res.var = None
                         elif self.var is None:
                             res.var = other.var * self.data.data[np.newaxis, :, :]\
-                                * self.data.data[np.newaxis, :, :] \
-                                / (other.data.data ** 4) / (other.fscale ** 2)
+                                    * self.data.data[np.newaxis, :, :] \
+                                    / (other.data.data ** 4) / (other.fscale ** 2)
                         elif other.var is None:
                             res.var = self.var[np.newaxis, :, :] \
-                                * other.data.data * other.data.data \
-                                / (other.data.data ** 4) / (other.fscale ** 2)
+                                    * other.data.data * other.data.data \
+                                    / (other.data.data ** 4) / (other.fscale ** 2)
                         else:
                             res.var = \
-                                (other.var * self.data.data[np.newaxis, :, :]
-                                 * self.data.data[np.newaxis, :, :]
-                                 + self.var[np.newaxis, :, :]
-                                 * other.data.data * other.data.data) \
-                                / (other.data.data ** 4) / (other.fscale ** 2)
-                            # data
+                                    (other.var * self.data.data[np.newaxis, :, :]
+                                     * self.data.data[np.newaxis, :, :]
+                                     + self.var[np.newaxis, :, :]
+                                     * other.data.data * other.data.data) \
+                                    / (other.data.data ** 4) / (other.fscale ** 2)
+                        # data
                         res.data = self.data[np.newaxis, :, :] / other.data \
-                            / other.fscale
+                                / other.fscale
                         # unit
                         if self.unit == other.unit:
                             res.unit = self.unit
@@ -1405,16 +1407,20 @@ class Image(object):
             except IOError as e:
                 raise e
             except:
-                raise IOError('Operation forbidden')
+                try:
+                    # image1 / number = image2 (image2[j,i]=image1[j,i]/number
+                    res = self.copy()
+                    res.data /= other
+                    if self.var is not None:
+                        res.var /= other ** 2
+                    return res
+                except:
+                    raise IOError('Operation forbidden')
 
     def __rdiv__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
-        if is_float(other) or is_int(other):
-            # image1 / number = image2 (image2[j,i]=image1[j,i]/number
-            res = self.copy()
-            res.fscale = other / res.fscale
-            return res
+        
         try:
             if other.image:
                 return other.__sub__(self)
@@ -1427,7 +1433,13 @@ class Image(object):
             except IOError as e:
                 raise e
             except:
-                raise IOError('Operation forbidden')
+                try:
+                    # image1 / number = image2 (image2[j,i]=image1[j,i]/number
+                    res = self.copy()
+                    res.fscale = other / res.fscale
+                    return res
+                except:
+                    raise IOError('Operation forbidden')
 
     def __pow__(self, other):
         """Computes the power exponent of data extensions (operator \*\*).
