@@ -33,4 +33,7 @@ def setup_logging(level, logfile):
     steam_handler.setFormatter(formatter)
     logger.addHandler(steam_handler)
 
-setup_logging(logging.DEBUG, 'mpdaf.log')
+try:
+    setup_logging(logging.DEBUG, 'mpdaf.log')
+except:
+    pass
