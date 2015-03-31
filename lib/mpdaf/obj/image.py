@@ -10,6 +10,7 @@ import warnings
 
 from astropy.io import fits as pyfits
 from matplotlib.widgets import RectangleSelector
+from matplotlib.path import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy import interpolate, ndimage, signal, special
 from scipy.optimize import leastsq
@@ -1797,6 +1798,37 @@ class Image(object):
                               ((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
                               + ((grid[0] * cospa - grid[1] * sinpa)
                                  / radius[1]) ** 2 > 1)
+
+
+    def mask_polygon(self,poly,pix=True,inside=True):
+        """Masks values inside/outside a polygonal region. 
+
+        Parameters
+        ----------
+        poly : array of (float,float) containing a set of (p,q) or (dec,ra) values for the polygon vertices
+        pix    : boolean
+                 If pix is False, polygon coordinates are in degrees.
+                 If pix is True, polygon coordinates are in pixels.
+        inside : boolean
+                 If inside is True, pixels inside the described region are masked.
+        """
+
+        if not pix: # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
+                poly=np.array([[self.wcs.sky2pix((val[0],val[1]))[0][0],self.wcs.sky2pix((val[0],val[1]))[0][1]] for val in poly])
+
+        P,Q=np.meshgrid(range(self.shape[0]),range(self.shape[1]))  
+        b=np.dstack([Q.ravel(),P.ravel()])  
+
+        polymask=Path(poly)  # use the matplotlib method to create a path wich is the polygon we want to use
+        c=polymask.contains_points(b[0]) # go through all pixels in the image to see if there are in the polygon, ouput is a boolean table
+
+        if not inside : # invert the boolean table to ''mask'' the outside part of the polygon, if it's False I mask the inside part
+                c=~np.array(c)
+
+        c=c.reshape(self.shape[0],self.shape[1]) # convert the boolean table into a matrix
+
+        self.data.mask=np.logical_or(c,self.data.mask) # combine the previous mask with the new one
+
 
     def unmask(self):
         """Unmasks the image (just invalid data (nan,inf) are masked)."""
