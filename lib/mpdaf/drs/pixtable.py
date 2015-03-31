@@ -260,6 +260,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
     if primary_header is not None:
         for card in primary_header.cards:
             try:
+                card.verify('fix')
                 prihdu.header[card.keyword] = (card.value, card.comment)
             except ValueError:
                 if isinstance(card.value, str):
@@ -497,7 +498,7 @@ class PixTable(object):
         result.wcs = self.wcs
         result.wave = self.wave
         result.ima = self.ima
-        
+
         if self.xpos is not None:
             result.xpos = self.xpos.__copy__()
         if self.ypos is not None:
@@ -514,19 +515,19 @@ class PixTable(object):
             result.origin = self.origin.__copy__()
         if self.weight is not None:
             result.weight = self.weight.__copy__()
-        
+
         result.nrows = self.nrows
         result.nifu = self.nifu
         result.skysub = self.skysub
         result.fluxcal = self.fluxcal
         result.unit_data = self.unit_data
         result.unit_stat = self.unit_stat
-        
+
         result.primary_header = pyfits.Header(self.primary_header)
-        
+
         result.xc = self.xc
         result.yc = self.yc
-        
+
         return result
 
     def info(self):
@@ -1719,7 +1720,7 @@ class PixTable(object):
         """
         return (((origin >> 11) & 0x1fff) - 1).astype(np.uint16)
 
-    def origin2xoffset(self, origin):
+    def origin2xoffset(self, origin, ifu=None, sli=None):
         """Converts the origin value and returns the x coordinates offset.
 
         Parameters
@@ -1731,25 +1732,25 @@ class PixTable(object):
         -------
         out : float
         """
-        col_ifu = self.origin2ifu(origin)
-        col_slice = self.origin2slice(origin)
+        col_ifu = ifu if ifu is not None else self.origin2ifu(origin)
+        col_slice = sli if sli is not None else self.origin2slice(origin)
+        key = "HIERARCH ESO DRS MUSE PIXTABLE EXP0 IFU%02d SLICE%02d XOFFSET"
+
         if isinstance(origin, np.ndarray):
-            xoffset = np.zeros_like(origin)
-            for ifu in np.unique(col_ifu):
-                for sl in np.unique(col_slice):
-                    value = self.get_keywords('HIERARCH ESO DRS MUSE '
-                                              'PIXTABLE EXP0 IFU%02d '
-                                              'SLICE%02d XOFFSET'
-                                              % (ifu, sl))
-                    xoffset[np.where((col_ifu == ifu)
-                                     & (col_slice == sl))] = value
+            ifus = np.unique(col_ifu)
+            slices = np.unique(col_slice)
+            offsets = np.zeros((ifus.max() + 1, slices.max() + 1),
+                               dtype=np.int32)
+            for ifu in ifus:
+                for sl in slices:
+                    offsets[ifu, sl] = self.get_keywords(key % (ifu, sl))
+
+            xoffset = offsets[col_ifu, col_slice]
         else:
-            xoffset = self.get_keywords("HIERARCH ESO DRS MUSE "
-                                        "PIXTABLE EXP0 IFU%02d "
-                                        "SLICE%02d XOFFSET" % (col_ifu, col_slice))
+            xoffset = self.get_keywords(key % (col_ifu, col_slice))
         return xoffset
 
-    def origin2xpix(self, origin):
+    def origin2xpix(self, origin, ifu=None, sli=None):
         """Converts the origin value and returns the x coordinates.
 
         Parameters
@@ -1761,7 +1762,8 @@ class PixTable(object):
         -------
         out : float
         """
-        return (self.origin2xoffset(origin) + ((origin >> 24) & 0x7f) - 1).astype(np.uint16)
+        return (self.origin2xoffset(origin, ifu=ifu, sli=sli) +
+                ((origin >> 24) & 0x7f) - 1).astype(np.uint16)
 
     def origin2coords(self, origin):
         """Converts the origin value and returns (ifu, slice, ypix, xpix).
@@ -1775,8 +1777,9 @@ class PixTable(object):
         -------
         out : (integer, integer, float, float)
         """
-        return (self.origin2ifu(origin), self.origin2slice(origin),
-                self.origin2ypix(origin), self.origin2xpix(origin))
+        ifu, sli = self.origin2ifu(origin), self.origin2slice(origin)
+        return (ifu, sli, self.origin2ypix(origin),
+                self.origin2xpix(origin, ifu=ifu, sli=sli))
 
     def _get_pos_sky(self, xpos, ypos):
         try:
@@ -1922,19 +1925,19 @@ class PixTable(object):
         -------
         out : float
         """
-        # HIERARCH ESO PRO MUSE has been renamed into HIERARCH ESO DRS MUSE
-        # in recent versions of the DRS.
-        if key.startswith('HIERARCH ESO PRO MUSE'):
-            alternate_key = key.replace('HIERARCH ESO PRO MUSE',
-                                        'HIERARCH ESO DRS MUSE')
-        elif key.startswith('HIERARCH ESO DRS MUSE'):
-            alternate_key = key.replace('HIERARCH ESO DRS MUSE',
-                                        'HIERARCH ESO PRO MUSE')
-        else:
-            alternate_key = key
         try:
             return self.primary_header[key]
-        except:
+        except KeyError:
+            # HIERARCH ESO PRO MUSE has been renamed into HIERARCH ESO DRS MUSE
+            # in recent versions of the DRS.
+            if key.startswith('HIERARCH ESO PRO MUSE'):
+                alternate_key = key.replace('HIERARCH ESO PRO MUSE',
+                                            'HIERARCH ESO DRS MUSE')
+            elif key.startswith('HIERARCH ESO DRS MUSE'):
+                alternate_key = key.replace('HIERARCH ESO DRS MUSE',
+                                            'HIERARCH ESO PRO MUSE')
+            else:
+                raise
             return self.primary_header[alternate_key]
 
     def reconstruct_sky_image(self, lbda=None, step=None):
@@ -2364,7 +2367,7 @@ class PixTable(object):
                   (previously computed by mask_column)
         Returns
         -------
-        out : :class:`mpdaf.drs.PixTableAutoCalib` 
+        out : :class:`mpdaf.drs.PixTableAutoCalib`
         """
         d = {'class': 'PixTable', 'method': 'subtract_slice_median'}
 

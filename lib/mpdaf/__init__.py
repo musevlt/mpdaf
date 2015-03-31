@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '1.1.15'
-__date__ = '2015/02/06'
+__version__ = '1.1.16'
+__date__ = '2015/03/16'
 
 import tools
 import obj
 import drs
 import sdetect
 import MUSE
-try:
-    import fusion
-except:
-    pass
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -37,4 +33,7 @@ def setup_logging(level, logfile):
     steam_handler.setFormatter(formatter)
     logger.addHandler(steam_handler)
 
-setup_logging(logging.DEBUG, 'mpdaf.log')
+try:
+    setup_logging(logging.DEBUG, 'mpdaf.log')
+except:
+    pass

@@ -115,7 +115,7 @@ except:
 
 package_dir = {'mpdaf': 'lib/mpdaf/', 'mpdaf_user': 'mpdaf_user/'}
 packages = ['mpdaf', 'mpdaf.tools', 'mpdaf.obj', 'mpdaf.drs', 'mpdaf.MUSE',
-            'mpdaf_user', 'mpdaf.sdetect']
+            'mpdaf_user', 'mpdaf.sdetect', 'mpdaf.sdetect.selfi']
 
 for path in os.listdir('mpdaf_user'):
     if os.path.isdir('mpdaf_user/' + path + '/lib/' + path):
@@ -178,7 +178,9 @@ setup(name='mpdaf',
                 'nose', 'PIL'],
       package_dir=package_dir,
       packages=packages,
-      package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'], 'mpdaf.sdetect': ['muselet_data/*']},
+      package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'],
+                    'mpdaf.sdetect': ['muselet_data/*'],
+                    'mpdaf.sdetect.selfi': ['p_val/*'],},
       maintainer='Laure Piqueras',
       maintainer_email='laure.piqueras@univ-lyon1.fr',
       platforms='any',
