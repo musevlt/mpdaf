@@ -221,7 +221,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
 
         f2 = open("nb/dosex", 'w')
         for k in range(2, size1 - 3):
-            #sys.stdout.write("Narrow band:%d/%d" % (k, size1 - 3) + "\r");
+            sys.stdout.write("Narrow band:%d/%d" % (k, size1 - 3) + "\r")
             leftmin = max(0, k - 2 - delta)
             leftmax = k - 2
             rightmin = k + 3
@@ -247,6 +247,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26],radius=4.0
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
             f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
 
+        sys.stdout.write("\n")
+        sys.stdout.flush()
         f2.close()
 
     if(step <= 2):
