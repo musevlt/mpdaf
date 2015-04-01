@@ -30,7 +30,7 @@ def add_mpdaf_method_keywords(header, method, params, values, comments):
         keyword = 'HIERARCH MPDAF METH%d PARAM%d VALUE' % (i, p + 1)
         if isinstance(values[p], str):
             n = 80 - len(keyword) - 14
-            s = values[0:n]
+            s = values[p][0:n]
             header[keyword] = s
         else:
             header[keyword] = values[p]
