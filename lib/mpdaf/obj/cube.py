@@ -215,7 +215,7 @@ class Cube(CubeBase):
                 if wcs is None:
                     self.wcs = WCS(hdr)
                 else:
-                    self.wcs = wcs
+                    self.wcs = wcs.copy()
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
@@ -243,7 +243,7 @@ class Cube(CubeBase):
                         self.wave = WaveCoord(crpix, cdelt, crval, cunit,
                                               self.shape[0])
                 else:
-                    self.wave = wave
+                    self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data have '
@@ -273,7 +273,7 @@ class Cube(CubeBase):
                 if wcs is None:
                     self.wcs = WCS(h)  # WCS object from data header
                 else:
-                    self.wcs = wcs
+                    self.wcs = wcs.copy()
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
@@ -301,7 +301,7 @@ class Cube(CubeBase):
                         self.wave = WaveCoord(crpix, cdelt, crval, cunit,
                                               self.shape[0])
                 else:
-                    self.wave = wave
+                    self.wave = wave.copy()
                     if wave.shape is not None and \
                             wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
@@ -384,8 +384,8 @@ class Cube(CubeBase):
                 self.var = np.array(var, dtype=float)
             self.fscale = np.float(fscale)
             try:
-                self.wcs = wcs
                 if wcs is not None:
+                    self.wcs = wcs.copy()
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
@@ -402,8 +402,8 @@ class Cube(CubeBase):
                 self.logger.warning("world coordinates not copied: %s",
                                     "wcs attribute is None", extra=d)
             try:
-                self.wave = wave
                 if wave is not None:
+                    self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape[0]:
                         d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
@@ -2063,7 +2063,7 @@ class Cube(CubeBase):
                Wavelength coordinates.
         """
         if wcs is not None:
-            self.wcs = wcs
+            self.wcs = wcs.copy()
             self.wcs.naxis1 = self.shape[2]
             self.wcs.naxis2 = self.shape[1]
             if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
@@ -2077,7 +2077,7 @@ class Cube(CubeBase):
                 d = {'class': 'Cube', 'method': 'set_wcs'}
                 self.logger.warning('wavelength coordinates and data have not '
                                     'the same dimensions', extra=d)
-            self.wave = wave
+            self.wave = wave.copy()
             self.wave.shape = self.shape[0]
 
     def set_var(self, var):

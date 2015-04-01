@@ -391,7 +391,7 @@ class Image(object):
                             self.logger.warning(e, extra=d)
                             self.wcs = WCS(hdr)
                     else:
-                        self.wcs = wcs
+                        self.wcs = wcs.copy()
                         self.wcs.set_naxis1(self.shape[1])
                         self.wcs.set_naxis2(self.shape[0])
                         if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
@@ -431,7 +431,7 @@ class Image(object):
                     if wcs is None:
                         self.wcs = WCS(h)  # WCS object from data header
                     else:
-                        self.wcs = wcs
+                        self.wcs = wcs.copy()
                         self.wcs.set_naxis1(self.shape[1])
                         self.wcs.set_naxis2(self.shape[0])
                         if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
@@ -493,7 +493,7 @@ class Image(object):
                     self.wcs.set_naxis1(self.shape[1])
                     self.wcs.set_naxis2(self.shape[0])
                 else:
-                    self.wcs = wcs
+                    self.wcs = wcs.copy()
                     self.wcs.set_naxis1(self.shape[1])
                     self.wcs.set_naxis2(self.shape[0])
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
@@ -528,8 +528,8 @@ class Image(object):
                 self.var = np.array(var, dtype=float)
             self.fscale = np.float(fscale)
             try:
-                self.wcs = wcs
                 if wcs is not None:
+                    self.wcs = wcs.copy()
                     self.wcs.set_naxis1(self.shape[1])
                     self.wcs.set_naxis2(self.shape[0])
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
@@ -1645,7 +1645,7 @@ class Image(object):
         wcs : :class:`mpdaf.obj.WCS`
               World coordinates.
         """
-        self.wcs = wcs
+        self.wcs = wcs.copy()
         self.wcs.set_naxis1(self.shape[1])
         self.wcs.set_naxis2(self.shape[0])
         if wcs.naxis1 != 0 and wcs.naxis2 != 0 \

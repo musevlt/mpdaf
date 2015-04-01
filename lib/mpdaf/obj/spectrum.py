@@ -299,7 +299,7 @@ class Spectrum(object):
                         self.wave = WaveCoord(crpix, cdelt, crval,
                                               cunit, self.shape)
                 else:
-                    self.wave = wave
+                    self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
@@ -343,7 +343,7 @@ class Spectrum(object):
                         self.wave = WaveCoord(crpix, cdelt, crval,
                                               cunit, self.shape)
                 else:
-                    self.wave = wave
+                    self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
@@ -402,8 +402,8 @@ class Spectrum(object):
                 self.var = np.array(var, dtype=float)
             self.fscale = np.float(fscale)
             try:
-                self.wave = wave
                 if wave is not None:
+                    self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape:
                         d = {'class': 'Spectrum', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
@@ -1417,7 +1417,7 @@ out : float or Spectrum
             d = {'class': 'Spectrum', 'method': 'set_wcs'}
             self.logger.warning('wavelength coordinates and data have '
                                 'not the same dimensions', extra=d)
-        self.wave = wave
+        self.wave = wave.copy()
         self.wave.shape = self.shape
 
     def set_var(self, var=None):
