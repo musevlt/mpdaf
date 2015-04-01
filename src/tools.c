@@ -11,6 +11,8 @@ static int qsort_compare (const void * a, const void * b)
         return ( *(double*)a > *(double*)b );
 }
 
+
+
 // Compute the arithmetic mean
 void mpdaf_mean(double* data, int n, double x[3])
 {
@@ -29,12 +31,26 @@ void mpdaf_mean(double* data, int n, double x[3])
     x[1] = sqrt(sum_deviation/n);           
 }
 
+// Compute the sum
+double mpdaf_sum(double* data, int n) // passer en index
+{
+  double sum=0;
+  int i;
+  for(i=0; i<n;i++)
+    {
+      sum+=data[i];
+    }
+  return sum;
+}
+
 // Compute the median
 double mpdaf_median(double* data, int n) // passer en index
 {
   qsort(data, n, sizeof(double), qsort_compare);
   return data[n / 2];
 }
+
+
 
 
 // Iterative sigma-clipping of array elements

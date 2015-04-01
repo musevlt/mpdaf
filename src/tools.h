@@ -7,6 +7,8 @@ different C methods used by several functions
 
 // Compute the arithmetic mean
 void mpdaf_mean(double* data, int n, double x[3]);
+// Compute sum
+double mpdaf_sum(double* data, int n);
 // Compute the median
 double mpdaf_median(double* data, int n);
 // Iterative sigma-clipping of array elements

@@ -8,7 +8,7 @@ import os
 from astropy.io import fits
 from ctypes import c_char_p
 
-from .cube import CubeDisk
+from .cube import CubeDisk, Cube
 from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords
 
@@ -179,25 +179,36 @@ class CubeList(object):
         libCmethods = np.ctypeslib.load_library("libCmethods", path)
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
+                                                 flags='CONTIGUOUS')
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
+                                              flags='CONTIGUOUS')
         # setup argument types
-        libCmethods.mpdaf_merging_median.argtypes = [charptr, charptr]
+        libCmethods.mpdaf_merging_median.argtypes = [charptr, array_1d_double, array_1d_int]
         # run C method
-        libCmethods.mpdaf_merging_median(c_char_p('\n'.join(self.files)),
-                                         c_char_p(output),
-                                         c_char_p(output_path))
+        data = np.empty(self.shape[0]*self.shape[1]*self.shape[2], dtype=np.float64)
+        expmap = np.empty(self.shape[0]*self.shape[1]*self.shape[2], dtype=np.int32)
+        libCmethods.mpdaf_merging_median(c_char_p('\n'.join(self.files)), data, expmap)
 
-        # update header
-        hdu = fits.open(cubepath, mode='update')
-        add_mpdaf_method_keywords(hdu[0].header, "obj.cubelist.median",
-                                  [], [], [])
         files = ','.join(os.path.basename(f) for f in self.files)
-        hdu[0].header['NFILES'] = (len(self.files),
-                                   'number of files merged in this cube')
-        hdu[0].header['FILES'] = (files, 'list of files merged in this cube')
-        hdu.flush()
-        hdu.close()
+        #expmap
+        expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs, wave=self.wave)
+        add_mpdaf_method_keywords(expmap.primary_header, "obj.cubelist.median",
+                                  ['NFILES', 'FILES'],
+                                  [len(self.files), files],
+                                  ['number of files merged in this cube', 'list of files merged in this cube'])
+        expmap.write(output_path + '/EXPMAP_' + output + '.fits')
+        # cube
+        cub = Cube(data=data.reshape(self.shape), var=None, wcs=self.wcs, wave=self.wave)
+        add_mpdaf_method_keywords(cub.primary_header, "obj.cubelist.median",
+                                  ['NFILES', 'FILES'],
+                                  [len(self.files), files],
+                                  ['number of files merged in this cube', 'list of files merged in this cube'])
+        cub.write(cubepath)
+        
+        return cub
 
-    def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var_mean=True):
+    def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var='merge'):
         """merges cubes in a single data cube using sigma clipped mean.
 
         Parameters
@@ -221,14 +232,19 @@ class CubeList(object):
         nstop       : integer
                       If the number of not rejected pixels is less
                       than this number, the clipping iterations stop.
-        var_mean    : boolean
-                      True: the variance of each combined pixel is computed
-                      as the variance derived from the comparison of the
-                      N individual exposures divided N-1.
+        var         : string
+                      'merge', 'compute', 'compute_mean'
+                      
+                      'merge': the variance is the mean of the variances
+                      of the N individual exposures divided by N**2.
+                      
+                      'compute_mean': the variance of each combined pixel
+                      is computed as the variance derived from the comparison
+                      of the N individual exposures divided N-1.
 
-                      False: the variance of each combined pixel is computed
-                      as the variance derived from the comparison of the
-                      N individual exposures.
+                      'compute': the variance of each combined pixel is
+                      computed as the variance derived from the comparison
+                      of the N individual exposures.
 
         Returns
         -------
@@ -255,33 +271,84 @@ class CubeList(object):
         libCmethods = np.ctypeslib.load_library("libCmethods", path)
         # define argument types
         charptr = ctypes.POINTER(ctypes.c_char)
-        # setup argument types
-        libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
-            charptr, charptr, charptr, ctypes.c_int, ctypes.c_double,
-            ctypes.c_double, ctypes.c_int, ctypes.c_int
-        ]
-        # run C method
-        libCmethods.mpdaf_merging_sigma_clipping(
-            c_char_p('\n'.join(self.files)), c_char_p(output),
-            c_char_p(output_path), nmax, np.float64(nclip_low),
-            np.float64(nclip_up), nstop, np.int32(var_mean)
-        )
-
-        # update header
-        hdu = fits.open(cubepath, mode='update')
-        add_mpdaf_method_keywords(
-            hdu[0].header, "obj.cubelist.merging",
-            ['nmax', 'nclip_low', 'nclip_up', 'nstop', 'var_mean'],
-            [nmax, nclip_low, nclip_up, nstop, var_mean],
-            ['max number of clipping iterations',
-             'lower clipping parameter',
-             'upper clipping parameter',
-             'clipping minimum number',
-             'variance divided or not by N-1']
-        )
+        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
+                                                 flags='CONTIGUOUS')
+        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
+                                              flags='CONTIGUOUS')
+        
+        # returned arrays
+        npixels = self.shape[0]*self.shape[1]*self.shape[2]
+        data = np.empty(npixels, dtype=np.float64)
+        vardata = np.empty(npixels, dtype=np.float64)
+        expmap = np.empty(npixels, dtype=np.int32)
+        valid_pix = np.zeros(self.nfiles, dtype=np.int32)
+        
+        if var == 'merge':
+            # setup argument types
+            libCmethods.mpdaf_merging_sigma_clipping_var.argtypes = \
+            [charptr, array_1d_double, array_1d_double,
+            array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
+            ctypes.c_double, ctypes.c_int]
+            # run C method
+            libCmethods.mpdaf_merging_sigma_clipping_var(
+            c_char_p('\n'.join(self.files)), data,
+            vardata, expmap, valid_pix, nmax, np.float64(nclip_low),
+            np.float64(nclip_up), nstop)
+        else:
+            if var == 'compute_mean':
+                var_mean = 1
+            else:
+                var_mean = 0
+            # setup argument types
+            libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
+            charptr, array_1d_double, array_1d_double,
+            array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
+            ctypes.c_double, ctypes.c_int, ctypes.c_int]
+            # run C method
+            libCmethods.mpdaf_merging_sigma_clipping(
+            c_char_p('\n'.join(self.files)), data,
+            vardata, expmap, valid_pix, nmax, np.float64(nclip_low),
+            np.float64(nclip_up), nstop, np.int32(var_mean))
+        
+        #no valid pixels
+        with open(output_path + '/NOVALID_' + output + '.txt', "w") as fw:
+            for (f, npix) in zip(self.files, valid_pix):
+                fw.write("%s\t%d\n"%(f,npixels-npix))
+        
         files = ','.join(os.path.basename(f) for f in self.files)
-        hdu[0].header['NFILES'] = (len(self.files),
-                                   'number of files merged in this cube')
-        hdu[0].header['FILES'] = (files, 'list of files merged in this cube')
-        hdu.flush()
-        hdu.close()
+        #expmap
+        expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs,
+                      wave=self.wave)
+        add_mpdaf_method_keywords(expmap.primary_header,
+                                  "obj.cubelist.merging",
+                                  ['nmax', 'nclip_low', 'nclip_up', 'nstop',
+                                   'var', 'NFILES', 'FILES'],
+                                  [len(self.files), files, nmax, nclip_low,
+                                   nclip_up, nstop, var],
+                                  ['number of files merged in this cube',
+                                   'list of files merged in this cube',
+                                   'max number of clipping iterations',
+                                   'lower clipping parameter',
+                                   'upper clipping parameter',
+                                   'clipping minimum number',
+                                   'type of variance'])
+        expmap.write(output_path + '/EXPMAP_' + output + '.fits')
+        # cube
+        cub = Cube(data=data.reshape(self.shape), var=vardata.reshape(self.shape),
+                   wcs=self.wcs, wave=self.wave)
+        add_mpdaf_method_keywords(cub.primary_header, 
+                                  "obj.cubelist.merging",
+                                  ['nmax', 'nclip_low', 'nclip_up', 'nstop',
+                                   'var', 'NFILES', 'FILES'],
+                                  [len(self.files), files, nmax, nclip_low,
+                                   nclip_up, nstop, var],
+                                  ['number of files merged in this cube',
+                                   'list of files merged in this cube',
+                                   'max number of clipping iterations',
+                                   'lower clipping parameter',
+                                   'upper clipping parameter',
+                                   'clipping minimum number',
+                                   'type of variance'])
+        cub.write(cubepath)
+        
+        return cub
