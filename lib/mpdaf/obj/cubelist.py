@@ -6,6 +6,7 @@ import numpy as np
 import os
 
 from astropy.io import fits
+from astropy.table import Table
 from ctypes import c_char_p
 
 from .cube import CubeDisk, Cube
@@ -149,8 +150,8 @@ class CubeList(object):
         """Checks if all cubes are compatible."""
         return self.check_dim() and self.check_wcs() and self.check_fscale()
 
-    def median(self, output, output_path='.'):
-        """merges cubes in a single data cube using median.
+    def median(self):
+        """combines cubes in a single data cube using median.
 
         Parameters
         ----------
@@ -165,15 +166,15 @@ class CubeList(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube`
+        out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`
+              cube, expmap
+              
+              cube will contain the merged cube
+              
+              expmap will contain an exposure map
+              data cube which counts the number of exposures used
+              for the combination of each pixel.
         """
-        cubepath = output_path + '/DATACUBE_' + output + '.fits'
-        try:
-            os.remove(cubepath)
-            os.remove(output_path + '/EXPMAP_' + output + '.fits')
-        except OSError:
-            pass
-
         # load the library, using numpy mechanisms
         path = os.path.dirname(__file__)[:-4]
         libCmethods = np.ctypeslib.load_library("libCmethods", path)
@@ -191,39 +192,29 @@ class CubeList(object):
         libCmethods.mpdaf_merging_median(c_char_p('\n'.join(self.files)), data, expmap)
 
         files = ','.join(os.path.basename(f) for f in self.files)
+        
         #expmap
         expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs, wave=self.wave)
         add_mpdaf_method_keywords(expmap.primary_header, "obj.cubelist.median",
                                   ['NFILES', 'FILES'],
                                   [len(self.files), files],
                                   ['number of files merged in this cube', 'list of files merged in this cube'])
-        expmap.write(output_path + '/EXPMAP_' + output + '.fits')
+        
         # cube
         cub = Cube(data=data.reshape(self.shape), var=None, wcs=self.wcs, wave=self.wave)
         add_mpdaf_method_keywords(cub.primary_header, "obj.cubelist.median",
                                   ['NFILES', 'FILES'],
                                   [len(self.files), files],
                                   ['number of files merged in this cube', 'list of files merged in this cube'])
-        cub.write(cubepath)
         
-        return cub
+        
+        return cub, expmap
 
-    def merging(self, output, output_path='.', nmax=2, nclip=5.0, nstop=2, var='merge'):
-        """merges cubes in a single data cube using sigma clipped mean.
+    def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate'):
+        """combines cubes in a single data cube using sigma clipped mean.
 
         Parameters
         ----------
-        output      : string
-                      DATACUBE_<output>.fits will contain the merged cube
-
-                      EXPMAP_<output>.fits will contain an exposure map
-                      data cube which counts the number of exposures used
-                      for the combination of each pixel.
-
-                      NOVALID_<output>.txt will give the number of invalid
-                      pixels per exposures.
-        output_path : string
-                      Output path where resulted cubes are stored.
         nmax        : integer
                       maximum number of clipping iterations
         nclip       : float or (float,float)
@@ -233,38 +224,39 @@ class CubeList(object):
                       If the number of not rejected pixels is less
                       than this number, the clipping iterations stop.
         var         : string
-                      'merge', 'compute', 'compute_mean'
+                      'propagate', 'compute', 'compute_mean'
                       
-                      'merge': the variance is the mean of the variances
+                      'propagate': the variance is the mean of the variances
                       of the N individual exposures divided by N**2.
                       
-                      'compute_mean': the variance of each combined pixel
+                      'stat_mean': the variance of each combined pixel
                       is computed as the variance derived from the comparison
                       of the N individual exposures divided N-1.
 
-                      'compute': the variance of each combined pixel is
+                      'stat_one': the variance of each combined pixel is
                       computed as the variance derived from the comparison
                       of the N individual exposures.
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube`
+        out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, astropy.table
+              cube, expmap, novalidpix
+              
+              cube will contain the merged cube
+              
+              expmap will contain an exposure map
+              data cube which counts the number of exposures used
+              for the combination of each pixel.
+              
+              novalidpix is a table that will give the number of invalid
+              pixels per exposures (columns are 'FILENAME' and 'NPIX_NO_VALID')
         """
-        cubepath = output_path + '/DATACUBE_' + output + '.fits'
-
         if is_int(nclip) or is_float(nclip):
             nclip_low = nclip
             nclip_up = nclip
         else:
             nclip_low = nclip[0]
             nclip_up = nclip[1]
-
-        try:
-            os.remove(cubepath)
-            os.remove(output_path + '/EXPMAP_' + output + '.fits')
-            os.remove(output_path + '/NOVALID_' + output + '.txt')
-        except OSError:
-            pass
 
         # load the library, using numpy mechanisms
         path = os.path.dirname(__file__)[:-4]
@@ -283,7 +275,7 @@ class CubeList(object):
         expmap = np.empty(npixels, dtype=np.int32)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
         
-        if var == 'merge':
+        if var == 'propagate':
             # setup argument types
             libCmethods.mpdaf_merging_sigma_clipping_var.argtypes = \
             [charptr, array_1d_double, array_1d_double,
@@ -295,7 +287,7 @@ class CubeList(object):
             vardata, expmap, valid_pix, nmax, np.float64(nclip_low),
             np.float64(nclip_up), nstop)
         else:
-            if var == 'compute_mean':
+            if var == 'stat_mean':
                 var_mean = 1
             else:
                 var_mean = 0
@@ -311,11 +303,12 @@ class CubeList(object):
             np.float64(nclip_up), nstop, np.int32(var_mean))
         
         #no valid pixels
-        with open(output_path + '/NOVALID_' + output + '.txt', "w") as fw:
-            for (f, npix) in zip(self.files, valid_pix):
-                fw.write("%s\t%d\n"%(f,npixels-npix))
+        filenames = [f for f in self.files ]
+        no_valid_pix = [npixels-npix for npix in valid_pix]
+        novalid = Table([filenames, no_valid_pix], names=['FILENAME', 'NPIX_NO_VALID'])
         
         files = ','.join(os.path.basename(f) for f in self.files)
+        
         #expmap
         expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs,
                       wave=self.wave)
@@ -332,7 +325,7 @@ class CubeList(object):
                                    'upper clipping parameter',
                                    'clipping minimum number',
                                    'type of variance'])
-        expmap.write(output_path + '/EXPMAP_' + output + '.fits')
+
         # cube
         cub = Cube(data=data.reshape(self.shape), var=vardata.reshape(self.shape),
                    wcs=self.wcs, wave=self.wave)
@@ -349,6 +342,6 @@ class CubeList(object):
                                    'upper clipping parameter',
                                    'clipping minimum number',
                                    'type of variance'])
-        cub.write(cubepath)
+
         
-        return cub
+        return cub, expmap, novalid
