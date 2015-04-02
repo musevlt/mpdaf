@@ -6,7 +6,7 @@
 #include <time.h>
 #include <math.h>
 
-int mpdaf_merging_median(char* input, double* data, int* expmap)
+int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 {
   int status = 0;  /* CFITSIO status value MUST be initialized to zero! */
   
@@ -91,6 +91,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap)
           printf("Memory allocation error\n");
           return(1);
       }
+      valid_pix[i] = 0;
   }
   wdata = (double *) malloc(nfiles * sizeof(double));
 
@@ -120,6 +121,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap)
 		  {
 		      wdata[n] = pix[i][ii];
 		      n = n + 1;
+		      valid_pix[i] = valid_pix[i] + 1;
 		   }
                }
 	       index = ii + (firstpix[1]-1)*naxes[0] + (firstpix[2]-1)*naxes[0]*naxes[1];
@@ -170,7 +172,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap)
 }
 
 
-int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* expmap, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop, int var_mean)
+int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* expmap, int* selected_pix, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop, int var_mean)
 {
     int status = 0;  //CFITSIO status value MUST be initialized to zero!
     int naxis, i, ii, n, index;
@@ -261,7 +263,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     for (i=0; i<nfiles; i++)
     {
         files_id[i] = i;
-	valid_pix[i] = 0;
+	selected_pix[i] = 0;
 	pix[i] = (double *) malloc(npixels * sizeof(double));
 	if (pix[i] == NULL)
         {
@@ -299,6 +301,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 		        wdata[n] = pix[i][ii];
 			files_id[n] = i;
 			n = n + 1;
+			valid_pix[i] = valid_pix[i] + 1;
 		    }
 		}
 		index = ii + (firstpix[1]-1)*naxes[0] + (firstpix[2]-1)*naxes[0]*naxes[1];
@@ -332,7 +335,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 		    }
 		    for (i=0; i<x[2]; i++)
 		    {
-		        valid_pix[files_id[i]] += 1;
+		        selected_pix[files_id[i]] += 1;
 		    }
 		}
 	    }
@@ -366,7 +369,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     return (1);
 }
 
-int mpdaf_merging_sigma_clipping_var(char* input, double* data, double* var, int* expmap, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop)
+int mpdaf_merging_sigma_clipping_var(char* input, double* data, double* var, int* expmap, int* selected_pix, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop)
 {
     int status = 0;  //CFITSIO status value MUST be initialized to zero!
     int naxis, i, ii, n, index;
@@ -483,7 +486,7 @@ int mpdaf_merging_sigma_clipping_var(char* input, double* data, double* var, int
     for (i=0; i<nfiles; i++)
     {
         files_id[i] = i;
-	valid_pix[i] = 0;
+	selected_pix[i] = 0;
 	pix[i] = (double *) malloc(npixels * sizeof(double));
 	if (pix[i] == NULL)
         {
@@ -532,6 +535,7 @@ int mpdaf_merging_sigma_clipping_var(char* input, double* data, double* var, int
 			wvar[n] = pixvar[i][ii];
 			files_id[n] = i;
 			n = n + 1;
+			valid_pix[i] = valid_pix[i] + 1;
 		    }
 		}
 		index = ii + (firstpix[1]-1)*naxes[0] + (firstpix[2]-1)*naxes[0]*naxes[1];
@@ -555,7 +559,7 @@ int mpdaf_merging_sigma_clipping_var(char* input, double* data, double* var, int
 		    var[index] = mpdaf_sum(wvar,n)/n/n;
 		    for (i=0; i<x[2]; i++)
 		    {
-		        valid_pix[files_id[i]] += 1;
+		        selected_pix[files_id[i]] += 1;
 		    }
 		}
 	    }
