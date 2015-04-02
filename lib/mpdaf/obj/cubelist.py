@@ -5,7 +5,6 @@ import logging
 import numpy as np
 import os
 
-from astropy.io import fits
 from astropy.table import Table
 from ctypes import c_char_p
 
