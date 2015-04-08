@@ -95,7 +95,8 @@ class CubeBase(object):
         else:
             self.wave.info()
 
-        log_info('.ima: %s', ', '.join(self.ima.keys()))
+        if len(self.ima) > 0:
+            log_info('.ima: %s', ', '.join(self.ima.keys()))
 
 
 class Cube(CubeBase):
@@ -345,9 +346,8 @@ class Cube(CubeBase):
                     for i in range(len(f)):
                         try:
                             hdr = f[i].header
-                            if hdr['NAXIS'] != 2:
-                                raise IOError('not an image')
-                            self.ima[hdr.get('EXTNAME')] = \
+                            if hdr['NAXIS']==2 and hdr['XTENSION']=='IMAGE':
+                                self.ima[hdr.get('EXTNAME')] = \
                                 Image(filename, ext=hdr.get('EXTNAME'),
                                       notnoise=True)
                         except:
@@ -3044,6 +3044,7 @@ class Cube(CubeBase):
                 if completed == num_tasks:
                     output = ""
                     sys.stdout.write("\r\x1b[K" + output.__str__())
+                    sys.stdout.flush()
                     break
                 output = ("\r Waiting for %i tasks to complete (%i%% done) ..."
                           % (num_tasks - completed, float(completed)
@@ -3168,6 +3169,7 @@ class Cube(CubeBase):
                 if completed == num_tasks:
                     output = ""
                     sys.stdout.write("\r\x1b[K" + output.__str__())
+                    sys.stdout.flush()
                     break
                 output = "\r Waiting for %i tasks to complete '\
                 '(%i%% done) ..." % (num_tasks - completed,
