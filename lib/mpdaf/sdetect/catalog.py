@@ -7,6 +7,37 @@ import numpy as np
 
 from ..tools.fits import add_mpdaf_method_keywords
 
+from astropy.table import Table
+
+class Catalog(Table):
+    """This class contains a catalog of objects.
+    table : astropy.table
+            Astropy table
+            
+    astropy.table object
+    """
+    
+    @classmethod
+    def from_sources(cls, sources):
+        """ constructs a catalog from a list of source objects.
+        
+        Parameters
+        ----------
+        sources : list< :class:`mpdaf.sdetect.Source` >
+        """ 
+        names = sources[0].header.keys()
+        for trash in ['SIMPLE', 'BITPIX', 'NAXIS','EXTEND','DATE','AUTHOR']:
+            try:
+                names.remove(trash)
+            except:
+                pass
+        data_rows = []
+        for source in sources:
+            row = [source.header[key] for key in names]
+            data_rows.append(row)
+        return cls(rows=data_rows, names=names)         
+    
+
 class SourceCatalog(object):
 
     """This class contains a catalog of objects.
