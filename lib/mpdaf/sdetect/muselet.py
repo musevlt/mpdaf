@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import stat
 import logging
-
+import sys
 
 def catalog(idline, xline, yline, ra, dec, lline, fline, zline=None, 
             errzline=None, lline_name=None):
