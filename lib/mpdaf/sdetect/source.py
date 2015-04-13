@@ -24,20 +24,20 @@ class Source(object):
               Name of detector software which creates this object
     lines   : list of lines
               List of :class:`mpdaf.sdetect.Line`
-    spe     : :class:`dict`
+    spectra     : :class:`dict`
               Dictionary containing spectra.
               
               Keys gives the origin of the spectrum
               ('tot' for total spectrum, TBC).
               
               Values are :class:`mpdaf.obj.Spectrum` object
-    ima     : :class:`dict`
+    images     : :class:`dict`
               Dictionary containing images.
               
               Keys gives the filter ('white' for white image, TBC)
               
               Values are :class:`mpdaf.obj.Image` object
-    cub     : :class:`mpdaf.obj.Cube`
+    cube     : :class:`mpdaf.obj.Cube`
               sub-data cube containing the object
     z       : float
               redshift
@@ -59,7 +59,7 @@ class Source(object):
         comment = hdr.get('comment', '')
     """
     
-    def __init__(self, header, lines=None, spe={}, ima={}, cub=None):
+    def __init__(self, header, lines=None, spectra=None, images=None, cube=None):
         """
         """
         if not ('ra' in header and 'dec' in header 
@@ -67,15 +67,21 @@ class Source(object):
             raise IOError('ID, ra, dec, origin are mandatory parameters to create a Source object') 
         self.header = header
         self.lines = lines
-        self.spe = spe
-        self.ima = ima
-        self.cub = cub
+        if spectra is None:
+            self.spectra = {}
+        else:
+            self.spectra = spectra
+        if images is None:
+            self.images = {}
+        else:
+            self.images = images
+        self.cube = cube
         self.logger = logging.getLogger('mpdaf corelib')
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin,
-                 lines=None, spe={}, ima={}, cub=None, z=None, errz=None,
-                 flag='', comment='', extras={}):
+                 lines=None, spectra=None, images=None, cube=None, z=None, errz=None,
+                 flag='', comment='', extras=None):
         """
         Parameters
         ----------
@@ -87,20 +93,20 @@ class Source(object):
                   Declination in degrees
         lines   : list of lines
                   List of :class:`mpdaf.sdetect.Line`
-        spe     : :class:`dict`
+        spectra     : :class:`dict`
                   Dictionary containing spectra.
               
                   Keys gives the origin of the spectrum
                   ('tot' for total spectrum, TBC).
               
                   Values are :class:`mpdaf.obj.Spectrum` object
-        ima     : :class:`dict`
+        images     : :class:`dict`
                   Dictionary containing images.
                 
                   Keys gives the filter ('white' for white image, TBC)
               
                   Values are :class:`mpdaf.obj.Image` object
-        cub     : :class:`mpdaf.obj.Cube`
+        cube     : :class:`mpdaf.obj.Cube`
                   sub-data cube containing the object
         origin  : string
                   Name of detector software which creates this object
@@ -127,10 +133,11 @@ class Source(object):
             header['flag'] = (flag, 'quality flag')
         if comment != '':
             header['comment'] = (comment, 'user comment')
-        for key, value in extras.iteritems():
-            header[key] = value
+        if extras is not None:
+            for key, value in extras.iteritems():
+                header[key] = value
             
-        return cls(header, lines, spe, ima, cub)
+        return cls(header, lines, spectra, images, cube)
             
             
     @classmethod
@@ -144,16 +151,16 @@ class Source(object):
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
         lines = None
-        spe = {}
-        ima = {}
-        cub = None
+        spectra = {}
+        images = {}
+        cube = None
         for i in range(1, len(hdulist)):
             hdu = hdulist[i]
             extname = hdu.header['EXTNAME']
             #lines
             if extname == 'LINES':
                 lines = Table.read(filename)
-            # spe
+            # spectra
             elif extname[:3] == 'SPE' and extname[-4:]=='DATA':
                 spe_name = extname[4:-5]
                 try:
@@ -161,8 +168,8 @@ class Source(object):
                     ext = (i, ext_var)
                 except:
                     ext = i
-                spe[spe_name] = Spectrum(filename, ext=ext)
-            #ima
+                spectra[spe_name] = Spectrum(filename, ext=ext)
+            #images
             elif extname[:3] == 'IMA' and extname[-4:]=='DATA':
                 ima_name = extname[4:-5]
                 try:
@@ -170,16 +177,16 @@ class Source(object):
                     ext = (i, ext_var)
                 except:
                     ext = i
-                ima[ima_name] = Image(filename, ext=ext)
+                images[ima_name] = Image(filename, ext=ext)
             elif extname == 'CUBE_DATA':
                 try:
                     ext_var = hdulist.index_of('CUBE_STAT')
                     ext = (i, ext_var)
                 except:
                     ext = i
-                cub = Cube(filename, ext=ext, ima=False)
+                cube = Cube(filename, ext=ext, ima=False)
         hdulist.close()
-        return cls(hdr, lines, spe, ima, cub)
+        return cls(hdr, lines, spectra, images, cube)
                                
         
     def write(self, filename):
@@ -232,7 +239,7 @@ class Source(object):
             hdulist.append(tbhdu)
         
         #spectra
-        for key, spe in self.spe.iteritems():
+        for key, spe in self.spectra.iteritems():
             ext_name = 'SPE_%s_DATA'%key
             data_hdu = spe.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
@@ -242,7 +249,7 @@ class Source(object):
                 hdulist.append(stat_hdu)
             
         #images
-        for key, ima in self.ima.iteritems():
+        for key, ima in self.images.iteritems():
             ext_name = 'IMA_%s_DATA'%key
             data_hdu = ima.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
@@ -252,12 +259,12 @@ class Source(object):
                 hdulist.append(stat_hdu)
         
         #cube
-        if self.cub is not None:
+        if self.cube is not None:
             ext_name = 'CUBE_DATA'
-            data_hdu = self.cub.get_data_hdu(name=ext_name, savemask='nan')
+            data_hdu = self.cube.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
             ext_name = 'CUBE_STAT'
-            stat_hdu = self.cub.get_stat_hdu(name=ext_name)
+            stat_hdu = self.cube.get_stat_hdu(name=ext_name)
             if stat_hdu is not None:
                 hdulist.append(stat_hdu)
             
@@ -265,9 +272,6 @@ class Source(object):
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True, output_verify='fix')
         warnings.simplefilter("default")
-        
-        #self.filename = filename
-    
         
     def info(self):
         """Prints information.
@@ -279,36 +283,37 @@ class Source(object):
             l.split()[0] != 'DATE' and l.split()[0] != 'AUTHOR':
                 self.logger.info(l, extra=d)
         print '\n'
-        for key, spe in self.spe.iteritems():
-            self.logger.info('spe[\'%s\']'%key, extra=d)
+        for key, spe in self.spectra.iteritems():
+            self.logger.info('spectra[\'%s\']'%key, extra=d)
             spe.info()
             print '\n'
-        for key, ima in self.ima.iteritems():
-            self.logger.info('ima[\'%s\']'%key, extra=d)
+        for key, ima in self.images.iteritems():
+            self.logger.info('images[\'%s\']'%key, extra=d)
             ima.info()
             print '\n'
-        if self.cub is not None:
-            self.logger.info('cub', extra=d)
-            self.cub.info()
+        if self.cube is not None:
+            self.logger.info('cube', extra=d)
+            self.cube.info()
             print '\n'
         if self.lines is not None:
             self.logger.info('lines', extra=d)
             for l in self.lines.pformat():
                 self.logger.info(l, extra=d)
             print '\n'
-        
-    def get_ra(self):
+
+    def __getattr__(self, item):
+        """Maps values to attributes.
+        Only called if there *isn't* an attribute with this name
         """
+        try:
+            return self.header[item]
+        except KeyError:
+            raise AttributeError(item)
+ 
+    def __setattr__(self, item, value):
+        """Maps attributes to values.
         """
-        return self.header['ra']
-    
-    def get_dec(self):
-        """
-        """
-        return self.header['dec']
-        
-    def get_keyword(self, key):
-        """
-        """
-        return self.header[key]
-        
+        if item=='cube' or item=='header' or item=='images' or item=='lines' or item=='logger' or item=='spectra':
+            return dict.__setattr__(self, item, value)
+        else:
+            self.header[item] = value
