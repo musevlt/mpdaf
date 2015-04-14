@@ -3290,26 +3290,21 @@ class Cube(CubeBase):
         radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
         radius2 = radius * radius
         if radius > 0:
-            imin = max(0, center[0] - radius)
-            imax = min(center[0] + radius + 1, self.shape[1])
-            jmin = max(0, center[1] - radius)
-            jmax = min(center[1] + radius + 1, self.shape[2])
+            imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
+            imax, jmax = np.maximum(np.minimum((center + radius + 0.5).astype(int), [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
+            imax += 1
+            jmax += 1
+            
+            grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                               np.arange(jmin, jmax) - center[1],
+                               indexing='ij')
+            grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
+                               (self.shape[0], imax - imin, jmax - jmin))
+            
             data = self.data[:, imin:imax, jmin:jmax].copy()
-
-            ni = data.shape[1]
-            nj = data.shape[2]
-            m = np.ma.make_mask_none(data.shape)
-            for i_in in range(ni):
-                i = i_in + imin
-                pixcrd = np.array([np.ones(nj) * i, np.arange(nj) + jmin]).T
-                pixcrd[:, 0] -= center[0]
-                pixcrd[:, 1] -= center[1]
-                m[:, i_in, :] = ((np.array(pixcrd[:, 0])
-                                  * np.array(pixcrd[:, 0])
-                                  + np.array(pixcrd[:, 1])
-                                  * np.array(pixcrd[:, 1])) < radius2)
-            m = np.ma.mask_or(m, np.ma.getmask(data))
-            data.mask[:, :, :] = m
+            data.mask[:, :, :] = np.logical_or(self.data.mask[:, imin:imax, jmin:jmax],
+                              grid3d)
+            
             if self.var is not None:
                 var = np.ma.sum(np.ma.sum(
                       np.ma.masked_invalid(self.var[:, imin:imax, jmin:jmax]),
