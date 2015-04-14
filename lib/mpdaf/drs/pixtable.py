@@ -1671,7 +1671,7 @@ class PixTable(object):
         -------
         out : PixTable
         """
-        if numexpr:
+        if not numexpr:
             return self._extract(filename, sky, lbda, ifu, sl,
                                  xpix, ypix, exp)
         else:
