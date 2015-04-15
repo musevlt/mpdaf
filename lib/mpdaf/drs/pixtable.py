@@ -1061,10 +1061,14 @@ class PixTable(object):
             exp = None
         return exp
 
-    def _extract(self, sky=None, lbda=None, ifu=None,
-                 sl=None, xpix=None, ypix=None, exp=None):
-        # To start select the whole pixtable
-        kmask = np.ones(self.nrows, dtype=bool)
+    def _extract(self, sky=None, lbda=None, ifu=None, sl=None, xpix=None,
+                 ypix=None, exp=None, method='and'):
+        if method == 'and':
+            kmask = np.ones(self.nrows, dtype=bool)
+            logical_func = np.logical_and
+        elif method == 'or':
+            kmask = np.zeros(self.nrows, dtype=bool)
+            logical_func = np.logical_or
 
         # Do the selection on the sky
         if sky is not None:
@@ -1102,7 +1106,7 @@ class PixTable(object):
                             & (np.abs(ypos - y0) < size)
                 else:
                     raise ValueError('Unknown shape parameter')
-            kmask &= mask
+            logical_func(kmask, mask, out=kmask)
             del xpos
             del ypos
 
@@ -1112,7 +1116,7 @@ class PixTable(object):
             mask = np.zeros(self.nrows, dtype=bool)
             for l1, l2 in lbda:
                 mask |= (col_lambda >= l1) & (col_lambda < l2)
-            kmask &= mask
+            logical_func(kmask, mask, out=kmask)
             del col_lambda
 
         # Do the selection on the origin column
@@ -1120,19 +1124,22 @@ class PixTable(object):
                 (xpix is not None) or (ypix is not None):
             col_origin = self.get_origin()
             if sl is not None:
-                kmask &= np.in1d(self.origin2slice(col_origin), sl)
+                logical_func(kmask, np.in1d(self.origin2slice(col_origin), sl),
+                             out=kmask)
             if ifu is not None:
-                kmask &= np.in1d(self.origin2ifu(col_origin), ifu)
+                logical_func(kmask, np.in1d(self.origin2ifu(col_origin), ifu),
+                             out=kmask)
             if xpix is not None:
                 col_xpix = self.origin2xpix(col_origin)
                 if hasattr(xpix, '__iter__'):
                     mask = np.zeros(self.nrows, dtype=bool)
                     for x1, x2 in xpix:
                         mask |= (col_xpix >= x1) & (col_xpix < x2)
-                    kmask &= mask
+                    logical_func(kmask, mask, out=kmask)
                 else:
                     x1, x2 = xpix
-                    kmask &= (col_xpix >= x1) & (col_xpix < x2)
+                    logical_func(kmask, (col_xpix >= x1) & (col_xpix < x2),
+                                 out=kmask)
                 del col_xpix
             if ypix is not None:
                 col_ypix = self.origin2ypix(col_origin)
@@ -1140,10 +1147,11 @@ class PixTable(object):
                     mask = np.zeros(self.nrows, dtype=bool)
                     for y1, y2 in ypix:
                         mask |= (col_ypix >= y1) & (col_ypix < y2)
-                    kmask &= mask
+                    logical_func(kmask, mask, out=kmask)
                 else:
                     y1, y2 = ypix
-                    kmask &= (col_ypix >= y1) & (col_ypix < y2)
+                    logical_func(kmask, (col_ypix >= y1) & (col_ypix < y2),
+                                 out=kmask)
                 del col_ypix
             del col_origin
 
@@ -1154,15 +1162,19 @@ class PixTable(object):
                 mask = np.zeros(self.nrows, dtype=bool)
                 for iexp in exp:
                     mask |= (col_exp == iexp)
-                kmask &= mask
+                logical_func(kmask, mask, out=kmask)
                 del col_exp
 
         return kmask
 
-    def _extract_numexpr(self, sky=None, lbda=None, ifu=None,
-                         sl=None, xpix=None, ypix=None, exp=None):
-        # To start select the whole pixtable
-        kmask = np.ones(self.nrows, dtype=bool)
+    def _extract_numexpr(self, sky=None, lbda=None, ifu=None, sl=None,
+                         xpix=None, ypix=None, exp=None, method='and'):
+        if method == 'and':
+            kmask = np.ones(self.nrows, dtype=bool)
+            logical_func = np.logical_and
+        elif method == 'or':
+            kmask = np.zeros(self.nrows, dtype=bool)
+            logical_func = np.logical_or
 
         # Do the selection on the sky
         if sky is not None:
@@ -1186,7 +1198,7 @@ class PixTable(object):
                         mask |= numexpr.evaluate('(abs(xpos - x0) < size) & (abs(ypos - y0) < size)')
                 else:
                     raise ValueError('Unknown shape parameter')
-            kmask &= mask
+            logical_func(kmask, mask, out=kmask)
             del xpos
             del ypos
 
@@ -1196,7 +1208,7 @@ class PixTable(object):
             mask = np.zeros(self.nrows, dtype=bool)
             for l1, l2 in lbda:
                 mask |= numexpr.evaluate('(col_lambda >= l1) & (col_lambda < l2)')
-            kmask &= mask
+            logical_func(kmask, mask, out=kmask)
             del col_lambda
 
         # Do the selection on the origin column
@@ -1208,14 +1220,14 @@ class PixTable(object):
                 mask = np.zeros(self.nrows, dtype=bool)
                 for s in sl:
                     mask |= numexpr.evaluate('sli == s')
-                kmask &= mask
+                logical_func(kmask, mask, out=kmask)
                 del sli
             if ifu is not None:
                 _i = self.origin2ifu(col_origin)
                 mask = np.zeros(self.nrows, dtype=bool)
                 for i in ifu:
                     mask |= numexpr.evaluate('_i == i')
-                kmask &= mask
+                logical_func(kmask, mask, out=kmask)
                 del _i
             if xpix is not None:
                 col_xpix = self.origin2xpix(col_origin)
@@ -1223,10 +1235,11 @@ class PixTable(object):
                     mask = np.zeros(self.nrows, dtype=bool)
                     for x1, x2 in xpix:
                         mask |= numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
-                    kmask &= mask
+                    logical_func(kmask, mask, out=kmask)
                 else:
                     x1, x2 = xpix
-                    kmask &= numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
+                    mask = numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
+                    logical_func(kmask, mask, out=kmask)
                 del col_xpix
             if ypix is not None:
                 col_ypix = self.origin2ypix(col_origin)
@@ -1234,10 +1247,11 @@ class PixTable(object):
                     mask = np.zeros(self.nrows, dtype=bool)
                     for y1, y2 in ypix:
                         mask |= numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
-                    kmask &= mask
+                    logical_func(kmask, mask, out=kmask)
                 else:
                     y1, y2 = ypix
-                    kmask &= numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
+                    mask = numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
+                    logical_func(kmask, mask, out=kmask)
                 del col_ypix
             del col_origin
 
@@ -1248,13 +1262,13 @@ class PixTable(object):
                 mask = np.zeros(self.nrows, dtype=bool)
                 for iexp in exp:
                     mask |= numexpr.evaluate('col_exp == iexp')
-                kmask &= mask
+                logical_func(kmask, mask, out=kmask)
                 del col_exp
 
         return kmask
 
-    def extract(self, filename=None, sky=None, lbda=None, ifu=None,
-                sl=None, xpix=None, ypix=None, exp=None, stack=None):
+    def extract(self, filename=None, sky=None, lbda=None, ifu=None, sl=None,
+                xpix=None, ypix=None, exp=None, stack=None, method='and'):
         """Extracts a subset of a pixtable using the following criteria:
 
         - aperture on the sky (center, size and shape)
@@ -1294,6 +1308,7 @@ class PixTable(object):
         -------
         out : PixTable
         """
+        d = {'class': 'PixTable', 'method': 'extract'}
         if self.nrows == 0:
             return None
 
@@ -1315,10 +1330,11 @@ class PixTable(object):
             sli = sorted([Slicer.sky2ccd(i) for st in stack
                           for i in range(1 + 12*(st - 1), 12*st - 1)])
             sl = list(set(sl + sli)) if sl is not None else sli
-            print 'Slice:', sl
+            self.logger.debug('Extract stack %s -> slices %s', stack, sl,
+                              extra=d)
 
-        method = self._extract_numexpr if numexpr else self._extract
-        kmask = method(sky, lbda, ifu, sl, xpix, ypix, exp)
+        func = self._extract_numexpr if numexpr else self._extract
+        kmask = func(sky, lbda, ifu, sl, xpix, ypix, exp, method)
 
         # Compute the new pixtable
         ksel = np.where(kmask)
