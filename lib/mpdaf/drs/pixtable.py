@@ -575,6 +575,40 @@ class PixTable(object):
         self.filename = filename
         self.ima = save_as_ima
 
+    def get_column(self, name, attr=None, ksel=None):
+        """Loads a column and returns it.
+
+        Parameters
+        ----------
+        ksel : output of np.where
+               Elements depending on a condition.
+
+        Returns
+        -------
+        out : numpy.array
+        """
+        attr = attr or getattr(self, name)
+        if attr is not None:
+            if ksel is None:
+                return attr
+            else:
+                return attr[ksel]
+        else:
+            if self.hdulist is None:
+                return None
+            else:
+                if ksel is None:
+                    if self.ima:
+                        column = self.hdulist[name].data[:, 0]
+                    else:
+                        column = self.hdulist[1].data.field(name)
+                else:
+                    if self.ima:
+                        column = self.hdulist[name].data[ksel, 0][0]
+                    else:
+                        column = self.hdulist[1].data.field(name)[ksel]
+                return column
+
     def get_xpos(self, ksel=None):
         """Loads the xpos column and returns it.
 
@@ -587,26 +621,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        if self.xpos is not None:
-            if ksel is None:
-                return self.xpos
-            else:
-                return self.xpos[ksel]
-        else:
-            if self.hdulist is None:
-                return None
-            else:
-                if ksel is None:
-                    if self.ima:
-                        xpos = self.hdulist['xpos'].data[:, 0]
-                    else:
-                        xpos = self.hdulist[1].data.field('xpos')
-                else:
-                    if self.ima:
-                        xpos = self.hdulist['xpos'].data[ksel, 0][0]
-                    else:
-                        xpos = self.hdulist[1].data.field('xpos')[ksel]
-                return xpos
+        return self.get_column('xpos', ksel=ksel)
 
     def set_xpos(self, xpos, ksel=None):
         """Sets xpos column (or a part of it).
@@ -645,26 +660,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        if self.ypos is not None:
-            if ksel is None:
-                return self.ypos
-            else:
-                return self.ypos[ksel]
-        else:
-            if self.hdulist is None:
-                return None
-            else:
-                if ksel is None:
-                    if self.ima:
-                        ypos = self.hdulist['ypos'].data[:, 0]
-                    else:
-                        ypos = self.hdulist[1].data.field('ypos')
-                else:
-                    if self.ima:
-                        ypos = self.hdulist['ypos'].data[ksel, 0][0]
-                    else:
-                        ypos = self.hdulist[1].data.field('ypos')[ksel]
-                return ypos
+        return self.get_column('ypos', ksel=ksel)
 
     def set_ypos(self, ypos, ksel=None):
         """Sets ypos column (or a part of it).
@@ -703,26 +699,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        if self.lbda is not None:
-            if ksel is None:
-                return self.lbda
-            else:
-                return self.lbda[ksel]
-        else:
-            if self.hdulist is None:
-                return None
-            else:
-                if ksel is None:
-                    if self.ima:
-                        lbda = self.hdulist['lambda'].data[:, 0]
-                    else:
-                        lbda = self.hdulist[1].data.field('lambda')
-                else:
-                    if self.ima:
-                        lbda = self.hdulist['lambda'].data[ksel, 0][0]
-                    else:
-                        lbda = self.hdulist[1].data.field('lambda')[ksel]
-                return lbda
+        return self.get_column('lambda', attr=self.lbda, ksel=ksel)
 
     def set_lambda(self, lbda, ksel=None):
         """Sets lambda column (or a part of it).
@@ -763,26 +740,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        if self.data is not None:
-            if ksel is None:
-                return self.data
-            else:
-                return self.data[ksel]
-        else:
-            if self.hdulist is None:
-                return None
-            else:
-                if ksel is None:
-                    if self.ima:
-                        data = self.hdulist['data'].data[:, 0]
-                    else:
-                        data = self.hdulist[1].data.field('data')
-                else:
-                    if self.ima:
-                        data = self.hdulist['data'].data[ksel, 0][0]
-                    else:
-                        data = self.hdulist[1].data.field('data')[ksel]
-                return data
+        return self.get_column('data', ksel=ksel)
 
     def set_data(self, data, ksel=None):
         """Sets data column (or a part of it).
@@ -817,26 +775,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        if self.stat is not None:
-            if ksel is None:
-                return self.stat
-            else:
-                return self.stat[ksel]
-        else:
-            if self.hdulist is None:
-                return None
-            else:
-                if ksel is None:
-                    if self.ima:
-                        stat = self.hdulist['stat'].data[:, 0]
-                    else:
-                        stat = self.hdulist[1].data.field('stat')
-                else:
-                    if self.ima:
-                        stat = self.hdulist['stat'].data[ksel, 0][0]
-                    else:
-                        stat = self.hdulist[1].data.field('stat')[ksel]
-                return stat
+        return self.get_column('stat', ksel=ksel)
 
     def set_stat(self, stat, ksel=None):
         """Sets stat column (or a part of it).
@@ -871,26 +810,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        if self.dq is not None:
-            if ksel is None:
-                return self.dq
-            else:
-                return self.dq[ksel]
-        else:
-            if self.hdulist is None:
-                return None
-            else:
-                if ksel is None:
-                    if self.ima:
-                        dq = self.hdulist['dq'].data[:, 0]
-                    else:
-                        dq = self.hdulist[1].data.field('dq')
-                else:
-                    if self.ima:
-                        dq = self.hdulist['dq'].data[ksel, 0][0]
-                    else:
-                        dq = self.hdulist[1].data.field('dq')[ksel]
-                return dq
+        return self.get_column('dq', ksel=ksel)
 
     def set_dq(self, dq, ksel=None):
         """Sets dq column (or a part of it).
@@ -925,26 +845,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        if self.origin is not None:
-            if ksel is None:
-                return self.origin
-            else:
-                return self.origin[ksel]
-        else:
-            if self.hdulist is None:
-                return None
-            else:
-                if ksel is None:
-                    if self.ima:
-                        origin = self.hdulist['origin'].data[:, 0]
-                    else:
-                        origin = self.hdulist[1].data.field('origin')
-                else:
-                    if self.ima:
-                        origin = self.hdulist['origin'].data[ksel, 0][0]
-                    else:
-                        origin = self.hdulist[1].data.field('origin')[ksel]
-                return origin
+        return self.get_column('origin', ksel=ksel)
 
     def set_origin(self, origin, ksel=None):
         """Sets origin column (or a part of it).
@@ -1048,8 +949,7 @@ class PixTable(object):
         out : numpy.memmap
         """
         try:
-            nexp = self.get_keywords("HIERARCH ESO DRS MUSE "
-                                     "PIXTABLE COMBINED")
+            nexp = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
             exp = np.empty(shape=(self.nrows))
             for i in range(1, nexp + 1):
                 first = self.get_keywords("HIERARCH ESO DRS MUSE "
