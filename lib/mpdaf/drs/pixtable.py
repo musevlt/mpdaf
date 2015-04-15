@@ -2,6 +2,7 @@
 
 import ctypes
 import datetime
+import itertools
 import logging
 import os.path
 import numpy as np
@@ -1068,8 +1069,6 @@ class PixTable(object):
         # Do the selection on the sky
         if sky is not None:
             xpos, ypos = self.get_pos_sky()
-            if (isinstance(sky, tuple)):
-                sky = [sky]
             mask = np.zeros(self.nrows, dtype=bool)
             for y0, x0, size, shape in sky:
                 if shape == 'C':
@@ -1104,20 +1103,16 @@ class PixTable(object):
                 else:
                     raise ValueError('Unknown shape parameter')
             kmask &= mask
-            del mask
             del xpos
             del ypos
 
         # Do the selection on wavelengths
         if lbda is not None:
             col_lambda = self.get_lambda()
-            if (isinstance(lbda, tuple)):
-                lbda = [lbda]
             mask = np.zeros(self.nrows, dtype=bool)
             for l1, l2 in lbda:
                 mask |= (col_lambda >= l1) & (col_lambda < l2)
             kmask &= mask
-            del mask
             del col_lambda
 
         # Do the selection on the origin column
@@ -1125,25 +1120,9 @@ class PixTable(object):
                 (xpix is not None) or (ypix is not None):
             col_origin = self.get_origin()
             if sl is not None:
-                sli = self.origin2slice(col_origin)
-                if hasattr(sl, '__iter__'):
-                    mask = np.zeros(self.nrows, dtype=bool)
-                    for s in sl:
-                        mask |= (sli == s)
-                    kmask &= mask
-                    del mask
-                else:
-                    kmask &= (sli == sl)
+                kmask &= np.in1d(self.origin2slice(col_origin), sl)
             if ifu is not None:
-                _i = self.origin2ifu(col_origin)
-                if hasattr(ifu, '__iter__'):
-                    mask = np.zeros(self.nrows, dtype=bool)
-                    for i in ifu:
-                        mask |= (_i == i)
-                    kmask &= mask
-                    del mask
-                else:
-                    kmask &= (_i == ifu)
+                kmask &= np.in1d(self.origin2ifu(col_origin), ifu)
             if xpix is not None:
                 col_xpix = self.origin2xpix(col_origin)
                 if hasattr(xpix, '__iter__'):
@@ -1151,7 +1130,6 @@ class PixTable(object):
                     for x1, x2 in xpix:
                         mask |= (col_xpix >= x1) & (col_xpix < x2)
                     kmask &= mask
-                    del mask
                 else:
                     x1, x2 = xpix
                     kmask &= (col_xpix >= x1) & (col_xpix < x2)
@@ -1163,7 +1141,6 @@ class PixTable(object):
                     for y1, y2 in ypix:
                         mask |= (col_ypix >= y1) & (col_ypix < y2)
                     kmask &= mask
-                    del mask
                 else:
                     y1, y2 = ypix
                     kmask &= (col_ypix >= y1) & (col_ypix < y2)
@@ -1178,7 +1155,6 @@ class PixTable(object):
                 for iexp in exp:
                     mask |= (col_exp == iexp)
                 kmask &= mask
-                del mask
                 del col_exp
 
         return kmask
@@ -1192,8 +1168,6 @@ class PixTable(object):
         if sky is not None:
             xpos, ypos = self.get_pos_sky()
             pi = np.pi
-            if (isinstance(sky, tuple)):
-                sky = [sky]
             mask = np.zeros(self.nrows, dtype=bool)
             for y0, x0, size, shape in sky:
                 if shape == 'C':
@@ -1213,20 +1187,16 @@ class PixTable(object):
                 else:
                     raise ValueError('Unknown shape parameter')
             kmask &= mask
-            del mask
             del xpos
             del ypos
 
         # Do the selection on wavelengths
         if lbda is not None:
             col_lambda = self.get_lambda()
-            if (isinstance(lbda, tuple)):
-                lbda = [lbda]
             mask = np.zeros(self.nrows, dtype=bool)
             for l1, l2 in lbda:
                 mask |= numexpr.evaluate('(col_lambda >= l1) & (col_lambda < l2)')
             kmask &= mask
-            del mask
             del col_lambda
 
         # Do the selection on the origin column
@@ -1235,25 +1205,17 @@ class PixTable(object):
             col_origin = self.get_origin()
             if sl is not None:
                 sli = self.origin2slice(col_origin)
-                if hasattr(sl, '__iter__'):
-                    mask = np.zeros(self.nrows, dtype=bool)
-                    for s in sl:
-                        mask |= numexpr.evaluate('sli == s')
-                    kmask &= mask
-                    del mask
-                else:
-                    kmask &= numexpr.evaluate('sli == sl')
+                mask = np.zeros(self.nrows, dtype=bool)
+                for s in sl:
+                    mask |= numexpr.evaluate('sli == s')
+                kmask &= mask
                 del sli
             if ifu is not None:
                 _i = self.origin2ifu(col_origin)
-                if hasattr(ifu, '__iter__'):
-                    mask = np.zeros(self.nrows, dtype=bool)
-                    for i in ifu:
-                        mask |= numexpr.evaluate('_i == i')
-                    kmask &= mask
-                    del mask
-                else:
-                    kmask &= numexpr.evaluate('_i == ifu')
+                mask = np.zeros(self.nrows, dtype=bool)
+                for i in ifu:
+                    mask |= numexpr.evaluate('_i == i')
+                kmask &= mask
                 del _i
             if xpix is not None:
                 col_xpix = self.origin2xpix(col_origin)
@@ -1262,7 +1224,6 @@ class PixTable(object):
                     for x1, x2 in xpix:
                         mask |= numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
                     kmask &= mask
-                    del mask
                 else:
                     x1, x2 = xpix
                     kmask &= numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
@@ -1274,7 +1235,6 @@ class PixTable(object):
                     for y1, y2 in ypix:
                         mask |= numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
                     kmask &= mask
-                    del mask
                 else:
                     y1, y2 = ypix
                     kmask &= numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
@@ -1289,26 +1249,21 @@ class PixTable(object):
                 for iexp in exp:
                     mask |= numexpr.evaluate('col_exp == iexp')
                 kmask &= mask
-                del mask
                 del col_exp
 
         return kmask
 
     def extract(self, filename=None, sky=None, lbda=None, ifu=None,
-                sl=None, xpix=None, ypix=None, exp=None):
+                sl=None, xpix=None, ypix=None, exp=None, stack=None):
         """Extracts a subset of a pixtable using the following criteria:
 
         - aperture on the sky (center, size and shape)
-
         - wavelength range
-
         - IFU number
-
         - slice number
-
         - detector pixels
-
         - exposure numbers
+        - stack number
 
         The arguments can be either single value or a list of values to select
         multiple regions.
@@ -1324,13 +1279,13 @@ class PixTable(object):
                    and size (radius or half side length) in arcsec/pixels.
         lbda     : (float, float)
                    (min, max) wavelength range in wavelength unit.
-        ifu      : int
+        ifu      : int or list
                    IFU number.
-        sl       : int
+        sl       : int or list
                    Slice number on the CCD.
-        xpix     : (int, int)
+        xpix     : (int, int) or list
                    (min, max) pixel range along the X axis
-        ypix     : (int, int)
+        ypix     : (int, int) or list
                    (min, max) pixel range along the Y axis
         exp      : list of integers
                    List of exposure numbers
@@ -1341,6 +1296,27 @@ class PixTable(object):
         """
         if self.nrows == 0:
             return None
+
+        if isinstance(sky, tuple):
+            sky = [sky]
+        if isinstance(lbda, tuple):
+            lbda = [lbda]
+        if isinstance(ifu, (int, float)):
+            ifu = [ifu]
+        if isinstance(sl, (int, float)):
+            sl = [sl]
+        if isinstance(stack, (int, float)):
+            stack = [stack]
+
+        if stack is not None:
+            from ..MUSE import Slicer
+            assert min(stack) > 0
+            assert max(stack) < 5
+            sli = sorted([Slicer.sky2ccd(i) for st in stack
+                          for i in range(1 + 12*(st - 1), 12*st - 1)])
+            sl = list(set(sl + sli)) if sl is not None else sli
+            print 'Slice:', sl
+
         method = self._extract_numexpr if numexpr else self._extract
         kmask = method(sky, lbda, ifu, sl, xpix, ypix, exp)
 
@@ -1620,19 +1596,16 @@ class PixTable(object):
         col_ypos = self.get_ypos()
 
         ifupix, slicepix, ypix, xpix = self.origin2coords(col_origin)
+        ifus = np.unique(ifupix)
+        slices = np.unique(slicepix)
 
         # build the slicelist
-        slicelist = []
-        for ifu in np.unique(ifupix):
-            for sl in np.unique(slicepix):
-                slicelist.append((ifu, sl))
-        nslice = len(slicelist)
-        slicelist = np.array(slicelist)
+        slicelist = np.array(list(itertools.product(ifus, slices)))
 
         # compute mean sky position of each slice
         skypos = []
         for ifu, sl in slicelist:
-            k = np.where((ifupix == ifu) & (slicepix == sl))
+            k = ((ifupix == ifu) & (slicepix == sl))
             skypos.append((col_xpos[k].mean(), col_ypos[k].mean()))
         skypos = np.array(skypos)
 
@@ -1643,7 +1616,7 @@ class PixTable(object):
         if verbose:
             d = {'class': 'PixTable', 'method': 'get_slices'}
             msg = '%d slices found, structure returned in \
-                   slices dictionary ' % nslice
+                   slices dictionary ' % len(slicelist)
             self.logger.info(msg, extra=d)
 
         return slices
