@@ -162,8 +162,8 @@ class PixTableAutoCalib(object):
 
     """
 
-    def __init__(self, filename=None, method=None, maskfile=None, skyref=None, pixtable=None,
-                 ifu=None, sli=None, npts=None, corr=None):
+    def __init__(self, filename=None, method=None, maskfile=None, skyref=None,
+                 pixtable=None, ifu=None, sli=None, npts=None, corr=None):
         """creates a PixTableAutoCalib object.
 
         Parameters
@@ -228,13 +228,13 @@ class PixTableAutoCalib(object):
         prihdu.header['skyref'] = (os.path.basename(self.skyref),
                                    'reference sky spectrum')
 
-        nrows = self.corr.shape[0]
+        shape = (self.corr.shape[0], 1)
         hdulist = [
             prihdu,
-            ImageHDU(name='ifu', data=np.int32(self.ifu.reshape((nrows, 1)))),
-            ImageHDU(name='sli', data=np.int32(self.sli.reshape((nrows, 1)))),
-            ImageHDU(name='npts', data=np.int32(self.npts.reshape((nrows, 1)))),
-            ImageHDU(name='corr', data=np.float64(self.corr.reshape((nrows, 1))))]
+            ImageHDU(name='ifu', data=np.int32(self.ifu.reshape(shape))),
+            ImageHDU(name='sli', data=np.int32(self.sli.reshape(shape))),
+            ImageHDU(name='npts', data=np.int32(self.npts.reshape(shape))),
+            ImageHDU(name='corr', data=np.float64(self.corr.reshape(shape)))]
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True, output_verify='fix')
         warnings.simplefilter("default")
@@ -292,8 +292,9 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
             ImageHDU(name='origin', data=np.int32(origin.reshape((nrows, 1)))),
         ]
         if weight is not None:
-            hdulist.append(ImageHDU(name='weight',
-                                    data=np.float32(weight.reshape((nrows, 1)))))
+            hdulist.append(
+                ImageHDU(name='weight',
+                         data=np.float32(weight.reshape((nrows, 1)))))
         hdu = pyfits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = wcs
         hdu[2].header['BUNIT'] = wcs
@@ -304,19 +305,15 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
             hdu[8].header['BUNIT'] = unit_data
     else:
         cols = [
-            Column(name='xpos', format='1E', unit=wcs,
-                   array=np.float32(xpos)),
-            Column(name='ypos', format='1E', unit=wcs,
-                   array=np.float32(ypos)),
-            Column(name='lambda', format='1E', unit=wave,
-                   array=lbda),
+            Column(name='xpos', format='1E', unit=wcs, array=np.float32(xpos)),
+            Column(name='ypos', format='1E', unit=wcs, array=np.float32(ypos)),
+            Column(name='lambda', format='1E', unit=wave, array=lbda),
             Column(name='data', format='1E', unit=unit_data,
                    array=np.float32(data)),
             Column(name='dq', format='1J', array=np.int32(dq)),
             Column(name='stat', format='1E', unit=unit_stat,
                    array=np.float32(stat)),
-            Column(name='origin', format='1J',
-                   array=np.int32(origin)),
+            Column(name='origin', format='1J', array=np.int32(origin)),
         ]
 
         if weight is not None:
@@ -543,21 +540,10 @@ class PixTable(object):
         if self.fluxcal:
             msg = "This pixel table was flux-calibrated"
             self.logger.info(msg, extra=d)
-        try:
-            msg = '%s (%s)' % (self.primary_header["HIERARCH ESO "
-                                                   "DRS MUSE PIXTABLE WCS"],
-                               self.primary_header.comments["HIERARCH ESO "
-                                                            "DRS MUSE PIXTABLE WCS"])
-            self.logger.info(msg, extra=d)
-        except:
-            try:
-                msg = '%s (%s)' % (self.primary_header["HIERARCH ESO "
-                                                       "PRO MUSE PIXTABLE WCS"],
-                                   self.primary_header.comments["HIERARCH ESO "
-                                                                "PRO MUSE PIXTABLE WCS"])
-                self.logger.info(msg, extra=d)
-            except:
-                pass
+        msg = '%s (%s)' % (
+            self.primary_header["HIERARCH ESO DRS MUSE PIXTABLE WCS"],
+            self.primary_header.comments["HIERARCH ESO DRS MUSE PIXTABLE WCS"])
+        self.logger.info(msg, extra=d)
         try:
             msg = self.hdulist.info()
             self.logger.info(msg, extra=d)
@@ -641,16 +627,10 @@ class PixTable(object):
             if self.xpos is None:
                 self.xpos = self.get_xpos()
             self.xpos[ksel] = xpos
-        try:
-            self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW']\
-                = float(self.xpos.min())
-            self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH']\
-                = float(self.xpos.max())
-        except:
-            self.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X LOW']\
-                = float(self.xpos.min())
-            self.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X HIGH']\
-                = float(self.xpos.max())
+        self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW']\
+            = float(self.xpos.min())
+        self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH']\
+            = float(self.xpos.max())
 
     def get_ypos(self, ksel=None):
         """Loads the ypos column and returns it.
@@ -705,16 +685,10 @@ class PixTable(object):
             if self.ypos is None:
                 self.ypos = self.get_ypos()
             self.ypos[ksel] = ypos
-        try:
-            self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW']\
-                = float(self.ypos.min())
-            self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH']\
-                = float(self.ypos.max())
-        except:
-            self.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y LOW']\
-                = float(self.ypos.min())
-            self.primary_header['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y HIGH']\
-                = float(self.ypos.max())
+        self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW']\
+            = float(self.ypos.min())
+        self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH']\
+            = float(self.ypos.max())
 
     def get_lambda(self, ksel=None):
         """Loads the lambda column and returns it.
@@ -769,20 +743,12 @@ class PixTable(object):
             if self.lbda is None:
                 self.lbda = self.get_lambda()
             self.lbda[ksel] = lbda
-        try:
-            self.primary_header['HIERARCH ESO DRS MUSE '
-                                'PIXTABLE LIMITS LAMBDA LOW']\
-                = float(self.lbda.min())
-            self.primary_header['HIERARCH ESO DRS MUSE '
-                                'PIXTABLE LIMITS LAMBDA HIGH']\
-                = float(self.lbda.max())
-        except:
-            self.primary_header['HIERARCH ESO PRO MUSE '
-                                'PIXTABLE LIMITS LAMBDA LOW']\
-                = float(self.lbda.min())
-            self.primary_header['HIERARCH ESO PRO MUSE '
-                                'PIXTABLE LIMITS LAMBDA HIGH']\
-                = float(self.lbda.max())
+        self.primary_header['HIERARCH ESO DRS MUSE '
+                            'PIXTABLE LIMITS LAMBDA LOW']\
+            = float(self.lbda.min())
+        self.primary_header['HIERARCH ESO DRS MUSE '
+                            'PIXTABLE LIMITS LAMBDA HIGH']\
+            = float(self.lbda.max())
 
     def get_data(self, ksel=None):
         """Loads the data column and returns it.
@@ -999,41 +965,21 @@ class PixTable(object):
             if self.origin is None:
                 self.origin = self.get_origin()
             self.origin[ksel] = origin
-        try:
-            self.primary_header['HIERARCH ESO DRS MUSE '
-                                'PIXTABLE LIMITS IFU LOW'] = \
-                int(self.origin2ifu(self.origin).min())
-            self.primary_header['HIERARCH ESO DRS MUSE '
-                                'PIXTABLE LIMITS IFU HIGH'] = \
-                int(self.origin2ifu(self.origin).max())
-            self.primary_header['HIERARCH ESO DRS MUSE '
-                                'PIXTABLE LIMITS SLICE LOW'] = \
-                int(self.origin2slice(self.origin).min())
-            self.primary_header['HIERARCH ESO DRS MUSE '
-                                'PIXTABLE LIMITS SLICE HIGH'] = \
-                int(self.origin2slice(self.origin).max())
-        except:
-            self.primary_header['HIERARCH ESO PRO MUSE '
-                                'PIXTABLE LIMITS IFU LOW'] = \
-                int(self.origin2ifu(self.origin).min())
-            self.primary_header['HIERARCH ESO PRO MUSE '
-                                'PIXTABLE LIMITS IFU HIGH'] = \
-                int(self.origin2ifu(self.origin).max())
-            self.primary_header['HIERARCH ESO PRO MUSE '
-                                'PIXTABLE LIMITS SLICE LOW'] = \
-                int(self.origin2slice(self.origin).min())
-            self.primary_header['HIERARCH ESO PRO MUSE '
-                                'PIXTABLE LIMITS SLICE HIGH'] = \
-                int(self.origin2slice(self.origin).max())
+
+        hdr = self.primary_header
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = \
+            int(self.origin2ifu(self.origin).min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH'] = \
+            int(self.origin2ifu(self.origin).max())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW'] = \
+            int(self.origin2slice(self.origin).min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH'] = \
+            int(self.origin2slice(self.origin).max())
 
         # merged pixtable
         if self.nifu > 1:
-            try:
-                self.primary_header["HIERARCH ESO DRS MUSE PIXTABLE MERGED"]\
-                    = len(np.unique(self.origin2ifu(self.origin)))
-            except:
-                self.primary_header["HIERARCH ESO PRO MUSE PIXTABLE MERGED"]\
-                    = len(np.unique(self.origin2ifu(self.origin)))
+            hdr["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = \
+                len(np.unique(self.origin2ifu(self.origin)))
 
     def get_weight(self, ksel=None):
         """Loads the weight column and returns it.
@@ -1349,7 +1295,7 @@ class PixTable(object):
         return kmask
 
     def extract(self, filename=None, sky=None, lbda=None, ifu=None,
-                sl=None, xpix=None, ypix=None, exp=None, use_numexpr=True):
+                sl=None, xpix=None, ypix=None, exp=None):
         """Extracts a subset of a pixtable using the following criteria:
 
         - aperture on the sky (center, size and shape)
@@ -1395,7 +1341,7 @@ class PixTable(object):
         """
         if self.nrows == 0:
             return None
-        method = self._extract_numexpr if numexpr and use_numexpr else self._extract
+        method = self._extract_numexpr if numexpr else self._extract
         kmask = method(sky, lbda, ifu, sl, xpix, ypix, exp)
 
         # Compute the new pixtable
@@ -1404,121 +1350,61 @@ class PixTable(object):
         nrows = len(ksel[0])
         if nrows == 0:
             return None
-        # xpos
-        xpos = self.get_xpos(ksel)
+
         # type of coordinates
         hdr = self.primary_header.copy()
 
-        try:
-            hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW'] = \
-                float(xpos.min())
-            hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH'] = \
-                float(xpos.max())
-        except:
-            hdr['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X LOW'] = \
-                float(xpos.min())
-            hdr['HIERARCH ESO PRO MUSE PIXTABLE LIMITS X HIGH'] = \
-                float(xpos.max())
+        # xpos
+        xpos = self.get_xpos(ksel)
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW'] = float(xpos.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH'] = float(xpos.max())
+
         # ypos
         ypos = self.get_ypos(ksel)
-        try:
-            hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW'] = \
-                float(ypos.min())
-            hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH'] = \
-                float(ypos.max())
-        except:
-            hdr['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y LOW'] = \
-                float(ypos.min())
-            hdr['HIERARCH ESO PRO MUSE PIXTABLE LIMITS Y HIGH'] = \
-                float(ypos.max())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW'] = float(ypos.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH'] = float(ypos.max())
+
         # lambda
         lbda = self.get_lambda(ksel)
-        try:
-            hdr['HIERARCH ESO DRS MUSE '
-                'PIXTABLE LIMITS LAMBDA LOW'] = float(lbda.min())
-            hdr['HIERARCH ESO DRS MUSE '
-                'PIXTABLE LIMITS LAMBDA HIGH'] = float(lbda.max())
-        except:
-            hdr['HIERARCH ESO PRO MUSE '
-                'PIXTABLE LIMITS LAMBDA LOW'] = float(lbda.min())
-            hdr['HIERARCH ESO PRO MUSE '
-                'PIXTABLE LIMITS LAMBDA HIGH'] = float(lbda.max())
-        # data
-        data = self.get_data(ksel)
-        # variance
-        stat = self.get_stat(ksel)
-        # pixel quality
-        dq = self.get_dq(ksel)
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA LOW'] = \
+            float(lbda.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA HIGH'] = \
+            float(lbda.max())
+
         # origin
         origin = self.get_origin(ksel)
         ifu = self.origin2ifu(origin)
         sl = self.origin2slice(origin)
-        try:
-            hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = \
-                int(ifu.min())
-            hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH'] = \
-                int(ifu.max())
-            hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW'] = \
-                int(sl.min())
-            hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH'] = \
-                int(sl.max())
-        except:
-            hdr['HIERARCH ESO PRO MUSE PIXTABLE LIMITS IFU LOW'] = \
-                int(ifu.min())
-            hdr['HIERARCH ESO PRO MUSE PIXTABLE LIMITS IFU HIGH'] = \
-                int(ifu.max())
-            hdr['HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE LOW'] = \
-                int(sl.min())
-            hdr['HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE HIGH'] = \
-                int(sl.max())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = int(ifu.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH'] = int(ifu.max())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW'] = int(sl.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH'] = int(sl.max())
+
         # merged pixtable
         if self.nifu > 1:
-            nifu = len(np.unique(ifu))
-            try:
-                hdr["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = nifu
-            except:
-                hdr["HIERARCH ESO PRO MUSE PIXTABLE MERGED"] = nifu
-
-        # weight
-        weight = self.get_weight(ksel)
+            hdr["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = len(np.unique(ifu))
 
         # combined exposures
         selfexp = self.get_exp()
         if selfexp is not None:
             newexp = selfexp[ksel]
             numbers_exp = np.unique(newexp)
-            try:
-                hdr["HIERARCH ESO DRS MUSE PIXTABLE COMBINED"] = \
-                    len(numbers_exp)
-                for iexp, i in zip(numbers_exp,
-                                   range(1, len(numbers_exp) + 1)):
-                    ksel = np.where(newexp == iexp)
-                    hdr["HIERARCH ESO DRS MUSE "
-                        "PIXTABLE EXP%i FIRST" % i] = ksel[0][0]
-                    hdr["HIERARCH ESO DRS MUSE "
-                        "PIXTABLE EXP%i LAST" % i] = ksel[0][-1]
-                for i in range(len(numbers_exp) + 1,
-                               self.get_keywords("HIERARCH ESO DRS MUSE "
-                                                 "PIXTABLE COMBINED") + 1):
-                    del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i]
-                    del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i]
-            except:
-                hdr["HIERARCH ESO PRO MUSE PIXTABLE COMBINED"] = \
-                    len(numbers_exp)
-                for iexp, i in zip(numbers_exp,
-                                   range(1, len(numbers_exp) + 1)):
-                    ksel = np.where(newexp == iexp)
-                    hdr["HIERARCH ESO PRO MUSE "
-                        "PIXTABLE EXP%i FIRST" % i] = ksel[0][0]
-                    hdr["HIERARCH ESO PRO MUSE "
-                        "PIXTABLE EXP%i LAST" % i] = ksel[0][-1]
-                for i in range(len(numbers_exp) + 1,
-                               self.get_keywords("HIERARCH ESO PRO MUSE '\
-                               PIXTABLE COMBINED") + 1):
-                    del hdr["HIERARCH ESO PRO MUSE PIXTABLE EXP%i FIRST" % i]
-                    del hdr["HIERARCH ESO PRO MUSE PIXTABLE EXP%i LAST" % i]
+            hdr["HIERARCH ESO DRS MUSE PIXTABLE COMBINED"] = len(numbers_exp)
+            for iexp, i in zip(numbers_exp, range(1, len(numbers_exp) + 1)):
+                k = np.where(newexp == iexp)
+                hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i] = k[0][0]
+                hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i] = k[0][-1]
+            for i in range(len(numbers_exp) + 1,
+                           self.get_keywords("HIERARCH ESO DRS MUSE "
+                                             "PIXTABLE COMBINED") + 1):
+                del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i]
+                del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i]
 
         # return sub pixtable
+        data = self.get_data(ksel)
+        stat = self.get_stat(ksel)
+        dq = self.get_dq(ksel)
+        weight = self.get_weight(ksel)
         pix = PixTable(filename, xpos, ypos, lbda, data, dq, stat, origin,
                        weight, hdr, self.ima, self.wcs, self.wave)
         if filename is not None:
@@ -1638,9 +1524,11 @@ class PixTable(object):
             theta = ypos + np.pi / 2
             dp = self.yc * np.pi / 180
             ra = np.arctan2(np.cos(theta) * np.sin(phi),
-                            np.sin(theta) * np.cos(dp) + np.cos(theta) * np.sin(dp) * np.cos(phi)) * 180 / np.pi
+                            np.sin(theta) * np.cos(dp) +
+                            np.cos(theta) * np.sin(dp) * np.cos(phi)) * 180 / np.pi
             xpos_sky = self.xc + ra
-            ypos_sky = np.arcsin(np.sin(theta) * np.sin(dp) - np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
+            ypos_sky = np.arcsin(np.sin(theta) * np.sin(dp) -
+                                 np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
         else:
             if self.wcs == 'deg':
                 dp = self.yc * np.pi / 180
@@ -2078,12 +1966,14 @@ class PixTable(object):
         self.set_data(result)
 
         # autocalib file
-        autocalib = PixTableAutoCalib(method='drs.pixtable.old_subtract_slice_median',
-                                      maskfile=maskfile, skyref=norm,
-                                      pixtable=os.path.basename(self.filename),
-                                      ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
-                                      sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
-                                      npts=npts, corr=corr)
+        autocalib = PixTableAutoCalib(
+            method='drs.pixtable.old_subtract_slice_median',
+            maskfile=maskfile, skyref=norm,
+            pixtable=os.path.basename(self.filename),
+            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)),
+                                     0, 1)),
+            sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+            npts=npts, corr=corr)
         # add keywords
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.old_subtract_slice_median",
@@ -2096,12 +1986,12 @@ class PixTable(object):
                          os.path.basename(self.filename), extra=d)
 
         # close libray
-        #import _ctypes
-        #_ctypes.dlclose(libCmethods._handle)
-        #libCmethods._handle = None
-        #libCmethods._name = None
-        #libCmethods._FuncPtr = None
-        #del libCmethods
+        # import _ctypes
+        # _ctypes.dlclose(libCmethods._handle)
+        # libCmethods._handle = None
+        # libCmethods._name = None
+        # libCmethods._FuncPtr = None
+        # del libCmethods
         return autocalib
 
     def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
@@ -2276,12 +2166,14 @@ class PixTable(object):
         else:
             skyref_file = os.path.basename(skyref.filename)
 
-        autocalib = PixTableAutoCalib(method='drs.pixtable.subtract_slice_median',
-                                      maskfile=maskfile, skyref=skyref_file,
-                                      pixtable=os.path.basename(self.filename),
-                                      ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
-                                      sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
-                                      npts=npts, corr=corr)
+        autocalib = PixTableAutoCalib(
+            method='drs.pixtable.subtract_slice_median',
+            maskfile=maskfile, skyref=skyref_file,
+            pixtable=os.path.basename(self.filename),
+            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)),
+                                     0, 1)),
+            sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+            npts=npts, corr=corr)
 
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,
@@ -2295,12 +2187,12 @@ class PixTable(object):
                          os.path.basename(self.filename), extra=d)
 
         # close libray
-        #import _ctypes
-        #_ctypes.dlclose(libCmethods._handle)
-        #libCmethods._handle = None
-        #libCmethods._name = None
-        #libCmethods._FuncPtr = None
-        #del libCmethods
+        # import _ctypes
+        # _ctypes.dlclose(libCmethods._handle)
+        # libCmethods._handle = None
+        # libCmethods._name = None
+        # libCmethods._FuncPtr = None
+        # del libCmethods
         return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
@@ -2394,21 +2286,23 @@ class PixTable(object):
                                    'reference sky spectrum'])
 
         # autocalib file
-        autocalib = PixTableAutoCalib(method='drs.pixtable.divide_slice_median',
-                                      maskfile=maskfile, skyref=skyref_file,
-                                      pixtable=os.path.basename(self.filename),
-                                      ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)), 0, 1)),
-                                      sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
-                                      npts=npts, corr=corr)
+        autocalib = PixTableAutoCalib(
+            method='drs.pixtable.divide_slice_median',
+            maskfile=maskfile, skyref=skyref_file,
+            pixtable=os.path.basename(self.filename),
+            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)),
+                                     0, 1)),
+            sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+            npts=npts, corr=corr)
 
         self.logger.info('pixtable %s updated',
                          os.path.basename(self.filename), extra=d)
 
         # close libray
-        #import _ctypes
-        #_ctypes.dlclose(libCmethods._handle)
-        #libCmethods._handle = None
-        #libCmethods._name = None
-        #libCmethods._FuncPtr = None
-        #del libCmethods
+        # import _ctypes
+        # _ctypes.dlclose(libCmethods._handle)
+        # libCmethods._handle = None
+        # libCmethods._name = None
+        # libCmethods._FuncPtr = None
+        # del libCmethods
         return autocalib
