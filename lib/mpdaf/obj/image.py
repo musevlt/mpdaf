@@ -4555,8 +4555,8 @@ class Image(object):
         ima.norm(type='sum')
         return self.fftconvolve(ima)
 
-    def fftconvolve_moffat(self, center=None, I=1., a=1.0, q=1.0,
-                           n=2, rot=0., factor=1, pix=False):
+    def fftconvolve_moffat(self, center=None, flux=1., a=1.0, q=1.0,
+                           n=2, peak=False, rot=0., factor=1, pix=False):
         """Returns the convolution of the image with a 2D moffat.
 
         Parameters
@@ -4565,8 +4565,9 @@ class Image(object):
                 Gaussian center (y_peak, x_peak)
                 in degrees (pix=False) or pixels (pix=True).
                 If None the center of the image is used.
-        I      : float
-                Intensity at image center. 1 by default.
+        flux   : float
+                Integrated gaussian flux or gaussian peak value
+                if peak is True.
         a      : float
                 Half width at half maximum of the image
                 in the absence of atmospheric scattering in arcseconds
@@ -4587,6 +4588,8 @@ class Image(object):
                 If pix is False, center and fwhm are
                 in degrees and arcsecs.
                 If pix is True, center and fwhm are in pixels.
+        peak   : boolean
+                If true, flux contains a gaussian peak value.
 
         Returns
         -------
@@ -4596,8 +4599,8 @@ class Image(object):
         fwhmx = fwhmy / q
 
         ima = moffat_image(self.shape, wcs=self.wcs, factor=factor,
-                           center=center, flux=I, fwhm=(fwhmy, fwhmx), n=n,
-                           rot=rot, pix=pix)
+                           center=center, flux=flux, fwhm=(fwhmy, fwhmx), n=n,
+                           rot=rot, pix=pix, peak=peak)
 
         ima.norm(type='sum')
         return self.fftconvolve(ima)
