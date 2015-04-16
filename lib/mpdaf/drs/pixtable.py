@@ -587,7 +587,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        attr = attr or getattr(self, name)
+        attr = attr if attr is not None else getattr(self, name, None)
         if attr is not None:
             if ksel is None:
                 return attr
@@ -961,19 +961,122 @@ class PixTable(object):
             exp = None
         return exp
 
-    def _extract(self, sky=None, lbda=None, ifu=None, sl=None, xpix=None,
-                 ypix=None, exp=None, method='and'):
-        if method == 'and':
-            kmask = np.ones(self.nrows, dtype=bool)
-            logical_func = np.logical_and
-        elif method == 'or':
-            kmask = np.zeros(self.nrows, dtype=bool)
-            logical_func = np.logical_or
+    def select_lambda(self, lbda):
+        arr = self.get_lambda()
+        mask = np.zeros(self.nrows, dtype=bool)
+        if numexpr:
+            for l1, l2 in lbda:
+                mask |= numexpr.evaluate('(arr >= l1) & (arr < l2)')
+        else:
+            for l1, l2 in lbda:
+                mask |= (arr >= l1) & (arr < l2)
+        return mask
 
-        # Do the selection on the sky
-        if sky is not None:
-            xpos, ypos = self.get_pos_sky()
+    def select_slices(self, slices, origin=None):
+        col_origin = origin if origin is not None else self.get_origin()
+        col_sli = self.origin2slice(col_origin)
+        if numexpr:
             mask = np.zeros(self.nrows, dtype=bool)
+            for s in slices:
+                mask |= numexpr.evaluate('col_sli == s')
+            return mask
+        else:
+            return np.in1d(col_sli, slices)
+
+    def select_ifus(self, ifus, origin=None):
+        col_origin = origin if origin is not None else self.get_origin()
+        col_ifu = self.origin2ifu(col_origin)
+        if numexpr:
+            mask = np.zeros(self.nrows, dtype=bool)
+            for ifu in ifus:
+                mask |= numexpr.evaluate('col_ifu == ifu')
+            return mask
+        else:
+            return np.in1d(col_ifu, ifus)
+
+    def select_exp(self, exp, col_exp):
+        mask = np.zeros(self.nrows, dtype=bool)
+        if numexpr:
+            for iexp in exp:
+                mask |= numexpr.evaluate('col_exp == iexp')
+        else:
+            for iexp in exp:
+                mask |= (col_exp == iexp)
+        return mask
+
+    def select_xpix(self, xpix, origin=None):
+        col_origin = origin if origin is not None else self.get_origin()
+        col_xpix = self.origin2xpix(col_origin)
+        if hasattr(xpix, '__iter__'):
+            mask = np.zeros(self.nrows, dtype=bool)
+            if numexpr:
+                for x1, x2 in xpix:
+                    mask |= numexpr.evaluate('(col_xpix >= x1) & '
+                                             '(col_xpix < x2)')
+            else:
+                for x1, x2 in xpix:
+                    mask |= (col_xpix >= x1) & (col_xpix < x2)
+        else:
+            x1, x2 = xpix
+            if numexpr:
+                mask = numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
+            else:
+                mask = (col_xpix >= x1) & (col_xpix < x2)
+        return mask
+
+    def select_ypix(self, ypix, origin=None):
+        col_origin = origin if origin is not None else self.get_origin()
+        col_ypix = self.origin2ypix(col_origin)
+        if hasattr(ypix, '__iter__'):
+            mask = np.zeros(self.nrows, dtype=bool)
+            if numexpr:
+                for y1, y2 in ypix:
+                    mask |= numexpr.evaluate('(col_ypix >= y1) & '
+                                             '(col_ypix < y2)')
+            else:
+                for y1, y2 in ypix:
+                    mask |= (col_ypix >= y1) & (col_ypix < y2)
+        else:
+            y1, y2 = ypix
+            if numexpr:
+                mask = numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
+            else:
+                mask = (col_ypix >= y1) & (col_ypix < y2)
+        return mask
+
+    def select_sky(self, sky):
+        xpos, ypos = self.get_pos_sky()
+        mask = np.zeros(self.nrows, dtype=bool)
+        if numexpr:
+            pi = np.pi
+            for y0, x0, size, shape in sky:
+                if shape == 'C':
+                    if self.wcs == 'deg':
+                        mask |= numexpr.evaluate(
+                            '(((xpos - x0) * 3600 * cos(y0 * pi / 180.)) ** 2 '
+                            '+ ((ypos - y0) * 3600) ** 2) < size ** 2')
+                    elif self.wcs == 'rad':
+                        mask |= numexpr.evaluate(
+                            '(((xpos - x0) * 3600 * 180 / pi * cos(y0)) ** 2 '
+                            '+ ((ypos - y0) * 3600 * 180 / pi)** 2) < size ** 2')
+                    else:
+                        mask |= numexpr.evaluate(
+                            '((xpos - x0) ** 2 + (ypos - y0) ** 2) < size ** 2')
+                elif shape == 'S':
+                    if self.wcs == 'deg':
+                        mask |= numexpr.evaluate(
+                            '(abs((xpos - x0) * 3600 * cos(y0 * pi / 180.)) < size) '
+                            '& (abs((ypos - y0) * 3600) < size)')
+                    elif self.wcs == 'rad':
+                        mask |= numexpr.evaluate(
+                            '(abs((xpos - x0) * 3600 * 180 / pi * cos(y0)) < size) '
+                            '& (abs((ypos - y0) * 3600 * 180 / pi) < size)')
+                    else:
+                        mask |= numexpr.evaluate(
+                            '(abs(xpos - x0) < size) & (abs(ypos - y0) < size)')
+                else:
+                    raise ValueError('Unknown shape parameter')
+        else:
             for y0, x0, size, shape in sky:
                 if shape == 'C':
                     if self.wcs == 'deg':
@@ -1006,166 +1109,7 @@ class PixTable(object):
                             & (np.abs(ypos - y0) < size)
                 else:
                     raise ValueError('Unknown shape parameter')
-            logical_func(kmask, mask, out=kmask)
-            del xpos
-            del ypos
-
-        # Do the selection on wavelengths
-        if lbda is not None:
-            col_lambda = self.get_lambda()
-            mask = np.zeros(self.nrows, dtype=bool)
-            for l1, l2 in lbda:
-                mask |= (col_lambda >= l1) & (col_lambda < l2)
-            logical_func(kmask, mask, out=kmask)
-            del col_lambda
-
-        # Do the selection on the origin column
-        if (ifu is not None) or (sl is not None) or \
-                (xpix is not None) or (ypix is not None):
-            col_origin = self.get_origin()
-            if sl is not None:
-                logical_func(kmask, np.in1d(self.origin2slice(col_origin), sl),
-                             out=kmask)
-            if ifu is not None:
-                logical_func(kmask, np.in1d(self.origin2ifu(col_origin), ifu),
-                             out=kmask)
-            if xpix is not None:
-                col_xpix = self.origin2xpix(col_origin)
-                if hasattr(xpix, '__iter__'):
-                    mask = np.zeros(self.nrows, dtype=bool)
-                    for x1, x2 in xpix:
-                        mask |= (col_xpix >= x1) & (col_xpix < x2)
-                    logical_func(kmask, mask, out=kmask)
-                else:
-                    x1, x2 = xpix
-                    logical_func(kmask, (col_xpix >= x1) & (col_xpix < x2),
-                                 out=kmask)
-                del col_xpix
-            if ypix is not None:
-                col_ypix = self.origin2ypix(col_origin)
-                if hasattr(ypix, '__iter__'):
-                    mask = np.zeros(self.nrows, dtype=bool)
-                    for y1, y2 in ypix:
-                        mask |= (col_ypix >= y1) & (col_ypix < y2)
-                    logical_func(kmask, mask, out=kmask)
-                else:
-                    y1, y2 = ypix
-                    logical_func(kmask, (col_ypix >= y1) & (col_ypix < y2),
-                                 out=kmask)
-                del col_ypix
-            del col_origin
-
-        # Do the selection on the exposure numbers
-        if exp is not None:
-            col_exp = self.get_exp()
-            if col_exp is not None:
-                mask = np.zeros(self.nrows, dtype=bool)
-                for iexp in exp:
-                    mask |= (col_exp == iexp)
-                logical_func(kmask, mask, out=kmask)
-                del col_exp
-
-        return kmask
-
-    def _extract_numexpr(self, sky=None, lbda=None, ifu=None, sl=None,
-                         xpix=None, ypix=None, exp=None, method='and'):
-        if method == 'and':
-            kmask = np.ones(self.nrows, dtype=bool)
-            logical_func = np.logical_and
-        elif method == 'or':
-            kmask = np.zeros(self.nrows, dtype=bool)
-            logical_func = np.logical_or
-
-        # Do the selection on the sky
-        if sky is not None:
-            xpos, ypos = self.get_pos_sky()
-            pi = np.pi
-            mask = np.zeros(self.nrows, dtype=bool)
-            for y0, x0, size, shape in sky:
-                if shape == 'C':
-                    if self.wcs == 'deg':
-                        mask |= numexpr.evaluate('(((xpos - x0) * 3600 * cos(y0 * pi / 180.)) ** 2 + ((ypos - y0) * 3600) ** 2) < size ** 2')
-                    elif self.wcs == 'rad':
-                        mask |= numexpr.evaluate('(((xpos - x0) * 3600 * 180 / pi * cos(y0)) ** 2 + ((ypos - y0) * 3600 * 180 / pi)** 2) < size ** 2')
-                    else:
-                        mask |= numexpr.evaluate('((xpos - x0) ** 2 + (ypos - y0) ** 2) < size ** 2')
-                elif shape == 'S':
-                    if self.wcs == 'deg':
-                        mask |= numexpr.evaluate('(abs((xpos - x0) * 3600 * cos(y0 * pi / 180.)) < size) & (abs((ypos - y0) * 3600) < size)')
-                    elif self.wcs == 'rad':
-                        mask |= numexpr.evaluate('(abs((xpos - x0) * 3600 * 180 / pi * cos(y0)) < size) & (abs((ypos - y0) * 3600 * 180 / pi) < size)')
-                    else:
-                        mask |= numexpr.evaluate('(abs(xpos - x0) < size) & (abs(ypos - y0) < size)')
-                else:
-                    raise ValueError('Unknown shape parameter')
-            logical_func(kmask, mask, out=kmask)
-            del xpos
-            del ypos
-
-        # Do the selection on wavelengths
-        if lbda is not None:
-            col_lambda = self.get_lambda()
-            mask = np.zeros(self.nrows, dtype=bool)
-            for l1, l2 in lbda:
-                mask |= numexpr.evaluate('(col_lambda >= l1) & (col_lambda < l2)')
-            logical_func(kmask, mask, out=kmask)
-            del col_lambda
-
-        # Do the selection on the origin column
-        if (ifu is not None) or (sl is not None) or \
-                (xpix is not None) or (ypix is not None):
-            col_origin = self.get_origin()
-            if sl is not None:
-                sli = self.origin2slice(col_origin)
-                mask = np.zeros(self.nrows, dtype=bool)
-                for s in sl:
-                    mask |= numexpr.evaluate('sli == s')
-                logical_func(kmask, mask, out=kmask)
-                del sli
-            if ifu is not None:
-                _i = self.origin2ifu(col_origin)
-                mask = np.zeros(self.nrows, dtype=bool)
-                for i in ifu:
-                    mask |= numexpr.evaluate('_i == i')
-                logical_func(kmask, mask, out=kmask)
-                del _i
-            if xpix is not None:
-                col_xpix = self.origin2xpix(col_origin)
-                if hasattr(xpix, '__iter__'):
-                    mask = np.zeros(self.nrows, dtype=bool)
-                    for x1, x2 in xpix:
-                        mask |= numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
-                    logical_func(kmask, mask, out=kmask)
-                else:
-                    x1, x2 = xpix
-                    mask = numexpr.evaluate('(col_xpix >= x1) & (col_xpix < x2)')
-                    logical_func(kmask, mask, out=kmask)
-                del col_xpix
-            if ypix is not None:
-                col_ypix = self.origin2ypix(col_origin)
-                if hasattr(ypix, '__iter__'):
-                    mask = np.zeros(self.nrows, dtype=bool)
-                    for y1, y2 in ypix:
-                        mask |= numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
-                    logical_func(kmask, mask, out=kmask)
-                else:
-                    y1, y2 = ypix
-                    mask = numexpr.evaluate('(col_ypix >= y1) & (col_ypix < y2)')
-                    logical_func(kmask, mask, out=kmask)
-                del col_ypix
-            del col_origin
-
-        # Do the selection on the exposure numbers
-        if exp is not None:
-            col_exp = self.get_exp()
-            if col_exp is not None:
-                mask = np.zeros(self.nrows, dtype=bool)
-                for iexp in exp:
-                    mask |= numexpr.evaluate('col_exp == iexp')
-                logical_func(kmask, mask, out=kmask)
-                del col_exp
-
-        return kmask
+        return mask
 
     def extract(self, filename=None, sky=None, lbda=None, ifu=None, sl=None,
                 xpix=None, ypix=None, exp=None, stack=None, method='and'):
@@ -1233,8 +1177,39 @@ class PixTable(object):
             self.logger.debug('Extract stack %s -> slices %s', stack, sl,
                               extra=d)
 
-        func = self._extract_numexpr if numexpr else self._extract
-        kmask = func(sky, lbda, ifu, sl, xpix, ypix, exp, method)
+        if method == 'and':
+            kmask = np.ones(self.nrows, dtype=bool)
+            lfunc = np.logical_and
+        elif method == 'or':
+            kmask = np.zeros(self.nrows, dtype=bool)
+            lfunc = np.logical_or
+
+        # Do the selection on the sky
+        if sky is not None:
+            lfunc(kmask, self.select_sky(sky), out=kmask)
+
+        # Do the selection on wavelengths
+        if lbda is not None:
+            lfunc(kmask, self.select_lambda(lbda), out=kmask)
+
+        # Do the selection on the origin column
+        if any([ifu, sl, xpix, ypix]):
+            origin = self.get_origin()
+            if sl is not None:
+                lfunc(kmask, self.select_slices(sl, origin=origin), out=kmask)
+            if ifu is not None:
+                lfunc(kmask, self.select_ifus(ifu, origin=origin), out=kmask)
+            if xpix is not None:
+                lfunc(kmask, self.select_xpix(xpix, origin=origin), out=kmask)
+            if ypix is not None:
+                lfunc(kmask, self.select_ypix(ypix, origin=origin), out=kmask)
+            del origin
+
+        # Do the selection on the exposure numbers
+        if exp is not None:
+            col_exp = self.get_exp()
+            if col_exp is not None:
+                lfunc(kmask, self.select_exp(exp, col_exp), out=kmask)
 
         # Compute the new pixtable
         ksel = np.where(kmask)
@@ -1725,7 +1700,7 @@ class PixTable(object):
         return Image(shape=(image.shape), data=image, wcs=wcs)
 
     def mask_column(self, maskfile=None, verbose=True):
-        """Computes the mask column correcponding to a mask file
+        """Computes the mask column corresponding to a mask file
 
         Parameters
         ----------
@@ -1754,8 +1729,6 @@ class PixTable(object):
         ulabel = np.unique(label)
         ulabel = ulabel[ulabel > 0]
 
-        n = len(ulabel)
-
         for i in ulabel:
             try:
                 ksel = np.where(label == i)
@@ -1770,7 +1743,7 @@ class PixTable(object):
                                 (ypos_sky > y0) & (ypos_sky < y1))
                 if verbose:
                     msg = 'masking object %i/%i %g<x<%g %g<y<%g (%i pixels)' % (
-                        i, n, x0, x1, y0, y1, len(ksel[0]))
+                        i, len(ulabel), x0, x1, y0, y1, len(ksel[0]))
                     self.logger.info(msg, extra=d)
                 if len(ksel[0]) != 0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
