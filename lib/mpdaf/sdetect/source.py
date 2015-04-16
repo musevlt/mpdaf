@@ -23,7 +23,7 @@ class Source(object):
     origin  : string
               Name of detector software which creates this object
     lines   : list of lines
-              List of :class:`mpdaf.sdetect.Line`
+              Table
     spectra     : :class:`dict`
               Dictionary containing spectra.
               
@@ -317,3 +317,13 @@ class Source(object):
             return dict.__setattr__(self, item, value)
         else:
             self.header[item] = value
+            
+    def add_comment(self,comment, author):
+        i = 1
+        while 'COMMENT%03d'%i in self.header:
+            i += 1
+        self.header['COMMENT%03d'%i] = (comment, '%s %s'%(author, str(datetime.date.today())))
+    
+    def remove_comment(self, ncomment):
+        del self.header['COMMENT%03d'%ncomment]
+    
