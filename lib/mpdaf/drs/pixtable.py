@@ -1273,7 +1273,8 @@ class PixTable(object):
         dq = self.get_dq(ksel)
         weight = self.get_weight(ksel)
         pix = PixTable(filename, xpos, ypos, lbda, data, dq, stat, origin,
-                       weight, hdr, self.ima, self.wcs, self.wave)
+                       weight, hdr, self.ima, self.wcs, self.wave,
+                       unit_data=self.unit_data, unit_stat=self.unit_stat)
         if filename is not None:
             pix.write(filename)
         return pix
