@@ -54,7 +54,8 @@ class PixTableMask(object):
                Name of the corresponding pixel table.
     """
 
-    def __init__(self, filename=None, maskfile=None, maskcol=None, pixtable=None):
+    def __init__(self, filename=None, maskfile=None, maskcol=None,
+                 pixtable=None):
         """creates a PixTableMask object.
 
         Parameters
@@ -101,8 +102,8 @@ class PixTableMask(object):
                                  'file to mask out all bright obj')
         hdulist = [prihdu]
         nrows = self.maskcol.shape[0]
-        hdulist.append(ImageHDU(name='maskcol',
-                                data=np.int32(self.maskcol.reshape((nrows, 1)))))
+        hdulist.append(ImageHDU(
+            name='maskcol', data=np.int32(self.maskcol.reshape((nrows, 1)))))
         hdu = pyfits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = 'boolean'
         hdu.writeto(filename, clobber=True, output_verify='fix')
@@ -400,31 +401,34 @@ class PixTable(object):
         self.fluxcal = False
         self.unit_data = unit_data
         self.unit_stat = unit_stat
+        self.xc = 0.0
+        self.yc = 0.0
 
-        if xpos is None and filename is not None:
+        if filename is not None:
             try:
                 self.hdulist = pyfits.open(self.filename, memmap=1)
-                self.primary_header = self.hdulist[0].header
-                self.nrows = self.hdulist[1].header["NAXIS2"]
-                self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
-
-                if self.ima:
-                    self.wcs = self.hdulist['xpos'].header['BUNIT']
-                    self.wave = self.hdulist['lambda'].header['BUNIT']
-                    self.unit_data = self.hdulist['data'].header['BUNIT']
-                    self.unit_stat = self.hdulist['stat'].header['BUNIT']
-                else:
-                    self.wcs = self.hdulist[1].header['TUNIT1']
-                    self.wave = self.hdulist[1].header['TUNIT3']
-                    self.unit_data = self.hdulist[1].header['TUNIT4']
-                    self.unit_stat = self.hdulist[1].header['TUNIT6']
             except IOError:
                 raise IOError('file %s not found' % filename)
+
+            self.primary_header = self.hdulist[0].header
+            self.nrows = self.hdulist[1].header["NAXIS2"]
+            self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
+
+            if self.ima:
+                self.wcs = self.hdulist['xpos'].header['BUNIT']
+                self.wave = self.hdulist['lambda'].header['BUNIT']
+                self.unit_data = self.hdulist['data'].header['BUNIT']
+                self.unit_stat = self.hdulist['stat'].header['BUNIT']
+            else:
+                self.wcs = self.hdulist[1].header['TUNIT1']
+                self.wave = self.hdulist[1].header['TUNIT3']
+                self.unit_data = self.hdulist[1].header['TUNIT4']
+                self.unit_stat = self.hdulist[1].header['TUNIT6']
         else:
             self.hdulist = None
-            if (xpos is None or ypos is None or lbda is None or data is None
-                    or dq is None or stat is None or origin is None
-                    or primary_header is None):
+            if (xpos is None or ypos is None or lbda is None or
+                    data is None or dq is None or stat is None or
+                    origin is None or primary_header is None):
                 self.primary_header = pyfits.Header()
                 self.nrows = 0
             else:
@@ -482,15 +486,13 @@ class PixTable(object):
                 cunit = self.get_keywords("CUNIT1")
             except:
                 cunit = 'pix'
+
             if cunit == 'rad':
                 self.xc = self.primary_header['RA'] * 180 / np.pi
                 self.yc = self.primary_header['DEC'] * 180 / np.pi
             elif cunit == 'deg':
                 self.xc = self.primary_header['RA']
                 self.yc = self.primary_header['DEC']
-            else:
-                self.xc = 0.0
-                self.yc = 0.0
 
     def copy(self):
         """Copies PixTable object in a new one and returns it."""
@@ -575,11 +577,13 @@ class PixTable(object):
         self.filename = filename
         self.ima = save_as_ima
 
-    def get_column(self, name, attr=None, ksel=None):
+    def get_column(self, name, ksel=None):
         """Loads a column and returns it.
 
         Parameters
         ----------
+        name : string or attribute
+               Name of the column.
         ksel : output of np.where
                Elements depending on a condition.
 
@@ -587,7 +591,8 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        attr = attr if attr is not None else getattr(self, name, None)
+        attr_name = 'lbda' if name == 'lambda' else name
+        attr = getattr(self, attr_name)
         if attr is not None:
             if ksel is None:
                 return attr
@@ -608,6 +613,29 @@ class PixTable(object):
                     else:
                         column = self.hdulist[1].data.field(name)[ksel]
                 return column
+
+    def set_column(self, name, data, ksel=None):
+        """Sets a column (or a part of it).
+
+        Parameters
+        ----------
+        name : string or attribute
+               Name of the column.
+        data : numpy.array
+               data values
+        ksel : output of np.where
+               Elements depending on a condition.
+        """
+        attr_name = 'lbda' if name == 'lambda' else name
+        data = np.asarray(data)
+        if ksel is None:
+            assert data.shape[0] == self.nrows, 'Wrong dimension number'
+            setattr(self, attr_name, data)
+        else:
+            if getattr(self, attr_name) is None:
+                setattr(self, attr_name, getattr(self, 'get_' + name)())
+            attr = getattr(self, attr_name)
+            attr[ksel] = data
 
     def get_xpos(self, ksel=None):
         """Loads the xpos column and returns it.
@@ -633,16 +661,7 @@ class PixTable(object):
         ksel : output of np.where
                Elements depending on a condition.
         """
-        xpos = np.array(xpos)
-        if ksel is None:
-            if xpos.shape[0] != self.nrows:
-                raise IOError('Wrong dimension number')
-            else:
-                self.xpos = xpos
-        else:
-            if self.xpos is None:
-                self.xpos = self.get_xpos()
-            self.xpos[ksel] = xpos
+        self.set_column('xpos', xpos, ksel=ksel)
         self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW']\
             = float(self.xpos.min())
         self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH']\
@@ -672,16 +691,7 @@ class PixTable(object):
         ksel : output of np.where
                Elements depending on a condition.
         """
-        ypos = np.array(ypos)
-        if ksel is None:
-            if ypos.shape[0] != self.nrows:
-                raise IOError('Wrong dimension number')
-            else:
-                self.ypos = ypos
-        else:
-            if self.ypos is None:
-                self.ypos = self.get_ypos()
-            self.ypos[ksel] = ypos
+        self.set_column('ypos', ypos, ksel=ksel)
         self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW']\
             = float(self.ypos.min())
         self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH']\
@@ -699,7 +709,7 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        return self.get_column('lambda', attr=self.lbda, ksel=ksel)
+        return self.get_column('lambda', ksel=ksel)
 
     def set_lambda(self, lbda, ksel=None):
         """Sets lambda column (or a part of it).
@@ -711,16 +721,7 @@ class PixTable(object):
         ksel : output of np.where
                Elements depending on a condition.
         """
-        lbda = np.array(lbda)
-        if ksel is None:
-            if lbda.shape[0] != self.nrows:
-                raise IOError('Wrong dimension number')
-            else:
-                self.lbda = lbda
-        else:
-            if self.lbda is None:
-                self.lbda = self.get_lambda()
-            self.lbda[ksel] = lbda
+        self.set_column('lambda', lbda, ksel=ksel)
         self.primary_header['HIERARCH ESO DRS MUSE '
                             'PIXTABLE LIMITS LAMBDA LOW']\
             = float(self.lbda.min())
@@ -752,16 +753,7 @@ class PixTable(object):
         ksel : output of np.where
                Elements depending on a condition.
         """
-        data = np.array(data)
-        if ksel is None:
-            if data.shape[0] != self.nrows:
-                raise IOError('Wrong dimension number')
-            else:
-                self.data = data
-        else:
-            if self.data is None:
-                self.data = self.get_data()
-            self.data[ksel] = data
+        self.set_column('data', data, ksel=ksel)
 
     def get_stat(self, ksel=None):
         """Loads the stat column and returns it.
@@ -787,16 +779,7 @@ class PixTable(object):
         ksel : output of np.where
                Elements depending on a condition.
         """
-        stat = np.array(stat)
-        if ksel is None:
-            if stat.shape[0] != self.nrows:
-                raise IOError('Wrong dimension number')
-            else:
-                self.stat = stat
-        else:
-            if self.stat is None:
-                self.stat = self.get_stat()
-            self.stat[ksel] = stat
+        self.set_column('stat', stat, ksel=ksel)
 
     def get_dq(self, ksel=None):
         """Loads the dq column and returns it.
@@ -822,16 +805,7 @@ class PixTable(object):
         ksel : output of np.where
                Elements depending on a condition.
         """
-        dq = np.array(dq)
-        if ksel is None:
-            if dq.shape[0] != self.nrows:
-                raise IOError('Wrong dimension number')
-            else:
-                self.dq = dq
-        else:
-            if self.dq is None:
-                self.dq = self.get_dq()
-            self.dq[ksel] = dq
+        self.set_column('dq', dq, ksel=ksel)
 
     def get_origin(self, ksel=None):
         """Loads the origin column and returns it.
@@ -857,17 +831,7 @@ class PixTable(object):
         ksel   : output of np.where
                  Elements depending on a condition.
         """
-        origin = np.array(origin)
-        if ksel is None:
-            if origin.shape[0] != self.nrows:
-                raise IOError('Wrong dimension number')
-            else:
-                self.origin = origin
-        else:
-            if self.origin is None:
-                self.origin = self.get_origin()
-            self.origin[ksel] = origin
-
+        self.set_column('origin', origin, ksel=ksel)
         hdr = self.primary_header
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = \
             int(self.origin2ifu(self.origin).min())
@@ -930,16 +894,7 @@ class PixTable(object):
         ksel   : output of np.where
                  Elements depending on a condition.
         """
-        weight = np.array(weight)
-        if ksel is None:
-            if weight.shape[0] != self.nrows:
-                raise IOError('Wrong dimension number')
-            else:
-                self.weight = weight
-        else:
-            if self.weight is None:
-                self.weight = self.get_weight()
-            self.weight[ksel] = weight
+        self.set_column('weight', weight, ksel=ksel)
 
     def get_exp(self):
         """Loads the exposure numbers and returns it as a column.
@@ -1385,7 +1340,8 @@ class PixTable(object):
 
     def _get_pos_sky(self, xpos, ypos):
         try:
-            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+            spheric = (self.get_keywords(
+                "HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
         except:
             spheric = False
         if spheric:  # spheric coordinates
@@ -1414,37 +1370,30 @@ class PixTable(object):
 
     def _get_pos_sky_numexpr(self, xpos, ypos):
         try:
-            spheric = (self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
+            spheric = (self.get_keywords(
+                "HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
         except:
             spheric = False
+        pi = np.pi
+        xc = self.xc
+        yc = self.yc
         if spheric:  # spheric coordinates
             phi = xpos
-            pi = np.pi
             theta = numexpr.evaluate("ypos + pi/2")
-            yc = self.yc
             dp = numexpr.evaluate("yc * pi / 180")
             ra = numexpr.evaluate("arctan2(cos(theta) * sin(phi), sin(theta) * cos(dp) + cos(theta) * sin(dp) * cos(phi)) * 180 / pi")
-            xc = self.xc
             xpos_sky = numexpr.evaluate("xc + ra")
             ypos_sky = numexpr.evaluate("arcsin(sin(theta) * sin(dp) - cos(theta) * cos(dp) * cos(phi)) * 180 / pi")
         else:
             if self.wcs == 'deg':
-                yc = self.yc
-                pi = np.pi
                 dp = numexpr.evaluate("yc * pi / 180")
-                xc = self.xc
                 xpos_sky = numexpr.evaluate("xc + xpos / cos(dp)")
                 ypos_sky = numexpr.evaluate("yc + ypos")
             elif self.wcs == 'rad':
-                yc = self.yc
-                pi = np.pi
                 dp = numexpr.evaluate("yc * pi / 180")
-                xc = self.xc
                 xpos_sky = numexpr.evaluate("xc + xpos * 180 / pi / cos(dp)")
                 ypos_sky = numexpr.evaluate("yc + ypos * 180 / pi")
             else:
-                xc = self.xc
-                yc = self.yc
                 xpos_sky = numexpr.evaluate("xc + xpos")
                 ypos_sky = numexpr.evaluate("yc + ypos")
         return xpos_sky, ypos_sky
@@ -1578,8 +1527,8 @@ class PixTable(object):
         else:
             l1, l2 = lbda
             col_lambda = self.get_lambda()
-            ksel = np.where((col_dq == 0) & (col_lambda > l1)
-                            & (col_lambda < l2))
+            ksel = np.where((col_dq == 0) & (col_lambda > l1) &
+                            (col_lambda < l2))
             del col_lambda
         del col_dq
 
