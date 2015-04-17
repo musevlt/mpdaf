@@ -1193,7 +1193,8 @@ class PixTable(object):
             lfunc(kmask, self.select_lambda(lbda), out=kmask)
 
         # Do the selection on the origin column
-        if any([ifu, sl, xpix, ypix]):
+        if (ifu is not None) or (sl is not None) or \
+                (xpix is not None) or (ypix is not None):
             origin = self.get_origin()
             if sl is not None:
                 lfunc(kmask, self.select_slices(sl, origin=origin), out=kmask)
