@@ -774,9 +774,13 @@ class WaveCoord(object):
         """Returns True if other and self have the same attributes."""
         if not isinstance(other, WaveCoord):
             return False
-        return (self.crpix == other.crpix and self.cdelt == other.cdelt and
-                self.crval == other.crval and self.cunit == other.cunit and
-                self.shape == other.shape)
+        
+        l1 = self.coord(0)
+        l2 = other.coord(0)
+        return (self.shape == other.shape and
+                np.allclose(l1, l2, atol=1E-3, rtol=0) and
+                np.allclose(self.cdelt, other.cdelt) and
+                self.cunit == other.cunit)
 
     def coord(self, pixel=None):
         """Returns the coordinate corresponding to pixel. If pixel is None
