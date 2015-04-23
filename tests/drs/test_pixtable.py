@@ -10,19 +10,33 @@ from astropy.io import fits
 from mpdaf.drs import PixTable
 from numpy.testing import assert_array_equal
 
+MUSE_ORIGIN_SHIFT_XSLICE = 24
+MUSE_ORIGIN_SHIFT_YPIX = 11
+MUSE_ORIGIN_SHIFT_IFU = 6
+
 
 class TestBasicPixTable(unittest.TestCase):
 
     @classmethod
     def setUp(self):
-        self.nrows = 10
+        self.nrows = 100
         self.xpos = np.linspace(1, 10, self.nrows)
         self.ypos = np.linspace(2, 6, self.nrows)
         self.lbda = np.linspace(5000, 8000, self.nrows)
         self.data = np.linspace(0, 100, self.nrows)
         self.dq = np.linspace(0, 1, self.nrows)
         self.stat = np.linspace(0, 1, self.nrows)
-        self.origin = np.linspace(10, 100, self.nrows)
+
+        # generate origin column
+        self.aifu = np.random.randint(1, 25, self.nrows)
+        self.aslice = np.random.randint(1, 49, self.nrows)
+        self.ax = np.random.randint(1, 8192, self.nrows)
+        self.ay = np.random.randint(1, 8192, self.nrows)
+        self.aoffset = np.random.randint(1, 8192, self.nrows)
+        self.origin = (((self.ax - self.aoffset) << MUSE_ORIGIN_SHIFT_XSLICE) |
+                       (self.ay << MUSE_ORIGIN_SHIFT_YPIX) |
+                       (self.aifu << MUSE_ORIGIN_SHIFT_IFU) | self.aslice)
+
         prihdu = fits.PrimaryHDU()
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
 
@@ -112,7 +126,28 @@ class TestBasicPixTable(unittest.TestCase):
             assert_array_equal(new_data, pix.get_data())
 
     @attr(speed='fast')
+    def test_origin_conversion(self):
+        origin = self.pix.get_origin()
+        ifu = self.pix.origin2ifu(origin)
+        sli = self.pix.origin2slice(origin)
+        assert_array_equal(self.aifu, ifu)
+        assert_array_equal(self.aslice, sli)
+        assert_array_equal(self.ay, self.pix.origin2ypix(origin) + 1)
+        # TODO: This one needs a pixtable with a header which contains the
+        # offset values HIERARCH ESO DRS MUSE PIXTABLE EXP0 IFU* SLICE* XOFFSET
+        # assert_array_equal(self.ax,
+        #                    self.origin2xpix(origin, ifu=ifu, sli=sli))
+
+    @attr(speed='fast')
     def test_extract(self):
         pix = self.pix.extract(lbda=(5000, 6000))
-        ksel = (self.lbda >= 5000 and self.lbda < 6000)
+        ksel = (self.lbda >= 5000) & (self.lbda < 6000)
+        assert_array_equal(self.data[ksel], pix.get_data())
+
+        pix = self.pix.extract(ifu=1)
+        ksel = (self.aifu == 1)
+        assert_array_equal(self.data[ksel], pix.get_data())
+
+        pix = self.pix.extract(sl=(1, 2, 3))
+        ksel = (self.aslice == 1) | (self.aslice == 2) | (self.aslice == 3)
         assert_array_equal(self.data[ksel], pix.get_data())
