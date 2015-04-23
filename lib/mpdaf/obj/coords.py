@@ -403,7 +403,7 @@ class WCS(object):
                 if item[1].start is None:
                     imin = 0
                 else:
-                    imin = item[1].start
+                    imin = int(item[1].start)
                     if imin < 0:
                         imin = self.naxis1 + imin
                     if imin > self.naxis1:
@@ -411,19 +411,19 @@ class WCS(object):
                 if item[1].stop is None:
                     imax = self.naxis1
                 else:
-                    imax = item[1].stop
+                    imax = int(item[1].stop)
                     if imax < 0:
                         imax = self.naxis1 + imax
                     if imax > self.naxis1:
                         imax = self.naxis1
             except:
-                imin = item[1]
-                imax = item[1] + 1
+                imin = int(item[1])
+                imax = int(item[1] + 1)
             try:
                 if item[0].start is None:
                     jmin = 0
                 else:
-                    jmin = item[0].start
+                    jmin = int(item[0].start)
                     if jmin < 0:
                         jmin = self.naxis2 + jmin
                     if jmin > self.naxis2:
@@ -431,14 +431,14 @@ class WCS(object):
                 if item[0].stop is None:
                     jmax = self.naxis2
                 else:
-                    jmax = item[0].stop
+                    jmax = int(item[0].stop)
                     if jmax < 0:
                         jmax = self.naxis2 + jmax
                         if jmax > self.naxis2:
                             jmax = self.naxis2
             except:
-                jmin = item[0]
-                jmax = item[0] + 1
+                jmin = int(item[0])
+                jmax = int(item[0] + 1)
 
             crpix = (self.wcs.wcs.crpix[0] - imin,
                      self.wcs.wcs.crpix[1] - jmin)
