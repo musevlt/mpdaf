@@ -1514,6 +1514,7 @@ class Image(object):
                                    fscale=self.fscale)
                     res.data = data
                     res.var = var
+                    res.filename = self.filename
                     return res
                 elif is_int(item[1]):
                     from spectrum import Spectrum
@@ -1529,12 +1530,14 @@ class Image(object):
                                    fscale=self.fscale)
                     res.data = data
                     res.var = var
+                    res.filename = self.filename
                     return res
                 else:
                     res = Image(shape=data.shape, wcs=wcs,
                                 unit=self.unit, fscale=self.fscale)
                     res.data = data
                     res.var = var
+                    res.filename = self.filename
                     return res
         else:
             if self.shape[0] == 1 or self.shape[1] == 1:
@@ -1563,6 +1566,7 @@ class Image(object):
                                    var=var, fscale=self.fscale)
                     res.data = data
                     res.var = var
+                    res.filename = self.filename
                     return res
             else:
                 raise ValueError('Operation forbidden')

@@ -1890,6 +1890,7 @@ class Cube(CubeBase):
                                 fscale=self.fscale)
                     res.data = data
                     res.var = var
+                    res.filename = self.filename
                     return res
             elif is_int(item[1]) and is_int(item[2]):
                 # return a spectrum
@@ -1905,6 +1906,7 @@ class Cube(CubeBase):
                                fscale=self.fscale)
                 res.data = data
                 res.var = var
+                res.filename = self.filename
                 return res
             else:
                 # return a cube
@@ -1929,6 +1931,7 @@ class Cube(CubeBase):
                            fscale=self.fscale)
                 res.data = data
                 res.var = var
+                res.filename = self.filename
                 return res
         else:
             raise ValueError('Operation forbidden')

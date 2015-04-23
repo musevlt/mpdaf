@@ -1300,6 +1300,7 @@ out : Spectrum or Cube object.
                            fscale=self.fscale)
             res.data = data
             res.var = var
+            res.filename = self.filename
             return res
         else:
             raise ValueError('Operation forbidden')
