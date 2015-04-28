@@ -1,87 +1,82 @@
 from astropy.io import fits as pyfits
-from astropy.io.fits import Column
 from astropy.table import Table
 
 import datetime
 import numpy as np
 import warnings
 import logging
+import os.path
+import shutil
 
 from ..obj import Cube, Image, Spectrum
+from .catalog import Catalog
 
 class Source(object):
     """This class describes an object.
 
     Attributes
     ----------
-    ID      : integer
-              ID of the source
-    ra      : double
-              Right ascension in degrees
-    dec     : double
-              Declination in degrees
-    origin  : string
-              Name of detector software which creates this object
-    lines   : list of lines
-              Table
-    spectra     : :class:`dict`
+    header  : pyfits.Header
+              FITS header instance
+    lines   : astropy.Table
+              List of lines 
+    mag     : astropy.Table
+              List of magnitudes
+    z       : astropy.Table
+              List of redshifts
+    spectra : :class:`dict`
               Dictionary containing spectra.
               
               Keys gives the origin of the spectrum
               ('tot' for total spectrum, TBC).
               
               Values are :class:`mpdaf.obj.Spectrum` object
-    images     : :class:`dict`
+    images  : :class:`dict`
               Dictionary containing images.
               
-              Keys gives the filter ('white' for white image, TBC)
+              Keys gives the filter ('SRC_WHITE' for white image, TBC)
               
               Values are :class:`mpdaf.obj.Image` object
-    cube     : :class:`mpdaf.obj.Cube`
+    cube    : :class:`mpdaf.obj.Cube`
               sub-data cube containing the object
-    z       : float
-              redshift
-    errz    : float
-              redshift error
-    flag    : integer
-              Quality flag
-    comment : string
-              Users comments
-    header  : pyfits.Header
-              FITS header instance
-               ID = hdr['ID']
-        ra = hdr['ra']
-        dec = hdr['dec']
-        origin = hdr['origin']
-        z = hdr.get('z', None)
-        errz = hdr.get('errz', None)
-        flag = hdr.get('flag', '')
-        comment = hdr.get('comment', '')
     """
     
-    def __init__(self, header, lines=None, spectra=None, images=None, cube=None):
+    def __init__(self, header, lines=None, mag=None, z=None,
+                 spectra=None, images=None, cube=None):
         """
         """
-        if not ('ra' in header and 'dec' in header 
-                and 'ID' in header and 'origin' in header):
-            raise IOError('ID, ra, dec, origin are mandatory parameters to create a Source object') 
+        # FITS header
+        if not ('RA' in header and 'DEC' in header 
+                and 'ID' in header and 'CUBE' in header
+                and 'ORIGIN' in header and 'ORIGIN_V' in header):
+            raise IOError('ID, RA, DEC, ORIGIN, ORIGIN_V and CUBE are \
+            mandatory parameters to create a Source object') 
         self.header = header
+        # Table LINES
         self.lines = lines
+        # Table MAG
+        self.mag = mag
+        # Table Z
+        self.z = z
+        # Dictionary SPECTRA
         if spectra is None:
             self.spectra = {}
         else:
             self.spectra = spectra
+        # Dictionary IMAGES
         if images is None:
             self.images = {}
         else:
             self.images = images
+        # CUBE
         self.cube = cube
+        # logger
         self.logger = logging.getLogger('mpdaf corelib')
 
     @classmethod
-    def from_data(cls, ID, ra, dec, origin,
-                 lines=None, spectra=None, images=None, cube=None, z=None, errz=None,
-                 flag='', comment='', extras=None):
+    def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
+                 lines=None, mag=None, z=None,
+                 spectra=None, images=None, cube=None):
         """
         Parameters
         ----------
@@ -91,53 +86,54 @@ class Source(object):
                   Right ascension in degrees
         dec     : double
                   Declination in degrees
-        lines   : list of lines
-                  List of :class:`mpdaf.sdetect.Line`
-        spectra     : :class:`dict`
+        origin  : tuple (string, string, string)
+                  1- Name of the detector software which creates this object
+                  2- Version of the detector software which creates this object
+                  3- Name of the FITS data cube from which this object has been extracted.
+        proba   : float
+                  Detection probability
+        confi   : integer
+                  Expert confidence index
+        extra   : dict{key: value} or dict{key: (value, comment)}
+                  Extra keywords
+        lines   : astropy.Table
+                  List of lines
+        mag     : astropy.Lines
+                  List of magnitudes.
+        z       : astropy.Table
+                  List of redshifts
+        spectra : :class:`dict`
                   Dictionary containing spectra.
               
                   Keys gives the origin of the spectrum
                   ('tot' for total spectrum, TBC).
               
                   Values are :class:`mpdaf.obj.Spectrum` object
-        images     : :class:`dict`
-                  Dictionary containing images.
+        images  : :class:`dict`
+                  Dictionary containing small images.
                 
-                  Keys gives the filter ('white' for white image, TBC)
+                  Keys gives the filter ('SRC_WHITE' for white image, TBC)
               
                   Values are :class:`mpdaf.obj.Image` object
-        cube     : :class:`mpdaf.obj.Cube`
-                  sub-data cube containing the object
-        origin  : string
-                  Name of detector software which creates this object
-        flag    : string
-                  Quality flag
-        comment : string
-                  Users comments
-              
-              
-        extra keywords : dict{key: value} or dict{key: (value, comment)}
-    
-    proba ??? - pmax pour selfi
+        cube    : :class:`mpdaf.obj.Cube`
+                  Small data cube containing the object
         """
         header = pyfits.Header()
         header['ID'] = (ID, 'object ID')
-        header['ra'] = (np.float32(ra), 'RA in degrees')
-        header['dec'] = (np.float32(dec), 'DEC in degrees')
-        header['origin'] = (origin, 'software which creates this object')
-        if z is not None:
-            header['z'] = (np.float32(z), 'redshift')
-        if errz is not None:
-            header['errz'] = (np.float32(errz), 'redshift error')
-        if flag != '':
-            header['flag'] = (flag, 'quality flag')
-        if comment != '':
-            header['comment'] = (comment, 'user comment')
+        header['RA'] = (np.float32(ra), 'RA in degrees')
+        header['DEC'] = (np.float32(dec), 'DEC in degrees')
+        header['ORIGIN'] = (origin[0], 'detection software')
+        header['ORIGIN_V'] = (origin[1], 'version of the detection software')
+        header['CUBE'] = (os.path.basename(origin[2]), 'MUSE data cube')
+        if proba is not None:
+            header['DPROBA'] = (np.float32(proba), 'Detection probability')
+        if confi is not None:
+            header['CONFI'] = (confi, 'Confidence index')
         if extras is not None:
             for key, value in extras.iteritems():
                 header[key] = value
             
-        return cls(header, lines, spectra, images, cube)
+        return cls(header, lines, mag, z, spectra, images, cube)
             
             
     @classmethod
@@ -151,6 +147,8 @@ class Source(object):
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
         lines = None
+        mag = None
+        z = None
         spectra = {}
         images = {}
         cube = None
@@ -159,7 +157,13 @@ class Source(object):
             extname = hdu.header['EXTNAME']
             #lines
             if extname == 'LINES':
-                lines = Table.read(filename)
+                lines = Table(hdu.data)
+            # mag
+            if extname == 'MAG':
+                mag = Table(hdu.data)
+            # Z
+            if extname == 'Z':
+                z = Table(hdu.data)
             # spectra
             elif extname[:3] == 'SPE' and extname[-4:]=='DATA':
                 spe_name = extname[4:-5]
@@ -186,7 +190,7 @@ class Source(object):
                     ext = i
                 cube = Cube(filename, ext=ext, ima=False)
         hdulist.close()
-        return cls(hdr, lines, spectra, images, cube)
+        return cls(hdr, lines, mag, z, spectra, images, cube)
                                
         
     def write(self, filename):
@@ -205,37 +209,19 @@ class Source(object):
 
         hdulist = [prihdu]
 
+        # lines
         if self.lines is not None:
-            lbda = self.lines['LBDA'] 
-            err_lbda = self.lines['ERR_LBDA']
-            width = self.lines['WIDTH']
-            err_width = self.lines['ERR_WIDTH']
-            flux = self.lines['FLUX']
-            err_flux = self.lines['ERR_FLUX']
-            ew = self.lines['EW']
-            err_ew = self.lines['ERR_EW']
-            name = self.lines['NAME']
-            z = self.lines['Z']
-        
-            cols = [Column(name='LBDA', format='1E', unit='Angstrom',
-                       array=lbda),
-                    Column(name='ERR_LBDA', format='1E', unit='Angstrom',
-                       array=err_lbda),
-                    Column(name='WIDTH', format='1E', unit='Angstrom',
-                       array=width),
-                    Column(name='ERR_WIDTH', format='1E', unit='Angstrom',
-                       array=err_width),
-                    Column(name='FLUX', format='1E', unit='10**(-20)*erg/s/cm**2',
-                       array=flux),
-                    Column(name='ERR_FLUX', format='1E', unit='10**(-20)*erg/s/cm**2',
-                       array=err_flux),
-                    Column(name='EW', format='1E', unit='Angstrom', array=ew),
-                    Column(name='ERR_EW', format='1E', unit='Angstrom', array=err_ew),
-                    Column(name='NAME', format='A20', unit='', array=name),
-                    Column(name='Z', format='1E', unit='', array=z)]
-
-            coltab = pyfits.ColDefs(cols)
-            tbhdu = pyfits.TableHDU(name='LINES', data=pyfits.FITS_rec.from_columns(coltab))
+            tbhdu = pyfits.BinTableHDU(name='LINES', data=np.array(self.lines))
+            hdulist.append(tbhdu)
+            
+        # magnitudes
+        if self.mag is not None:
+            tbhdu = pyfits.BinTableHDU(name='MAG', data=np.array(self.mag))
+            hdulist.append(tbhdu)
+            
+        # redshifts
+        if self.z is not None:
+            tbhdu = pyfits.BinTableHDU(name='Z', data=np.array(self.z))
             hdulist.append(tbhdu)
         
         #spectra
@@ -300,10 +286,19 @@ class Source(object):
             for l in self.lines.pformat():
                 self.logger.info(l, extra=d)
             print '\n'
+        if self.mag is not None:
+            self.logger.info('magnitudes', extra=d)
+            for l in self.mag.pformat():
+                self.logger.info(l, extra=d)
+            print '\n'
+        if self.z is not None:
+            self.logger.info('redshifts', extra=d)
+            for l in self.z.pformat():
+                self.logger.info(l, extra=d)
+            print '\n'
 
     def __getattr__(self, item):
         """Maps values to attributes.
-        Only called if there *isn't* an attribute with this name
         """
         try:
             return self.header[item]
@@ -313,12 +308,14 @@ class Source(object):
     def __setattr__(self, item, value):
         """Maps attributes to values.
         """
-        if item=='cube' or item=='header' or item=='images' or item=='lines' or item=='logger' or item=='spectra':
+        if item=='header' or item=='logger' or \
+           item=='lines' or item=='mag' or item=='z' or \
+           item=='cube' or item=='images'or item=='spectra':
             return dict.__setattr__(self, item, value)
         else:
             self.header[item] = value
             
-    def add_comment(self,comment, author):
+    def add_comment(self, comment, author):
         i = 1
         while 'COMMENT%03d'%i in self.header:
             i += 1
@@ -326,4 +323,62 @@ class Source(object):
     
     def remove_comment(self, ncomment):
         del self.header['COMMENT%03d'%ncomment]
+        
+    def add_image(self, image, name, size=None):
+        """ Extracts a image centered on the source center
+        and appends it to the image dictionary.
+        
+        Parameters
+        ----------
+        image : :class:`mpdaf.obj.Image`
+                Input image MPDAF object
+        name  : string
+                Name used to distingish this image
+        size  : float
+                Size of the image in arcsec.
+                If None, the size of the white image extension is taken if it exists.
+        """
+        if size is None:
+            white_ima = self.images['SRC_WHITE']
+            size = max(np.abs(white_ima.get_step() * white_ima.shape))
+        else:
+            size /= 3600.
+        radius = size/2.
+        ra_min = self.ra - radius
+        ra_max = self.ra + radius
+        dec_min = self.dec - radius
+        dec_max = self.dec + radius
+        subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
+        self.images[name] = subima
+
+class SourceList(list):
+    """
+        list< :class:`mpdaf.sdetect.Source` >
+    """
+    
+    def write(self, name, overwrite=True):
+        """ Creates a directory named name and saves all sources files and the catalog file in this folder.
+        name/name.fits: catalog file
+        name/nameNNNN.fits: source file (NNNN corresponds to the ID of the source)
+        
+        Parameters
+        ----------
+        name : string
+               Name of the folder
+        overwrite : boolean
+                    Overwrite folder if it already exists
+        """
+        if not os.path.exists(name):
+            os.makedirs(name)
+        else:
+            if overwrite:
+                shutil.rmtree(name)
+                os.makedirs(name)
+                
+        for source in self:
+            source.write('%s/%s%04d.fits'%(name, name, source.ID))
+            
+        cat = Catalog.from_sources(self)
+        cat.write('%s/%s.fits'%(name, name))
+        
     
