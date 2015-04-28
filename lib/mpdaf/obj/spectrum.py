@@ -2909,7 +2909,7 @@ pix         : boolean
             wave = self.wave.coord()
             return wave[ksel]
 
-    def plot(self, max=None, title=None, noise=False,
+    def plot(self, max=None, title=None, noise=False, snr=False,
              lmin=None, lmax=None, ax=None, **kargs):
         """Plots the spectrum. By default, drawstyle is 'steps-mid'.
 
@@ -2922,6 +2922,8 @@ pix         : boolean
         noise : boolean
                 If noise is True
                 the +/- standard deviation is overplotted.
+        snr   : boolean
+                If snr is True, data/sqrt(var) is plotted.
         lmin  : float
                 Minimum wavelength.
         lmax  : float
@@ -2942,10 +2944,13 @@ pix         : boolean
 
         x = res.wave.coord()
         f = res.data * res.fscale
-        if max != None:
-            f = f * max / f.max()
         if res.var is None:
             noise = False
+            snr = False
+        if snr:
+            f /= np.sqrt(res.var)
+        if max != None:
+            f = f * max / f.max()
 
         # default plot arguments
         plotargs = dict(drawstyle='steps-mid')
