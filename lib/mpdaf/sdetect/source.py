@@ -344,8 +344,9 @@ class Source(object):
         else:
             size /= 3600.
         radius = size/2.
-        ra_min = self.ra - radius
-        ra_max = self.ra + radius
+        radius_ra = radius / np.cos(np.deg2rad(self.dec))
+        ra_min = self.ra - radius_ra
+        ra_max = self.ra + radius_ra
         dec_min = self.dec - radius
         dec_max = self.dec + radius
         subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
