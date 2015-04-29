@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 from ..tools.fits import add_mpdaf_method_keywords
 
-from astropy.table import Table
+from astropy.table import Table, hstack
 
 class Catalog(Table):
     """This class contains a catalog of objects.
@@ -170,7 +170,7 @@ class Catalog(Table):
         self.logger.info('Cat2 Nelt %d Match %d Not Matched %d'\
                          %(len(cat2),len(id2),len(cat2[id2_notin_1])), \
                          extra=d)
-        match = np.hstack([self[id1], cat2[id2]])
+        match = hstack([self[id1], cat2[id2]])
         nomatch = self[id1_notin_2]
         nomatch2 = cat2[id2_notin_1]
         return match, nomatch, nomatch2
