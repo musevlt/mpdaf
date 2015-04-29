@@ -356,29 +356,40 @@ class SourceList(list):
         list< :class:`mpdaf.sdetect.Source` >
     """
     
-    def write(self, name, overwrite=True):
+    def write(self, name, path='.', overwrite=True):
         """ Creates a directory named name and saves all sources files and the catalog file in this folder.
-        name/name.fits: catalog file
-        name/nameNNNN.fits: source file (NNNN corresponds to the ID of the source)
+        path/name.fits: catalog file
+        path/name/nameNNNN.fits: source file (NNNN corresponds to the ID of the source)
         
         Parameters
         ----------
         name : string
-               Name of the folder
+               Name of the catalog
+        path : string
+               path where the catalog will be saved.
         overwrite : boolean
-                    Overwrite folder if it already exists
+                    Overwrite the catalog if it already exists
         """
-        if not os.path.exists(name):
-            os.makedirs(name)
+        if not os.path.exists(path):
+            raise IOError("Invalid path: {0}".format(path))
+
+        path = os.path.normpath(path)
+        
+        path2 = path + '/' + name
+        if not os.path.exists(path2):
+            os.makedirs(path2)
         else:
             if overwrite:
-                shutil.rmtree(name)
-                os.makedirs(name)
+                shutil.rmtree(path2)
+                os.makedirs(path2)
                 
         for source in self:
-            source.write('%s/%s%04d.fits'%(name, name, source.ID))
-            
+            source.write('%s/%s-%04d.fits'%(path2, name, source.ID))
+         
+        fcat = '%s/%s.fits'%(path, name)
+        if overwrite and os.path.isfile(fcat) :
+            os.remove(fcat)
         cat = Catalog.from_sources(self)
-        cat.write('%s/%s.fits'%(name, name))
+        cat.write(fcat)
         
     
