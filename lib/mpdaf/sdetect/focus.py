@@ -185,8 +185,7 @@ class FOCUS(object):
                 #create source object
                 ra = coord[1]
                 dec = coord[0]
-                rows = [[l] for l in np.unique(detect[ksel])]
-                lines = Table(names=['LBDA_OBS'], rows=rows)
+                lines = Table([np.unique(detect[ksel])], names=['LBDA_OBS'])
                 extras = {}
                 extras['pvalues'] = (pval_file, 'p_values')
                 extras['p0'] = (p0, 'p0')
