@@ -1,5 +1,5 @@
 from astropy.io import fits as pyfits
-from astropy.table import Table
+from astropy.table import Table, Column
 
 import datetime
 import numpy as np
@@ -10,6 +10,151 @@ import shutil
 
 from ..obj import Cube, Image, Spectrum
 from .catalog import Catalog
+
+emlines = {1215.67: 'Lyalpha',
+           1550.0: 'CIV',
+           1909.0: 'CIII]',
+           2326.0: 'CII',
+           3726.032: '[OII]',
+           3728.8149: '[OII]2',
+           3798.6001: 'Htheta',
+           3834.6599: 'Heta',
+           3869.0: '[NeIII]3',
+           3888.7: 'Hzeta',
+           3967.0: '[NeIII]2',
+           4102.0: 'Hdelta',
+           4340.0: 'Hgamma',
+           4861.3198: 'Hbeta',
+           4959.0: '[OIII]',
+           5007.0: '[OIII]2',
+           6548.0: '[NII]',
+           6562.7998: 'Halpha',
+           6583.0: '[NII]',
+           6716.0: '[SII]',
+           6731.0: '[SII]2'}
+
+emlines_small = {1215.67: 'Lyalpha',
+                 1550.0: 'CIV',
+                 1909.0: 'CIII]',
+                 2326.0: 'CII',
+                 3726.032: '[OII]',
+                 3728.8149: '[OII]2',
+                 4340.0: 'Hgamma',
+                 4861.3198: 'Hbeta',
+                 4959.0: '[OIII]',
+                 5007.0: '[OIII]2',
+                 6562.7998: 'Halpha',
+                 6583.0: '[NII]'}
+
+def matchlines(nlines, wl, z, eml, eml2):
+    """ try to match all the lines given : 
+    for each line computes the distance in Angstroms to the closest line.
+    Add the errors
+    
+    Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
+     
+     Parameters
+     ----------
+     nlines : integer
+              Number of emission lines
+     wl     : array<double>
+              Table of wavelengths
+     z      : double
+              Redshift to test
+     eml    : dict
+              Full catalog of lines to test redshift
+              key: wavelength, value: name
+     eml2   : dict
+              Smaller catalog containing only the brightest lines to test
+              key: wavelength, value: name
+    Returns
+    -------
+    out : (array<double>, array<double>)
+          (list of wavelengths, errors)
+              
+    """
+    jfound = np.zeros(nlines, dtype=np.int)
+    if(nlines > 3):
+        lbdas = np.array(eml.keys())
+    else:
+        lbdas = np.array(eml2.keys())
+    error = 0
+    for i in range(nlines):
+        # finds closest emline to this line
+        jfound[i] = np.argmin((wl[i] / (1 + z) - lbdas) ** 2.0)
+        error += (wl[i] / (1 + z) - lbdas[jfound[i]]) ** 2.0
+    error = np.sqrt(error / nlines)
+    if((nlines >= 2)and(jfound[0] == jfound[1])):
+        error = 15.
+    return(error, jfound)
+
+
+def crackz(nlines, wl, flux, eml, eml2):
+    """Method to estimate the best redshift matching a list of emission lines
+     
+     Parameters
+     ----------
+     nlines : integer
+              Number of emission lines
+     wl     : array<double>
+              Table of observed line wavelengths
+     flux   : array<double>
+              Table of line fluxes
+     eml    : dict
+              Full catalog of lines to test redshift
+     eml2   : dict
+              Smaller catalog containing only the brightest lines to test
+              key: wavelength, value: name
+              
+    Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
+    
+    Returns
+    -------
+    out : (float, float, integer, list<double>, list<double>, list<string>)
+          (redshift, redshift error, list of wavelengths, list of fluxes, list of lines names)
+    """
+    errmin = 3.0
+    zmin = 0.0
+    zmax = 7.0
+    if(nlines == 0):
+        return -9999.0, -9999.0, 0, [], [], []
+    if(nlines == 1):
+        return -9999.0, -9999.0, 1, wl, flux, ["Lya or [OII]"]
+    if(nlines > 1):
+        found = 0
+        if(nlines > 3):
+            #listwl = eml
+            lbdas = np.array(eml.keys())
+            lnames = np.array(eml.values())
+        else:
+            #listwl = eml2
+            lbdas = np.array(eml2.keys())
+            lnames = np.array(eml2.values())
+        for z in np.arange(zmin, zmax, 0.001):
+            (error, jfound) = matchlines(nlines, wl, z, eml, eml2)
+            if(error < errmin):
+                errmin = error
+                found = 1
+                zfound = z
+                jfinal = jfound.copy()
+        if(found == 1):
+            jfinal = np.array(jfinal).astype(int)
+            return zfound, errmin / np.min(lbdas[jfinal]), nlines, \
+                wl, flux, list(lnames[jfinal[0:nlines]])
+        else:
+            if(nlines > 3):
+                # keep the three brightest
+                ksel = np.argsort(flux)[-1:-4:-1]
+                return crackz(3, wl[ksel], flux[ksel], eml, eml2)
+            if(nlines == 3):
+                # keep the two brightest
+                ksel = np.argsort(flux)[-1:-3:-1]
+                return crackz(2, wl[ksel], flux[ksel], eml, eml2)
+            if(nlines == 2):
+                # keep the brightest
+                ksel = np.argsort(flux)[-1]
+                return -9999.0, -9999.0, 1, [wl[ksel]], [flux[ksel]], \
+                    ["Lya or [OII]"]
 
 class Source(object):
     """This class describes an object.
@@ -134,7 +279,7 @@ class Source(object):
                 header[key] = value
             
         return cls(header, lines, mag, z, spectra, images, cube)
-            
+       
             
     @classmethod
     def from_file(cls, filename):
@@ -351,6 +496,76 @@ class Source(object):
         dec_max = self.dec + radius
         subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
         self.images[name] = subima
+        
+    def add_z(self, desc, z, errz):
+        """Adds a redshift value
+        
+        Parameters
+        ----------
+        desc : string
+               Redshift description.
+        z    : float
+               Redshidt value.
+        errz : float
+               Redshift error.
+        """
+        if self.z is None:
+            self.z = Table(names=['Z_DESC', 'Z', 'Z_ERR'],
+                           rows=[[desc, z, errz]],
+                           dtype=('S20', 'f6', 'f6'))
+            self.z['Z'].format = '%.6f'
+            self.z['Z_ERR'].format = '%.6f'
+        else:
+            if desc in self.z['Z_DESC']:
+                self.z['Z'][self.z['Z_DESC']==desc] = z
+                self.z['Z_ERR'][self.z['Z_DESC']==desc] = errz
+            else:
+                self.z.add_row([desc, z, errz])
+                
+
+    def estimate_z(self, eml=None, eml2=None, cont=True):
+        """Method to estimate the best redshift matching a list of emission lines
+     
+         Parameters
+         ----------
+         eml    : dict{float: string}
+                  Full catalog of lines to test redshift
+                  Dictionary: key is the wavelength value in Angtsrom,
+                  value is the name of the line.
+                  if None, default catalog is used.
+         eml2   : dict{float: string}
+                  Smaller catalog containing only the brightest lines to test
+                  Dictionary: key is the wavelength value in Angtsrom,
+                  value is the name of the line.
+                  if None, default catalog is used
+        cont    : boolean
+                  if True we suppose that it is a continuum line
+              
+        Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
+        """
+        if eml is None:
+            eml = emlines
+        if eml2 is None:
+            eml2 = emlines_small
+            
+        wl = self.lines['LBDA_OBS']
+        flux = self.lines['FLUX']
+        nlines = len(wl)
+        
+        z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml, eml2)
+        
+        if nlines > 0:
+            if cont or nlines < 20:
+                #redshift
+                self.add_z('EMI', z, errz)
+                #line names
+                if 'LINE' not in self.lines.colnames:
+                    col = Column(data=None, name='LINE', dtype='S20', length=len(self.lines))
+                    self.lines.add_column(col)
+                for w, name in zip(wl, lnames):
+                    self.lines['LINE']['LBDA_OBS'==w] = name
+        
+                    
 
 class SourceList(list):
     """
