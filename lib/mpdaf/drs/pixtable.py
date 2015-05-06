@@ -833,19 +833,17 @@ class PixTable(object):
         """
         self.set_column('origin', origin, ksel=ksel)
         hdr = self.primary_header
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = \
-            int(self.origin2ifu(self.origin).min())
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH'] = \
-            int(self.origin2ifu(self.origin).max())
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW'] = \
-            int(self.origin2slice(self.origin).min())
+        ifu = self.origin2ifu(self.origin)
+        sli = self.origin2slice(self.origin)
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = int(ifu.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH'] = int(ifu.max())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW'] = int(sli.min())
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH'] = \
-            int(self.origin2slice(self.origin).max())
+            int(sli.max())
 
         # merged pixtable
         if self.nifu > 1:
-            hdr["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = \
-                len(np.unique(self.origin2ifu(self.origin)))
+            hdr["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = len(np.unique(ifu))
 
     def get_weight(self, ksel=None):
         """Loads the weight column and returns it.
@@ -859,30 +857,11 @@ class PixTable(object):
         -------
         out : numpy.array
         """
-        if self.weight is not None:
-            if ksel is None:
-                return self.weight
-            else:
-                return self.weight[ksel]
-        else:
-            if self.hdulist is None:
-                return None
-            else:
-                try:
-                    if self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WEIGHTED"):
-                        if ksel is None:
-                            if self.ima:
-                                weight = self.hdulist['weight'].data[:, 0]
-                            else:
-                                weight = self.hdulist[1].data.field('weight')
-                        else:
-                            if self.ima:
-                                weight = self.hdulist['weight'].data[ksel, 0][0]
-                            else:
-                                weight = self.hdulist[1].data.field('weight')[ksel]
-                except:
-                    weight = None
-                return weight
+        try:
+            wght = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WEIGHTED")
+        except KeyError:
+            wght = False
+        return self.get_column('weight', ksel=ksel) if wght else None
 
     def set_weight(self, weight, ksel=None):
         """Sets weight column (or a part of it).
@@ -903,14 +882,13 @@ class PixTable(object):
         -------
         out : numpy.memmap
         """
+        getk = self.get_keywords
         try:
-            nexp = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
+            nexp = getk("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
             exp = np.empty(shape=(self.nrows))
             for i in range(1, nexp + 1):
-                first = self.get_keywords("HIERARCH ESO DRS MUSE "
-                                          "PIXTABLE EXP%i FIRST" % i)
-                last = self.get_keywords("HIERARCH ESO DRS MUSE "
-                                         "PIXTABLE EXP%i LAST" % i)
+                first = getk("HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i)
+                last = getk("HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i)
                 exp[first:last + 1] = i
         except:
             exp = None
@@ -1003,7 +981,7 @@ class PixTable(object):
         xpos, ypos = self.get_pos_sky()
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
-            pi = np.pi
+            pi = np.pi  # NOQA
             for y0, x0, size, shape in sky:
                 if shape == 'C':
                     if self.wcs == 'deg':
@@ -1050,15 +1028,12 @@ class PixTable(object):
                 elif shape == 'S':
                     if self.wcs == 'deg':
                         mask |= (np.abs((xpos - x0) * 3600
-                                        * np.cos(y0 * np.pi / 180.))
-                                 < size) \
-                            & (np.abs((ypos - y0) * 3600)
-                               < size)
+                                        * np.cos(y0 * np.pi / 180.)) < size) \
+                            & (np.abs((ypos - y0) * 3600) < size)
                     elif self.wcs == 'rad':
                         mask |= (np.abs((xpos - x0) * 3600 * 180
                                         / np.pi * np.cos(y0)) < size) \
-                            & (np.abs((ypos - y0) * 3600 * 180
-                                      / np.pi) < size)
+                            & (np.abs((ypos - y0) * 3600 * 180 / np.pi) < size)
                     else:
                         mask |= (np.abs(xpos - x0) < size) \
                             & (np.abs(ypos - y0) < size)
@@ -1374,11 +1349,11 @@ class PixTable(object):
                 "HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
         except:
             spheric = False
-        pi = np.pi
-        xc = self.xc
-        yc = self.yc
+        pi = np.pi  # NOQA
+        xc = self.xc  # NOQA
+        yc = self.yc  # NOQA
         if spheric:  # spheric coordinates
-            phi = xpos
+            phi = xpos  # NOQA
             theta = numexpr.evaluate("ypos + pi/2")
             dp = numexpr.evaluate("yc * pi / 180")
             ra = numexpr.evaluate("arctan2(cos(theta) * sin(phi), sin(theta) * cos(dp) + cos(theta) * sin(dp) * cos(phi)) * 180 / pi")
