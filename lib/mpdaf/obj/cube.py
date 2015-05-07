@@ -103,33 +103,6 @@ class Cube(CubeBase):
 
     """This class manages Cube objects.
 
-    Parameters
-    ----------
-    filename : string
-               Possible FITS file name. None by default.
-    ext      : integer or (integer,integer) or string or (string,string)
-               Number/name of the data extension
-               or numbers/names of the data and variance extensions.
-    notnoise : boolean
-               True if the noise Variance cube is not read (if it exists).
-               Use notnoise=True to create cube without variance extension.
-
-    shape    : integer or (integer,integer,integer)
-               Lengths of data in Z, Y and X.
-               Python notation is used (nz,ny,nx).
-    wcs      : :class:`mpdaf.obj.WCS`
-               World coordinates.
-    wave     : :class:`mpdaf.obj.WaveCoord`
-               Wavelength coordinates.
-    unit     : string
-               Possible data unit type. None by default.
-    data     : float arry
-               Array containing the pixel values of the cube. None by default.
-    var      : float array
-               Array containing the variance. None by default.
-    fscale   : float
-               Flux scaling factor (1 by default).
-
     Attributes
     ----------
     filename       : string
@@ -172,28 +145,28 @@ class Cube(CubeBase):
         notnoise : boolean
                    True if the noise Variance cube is not read (if it exists).
                    Use notnoise=True to create cube without variance extension.
-
         shape    : integer or (integer,integer,integer)
-                   Lengths of data in Z, Y and X.
-                   Python notation is used (nz,ny,nx).
+                   Lengths of data in Z, Y and X. Python notation is used
+                   (nz,ny,nx). If data is not None, its shape is used instead.
         wcs      : :class:`mpdaf.obj.WCS`
                    World coordinates.
         wave     : :class:`mpdaf.obj.WaveCoord`
                    Wavelength coordinates.
         unit     : string
                    Possible data unit type. None by default.
-        data     : float arry
-                   Array containing the pixel values of the cube. None by default.
+        data     : float array
+                   Array containing the pixel values of the cube. None by
+                   default.
         var      : float array
                    Array containing the variance. None by default.
         fscale   : float
                    Flux scaling factor (1 by default).
         """
-        # possible FITS filename
+        d = {'class': 'Cube', 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
-        self.cube = True
         self.filename = filename
         self.ima = {}
+
         if filename is not None:
             f = pyfits.open(filename)
             # primary header
@@ -220,7 +193,6 @@ class Cube(CubeBase):
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
-                        d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('world coordinates and data have '
                                             'not the same dimensions: %s',
                                             "shape of WCS object is modified",
@@ -246,7 +218,6 @@ class Cube(CubeBase):
                 else:
                     self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape[0]:
-                        d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
                                             'have not the same dimensions: %s',
                                             'shape of WaveCoord object is '
@@ -278,7 +249,6 @@ class Cube(CubeBase):
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
-                        d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('world coordinates and data have '
                                             'not the same dimensions: %s',
                                             'shape of WCS object is modified',
@@ -305,7 +275,6 @@ class Cube(CubeBase):
                     self.wave = wave.copy()
                     if wave.shape is not None and \
                             wave.shape != self.shape[0]:
-                        d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
                                             'have not the same dimensions: %s',
                                             'shape of WaveCoord object is '
@@ -346,7 +315,8 @@ class Cube(CubeBase):
                     for i in range(len(f)):
                         try:
                             hdr = f[i].header
-                            if hdr['NAXIS']==2 and hdr['XTENSION']=='IMAGE':
+                            if hdr['NAXIS'] == 2 and \
+                                    hdr['XTENSION'] == 'IMAGE':
                                 self.ima[hdr.get('EXTNAME')] = \
                                     Image(filename, ext=hdr.get('EXTNAME'),
                                           notnoise=True)
@@ -368,6 +338,7 @@ class Cube(CubeBase):
                 pass
             else:
                 raise ValueError('dim with dimension > 3')
+
             if data is None:
                 self.data = None
                 self.shape = np.array(shape)
@@ -389,7 +360,6 @@ class Cube(CubeBase):
                     if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
                         (wcs.naxis1 != self.shape[2] or
                          wcs.naxis2 != self.shape[1]):
-                        d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('world coordinates and data have '
                                             'not the same dimensions: %s',
                                             'shape of WCS object is modified',
@@ -398,14 +368,12 @@ class Cube(CubeBase):
                     self.wcs.naxis2 = self.shape[1]
             except:
                 self.wcs = None
-                d = {'class': 'Cube', 'method': '__init__'}
                 self.logger.warning("world coordinates not copied: %s",
                                     "wcs attribute is None", extra=d)
             try:
                 if wave is not None:
                     self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape[0]:
-                        d = {'class': 'Cube', 'method': '__init__'}
                         self.logger.warning('wavelength coordinates and data '
                                             'have not the same dimensions: %s',
                                             'shape of WaveCoord object is '
@@ -413,7 +381,6 @@ class Cube(CubeBase):
                     self.wave.shape = self.shape[0]
             except:
                 self.wave = None
-                d = {'class': 'Cube', 'method': '__init__'}
                 self.logger.warning("wavelength solution not copied: %s",
                                     "wave attribute is None", extra=d)
         # Mask an array where invalid values occur (NaNs or infs).

@@ -126,22 +126,24 @@ class CubeList(object):
         fscale = np.array([cube.fscale for cube in self.cubes])
         unit = np.array([cube.unit for cube in self.cubes])
 
-        if len(np.unique(fscale)) == 1 and len(np.unique(unit)):
-            self.fscale = fscale[0]
-            self.unit = unit[0]
+        self.fscale = fscale[0]
+        self.unit = unit[0]
+        if len(np.unique(fscale)) == 1 and len(np.unique(unit)) == 1:
             return True
         else:
             if len(np.unique(fscale)) > 1:
-                msg = 'all cubes have not same scale factor'
-                self.logger.info(msg, extra=d)
+                msg = ('All cubes have not same scale factor. Scale from the '
+                       'first cube will be used.')
+                self.logger.warning(msg, extra=d)
                 for i in range(self.nfiles):
-                    msg = 'FSCALE=%g (%s)' % (fscale[i], self.files[i])
+                    msg = 'FSCALE=%s (%s)' % (fscale[i], self.files[i])
                     self.logger.info(msg, extra=d)
             if len(np.unique(unit)) > 1:
-                msg = 'all cubes have not same unit'
-                self.logger.info(msg, extra=d)
+                msg = ('All cubes have not same unit. Unit from the first cube'
+                       ' will be used.')
+                self.logger.warning(msg, extra=d)
                 for i in range(self.nfiles):
-                    msg = 'BUNIT=%g (%s)' % (unit[i], self.files[i])
+                    msg = 'BUNIT=%s (%s)' % (unit[i], self.files[i])
                     self.logger.info(msg, extra=d)
             return False
 
@@ -201,30 +203,23 @@ class CubeList(object):
         files = ','.join(os.path.basename(f) for f in self.files)
 
         # no valid pixels
-        filenames = [f for f in self.files]
-        no_valid_pix = [npixels-npix for npix in valid_pix]
-        stat_pix = Table([filenames, no_valid_pix],
+        no_valid_pix = [npixels - npix for npix in valid_pix]
+        stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        # expmap
-        expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs,
-                      wave=self.wave)
-        add_mpdaf_method_keywords(expmap.primary_header, "obj.cubelist.median",
-                                  ['NFILES', 'FILES'],
-                                  [len(self.files), files],
-                                  ['number of files merged in this cube',
-                                   'list of files merged in this cube'])
+        def save_cube(arr):
+            c = Cube(data=arr.reshape(self.shape), wcs=self.wcs,
+                     wave=self.wave, unit=self.unit)
+            add_mpdaf_method_keywords(
+                c.header, "obj.cubelist.median",
+                ['NFILES', 'FILES'], [len(self.files), files],
+                ['number of files merged in this cube',
+                 'list of files merged in this cube'])
+            return c
 
-        # cube
-        cub = Cube(data=data.reshape(self.shape), var=None, wcs=self.wcs,
-                   wave=self.wave)
-        add_mpdaf_method_keywords(cub.primary_header, "obj.cubelist.median",
-                                  ['NFILES', 'FILES'],
-                                  [len(self.files), files],
-                                  ['number of files merged in this cube',
-                                   'list of files merged in this cube'])
-
-        return cub, expmap, stat_pix
+        expmap = save_cube(expmap)
+        cube = save_cube(data)
+        return cube, expmap, stat_pix
 
     def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate'):
         """combines cubes in a single data cube using sigma clipped mean.
@@ -322,48 +317,32 @@ class CubeList(object):
                 np.float64(nclip_up), nstop, np.int32(var_mean))
 
         # no valid pixels
-        filenames = [f for f in self.files]
-        no_valid_pix = [npixels-npix for npix in valid_pix]
-        rejected_pix = [valid-select for (valid, select) in zip(valid_pix,
+        no_valid_pix = [npixels - npix for npix in valid_pix]
+        rejected_pix = [valid - select for valid, select in zip(valid_pix,
                                                                 select_pix)]
-        statpix = Table([filenames, no_valid_pix, rejected_pix],
+        statpix = Table([self.files, no_valid_pix, rejected_pix],
                         names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
 
         files = ','.join(os.path.basename(f) for f in self.files)
 
-        # expmap
-        expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs,
-                      wave=self.wave)
-        add_mpdaf_method_keywords(expmap.primary_header,
-                                  "obj.cubelist.merging",
-                                  ['nmax', 'nclip_low', 'nclip_up', 'nstop',
-                                   'var', 'NFILES', 'FILES'],
-                                  [len(self.files), files, nmax, nclip_low,
-                                   nclip_up, nstop, var],
-                                  ['number of files merged in this cube',
-                                   'list of files merged in this cube',
-                                   'max number of clipping iterations',
-                                   'lower clipping parameter',
-                                   'upper clipping parameter',
-                                   'clipping minimum number',
-                                   'type of variance'])
+        def save_cube(arr, var=None):
+            c = Cube(data=arr.reshape(self.shape), wcs=self.wcs,
+                     wave=self.wave, var=var, unit=self.unit)
+            add_mpdaf_method_keywords(
+                c.header, "obj.cubelist.merging",
+                ['nmax', 'nclip_low', 'nclip_up', 'nstop', 'var', 'NFILES',
+                 'FILES'],
+                [len(self.files), files, nmax, nclip_low, nclip_up, nstop,
+                 var],
+                ['max number of clipping iterations',
+                 'lower clipping parameter',
+                 'upper clipping parameter',
+                 'clipping minimum number',
+                 'type of variance',
+                 'number of files merged in this cube',
+                 'list of files merged in this cube'])
+            return c
 
-        # cube
-        cub = Cube(data=data.reshape(self.shape),
-                   var=vardata.reshape(self.shape),
-                   wcs=self.wcs, wave=self.wave)
-        add_mpdaf_method_keywords(cub.primary_header,
-                                  "obj.cubelist.merging",
-                                  ['nmax', 'nclip_low', 'nclip_up', 'nstop',
-                                   'var', 'NFILES', 'FILES'],
-                                  [len(self.files), files, nmax, nclip_low,
-                                   nclip_up, nstop, var],
-                                  ['number of files merged in this cube',
-                                   'list of files merged in this cube',
-                                   'max number of clipping iterations',
-                                   'lower clipping parameter',
-                                   'upper clipping parameter',
-                                   'clipping minimum number',
-                                   'type of variance'])
-
-        return cub, expmap, statpix
+        expmap = save_cube(expmap)
+        cube = save_cube(data, var=vardata.reshape(self.shape))
+        return cube, expmap, statpix
