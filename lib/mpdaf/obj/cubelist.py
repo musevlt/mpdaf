@@ -10,7 +10,7 @@ from ctypes import c_char_p
 
 from .cube import CubeDisk, Cube
 from .objs import is_float, is_int
-from ..tools.fits import add_mpdaf_method_keywords
+from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
 
 class CubeList(object):
@@ -151,6 +151,29 @@ class CubeList(object):
         """Checks if all cubes are compatible."""
         return self.check_dim() and self.check_wcs() and self.check_fscale()
 
+    def save_combined_cube(self, data, var=None, method='', keywords=None):
+        c = Cube(data=data.reshape(self.shape), wcs=self.wcs,
+                 wave=self.wave, unit=self.unit, var=var)
+        hdr = c.primary_header
+        nfiles = len(self.files)
+        copy_keywords(self.cubes[0].primary_header, hdr,
+                      ('ORIGIN', 'TELESCOP', 'INSTRUME', 'EQUINOX',
+                       'RADECSYS', 'EXPTIME', 'OBJECT'))
+        hdr['EXPTIME'] = hdr['EXPTIME'] * nfiles
+        c.data_header['OBJECT'] = self.cubes[0].data_header['OBJECT']
+
+        if keywords is not None:
+            params, values, comments = zip(*keywords)
+        else:
+            params, values, comments = None, None, None
+
+        add_mpdaf_method_keywords(hdr, method, params, values, comments)
+
+        files = ','.join(os.path.basename(f) for f in self.files)
+        hdr['NFILES'] = (nfiles, 'number of files merged in this cube')
+        hdr['FILES'] = (files, 'list of files merged in this cube')
+        return c
+
     def median(self):
         """combines cubes in a single data cube using median.
 
@@ -200,25 +223,13 @@ class CubeList(object):
         libCmethods.mpdaf_merging_median(c_char_p('\n'.join(self.files)), data,
                                          expmap, valid_pix)
 
-        files = ','.join(os.path.basename(f) for f in self.files)
-
         # no valid pixels
         no_valid_pix = [npixels - npix for npix in valid_pix]
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        def save_cube(arr):
-            c = Cube(data=arr.reshape(self.shape), wcs=self.wcs,
-                     wave=self.wave, unit=self.unit)
-            add_mpdaf_method_keywords(
-                c.header, "obj.cubelist.median",
-                ['NFILES', 'FILES'], [len(self.files), files],
-                ['number of files merged in this cube',
-                 'list of files merged in this cube'])
-            return c
-
-        expmap = save_cube(expmap)
-        cube = save_cube(data)
+        expmap = self.save_combined_cube(expmap, method='obj.cubelist.median')
+        cube = self.save_combined_cube(data, method='obj.cubelist.median')
         return cube, expmap, stat_pix
 
     def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate'):
@@ -323,26 +334,14 @@ class CubeList(object):
         statpix = Table([self.files, no_valid_pix, rejected_pix],
                         names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
 
-        files = ','.join(os.path.basename(f) for f in self.files)
-
-        def save_cube(arr, var=None):
-            c = Cube(data=arr.reshape(self.shape), wcs=self.wcs,
-                     wave=self.wave, var=var, unit=self.unit)
-            add_mpdaf_method_keywords(
-                c.header, "obj.cubelist.merging",
-                ['nmax', 'nclip_low', 'nclip_up', 'nstop', 'var', 'NFILES',
-                 'FILES'],
-                [len(self.files), files, nmax, nclip_low, nclip_up, nstop,
-                 var],
-                ['max number of clipping iterations',
-                 'lower clipping parameter',
-                 'upper clipping parameter',
-                 'clipping minimum number',
-                 'type of variance',
-                 'number of files merged in this cube',
-                 'list of files merged in this cube'])
-            return c
-
-        expmap = save_cube(expmap)
-        cube = save_cube(data, var=vardata.reshape(self.shape))
+        keywords = [('nmax', nmax, 'max number of clipping iterations'),
+                    ('nclip_low', nclip_low, 'lower clipping parameter'),
+                    ('nclip_up', nclip_up, 'upper clipping parameter'),
+                    ('nstop', nstop, 'clipping minimum number'),
+                    ('var', var, 'type of variance')]
+        expmap = self.save_combined_cube(expmap, method='obj.cubelist.merging',
+                                         keywords=keywords)
+        cube = self.save_combined_cube(data, var=vardata.reshape(self.shape),
+                                       method='obj.cubelist.merging',
+                                       keywords=keywords)
         return cube, expmap, statpix

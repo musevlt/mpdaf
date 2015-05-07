@@ -58,3 +58,21 @@ def add_mpdaf_keywords_to_file(path, method, params, values, comments, ext=0):
                               params, values, comments)
     hdu.flush()
     hdu.close()
+
+
+def copy_keywords(srchdr, dsthdr, keys):
+    """Copy a list of FITS keywords from one header to another.
+
+    Parameters
+    ----------
+    srchdr : astropy.io.fits.Header
+             Source header
+    dsthdr : astropy.io.fits.Header
+             Destination header
+    keys   : list
+             List of keys
+
+    """
+    for key in keys:
+        if key in srchdr:
+            dsthdr[key] = (srchdr[key], srchdr.comments[key])
