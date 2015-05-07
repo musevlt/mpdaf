@@ -167,13 +167,13 @@ class CubeList(object):
         -------
         out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, Table
               cube, expmap, statpix
-              
+
               cube will contain the merged cube
-              
+
               expmap will contain an exposure map
               data cube which counts the number of exposures used
               for the combination of each pixel.
-              
+
               statpix is a table that will give the number of Nan
               pixels pixels per exposures
               (columns are FILENAME and NPIX_NAN)
@@ -188,36 +188,42 @@ class CubeList(object):
         array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
                                               flags='CONTIGUOUS')
         # setup argument types
-        libCmethods.mpdaf_merging_median.argtypes = [charptr, array_1d_double, array_1d_int, array_1d_int]
+        libCmethods.mpdaf_merging_median.argtypes = [
+            charptr, array_1d_double, array_1d_int, array_1d_int]
         # run C method
         npixels = self.shape[0]*self.shape[1]*self.shape[2]
         data = np.empty(npixels, dtype=np.float64)
         expmap = np.empty(npixels, dtype=np.int32)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
-        libCmethods.mpdaf_merging_median(c_char_p('\n'.join(self.files)), data, expmap, valid_pix)
+        libCmethods.mpdaf_merging_median(c_char_p('\n'.join(self.files)), data,
+                                         expmap, valid_pix)
 
         files = ','.join(os.path.basename(f) for f in self.files)
-        
-        #no valid pixels
-        filenames = [f for f in self.files ]
+
+        # no valid pixels
+        filenames = [f for f in self.files]
         no_valid_pix = [npixels-npix for npix in valid_pix]
-        stat_pix = Table([filenames, no_valid_pix], names=['FILENAME', 'NPIX_NAN'])
-        
-        #expmap
-        expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs, wave=self.wave)
+        stat_pix = Table([filenames, no_valid_pix],
+                         names=['FILENAME', 'NPIX_NAN'])
+
+        # expmap
+        expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs,
+                      wave=self.wave)
         add_mpdaf_method_keywords(expmap.primary_header, "obj.cubelist.median",
                                   ['NFILES', 'FILES'],
                                   [len(self.files), files],
-                                  ['number of files merged in this cube', 'list of files merged in this cube'])
-        
+                                  ['number of files merged in this cube',
+                                   'list of files merged in this cube'])
+
         # cube
-        cub = Cube(data=data.reshape(self.shape), var=None, wcs=self.wcs, wave=self.wave)
+        cub = Cube(data=data.reshape(self.shape), var=None, wcs=self.wcs,
+                   wave=self.wave)
         add_mpdaf_method_keywords(cub.primary_header, "obj.cubelist.median",
                                   ['NFILES', 'FILES'],
                                   [len(self.files), files],
-                                  ['number of files merged in this cube', 'list of files merged in this cube'])
-        
-        
+                                  ['number of files merged in this cube',
+                                   'list of files merged in this cube'])
+
         return cub, expmap, stat_pix
 
     def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate'):
@@ -229,16 +235,17 @@ class CubeList(object):
                       maximum number of clipping iterations
         nclip       : float or (float,float)
                       Number of sigma at which to clip.
-                      Single clipping parameter or lower / upper clipping parameters
+                      Single clipping parameter or lower / upper clipping
+                      parameters.
         nstop       : integer
                       If the number of not rejected pixels is less
                       than this number, the clipping iterations stop.
         var         : string
                       'propagate', 'stat_mean', 'stat_one'
-                      
+
                       'propagate': the variance is the mean of the variances
                       of the N individual exposures divided by N**2.
-                      
+
                       'stat_mean': the variance of each combined pixel
                       is computed as the variance derived from the comparison
                       of the N individual exposures divided N-1.
@@ -251,13 +258,13 @@ class CubeList(object):
         -------
         out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, astropy.table
               cube, expmap, statpix
-              
+
               cube will contain the merged cube
-              
+
               expmap will contain an exposure map
               data cube which counts the number of exposures used
               for the combination of each pixel.
-              
+
               statpix is a table that will give the number of Nan
               pixels and rejected pixels per exposures
               (columns are FILENAME, NPIX_NAN and NPIX_REJECTED)
@@ -278,7 +285,7 @@ class CubeList(object):
                                                  flags='CONTIGUOUS')
         array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
                                               flags='CONTIGUOUS')
-        
+
         # returned arrays
         npixels = self.shape[0]*self.shape[1]*self.shape[2]
         data = np.empty(npixels, dtype=np.float64)
@@ -286,18 +293,18 @@ class CubeList(object):
         expmap = np.empty(npixels, dtype=np.int32)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
         select_pix = np.zeros(self.nfiles, dtype=np.int32)
-        
+
         if var == 'propagate':
             # setup argument types
-            libCmethods.mpdaf_merging_sigma_clipping_var.argtypes = \
-            [charptr, array_1d_double, array_1d_double, array_1d_int,
-            array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
-            ctypes.c_double, ctypes.c_int]
+            libCmethods.mpdaf_merging_sigma_clipping_var.argtypes = [
+                charptr, array_1d_double, array_1d_double, array_1d_int,
+                array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
+                ctypes.c_double, ctypes.c_int]
             # run C method
             libCmethods.mpdaf_merging_sigma_clipping_var(
-            c_char_p('\n'.join(self.files)), data, vardata,
-            expmap, select_pix, valid_pix, nmax, np.float64(nclip_low),
-            np.float64(nclip_up), nstop)
+                c_char_p('\n'.join(self.files)), data, vardata, expmap,
+                select_pix, valid_pix, nmax, np.float64(nclip_low),
+                np.float64(nclip_up), nstop)
         else:
             if var == 'stat_mean':
                 var_mean = 1
@@ -305,24 +312,26 @@ class CubeList(object):
                 var_mean = 0
             # setup argument types
             libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
-            charptr, array_1d_double, array_1d_double, array_1d_int,
-            array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
-            ctypes.c_double, ctypes.c_int, ctypes.c_int]
+                charptr, array_1d_double, array_1d_double, array_1d_int,
+                array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
+                ctypes.c_double, ctypes.c_int, ctypes.c_int]
             # run C method
             libCmethods.mpdaf_merging_sigma_clipping(
-            c_char_p('\n'.join(self.files)), data, vardata, expmap,
-            select_pix, valid_pix, nmax, np.float64(nclip_low),
-            np.float64(nclip_up), nstop, np.int32(var_mean))
-        
-        #no valid pixels
-        filenames = [f for f in self.files ]
+                c_char_p('\n'.join(self.files)), data, vardata, expmap,
+                select_pix, valid_pix, nmax, np.float64(nclip_low),
+                np.float64(nclip_up), nstop, np.int32(var_mean))
+
+        # no valid pixels
+        filenames = [f for f in self.files]
         no_valid_pix = [npixels-npix for npix in valid_pix]
-        rejected_pix = [valid-select for(valid, select) in zip(valid_pix, select_pix)]
-        statpix = Table([filenames, no_valid_pix, rejected_pix], names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
-        
+        rejected_pix = [valid-select for (valid, select) in zip(valid_pix,
+                                                                select_pix)]
+        statpix = Table([filenames, no_valid_pix, rejected_pix],
+                        names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
+
         files = ','.join(os.path.basename(f) for f in self.files)
-        
-        #expmap
+
+        # expmap
         expmap = Cube(data=expmap.reshape(self.shape), wcs=self.wcs,
                       wave=self.wave)
         add_mpdaf_method_keywords(expmap.primary_header,
@@ -340,9 +349,10 @@ class CubeList(object):
                                    'type of variance'])
 
         # cube
-        cub = Cube(data=data.reshape(self.shape), var=vardata.reshape(self.shape),
+        cub = Cube(data=data.reshape(self.shape),
+                   var=vardata.reshape(self.shape),
                    wcs=self.wcs, wave=self.wave)
-        add_mpdaf_method_keywords(cub.primary_header, 
+        add_mpdaf_method_keywords(cub.primary_header,
                                   "obj.cubelist.merging",
                                   ['nmax', 'nclip_low', 'nclip_up', 'nstop',
                                    'var', 'NFILES', 'FILES'],
@@ -356,5 +366,4 @@ class CubeList(object):
                                    'clipping minimum number',
                                    'type of variance'])
 
-        
         return cub, expmap, statpix
