@@ -1041,6 +1041,81 @@ class PixTable(object):
                     raise ValueError('Unknown shape parameter')
         return mask
 
+    def extract_from_mask(self, mask):
+        """Return a new pixtable extracted with the given mask.
+
+        Parameters
+        ----------
+        mask : numpy.ndarray
+               Mask (array of boolean).
+
+        Returns
+        -------
+        out : PixTable
+
+        """
+        ksel = np.where(mask)
+        nrows = len(ksel[0])
+        if nrows == 0:
+            return None
+
+        hdr = self.primary_header.copy()
+
+        # xpos
+        xpos = self.get_xpos(ksel)
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW'] = float(xpos.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH'] = float(xpos.max())
+
+        # ypos
+        ypos = self.get_ypos(ksel)
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW'] = float(ypos.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH'] = float(ypos.max())
+
+        # lambda
+        lbda = self.get_lambda(ksel)
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA LOW'] = \
+            float(lbda.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA HIGH'] = \
+            float(lbda.max())
+
+        # origin
+        origin = self.get_origin(ksel)
+        ifu = self.origin2ifu(origin)
+        sl = self.origin2slice(origin)
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = int(ifu.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH'] = int(ifu.max())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW'] = int(sl.min())
+        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH'] = int(sl.max())
+
+        # merged pixtable
+        if self.nifu > 1:
+            hdr["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = len(np.unique(ifu))
+
+        # combined exposures
+        selfexp = self.get_exp()
+        if selfexp is not None:
+            newexp = selfexp[ksel]
+            numbers_exp = np.unique(newexp)
+            hdr["HIERARCH ESO DRS MUSE PIXTABLE COMBINED"] = len(numbers_exp)
+            for iexp, i in zip(numbers_exp, range(1, len(numbers_exp) + 1)):
+                k = np.where(newexp == iexp)
+                hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i] = k[0][0]
+                hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i] = k[0][-1]
+            for i in range(len(numbers_exp) + 1,
+                           self.get_keywords("HIERARCH ESO DRS MUSE "
+                                             "PIXTABLE COMBINED") + 1):
+                del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i]
+                del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i]
+
+        # return sub pixtable
+        data = self.get_data(ksel)
+        stat = self.get_stat(ksel)
+        dq = self.get_dq(ksel)
+        weight = self.get_weight(ksel)
+        return PixTable(None, xpos, ypos, lbda, data, dq, stat, origin,
+                        weight, hdr, self.ima, self.wcs, self.wave,
+                        unit_data=self.unit_data, unit_stat=self.unit_stat)
+
     def extract(self, filename=None, sky=None, lbda=None, ifu=None, sl=None,
                 xpix=None, ypix=None, exp=None, stack=None, method='and'):
         """Extracts a subset of a pixtable using the following criteria:
@@ -1134,7 +1209,7 @@ class PixTable(object):
                 lfunc(kmask, self.select_xpix(xpix, origin=origin), out=kmask)
             if ypix is not None:
                 lfunc(kmask, self.select_ypix(ypix, origin=origin), out=kmask)
-            del origin
+            origin = None
 
         # Do the selection on the exposure numbers
         if exp is not None:
@@ -1143,70 +1218,9 @@ class PixTable(object):
                 lfunc(kmask, self.select_exp(exp, col_exp), out=kmask)
 
         # Compute the new pixtable
-        ksel = np.where(kmask)
-        del kmask
-        nrows = len(ksel[0])
-        if nrows == 0:
-            return None
-
-        # type of coordinates
-        hdr = self.primary_header.copy()
-
-        # xpos
-        xpos = self.get_xpos(ksel)
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW'] = float(xpos.min())
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH'] = float(xpos.max())
-
-        # ypos
-        ypos = self.get_ypos(ksel)
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW'] = float(ypos.min())
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH'] = float(ypos.max())
-
-        # lambda
-        lbda = self.get_lambda(ksel)
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA LOW'] = \
-            float(lbda.min())
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA HIGH'] = \
-            float(lbda.max())
-
-        # origin
-        origin = self.get_origin(ksel)
-        ifu = self.origin2ifu(origin)
-        sl = self.origin2slice(origin)
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = int(ifu.min())
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU HIGH'] = int(ifu.max())
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE LOW'] = int(sl.min())
-        hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS SLICE HIGH'] = int(sl.max())
-
-        # merged pixtable
-        if self.nifu > 1:
-            hdr["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = len(np.unique(ifu))
-
-        # combined exposures
-        selfexp = self.get_exp()
-        if selfexp is not None:
-            newexp = selfexp[ksel]
-            numbers_exp = np.unique(newexp)
-            hdr["HIERARCH ESO DRS MUSE PIXTABLE COMBINED"] = len(numbers_exp)
-            for iexp, i in zip(numbers_exp, range(1, len(numbers_exp) + 1)):
-                k = np.where(newexp == iexp)
-                hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i] = k[0][0]
-                hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i] = k[0][-1]
-            for i in range(len(numbers_exp) + 1,
-                           self.get_keywords("HIERARCH ESO DRS MUSE "
-                                             "PIXTABLE COMBINED") + 1):
-                del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i]
-                del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i]
-
-        # return sub pixtable
-        data = self.get_data(ksel)
-        stat = self.get_stat(ksel)
-        dq = self.get_dq(ksel)
-        weight = self.get_weight(ksel)
-        pix = PixTable(filename, xpos, ypos, lbda, data, dq, stat, origin,
-                       weight, hdr, self.ima, self.wcs, self.wave,
-                       unit_data=self.unit_data, unit_stat=self.unit_stat)
+        pix = self.extract_from_mask(kmask)
         if filename is not None:
+            pix.filename = filename
             pix.write(filename)
         return pix
 
