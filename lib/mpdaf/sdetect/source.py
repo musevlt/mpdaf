@@ -2,13 +2,18 @@ from astropy.io import fits as pyfits
 from astropy.table import Table, Column
 
 import datetime
-import numpy as np
-import warnings
 import logging
+import multiprocessing
+import numpy as np
 import os.path
 import shutil
+import sys
+import time
+import types
+import warnings
 
 from ..obj import Cube, Image, Spectrum
+from ..obj.objs import is_int
 from .catalog import Catalog
 
 emlines = {1215.67: 'Lyalpha',
@@ -33,20 +38,8 @@ emlines = {1215.67: 'Lyalpha',
            6716.0: '[SII]',
            6731.0: '[SII]2'}
 
-emlines_small = {1215.67: 'Lyalpha',
-                 1550.0: 'CIV',
-                 1909.0: 'CIII]',
-                 2326.0: 'CII',
-                 3726.032: '[OII]',
-                 3728.8149: '[OII]2',
-                 4340.0: 'Hgamma',
-                 4861.3198: 'Hbeta',
-                 4959.0: '[OIII]',
-                 5007.0: '[OIII]2',
-                 6562.7998: 'Halpha',
-                 6583.0: '[NII]'}
 
-def matchlines(nlines, wl, z, eml, eml2):
+def matchlines(nlines, wl, z, eml):
     """ try to match all the lines given : 
     for each line computes the distance in Angstroms to the closest line.
     Add the errors
@@ -64,9 +57,7 @@ def matchlines(nlines, wl, z, eml, eml2):
      eml    : dict
               Full catalog of lines to test redshift
               key: wavelength, value: name
-     eml2   : dict
-              Smaller catalog containing only the brightest lines to test
-              key: wavelength, value: name
+              
     Returns
     -------
     out : (array<double>, array<double>)
@@ -74,10 +65,7 @@ def matchlines(nlines, wl, z, eml, eml2):
               
     """
     jfound = np.zeros(nlines, dtype=np.int)
-    if(nlines > 3):
-        lbdas = np.array(eml.keys())
-    else:
-        lbdas = np.array(eml2.keys())
+    lbdas = np.array(eml.keys())
     error = 0
     for i in range(nlines):
         # finds closest emline to this line
@@ -89,7 +77,7 @@ def matchlines(nlines, wl, z, eml, eml2):
     return(error, jfound)
 
 
-def crackz(nlines, wl, flux, eml, eml2):
+def crackz(nlines, wl, flux, eml):
     """Method to estimate the best redshift matching a list of emission lines
      
      Parameters
@@ -102,9 +90,6 @@ def crackz(nlines, wl, flux, eml, eml2):
               Table of line fluxes
      eml    : dict
               Full catalog of lines to test redshift
-     eml2   : dict
-              Smaller catalog containing only the brightest lines to test
-              key: wavelength, value: name
               
     Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
     
@@ -122,16 +107,10 @@ def crackz(nlines, wl, flux, eml, eml2):
         return -9999.0, -9999.0, 1, wl, flux, ["Lya or [OII]"]
     if(nlines > 1):
         found = 0
-        if(nlines > 3):
-            #listwl = eml
-            lbdas = np.array(eml.keys())
-            lnames = np.array(eml.values())
-        else:
-            #listwl = eml2
-            lbdas = np.array(eml2.keys())
-            lnames = np.array(eml2.values())
+        lbdas = np.array(eml.keys())
+        lnames = np.array(eml.values())
         for z in np.arange(zmin, zmax, 0.001):
-            (error, jfound) = matchlines(nlines, wl, z, eml, eml2)
+            (error, jfound) = matchlines(nlines, wl, z, eml)
             if(error < errmin):
                 errmin = error
                 found = 1
@@ -145,11 +124,11 @@ def crackz(nlines, wl, flux, eml, eml2):
             if(nlines > 3):
                 # keep the three brightest
                 ksel = np.argsort(flux)[-1:-4:-1]
-                return crackz(3, wl[ksel], flux[ksel], eml, eml2)
+                return crackz(3, wl[ksel], flux[ksel], eml)
             if(nlines == 3):
                 # keep the two brightest
                 ksel = np.argsort(flux)[-1:-3:-1]
-                return crackz(2, wl[ksel], flux[ksel], eml, eml2)
+                return crackz(2, wl[ksel], flux[ksel], eml)
             if(nlines == 2):
                 # keep the brightest
                 ksel = np.argsort(flux)[-1]
@@ -485,15 +464,17 @@ class Source(object):
         """
         if size is None:
             white_ima = self.images['SRC_WHITE']
-            size = max(np.abs(white_ima.get_step() * white_ima.shape))
+            size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
         else:
-            size /= 3600.
-        radius = size/2.
-        radius_ra = radius / np.cos(np.deg2rad(self.dec))
+            if is_int(size):
+                size = (size, size)
+        
+        radius = size/2./3600.0
+        radius_ra = radius[1] / np.cos(np.deg2rad(self.dec))
         ra_min = self.ra - radius_ra
         ra_max = self.ra + radius_ra
-        dec_min = self.dec - radius
-        dec_max = self.dec + radius
+        dec_min = self.dec - radius[0]
+        dec_max = self.dec + radius[0]
         subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
         self.images[name] = subima
         
@@ -522,8 +503,33 @@ class Source(object):
             else:
                 self.z.add_row([desc, z, errz])
                 
+    def add_mag(self, band, m, errm):
+        """Adds a magnitude value
+        
+        Parameters
+        ----------
+        band : string
+               Filter name.
+        m    : float
+               Magnitude value.
+        errm : float
+               Magnitude error.
+        """
+        if self.mag is None:
+            self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
+                           rows=[[band, m, errm]],
+                           dtype=('S20', 'f6', 'f6'))
+            self.mag['MAG'].format = '%.6f'
+            self.mag['MAG_ERR'].format = '%.6f'
+        else:
+            if band in self.mag['BAND']:
+                self.mag['MAG'][self.mag['BAND']==band] = m
+                self.mag['MAG_ERR'][self.mag['BAND']==band] = errm
+            else:
+                self.mag.add_row([band, m, errm])
+                
 
-    def estimate_z(self, eml=None, eml2=None, cont=True):
+    def crack_z(self, eml=None, nlines=np.inf):
         """Method to estimate the best redshift matching a list of emission lines
      
          Parameters
@@ -533,29 +539,23 @@ class Source(object):
                   Dictionary: key is the wavelength value in Angtsrom,
                   value is the name of the line.
                   if None, default catalog is used.
-         eml2   : dict{float: string}
-                  Smaller catalog containing only the brightest lines to test
-                  Dictionary: key is the wavelength value in Angtsrom,
-                  value is the name of the line.
-                  if None, default catalog is used
-        cont    : boolean
-                  if True we suppose that it is a continuum line
+          nlines  : integer
+                    estimated the redshift if the list of emission lines is inferior to this value
               
         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
         """
+        nline_max = nlines
         if eml is None:
             eml = emlines
-        if eml2 is None:
-            eml2 = emlines_small
             
-        wl = self.lines['LBDA_OBS']
-        flux = self.lines['FLUX']
+        wl = np.array(self.lines['LBDA_OBS'])
+        flux = np.array(self.lines['FLUX'])
         nlines = len(wl)
         
-        z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml, eml2)
+        z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml)
         
         if nlines > 0:
-            if cont or nlines < 20:
+            if nlines < nline_max:
                 #redshift
                 self.add_z('EMI', z, errz)
                 #line names
@@ -563,10 +563,8 @@ class Source(object):
                     col = Column(data=None, name='LINE', dtype='S20', length=len(self.lines))
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
-                    self.lines['LINE']['LBDA_OBS'==w] = name
+                    self.lines['LINE'][self.lines['LBDA_OBS']==w] = name
         
-                    
-
 class SourceList(list):
     """
         list< :class:`mpdaf.sdetect.Source` >
@@ -607,5 +605,5 @@ class SourceList(list):
             os.remove(fcat)
         cat = Catalog.from_sources(self)
         cat.write(fcat)
-        
+        # For FITS tables, the maximum number of fields is 999
     
