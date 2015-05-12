@@ -4768,23 +4768,20 @@ class Image(object):
         if title is not None:
             ax.set_title(title)
  
-        self._fig = plt.get_current_fig_manager()
-        plt.connect('motion_notify_event', self._on_move)
+        ax.format_coord = self._format_coord
         return cax
-
-    def _on_move(self, event):
-        """prints y,x,p,q and data in the figure toolbar."""
-        if event.inaxes is not None:
-            j, i = int(event.xdata), int(event.ydata)
-            try:
-                pixsky = self.wcs.pix2sky([i, j])
-                yc = pixsky[0][0]
-                xc = pixsky[0][1]
-                val = self.data.data[i, j] * self.fscale
-                s = 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, i, j, val)
-                self._fig.toolbar.set_message(s)
-            except:
-                pass
+            
+    def _format_coord(self, x, y):
+        col = int(x+0.5)
+        row = int(y+0.5)
+        if col>=0 and col<self.shape[0] and row>=0 and row<self.shape[1]:
+            pixsky = self.wcs.pix2sky([col, row])
+            yc = pixsky[0][0]
+            xc = pixsky[0][1]
+            val = self.data.data[col, row] * self.fscale
+            return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, col, row, val)
+        else:
+            return 'x=%1.4f, y=%1.4f'%(x, y)
 
     def ipos(self, filename='None'):
         """Prints cursor position in interactive mode (p and q define the
