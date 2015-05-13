@@ -19,7 +19,7 @@ void mpdaf_old_subtract_slice_median(double* result, double* corr, int* npts, in
 
     #pragma omp parallel shared(ifu,sli,data,npix,med,mask,npts) private(chan)
     {
-         #pragma omp for 
+         #pragma omp for
          for (chan=1; chan<=24; chan++)
          {
             int sl, i, count;
@@ -75,7 +75,7 @@ void mpdaf_old_subtract_slice_median(double* result, double* corr, int* npts, in
 	    }
 	}
     }
-	       
+
 
     #pragma omp parallel shared(ifu,sli,data,npix,med,result, median) private(n)
     {
@@ -104,7 +104,7 @@ void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin,
       double l0, l1;
       l0 = lmin + l*dl;
       l1 = l0 + dl;
-      
+
       temp = (double *) malloc(npix * sizeof(double));
       count = 0;
       for (i=0; i<npix; i++)
@@ -119,7 +119,7 @@ void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin,
       mpdaf_median_sigma_clip(temp, count, x, nmax, nclip_low, nclip_up, nstop);
       //med = mpdaf_median(temp, count);
       free(temp);
-      
+
       #pragma omp critical //#pragma omp atomic write
       {
 	//printf("%g %g %i %g \n",l0,l1,count,med);
@@ -136,37 +136,41 @@ void mpdaf_subtract_slice_median(double* result, double* corr, int* npts, int* i
 
     //omp_set_num_threads
 
-#pragma omp parallel shared(ifu,sli,data,npix,corr,mask,lbda,skyref_lbda,skyref_flux,skyref_n, npts) private(chan)
+    #pragma omp parallel shared(ifu,sli,data,npix,corr,mask,lbda,skyref_lbda,skyref_flux,skyref_n, npts) private(chan)
     {
-         #pragma omp for 
-         for (chan=1; chan<=24; chan++)
-         {
+        #pragma omp for
+        for (chan=1; chan<=24; chan++)
+        {
             int sl, i, count;
             double m;
             double *temp;
             double skyref;
-	    temp = (double *) malloc(npix * sizeof(double));
-	    for (sl=1; sl<=48; sl++)
-	    {
-	        count = 0;
+            temp = (double *) malloc(npix * sizeof(double));
+            for (sl=1; sl<=48; sl++)
+            {
+                count = 0;
                 for (i=0; i<npix; i++)
-	        {
-		  if ((mask[i]==0) && (ifu[i]==chan) && (sli[i]==sl) && (lbda[i] > 4800) && (lbda[i] < 9300))
-		     {
-		          skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[i]);
-			  temp[count] = skyref - data[i];
-			  count += 1;
-		     }
-	        }
-	        m = mpdaf_median(temp,count);
+                {
+                    if ((mask[i]==0) && (ifu[i]==chan) && (sli[i]==sl) && (lbda[i] > 4800) && (lbda[i] < 9300))
+                    {
+                        skyref = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[i]);
+                        temp[count] = skyref - data[i];
+                        count += 1;
+                    }
+                }
+                if (count > 0)
+                    m = mpdaf_median(temp,count);
+                else
+                    m = 0.0;
+
                 #pragma omp critical //#pragma omp atomic write
-		{
-                     corr[48*(chan-1)+sl-1] = m;
-		     npts[48*(chan-1)+sl-1] = count;
-	             //printf("%i %i %i %g \n",chan,sl,count,m);
-	        }
-	    }
-	    free(temp);
+                {
+                    corr[48*(chan-1)+sl-1] = m;
+                    npts[48*(chan-1)+sl-1] = count;
+                    //printf("%i %i %i %g \n",chan,sl,count,m);
+                }
+            }
+            free(temp);
         }
     }
 
@@ -174,11 +178,11 @@ void mpdaf_subtract_slice_median(double* result, double* corr, int* npts, int* i
 
     #pragma omp parallel shared(ifu,sli,data,npix,corr,result) private(n)
     {
-          #pragma omp for
-          for(n=0; n<npix; n++)
-          {
-             result[n] =  data[n] + corr[48*(ifu[n]-1)+sli[n]-1];
-	  }
+        #pragma omp for
+        for(n=0; n<npix; n++)
+        {
+            result[n] =  data[n] + corr[48*(ifu[n]-1)+sli[n]-1];
+        }
     }
 }
 
@@ -191,7 +195,7 @@ void mpdaf_divide_slice_median(double* result, double* result_stat ,double* corr
 
 #pragma omp parallel shared(ifu,sli,data,npix,corr,mask,lbda,skyref_lbda,skyref_flux,skyref_n,npts) private(chan)
     {
-         #pragma omp for 
+         #pragma omp for
          for (chan=1; chan<=24; chan++)
          {
             int sl, i, count;
