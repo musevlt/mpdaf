@@ -161,12 +161,16 @@ class Source(object):
               Keys gives the filter ('SRC_WHITE' for white image, TBC)
               
               Values are :class:`mpdaf.obj.Image` object
-    cube    : :class:`mpdaf.obj.Cube`
-              sub-data cube containing the object
+    cubes   : :class:`dict`
+                  Dictionary containing small data cubes
+                  
+                  Keys gives a description of the cube
+                  
+                  Values are :class:`mpdaf.obj.Cube` objects
     """
     
     def __init__(self, header, lines=None, mag=None, z=None,
-                 spectra=None, images=None, cube=None):
+                 spectra=None, images=None, cubes=None):
         """
         """
         # FITS header
@@ -192,15 +196,18 @@ class Source(object):
             self.images = {}
         else:
             self.images = images
-        # CUBE
-        self.cube = cube
+        # Dictionary CUBES
+        if cubes is None:
+            self.cubes = {}
+        else:
+            self.cubes = cubes
         # logger
         self.logger = logging.getLogger('mpdaf corelib')
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
                  lines=None, mag=None, z=None,
-                 spectra=None, images=None, cube=None):
+                 spectra=None, images=None, cubes=None):
         """
         Parameters
         ----------
@@ -239,8 +246,12 @@ class Source(object):
                   Keys gives the filter ('SRC_WHITE' for white image, TBC)
               
                   Values are :class:`mpdaf.obj.Image` object
-        cube    : :class:`mpdaf.obj.Cube`
-                  Small data cube containing the object
+        cubes   : :class:`dict`
+                  Dictionary containing small data cubes
+                  
+                  Keys gives a description of the cube
+                  
+                  Values are :class:`mpdaf.obj.Cube` objects
         """
         header = pyfits.Header()
         header['ID'] = (ID, 'object ID')
@@ -257,7 +268,7 @@ class Source(object):
             for key, value in extras.iteritems():
                 header[key] = value
             
-        return cls(header, lines, mag, z, spectra, images, cube)
+        return cls(header, lines, mag, z, spectra, images, cubes)
        
             
     @classmethod
@@ -275,7 +286,7 @@ class Source(object):
         z = None
         spectra = {}
         images = {}
-        cube = None
+        cubes = {}
         for i in range(1, len(hdulist)):
             hdu = hdulist[i]
             extname = hdu.header['EXTNAME']
@@ -306,15 +317,16 @@ class Source(object):
                 except:
                     ext = i
                 images[ima_name] = Image(filename, ext=ext)
-            elif extname == 'CUBE_DATA':
+            elif extname[:3] == 'CUB' and extname[-4:]=='DATA':
+                cub_name = extname[4:-5]
                 try:
-                    ext_var = hdulist.index_of('CUBE_STAT')
+                    ext_var = hdulist.index_of('CUB_'+cub_name+'_STAT')
                     ext = (i, ext_var)
                 except:
                     ext = i
-                cube = Cube(filename, ext=ext, ima=False)
+                cubes[cub_name] = Cube(filename, ext=ext, ima=False)
         hdulist.close()
-        return cls(hdr, lines, mag, z, spectra, images, cube)
+        return cls(hdr, lines, mag, z, spectra, images, cubes)
                                
         
     def write(self, filename):
@@ -368,13 +380,13 @@ class Source(object):
             if stat_hdu is not None:
                 hdulist.append(stat_hdu)
         
-        #cube
-        if self.cube is not None:
-            ext_name = 'CUBE_DATA'
-            data_hdu = self.cube.get_data_hdu(name=ext_name, savemask='nan')
+        #cubes
+        for key, cub in self.cubes.iteritems():
+            ext_name = 'CUB_%s_DATA'%key
+            data_hdu = cub.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
-            ext_name = 'CUBE_STAT'
-            stat_hdu = self.cube.get_stat_hdu(name=ext_name)
+            ext_name = 'CUB_%s_STAT'%key
+            stat_hdu = cub.get_stat_hdu(name=ext_name)
             if stat_hdu is not None:
                 hdulist.append(stat_hdu)
             
@@ -401,9 +413,9 @@ class Source(object):
             self.logger.info('images[\'%s\']'%key, extra=d)
             ima.info()
             print '\n'
-        if self.cube is not None:
-            self.logger.info('cube', extra=d)
-            self.cube.info()
+        for key, cub in self.cubes.iteritems():
+            self.logger.info('cubes[\'%s\']'%key, extra=d)
+            cub.info()
             print '\n'
         if self.lines is not None:
             self.logger.info('lines', extra=d)
@@ -434,7 +446,7 @@ class Source(object):
         """
         if item=='header' or item=='logger' or \
            item=='lines' or item=='mag' or item=='z' or \
-           item=='cube' or item=='images'or item=='spectra':
+           item=='cubes' or item=='images'or item=='spectra':
             return dict.__setattr__(self, item, value)
         else:
             self.header[item] = value
