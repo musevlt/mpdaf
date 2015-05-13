@@ -393,7 +393,7 @@ class WCS(object):
         return (self.naxis1 == other.naxis1 and
                 self.naxis2 == other.naxis2 and
                 np.allclose(x1, x2, atol=1E-3, rtol=0) and
-                np.allclose(cdelt1, cdelt2) and
+                np.allclose(cdelt1, cdelt2, atol=1E-3, rtol=0) and
                 self.get_rot() == other.get_rot())
 
     def __getitem__(self, item):
@@ -778,8 +778,8 @@ class WaveCoord(object):
         l1 = self.coord(0)
         l2 = other.coord(0)
         return (self.shape == other.shape and
-                np.allclose(l1, l2, atol=1E-3, rtol=0) and
-                np.allclose(self.cdelt, other.cdelt) and
+                np.allclose(l1, l2, atol=1E-2, rtol=0) and
+                np.allclose(self.cdelt, other.cdelt, atol=1E-2, rtol=0) and
                 self.cunit == other.cunit)
 
     def coord(self, pixel=None):
