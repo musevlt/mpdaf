@@ -108,7 +108,6 @@ class CubeList(object):
                     self.wcs.info()
                     self.logger.info(f, extra=d)
                     cube.wcs.info()
-                    self.wcs = None
                 if not cube.wave.isEqual(self.wave):
                     msg = 'all cubes have not same spectral coordinates'
                     self.logger.warning(msg, extra=d)
@@ -116,7 +115,6 @@ class CubeList(object):
                     self.wave.info()
                     self.logger.info(f, extra=d)
                     cube.wave.info()
-                    self.wave = None
                 return False
         return True
 
