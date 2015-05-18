@@ -3208,16 +3208,17 @@ class Cube(CubeBase):
                     result[k] = out[0]
         return result
 
-    def get_image(self, wave, is_sum=False, verbose=True):
+    def get_image(self, wave, is_sum=False, subtract_off=False):
         """Extracts an image from the datacube.
 
         Parameters
         ----------
-        wave : (float, float)
-            (lbda1,lbda2) interval of wavelength.
-        is_sum : boolean
-                if True the sum is computes, otherwise this is the average.
-
+        wave         : (float, float)
+                       (lbda1,lbda2) interval of wavelength.
+        is_sum       : boolean
+                       if True the sum is computes, otherwise this is the average.
+        subtract_off : boolean
+                       If True, subtracting off nearby data.
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
@@ -3225,17 +3226,31 @@ class Cube(CubeBase):
         d = {'class': 'Cube', 'method': 'get_image'}
         l1, l2 = wave
         k1, k2 = self.wave.pixel(wave, nearest=True).astype(int)
-        if verbose:
-            msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2)
-            self.logger.info(msg, extra=d)
+        msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2)
+        self.logger.info(msg, extra=d)
         if is_sum:
             ima = self[k1:k2 + 1, :, :].sum(axis=0)
         else:
             ima = self[k1:k2 + 1, :, :].mean(axis=0)
+            
+        if subtract_off:
+            dl = (l2-l1)*3
+            margin = 10.0
+            lbdas = self.wave.coord()
+            is_off = np.where(((lbdas<l1-margin) & (lbdas>l1-margin-dl/2)) |
+                              ((lbdas>l2+margin) & (lbdas<l2+margin+dl/2)))
+            if is_sum:
+                off_im = self[is_off, :, :].sum(axis=0)
+            else:
+                off_im = self[is_off, :, :].mean(axis=0)
+            ima.data = ima.data - off_im.data
+            if ima.var is not None:
+                ima.var = ima.var + off_im.var
+         
         return ima
 
-    def aperture(self, center, radius, verbose=True):
-        """Extracts a spectra from an aperture of fixed radius.
+    def subcube(self, center, radius):
+        """Extracts a sub-cube from an aperture of fixed radius.
 
         Parameters
         ----------
@@ -3247,13 +3262,13 @@ class Cube(CubeBase):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Spectrum`
+        out : :class:`mpdaf.obj.Cube`
         """
-        d = {'class': 'Cube', 'method': 'aperture'}
-        center = self.wcs.sky2pix(center)[0]
-        radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
-        radius2 = radius * radius
+        d = {'class': 'Cube', 'method': 'subcube'}
         if radius > 0:
+            center = self.wcs.sky2pix(center)[0]
+            radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
+            radius2 = radius * radius
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
@@ -3274,22 +3289,41 @@ class Cube(CubeBase):
                 self.data.mask[:, imin:imax, jmin:jmax], grid3d)
 
             if self.var is not None:
-                var = np.ma.sum(np.ma.sum(
-                    np.ma.masked_invalid(self.var[:, imin:imax, jmin:jmax]),
-                    axis=1), axis=1).filled(np.NaN)
+                var = self.var[:, imin:imax, jmin:jmax].copy()
             else:
                 var = None
-            spec = Spectrum(wave=self.wave, unit=self.unit,
-                            data=data.sum(axis=1).sum(axis=1), var=var,
-                            fscale=self.fscale)
-            if verbose:
-                msg = '%d spaxels summed' % (data.shape[1] * data.shape[2])
-                self.logger.info(msg, extra=d)
+            cub = Cube(wcs=self.wcs, wave=self.wave, unit=self.unit,
+                       data=data, var=var, fscale=self.fscale)
+            return cub
         else:
+            return None
+
+    def aperture(self, center, radius):
+        """Extracts a spectra from an aperture of fixed radius.
+
+        Parameters
+        ----------
+        center : (float,float)
+                Center of the aperture.
+                (dec,ra) is in degrees.
+        radius : float
+                Radius of the aperture in arcsec.
+
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Spectrum`
+        """
+        d = {'class': 'Cube', 'method': 'aperture'}
+        if radius > 0:
+            cub = self.subcube(center, radius)
+            msg = '%d spaxels summed' % (cub.shape[1] * cub.shape[2])
+            spec = cub.sum(axis=(1,2))
+            self.logger.info(msg, extra=d)
+        else:
+            center = self.wcs.sky2pix(center)[0]
             spec = self[:, int(center[0] + 0.5), int(center[1] + 0.5)]
-            if verbose:
-                msg = 'returning spectrum at nearest spaxel'
-                self.logger.info(msg, extra=d)
+            msg = 'returning spectrum at nearest spaxel'
+            self.logger.info(msg, extra=d)
         return spec
 
 
