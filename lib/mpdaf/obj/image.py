@@ -3975,8 +3975,7 @@ class Image(object):
         mask = np.ma.make_mask(1 - newmask)
 
         if flux:
-            rflux = self.wcs.get_step().prod() / newstep.prod()
-            data *= rflux
+            data *= newstep.prod() / self.wcs.get_step().prod()
 
         self.shape = newdim
         self.wcs = wcs
