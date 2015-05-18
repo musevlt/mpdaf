@@ -60,9 +60,10 @@ class Channel(object):
 
         """
         self.logger = logging.getLogger('mpdaf corelib')
+        d = {'class': 'Channel', 'method': '__init__'}
         self.extname = extname
         if filename != None:
-            hdulist = pyfits.open(filename, memmap=1)
+            hdulist = pyfits.open(filename)
             self.header = hdulist[extname].header
             self.nx = hdulist[extname].header["NAXIS1"]
             self.ny = hdulist[extname].header["NAXIS2"]
@@ -71,6 +72,7 @@ class Channel(object):
                 self.data = np.ndarray(np.shape(data))
                 self.data[:] = data[:]
             except:
+                self.logger.warning("extension %s not loaded"%extname, extra=d)
                 self.data = None
             hdulist.close()
         elif data is not None:
