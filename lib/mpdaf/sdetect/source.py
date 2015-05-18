@@ -3,13 +3,9 @@ from astropy.table import Table, Column
 
 import datetime
 import logging
-import multiprocessing
 import numpy as np
 import os.path
 import shutil
-import sys
-import time
-import types
 import warnings
 
 from ..obj import Cube, Image, Spectrum
@@ -470,7 +466,7 @@ class Source(object):
                 Input image MPDAF object
         name  : string
                 Name used to distingish this image
-        size  : float
+        size  : float or (float, float)
                 Size of the image in arcsec.
                 If None, the size of the white image extension is taken if it exists.
         """
