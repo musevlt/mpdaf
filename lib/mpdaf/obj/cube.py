@@ -162,6 +162,7 @@ class Cube(CubeBase):
         fscale   : float
                    Flux scaling factor (1 by default).
         """
+        self.cube = True
         d = {'class': 'Cube', 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
@@ -2067,7 +2068,7 @@ class Cube(CubeBase):
             else:
                 raise ValueError('var and data have not the same dimensions.')
 
-    def sum(self, axis=None):
+    def sum(self, axis=None, weights=None):
         """Returns the sum over the given axis.
 
         Parameters
@@ -2085,16 +2086,63 @@ class Cube(CubeBase):
                returns a spectrum.
 
                Other cases return None.
+        weights : array_like, optional
+                  An array of weights associated with the data values. 
+                  The weights array can either be 1-D (axis=(1,2))
+                  or 2-D (axis=0) or of the same shape as the cube.
+                  If weights=None, then all data in a are assumed to have a weight equal to one.
+
         """
+        if weights is not None:
+            if len(weights.shape)==3 and (weights.shape[0] != self.shape[0] or \
+                                    weights.shape[1] != self.shape[1] or \
+                                    weights.shape[2] != self.shape[2]):
+                raise IOError('Incorrect dimensions for the weights (%i,%i,%i) (it must be (%i,%i,%i)) '\
+                    %(weights.shape[0], weights.shape[1], weights.shape[2],
+                    self.shape[0], self.shape[1], self.shape[2]))
+            elif len(weights.shape)==2:
+                if weights.shape[0] != self.shape[1] or \
+                   weights.shape[1] != self.shape[2]:
+                    raise IOError('Incorrect dimensions for the weights (%i,%i) (it must be (%i,%i)) '\
+                    %(weights.shape[0], weights.shape[1], self.shape[1], self.shape[2]))
+                else:
+                    weights = np.tile(weights,(self.shape[0],1,1))
+            elif len(weights.shape)==1:
+                if weights.shape[0] != self.shape[0]:
+                    raise IOError('Incorrect dimensions for the weights (%i) (it must be (%i))' \
+                           %(weights.shape[0], self.shape[0]))
+                else:
+                    weights = np.ones_like(self.data.data) * weights[:,np.newaxis,np.newaxis]
+            else:
+                raise IOError('Incorrect dimensions for the weights (it must be (%i,%i,%i)) '\
+                    %(self.shape[0], self.shape[1], self.shape[2]))
+            
         if axis is None:
-            return self.data.sum() * self.fscale
+            if weights is None:
+                return self.data.sum() * self.fscale
+            else:
+                sum_weights = np.ma.sum(np.ma.masked_where(self.data.mask, weights)) / np.sum(~self.data.mask)
+                data = self.data * weights
+                return data.sum() * self.fscale / sum_weights
         elif axis == 0:
             # return an image
-            data = np.ma.sum(self.data, axis)
-            if self.var is not None:
-                var = (np.ma.sum(np.ma.masked_invalid(self.var), axis)).filled(np.NaN)
+            if weights is None:
+                data = np.ma.sum(self.data, axis)
+                if self.var is not None:
+                    var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(self.var))
+                    var = np.ma.sum(var, axis).filled(np.NaN)
+                else:
+                    var = None
             else:
-                var = None
+                sum_weights = np.ma.sum(np.ma.masked_where(self.data.mask, weights), axis) / np.sum(~self.data.mask, axis)
+                data = self.data * weights
+                data = np.ma.sum(data, axis) / sum_weights
+                if self.var is not None:
+                    var = self.var * weights * weights
+                    var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(var))
+                    var = (np.ma.sum(var, axis) / sum_weights / sum_weights).filled(np.NaN)
+                else:
+                    var = None
             res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit,
                         fscale=self.fscale)
             res.data = data
@@ -2102,12 +2150,24 @@ class Cube(CubeBase):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.sum(np.ma.sum(self.data, axis=1), axis=1)
-            if self.var is not None:
-                var = np.ma.sum(np.ma.sum(np.ma.masked_invalid(self.var),
-                                          axis=1), axis=1).filled(np.NaN)
+            if weights is None:
+                data = np.ma.sum(np.ma.sum(self.data, axis=1), axis=1)
+                if self.var is not None:
+                    var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(self.var))
+                    var = np.ma.sum(np.ma.sum(var, axis=1), axis=1).filled(np.NaN)
+                else:
+                    var = None
             else:
-                var = None
+                sum_weights = np.ma.sum(np.ma.sum(np.ma.masked_where(self.data.mask, weights), axis=1), axis=1) /\
+                              np.sum(np.sum(~self.data.mask, axis=1), axis=1)
+                data = self.data * weights
+                data = np.ma.sum(np.ma.sum(data, axis=1), axis=1) / sum_weights
+                if self.var is not None:
+                    var = self.var * weights * weights
+                    var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(var))
+                    var = (np.ma.sum(np.ma.sum(var, axis=1), axis=1) / sum_weights / sum_weights).filled(np.NaN)
+                else:
+                    var = None
             res = Spectrum(shape=data.shape[0], wave=self.wave,
                            unit=self.unit, fscale=self.fscale)
             res.data = data
@@ -2197,7 +2257,8 @@ class Cube(CubeBase):
             # return an image
             data = np.ma.median(self.data, axis)
             if self.var is not None:
-                var = np.ma.median(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
+                var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(self.var))
+                var = np.ma.median(var, axis).filled(np.NaN)
             else:
                 var = None
             res = Image(shape=data.shape, wcs=self.wcs,
@@ -2209,8 +2270,8 @@ class Cube(CubeBase):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
             if self.var is not None:
-                var = np.ma.median(np.ma.median(np.ma.masked_invalid(self.var),
-                                                axis=1), axis=1).filled(np.NaN)
+                var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(self.var))
+                var = np.ma.median(np.ma.median(var, axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(notnoise=True, shape=data.shape[0],
