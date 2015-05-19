@@ -2141,7 +2141,9 @@ class Cube(CubeBase):
             # return an image
             data = np.ma.mean(self.data, axis)
             if self.var is not None:
-                var = np.ma.mean(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
+                var = np.ma.sum(np.ma.masked_where(self.data.mask, self.var), axis).filled(np.NaN) \
+                    / np.sum(~self.data.mask, axis)**2
+                #var = np.ma.mean(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
             else:
                 var = None
             res = Image(shape=data.shape, wcs=self.wcs,
@@ -2153,8 +2155,12 @@ class Cube(CubeBase):
             # return a spectrum
             data = np.ma.mean(np.ma.mean(self.data, axis=1), axis=1)
             if self.var is not None:
-                var = np.ma.mean(np.ma.mean(np.ma.masked_invalid(self.var),
-                                            axis=1), axis=1).filled(np.NaN)
+                var = np.ma.sum(np.ma.sum(np.ma.masked_where(self.data.mask,
+                                                             self.var),
+                                          axis=1), axis=1).filled(np.NaN) \
+                                        / np.sum(np.sum(~self.data.mask, axis=1), axis=1)**2
+                #var = np.ma.mean(np.ma.mean(np.ma.masked_invalid(self.var),
+                #                            axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(notnoise=True, shape=data.shape[0],
