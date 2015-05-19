@@ -481,6 +481,7 @@ class Source(object):
             if is_int(size):
                 size = (size, size)
         
+        size = np.array(size)
         radius = size/2./3600.0
         radius_ra = radius[1] / np.cos(np.deg2rad(self.dec))
         ra_min = self.ra - radius_ra
