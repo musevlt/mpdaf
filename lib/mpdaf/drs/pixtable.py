@@ -2054,20 +2054,18 @@ class PixTable(object):
         data = data.astype(np.float64)
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
-        stat = self.get_stat()
-        stat = stat.astype(np.float64)
         mask = maskcol.astype(np.int32)
         skyref_flux = skyref.data.data.astype(np.float64)
         skyref_lbda = skyref.wave.coord()
         skyref_n = skyref.shape
 
         result = np.empty_like(data, dtype=np.float64)
-        result_stat = np.empty_like(stat, dtype=np.float64)
+        result_stat = np.empty_like(data, dtype=np.float64)
         corr = np.empty(24 * 48, dtype=np.float64)
         npts = np.empty(24 * 48, dtype=np.int32)
 
         libCmethods.mpdaf_divide_slice_median(
-            result, result_stat, corr, npts, ifu, sli, data, stat, lbda,
+            result, result_stat, corr, npts, ifu, sli, data, lbda,
             data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n)
 
         # set pixtable data
