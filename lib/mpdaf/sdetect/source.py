@@ -9,7 +9,7 @@ import shutil
 import warnings
 
 from ..obj import Cube, Image, Spectrum
-from ..obj.objs import is_int
+from ..obj.objs import is_int, is_float
 from .catalog import Catalog
 
 emlines = {1215.67: 'Lyalpha',
@@ -474,7 +474,7 @@ class Source(object):
             white_ima = self.images['SRC_WHITE']
             size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
         else:
-            if is_int(size):
+            if is_int(size) or is_float(size):
                 size = (size, size)
         
         size = np.array(size)
