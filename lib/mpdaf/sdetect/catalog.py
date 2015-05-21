@@ -19,6 +19,10 @@ class Catalog(Table):
                  dtype=None, meta=None, copy=True, rows=None):
         Table.__init__(self, data, masked, names, dtype, meta, copy, rows)
         self.logger = logging.getLogger('mpdaf corelib')
+        if self.colnames.count('ra') != 0:
+            self.rename_column('ra', 'RA')
+        if self.colnames.count('dec') != 0:
+            self.rename_column('dec', 'DEC')
 
         
     @classmethod
