@@ -8,31 +8,31 @@ import os.path
 import shutil
 import warnings
 
-from ..obj import Cube, Image, Spectrum
+from ..obj import Cube, Image, Spectrum, gauss_image
 from ..obj.objs import is_int, is_float
 from .catalog import Catalog
 
-emlines = {1215.67: 'Lyalpha',
-           1550.0: 'CIV',
-           1909.0: 'CIII]',
-           2326.0: 'CII',
-           3726.032: '[OII]',
-           3728.8149: '[OII]2',
-           3798.6001: 'Htheta',
-           3834.6599: 'Heta',
-           3869.0: '[NeIII]3',
-           3888.7: 'Hzeta',
-           3967.0: '[NeIII]2',
-           4102.0: 'Hdelta',
-           4340.0: 'Hgamma',
-           4861.3198: 'Hbeta',
-           4959.0: '[OIII]',
-           5007.0: '[OIII]2',
-           6548.0: '[NII]',
-           6562.7998: 'Halpha',
-           6583.0: '[NII]',
-           6716.0: '[SII]',
-           6731.0: '[SII]2'}
+emlines = {1215.67: 'Lyalpha1216',
+           1550.0: 'CIV1550',
+           1909.0: 'CIII]1909',
+           2326.0: 'CII2326',
+           3726.032: '[OII]3726',
+           3728.8149: '[OII]3729',
+           3798.6001: 'Htheta3799',
+           3834.6599: 'Heta3835',
+           3869.0: '[NeIII]3869',
+           3888.7: 'Hzeta3888',
+           3967.0: '[NeIII]3967',
+           4102.0: 'Hdelta4102',
+           4340.0: 'Hgamma4340',
+           4861.3198: 'Hbeta4861',
+           4959.0: '[OIII]4959',
+           5007.0: '[OIII]5007',
+           6548.0: '[NII]6548',
+           6562.7998: 'Halpha6563',
+           6583.0: '[NII]6583',
+           6716.0: '[SII]6716',
+           6731.0: '[SII]6731'}
 
 
 def matchlines(nlines, wl, z, eml):
@@ -132,7 +132,7 @@ def crackz(nlines, wl, flux, eml):
                     ["Lya or [OII]"]
 
 class Source(object):
-    """This class describes an object.
+    """This class contains a Source object.
 
     Attributes
     ----------
@@ -147,27 +147,27 @@ class Source(object):
     spectra : :class:`dict`
               Dictionary containing spectra.
               
-              Keys gives the origin of the spectrum
+              Keys give origin of spectra
               ('tot' for total spectrum, TBC).
               
               Values are :class:`mpdaf.obj.Spectrum` object
     images  : :class:`dict`
               Dictionary containing images.
               
-              Keys gives the filter ('SRC_WHITE' for white image, TBC)
+              Keys give filter names ('SRC_WHITE' for white image, TBC)
               
               Values are :class:`mpdaf.obj.Image` object
     cubes   : :class:`dict`
                   Dictionary containing small data cubes
                   
-                  Keys gives a description of the cube
+                  Keys give a description of the cube
                   
                   Values are :class:`mpdaf.obj.Cube` objects
     """
     
     def __init__(self, header, lines=None, mag=None, z=None,
                  spectra=None, images=None, cubes=None):
-        """
+        """Classic constructor.
         """
         # FITS header
         if not ('RA' in header and 'DEC' in header 
@@ -205,6 +205,8 @@ class Source(object):
                  lines=None, mag=None, z=None,
                  spectra=None, images=None, cubes=None):
         """
+        Source constructor from a list of data.
+        
         Parameters
         ----------
         ID      : integer
@@ -221,7 +223,7 @@ class Source(object):
                   Detection probability
         confi   : integer
                   Expert confidence index
-        extra   : dict{key: value} or dict{key: (value, comment)}
+        extras  : dict{key: value} or dict{key: (value, comment)}
                   Extra keywords
         lines   : astropy.Table
                   List of lines
@@ -269,7 +271,8 @@ class Source(object):
             
     @classmethod
     def from_file(cls, filename):
-        """
+        """Source constructor from a FITS file.
+        
         Parameters
         ----------
         filename : string
@@ -326,7 +329,7 @@ class Source(object):
                                
         
     def write(self, filename):
-        """writes source in a FITS file
+        """Write the source object in a FITS file
         
         Parameters
         ----------
@@ -392,7 +395,7 @@ class Source(object):
         warnings.simplefilter("default")
         
     def info(self):
-        """Prints information.
+        """Print information.
         """
         d = {'class': 'Source', 'method': 'info'}
         for l in repr(self.header).split('\n'):
@@ -430,7 +433,7 @@ class Source(object):
             print '\n'
 
     def __getattr__(self, item):
-        """Maps values to attributes.
+        """Map values to attributes.
         """
         try:
             return self.header[item]
@@ -438,7 +441,7 @@ class Source(object):
             raise AttributeError(item)
  
     def __setattr__(self, item, value):
-        """Maps attributes to values.
+        """Map attributes to values.
         """
         if item=='header' or item=='logger' or \
            item=='lines' or item=='mag' or item=='z' or \
@@ -448,47 +451,20 @@ class Source(object):
             self.header[item] = value
             
     def add_comment(self, comment, author):
+        """Add a user comment to the FITS header of the Source object.
+        """
         i = 1
         while 'COMMENT%03d'%i in self.header:
             i += 1
         self.header['COMMENT%03d'%i] = (comment, '%s %s'%(author, str(datetime.date.today())))
     
     def remove_comment(self, ncomment):
+        """Remove a comment from the FITS header of the Source object.
+        """
         del self.header['COMMENT%03d'%ncomment]
         
-    def add_image(self, image, name, size=None):
-        """ Extracts a image centered on the source center
-        and appends it to the image dictionary.
-        
-        Parameters
-        ----------
-        image : :class:`mpdaf.obj.Image`
-                Input image MPDAF object
-        name  : string
-                Name used to distingish this image
-        size  : float or (float, float)
-                Size of the image in arcsec.
-                If None, the size of the white image extension is taken if it exists.
-        """
-        if size is None:
-            white_ima = self.images['SRC_WHITE']
-            size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
-        else:
-            if is_int(size) or is_float(size):
-                size = (size, size)
-        
-        size = np.array(size)
-        radius = size/2./3600.0
-        radius_ra = radius[1] / np.cos(np.deg2rad(self.dec))
-        ra_min = self.ra - radius_ra
-        ra_max = self.ra + radius_ra
-        dec_min = self.dec - radius[0]
-        dec_max = self.dec + radius[0]
-        subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
-        self.images[name] = subima
-        
     def add_z(self, desc, z, errz):
-        """Adds a redshift value
+        """Add a redshift value to the z table.
         
         Parameters
         ----------
@@ -513,7 +489,7 @@ class Source(object):
                 self.z.add_row([desc, z, errz])
                 
     def add_mag(self, band, m, errm):
-        """Adds a magnitude value
+        """Add a magnitude value to the mag table.
         
         Parameters
         ----------
@@ -536,10 +512,294 @@ class Source(object):
                 self.mag['MAG_ERR'][self.mag['BAND']==band] = errm
             else:
                 self.mag.add_row([band, m, errm])
+        
+    def add_image(self, image, name, size=None):
+        """ Extract an image centered on the source center
+        and append it to the images dictionary
+        
+        Extracted image saved in self.images['name'].
+        
+        Parameters
+        ----------
+        image : :class:`mpdaf.obj.Image`
+                Input image MPDAF object.
+        name  : string
+                Name used to distingish this image
+        size  : float or (float, float)
+                The size to extract in arcseconds.
+                If None, the size of the white image extension is taken if it exists.
+        """
+        if size is None:
+            try:
+                white_ima = self.images['SRC_WHITE']
+                size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
+            except:
+                try:
+                    white_ima = self.images['MUSE_WHITE']
+                    size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
+                except:
+                    raise IOError('Size of the image (in arcsec) is required')
+        else:
+            if is_int(size) or is_float(size):
+                size = (size, size)
+        
+        size = np.array(size)
+        radius = size/2./3600.0
+        radius_ra = radius[1] / np.cos(np.deg2rad(self.dec))
+        ra_min = self.ra - radius_ra
+        ra_max = self.ra + radius_ra
+        dec_min = self.dec - radius[0]
+        dec_max = self.dec + radius[0]
+        subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
+        self.images[name] = subima
+        
+    def add_white_image(self, cube, size=5):
+        """ Compute the white images from the MUSE data cube
+        and appends it to the images dictionary.
+        
+        White image saved in self.images['MUSE_WHITE'].
+        
+        Parameters
+        ----------
+        cube : :class:`mpdaf.obj.Cube`
+               MUSE data cube.
+        size : float
+               The size to extract in arcseconds.
+               By default 5x5arcsec
+        """
+        subcub = cube.subcube((self.dec, self.ra), size)
+        self.images['MUSE_WHITE'] = subcub.sum(axis=0)
+        
+    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8):
+        """Create narrow band images
+        
+        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+        
+        Narrow-band images are saved in self.images['MUSE_*'].
+        
+        Parameters
+        ----------
+        cube   : :class:`mpdaf.obj.Cube`
+                 MUSE data cube.
+        z_desc : string
+                 Redshift description.
+                 The redshift value corresponding to this description will be used.
+        eml    : dict{float: string}
+                 Full catalog of lines
+                 Dictionary: key is the wavelength value in Angtsrom,
+                 value is the name of the line.
+                 if None, the following catalog is used:
+                 eml = {1216 : 'Lyalpha1216', 1909: 'CIII]1909', 3727: '[OII]3727',
+                        4861 : 'Hbeta4861' , 5007: '[OIII]5007', 6563: 'Halpha6563',
+                        6724 : '[SII]6724'}
+        size  : float
+                The size to extract in arcseconds.    
+                If None, the size of the white image extension is taken if it exists.
+        width : float
+                 Angstrom width
+        """
+        if size is None:
+            try:
+                size = self.images['SRC_WHITE'].shape
+                pix = True
+            except:
+                try:
+                    size = self.images['MUSE_WHITE'].shape
+                    pix = True
+                except:
+                    raise IOError('Size of the image (in arcsec) is required')
+        else:
+            if is_int(size) or is_float(size):
+                size = (size, size)
+                pix = False
+            
                 
-
+        if eml is None:
+            all_lines = np.array([1216, 1909, 3727, 4861, 5007, 6563, 6724])
+            all_tags = np.array(['Lyalpha1216', 'CIII]1909', '[OII]3727', 'Hbeta4861', '[OIII]5007', 'Halpha6563', '[SII]6724'])
+        else:
+            all_lines = np.array(eml.keys())
+            all_tags = np.array(eml.values())
+                
+        subcub = cube.subcube((self.dec, self.ra), size, pix)
+        
+        z = self.z['Z'][self.z['Z_DESC']==z_desc]
+        
+        if z>0:
+            minl, maxl = subcub.wave.get_range()/(1+z)
+            useful = np.where((all_lines>minl) &  (all_lines<maxl))
+            nlines = len(useful[0])
+            if nlines>0:
+                lambda_ranges = np.empty((2, nlines))
+                lambda_ranges[0, :] = (1+z)*all_lines[useful]-width/2.0
+                lambda_ranges[1, :] = (1+z)*all_lines[useful]+width/2.0
+                tags = all_tags[useful]
+                for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
+                    self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True)
+        
+    def add_masks(self):
+        """Run SExtractor on all images present in self.images dictionary
+        to create segmentation maps. After that, the list of segmentation maps are used
+        to compute the union mask and the intersection mask and  the region
+        where no object is detected in any segmentation map is saved in the sky mask.
+        
+        Union is saved as an image of booleans in self.images['MASK_UNION']
+        
+        Intersection is saved as an image of booleans in self.images['MASK_INTER']
+        
+        Sky mask is saved as an image of booleans in self.images['MASK_SKY']
+        
+        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+        """
+        d = {'class': 'Source', 'method': 'add_masks'}
+        if 'MUSE_WHITE' in self.images:
+            from ..sdetect.sea import segmentation
+            segmentation(self)
+        else:
+            self.logger.warning('add_mask method use the MUSE_WHITE image computed by add_white_image method',
+                                extra=d)
+        
+    def extract_spectra(self, cube,
+                        tags_to_try = ['MUSE_WHITE', 'MUSE_LYALPHA1216', 'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
+                        skysub=True, psf=None):
+        """Extract spectra from the MUSE data cube and from a list of narrow-band images
+        (to define spectrum extraction apertures).
+        
+        If skysub:
+        
+            The local sky spectrum is saved in self.spectra['MUSE_SKY']
+            
+            The no-weighting spectrum is saved in self.spectra['MUSE_TOT_NOSKY']
+            
+            The weighted spectra are saved in self.spectra['*_NOSKY'] (for * in tags_to_try)
+            
+            The potential PSF weighted spectra is saved in self.spectra['MUSE_PSF_NOSKY']
+            
+        else:
+        
+            The no-weighting spectrum is saved in self.spectra['MUSE_TOT']
+            
+            The weighted spectra are saved in self.spectra['*'] (for * in tags_to_try)
+            
+            The potential PSF weighted spectra is saved in self.spectra['MUSE_PSF']
+        
+        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+        
+        Parameters
+        ----------
+        cube        : :class:`mpdaf.obj.Cube`
+                      MUSE data cube.    
+        tags_to_try : list<string>
+                      List of narrow bands images.
+        skysub      : boolean
+                      If True, a local sky subtraction is done.
+        psf         : np.array
+                      The PSF to use for PSF-weighted extraction.
+                      This can be a vector of length equal to the wavelength
+                      axis to give the FWHM of the Gaussian PSF at each
+                      wavelength (in arcsec) or a cube with the PSF to use.
+                      psf=None by default (no PSF-weighted extraction).
+        """
+        d = {'class': 'Source', 'method': 'add_masks'}
+        try:
+            object_mask = self.images['MASK_UNION'].data.data
+        except:
+            raise IOError('extract_spectra method use the MASK_UNION computed by add_mask method')
+        
+        wcs = self.images['MASK_UNION'].wcs
+        size = self.images['MASK_UNION'].shape
+        
+        subcub = cube.subcube((self.dec, self.ra), size, pix=True)
+        
+        if skysub:
+            try:
+                sky_mask = self.images['MASK_SKY'].data.data
+                if not self.images['MASK_UNION'].wcs.isEqual(wcs):
+                    raise IOError('MASK_UNION and MASK_SKY have not the same wcs')
+            except:
+                raise IOError('extract_spectra method use the MASK_SKY computed by add_mask method')
+         
+            # Get the sky spectrum to subtract
+            sky = subcub.sum(axis=(1,2), weights=sky_mask)
+            old_mask = subcub.data.mask.copy()
+            subcub.data.mask[np.where(np.tile(sky_mask,(subcub.shape[0],1,1))==0)] = True
+            sky = subcub.mean(axis=(1,2))
+            self.spectra['MUSE_SKY'] = sky
+            subcub.data.mask = old_mask
+        
+            #substract sky
+            subcub = subcub - sky
+        
+        # extract spectra
+        # select narrow bands images
+        nb_tags = list(set(tags_to_try) & set(self.images.keys()))
+        
+        # No weighting
+        spec = subcub.sum(axis=(1,2), weights=object_mask)
+        if skysub:
+            self.spectra['MUSE_TOT_NOSKY'] = spec
+        else:
+            self.spectra['MUSE_TOT'] = spec
+         
+        # Now loop over the narrow-band images we want to use. Apply
+        # the object mask and ensure that the weight map within the
+        # object mask is >=0.
+        # Weighted extractions
+        ksel = np.where(object_mask==1)
+        for tag in nb_tags:
+            if self.images[tag].wcs.isEqual(wcs):
+                weight = self.images[tag].data * object_mask
+                weight[ksel] = weight[ksel] - np.min(weight[ksel])
+                weight = weight.filled(0)
+                spec = subcub.sum(axis=(1,2), weights=weight)
+                if skysub:
+                    self.spectra[tag+'_NOSKY'] = spec
+                else:
+                    self.spectra[tag] = spec
+             
+        # PSF
+        if psf is not None:
+            if len(psf.shape)==3:
+                #PSF cube. The user is responsible for getting the
+                #dimensions right
+                if psf.shape[0] != subcub.shape[0] or \
+                   psf.shape[1] != subcub.shape[1] or \
+                   psf.shape[2] != subcub.shape[2]:
+                    msg = 'Incorrect dimensions for the PSF cube (%i,%i,%i) (it must be (%i,%i,%i)) '\
+                        %(psf.shape[0], psf.shape[1], psf.shape[2],
+                          subcub.shape[0], subcub.shape[1], subcub.shape[2])
+                    self.logger.warning(msg, extra=d)
+                    white_cube = None
+                else:
+                    white_cube = psf
+            elif len(psf.shape)==1 and psf.shape[0]==subcub.shape[0]:
+                # a Gaussian expected.
+                white_cube = np.zeros_like(subcub.data.data)
+                for l in range(subcub.shape[0]):
+                    gauss_ima = gauss_image(shape=(subcub.shape[1], subcub.shape[2]),
+                                            wcs=subcub.wcs, fwhm=(psf[l], psf[l]), peak=False)
+                    white_cube[l,:,:] = gauss_ima.data.data
+            else:
+                msg = 'Incorrect dimensions for the PSF vector (%i) (it must be (%i)) '\
+                        %(psf.shape[0], subcub.shape[0])
+                self.logger.warning(msg, extra=d)
+                white_cube = None
+            if white_cube is not None:
+                weight = white_cube * np.tile(object_mask,(subcub.shape[0],1,1))
+                spec = subcub.sum(axis=(1,2), weights=weight)
+                if skysub:
+                    self.spectra['MUSE_PSF_NOSKY'] = spec
+                else:
+                    self.spectra['MUSE_PSF'] = spec
+                # Insert the PSF weighted flux - here re-normalised? 
+                
     def crack_z(self, eml=None, nlines=np.inf):
-        """Method to estimate the best redshift matching a list of emission lines
+        """Estimate the best redshift matching the list of emission lines
+        
+         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr).
+         
+         This method saves the redshift values in self.z and lists the detected lines in self.lines.
+         self.info() could be used to print the results.
      
          Parameters
          ----------
@@ -547,12 +807,23 @@ class Source(object):
                   Full catalog of lines to test redshift
                   Dictionary: key is the wavelength value in Angtsrom,
                   value is the name of the line.
-                  if None, default catalog is used.
+                  if None, the following catalog is used:
+                  emlines = {1215.67  : 'Lyalpha1216' , 1550.0   : 'CIV1550',
+                             1909.0   : 'CIII]1909'   , 2326.0   : 'CII2326', 
+                             3726.032 : '[OII]3726'   , 3728.8149: '[OII]3729',
+                             3798.6001: 'Htheta3799'  , 3834.6599: 'Heta3835',
+                             3869.0   : '[NeIII]3869' , 3888.7   : 'Hzeta3889',
+                             3967.0   : '[NeIII]3967' , 4102.0   : 'Hdelta4102',
+                             4340.0   : 'Hgamma4340'  , 4861.3198: 'Hbeta4861',
+                             4959.0   : '[OIII]4959'  , 5007.0   : '[OIII]5007',
+                             6548.0   : '[NII6548]'   , 6562.7998: 'Halpha6563',
+                             6583.0   : '[NII]6583'   , 6716.0   : '[SII]6716',
+                             6731.0   : '[SII]6731'}
+                  
           nlines  : integer
                     estimated the redshift if the list of emission lines is inferior to this value
-              
-        Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
         """
+        #d = {'class': 'Source', 'method': 'crack_z'}
         nline_max = nlines
         if eml is None:
             eml = emlines
@@ -567,12 +838,16 @@ class Source(object):
             if nlines < nline_max:
                 #redshift
                 self.add_z('EMI', z, errz)
+                #self.logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
                 #line names
                 if 'LINE' not in self.lines.colnames:
                     col = Column(data=None, name='LINE', dtype='S20', length=len(self.lines))
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
                     self.lines['LINE'][self.lines['LBDA_OBS']==w] = name
+                #self.logger.info('crack_z: lines', extra=d)
+                #for l in self.lines.pformat():
+                #    self.logger.info(l, extra=d)
         
 class SourceList(list):
     """
@@ -580,8 +855,12 @@ class SourceList(list):
     """
     
     def write(self, name, path='.', overwrite=True):
-        """ Creates a directory named name and saves all sources files and the catalog file in this folder.
+        """ Create the directory and saves all sources files and the catalog file in this folder.
+        
         path/name.fits: catalog file
+        (In FITS table, the maximum number of fields is 999.
+        In this case, the catalog is saved as an ascci table).
+        
         path/name/nameNNNN.fits: source file (NNNN corresponds to the ID of the source)
         
         Parameters
@@ -613,6 +892,9 @@ class SourceList(list):
         if overwrite and os.path.isfile(fcat) :
             os.remove(fcat)
         cat = Catalog.from_sources(self)
-        cat.write(fcat)
-        # For FITS tables, the maximum number of fields is 999
+        try:
+            cat.write(fcat)
+            # For FITS tables, the maximum number of fields is 999
+        except:
+            cat.write(fcat.replace('.fits', '.txt'), format='ascii')
     

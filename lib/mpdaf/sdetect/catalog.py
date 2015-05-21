@@ -9,10 +9,7 @@ from astropy.table import Table, hstack
 
 class Catalog(Table):
     """This class contains a catalog of objects.
-    table : astropy.table
-            Astropy table
-            
-    astropy.table object
+       This is a subclass of Table class from astropy.table
     """
     
     def __init__(self, data=None, masked=None, names=None,
@@ -199,8 +196,11 @@ class Catalog(Table):
         Returns
         -------
         match, nomatch, nomatch2 : astropy.Table, astropy.Table, astropy.Table
+        
                                    1- match table of matched elements in RA,DEC
+                                   
                                    2- sub-table of non matched elements of the current catalog
+                                   
                                    3- sub-table of non matched elements of the catalog cat2
         """
         d = {'class': 'Catalog', 'method': 'match'}

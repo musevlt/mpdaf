@@ -41,7 +41,7 @@ class FOCUS(object):
     """
 
     def __init__(self, cube, expmap):
-        """Creates a SourceDetect3D object.
+        """Create a FOCUS object.
 
         Parameters
         ----------
@@ -55,7 +55,7 @@ class FOCUS(object):
         self.expmap = expmap
 
     def p_values(self):
-        """ computes the false detection probability cube.
+        """Compute the false detection probability cube.
         The Student cumulative distribution function
         with expmap-1 degrees of freedom is used. 
  
@@ -98,7 +98,7 @@ class FOCUS(object):
         return Cube(wcs=self.cube.wcs, wave=self.cube.wave, data=pval_t)
  
     def quick_detection(self, p_values, p0=1e-8):
-        """ detects quickly bright voxels and builds a catalog of objects.
+        """Detect quickly bright voxels and builds a catalog of objects.
  
         Algorithm from Carole Clastre (carole.clastres@univ-lyon1.fr)
  
@@ -113,7 +113,7 @@ class FOCUS(object):
         -------
         imaobj :  :class:`mpdaf.obj.Image`
                   Image containing maximum lambda value of the detected objects
-        sources : list< :class:`mpdaf.sdetect.Source` >
+        sources : :class:`mpdaf.sdetect.SourceList`
                   List of source objects.
                   Each source contains only the center of mass of the detected component
                   and the maximum wavelengths

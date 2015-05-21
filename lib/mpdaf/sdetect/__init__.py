@@ -6,4 +6,5 @@ from source import SourceList
 from catalog import Catalog
 from focus import FOCUS
 from muselet import muselet
+from sea import SEA
 
