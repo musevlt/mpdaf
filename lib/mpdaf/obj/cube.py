@@ -3359,7 +3359,7 @@ class Cube(CubeBase):
                 var = self.var[:, imin:imax, jmin:jmax].copy()
             else:
                 var = None
-            cub = Cube(wcs=self.wcs, wave=self.wave, unit=self.unit,
+            cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave, unit=self.unit,
                        data=data, var=var, fscale=self.fscale)
             return cub
         else:
