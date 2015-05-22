@@ -905,6 +905,16 @@ class PixTable(object):
                 mask |= (arr >= l1) & (arr < l2)
         return mask
 
+    def select_stacks(self, stacks, origin=None):
+        from ..MUSE import Slicer
+        d = {'class': 'PixTable', 'method': 'select_stacks'}
+        assert min(stacks) > 0
+        assert max(stacks) < 5
+        sl = sorted([Slicer.sky2ccd(i) for st in stacks
+                     for i in range(1 + 12*(st - 1), 12*st - 1)])
+        self.logger.debug('Extract stack %s -> slices %s', stacks, sl, extra=d)
+        return self.select_slices(sl, origin=origin)
+
     def select_slices(self, slices, origin=None):
         col_origin = origin if origin is not None else self.get_origin()
         col_sli = self.origin2slice(col_origin)
@@ -1172,16 +1182,6 @@ class PixTable(object):
         if isinstance(stack, (int, float)):
             stack = [stack]
 
-        if stack is not None:
-            from ..MUSE import Slicer
-            assert min(stack) > 0
-            assert max(stack) < 5
-            sli = sorted([Slicer.sky2ccd(i) for st in stack
-                          for i in range(1 + 12*(st - 1), 12*st - 1)])
-            sl = list(set(sl + sli)) if sl is not None else sli
-            self.logger.debug('Extract stack %s -> slices %s', stack, sl,
-                              extra=d)
-
         if method == 'and':
             kmask = np.ones(self.nrows, dtype=bool)
             lfunc = np.logical_and
@@ -1198,11 +1198,14 @@ class PixTable(object):
             lfunc(kmask, self.select_lambda(lbda), out=kmask)
 
         # Do the selection on the origin column
-        if (ifu is not None) or (sl is not None) or \
+        if (ifu is not None) or (sl is not None) or (stack is not None) or \
                 (xpix is not None) or (ypix is not None):
             origin = self.get_origin()
             if sl is not None:
                 lfunc(kmask, self.select_slices(sl, origin=origin), out=kmask)
+            if stack is not None:
+                lfunc(kmask, self.select_stacks(stack, origin=origin),
+                      out=kmask)
             if ifu is not None:
                 lfunc(kmask, self.select_ifus(ifu, origin=origin), out=kmask)
             if xpix is not None:
