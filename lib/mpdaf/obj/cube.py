@@ -2087,7 +2087,7 @@ class Cube(CubeBase):
 
                Other cases return None.
         weights : array_like, optional
-                  An array of weights associated with the data values. 
+                  An array of weights associated with the data values.
                   The weights array can either be 1-D (axis=(1,2))
                   or 2-D (axis=0) or of the same shape as the cube.
                   If weights=None, then all data in a are assumed to have a weight equal to one.
@@ -2117,11 +2117,12 @@ class Cube(CubeBase):
             else:
                 raise IOError('Incorrect dimensions for the weights (it must be (%i,%i,%i)) '\
                     %(self.shape[0], self.shape[1], self.shape[2]))
+
             # normalize the weights
             wmask = np.ma.masked_where(self.data.mask, np.ma.masked_where(w==0, w))
             npixels = np.sum(~wmask.mask)
             w *= (npixels/np.ma.sum(wmask))
-            
+
         if axis is None:
             if weights is None:
                 return self.data.sum() * self.fscale
@@ -3300,7 +3301,7 @@ class Cube(CubeBase):
             ima = self[k1:k2 + 1, :, :].sum(axis=0)
         else:
             ima = self[k1:k2 + 1, :, :].mean(axis=0)
-            
+
         if subtract_off:
             dl = (l2-l1)*3
             margin = 10.0
@@ -3314,7 +3315,7 @@ class Cube(CubeBase):
             ima.data = ima.data - off_im.data
             if ima.var is not None:
                 ima.var = ima.var + off_im.var
-         
+
         return ima
 
     def subcube(self, center, radius):
@@ -3742,28 +3743,16 @@ class CubeDisk(CubeBase):
                 if True, pixels outside [y_min,y_max]
                 and [x_min,x_max] are masked.
         """
-        lmin = coord[0][0]
-        y_min = coord[0][1]
-        x_min = coord[0][2]
-        lmax = coord[1][0]
-        y_max = coord[1][1]
-        x_max = coord[1][2]
+        lmin, y_min, x_min = coord[0]
+        lmax, y_max, x_max = coord[1]
+        skycrd = [[y_min, x_min], [y_min, x_max], [y_max, x_min],
+                  [y_max, x_max]]
+        pixcrd = self.wcs.sky2pix(skycrd, nearest=True)
 
-        skycrd = [[y_min, x_min], [y_min, x_max], [y_max, x_min], [y_max, x_max]]
-        pixcrd = self.wcs.sky2pix(skycrd)
-
-        imin = int(np.min(pixcrd[:, 0]))
-        if imin < 0:
-            imin = 0
-        imax = int(np.max(pixcrd[:, 0])) + 1
-        if imax > self.shape[1]:
-            imax = self.shape[1]
-        jmin = int(np.min(pixcrd[:, 1]))
-        if jmin < 0:
-            jmin = 0
-        jmax = int(np.max(pixcrd[:, 1])) + 1
-        if jmax > self.shape[2]:
-            jmax = self.shape[2]
+        imin = np.min(pixcrd[:, 0])
+        imax = np.max(pixcrd[:, 0]) + 1
+        jmin = np.min(pixcrd[:, 1])
+        jmax = np.max(pixcrd[:, 1]) + 1
 
         kmin = max(0, self.wave.pixel(lmin, nearest=True))
         kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True) + 1)
@@ -3775,27 +3764,7 @@ class CubeDisk(CubeBase):
             raise ValueError('Minimum and maximum wavelengths '
                              'are outside the spectrum range')
 
-        f = pyfits.open(self.filename, memmap=True)
-        data = f[self.data].data[kmin:kmax, imin:imax, jmin:jmax]
-        if self.var != -1:
-            var = f[self.var].data[kmin:kmax, imin:imax, jmin:jmax]
-        else:
-            self.var = None
-        f.close()
-
-        shape = np.array((data.shape[0], data.shape[1], data.shape[2]))
-
-        try:
-            wcs = self.wcs[imin:imax, jmin:jmax]
-        except:
-            wcs = None
-        try:
-            wave = self.wave[kmin:kmax]
-        except:
-            wave = None
-
-        res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit,
-                   fscale=self.fscale, data=data, var=var)
+        res = self[kmin:kmax, imin:imax, jmin:jmax]
 
         if mask:
             # mask outside pixels
