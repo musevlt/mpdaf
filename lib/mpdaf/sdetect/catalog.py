@@ -23,6 +23,8 @@ class Catalog(Table):
             self.rename_column('ra', 'RA')
         if self.colnames.count('dec') != 0:
             self.rename_column('dec', 'DEC')
+        if self.colnames.count('z') != 0:
+            self.rename_column('z', 'Z')
 
         
     @classmethod
