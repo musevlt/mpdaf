@@ -3294,7 +3294,13 @@ class Cube(CubeBase):
         """
         d = {'class': 'Cube', 'method': 'get_image'}
         l1, l2 = wave
-        k1, k2 = self.wave.pixel(wave, nearest=True).astype(int)
+        k1, k2 = self.wave.pixel(wave)
+        if k1 - int(k1) > 0.01:
+            k1 = int(k1) + 1
+        else:
+            k1 = int(k1)
+        k2 = int(k2)
+        
         msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2)
         self.logger.info(msg, extra=d)
         if is_sum:
@@ -3309,9 +3315,9 @@ class Cube(CubeBase):
             is_off = np.where(((lbdas<l1-margin) & (lbdas>l1-margin-dl/2)) |
                               ((lbdas>l2+margin) & (lbdas<l2+margin+dl/2)))
             if is_sum:
-                off_im = self[is_off, :, :].sum(axis=0)
+                off_im = self[is_off[0], :, :].sum(axis=0)
             else:
-                off_im = self[is_off, :, :].mean(axis=0)
+                off_im = self[is_off[0], :, :].mean(axis=0)
             ima.data = ima.data - off_im.data
             if ima.var is not None:
                 ima.var = ima.var + off_im.var
