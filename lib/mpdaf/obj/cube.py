@@ -2118,17 +2118,24 @@ class Cube(CubeBase):
                 raise IOError('Incorrect dimensions for the weights (it must be (%i,%i,%i)) '\
                     %(self.shape[0], self.shape[1], self.shape[2]))
 
-            # normalize the weights
+            # weights mask
             wmask = np.ma.masked_where(self.data.mask, np.ma.masked_where(w==0, w))
-            npixels = np.sum(~wmask.mask)
-            w *= (npixels/np.ma.sum(wmask))
-
+            
         if axis is None:
             if weights is None:
                 return self.data.sum() * self.fscale
             else:
                 data = self.data * w
-                return data.sum() * self.fscale
+                npix = np.sum(~self.data.mask)
+                data =  np.ma.sum(data) / npix
+                # flux conservation
+                orig_data = self.data * ~wmask.mask
+                orig_data = np.ma.sum(orig_data)
+                rr  = data / orig_data
+                med_rr = np.ma.median(rr)
+                if med_rr > 0:
+                    data /= med_rr
+                return data * self.fscale
         elif axis == 0:
             # return an image
             if weights is None:
@@ -2140,11 +2147,32 @@ class Cube(CubeBase):
                     var = None
             else:
                 data = self.data * w
-                data = np.ma.sum(data, axis)
+                npix = np.sum(~self.data.mask, axis)
+                data = np.ma.sum(data, axis) / npix
+                # flux conservation
+                orig_data = self.data * ~wmask.mask
+                orig_data = np.ma.sum(orig_data, axis)
+                rr  = data / orig_data
+                med_rr = np.ma.median(rr)
+                if med_rr > 0:
+                    data /= med_rr
                 if self.var is not None:
-                    var = self.var * w * w
+                    var = self.var * w
                     var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(var))
-                    var = np.ma.sum(var, axis).filled(np.NaN)
+                    var = np.ma.sum(var, axis) / npix
+                    dspec = np.ma.sqrt(var)
+                    # flux conservation
+                    if med_rr > 0:
+                        dspec /= med_rr
+                    orig_var = self.var * ~wmask.mask
+                    orig_var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(orig_var))
+                    orig_var = np.ma.sum(orig_var, axis)
+                    sn_orig = orig_data / np.ma.sqrt(orig_var)
+                    sn_now =  data / dspec
+                    sn_ratio = np.ma.median(sn_orig/sn_now)
+                    dspec /= sn_ratio
+                    var = dspec*dspec
+                    var = var.filled(np.NaN)
                 else:
                     var = None
             res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit,
@@ -2163,13 +2191,35 @@ class Cube(CubeBase):
                     var = None
             else:
                 data = self.data * w
-                data = np.ma.sum(np.ma.sum(data, axis=1), axis=1)
+                npix = np.sum(np.sum(~self.data.mask, axis=1), axis=1)
+                data = np.ma.sum(np.ma.sum(data, axis=1), axis=1) / npix
+                # flux conservation
+                orig_data = self.data * ~wmask.mask
+                orig_data = np.ma.sum(np.ma.sum(orig_data, axis=1), axis=1)
+                rr  = data / orig_data
+                med_rr = np.ma.median(rr)
+                if med_rr > 0:
+                    data /= med_rr
                 if self.var is not None:
-                    var = self.var * w * w
+                    var = self.var * w
                     var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(var))
-                    var = np.ma.sum(np.ma.sum(var, axis=1), axis=1).filled(np.NaN)
+                    var = np.ma.sum(np.ma.sum(var, axis=1), axis=1) / npix
+                    dspec = np.ma.sqrt(var)
+                    # flux conservation
+                    if med_rr > 0:
+                        dspec /= med_rr
+                    orig_var = self.var * ~wmask.mask
+                    orig_var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(orig_var))
+                    orig_var = np.ma.sum(np.ma.sum(orig_var, axis=1), axis=1)
+                    sn_orig = orig_data / np.ma.sqrt(orig_var)
+                    sn_now =  data / dspec
+                    sn_ratio = np.ma.median(sn_orig/sn_now)
+                    dspec /= sn_ratio
+                    var = dspec*dspec
+                    var = var.filled(np.NaN)
                 else:
                     var = None
+               
             res = Spectrum(shape=data.shape[0], wave=self.wave,
                            unit=self.unit, fscale=self.fscale)
             res.data = data
