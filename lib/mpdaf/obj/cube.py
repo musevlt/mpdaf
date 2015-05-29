@@ -2095,12 +2095,13 @@ class Cube(CubeBase):
         """
         if weights is not None:
             w = np.array(weights, dtype=np.float)
-            if len(w.shape)==3 and (w.shape[0] != self.shape[0] or \
-                                    w.shape[1] != self.shape[1] or \
-                                    w.shape[2] != self.shape[2]):
-                raise IOError('Incorrect dimensions for the weights (%i,%i,%i) (it must be (%i,%i,%i)) '\
-                    %(w.shape[0], w.shape[1], w.shape[2],
-                    self.shape[0], self.shape[1], self.shape[2]))
+            if len(w.shape)==3:
+                if (w.shape[0] != self.shape[0] or \
+                    w.shape[1] != self.shape[1] or \
+                    w.shape[2] != self.shape[2]):
+                    raise IOError('Incorrect dimensions for the weights (%i,%i,%i) (it must be (%i,%i,%i)) '\
+                                  %(w.shape[0], w.shape[1], w.shape[2],
+                                    self.shape[0], self.shape[1], self.shape[2]))
             elif len(w.shape)==2:
                 if w.shape[0] != self.shape[1] or \
                    w.shape[1] != self.shape[2]:
@@ -2265,14 +2266,13 @@ class Cube(CubeBase):
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.mean(np.ma.mean(self.data, axis=1), axis=1)
+            data = np.ma.sum(np.ma.sum(self.data, axis=1), axis=1) / \
+            np.sum(np.sum(~self.data.mask, axis=1), axis=1)
             if self.var is not None:
                 var = np.ma.sum(np.ma.sum(np.ma.masked_where(self.data.mask,
                                                              self.var),
                                           axis=1), axis=1).filled(np.NaN) \
                                         / np.sum(np.sum(~self.data.mask, axis=1), axis=1)**2
-                #var = np.ma.mean(np.ma.mean(np.ma.masked_invalid(self.var),
-                #                            axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
             res = Spectrum(notnoise=True, shape=data.shape[0],
