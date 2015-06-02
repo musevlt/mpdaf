@@ -3373,8 +3373,49 @@ class Cube(CubeBase):
                 ima.var = ima.var + off_im.var
 
         return ima
+    
+    def subcube(self, center, size, pix=False):
+        """Extracts a sub-cube
 
-    def subcube(self, center, radius):
+        Parameters
+        ----------
+        center : (float,float)
+                Center of the aperture.
+                (dec,ra) is in degrees.
+        size : float or (float,float)
+               The size to extract in arcseconds.
+        pix  : boolean
+               if True size is in pixels
+
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Cube`
+        """
+        if is_int(size) or is_float(size):
+            size = (size, size)
+        if size[0]>0 and size[1]>0:
+            center = self.wcs.sky2pix(center)[0]
+            if not pix:
+                size = size / np.abs(self.wcs.get_step()) / 3600.
+            radius = size/2.
+            imin, jmin = np.maximum(np.minimum(
+                (center - radius + 0.5).astype(int),
+                [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
+            imax, jmax = np.minimum([imin+int(size[0]+0.5), jmin+int(size[1]+0.5)],
+                                    [self.shape[1], self.shape[2]])
+            
+            data = self.data[:, imin:imax, jmin:jmax].copy()
+            if self.var is not None:
+                var = self.var[:, imin:imax, jmin:jmax].copy()
+            else:
+                var = None
+            cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave, unit=self.unit,
+                       data=data, var=var, fscale=self.fscale)
+            return cub
+        else:
+            return None
+
+    def subcube_aperture(self, center, radius):
         """Extracts a sub-cube from an aperture of fixed radius.
 
         Parameters
@@ -3382,14 +3423,13 @@ class Cube(CubeBase):
         center : (float,float)
                 Center of the aperture.
                 (dec,ra) is in degrees.
-        radius : float
+        radius : float or (float,float)
                 Radius of the aperture in arcsec.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`
         """
-        d = {'class': 'Cube', 'method': 'subcube'}
         if radius > 0:
             center = self.wcs.sky2pix(center)[0]
             radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
@@ -3397,11 +3437,8 @@ class Cube(CubeBase):
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.maximum(np.minimum(
-                (center + radius + 0.5).astype(int),
-                [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax += 1
-            jmax += 1
+            imax, jmax = np.minimum([imin+int(2*radius+0.5), jmin+int(2*radius+0.5)],
+                                    [self.shape[1], self.shape[2]])
 
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1],
@@ -3419,6 +3456,7 @@ class Cube(CubeBase):
                 var = None
             cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave, unit=self.unit,
                        data=data, var=var, fscale=self.fscale)
+            cub.data.mask = data.mask
             return cub
         else:
             return None
