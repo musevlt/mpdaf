@@ -47,7 +47,8 @@ double mpdaf_sum(double* data, int n) // passer en index
 double mpdaf_median(double* data, int n) // passer en index
 {
   qsort(data, n, sizeof(double), qsort_compare);
-  return data[n / 2];
+  if(n%2==1) return data[n / 2];
+  else return (data[n/2-1]+data[n/2])/2.0;
 }
 
 
