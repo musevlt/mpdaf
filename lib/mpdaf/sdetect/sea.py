@@ -208,7 +208,9 @@ def segmentation(source):
     setup_config_files()
     # size in arcsec
     for tag, ima in source.images.iteritems():
-        fname = '%04d-%s.fits'%(source.id, tag)
+        tag2 = tag.replace('[','').replace(']','')
+        
+        fname = '%04d-%s.fits'%(source.id, tag2)
         start_ima = ima.wcs.pix2sky([0,0])[0]
         step_ima = ima.get_step()
         prihdu = pyfits.PrimaryHDU()
