@@ -9,6 +9,7 @@ import logging
 import numpy as np
 import os.path
 import shutil
+import subprocess
 import warnings
 
 from ..obj import Cube, Image, Spectrum, gauss_image
@@ -516,6 +517,7 @@ class Source(object):
                 self.mag['MAG_ERR'][self.mag['BAND']==band] = errm
             else:
                 self.mag.add_row([band, m, errm])
+                
         
     def add_image(self, image, name, size=None):
         """ Extract an image centered on the source center
@@ -795,7 +797,179 @@ class Source(object):
                     self.spectra['MUSE_PSF_NOSKY'] = spec
                 else:
                     self.spectra['MUSE_PSF'] = spec
-                # Insert the PSF weighted flux - here re-normalised? 
+                # Insert the PSF weighted flux - here re-normalised?
+                
+    def detect_lines(self, cube, width=6, fw=[0.26, 0.7, 1., 0.7, 0.26], delta=25, size=None):
+        """
+        
+        Parameters
+        ----------
+        cube   : :class:`mpdaf.obj.Cube`
+                 MUSE data cube.
+        width : float
+                 Angstrom width of the narrow-band image
+        fw    : array of floats
+             Define the weights on the wavelength planes
+             when estimated the line-profile-weighted flux
+             in the narrow-band images
+             Its size must be equal to the lenght of the Angstrom width in pixels
+             (ie int(width/cube.wave.get_step()+0.5).
+        delta  : float
+             Size of the two median continuum estimates to be taken 
+             on each side of the narrow-band image (in MUSE wavelength planes).
+             Default is 25 Angstroms.
+        size : float
+               Size that defines the subcube from which the lines are extracted.
+               If None, the size of the white image extension is taken if it exists.
+        """
+        d = {'class': 'Source', 'method': 'detect_lines'}
+        
+        dk = int(width / cube.wave.get_step() + 0.5)
+        if len(fw) != dk:
+            self.logger.error("len(fw) != %d"%dk, extra=d)
+        try:
+            fw = np.array(fw, dtype=np.float)
+        except:
+            self.logger.error('fw is not an array of float', extra=d)
+                
+        #sextractor
+        try:
+            subprocess.check_call(['sex'])
+            cmd_sex = 'sex'
+        except OSError:
+            try:
+                subprocess.check_call(['sextractor'])
+                cmd_sex = 'sextractor'
+            except OSError:
+                raise OSError('SExtractor not found')
+        from ..sdetect.muselet import setup_config_files_nb, remove_config_files
+        
+        # extract subcub
+        if size is None:
+            try:
+                size = self.images['SRC_WHITE'].shape
+                pix = True
+            except:
+                try:
+                    size = self.images['MUSE_WHITE'].shape
+                    pix = True
+                except:
+                    raise IOError('Size of the image (in arcsec) is required')
+        else:
+            if is_int(size) or is_float(size):
+                size = (size, size)
+                pix = False
+            
+        subcub = cube.subcube((self.dec, self.ra), size, pix)
+        
+        # run sextractor
+        setup_config_files_nb()
+        k1 = dk/2
+        k2 = dk-k1
+        kdelta = int(delta / subcub.wave.get_step() + 0.5)
+        fwcube = np.ones((dk, subcub.shape[1], subcub.shape[2])) * fw[:, np.newaxis, np.newaxis]
+        
+        #inv_variance
+        fullvar_data = np.ma.masked_invalid(1.0 / subcub[2: subcub.shape[0] - 3, :, :].var.mean(axis=0))
+        fullvar = Image(wcs=subcub.wcs, data=np.ma.filled(fullvar_data, np.nan),
+                        shape=subcub.shape, fscale=subcub.fscale ** 2.0)
+        fullvar.write('inv_variance.fits', savemask='nan')
+        
+        
+        yc, xc = subcub.wcs.sky2pix([self.dec, self.ra])[0]
+        
+        for k in range(k1, subcub.shape[0] - k2):
+            leftmin = max(0, k - k1 - kdelta)
+            leftmax = k - k1
+            rightmin = k + k2
+            rightmax = min(subcub.shape[0], k + k2 + kdelta)
+            imslice = np.ma.average(subcub.data[k - k1:k + k2, :, :],
+                                    weights=fwcube / subcub.var[k - k1:k + k2, :, :],
+                                    axis=0)
+            if(leftmax == 1):
+                contleft = subcub.data.data[0, :, :]
+            elif(leftmax > leftmin + 1):
+                contleft = np.median(subcub.data.data[leftmin:leftmax, :, :], axis=0)
+            elif(rightmax == subcub.shape[0]):
+                contleft = subcub.data.data[-1, :, :]
+            else:
+                contleft = subcub.data.data[0, :, :]
+            if(rightmax > rightmin):
+                contright = np.median(subcub.data.data[rightmin:rightmax, :, :], axis=0)
+            else:
+                contright = subcub.data.data[0, :, :]
+            sizeleft = leftmax - leftmin
+            sizeright = rightmax - rightmin
+            contmean = (sizeleft * contleft + sizeright * contright) / (sizeleft + sizeright)
+            
+            imnb = Image(wcs=subcub.wcs, fscale=subcub.fscale,
+                         data=np.ma.filled(imslice - contmean, np.nan),
+                         shape=(subcub.shape[1],subcub.shape[2]))
+            fname = "%04d.fits" % k
+            imnb.write(fname, savemask='nan')
+            
+            catalogFile = "%04d.cat" % k
+            
+            command = [cmd_sex, '-CATALOG_TYPE', 'ASCII_HEAD', '-CATALOG_NAME', catalogFile, fname]
+            subprocess.call(command)
+            
+            ll = subcub.wave.coord(k)
+            t = Table.read(catalogFile, format='ascii.sextractor')
+            for line in t:
+                xline = line['X_IMAGE']
+                yline = line['Y_IMAGE']
+                dist = (xline - xc) ** 2.0 + (yline - yc) ** 2.0
+                print dist
+                fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
+                eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
+                if(fline > 5.0 * eline):
+                    flag = 1
+                else:
+                    if(fline < -5 * eline):
+                        flag = -2
+                    else:
+                        flag = -1
+                if flag==1:
+                    #add line ['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR']
+                    #ll, width, fline, eline
+                    if self.lines is None:
+                        self.lines = Table(names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
+                                           dtype=['<f8', '<f8','<f8', '<f8'])
+                        self.lines['LBDA_OBS'].format = '.2f'
+                        self.lines['LBDA_OBS_ERR'].format = '.2f'
+                        self.lines['FLUX'].format = '.4f'
+                        self.lines['FLUX_ERR'].format = '.4f'
+                        self.lines.add_row([ll, width, fline, eline])
+                    else:
+                        if 'LBDA_OBS' not in self.lines.colnames:
+                            col = Column(data=None, name='LBDA_OBS',
+                                         dtype='<f8',length=len(self.lines))
+                            self.lines.add_column(col)
+                        if 'LBDA_OBS_ERR' not in self.lines.colnames:
+                            col = Column(data=None, name='LBDA_OBS_ERR',
+                                         dtype='<f8',length=len(self.lines))
+                            self.lines.add_column(col)
+                        if 'FLUX' not in self.lines.colnames:
+                            col = Column(data=None, name='FLUX',
+                                         dtype='<f8',length=len(self.lines))
+                            self.lines.add_column(col)
+                        if 'FLUX_ERR' not in self.lines.colnames:
+                            col = Column(data=None, name='FLUX_ERR',
+                                         dtype='<f8',length=len(self.lines))
+                            self.lines.add_column(col)
+                        row = [None] * len(self.lines.columns)
+                        row[self.lines.colnames.index('LBDA_OBS')] = ll
+                        row[self.lines.colnames.index('LBDA_OBS_ERR')] = width
+                        row[self.lines.colnames.index('FLUX')] = fline
+                        row[self.lines.colnames.index('FLUX_ERR')] = eline
+                        self.lines.add_row(row)
+            
+            # remove source file
+            os.remove(fname)
+            # remove catalog file
+            os.remove(catalogFile)
+        os.remove('inv_variance.fits')
+        remove_config_files()
                 
     def crack_z(self, eml=None, nlines=np.inf):
         """Estimate the best redshift matching the list of emission lines
