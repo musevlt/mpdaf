@@ -1,6 +1,9 @@
 from astropy.io import fits as pyfits
 from astropy.table import Table, Column
 
+from matplotlib import cm
+from matplotlib.patches import Ellipse
+
 import datetime
 import logging
 import numpy as np
@@ -130,6 +133,7 @@ def crackz(nlines, wl, flux, eml):
                 ksel = np.argsort(flux)[-1]
                 return -9999.0, -9999.0, 1, [wl[ksel]], [flux[ksel]], \
                     ["Lya or [OII]"]
+                    
 
 class Source(object):
     """This class contains a Source object.
@@ -848,6 +852,90 @@ class Source(object):
                 #self.logger.info('crack_z: lines', extra=d)
                 #for l in self.lines.pformat():
                 #    self.logger.info(l, extra=d)
+                
+    def show_ima(self, ax, name, showcenter=None,
+                 cuts=None, cmap=cm.gray_r, **kwargs):
+        """
+        Show image.
+        
+        Parameters
+        ----------
+        ax         : matplotlib.axes._subplots.AxesSubplot
+                     Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+        name       : string
+                     Name of image to display.
+        showcenter : (float, string)
+                     radius in arcsec and color used to plot a circle around the center of the source.
+        cuts       : (float, float)
+                     Minimum and maximum values to use for the scaling.
+        cmap       : matplotlib.cm
+                     Color map.
+        kwargs     : matplotlib.artist.Artist
+                     kwargs can be used to set additional plotting properties.
+        """
+        if name not in self.images.keys():
+            raise ValueError,'Image %s not found'%(name)
+        zima = self.images[name]
+        if cuts == None:
+            vmin = None
+            vmax = None
+        else:
+            vmin, vmax = cuts 
+        if 'title' not in kwargs:
+            kwargs['title'] = '%s'%(name)
+        zima.plot(vmin=vmin, vmax=vmax, cmap=cmap, ax=ax, **kwargs)
+        if showcenter is not None:
+            rad, col = showcenter
+            pix = zima.wcs.sky2pix((self.DEC, self.RA))[0]
+            rpix = rad/(3600.0*zima.get_step()[0])
+            ell = Ellipse((pix[1],pix[0]), 2*rpix, 2*rpix, 0, fill=False)
+            ax.add_artist(ell)
+            ell.set_clip_box(ax.bbox)
+            ell.set_alpha(1)
+            ell.set_edgecolor(col)  
+        ax.axis('off')
+        return  
+    
+    def show_spec(self, ax, name, cuts=None, zero=False, sky=None, lines=None, **kwargs): 
+        """Display a spectra.
+         
+        Parameters
+        ----------
+        ax         : matplotlib.axes._subplots.AxesSubplot
+                     Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+        name       : string
+                     Name of spectra to display.
+        cuts       : (float, float)
+                     Minimum and maximum values to use for the scaling.
+        zero       : float
+                     If True, the 0 flux line is plotted in black.
+        sky        : :class:`mpdaf.obj.Spectrum`
+                     Sky spectra to overplot (default None).
+        lines      : string
+                     Name of a columns of the lines table containing wavelength values.
+                     If not None, overplot red vertical lines at the given wavelengths.
+        kwargs     : matplotlib.artist.Artist
+                     kwargs can be used to set additional plotting properties.
+        """
+        spec = self.spectra[name]
+        spec.plot(ax=ax, **kwargs)
+        if zero:
+            ax.axhline(0, color='k')
+        if cuts is not None:
+            ax.set_ylim(cuts)
+        if sky is not None:
+            ax2 = ax.twinx()
+            if 'lmin' in kwargs:
+                sky.plot(ax=ax2, color='k', alpha=0.2, lmin=kwargs['lmin'], lmax=kwargs['lmax'])
+            else:
+                sky.plot(ax=ax2, color='k', alpha=0.2)
+            ax2.axis('off')
+        if lines is not None:
+            wavelist = self.lines[name]
+            for lbda in wavelist:
+                ax.axvline(lbda, color='r', **kwargs)
+        return 
+    
         
 class SourceList(list):
     """
