@@ -1,11 +1,14 @@
 
 from astropy.coordinates import SkyCoord, search_around_sky
+from astropy.table import Table, hstack
 from astropy import units as u
+
+from matplotlib.patches import Ellipse
 
 import logging
 import numpy as np
 
-from astropy.table import Table, hstack
+
 
 class Catalog(Table):
     """This class contains a catalog of objects.
@@ -220,4 +223,133 @@ class Catalog(Table):
         nomatch = self[id1_notin_2]
         nomatch2 = cat2[id2_notin_1]
         return match, nomatch, nomatch2
+    
+    def select(self, wcs, ra='RA', dec='DEC'):
+        """ Selected all sources from catalog which are inside the WCS of image
+        and return a new catalog.
+        
+        Parameters
+        ----------
+        wcs : :class:`mpdaf.obj.WCS`
+              Image WCS
+        ra  : string
+              Name of the column that contains RA values
+        dec : string
+              Name of the column that contains DEC values
+        
+        Returns
+        -------
+        out : :class:`mpdaf.sdetect.Catalog`
+        """
+        dec1,ra1 = wcs.get_start()
+        dec2,ra2 = wcs.get_end()
+        k = np.where((self[ra]>=ra2) & (self[ra]<=ra1) & (self[dec]>=dec1) & (self[dec]<=dec2))
+        return self[k]
+    
+    def plot_symb(self, ax, wcs, ra='RA', dec='DEC', symb=0.4, col='k', alpha=1.0, **kwargs):
+        """This function plots the sources location from the catalog
+        
+        Parameters
+        ----------
+        ax         : matplotlib.axes._subplots.AxesSubplot
+                     Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+        wcs : :class:`mpdaf.obj.WCS`
+              Image WCS
+        ra  : string
+              Name of the column that contains RA values
+        dec : string
+              Name of the column that contains DEC values
+        symb : list or string or float
+               
+               - List of 3 columns names containing FWHM1,
+               FWHM2 and ANGLE values to define the ellipse of each source.
+               - Column name containing value that will be used
+               to define the circle size of each source.
+               - float in the case of circle with constant size in arcsec
+        col : string
+              Symbol color.
+        alpha : float
+                Symbol transparency
+        kwargs     : matplotlib.artist.Artist
+                     kwargs can be used to set additional plotting properties.
+        """
+        if type(symb) in [list,tuple] and len(symb) == 3:
+            stype = 'ellipse'
+            fwhm1,fwhm2,angle = symb
+        elif type(symb) is str:
+            stype = 'circle'
+            fwhm = symb
+        elif type(symb) in [int, float]:
+            stype = 'fix'
+            size = symb
+        else:
+            raise IOError, 'wrong symbol'
+        
+        if ra not in self.colnames:
+            raise IOError('column %s not found in catalog'%ra)
+        if dec not in self.colnames:
+            raise IOError('column %s not found in catalog'%dec)
+
+        for src in self:
+            cen = wcs.sky2pix([src[dec],src[ra]])[0]
+            if stype == 'ellipse':
+                f1 = src[fwhm1]/(3600.0*wcs.get_step()[0]) #/cos(dec) ?
+                f2 = src[fwhm2]/(3600.0*wcs.get_step()[1])
+                pa = src[angle]*180/np.pi            
+            elif stype == 'circle':
+                f1 = src[fwhm]/(3600.0*wcs.get_step()[0])
+                f2 = f1
+                pa = 0
+            elif stype == 'fix':
+                f1 = size/(3600.0*wcs.get_step()[0])
+                f2 = f1
+                pa = 0
+            ell = Ellipse((cen[1],cen[0]), 2*f1, 2*f2, pa, fill=False)
+            ax.add_artist(ell)
+            ell.set_clip_box(ax.bbox)
+            ell.set_alpha(alpha)
+            ell.set_edgecolor(col)
+            
+    def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2, alpha=0.5, col='k', **kwargs):
+        """ This function display the id of the catalog
+        
+        Parameters
+        ----------
+        ax         : matplotlib.axes._subplots.AxesSubplot
+                     Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+        wcs : :class:`mpdaf.obj.WCS`
+              Image WCS
+        iden : string
+               Name of the column that contains ID values
+        ra  : string
+              Name of the column that contains RA values
+        dec : string
+              Name of the column that contains DEC values
+        symb : float
+               Size of the circle in arcsec
+        col : string
+              Symbol color.
+        alpha : float
+                Symbol transparency
+        kwargs     : matplotlib.artist.Artist
+                     kwargs can be used to set additional plotting properties.
+        """
+        if ra not in self.colnames:
+            raise IOError('column %s not found in catalog'%ra)
+        if dec not in self.colnames:
+            raise IOError('column %s not found in catalog'%dec)
+        if iden not in self.colnames:
+            raise IOError('column %s not found in catalog'%iden)
+        
+        cat = self.select(wcs)
+        size = 2*symb/(3600.0*wcs.get_step()[0])
+        for src in cat:
+            cen = wcs.sky2pix([src[dec],src[ra]])[0]
+            ax.text(cen[1], cen[0]+size, src[iden], ha='center', color=col, **kwargs)
+            ell = Ellipse((cen[1],cen[0]), size, size, 0, fill=False) 
+            ax.add_artist(ell)
+            ell.set_clip_box(ax.bbox)
+            ell.set_alpha(alpha)
+            ell.set_edgecolor(col) 
+            
     
