@@ -104,6 +104,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         logger.info("muselet - Opening: " + cubename, extra=d)
         c = Cube(cubename)
         
+        mvar = np.ma.masked_invalid(c.var)
+        
         imsum = c[0, :, :]
         size1 = c.shape[0]
         size2 = c.shape[1]
@@ -112,7 +114,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         nsfilter = int(size1 / 3.0)
         
         logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images", extra=d)
-        weight_data = np.ma.average(c.data[1:size1 - 1, :, :], weights=1. / c.var[1:size1 - 1, :, :], axis=0)
+        weight_data = np.ma.average(c.data[1:size1 - 1, :, :], weights=1. / mvar[1:size1 - 1, :, :], axis=0)
         weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), shape=imsum.shape, fscale=imsum.fscale)
         weight.write('white.fits', savemask='nan')
 
@@ -120,9 +122,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), shape=imsum.shape, fscale=imsum.fscale ** 2.0)
         fullvar.write('inv_variance.fits', savemask='nan')
 
-        bdata = np.ma.average(c.data[1:nsfilter, :, :], weights=1. / c.var[1:nsfilter, :, :], axis=0)
-        gdata = np.ma.average(c.data[nsfilter:2 * nsfilter, :, :], weights=1. / c.var[nsfilter:2 * nsfilter, :, :], axis=0)
-        rdata = np.ma.average(c.data[2 * nsfilter:size1 - 1, :, :], weights=1. / c.var[2 * nsfilter:size1 - 1, :, :], axis=0)
+        bdata = np.ma.average(c.data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)
+        gdata = np.ma.average(c.data[nsfilter:2 * nsfilter, :, :], weights=1. / mvar[nsfilter:2 * nsfilter, :, :], axis=0)
+        rdata = np.ma.average(c.data[2 * nsfilter:size1 - 1, :, :], weights=1. / mvar[2 * nsfilter:size1 - 1, :, :], axis=0)
         r = Image(wcs=imsum.wcs, data=np.ma.filled(rdata, np.nan), shape=imsum.shape, fscale=imsum.fscale)
         g = Image(wcs=imsum.wcs, data=np.ma.filled(gdata, np.nan), shape=imsum.shape, fscale=imsum.fscale)
         b = Image(wcs=imsum.wcs, data=np.ma.filled(bdata, np.nan), shape=imsum.shape, fscale=imsum.fscale)
@@ -144,7 +146,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             leftmax = k - 2
             rightmin = k + 3
             rightmax = min(size1, k + 3 + delta)
-            imslice = np.ma.average(c.data[k - 2:k + 3, :, :], weights=fwcube / c.var[k - 2:k + 3, :, :], axis=0)
+            imslice = np.ma.average(c.data[k - 2:k + 3, :, :], weights=fwcube / mvar[k - 2:k + 3, :, :], axis=0)
             if(leftmax == 1):
                 contleft = c.data.data[0, :, :]
             elif(leftmax > leftmin + 1):
