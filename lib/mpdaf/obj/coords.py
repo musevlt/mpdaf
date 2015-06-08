@@ -312,7 +312,7 @@ class WCS(object):
             dec = sexa[0][0]
             # step in arcsec
             cdelt = self.get_step()
-            dy = np.abs(cdelt[0] * 3600)
+            dy = np.abs(cdelt[0] * 3600)*np.cos(np.deg2rad(pixsky[0][0]))
             dx = np.abs(cdelt[1] * 3600)
             sizex = self.naxis1 * dx
             sizey = self.naxis2 * dy
