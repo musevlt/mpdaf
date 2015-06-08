@@ -281,6 +281,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                             emagB = tBGR['MAGERR_APER_B'][j]
                             emagG = tBGR['MAGERR_APER_G'][j]
                             emagR = tBGR['MAGERR_APER_R'][j]
+                            xline=tBGR['X_IMAGE'][j]
+                            yline=tBGR['Y_IMAGE'][j]
                             flag = 1
                     else:
                         if(fline < -5 * eline):
@@ -333,6 +335,12 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         # Sources list
         continuum_lines = SourceList()
         origin=('muselet', __version__, cubename)
+
+
+        #write all continuum lines here:catalog C
+	continuum_nomerging=SourceList()
+        #....
+
         for r in range(maxidc + 1):
             lbdas = []
             fluxes = []
@@ -340,7 +348,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             for i in range(nC):
                 if (C_idmin[i] == r) and (flags[i] == 1):
                     if len(lbdas) == 0:
-                        dec, ra = c.wcs.pix2sky([C_yline[i], C_xline[i]])[0]
+                        dec, ra = c.wcs.pix2sky([C_yline[i]-1, C_xline[i]-1])[0]
                         s = Source.from_data(ID=r, ra=ra, dec=dec, origin=origin)
                         s.add_mag('MUSEB', C_magB[i], C_emagB[i])
                         s.add_mag('MUSEG', C_magG[i], C_emagG[i])
@@ -395,6 +403,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 S2_xline.append(S_xline[i])
                 S2_yline.append(S_yline[i])
                 S2_catID.append(S_catID[i])
+
+        #output single lines catalogs here:S2_ll,S2_fline,S2_eline,S2_xline,S2_yline,S2_catID
+        #...
  
         # List of single lines
         # Merging single lines of the same object
@@ -406,7 +417,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 lbdas = []
                 fluxes = []
                 err_fluxes = []
-                dec, ra = c.wcs.pix2sky([S2_yline[i], S2_xline[i]])[0]
+                dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1])[0]
                 s = Source.from_data(ID=i, ra=ra, dec=dec, origin=origin)
                 lbdas.append(S2_ll[i])
                 fluxes.append(S2_fline[i])
