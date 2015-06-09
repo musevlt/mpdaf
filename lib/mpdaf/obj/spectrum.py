@@ -152,14 +152,14 @@ class Gauss1D:
         self.dof = dof
 
     def copy(self):
-        """Copies Gauss1D object in a new one and returns it."""
+        """Copy Gauss1D object in a new one and returns it."""
         res = Gauss1D(self.lpeak, self.peak, self.flux, self.fwhm,
                       self.cont, self.err_lpeak, self.err_peak,
                       self.err_flux, self.err_fwhm, self.chisq, self.dof)
         return res
 
     def print_param(self):
-        """Prints Gaussian parameters."""
+        """Print Gaussian parameters."""
         d = {'class': 'Gauss1D', 'method': 'print_param'}
 
         msg = 'Gaussian center = %g (error:%g)' % (self.lpeak, self.err_lpeak)
@@ -234,7 +234,7 @@ class Spectrum(object):
     def __init__(self, filename=None, ext=None, notnoise=False, shape=101,
                  wave=None, unit=None, data=None, var=None,
                  fscale=1.0):
-        """Creates a Spectrum object.
+        """Create a Spectrum object.
 
         Parameters
         ----------
@@ -420,7 +420,7 @@ class Spectrum(object):
             self.data = np.ma.masked_invalid(self.data)
 
     def copy(self):
-        """Returns a new copy of a Spectrum object."""
+        """Return a new copy of a Spectrum object."""
         spe = Spectrum()
         spe.filename = self.filename
         spe.unit = self.unit
@@ -443,7 +443,7 @@ class Spectrum(object):
         return spe
 
     def clone(self, var=False):
-        """Returns a new spectrum of the same shape and coordinates, filled
+        """Return a new spectrum of the same shape and coordinates, filled
         with zeros.
 
         Parameters
@@ -464,7 +464,7 @@ class Spectrum(object):
         return spe
     
     def get_data_hdu(self, name='DATA', fscale=None, savemask='dq'):
-        """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
+        """ Return astropy.io.fits.ImageHDU corresponding to the DATA extension
         
         Parameters
         ----------
@@ -524,7 +524,7 @@ class Spectrum(object):
         return imahdu
     
     def get_stat_hdu(self, name='STAT', fscale=None):
-        """ Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
+        """ Return astropy.io.fits.ImageHDU corresponding to the STAT extension
         
         Parameters
         ----------
@@ -558,7 +558,7 @@ class Spectrum(object):
             return hdu
 
     def write(self, filename, fscale=None, savemask='dq'):
-        """Saves the object in a FITS file.
+        """Save the object in a FITS file.
 
         Parameters
         ----------
@@ -628,7 +628,7 @@ class Spectrum(object):
         self.filename = filename
 
     def info(self):
-        """Prints information."""
+        """Print information."""
         d = {'class': 'Spectrum', 'method': 'info'}
         if self.filename != None:
             msg = 'spectrum of %i elements (%s)' % (self.shape, self.filename)
@@ -656,7 +656,7 @@ class Spectrum(object):
             self.wave.info()
 
     def __le__(self, item):
-        """Masks data array where greater than a given value (operator <=).
+        """Mask data array where greater than a given value (operator <=).
 
 Parameters
 ----------
@@ -673,7 +673,7 @@ out : Spectrum object.
         return result
 
     def __lt__(self, item):
-        """Masks data array where greater or equal than a given value
+        """Mask data array where greater or equal than a given value
         (operator.
 
         <).
@@ -694,7 +694,7 @@ out : Spectrum object.
         return result
 
     def __ge__(self, item):
-        """Masks data array where less than a given value (operator >=).
+        """Mask data array where less than a given value (operator >=).
 
 Parameters
 ----------
@@ -711,7 +711,7 @@ out : Spectrum object.
         return result
 
     def __gt__(self, item):
-        """Masks data array where less or equal than a given value (operator.
+        """Mask data array where less or equal than a given value (operator.
 
         >).
 
@@ -731,7 +731,7 @@ out : Spectrum object.
         return result
 
     def resize(self):
-        """Resizes the spectrum to have a minimum number of masked values."""
+        """Resize the spectrum to have a minimum number of masked values."""
         if np.ma.count_masked(self.data) != 0:
             ksel = np.where(self.data.mask == False)
             try:
@@ -1239,7 +1239,7 @@ out : Spectrum or Cube object.
                 return None
 
     def __pow__(self, other):
-        """Computes the power exponent of data extensions (operator \*\*).
+        """Compute the power exponent of data extensions (operator \*\*).
         """
         if self.data is None:
             raise ValueError('empty data array')
@@ -1252,7 +1252,7 @@ out : Spectrum or Cube object.
         return res
 
     def _sqrt(self):
-        """Computes the positive square-root of data extension.
+        """Compute the positive square-root of data extension.
         """
         if self.data is None:
             raise ValueError('empty data array')
@@ -1261,7 +1261,7 @@ out : Spectrum or Cube object.
         self.data = np.ma.sqrt(self.data) / np.sqrt(self.fscale)
 
     def sqrt(self):
-        """Returns a spectrum containing the positive
+        """Return a spectrum containing the positive
         square-root of data extension
         """
         res = self.copy()
@@ -1269,20 +1269,20 @@ out : Spectrum or Cube object.
         return res
 
     def _abs(self):
-        """Computes the absolute value of data extension."""
+        """Compute the absolute value of data extension."""
         if self.data is None:
             raise ValueError('empty data array')
         self.data = np.ma.abs(self.data)
 
     def abs(self):
-        """Returns a spectrum containing the absolute value of data
+        """Return a spectrum containing the absolute value of data
         extension."""
         res = self.copy()
         res._abs()
         return res
 
     def __getitem__(self, item):
-        """ Returns the corresponding value or sub-spectrum.
+        """ Return the corresponding value or sub-spectrum.
         """
         if is_int(item):
             return self.data[item] * self.fscale
@@ -1306,8 +1306,8 @@ out : Spectrum or Cube object.
             raise ValueError('Operation forbidden')
 
     def get_lambda(self, lmin, lmax=None):
-        """ Returns the flux value corresponding to a wavelength,
-or returns the sub-spectrum corresponding to a wavelength range.
+        """ Return the flux value corresponding to a wavelength,
+or return the sub-spectrum corresponding to a wavelength range.
 
 Parameters
 ----------
@@ -1334,7 +1334,7 @@ out : float or Spectrum
                 return self[pix_min:pix_max]
 
     def get_step(self):
-        """Returns the wavelength step.
+        """Return the wavelength step.
 
         Results
         -------
@@ -1346,7 +1346,7 @@ out : float or Spectrum
             return None
 
     def get_start(self):
-        """Returns the wavelength value of the first pixel.
+        """Return the wavelength value of the first pixel.
 
         Results
         -------
@@ -1358,7 +1358,7 @@ out : float or Spectrum
             return None
 
     def get_end(self):
-        """Returns the wavelength value of the last pixel.
+        """Return the wavelength value of the last pixel.
 
         Results
         -------
@@ -1370,7 +1370,7 @@ out : float or Spectrum
             return None
 
     def get_range(self):
-        """Returns the wavelength range [Lambda_min,Lambda_max].
+        """Return the wavelength range [Lambda_min,Lambda_max].
 
         Results
         -------
@@ -1382,12 +1382,12 @@ out : float or Spectrum
             return None
 
     def get_np_data(self):
-        """Returns numpy masked array containing the flux multiplied by scaling
+        """Return numpy masked array containing the flux multiplied by scaling
         factor."""
         return self.data * self.fscale
 
     def __setitem__(self, key, other):
-        """Sets the corresponding part of data."""
+        """Set the corresponding part of data."""
         if self.data is None:
             raise ValueError('empty data array')
         try:
@@ -1407,7 +1407,7 @@ out : float or Spectrum
                 raise IOError('Operation forbidden')
 
     def set_wcs(self, wave):
-        """Sets the world coordinates.
+        """Set the world coordinates.
 
         Parameters
         ----------
@@ -1422,7 +1422,7 @@ out : float or Spectrum
         self.wave.shape = self.shape
 
     def set_var(self, var=None):
-        """Sets the variance array.
+        """Set the variance array.
 
         Parameters
         ----------
@@ -1439,7 +1439,7 @@ out : float or Spectrum
                 raise ValueError('var and data have not the same dimensions.')
 
     def mask(self, lmin=None, lmax=None, inside=True):
-        """Masks the spectrum inside/outside [lmin,lmax].
+        """Mask the spectrum inside/outside [lmin,lmax].
 
         Parameters
         ----------
@@ -1472,12 +1472,12 @@ out : float or Spectrum
                 self.data[pix_max + 1:] = np.ma.masked
 
     def unmask(self):
-        """Unmasks the spectrum (just invalid data (nan,inf) are masked)."""
+        """Unmask the spectrum (just invalid data (nan,inf) are masked)."""
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
 
     def mask_variance(self, threshold):
-        """Masks pixels with a variance upper than threshold value.
+        """Mask pixels with a variance upper than threshold value.
 
         Parameters
         ----------
@@ -1492,7 +1492,7 @@ out : float or Spectrum
             self.data[ksel] = np.ma.masked
 
     def mask_selection(self, ksel):
-        """Masks pixels corresponding to the selection.
+        """Mask pixels corresponding to the selection.
 
         Parameters
         ----------
@@ -1502,7 +1502,7 @@ out : float or Spectrum
         self.data[ksel] = np.ma.masked
 
     def _interp(self, wavelengths, spline=False):
-        """returns the interpolated values corresponding to the wavelength
+        """return the interpolated values corresponding to the wavelength
         array.
 
         Parameters
@@ -1543,7 +1543,7 @@ out : float or Spectrum
             return f(wavelengths)
 
     def _interp_data(self, spline=False):
-        """Returns data array with interpolated values for masked pixels.
+        """Return data array with interpolated values for masked pixels.
 
         Parameters
         ----------
@@ -1563,7 +1563,7 @@ out : float or Spectrum
             return data
 
     def interp_mask(self, spline=False):
-        """Interpolates masked pixels.
+        """Interpolate masked pixels.
 
         Parameters
         ----------
@@ -1575,7 +1575,7 @@ out : float or Spectrum
         self.data = np.ma.masked_invalid(self._interp_data(spline))
 
     def _rebin_factor_(self, factor):
-        """Shrinks the size of the spectrum by factor. New size is an integer
+        """Shrink the size of the spectrum by factor. New size is an integer
         multiple of the original size.
 
         Parameters
@@ -1600,7 +1600,7 @@ out : float or Spectrum
             self.wave = None
 
     def _rebin_factor(self, factor, margin='center'):
-        """Shrinks the size of the spectrum by factor.
+        """Shrink the size of the spectrum by factor.
 
         Parameters
         ----------
@@ -1702,7 +1702,7 @@ out : float or Spectrum
             pass
 
     def rebin_factor(self, factor, margin='center'):
-        """Returns a spectrum that shrinks the size of the current spectrum by
+        """Return a spectrum that shrinks the size of the current spectrum by
         factor.
 
         Parameters
@@ -1729,7 +1729,7 @@ out : float or Spectrum
         return res
 
     def _rebin_median_(self, factor):
-        """Shrinks the size of the spectrum by factor. Median values used. New
+        """Shrink the size of the spectrum by factor. Median values used. New
         size is an integer multiple of the original size.
 
         Parameters
@@ -1752,7 +1752,7 @@ out : float or Spectrum
             self.wave = None
 
     def rebin_median(self, factor, margin='center'):
-        """Shrinks the size of the spectrum by factor. Median values are used.
+        """Shrink the size of the spectrum by factor. Median values are used.
 
         Parameters
         ----------
@@ -1799,7 +1799,7 @@ out : float or Spectrum
 
     def _rebin(self, step, start=None, shape=None,
                spline=False, notnoise=False):
-        """Rebins spectrum data to different wavelength step size.
+        """Rebin spectrum data to different wavelength step size.
 Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
 
 Parameters
@@ -1871,7 +1871,7 @@ notnoise : boolean
 
     def rebin(self, step, start=None, shape=None,
               spline=False, notnoise=False):
-        """Returns a spectrum with data rebin to different wavelength step size.
+        """Return a spectrum with data rebin to different wavelength step size.
 Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
 
 Parameters
@@ -1897,7 +1897,7 @@ out : Spectrum
         return res
 
     def mean(self, lmin=None, lmax=None, weight=True, spline=False):
-        """Computes the mean flux value over a wavelength range.
+        """Compute the mean flux value over a wavelength range.
 
         Parameters
         ----------
@@ -1940,7 +1940,7 @@ out : Spectrum
         return flux
 
     def sum(self, lmin=None, lmax=None, weight=True, spline=False):
-        """Sums the flux value over [lmin,lmax].
+        """Sum the flux value over [lmin,lmax].
 
         Parameters
         ----------
@@ -1982,7 +1982,7 @@ out : Spectrum
         return flux
 
     def integrate(self, lmin=None, lmax=None, spline=False):
-        """Integrates the flux value over [lmin,lmax].
+        """Integrate the flux value over [lmin,lmax].
 
         Parameters
         ----------
@@ -2014,7 +2014,7 @@ out : Spectrum
 
     def poly_fit(self, deg, weight=True, maxiter=0,
                  nsig=(-3.0, 3.0), verbose=False):
-        """Performs polynomial fit on normalized spectrum and returns
+        """Perform polynomial fit on normalized spectrum and returns
         polynomial coefficients.
 
         Parameters
@@ -2090,7 +2090,7 @@ out : Spectrum
         return p * self.fscale
 
     def poly_val(self, z):
-        """Updates in place the spectrum data from polynomial coefficients.
+        """Update in place the spectrum data from polynomial coefficients.
 Uses `numpy.poly1d <http://docs.scipy.org/doc/numpy/reference/generated/numpy.poly1d.html>`_.
 
 Parameters
@@ -2111,7 +2111,7 @@ z : array
 
     def poly_spec(self, deg, weight=True, maxiter=0,
                   nsig=(-3.0, 3.0), verbose=False):
-        """Returns a spectrum containing a polynomial fit.
+        """Return a spectrum containing a polynomial fit.
 
         Parameters
         ----------
@@ -2140,7 +2140,7 @@ z : array
         return res
 
     def abmag_band(self, lbda, dlbda, out=1, spline=False):
-        """Computes AB magnitude corresponding to the wavelength band.
+        """Compute AB magnitude corresponding to the wavelength band.
 
         Parameters
         ----------
@@ -2175,7 +2175,7 @@ z : array
                 return np.array([mag, vflux, lbda])
 
     def abmag_filter_name(self, name, out=1, spline=False):
-        """Computes AB magnitude using the filter name.
+        """Compute AB magnitude using the filter name.
 
         Parameters
         ----------
@@ -2215,7 +2215,7 @@ z : array
             pass
 
     def abmag_filter(self, lbda, eff, out=1, spline=False):
-        """Computes AB magnitude using array filter.
+        """Compute AB magnitude using array filter.
 
         Parameters
         ----------
@@ -2249,7 +2249,7 @@ z : array
         return self._filter(l0, lmin, lmax, tck, out, spline)
 
     def _filter(self, l0, lmin, lmax, tck, out=1, spline=False):
-        """computes AB magnitude.
+        """compute AB magnitude.
 
         Parameters
         ----------
@@ -2287,7 +2287,7 @@ z : array
             return np.array([mag, vflux, l0])
 
     def truncate(self, lmin=None, lmax=None):
-        """Truncates a spectrum in place.
+        """Truncate a spectrum in place.
 
         Parameters
         ----------
@@ -2319,7 +2319,7 @@ z : array
         self.var = res.var
 
     def fwhm(self, l0, cont=0, spline=False):
-        """Returns the fwhm of a peak.
+        """Return the fwhm of a peak.
 
         Parameters
         ----------
@@ -2362,17 +2362,17 @@ z : array
     def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None,
                   cont=None, peak=False, spline=False, weight=True,
                   plot=False, plot_factor=10):
-        """Performs Gaussian fit on spectrum.
+        """Perform a Gaussian fit.
 Uses `scipy.optimize.leastsq <http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html>`_ to minimize the sum of squares.
 
 Parameters
 ----------
 lmin        : float or (float,float)
               Minimum wavelength value or wavelength range
-              used to compute the gaussian left value.
+              used to initialize the gaussian left value.
 lmax        : float or (float,float)
               Maximum wavelength or wavelength range
-              used to compute the gaussian right value.
+              used to initialize the gaussian right value.
 lpeak       : float
               Input gaussian center, if None it is estimated
               with the wavelength corresponding to the maximum value
@@ -2531,7 +2531,7 @@ out : :class:`mpdaf.obj.Gauss1D`
                        err_peak, err_flux, err_fwhm, chisq, dof)
 
     def add_gaussian(self, lpeak, flux, fwhm, cont=0, peak=False):
-        """Adds a gaussian on spectrum in place.
+        """Add a gaussian on spectrum in place.
 
         Parameters
         ----------
@@ -2569,9 +2569,398 @@ out : :class:`mpdaf.obj.Gauss1D`
 
         self.data[imin:imax] = self.data[imin:imax] \
             + gauss(v, wave) / self.fscale
+            
+    def gauss_dfit(self, lmin, lmax, lineratio, lpeak_1=None,
+                         flux_1=None, fratio=1., fwhm=None, cont=None,
+                         peak=False, spline=False, weight=True,
+                         plot=False, plot_factor=10):
+        """Truncate the spectrum and fit it as a sum of two gaussian functions.
+        Returns the two gaussian fucntions as :class:`mpdaf.obj.Gauss1D` objects.
+        
+        From Johan Richard and Vera Patricio.
+        
+Parameters
+----------
+lmin        : float or (float,float)
+              Minimum wavelength value or wavelength range
+              used to initialize the gaussian left value.
+lmax        : float or (float,float)
+              Maximum wavelength or wavelength range
+              used to initialize the gaussian right value.
+lineratio   : float
+              Ration between the two gaussian centers          
+lpeak_1     : float
+              Input gaussian center of the first gaussian.
+              if None it is estimated
+              with the wavelength corresponding to the maximum value
+              in [max(lmin), min(lmax)]
+flux_1      : float
+              Integrated gaussian flux
+              or gaussian peak value if peak is True.
+fratio      : float
+              Ratio between the two integrated gaussian fluxes.
+fwhm        : float
+              Input gaussian fwhm, if None it is estimated.
+peak        : boolean
+              If true, flux contains the gaussian peak value .
+cont        : float
+              Continuum value, if None it is estimated
+              by the line through points (max(lmin),mean(data[lmin]))
+              and (min(lmax),mean(data[lmax])).
+spline      : boolean
+              Linear/spline interpolation
+              to interpolate masked values.
+weight      : boolean
+              If weight is True, the weight
+              is computed as the inverse of variance.
+plot        : boolean
+              If True, the resulted fit is plotted.
+plot_factor : double
+              oversampling factor for the overplotted fit
+
+Returns
+-------
+out : :class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`
+        """
+        if is_int(lmin) or is_float(lmin):
+            fmin = None
+        else:
+            lmin = np.array(lmin, dtype=float)
+            fmin = self.mean(lmin[0], lmin[1], weight=False)
+            lmin = lmin[1]
+
+        if is_int(lmax) or is_float(lmax):
+            fmax = None
+        else:
+            lmax = np.array(lmax, dtype=float)
+            fmax = self.mean(lmax[0], lmax[1], weight=False)
+            lmax = lmax[0]
+
+        #spec = self.truncate(lmin, lmax)
+        spec = self.get_lambda(lmin, lmax)
+        data = spec._interp_data(spline)
+        l = spec.wave.coord()
+        d = data
+
+        lmin = l[0]
+        lmax = l[-1]
+        if fmin is None:
+            fmin = d[0]
+        if fmax is None:
+            fmax = d[-1]
+
+        # initial gaussian peak position
+        if lpeak_1 is None:
+            lpeak_1 = l[d.argmax()]
+
+        # continuum value
+        if cont is None:
+            cont0 = ((fmax - fmin) * lpeak_1 + lmax * fmin - lmin * fmax) / (lmax - lmin)
+        else:
+            cont /= self.fscale
+            cont0 = cont
+
+        # initial sigma value
+        if fwhm is None:
+            try:
+                fwhm = spec.fwhm(lpeak_1, cont0 * self.fscale, spline)
+            except:
+                lpeak_1 = l[d.argmin()]
+                fwhm = spec.fwhm(lpeak_1, cont0 * self.fscale, spline)
+        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+
+        # initial gaussian integrated flux
+        if flux_1 is None:
+            pixel = spec.wave.pixel(lpeak_1, nearest=True)
+            peak_1 = d[pixel] - cont0
+            flux_1 = peak_1 * np.sqrt(2 * np.pi * (sigma ** 2))
+        elif peak is True:
+            peak_1 = flux_1 / self.fscale - cont0
+            flux_1 = peak_1 * np.sqrt(2 * np.pi * (sigma ** 2))
+        else:
+            pass
+
+
+        flux_2 = fratio * flux_1
+
+        # 1d gaussian function
+        # p[0]: flux 1, p[1]:center 1, p[2]: fwhm, p[3] = peak 2
+        gaussfit = lambda p, x: cont0 + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) \
+                                      + p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - (p[1] * lineratio)) ** 2 / (2 * p[2] ** 2))
+
+        # 1d gaussian fit
+        if spec.var is not None and weight:
+            wght = 1.0 / np.sqrt(np.abs(spec.var))
+            np.ma.fix_invalid(wght, copy=False, fill_value=0)
+        else:
+            wght = np.ones(spec.shape)
+
+        e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
+
+        # inital guesses for Gaussian Fit
+        v0 = [flux_1, lpeak_1, sigma, flux_2]
+        # Minimize the sum of squares
+        v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)  # Gauss Fit
+
+        # calculate the errors from the estimated covariance matrix
+        chisq = sum(info["fvec"] * info["fvec"])
+        dof = len(info["fvec"]) - len(v)
+        if covar is not None:
+            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        else:
+            err = None
+
+        # plot
+        if plot:
+            xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
+            ccc = gaussfit(v, xxx) * self.fscale
+            plt.plot(xxx, ccc, 'r--')
+
+        # return a Gauss1D object
+        flux_1 = v[0] * self.fscale
+        flux_2 = v[3] * self.fscale
+        lpeak_1 = v[1]
+        lpeak_2 = lpeak_1 * lineratio
+        sigma = np.abs(v[2])
+        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
+        peak_1 = flux_1 / np.sqrt(2 * np.pi * (sigma ** 2))
+        peak_2 = flux_2 / np.sqrt(2 * np.pi * (sigma ** 2))
+        cont0 *= self.fscale
+        if err is not None:
+            err_flux_1 = err[0] * self.fscale
+            err_flux_2 = err[3] * self.fscale
+            err_lpeak_1 = err[1]
+            err_lpeak_2 = err[1] * lineratio
+            err_sigma = err[2]
+            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
+            err_peak_1 = np.abs(1. / np.sqrt(2 * np.pi) * (err_flux_1 * sigma - flux_1 * err_sigma) / sigma / sigma)
+            err_peak_2 = np.abs(1. / np.sqrt(2 * np.pi) * (err_flux_2 * sigma - flux_2 * err_sigma) / sigma / sigma)
+        else:
+            err_flux_1 = np.NAN
+            err_flux_2 = np.NAN
+            err_lpeak_1 = np.NAN
+            err_lpeak_2 = np.NAN
+            err_sigma = np.NAN
+            err_fwhm = np.NAN
+            err_peak_1 = np.NAN
+            err_peak_2 = np.NAN
+
+        return Gauss1D(lpeak_1, peak_1, flux_1, fwhm, cont0, err_lpeak_1, err_peak_1, err_flux_1, err_fwhm, chisq, dof), \
+               Gauss1D(lpeak_2, peak_2, flux_2, fwhm, cont0, err_lpeak_2, err_peak_2, err_flux_2, err_fwhm, chisq, dof)
+
+    def gauss_asymfit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None, cont=None, peak=False, spline=False, weight=True, plot=False, plot_factor=10):
+        """Truncate the spectrum and fit it with an asymetric gaussian function.
+        Returns the two gaussian functions (right and left) as :class:`mpdaf.obj.Gauss1D` objects.
+        
+        # From Johan Richard and Vera Patricio
+        # Modified by Jeremy Blaizot
+
+Parameters
+----------
+lmin        : float or (float,float)
+              Minimum wavelength value or wavelength range
+              used to initialize the gaussian left value.
+lmax        : float or (float,float)
+              Maximum wavelength or wavelength range
+              used to initialize the gaussian right value.       
+lpeak       : float
+              Input gaussian center
+              if None it is estimated
+              with the wavelength corresponding to the maximum value
+              in [max(lmin), min(lmax)]
+flux        : float
+              Integrated gaussian flux
+              or gaussian peak value if peak is True.
+fwhm        : float
+              Input gaussian fwhm, if None it is estimated.
+peak        : boolean
+              If true, flux contains the gaussian peak value .
+cont        : float
+              Continuum value, if None it is estimated
+              by the line through points (max(lmin),mean(data[lmin]))
+              and (min(lmax),mean(data[lmax])).
+spline      : boolean
+              Linear/spline interpolation
+              to interpolate masked values.
+weight      : boolean
+              If weight is True, the weight
+              is computed as the inverse of variance.
+plot        : boolean
+              If True, the resulted fit is plotted.
+plot_factor : double
+              oversampling factor for the overplotted fit
+
+Returns
+-------
+out : :class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`
+      Left and right Gaussian functions.
+        """
+        if is_int(lmin) or is_float(lmin):
+            fmin = None
+        else:
+            lmin = np.array(lmin, dtype=float)
+            fmin = self.mean(lmin[0], lmin[1], weight=False)
+            lmin = lmin[1]
+
+        if is_int(lmax) or is_float(lmax):
+            fmax = None
+        else:
+            lmax = np.array(lmax, dtype=float)
+            fmax = self.mean(lmax[0], lmax[1], weight=False)
+            lmax = lmax[0]
+
+        spec = self.get_lambda(lmin, lmax)
+        data = spec._interp_data(spline)
+        l = spec.wave.coord()
+        d = data
+
+        lmin = l[0]
+        lmax = l[-1]
+        if fmin is None:
+            fmin = d[0]
+        if fmax is None:
+            fmax = d[-1]
+
+        # initial gaussian peak position
+        if lpeak is None:
+            lpeak = l[d.argmax()]
+
+        # continuum value
+        if cont is None:
+            cont0 = ((fmax - fmin) * lpeak + lmax * fmin - lmin * fmax) / (lmax - lmin)
+        else:
+            cont /= self.fscale
+            cont0 = cont
+
+        # initial sigma value
+        if fwhm is None:
+            try:
+                fwhm = spec.fwhm(lpeak, cont0 * self.fscale, spline)
+            except:
+                lpeak = l[d.argmin()]
+                fwhm = spec.fwhm(lpeak, cont0 * self.fscale, spline)
+        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+
+        # initial gaussian integrated flux
+        if flux is None:
+            pixel = spec.wave.pixel(lpeak, nearest=True)
+            peak = d[pixel] - cont0
+            flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
+        elif peak is True:
+            peak = flux / self.fscale - cont0
+            flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
+        else:
+            pass
+
+        # Asymetric gaussian function (p[0]: flux of the right-hand side if it was full... ; p[1]: lambda peak; p[2]:sigma_right; p[3]: sigma_left)
+        asymfit = lambda p, x: np.where(x > p[1], cont0 + p[0] / np.sqrt(2 * np.pi) / p[2] * np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)), cont0 + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] * np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2)))
+        #cont + p[0] / np.sqrt(2*np.pi)/p[2] * np.exp(-(x-p[1])**2/(2.*p[2]**2)) if x > p[1] else cont + p[0] * p[3]/p[2] / np.sqrt(2*np.pi)/p[3] * np.exp(-(x-p[1])**2/(2.*p[3]**2))
+
+        # 1d Gaussian fit
+        if spec.var is not None and weight:
+            wght = 1.0 / np.sqrt(np.abs(spec.var))
+            np.ma.fix_invalid(wght, copy=False, fill_value=0)
+        else:
+            wght = np.ones(spec.shape)
+
+        e_asym_fit = lambda p, x, y, w: w * (asymfit(p, x) - y)
+
+        # inital guesses for Gaussian Fit
+        v0 = [peak, lpeak, sigma, sigma]
+        
+        # Minimize the sum of squares
+        v, covar, info, mesg, success = leastsq(e_asym_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)
+
+        # calculate the errors from the estimated covariance matrix
+        chisq = sum(info["fvec"] * info["fvec"])
+        dof = len(info["fvec"]) - len(v)
+        if covar is not None:
+            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+        else:
+            err = None
+
+        # plot
+        if plot:
+            xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)  # Same wavelenght grid as input spectrum
+            ccc = asymfit(v, xxx) * self.fscale
+            plt.plot(xxx, ccc, 'm--', label='Asymmetric')
+
+        # return a Gauss1D object
+        sigma_right = np.abs(v[2])
+        sigma_left = np.abs(v[3])
+        flux_right = 0.5 * v[0] * self.fscale
+        flux_left = flux_right * sigma_left / sigma_right
+        flux = flux_right + flux_left
+        fwhm_right = sigma_right * 2 * np.sqrt(2 * np.log(2))
+        fwhm_left = sigma_left * 2 * np.sqrt(2 * np.log(2))
+        lpeak = v[1]
+        peak = flux_right / np.sqrt(2 * np.pi * sigma_right ** 2)
+        cont0 *= self.fscale
+        if err is not None:
+            err_flux = err[0] * self.fscale
+            err_lpeak = err[1]
+            err_sigma_right = err[2]
+            err_sigma_left = err[3]
+            err_fwhm_right = err_sigma_right * 2 * np.sqrt(2 * np.log(2))
+            err_fwhm_left = err_sigma_left * 2 * np.sqrt(2 * np.log(2))
+            err_peak = np.abs(1. / np.sqrt(2 * np.pi) * (err_flux * sigma_right - flux * err_sigma_right) / sigma_right / sigma_right)
+        else:
+            err_flux = np.NAN
+            err_lpeak = np.NAN
+            err_sigma_right = np.NAN
+            err_sigma_left = np.NAN
+            err_fwhm_right = np.NAN
+            err_fwhm_left = np.NAN
+            err_peak = np.NAN
+
+        return Gauss1D(lpeak, peak, flux_left, fwhm_left, cont0, err_lpeak, err_peak, err_flux/2, err_fwhm_left, chisq, dof), \
+               Gauss1D(lpeak, peak, flux_right, fwhm_right, cont0, err_lpeak, err_peak, err_flux/2, err_fwhm_right, chisq, dof)
+               
+
+    def add_asym_gaussian(self, lpeak, flux, fwhm_right, fwhm_left, cont=0, peak=False):
+        """Adds an asymetric gaussian on spectrum in place.
+
+        Parameters
+        ----------
+        lpeak : float
+                Gaussian center.
+        flux  : float
+                Integrated gaussian flux
+                or gaussian peak value if peak is True.
+        fwhm_right : float
+                     Gaussian fwhm on the right (red) side
+        fwhm_left  : float
+                     Gaussian fwhm on the right (red) side
+        cont  : float
+                Continuum value.
+        peak  : boolean
+                If true, flux contains the gaussian peak value
+        """
+
+        asym_gauss = lambda p, x: np.where(x > p[1], cont + p[0] / np.sqrt(2 * np.pi) / p[2] * np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)), cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] * np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2)))
+        sigma_left = fwhm_left / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma_right = fwhm_right / (2. * np.sqrt(2. * np.log(2.0)))
+
+#         if peak is True:
+#             right_norm = flux * np.sqrt(2. * np.pi * sigma_right ** 2)
+#         else:
+#             right_norm = 2. * flux / (1. + sigma_left / sigma_right)
+
+        lmin = lpeak - 5 * sigma_left
+        lmax = lpeak + 5 * sigma_right
+        imin = self.wave.pixel(lmin, True)
+        imax = self.wave.pixel(lmax, True)
+        if imin == imax:
+            if imin == 0 or imin == self.shape:
+                raise ValueError('Gaussian outside spectrum wavelength range')
+
+        wave = self.wave.coord()[imin:imax]
+        v = [flux, lpeak, sigma_right, sigma_left]
+        self.data[imin:imax] = self.data[imin:imax] \
+            + asym_gauss(v, wave) / self.fscale
 
     def _median_filter(self, kernel_size=1., pixel=True, spline=False):
-        """Performs a median filter on the spectrum.
+        """Perform a median filter on the spectrum.
 Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
 
 Parameters
@@ -2594,7 +2983,7 @@ pixel       : boolean
         self.data = np.ma.array(data[ks:-ks], mask=self.data.mask)
 
     def median_filter(self, kernel_size=1., pixel=True, spline=False):
-        """Returns a spectrum resulted on a median filter on the current spectrum.
+        """Return a spectrum resulted on a median filter on the current spectrum.
 Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
 
 Parameters
@@ -2614,7 +3003,7 @@ out : Spectrum
         return res
 
     def _convolve(self, other):
-        """Convolves the spectrum with a other spectrum or an array.
+        """Convolve the spectrum with a other spectrum or an array.
 Uses `scipy.signal.convolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.convolve.html>`_. self and other must have the same size.
 
 Parameters
@@ -2653,7 +3042,7 @@ other : 1d-array or Spectrum
                 return None
 
     def convolve(self, other):
-        """Returns the convolution of the spectrum
+        """Return the convolution of the spectrum
 with a other spectrum or an array.
 Uses `scipy.signal.convolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.convolve.html>`_. self and other must have the same size.
 
@@ -2671,7 +3060,7 @@ out : Spectrum
         return res
 
     def _fftconvolve(self, other):
-        """Convolves the spectrum with a other spectrum or an array using fft.
+        """Convolve the spectrum with a other spectrum or an array using fft.
 Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_. self and other must have the same size.
 
 Parameters
@@ -2710,7 +3099,7 @@ other : 1d-array or Spectrum
                 raise IOError('Operation forbidden')
 
     def fftconvolve(self, other):
-        """Returns the convolution of the spectrum
+        """Return the convolution of the spectrum
 with a other spectrum or an array using fft.
 Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_. self and other must have the same size.
 
@@ -2728,7 +3117,7 @@ out : Spectrum
         return res
 
     def _correlate(self, other):
-        """Cross-correlates the spectrum with a other spectrum or an array.
+        """Cross-correlate the spectrum with a other spectrum or an array.
 Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.
 
 Parameters
@@ -2767,7 +3156,7 @@ other : 1d-array or Spectrum
                 raise IOError('Operation forbidden')
 
     def correlate(self, other):
-        """Returns the cross-correlation of the spectrum
+        """Return the cross-correlation of the spectrum
 with a other spectrum or an array.
 Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.
 
@@ -2785,7 +3174,7 @@ out : Spectrum
         return res
 
     def _fftconvolve_gauss(self, fwhm, nsig=5):
-        """Convolves the spectrum with a Gaussian using fft.
+        """Convolve the spectrum with a Gaussian using fft.
 
         Parameters
         ----------
@@ -2810,7 +3199,7 @@ out : Spectrum
             self.var = signal.correlate(self.var, kernel, mode='same')
 
     def fftconvolve_gauss(self, fwhm, nsig=5):
-        """Returns the convolution of the spectrum with a Gaussian using fft.
+        """Return the convolution of the spectrum with a Gaussian using fft.
 
         Parameters
         ----------
@@ -2889,7 +3278,7 @@ out : Spectrum
         return res
 
     def peak_detection(self, kernel_size=None, pix=False):
-        """Returns a list of peak locations.
+        """Return a list of peak locations.
 Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
 
 Parameters
@@ -2911,7 +3300,7 @@ pix         : boolean
 
     def plot(self, max=None, title=None, noise=False, snr=False,
              lmin=None, lmax=None, ax=None, **kargs):
-        """Plots the spectrum. By default, drawstyle is 'steps-mid'.
+        """Plot the spectrum. By default, drawstyle is 'steps-mid'.
 
         Parameters
         ----------
@@ -2974,7 +3363,7 @@ pix         : boolean
 
     def log_plot(self, max=None, title=None, noise=False,
                  lmin=None, lmax=None, ax=None, **kargs):
-        """Plots the spectrum with y logarithmic scale.
+        """Plot the spectrum with y logarithmic scale.
 By default, drawstyle is 'steps-mid'.
 
 Parameters
@@ -3031,7 +3420,7 @@ kargs : matplotlib.lines.Line2D
         self._plot_id = len(plt.gca().lines) - 1
 
     def _on_move(self, event):
-        """prints xc,yc,k,lbda and data in the figure toolbar."""
+        """print xc,yc,k,lbda and data in the figure toolbar."""
         if event.inaxes is not None:
             xc, yc = event.xdata, event.ydata
             try:
@@ -3044,7 +3433,7 @@ kargs : matplotlib.lines.Line2D
                 pass
 
     def ipos(self, filename='None'):
-        """Prints cursor position in interactive mode (xc and yc correspond to
+        """Print cursor position in interactive mode (xc and yc correspond to
         the cursor position, k is the nearest pixel, lbda contains the
         wavelength value and data contains spectrum data value.)
 
@@ -3087,7 +3476,7 @@ kargs : matplotlib.lines.Line2D
             self._clicks.filename = filename
 
     def _on_click(self, event):
-        """prints xc,yc,k,lbda and data corresponding to the cursor
+        """print xc,yc,k,lbda and data corresponding to the cursor
         position."""
         d = {'class': 'Spectrum', 'method': '_on_click'}
         if event.key == 'd':
@@ -3131,7 +3520,7 @@ kargs : matplotlib.lines.Line2D
                 fig.canvas.stop_event_loop_default()
 
     def idist(self):
-        """Gets distance and center from 2 cursor positions (interactive mode)
+        """Get distance and center from 2 cursor positions (interactive mode)
 
         To quit the interactive mode, click on the right mouse button.
         """
@@ -3151,7 +3540,7 @@ kargs : matplotlib.lines.Line2D
             warnings.filterwarnings(action="default")
 
     def _on_click_dist(self, event):
-        """Prints distance and center between 2 cursor positions."""
+        """Print distance and center between 2 cursor positions."""
         if event.button == 1:
             if event.inaxes is not None:
                 try:
@@ -3178,7 +3567,7 @@ kargs : matplotlib.lines.Line2D
             fig.canvas.stop_event_loop_default()
 
     def igauss_fit(self, nclicks=5):
-        """Performs and plots a polynomial fit on spectrum.
+        """Perform and plots a gaussian fit on spectrum.
 
                   To select minimum, peak and maximum wavelengths,
                   click on the left mouse button.
@@ -3245,7 +3634,7 @@ kargs : matplotlib.lines.Line2D
                 warnings.filterwarnings(action="default")
 
     def _on_3clicks_gauss_fit(self, event):
-        """Performs polynomial fit on spectrum (interactive mode)."""
+        """Perform polynomial fit on spectrum (interactive mode)."""
         if event.button == 1:
             if event.inaxes is not None:
                 try:
@@ -3273,7 +3662,7 @@ kargs : matplotlib.lines.Line2D
             fig.canvas.stop_event_loop_default()
 
     def _on_5clicks_gauss_fit(self, event):
-        """Performs polynomial fit on spectrum (interactive mode)."""
+        """Perform polynomial fit on spectrum (interactive mode)."""
         if event.button == 1:
             if event.inaxes is not None:
                 try:
@@ -3304,7 +3693,7 @@ kargs : matplotlib.lines.Line2D
             fig.canvas.stop_event_loop_default()
 
     def imask(self):
-        """Over-plots masked values (interactive mode).
+        """Over-plot masked values (interactive mode).
         """
         try:
             try:
@@ -3319,296 +3708,139 @@ kargs : matplotlib.lines.Line2D
         except:
             pass
 
-    def gauss_dfit(self, lmin, lmax, lineratio, lpeak_1=None, lpeak_2=None, flux_1=None, flux_2=None, fratio=None, fwhm=None, cont=None, peak_1=False, peak_2=False, spline=False, weight=True, plot=False):
 
-        # truncate the spectrum and compute right and left gaussian values
-        if is_int(lmin) or is_float(lmin):
-            fmin = None
-        else:
-            lmin = np.array(lmin, dtype=float)
-            fmin = self.mean(lmin[0], lmin[1], weight=False)
-            lmin = lmin[1]
+            
+    def igauss_asymfit(self, nclicks=5):
+        """Performs and plots a asymetric gaussian fit on spectrum.
 
-        if is_int(lmax) or is_float(lmax):
-            fmax = None
-        else:
-            lmax = np.array(lmax, dtype=float)
-            fmax = self.mean(lmax[0], lmax[1], weight=False)
-            lmax = lmax[0]
+                  To select minimum, peak and maximum wavelengths,
+                  click on the left mouse button.
 
-        #spec = self.truncate(lmin, lmax)
-        spec = self.get_lambda(lmin, lmax)
-        data = spec._interp_data(spline)
-        l = spec.wave.coord()
-        d = data
+                  To quit the interactive mode,
+                  click on the right mouse button.
 
-        lmin = l[0]
-        lmax = l[-1]
-        if fmin is None:
-            fmin = d[0]
-        if fmax is None:
-            fmax = d[-1]
-
-        # initial gaussian peak position
-        if lpeak_1 is None:
-            lpeak_1 = l[d.argmax()]
-
-        # continuum value
-        if cont is None:
-            cont0 = ((fmax - fmin) * lpeak_1 + lmax * fmin - lmin * fmax) / (lmax - lmin)
-        else:
-            cont /= self.fscale
-            cont0 = cont
-
-        # initial sigma value
-        if fwhm is None:
-            try:
-                fwhm = spec.fwhm(lpeak_1, cont0 * self.fscale, spline)
-            except:
-                lpeak_1 = l[d.argmin()]
-                fwhm = spec.fwhm(lpeak_1, cont0 * self.fscale, spline)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
-
-        # initial gaussian integrated flux
-        if flux_1 is None:
-            pixel = spec.wave.pixel(lpeak_1, nearest=True)
-            peak_1 = d[pixel] - cont0
-            flux_1 = peak_1 * np.sqrt(2 * np.pi * (sigma ** 2))
-        elif peak_1 is True:
-            peak_1 = flux_1 / self.fscale - cont0
-            flux_1 = peak_1 * np.sqrt(2 * np.pi * (sigma ** 2))
-        else:
-            pass
-
-        if fratio is None:
-            fratio = 1
-
-        flux_2 = fratio * flux_1
-
-        # 1d gaussian function
-        # p[0]: flux 1, p[1]:center 1, p[2]: fwhm, p[3] = peak 2
-        gaussfit = lambda p, x: cont0 + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) + p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - (p[1] * lineratio)) ** 2 / (2 * p[2] ** 2))
-
-        # 1d gaussian fit
-        if spec.var is not None and weight:
-            wght = 1.0 / np.sqrt(np.abs(spec.var))
-        else:
-            wght = np.ones(spec.shape)
-
-        e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
-
-        # inital guesses for Gaussian Fit
-        v0 = [flux_1, lpeak_1, sigma, flux_2]
-        # Minimize the sum of squares
-        v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)  # Gauss Fit
-
-        # calculate the errors from the estimated covariance matrix
-        chisq = sum(info["fvec"] * info["fvec"])
-        dof = len(info["fvec"]) - len(v)
-        if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
-        else:
-            err = None
-
-        # plot
-        if plot:
-            xxx = np.arange(l[0], l[-1], l[1] - l[0])
-            ccc = gaussfit(v, xxx) * self.fscale
-            plt.plot(xxx, ccc, 'm--')
-
-        # return a Gauss1D object
-        flux_1 = v[0] * self.fscale
-        flux_2 = v[3] * self.fscale
-        lpeak_1 = v[1]
-        lpeak_2 = lpeak_1 * lineratio
-        sigma = np.abs(v[2])
-        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
-        peak_1 = flux_1 / np.sqrt(2 * np.pi * (sigma ** 2))
-        peak_2 = flux_2 / np.sqrt(2 * np.pi * (sigma ** 2))
-        cont0 *= self.fscale
-        if err is not None:
-            err_flux_1 = err[0] * self.fscale
-            err_flux_2 = err[3] * self.fscale
-            err_lpeak_1 = err[1]
-            err_lpeak_2 = err[1] * lineratio
-            err_sigma = err[2]
-            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
-            err_peak_1 = np.abs(1. / np.sqrt(2 * np.pi) * (err_flux_1 * sigma - flux_1 * err_sigma) / sigma / sigma)
-            err_peak_2 = np.abs(1. / np.sqrt(2 * np.pi) * (err_flux_2 * sigma - flux_2 * err_sigma) / sigma / sigma)
-        else:
-            err_flux_1 = np.NAN
-            err_flux_2 = np.NAN
-            err_lpeak_1 = np.NAN
-            err_lpeak_2 = np.NAN
-            err_sigma = np.NAN
-            err_fwhm = np.NAN
-            err_peak_1 = np.NAN
-            err_peak_2 = np.NAN
-
-        return Gauss1D(lpeak_1, peak_1, flux_1, fwhm, cont0, err_lpeak_1, err_peak_1, err_flux_1, err_fwhm, chisq, dof), Gauss1D(lpeak_2, peak_2, flux_2, fwhm, cont0, err_lpeak_2, err_peak_2, err_flux_2, err_fwhm, chisq, dof)
-
-    def gauss_asymfit(self, lmin, lmax, lpeak=None, flux=None, fwhm_1=None, fwhm_2=None, cont=None, peak=False, spline=False, weight=True, plot=False, plot_factor=10):
-        # From Johan and Vera
-        # modified by JB (i removed what i dont understand, e.g. flux = abs(...), and what i don't use)
-
-        # truncate the spectrum and compute right and left gaussian values
-        if is_int(lmin) or is_float(lmin):
-            fmin = None
-        else:
-            lmin = np.array(lmin, dtype=float)
-            fmin = self.mean(lmin[0], lmin[1], weight=False)
-            lmin = lmin[1]
-
-        if is_int(lmax) or is_float(lmax):
-            fmax = None
-        else:
-            lmax = np.array(lmax, dtype=float)
-            fmax = self.mean(lmax[0], lmax[1], weight=False)
-            lmax = lmax[0]
-
-        spec = self.get_lambda(lmin, lmax)
-        data = spec._interp_data(spline)
-        l = spec.wave.coord()
-        d = data
-
-        lmin = l[0]
-        lmax = l[-1]
-        if fmin is None:
-            fmin = d[0]
-        if fmax is None:
-            fmax = d[-1]
-
-        # initial gaussian peak position
-        if lpeak is None:
-            lpeak = l[d.argmax()]
-
-        # continuum value
-        if cont is None:
-            cont0 = ((fmax - fmin) * lpeak + lmax * fmin - lmin * fmax) / (lmax - lmin)
-        else:
-            cont /= self.fscale
-            cont0 = cont
-
-        # initial sigma value
-        if fwhm_1 is None:
-            try:
-                fwhm_1 = spec.fwhm(lpeak, cont0 * self.fscale, spline)
-            except:
-                lpeak = l[d.argmin()]
-                fwhm_1 = spec.fwhm(lpeak, cont0 * self.fscale, spline)
-        sigma = fwhm_1 / (2. * np.sqrt(2. * np.log(2.0)))
-
-        # initial gaussian integrated flux
-        if flux is None:
-            pixel = spec.wave.pixel(lpeak, nearest=True)
-            peak = d[pixel] - cont0
-            flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
-        elif peak is True:
-            peak = flux / self.fscale - cont0
-            flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
-        else:
-            pass
-
-        # Asymetric gaussian function (p[0]: flux of the right-hand side if it was full... ; p[1]: lambda peak; p[2]:sigma_right; p[3]: sigma_left)
-        asymfit = lambda p, x: np.where(x > p[1], cont + p[0] / np.sqrt(2 * np.pi) / p[2] * np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)), cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] * np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2)))
-        #cont + p[0] / np.sqrt(2*np.pi)/p[2] * np.exp(-(x-p[1])**2/(2.*p[2]**2)) if x > p[1] else cont + p[0] * p[3]/p[2] / np.sqrt(2*np.pi)/p[3] * np.exp(-(x-p[1])**2/(2.*p[3]**2))
-
-        # 1d Gaussian fit
-        if spec.var is not None and weight:
-            wght = 1.0 / np.sqrt(np.abs(spec.var))
-            np.ma.fix_invalid(wght, copy=False, fill_value=0)
-        else:
-            wght = np.ones(spec.shape)
-
-        e_asym_fit = lambda p, x, y, w: w * (asymfit(p, x) - y)
-
-        # inital guesses for Gaussian Fit
-        v0 = [peak, lpeak, sigma, sigma]
-        # Minimize the sum of squares
-        v, covar, info, mesg, success = leastsq(e_asym_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)
-
-        # calculate the errors from the estimated covariance matrix
-        chisq = sum(info["fvec"] * info["fvec"])
-        dof = len(info["fvec"]) - len(v)
-        if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
-        else:
-            err = None
-
-        # plot
-        if plot:
-            xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)  # Same wavelenght grid as input spectrum
-            ccc = asymfit(v, xxx) * self.fscale
-            plt.plot(xxx, ccc, 'm--', label='Asymmetric')
-
-        # return a Gauss1D object
-        sigma_right = np.abs(v[2])
-        sigma_left = np.abs(v[3])
-        flux_right = 0.5 * v[0] * self.fscale
-        flux_left = flux_right * sigma_left / sigma_right
-        flux = flux_right + flux_left
-        fwhm_right = sigma_right * 2 * np.sqrt(2 * np.log(2))
-        fwhm_left = sigma_left * 2 * np.sqrt(2 * np.log(2))
-        lpeak = v[1]
-        peak = flux_right / np.sqrt(2 * np.pi * sigma_right ** 2)
-        cont0 *= self.fscale
-        if err is not None:
-            err_flux = err[0] * self.fscale
-            err_lpeak = err[1]
-            err_sigma_right = err[2]
-            err_sigma_left = err[3]
-            err_fwhm_right = err_sigma_right * 2 * np.sqrt(2 * np.log(2))
-            err_fwhm_left = err_sigma_left * 2 * np.sqrt(2 * np.log(2))
-            err_peak = np.abs(1. / np.sqrt(2 * np.pi) * (err_flux * sigma_right - flux * err_sigma_right) / sigma_right / sigma_right)
-        else:
-            err_flux = np.NAN
-            err_lpeak = np.NAN
-            err_sigma_right = np.NAN
-            err_sigma_left = np.NAN
-            err_fwhm_right = np.NAN
-            err_fwhm_left = np.NAN
-            err_peak = np.NAN
-
-        return (Gauss1D(lpeak, peak, flux, fwhm_right, cont0, err_lpeak, err_peak, err_flux, err_fwhm_right, chisq, dof), fwhm_left)
-
-    def add_asym_gaussian(self, lpeak, flux, fwhm_right, fwhm_left, cont=0, peak=False):
-        """Adds a gaussian on spectrum in place.
+                  The parameters of the returned gaussian functions are saved
+                  in self.gauss2 (:class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`)
 
         Parameters
         ----------
-        lpeak : float
-                Gaussian center.
-        flux  : float
-                Integrated gaussian flux
-                or gaussian peak value if peak is True.
-        fwhm_right : float
-                     Gaussian fwhm on the right (red) side
-        fwhm_left  : float
-                     Gaussian fwhm on the right (red) side
-        cont  : float
-                Continuum value.
-        peak  : boolean
-                If true, flux contains the gaussian peak value
+        nclicks : integer (3 or 5)
+                  3 or 5 clicks.
+
+                 Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
+
+                 Use 5 mouse clicks: the two first select a range
+                 of minimum wavelengths, the 3th selects the peak wavelength and
+                 the two last clicks select a range of maximum wavelengths
+                 - see :func:`mpdaf.obj.Spectrum.gauss_symfit`.
         """
-
-        asym_gauss = lambda p, x: np.where(x > p[1], cont + p[0] / np.sqrt(2 * np.pi) / p[2] * np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)), cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] * np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2)))
-        sigma_left = fwhm_left / (2. * np.sqrt(2. * np.log(2.0)))
-        sigma_right = fwhm_right / (2. * np.sqrt(2. * np.log(2.0)))
-
-        if peak is True:
-            right_norm = flux * np.sqrt(2. * np.pi * sigma_right ** 2)
+        d = {'class': 'Spectrum', 'method': 'igauss_asymfit'}
+        if nclicks == 3:
+            msg = 'Use 3 mouse clicks to get minimim, '\
+                'peak and maximum wavelengths.'
+            self.logger.info(msg, extra=d)
+            msg = 'To quit the interactive mode, '\
+                'click on the right mouse button.'
+            self.logger.info(msg, extra=d)
+            msg = 'The parameters of the '\
+                'gaussian functions are saved in self.gauss2.'
+            self.logger.info(msg, extra=d)
+            if self._clicks is None:
+                binding_id = plt.connect('button_press_event',
+                                         self._on_3clicks_gauss_asymfit)
+                self._clicks = SpectrumClicks(binding_id)
+                warnings.filterwarnings(action="ignore")
+                fig = plt.gcf()
+                fig.canvas.start_event_loop_default(timeout=-1)
+                warnings.filterwarnings(action="default")
         else:
-            right_norm = 2. * flux / (1. + sigma_left / sigma_right)
+            msg = 'Use the 2 first mouse clicks to get the wavelength '\
+                'range to compute the gaussian left value.'
+            self.logger.info(msg, extra=d)
+            msg = 'Use the next click to get the peak wavelength.'
+            self.logger.info(msg, extra=d)
+            msg = 'Use the 2 last mouse clicks to get the wavelength range '\
+                'to compute the gaussian rigth value.'
+            self.logger.info(msg, extra=d)
+            msg = 'To quit the interactive mode, '\
+                'click on the right mouse button.'
+            self.logger.info(msg, extra=d)
+            msg = 'The parameters of the resulted gaussian functions'\
+                'are saved in self.gauss2.'
+            self.logger.info(msg, extra=d)
+            if self._clicks is None:
+                binding_id = plt.connect('button_press_event',
+                                         self._on_5clicks_gauss_asymfit)
+                self._clicks = SpectrumClicks(binding_id)
+                warnings.filterwarnings(action="ignore")
+                fig = plt.gcf()
+                fig.canvas.start_event_loop_default(timeout=-1)
+                warnings.filterwarnings(action="default")
 
-        lmin = lpeak - 5 * sigma_left
-        lmax = lpeak + 5 * sigma_right
-        imin = self.wave.pixel(lmin, True)
-        imax = self.wave.pixel(lmax, True)
-        if imin == imax:
-            if imin == 0 or imin == self.shape:
-                raise ValueError('Gaussian outside spectrum wavelength range')
+    def _on_3clicks_gauss_asymfit(self, event):
+        """Performs asymetrical gaussian fit on spectrum (interactive mode)."""
+        d = {'class': 'Spectrum', 'method': '_on_3clicks_gauss_asymfit'}
+        if event.button == 1:
+            if event.inaxes is not None:
+                try:
+                    xc, yc = event.xdata, event.ydata
+                    i = self.wave.pixel(xc, True)
+                    x = self.wave.coord(i)
+                    val = self.data[i] * self.fscale
+                    if len(self._clicks.k) == 0:
+                        print ''
+                    self._clicks.add(xc, yc, i, x, val)
+                    if np.sometrue(np.mod(len(self._clicks.k), 3)) == False:
+                        lmin = self._clicks.xc[-3]
+                        lpeak = self._clicks.xc[-2]
+                        lmax = self._clicks.xc[-1]
+                        self.gauss2 = self.gauss_asymfit(lmin, lmax,
+                                                    lpeak=lpeak, plot=True)
+                        self.logger.info('left:', extra=d)
+                        self.gauss2[0].print_param()
+                        self.logger.info('right:', extra=d)
+                        self.gauss2[1].print_param()
+                        self._clicks.id_lines.append(len(plt.gca().lines) - 1)
+                except:
+                    pass
+        else:
+            self._clicks.clear()
+            self._clicks = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
 
-        wave = self.wave.coord()[imin:imax]
-        v = [flux, lpeak, sigma_right, sigma_left]
-        self.data[imin:imax] = self.data[imin:imax] \
-            + asym_gauss(v, wave) / self.fscale
+    def _on_5clicks_gauss_asymfit(self, event):
+        """Performs asymetrical gaussian fit on spectrum (interactive mode)."""
+        d = {'class': 'Spectrum', 'method': '_on_3clicks_gauss_asymfit'}
+        if event.button == 1:
+            if event.inaxes is not None:
+                try:
+                    xc, yc = event.xdata, event.ydata
+                    i = self.wave.pixel(xc, True)
+                    x = self.wave.coord(i)
+                    val = self.data[i] * self.fscale
+                    if len(self._clicks.k) == 0:
+                        print ''
+                    self._clicks.add(xc, yc, i, x, val)
+                    if np.sometrue(np.mod(len(self._clicks.k), 5)) == False:
+                        lmin1 = self._clicks.xc[-5]
+                        lmin2 = self._clicks.xc[-4]
+                        lpeak = self._clicks.xc[-3]
+                        lmax1 = self._clicks.xc[-2]
+                        lmax2 = self._clicks.xc[-1]
+                        self.gauss2 = self.gauss_asymfit((lmin1, lmin2),
+                                                    (lmax1, lmax2),
+                                                    lpeak=lpeak, plot=True)
+                        self.logger.info('left:', extra=d)
+                        self.gauss2[0].print_param()
+                        self.logger.info('right:', extra=d)
+                        self.gauss2[1].print_param()
+                        self._clicks.id_lines.append(len(plt.gca().lines) - 1)
+                except:
+                    pass
+        else:
+            self._clicks.clear()
+            self._clicks = None
+            fig = plt.gcf()
+            fig.canvas.stop_event_loop_default()
+            
