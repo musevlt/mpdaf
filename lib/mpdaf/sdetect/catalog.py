@@ -241,12 +241,17 @@ class Catalog(Table):
         -------
         out : :class:`mpdaf.sdetect.Catalog`
         """
-        dec1,ra1 = wcs.get_start()
-        dec2,ra2 = wcs.get_end()
-        k = np.where((self[ra]>=ra2) & (self[ra]<=ra1) & (self[dec]>=dec1) & (self[dec]<=dec2))
-        return self[k]
+        ksel = []
+        for k,src in enumerate(self):
+            cen = wcs.sky2pix([src[dec],src[ra]])[0]
+            if cen[0] >= 0 and cen[0] <= wcs.naxis1 and cen[1] >= 0 \
+            and cen[1] <= wcs.naxis2:
+                ksel.append(k)
+        return self[ksel]
     
-    def plot_symb(self, ax, wcs, ra='RA', dec='DEC', symb=0.4, col='k', alpha=1.0, **kwargs):
+    
+    def plot_symb(self, ax, wcs, ra='RA', dec='DEC', symb=0.4, col='k', 
+                  alpha=1.0, **kwargs):
         """This function plots the sources location from the catalog
         
         Parameters
@@ -310,7 +315,8 @@ class Catalog(Table):
             ell.set_alpha(alpha)
             ell.set_edgecolor(col)
             
-    def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2, alpha=0.5, col='k', **kwargs):
+    def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
+                alpha=0.5, col='k', **kwargs):
         """ This function display the id of the catalog
         
         Parameters
