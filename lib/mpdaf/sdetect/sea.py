@@ -302,41 +302,47 @@ def SEA(cat, cube, hst=None, size=5, psf=None):
     # create source objects
     sources = []
     origin = ('sea', __version__, os.path.basename(cube.filename))
-    for obj in cat:
-        source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
-        try:
-            z = obj['Z']
-        except:
-            z = -9999
-        try:
-            errz = obj['Z_ERR']
-        except:
-            errz = -9999
-        source.add_z('CAT', z, errz)
-        
-        # create white image
-        source.add_white_image(cube, size)
-        
-        # create narrow band images
-        source.add_narrow_band_images(cube, 'CAT')
-        
-        # extract hst stamps
-        newdim = source.images['MUSE_WHITE'].shape
-        newstep = source.images['MUSE_WHITE'].get_step()
-        # size in arcsec
-        cdelt = np.abs(newstep*3600)
-        newsize = np.max(cdelt*newdim)
-        for tag, ima in hst.iteritems():
-            source.add_image(Image(ima), 'HST_'+tag, newsize)
-                
-        # segmentation maps
-        source.add_masks()
-            
-        # extract spectra
-        source.extract_spectra(cube, skysub=True, psf=psf)
-        source.extract_spectra(cube, skysub=False, psf=psf)
     
-        sources.append(source)
+    for obj in cat:
+        
+        cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']])[0]
+        if cen[0] >= 0 and cen[0] <= cube.wcs.naxis1 and \
+        cen[1] >= 0 and cen[1] <= cube.wcs.naxis2:
+        
+            source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
+            try:
+                z = obj['Z']
+            except:
+                z = -9999
+            try:
+                errz = obj['Z_ERR']
+            except:
+                errz = -9999
+            source.add_z('CAT', z, errz)
+            
+            # create white image
+            source.add_white_image(cube, size)
+            
+            # create narrow band images
+            source.add_narrow_band_images(cube, 'CAT')
+            
+            # extract hst stamps
+            newdim = source.images['MUSE_WHITE'].shape
+            newstep = source.images['MUSE_WHITE'].get_step()
+            # size in arcsec
+            cdelt = np.abs(newstep*3600)
+            newsize = np.max(cdelt*newdim)
+            for tag, ima in hst.iteritems():
+                source.add_image(ima, 'HST_'+tag, newsize)
+                    
+            # segmentation maps
+            source.add_masks()
+                
+            # extract spectra
+            source.extract_spectra(cube, skysub=True, psf=psf)
+            source.extract_spectra(cube, skysub=False, psf=psf)
+        
+            sources.append(source)
         
     # return list of sources
     return SourceList(sources)
