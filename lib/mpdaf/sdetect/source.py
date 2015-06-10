@@ -104,7 +104,7 @@ def crackz(nlines, wl, flux, eml):
     if(nlines == 0):
         return -9999.0, -9999.0, 0, [], [], []
     if(nlines == 1):
-        return -9999.0, -9999.0, 1, wl, flux, ["Lya or [OII]"]
+        return -9999.0, -9999.0, 1, wl, flux, ["Lya/[OII]"]
     if(nlines > 1):
         found = 0
         lbdas = np.array(eml.keys())
@@ -133,7 +133,7 @@ def crackz(nlines, wl, flux, eml):
                 # keep the brightest
                 ksel = np.argsort(flux)[-1]
                 return -9999.0, -9999.0, 1, [wl[ksel]], [flux[ksel]], \
-                    ["Lya or [OII]"]
+                    ["Lya/[OII]"]
                     
 
 class Source(object):
