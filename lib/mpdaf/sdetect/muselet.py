@@ -66,10 +66,10 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
              
     Returns
     -------
-    continuum_lines.cat   : ASCII file containing a list of continuum emission lines
-    single_lines.cat      : ASCII file containing a list of isolated emission lines
-    continuum_lines_z.cat : ASCII file containing a list of continuum emission lines with estimated redshift
-    single_lines_z.cat    : ASCII file containing a list of isolated emission lines with estimated redshift
+    continuum,single,raw
+    continuum             : (MPDAF-sdetect) Source catalog of emission lines associated with continuum detection
+    single                : (MPDAF-sdetect) Source catalog of emission lines not associated with continuum detection
+    raw                   : (MPDAF-sdetect) Source catalog of individual emission lines detected.
     """
     logger = logging.getLogger('mpdaf corelib')
     d = {'class': '', 'method': 'muselet'}
@@ -111,6 +111,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         size2 = c.shape[1]
         size3 = c.shape[2]
 
+        mcentralvar=np.ma.masked_invalid(c[2: size1 - 3, :, :].var)
+
         nsfilter = int(size1 / 3.0)
         
         logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images", extra=d)
@@ -118,7 +120,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), shape=imsum.shape, fscale=imsum.fscale)
         weight.write('white.fits', savemask='nan')
 
-        fullvar_data = np.ma.masked_invalid(1.0 / c[2: size1 - 3, :, :].var.mean(axis=0))
+        fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
         fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), shape=imsum.shape, fscale=imsum.fscale ** 2.0)
         fullvar.write('inv_variance.fits', savemask='nan')
 
@@ -337,9 +339,32 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         origin=('muselet', __version__, cubename)
 
 
-        #write all continuum lines here:catalog C
-	continuum_nomerging=SourceList()
-        #....
+        #write all continuum lines here:
+	raw_catalog=SourceList()
+        idraw=0
+        for i in range(nC):
+            if (flags[i] == 1): 
+                idraw=idraw+1
+                dec, ra = c.wcs.pix2sky([C_yline[i]-1, C_xline[i]-1])[0]
+                s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
+                s.add_mag('MUSEB', C_magB[i], C_emagB[i])
+                s.add_mag('MUSEG', C_magG[i], C_emagG[i])
+                s.add_mag('MUSER', C_magR[i], C_emagR[i])
+                lbdas=[C_ll[i]]
+                fluxes=[C_fline[i]]
+                err_fluxes=[C_eline[i]]
+                ima = Image('nb/nb%04d.fits'%C_catID[i])
+                s.add_image(ima, 'NB%04d'%int(C_ll[i]), ima_size)
+                lines = Table([lbdas, [dw]*len(lbdas), fluxes, err_fluxes],
+                              names=['LBDA_OBS', 'LBDA_OBS_ERR', 
+                                     'FLUX', 'FLUX_ERR'],
+                              dtype=['<f8', '<f8','<f8', '<f8'])
+                lines['LBDA_OBS'].format = '.2f'
+                lines['LBDA_OBS_ERR'].format = '.2f'
+                lines['FLUX'].format = '.4f'
+                lines['FLUX_ERR'].format = '.4f'
+                s.lines = lines
+                raw_catalog.append(s)
 
         for r in range(maxidc + 1):
             lbdas = []
@@ -405,12 +430,30 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 S2_catID.append(S_catID[i])
 
         #output single lines catalogs here:S2_ll,S2_fline,S2_eline,S2_xline,S2_yline,S2_catID
-        #...
+        nlines = len(S2_ll)
+        for i in range(nlines):
+                idraw=idraw+1
+                dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1])[0]
+                s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
+                lbdas=[S2_ll[i]]
+                fluxes=[S2_fline[i]]
+                err_fluxes=[S2_eline[i]]
+                ima = Image('nb/nb%04d.fits'%S2_catID[i])
+                s.add_image(ima, 'NB%04d'%int(S2_ll[i]), ima_size)
+                lines = Table([lbdas, [dw]*len(lbdas), fluxes, err_fluxes],
+                              names=['LBDA_OBS', 'LBDA_OBS_ERR', 
+                                     'FLUX', 'FLUX_ERR'],
+                              dtype=['<f8', '<f8', '<f8', '<f8'])
+                lines['LBDA_OBS'].format = '.2f'
+                lines['LBDA_OBS_ERR'].format = '.2f'
+                lines['FLUX'].format = '.4f'
+                lines['FLUX_ERR'].format = '.4f'
+                s.lines = lines
+                raw_catalog.append(s)
  
         # List of single lines
         # Merging single lines of the same object
         single_lines = SourceList()
-        nlines = len(S2_ll)
         flags = np.zeros(nlines)
         for i in range(nlines):
             if(flags[i] == 0):
@@ -471,7 +514,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             else:
                 source.crack_z(eml2, 20)
             
-        return continuum_lines, single_lines
+        return continuum_lines, single_lines, raw_catalog
     
 #             t = Catalog.from_sources(continuum_lines)
 #             t.write('continuum_lines_z2.cat', format='ascii')
