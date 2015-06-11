@@ -1,6 +1,6 @@
 
 from astropy.coordinates import SkyCoord, search_around_sky
-from astropy.table import Table, hstack
+from astropy.table import Table, hstack, vstack
 from astropy import units as u
 
 from matplotlib.patches import Ellipse
@@ -64,28 +64,6 @@ class Catalog(Table):
         index = names_hdr.index('CUBE')
         names_hdr.insert(5, names_hdr.pop(index))
         dtype_hdr.insert(5, dtype_hdr.pop(index))
-         
-        #lines
-        llines = [len(source.lines) for source in sources if source.lines is not None]
-        if len(llines) != 0:
-            lmax = max(llines)
-            d = {}
-            for source in sources:
-                if source.lines is not None:
-                    for col in source.lines.colnames:
-                        d[col] = source.lines.dtype[col]
-            if lmax ==1:
-                names_lines = sorted(d)
-                dtype_lines = [d[key] for key in sorted(d)]
-            else:
-                names_lines = []
-                inames_lines = sorted(d)
-                for i in range(1,lmax+1):
-                    names_lines += [col+'%03d'%i for col in inames_lines]
-                dtype_lines = [d[key] for key in sorted(d)]*lmax
-        else:
-            names_lines = []
-            dtype_lines = []
             
         #magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
@@ -108,6 +86,28 @@ class Catalog(Table):
         else:
             names_z = []
             
+        #lines
+        llines = [len(source.lines) for source in sources if source.lines is not None]
+        if len(llines) != 0:
+            lmax = max(llines)
+            d = {}
+            for source in sources:
+                if source.lines is not None:
+                    for col in source.lines.colnames:
+                        d[col] = source.lines.dtype[col]
+            if lmax ==1:
+                names_lines = sorted(d)
+                dtype_lines = [d[key] for key in sorted(d)]
+            else:
+                names_lines = []
+                inames_lines = sorted(d)
+                for i in range(1,lmax+1):
+                    names_lines += [col+'%03d'%i for col in inames_lines]
+                dtype_lines = [d[key] for key in sorted(d)]*lmax
+        else:
+            names_lines = []
+            dtype_lines = []
+            
         
         data_rows = []
         for source in sources:
@@ -115,17 +115,6 @@ class Catalog(Table):
             h = source.header
             keys = h.keys()
             row = [h[key] if key in keys else None for key in names_hdr]
-            # lines
-            if len(llines) != 0:
-                if source.lines is None:
-                    row += [None for key in names_lines]
-                else:
-                    keys = source.lines.colnames
-                    if lmax ==1:
-                        row += [source.lines[key][0] if key in keys else None for key in names_lines]
-                    else:
-                        n = len(source.lines)
-                        row += [source.lines[key[:-3]][int(key[-3:])-1] if key[:-3] in keys and int(key[-3:])<=n else None for key in names_lines]
             #magnitudes
             if len(lmag) != 0:
                 if source.mag is None:
@@ -153,24 +142,46 @@ class Catalog(Table):
                             row += [float(source.z['Z_ERR'][source.z['Z_DESC']==key[:-4]])]
                         else:
                             row += [None]
-                    
+            # lines
+            if len(llines) != 0:
+                if source.lines is None:
+                    row += [None for key in names_lines]
+                else:
+                    keys = source.lines.colnames
+                    if lmax ==1:
+                        row += [source.lines[key][0] if key in keys else None for key in names_lines]
+                    else:
+                        subtab1 = source.lines[source.lines['LINE']!=""]
+                        subtab2 = source.lines[source.lines['LINE']==""]
+                        lines = vstack([subtab1, subtab2])
+                        n = len(lines)
+                        for key,typ in zip(names_lines, dtype_lines):
+                            if key[:-3] in keys and int(key[-3:])<=n:
+                                row += [lines[key[:-3]][int(key[-3:])-1]]
+                            elif typ=='S20':
+                                row += ['']
+                            else:
+                                row += [None]
+                        #row += [lines[key[:-3]][int(key[-3:])-1] if key[:-3] in keys and int(key[-3:])<=n else None for key in names_lines]
+                        
             # final row
             data_rows.append(row)
             
         dtype = dtype_hdr
-        #lines
-        if len(llines) != 0:
-#             dtype += ['<f8' for i in range(len(names_lines))]
-            dtype += dtype_lines
+        
         #magnitudes
         if len(lmag) != 0:
             dtype += ['<f8' for i in range(len(names_mag))]
         #redshifts
         if len(lz) !=0:
             dtype += ['<f8' for i in range(len(names_z))]
+        #lines
+        if len(llines) != 0:
+#             dtype += ['<f8' for i in range(len(names_lines))]
+            dtype += dtype_lines
             
         #create Table
-        names = names_hdr + names_lines + names_mag + names_z
+        names = names_hdr + names_mag + names_z + names_lines
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
         
         #format
