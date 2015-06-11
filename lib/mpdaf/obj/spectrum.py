@@ -2575,7 +2575,7 @@ out : :class:`mpdaf.obj.Gauss1D`
                          peak=False, spline=False, weight=True,
                          plot=False, plot_factor=10):
         """Truncate the spectrum and fit it as a sum of two gaussian functions.
-        Returns the two gaussian fucntions as :class:`mpdaf.obj.Gauss1D` objects.
+        Returns the two gaussian functions as :class:`mpdaf.obj.Gauss1D` objects.
         
         From Johan Richard and Vera Patricio.
         
