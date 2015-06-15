@@ -42,7 +42,7 @@ We create a CubeList object containing these 54 cubes::
  
 We merge these cubes in a single data cube containing median values of each voxel::
 
- >>> l.median(output='median')
+ >>> cube, expmap, statpix = l.median()
   1: HDFS/DATACUBE-MUSE.2014-07-26T05:08:59.778.fits
   2: HDFS/DATACUBE-MUSE.2014-07-28T05:28:57.448.fits
   3: HDFS/DATACUBE-MUSE.2014-08-01T05:08:41.575.fits
@@ -100,7 +100,7 @@ We merge these cubes in a single data cube containing median values of each voxe
  nfiles: 54
  Read fits files
  naxes 326 331 3641
- Memory allocation and creation of the new empty output file
+ Memory allocation
  Loop over all planes of the cube
  12/15/14 - 10:12AM 0.0%
  12/15/14 - 10:13AM 2.0%
@@ -132,16 +132,15 @@ We merge these cubes in a single data cube containing median values of each voxe
  12/15/14 - 10:39AM 94.3%
  12/15/14 - 10:40AM 97.8%
  12/15/14 - 10:40AM 100%
- ./DATACUBE_median.fits created
- ./EXPMAP_median.fits created
 
-DATACUBE_median.fits contains the merged cube and EXPMAP_median.fits contains an exposure map data cube which counts the number of exposures used for the combination of each pixel.
+cube and expmap are :class:`mpdaf.obj.Cube` objects that contains respectively the merged cube and an exposure map data cube which counts the number of exposures used for the combination of each pixel.
+statpix is an astropy.Table objects that gives pixel statistics.
 
 This process is multithreaded. It needs 30 minutes on a machine with 32 cpus.
 
 It is also possible to merge these cubes using sigma clipped mean::
 
- >>> l.merging(output='merging', nmax=2, nclip=5.0, nstop=2, var_mean=True)
+ >>> cube, expmap, statpix = l.merging(output='merging', nmax=2, nclip=5.0, nstop=2, var='stat_mean')
   1: HDFS/DATACUBE-MUSE.2014-07-26T05:08:59.778.fits
   2: HDFS/DATACUBE-MUSE.2014-07-28T05:28:57.448.fits
   3: HDFS/DATACUBE-MUSE.2014-08-01T05:08:41.575.fits
@@ -203,7 +202,7 @@ It is also possible to merge these cubes using sigma clipped mean::
  nmax = 2
  nclip = 5.000000
  nstop = 2
- Memory allocation and creation of the new empty output file
+ Memory allocation
  Loop over all planes of the cube
  12/15/14 - 10:44AM 0.0%
  12/15/14 - 10:45AM 0.1%
@@ -240,10 +239,7 @@ It is also possible to merge these cubes using sigma clipped mean::
  12/15/14 - 11:16AM 96.0%
  12/15/14 - 11:17AM 99.1%
  12/15/14 - 11:17AM 100%
- ./NOVALID_merging.txt created
- write variance extension
- ./DATACUBE_merging.fits created
- ./EXPMAP_merging.fits created
+
 
  
 The process prints the main parameters:
@@ -251,12 +247,15 @@ The process prints the main parameters:
  - nclip: number of sigma at which to clip.
  - nstop: if the number of not rejected pixels is less than this number, the clipping iterations stop.   
  
-The resulted DATACUBE_merging.fits contains the merged cube.
-The variance for each combined voxel is computed as the variance derived from the comparison of the N individual exposures divided by N-1, where N is the number of voxel left after the sigma-clipping.
-This variance data cube is saved as an additional extension of the combined data cube.
+The resulted cube contains an additional extension for the variance.
+3 options are proposed to compute the variance:
 
-In addition, EXPMAP_merging.fits contains an exposure map data cube which counts the number of exposures used for the combination of each pixel and NOVALID_merging.txt gives the number of invalid pixels per exposures.
+ - 'propagate': the variance is the mean of the variances of the N individual exposures divided by N**2.
+ - 'stat_mean': the variance of each combined pixel is computed as the variance derived from the comparison of the N individual exposures divided N-1.
+ - 'stat_one': the variance of each combined pixel is computed as the variance derived from the comparison of the N individual exposures.
  
+N is the number of voxel left after the sigma-clipping.
+
 
 Reference
 =========
@@ -264,7 +263,6 @@ Reference
 :func:`mpdaf.obj.CubeList <mpdaf.obj.CubeList>` is the classic cubes list constructor.
 
 :func:`mpdaf.obj.CubeList.info <mpdaf.obj.CubeList.info>` prints information.
-
 
 
 Checking
@@ -282,6 +280,6 @@ Checking
 Merging
 -------
 
-:func:`mpdaf.obj.CubeList.median <mpdaf.obj.CubeList.median>` merges cubes in a single data cube using median.
+:func:`mpdaf.obj.CubeList.median <mpdaf.obj.CubeList.median>` combines cubes in a single data cube using median.
 
-:func:`mpdaf.obj.CubeList.merging <mpdaf.obj.CubeList.merging>` merges cubes in a single data cube using sigma clipped mean.
+:func:`mpdaf.obj.CubeList.combine <mpdaf.obj.CubeList.combine>` combines cubes in a single data cube using sigma clipped mean.

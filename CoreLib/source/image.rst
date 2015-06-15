@@ -68,3 +68,4 @@ Examples::
   p1.show()
   p1.save('test_composite.jpg')
 
+.. autofunction:: mpdaf.obj.mask_image

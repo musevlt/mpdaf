@@ -278,8 +278,6 @@ Reference
 
 :func:`mpdaf.drs.PixTable.write <mpdaf.drs.PixTable.write>` saves the pixtable in a FITS file.
 
-:func:`mpdaf.drs.PixTable.extract <mpdaf.drs.PixTable.extract>` extracts a subset of a pixtable.
-
 :func:`mpdaf.drs.PixTable.reconstruct_det_image <mpdaf.drs.PixTable.reconstruct_det_image>` reconstructs the image on the detector from the pixtable.
 
 :func:`mpdaf.drs.PixTable.reconstruct_det_waveimage <mpdaf.drs.PixTable.reconstruct_det_waveimage>` reconstructs the image of wavelength values on the detector from the pixtable.
@@ -289,6 +287,10 @@ Reference
 
 Getters and setters
 -------------------
+
+:func:`mpdaf.drs.PixTable.get_column <mpdaf.drs.PixTable.get_column>` loads a column and returns it.
+
+:func:`mpdaf.drs.PixTable.set_column <mpdaf.drs.PixTable.set_column>` sets a column (or a part of it).
 
 :func:`mpdaf.drs.PixTable.get_xpos <mpdaf.drs.PixTable.get_xpos>` gets the xpos column.
 
@@ -345,6 +347,31 @@ Get information from origin array
 :func:`mpdaf.drs.PixTable.origin2xpix <mpdaf.drs.PixTable.origin2xpix>` converts the origin value and returns the x coordinates.
 
 :func:`mpdaf.drs.PixTable.origin2coords <mpdaf.drs.PixTable.origin2coords>` converts the origin value and returns (ifu, slice, ypix, xpix).
+
+
+Extraction
+----------
+
+:func:`mpdaf.drs.PixTable.select_lambda <mpdaf.drs.PixTable.select_lambda>` returns a mask corresponding to the given wavelength range.
+
+:func:`mpdaf.drs.PixTable.select_stacks <mpdaf.drs.PixTable.select_stacks>` returns a mask corresponding to given stacks.
+
+:func:`mpdaf.drs.PixTable.select_slices <mpdaf.drs.PixTable.select_slices>` returns a mask corresponding to given slices.
+
+:func:`mpdaf.drs.PixTable.select_ifus <mpdaf.drs.PixTable.select_ifus>` returns a mask corresponding to given ifus.
+
+:func:`mpdaf.drs.PixTable.select_exp <mpdaf.drs.PixTable.select_exp>` returns a mask corresponding to given exposures.
+
+:func:`mpdaf.drs.PixTable.select_xpix <mpdaf.drs.PixTable.select_xpix>` returns a mask corresponding to detector pixels.
+
+:func:`mpdaf.drs.PixTable.select_ypix <mpdaf.drs.PixTable.select_ypix>` returns a mask corresponding to detector pixels.
+
+:func:`mpdaf.drs.PixTable.select_sky <mpdaf.drs.PixTable.select_sky>` returns a mask corresponding to the given aperture on the sky.
+
+:func:`mpdaf.drs.PixTable.extract <mpdaf.drs.PixTable.extract>` extracts a subset of a pixtable.
+
+:func:`mpdaf.drs.PixTable.extract_from_mask <mpdaf.drs.PixTable.extract_from_mask>` Return a new pixtable extracted with the given mask.
+
 
 
 Autocalibration

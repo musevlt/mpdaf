@@ -34,20 +34,21 @@ MUSELET will run SExtractor using the default.sex,default.param,default.conv and
 in the current and nb/ directory. If not present default parameter files are created. 
 
 - STEP 3:
-The code will merge all SExtractor catalogs, separate emission lines linked with continuum objects from the rest, 
-and produce a list of continuum emission lines (continuum_lines.cat) and isolated emission lines (single_lines.cat).
-
-Then, for each of these catalog, MUSELET will estimate a redshift based on multiple emission lines, and produces 
-the corresponding files continuum_lines_z.cat and single_lines_z.cat. Emission lines are merged spatially to the same 
+The code will merge all SExtractor catalogs and will return separate emission lines linked with continuum objects from the rest.
+For each of these catalog, MUSELET will estimate a redshift based on multiple emission lines. Emission lines are merged spatially to the same 
 source based on the "radius" parameter (in pixels, default radius=4).
-
 The redshifts are estimated from emission line catalogs emlines (all emission lines) and emlines_small (list of brightest 
 emission lines). These files are 2 columns (name and wavelength) and can be adjusted to one's needs.
+
+The code will produce:
+  - a :class:`mpdaf.sdetect.SourceList` containing continuum emission lines,
+  - a :class:`mpdaf.sdetect.SourceList` containing isolated emission lines,
+  - a :class:`mpdaf.sdetect.SourceList` that stores all detected sources before the merging procedure.
 
 
 Requirements:
 
-- MPDAF (v 1.1.16)
+- MPDAF (v 1.1.17)
 
 - SExtractor ("sex" binary file in your $PATH).
 
@@ -58,17 +59,28 @@ Tutorials
 MUSELET is run through the following commands in mpdaf:
 
   >>> from mpdaf.sdetect import muselet
-  >>> muselet('DATACUBE.fits')
+  >>> cont, sing, raw = muselet('DATACUBE.fits')
 
 Optionally, one can provide the starting step (2 or 3) in order to 
 only redo one part of the script.
 
-  >>> muselet('DATACUBE.fits',step=2) #will assume the narrow-band images are already created
+  >>> cont, sing, raw = muselet('DATACUBE.fits',step=2) #will assume the narrow-band images are already created
 
 Optionally, one can provide the size of the continuum region to subtract on each side of the narrow-band 
 images.
 
-  >>> muselet('DATACUBE.fits',delta=15) #only 15 wavelength planes in continuum estimate
+  >>> cont, sing, raw = muselet('DATACUBE.fits',delta=15) #only 15 wavelength planes in continuum estimate
+
+The method :func:`mpdaf.sdetect.SourceList.write <mpdaf.sdetect.SourceList.write>` could be used to  save all sources and the corresponding catalog  as FITS files:
+
+  >>> cont.write(path='cont')
+
+Is is also possible to create a :class:`mpdaf.sdetect.Catalog` object and save it as an ascii file:
+
+  >>> from mpdaf.sdetect import Catalog
+  >>> cat = Catalog.from_sources(cont)
+  >>> cat.write('continuum_lines_z.cat', format='ascii')
+
 
 Reference
 =========

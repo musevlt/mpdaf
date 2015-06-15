@@ -257,6 +257,10 @@ Getters and setters
 
 :func:`mpdaf.obj.Image.get_np_data <mpdaf.obj.Image.get_np_data>` returns flux array multiplied by scaling factor.
 
+:func:`mpdaf.obj.Image.get_data_hdu <mpdaf.obj.Image.get_data_hdu>` returns astropy.io.fits.ImageHDU corresponding to the DATA extension.
+
+:func:`mpdaf.obj.Image.get_stat_hdu <mpdaf.obj.Image.get_stat_hdu>` returns astropy.io.fits.ImageHDU corresponding to the STAT extension.
+
 :func:`mpdaf.obj.Image.set_wcs <mpdaf.obj.Image.set_wcs>` sets the world coordinates.
 
 :func:`mpdaf.obj.Image.set_var <mpdaf.obj.Image.set_var>` sets the variance array.
@@ -276,6 +280,8 @@ Mask
 :func:`mpdaf.obj.Image.mask <mpdaf.obj.Image.mask>` masks values inside/outside the described region (in place).
 
 :func:`mpdaf.obj.Image.mask_ellipse <mpdaf.obj.Image.mask_ellipse>` masks values inside/outside the described region. Uses an elliptical shape.
+
+:func:`mpdaf.obj.Image.mask_polygon <mpdaf.obj.Image.mask_polygon>` masks values inside/outside a polygonal region.
 
 :func:`mpdaf.obj.Image.unmask <mpdaf.obj.Image.unmask>` unmasks the image (just invalid data (nan,inf) are masked) (in place).
 

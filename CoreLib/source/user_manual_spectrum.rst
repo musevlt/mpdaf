@@ -234,6 +234,10 @@ Getters and setters
 
 :func:`mpdaf.obj.Spectrum.get_np_data <mpdaf.obj.Spectrum.get_np_data>` returns flux array multiplied by scaling factor.
 
+:func:`mpdaf.obj.Spectrum.get_data_hdu <mpdaf.obj.Spectrum.get_data_hdu>` returns astropy.io.fits.ImageHDU corresponding to the DATA extension.
+
+:func:`mpdaf.obj.Spectrum.get_stat_hdu <mpdaf.obj.Spectrum.get_stat_hdu>` returns astropy.io.fits.ImageHDU corresponding to the STAT extension.
+
 :func:`mpdaf.obj.Spectrum.set_wcs <mpdaf.obj.Spectrum.set_wcs>` sets the world coordinates.
 
 :func:`mpdaf.obj.Spectrum.set_var <mpdaf.obj.Spectrum.set_var>` sets the variance array.
@@ -282,7 +286,7 @@ Arithmetic
 
 :func:`mpdaf.obj.Spectrum.abs <mpdaf.obj.Spectrum.abs>` computes the absolute value of data extension.
 
-
+:func:`mpdaf.obj.Spectrum.integrate <mpdaf.obj.Spectrum.integrate>` integrates the flux value over a wavelength range.
 
 Transformation
 --------------
@@ -326,6 +330,12 @@ Fit
 
 :func:`mpdaf.obj.Spectrum.add_gaussian <mpdaf.obj.Spectrum.add_gaussian>` adds a Gaussian on spectrum (in place).
 
+:func:`mpdaf.obj.Spectrum.gauss_dfit <mpdaf.obj.Spectrum.gauss_dfit>` performs a double Gaussian fit on spectrum.
+
+:func:`mpdaf.obj.Spectrum.gauss_asymfit <mpdaf.obj.Spectrum.gauss_asymfit>` performs an asymetric Gaussian fit on spectrum.
+
+:func:`mpdaf.obj.Spectrum.add_asym_gaussian <mpdaf.obj.Spectrum.add_asym_gaussian>` adds an asymetric Gaussian on spectrum (in place).
+
 
 Photometry
 ----------
@@ -352,5 +362,5 @@ Plotting
 
 :func:`mpdaf.obj.Spectrum.igauss_fit <mpdaf.obj.Spectrum.igauss_fit>` performs and plots a Gaussian fit on spectrum.
   
-        
+:func:`mpdaf.obj.Spectrum.igauss_asymfit <mpdaf.obj.Spectrum.igauss_asymfit>` performs and plots an asymetric Gaussian fit on spectrum.        
   

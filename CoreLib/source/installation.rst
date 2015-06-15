@@ -57,20 +57,18 @@ Prerequisites
 
 The various software required are:
 
- * Python (version 2.6 or 2.7)
- * IPython
- * numpy (version 1.6.2 or above)
- * scipy (version 0.12 or above)
- * matplotlib (version 1.1.0 or above)
- * astropy (version 1.0 or above)
- * nose
- * PIL
- * numexpr
- * python-development package
- * pkg-config tool
- * C numerics library
- * C CFITSIO library
- * C OpenMP library (optional)
+ * `python <http://python.org/>`_ version 2.6 or 2.7
+ * `ipython <http://ipython.org/>`_  (enhanced interactive console)
+ * `numpy <http://www.numpy.org/>`_ version 1.6.2 or above (base N-dimensional array Python package)
+ * `scipy <http://www.scipy.org/>`_ version 0.12 or above (fundamental Python library for scientific computing)
+ * `matplotlib <http://matplotlib.org/>`_ version 1.1.0 or above (Python 2D plotting library)
+ * `astropy <http://www.astropy.org/>`_ version 1.0 or above (Python package for Astronomy) 
+ * `nose <http://pypi.python.org/pypi/nose/>`_ (testing for python)
+ * `PIL <http://pypi.python.org/pypi/PIL>`_  (Python imaging library)
+ * `numexpr <http://pypi.python.org/pypi/numexpr>`_ (fast numerical expression evaluator for NumPy)
+ * pkg-config tool (helper tool used when compiling C libraries)
+ * `CFITSIO <http://heasarc.gsfc.nasa.gov/fitsio/>`_ (C library for reading and writing FITS files) 
+ * optional: `C OpenMP library <http://openmp.org>`_ (parallel programming)
 
 
 .. _installation-label:

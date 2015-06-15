@@ -384,7 +384,7 @@ Reference
 
 :func:`mpdaf.obj.Cube.clone <mpdaf.obj.Cube.clone>` returns a new cube of the same shape and coordinates, filled with zeros.
 
-:func:`mpdaf.obj.Cube.info <mpdaf.obj.Cube.info>` prints information.
+:func:`mpdaf.obj.cube.CubeBase.info <mpdaf.obj.cube.CubeBase.info>` prints information.
 
 :func:`mpdaf.obj.Cube.write <mpdaf.obj.Cube.write>` saves the Cube in a FITS file.
 
@@ -421,6 +421,10 @@ Getters and setters
 :func:`mpdaf.obj.Cube.get_rot <mpdaf.obj.Cube.get_rot>` returns the rotation angle.
 
 :func:`mpdaf.obj.Cube.get_np_data <mpdaf.obj.Cube.get_np_data>` returns flux array multiplied by scaling factor.
+
+:func:`mpdaf.obj.Cube.get_data_hdu <mpdaf.obj.Cube.get_data_hdu>` returns astropy.io.fits.ImageHDU corresponding to the DATA extension.
+
+:func:`mpdaf.obj.Cube.get_stat_hdu <mpdaf.obj.Cube.get_stat_hdu>` returns astropy.io.fits.ImageHDU corresponding to the STAT extension.
 
 :func:`mpdaf.obj.Cube.set_wcs <mpdaf.obj.Cube.set_wcs>` sets the world coordinates.
 
@@ -484,6 +488,10 @@ Transformation
 
 :func:`mpdaf.obj.Cube.get_image <mpdaf.obj.Cube.get_image>` extracts an image from the datacube.
 
+:func:`mpdaf.obj.Cube.subcube <mpdaf.obj.Cube.subcube>` extracts a sub-cube.
+
+:func:`mpdaf.obj.Cube.subcube <mpdaf.obj.Cube.subcube_aperture>` extracts a sub-cube from an aperture of fixed radius.
+
 :func:`mpdaf.obj.Cube.rebin_factor <mpdaf.obj.Cube.rebin_factor>` shrinks the size of the cube by factor.
 
 :func:`mpdaf.obj.Cube.rebin_median <mpdaf.obj.Cube.rebin_median>` rebins the cube using median values.
@@ -499,7 +507,7 @@ Open big cube with memory mapping
 
 :func:`mpdaf.obj.CubeDisk <mpdaf.obj.CubeDisk>` is the cube constructor that uses memory mapping.
 
-:func:`mpdaf.obj.CubeDisk.info <mpdaf.obj.CubeDisk.info>` prints information.
+:func:`mpdaf.obj.cube.CubeBase.info <mpdaf.obj.cube.CubeBase.info>` prints information.
 
 :func:`CubeDisk[k,p,q] <mpdaf.obj.CubeDisk.__getitem__>` returns the corresponding value.
 
