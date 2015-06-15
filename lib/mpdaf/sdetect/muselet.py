@@ -1,4 +1,4 @@
-from astropy.table import Table, Column
+from astropy.table import Table
 import logging
 import numpy as np
 import os
@@ -9,7 +9,7 @@ import sys
 
 
 from ..obj import Cube, CubeDisk, Image
-from ..sdetect import Source, SourceList, Catalog
+from ..sdetect import Source, SourceList
 
 __version__ = 2.0
 
@@ -35,7 +35,7 @@ def setup_config_files_nb():
             pass
         
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21):
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
     to detect emission lines in a datacube. It has been developed by Johan Richard
     (johan.richard@univ-lyon1.fr)
@@ -58,14 +58,17 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
     radius : double
              Radius in spatial pixels (default=4) within which emission lines
              are merged spatially into the same object.
-    ima_size
+    ima_size : integer
+               Size of the extracted images in pixels.
+    nlines_max : integer
+                 Maximum number of lines detected per object.
              
     Returns
     -------
-    continuum,single,raw
-    continuum             : (MPDAF-sdetect) Source catalog of emission lines associated with continuum detection
-    single                : (MPDAF-sdetect) Source catalog of emission lines not associated with continuum detection
-    raw                   : (MPDAF-sdetect) Source catalog of individual emission lines detected.
+    continuum,single,raw : :class:`mpdaf.sdetect.SourceList`, :class:`mpdaf.sdetect.SourceList`, :class:`mpdaf.sdetect.SourceList`
+    continuum             : List of detected sources that contains emission lines associated with continuum detection
+    single                : List of detected sources that contains emission lines not associated with continuum detection
+    raw                   : List of detected sources  before the merging procedure.
     """
     logger = logging.getLogger('mpdaf corelib')
     d = {'class': '', 'method': 'muselet'}
@@ -336,7 +339,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
 
         #write all continuum lines here:
-	    raw_catalog=SourceList()
+        raw_catalog=SourceList()
         idraw=0
         for i in range(nC):
             if (flags[i] == 1): 
@@ -504,11 +507,16 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 source.crack_z(eml)
             else:
                 source.crack_z(eml2)
+            source.sort_lines(nlines_max)
         for source in single_lines:
             if(len(source.lines) > 3):
                 source.crack_z(eml, 20)
             else:
                 source.crack_z(eml2, 20)
+            source.sort_lines(nlines_max)
+                
+        
+                
             
         return continuum_lines, single_lines, raw_catalog
     
