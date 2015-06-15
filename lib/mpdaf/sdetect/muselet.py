@@ -19,14 +19,10 @@ def setup_config_files():
     for f in files:
         try:
             if not os.path.isfile(f):
-                os.symlink(DIR+f, './'+f)
+                shutil.copy(DIR+f, './'+f)
         except:
             pass
-        
-def remove_config_files():
-    files = ['default.sex', 'default.conv', 'default.nnw','default.param']
-    for f in files:
-        os.unlink(f)
+
         
 def setup_config_files_nb():
     DIR = os.path.dirname(__file__) + '/muselet_data/'
@@ -34,7 +30,7 @@ def setup_config_files_nb():
     for f in files:
         try:
             if not os.path.isfile(f):
-                os.symlink(DIR+f, './'+f[3:])
+                shutil.copy(DIR+f, './'+f[3:])
         except:
             pass
         
@@ -340,7 +336,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
 
         #write all continuum lines here:
-	raw_catalog=SourceList()
+	    raw_catalog=SourceList()
         idraw=0
         for i in range(nC):
             if (flags[i] == 1): 
