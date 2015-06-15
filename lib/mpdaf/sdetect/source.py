@@ -1,5 +1,5 @@
 from astropy.io import fits as pyfits
-from astropy.table import Table, Column
+from astropy.table import Table, Column, vstack
 
 from matplotlib import cm
 from matplotlib.patches import Ellipse
@@ -1026,6 +1026,27 @@ class Source(object):
                 #self.logger.info('crack_z: lines', extra=d)
                 #for l in self.lines.pformat():
                 #    self.logger.info(l, extra=d)
+                
+    def sort_lines(self, nlines_max=25):
+        """Sort lines by flux in descending order. 
+        
+        Parameters
+        ----------
+        nlines_max : integer
+                     Maximum number of stored lines
+        """
+        if self.lines is not None:
+            subtab1 = self.lines[self.lines['LINE']!=""]
+            subtab1.sort('FLUX')
+            subtab1.reverse()
+            n1 = len(subtab1)
+            subtab2 = self.lines[self.lines['LINE']==""]
+            subtab2.sort('FLUX')
+            subtab2.reverse()
+            n2 = len(subtab2)
+            if (n1+n2)>25:
+                n2 = max(nlines_max-n1,0)
+            self.lines = vstack([subtab1, subtab2[0:n2]])
                 
     def show_ima(self, ax, name, showcenter=None,
                  cuts=None, cmap=cm.gray_r, **kwargs):
