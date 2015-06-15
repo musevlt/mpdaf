@@ -56,7 +56,7 @@ class PixTableMask(object):
 
     def __init__(self, filename=None, maskfile=None, maskcol=None,
                  pixtable=None):
-        """creates a PixTableMask object.
+        """Create a PixTableMask object.
 
         Parameters
         ----------
@@ -83,7 +83,7 @@ class PixTableMask(object):
             self.maskcol = np.bool_(hdulist['maskcol'].data[:, 0])
 
     def write(self, filename):
-        """Saves the object in a FITS file.
+        """Save the object in a FITS file.
 
         Parameters
         ----------
@@ -166,7 +166,7 @@ class PixTableAutoCalib(object):
 
     def __init__(self, filename=None, method=None, maskfile=None, skyref=None,
                  pixtable=None, ifu=None, sli=None, npts=None, corr=None):
-        """creates a PixTableAutoCalib object.
+        """Create a PixTableAutoCalib object.
 
         Parameters
         ----------
@@ -213,7 +213,7 @@ class PixTableAutoCalib(object):
             self.corr = hdulist['corr'].data[:, 0]
 
     def write(self, filename):
-        """Saves the object in a FITS file.
+        """Save the object in a FITS file.
         """
         prihdu = pyfits.PrimaryHDU()
         warnings.simplefilter("ignore")
@@ -245,7 +245,7 @@ class PixTableAutoCalib(object):
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
           primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom',
           unit_data='count', unit_stat='count**2'):
-    """Saves the object in a FITS file.
+    """Save the object in a FITS file.
 
     Parameters
     ----------
@@ -369,7 +369,7 @@ class PixTable(object):
                  dq=None, stat=None, origin=None, weight=None,
                  primary_header=None, save_as_ima=True, wcs='pix',
                  wave='Angstrom', unit_data='count', unit_stat='count**2'):
-        """Creates a PixTable object.
+        """Create a PixTable object.
 
         Parameters
         ----------
@@ -495,7 +495,7 @@ class PixTable(object):
                 self.yc = self.primary_header['DEC']
 
     def copy(self):
-        """Copies PixTable object in a new one and returns it."""
+        """Copy PixTable object in a new one and returns it."""
         result = PixTable(self.filename)
         result.wcs = self.wcs
         result.wave = self.wave
@@ -533,7 +533,7 @@ class PixTable(object):
         return result
 
     def info(self):
-        """Prints information."""
+        """Print information."""
         d = {'class': 'PixTable', 'method': 'info'}
         msg = "%i merged IFUs went into this pixel table" % self.nifu
         self.logger.info(msg, extra=d)
@@ -558,7 +558,7 @@ class PixTable(object):
             # print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
 
     def write(self, filename, save_as_ima=True):
-        """Saves the object in a FITS file.
+        """Save the object in a FITS file.
 
         Parameters
         ----------
@@ -578,7 +578,7 @@ class PixTable(object):
         self.ima = save_as_ima
 
     def get_column(self, name, ksel=None):
-        """Loads a column and returns it.
+        """Load a column and return it.
 
         Parameters
         ----------
@@ -615,7 +615,7 @@ class PixTable(object):
                 return column
 
     def set_column(self, name, data, ksel=None):
-        """Sets a column (or a part of it).
+        """Set a column (or a part of it).
 
         Parameters
         ----------
@@ -638,7 +638,7 @@ class PixTable(object):
             attr[ksel] = data
 
     def get_xpos(self, ksel=None):
-        """Loads the xpos column and returns it.
+        """Load the xpos column and return it.
 
         Parameters
         ----------
@@ -652,7 +652,7 @@ class PixTable(object):
         return self.get_column('xpos', ksel=ksel)
 
     def set_xpos(self, xpos, ksel=None):
-        """Sets xpos column (or a part of it).
+        """Set xpos column (or a part of it).
 
         Parameters
         ----------
@@ -668,7 +668,7 @@ class PixTable(object):
             = float(self.xpos.max())
 
     def get_ypos(self, ksel=None):
-        """Loads the ypos column and returns it.
+        """Load the ypos column and return it.
 
         Parameters
         ----------
@@ -682,7 +682,7 @@ class PixTable(object):
         return self.get_column('ypos', ksel=ksel)
 
     def set_ypos(self, ypos, ksel=None):
-        """Sets ypos column (or a part of it).
+        """Set ypos column (or a part of it).
 
         Parameters
         ----------
@@ -698,7 +698,7 @@ class PixTable(object):
             = float(self.ypos.max())
 
     def get_lambda(self, ksel=None):
-        """Loads the lambda column and returns it.
+        """Load the lambda column and return it.
 
         Parameters
         ----------
@@ -712,7 +712,7 @@ class PixTable(object):
         return self.get_column('lambda', ksel=ksel)
 
     def set_lambda(self, lbda, ksel=None):
-        """Sets lambda column (or a part of it).
+        """Set lambda column (or a part of it).
 
         Parameters
         ----------
@@ -730,7 +730,7 @@ class PixTable(object):
             = float(self.lbda.max())
 
     def get_data(self, ksel=None):
-        """Loads the data column and returns it.
+        """Load the data column and return it.
 
         Parameters
         ----------
@@ -744,7 +744,7 @@ class PixTable(object):
         return self.get_column('data', ksel=ksel)
 
     def set_data(self, data, ksel=None):
-        """Sets data column (or a part of it).
+        """Set data column (or a part of it).
 
         Parameters
         ----------
@@ -756,7 +756,7 @@ class PixTable(object):
         self.set_column('data', data, ksel=ksel)
 
     def get_stat(self, ksel=None):
-        """Loads the stat column and returns it.
+        """Load the stat column and return it.
 
         Parameters
         ----------
@@ -770,7 +770,7 @@ class PixTable(object):
         return self.get_column('stat', ksel=ksel)
 
     def set_stat(self, stat, ksel=None):
-        """Sets stat column (or a part of it).
+        """Set stat column (or a part of it).
 
         Parameters
         ----------
@@ -782,7 +782,7 @@ class PixTable(object):
         self.set_column('stat', stat, ksel=ksel)
 
     def get_dq(self, ksel=None):
-        """Loads the dq column and returns it.
+        """Load the dq column and return it.
 
         Parameters
         ----------
@@ -796,7 +796,7 @@ class PixTable(object):
         return self.get_column('dq', ksel=ksel)
 
     def set_dq(self, dq, ksel=None):
-        """Sets dq column (or a part of it).
+        """Set dq column (or a part of it).
 
         Parameters
         ----------
@@ -808,7 +808,7 @@ class PixTable(object):
         self.set_column('dq', dq, ksel=ksel)
 
     def get_origin(self, ksel=None):
-        """Loads the origin column and returns it.
+        """Load the origin column and return it.
 
         Parameters
         ----------
@@ -822,7 +822,7 @@ class PixTable(object):
         return self.get_column('origin', ksel=ksel)
 
     def set_origin(self, origin, ksel=None):
-        """Sets origin column (or a part of it).
+        """Set origin column (or a part of it).
 
         Parameters
         ----------
@@ -846,7 +846,7 @@ class PixTable(object):
             hdr["HIERARCH ESO DRS MUSE PIXTABLE MERGED"] = len(np.unique(ifu))
 
     def get_weight(self, ksel=None):
-        """Loads the weight column and returns it.
+        """Load the weight column and return it.
 
         Parameters
         ----------
@@ -864,7 +864,7 @@ class PixTable(object):
         return self.get_column('weight', ksel=ksel) if wght else None
 
     def set_weight(self, weight, ksel=None):
-        """Sets weight column (or a part of it).
+        """Set weight column (or a part of it).
 
         Parameters
         ----------
@@ -876,7 +876,7 @@ class PixTable(object):
         self.set_column('weight', weight, ksel=ksel)
 
     def get_exp(self):
-        """Loads the exposure numbers and returns it as a column.
+        """Load the exposure numbers and return it as a column.
 
         Returns
         -------
@@ -895,6 +895,18 @@ class PixTable(object):
         return exp
 
     def select_lambda(self, lbda):
+        """Return a mask corresponding to the given wavelength range
+
+        Parameters
+        ----------
+        lbda     : (float, float)
+                   (min, max) wavelength range in wavelength unit.
+
+        Returns
+        -------
+        out : array of booleans
+              mask
+        """
         arr = self.get_lambda()
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
@@ -906,6 +918,17 @@ class PixTable(object):
         return mask
 
     def select_stacks(self, stacks, origin=None):
+        """Return a mask corresponding to given stacks.
+
+        Parameters
+        ----------
+        stacks     : list of integers
+                     Sracks numbers (1,2,3 or 4)
+        Returns
+        -------
+        out : array of booleans
+              mask
+        """
         from ..MUSE import Slicer
         d = {'class': 'PixTable', 'method': 'select_stacks'}
         assert min(stacks) > 0
@@ -916,6 +939,18 @@ class PixTable(object):
         return self.select_slices(sl, origin=origin)
 
     def select_slices(self, slices, origin=None):
+        """Return a mask corresponding to given slices.
+        
+        Parameters
+        ----------
+        slices       : list of integers
+                       Slice number on the CCD.
+
+        Returns
+        -------
+        out : array of booleans
+              mask
+        """
         col_origin = origin if origin is not None else self.get_origin()
         col_sli = self.origin2slice(col_origin)
         if numexpr:
@@ -927,6 +962,18 @@ class PixTable(object):
             return np.in1d(col_sli, slices)
 
     def select_ifus(self, ifus, origin=None):
+        """Return a mask corresponding to given ifus.
+
+        Parameters
+        ----------
+        ifu      : int or list
+                   IFU number.
+                   
+        Returns
+        -------
+        out : array of booleans
+              mask
+        """
         col_origin = origin if origin is not None else self.get_origin()
         col_ifu = self.origin2ifu(col_origin)
         if numexpr:
@@ -938,6 +985,18 @@ class PixTable(object):
             return np.in1d(col_ifu, ifus)
 
     def select_exp(self, exp, col_exp):
+        """Return a mask corresponding to given exposure numbers.
+        
+        Parameters
+        ----------
+        exp      : list of integers
+                   List of exposure numbers
+
+        Returns
+        -------
+        out : array of booleans
+              mask
+        """
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
             for iexp in exp:
@@ -948,6 +1007,18 @@ class PixTable(object):
         return mask
 
     def select_xpix(self, xpix, origin=None):
+        """Return a mask corresponding to given detector pixels.
+        
+        Parameters
+        ----------
+        xpix     : list
+                   [(min, max)] pixel range along the X axis
+
+        Returns
+        -------
+        out : array of booleans
+              mask
+        """
         col_origin = origin if origin is not None else self.get_origin()
         col_xpix = self.origin2xpix(col_origin)
         if hasattr(xpix, '__iter__'):
@@ -968,6 +1039,18 @@ class PixTable(object):
         return mask
 
     def select_ypix(self, ypix, origin=None):
+        """Return a mask corresponding to given detector pixels.
+        
+        Parameters
+        ----------
+        ypix     : list
+                   [(min, max)] pixel range along the Y axis
+
+        Returns
+        -------
+        out : array of booleans
+              mask
+        """
         col_origin = origin if origin is not None else self.get_origin()
         col_ypix = self.origin2ypix(col_origin)
         if hasattr(ypix, '__iter__'):
@@ -988,6 +1071,22 @@ class PixTable(object):
         return mask
 
     def select_sky(self, sky):
+        """Return a mask corresponding to the given aperture on the sky (center, size and shape)
+        
+        Parameters
+        ----------
+        sky      : (float, float, float, char)
+                   (y, x, size, shape) extract an aperture on the sky,
+                   defined by a center (y, x) in degrees/pixel,
+                   a shape ('C' for circular, 'S' for square)
+                   and size (radius or half side length) in arcsec/pixels.
+        
+
+        Returns
+        -------
+        out : array of booleans
+              mask
+        """
         xpos, ypos = self.get_pos_sky()
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
