@@ -29,7 +29,7 @@ class Catalog(Table):
         
     @classmethod
     def from_sources(cls, sources):
-        """ constructs a catalog from a list of source objects.
+        """Construct a catalog from a list of source objects.
         
         Parameters
         ----------
@@ -151,9 +151,13 @@ class Catalog(Table):
                     if lmax ==1:
                         row += [source.lines[key][0] if key in keys else None for key in names_lines]
                     else:
-                        subtab1 = source.lines[source.lines['LINE']!=""]
-                        subtab2 = source.lines[source.lines['LINE']==""]
-                        lines = vstack([subtab1, subtab2])
+                        try:
+                            subtab1 = source.lines[source.lines['LINE']!=""]
+                            subtab2 = source.lines[source.lines['LINE']==""]
+                            lines = vstack([subtab1, subtab2])
+                        except:
+                            lines = source.lines
+                        
                         n = len(lines)
                         for key,typ in zip(names_lines, dtype_lines):
                             if key[:-3] in keys and int(key[-3:])<=n:
@@ -198,7 +202,7 @@ class Catalog(Table):
         return t   
     
     def match(self, cat2, radius=1):
-        """ Matchs elements of the current catalog with an other (in RA, DEC).
+        """Match elements of the current catalog with an other (in RA, DEC).
         
         Parameters
         ----------
@@ -236,7 +240,7 @@ class Catalog(Table):
         return match, nomatch, nomatch2
     
     def select(self, wcs, ra='RA', dec='DEC'):
-        """ Selected all sources from catalog which are inside the WCS of image
+        """Select all sources from catalog which are inside the WCS of image
         and return a new catalog.
         
         Parameters
@@ -328,7 +332,7 @@ class Catalog(Table):
             
     def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
                 alpha=0.5, col='k', **kwargs):
-        """ This function display the id of the catalog
+        """ This function displays the id of the catalog
         
         Parameters
         ----------
