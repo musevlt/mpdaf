@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '1.1.16'
-__date__ = '2015/03/16'
+__version__ = '1.1.17'
+__date__ = '2015/06/15'
 
 import tools
 import obj
