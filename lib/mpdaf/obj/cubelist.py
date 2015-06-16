@@ -157,13 +157,19 @@ class CubeList(object):
         copy_keywords(self.cubes[0].primary_header, hdr,
                       ('ORIGIN', 'TELESCOP', 'INSTRUME', 'EQUINOX',
                        'RADECSYS', 'EXPTIME', 'OBJECT'))
-        hdr['EXPTIME'] = hdr['EXPTIME'] * nfiles
-        c.data_header['OBJECT'] = self.cubes[0].data_header['OBJECT']
+        try:
+            hdr['EXPTIME'] = hdr['EXPTIME'] * nfiles
+        except:
+            pass
+        try:
+            c.data_header['OBJECT'] = self.cubes[0].data_header['OBJECT']
+        except:
+            pass
 
         if keywords is not None:
             params, values, comments = zip(*keywords)
         else:
-            params, values, comments = None, None, None
+            params, values, comments = [], [], []
 
         add_mpdaf_method_keywords(hdr, method, params, values, comments)
 
