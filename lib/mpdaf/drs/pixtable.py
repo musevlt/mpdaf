@@ -2147,8 +2147,8 @@ class PixTable(object):
         libCmethods.mpdaf_divide_slice_median.argtypes = \
             [array_1d_double, array_1d_double, array_1d_double, array_1d_int,
              array_1d_int, array_1d_int, array_1d_double, array_1d_double,
-             array_1d_double, ctypes.c_int, array_1d_int, array_1d_double,
-             array_1d_double, ctypes.c_int]
+             ctypes.c_int, array_1d_int, array_1d_double,array_1d_double,
+             ctypes.c_int]
 
         data = self.get_data()
         ifu = ifu.astype(np.int32)

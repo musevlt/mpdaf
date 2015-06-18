@@ -6,74 +6,95 @@
 
 
 // Compare two elements
-static int qsort_compare (const void * a, const void * b)
-{
-        return ( *(double*)a > *(double*)b );
-}
+//static int qsort_compare (const void * a, const void * b)
+//{
+//        return ( *(double*)a > *(double*)b );
+//}
 
 
 
 // Compute the arithmetic mean
-void mpdaf_mean(double* data, int n, double x[3])
+void mpdaf_mean(double* data, int n, double x[3], int* indx)
 {
     double mean=0.0, sum_deviation=0.0;
     int i;
     for(i=0; i<n;i++)
     {
-      mean+=data[i];
+      mean+=data[indx[i]];
     }
     mean=mean/n;
     for(i=0; i<n;i++)
       {
-	sum_deviation+=(data[i]-mean)*(data[i]-mean);
+	sum_deviation+=(data[indx[i]]-mean)*(data[indx[i]]-mean);
       }
     x[0] = mean;
     x[1] = sqrt(sum_deviation/n);           
 }
 
 // Compute the sum
-double mpdaf_sum(double* data, int n) // passer en index
+double mpdaf_sum(double* data, int n, int* indx)
 {
   double sum=0;
   int i;
   for(i=0; i<n;i++)
     {
-      sum+=data[i];
+      sum+=data[indx[i]];
     }
   return sum;
 }
 
 // Compute the median
-double mpdaf_median(double* data, int n) // passer en index
+/*double mpdaf_median(double* data, int n)
 {
   qsort(data, n, sizeof(double), qsort_compare);
   if(n%2==1) return data[n / 2];
   else return (data[n/2-1]+data[n/2])/2.0;
+  }*/
+
+
+double mpdaf_median(double *data, int  n, int *indx)
+{
+        int npts=n;
+	double med;
+
+	indexx(npts,data,indx);
+	if (npts%2 == 0) 
+		med = (data[indx[(int)(npts/2)]] + data[indx[(int)(npts/2)-1]])/2;
+	else
+		med = data[indx[(int)(npts/2)]];
+
+	return(med);
 }
 
 
-
-
 // Iterative sigma-clipping of array elements
-// return x[0]=mean, x[1]=std, x[2]=n, id
-void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* id)
+// return x[0]=mean, x[1]=std, x[2]=n
+// index must be initialized.
+void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx)
 {
   double clip_lo, clip_up;
-  mpdaf_mean(data, n, x);
+  mpdaf_mean(data, n, x, indx);
   x[2] = n;
   double med;
-  med =  mpdaf_median(data,n);
+  med =  mpdaf_median(data,n, indx);
   clip_lo = med - (nclip_low*x[1]);
   clip_up = med + (nclip_up*x[1]);
 
   int i, ni = 0; 
-  for (i=0; i<n; i++)
+  /*for (i=0; i<n; i++)
     {
       if ((data[i]<clip_up) && (data[i]>clip_lo))
         {
 	  data[ni]=data[i];
 	  id[ni]=id[i];
 	  ni = ni + 1;
+	}
+	}*/
+  for (i=0; i<n; i++)
+    {
+      if ((data[indx[i]]<clip_up) && (data[indx[i]]>clip_lo))
+	{
+	  ni = ni+1;
 	}
     }
   if (ni<nstop || ni==n)
@@ -82,21 +103,30 @@ void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nc
     }
    if ( nmax > 0 )
    {
+     ni = 0;
+     for (i=0; i<n; i++)
+     {
+      if ((data[indx[i]]<clip_up) && (data[indx[i]]>clip_lo))
+	{
+	  indx[ni]=indx[i];
+	  ni = ni+1;
+	}
+     }
      nmax = nmax - 1;
-     mpdaf_mean_sigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop, id);
+     mpdaf_mean_sigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop, indx);
    }
 }
 
 // Iterative sigma-clipping of array elements
 // return x[0]=median, x[1]=std, x[2]=n
-void mpdaf_median_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop)
+void mpdaf_median_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx)
 {
   //printf("n = %i med=%g\n",n,mpdaf_median(data,n));
   double clip_lo, clip_up;
-  mpdaf_mean(data, n, x);
+  mpdaf_mean(data, n, x, indx);
   x[2] = n;
   double med;
-  med =  mpdaf_median(data,n);
+  med =  mpdaf_median(data,n,indx);
   x[0] = med;
   clip_lo = med - (nclip_low*x[1]);
   clip_up = med + (nclip_up*x[1]);
@@ -104,9 +134,8 @@ void mpdaf_median_sigma_clip(double* data, int n, double x[3], int nmax, double 
   int i, ni = 0; 
   for (i=0; i<n; i++)
     {
-      if ((data[i]<clip_up) && (data[i]>clip_lo))
+      if ((data[indx[i]]<clip_up) && (data[indx[i]]>clip_lo))
         {
-	  data[ni]=data[i];
 	  ni = ni + 1;
 	}
     }
@@ -117,8 +146,17 @@ void mpdaf_median_sigma_clip(double* data, int n, double x[3], int nmax, double 
     }
    if ( nmax > 0 )
    {
+     ni = 0; 
+     for (i=0; i<n; i++)
+       {
+	 if ((data[indx[i]]<clip_up) && (data[indx[i]]>clip_lo))
+	   {
+	     indx[ni]=indx[i];
+	     ni = ni + 1;
+	   }
+       }
      nmax = nmax - 1;
-     mpdaf_median_sigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop);
+     mpdaf_median_sigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop,indx);
    }
 }
 
@@ -155,3 +193,87 @@ double mpdaf_linear_interpolation(double* xx, double* yy, int n, double x)
 }
 
 
+/*-----------------------------------------------------------------------------
+!
+!.func                            indexx()
+!
+!.purp     indexes x[] in indx[] such as x[indx[]] is in ascending order
+!.desc
+! int indexx(npts,x,indx)
+!
+! int    npts;                             number of values
+! double *x;                               array of values
+! int    *indx;                            allocated array (size >= npts)
+!.ed
+------------------------------------------------------------------------------*/
+#define SWAP(a,b) itemp=(a);(a)=(b);(b)=itemp;
+#define M 7
+#define NSTACK 50
+#define NR_END 1
+
+int indexx(int n, double *arr, int *indx)
+{
+	int long i,indxt,ir=n-1,itemp,j,k,l=0;
+	int jstack=0, *istack;
+    int *v;
+	double a;
+
+    v=(int *)malloc((size_t)((NSTACK+NR_END)*sizeof(int)));
+    istack = v-1+NR_END;
+    
+    
+    //for (j=l;j<=ir;j++) indx[j]=j;
+	for (;;) {
+		if (ir-l < M) {
+			for (j=l+1;j<=ir;j++) {
+				indxt=indx[j];
+				a=arr[indxt];
+				for (i=j-1;i>=0;i--) {
+					if (arr[indx[i]] <= a) break;
+					indx[i+1]=indx[i];
+				}
+				indx[i+1]=indxt;
+			}
+			if (jstack == 0) break;
+			ir=istack[jstack--];
+			l=istack[jstack--];
+		} else {
+			k=(l+ir) >> 1;
+			SWAP(indx[k],indx[l+1]);
+			if (arr[indx[l+1]] > arr[indx[ir]]) {
+				SWAP(indx[l+1],indx[ir])
+			}
+			if (arr[indx[l]] > arr[indx[ir]]) {
+				SWAP(indx[l],indx[ir])
+			}
+			if (arr[indx[l+1]] > arr[indx[l]]) {
+				SWAP(indx[l+1],indx[l])
+			}
+			i=l+1;
+			j=ir;
+			indxt=indx[l];
+			a=arr[indxt];
+			for (;;) {
+				do i++; while (arr[indx[i]] < a);
+				do j--; while (arr[indx[j]] > a);
+				if (j < i) break;
+				SWAP(indx[i],indx[j])
+			}
+			indx[l]=indx[j];
+			indx[j]=indxt;
+			jstack += 2;
+			if (jstack > NSTACK) return(-1);
+			if (ir-i+1 >= j-l) {
+				istack[jstack]=ir;
+				istack[jstack-1]=i;
+				ir=j-1;
+			} else {
+				istack[jstack]=j-1;
+				istack[jstack-1]=l;
+				l=i;
+			}
+		}
+	}
+    free((char *)v);
+	return(0);
+}

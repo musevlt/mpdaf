@@ -253,7 +253,7 @@ class CubeList(object):
         var         : string
                       'propagate', 'stat_mean', 'stat_one'
 
-                      'propagate': the variance is the mean of the variances
+                      'propagate': the variance is the sum of the variances
                       of the N individual exposures divided by N**2.
 
                       'stat_mean': the variance of each combined pixel
