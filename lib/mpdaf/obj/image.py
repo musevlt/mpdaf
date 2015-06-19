@@ -613,7 +613,7 @@ class Image(object):
             fscale = self.fscale
             
         # world coordinates
-        wcs_cards = self.wcs.to_header().cards
+        hdr = self.wcs.to_header()
 
         # create spectrum DATA extension
         if savemask == 'nan':
@@ -622,13 +622,12 @@ class Image(object):
             data = self.data.data
             
         data *= np.double(self.fscale / fscale)
-        imahdu = pyfits.ImageHDU(name=name, data=data.astype(np.float32))
+        imahdu = pyfits.ImageHDU(name=name, data=data.astype(np.float32), header=hdr)
         
         for card in self.data_header.cards:
-            if card.keyword != 'CD1_1' and card.keyword != 'CD1_2' \
-                and card.keyword != 'CD2_1' and card.keyword != 'CD2_2' \
-                and card.keyword != 'CDELT1' and card.keyword != 'CDELT2' \
-                and imahdu.header.keys().count(card.keyword) == 0:
+            to_copy = (card.keyword[0:2] not in ('CD','PC')
+                       and card.keyword not in imahdu.header)
+            if to_copy:
                 try:
                     card.verify('fix')
                     imahdu.header[card.keyword] = \
@@ -648,39 +647,13 @@ class Image(object):
                         self.logger.warning("%s not copied in data header",
                                         card.keyword, extra=d)
 
-        cd = self.wcs.get_cd()
-        imahdu.header['CTYPE1'] = \
-            (wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
-        imahdu.header['CUNIT1'] = \
-            (wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
-        imahdu.header['CRVAL1'] = \
-            (wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
-        imahdu.header['CRPIX1'] = \
-            (wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
-        imahdu.header['CD1_1'] = \
-            (cd[0, 0], 'partial of first axis coordinate w.r.t. x ')
-        imahdu.header['CD1_2'] = \
-            (cd[0, 1], 'partial of first axis coordinate w.r.t. y')
-        imahdu.header['CTYPE2'] = \
-            (wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
-        imahdu.header['CUNIT2'] = \
-            (wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
-        imahdu.header['CRVAL2'] = \
-            (wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
-        imahdu.header['CRPIX2'] = \
-            (wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
-        imahdu.header['CD2_1'] = \
-            (cd[1, 0], 'partial of second axis coordinate w.r.t. x')
-        imahdu.header['CD2_2'] = \
-            (cd[1, 1], 'partial of second axis coordinate w.r.t. y')
-
         if self.unit is not None:
             imahdu.header['BUNIT'] = (self.unit, 'data unit type')
         imahdu.header['FSCALE'] = (fscale, 'Flux scaling factor')
         
         return imahdu
     
-    def get_stat_hdu(self, name='STAT', fscale=None):
+    def get_stat_hdu(self, name='STAT', fscale=None, header=None):
         """ Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
         
         Parameters
@@ -703,15 +676,40 @@ class Image(object):
                 fscale = self.fscale
             
             # world coordinates
-            wcs_cards = self.wcs.to_header().cards
+            if header is None:
+                header = self.wcs.to_header()
         
             # create image STAT extension
             var = (self.var * np.double(self.fscale * self.fscale
                                      / fscale / fscale)).astype(np.float32)
-            imahdu = pyfits.ImageHDU(name=name, data=var)
-            for card in wcs_cards:
-                imahdu.header[card.keyword] = (card.value, card.comment)
-                
+            imahdu = pyfits.ImageHDU(name=name, data=var, header=header)
+            
+            if header is None:
+                for card in self.data_header.cards:
+                    to_copy = (card.keyword[0:2] not in ('CD','PC')
+                       and card.keyword not in imahdu.header)
+                    if to_copy:
+                        try:
+                            card.verify('fix')
+                            imahdu.header[card.keyword] = (card.value, card.comment)
+                        except:
+                            try:
+                                if isinstance(card.value, str):
+                                    n = 80 - len(card.keyword) - 14
+                                    s = card.value[0:n]
+                                    imahdu.header['hierarch %s' % card.keyword] = \
+                                    (s, card.comment)
+                                else:
+                                    imahdu.header['hierarch %s' % card.keyword] = \
+                                    (card.value, card.comment)
+                            except:
+                                d = {'class': 'Cube', 'method': 'write'}
+                                self.logger.warning("%s not copied in data header",
+                                            card.keyword, extra=d)
+            
+            if self.unit is not None:
+                imahdu.header['BUNIT'] = self.unit+'**2'
+            imahdu.header['FSCALE'] = (fscale**2, 'scaling factor')
             return imahdu
         
 
@@ -756,24 +754,19 @@ class Image(object):
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
 
-        # world coordinates
-        wcs_cards = self.wcs.to_header().cards
 
         # create spectrum DATA extension
         data_hdu = self.get_data_hdu('DATA', fscale, savemask)
         hdulist.append(data_hdu)
-        self.wcs = WCS(data_hdu.header)
 
         # create image STAT extension
-        stat_hdu = self.get_stat_hdu('STAT', fscale)
+        stat_hdu = self.get_stat_hdu('STAT', fscale, data_hdu.header)
         if stat_hdu is not None:
             hdulist.append(stat_hdu)
  
         # create DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
-            for card in wcs_cards:
-                dqhdu.header[card.keyword] = (card.value, card.comment)
             hdulist.append(dqhdu)
 
         # save to disk
@@ -1037,6 +1030,8 @@ class Image(object):
                                       'with different sizes')
                 else:
                     res = Image(shape=self.shape, fscale=self.fscale)
+                    res.data_header = pyfits.Header(self.data_header)
+                    res.primary_header = pyfits.Header(self.primary_header)
                     # wcs
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
@@ -1187,6 +1182,8 @@ class Image(object):
                 else:
                     res = Image(shape=self.shape,
                                     fscale=self.fscale)
+                    res.data_header = pyfits.Header(self.data_header)
+                    res.primary_header = pyfits.Header(self.primary_header)
                     # coordinates
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
@@ -1325,6 +1322,8 @@ class Image(object):
                 else:
                     res = Image(shape=self.shape,
                                 fscale=self.fscale)
+                    res.data_header = pyfits.Header(self.data_header)
+                    res.primary_header = pyfits.Header(self.primary_header)
                     # coordinates
                     if self.wcs is None or other.wcs is None:
                         res.wcs = None
@@ -1538,6 +1537,8 @@ class Image(object):
                     res.data = data
                     res.var = var
                     res.filename = self.filename
+                    res.data_header = pyfits.Header(self.data_header)
+                    res.primary_header = pyfits.Header(self.primary_header)
                     return res
         else:
             if self.shape[0] == 1 or self.shape[1] == 1:

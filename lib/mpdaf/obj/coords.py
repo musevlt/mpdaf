@@ -688,7 +688,27 @@ class WCS(object):
             return self.wcs.wcs.ctype[0] not in ('LINEAR', 'PIXEL')
         except:
             return True
-
+        
+    def to_cube_header(self, wave):
+        wcs_hdr = self.to_header()
+        wcs_hdr['WCSAXES'] = 3      
+        wcs_hdr['CRVAL3'] = wave.crval    
+        wcs_hdr['CRPIX3'] = wave.crpix       
+        wcs_hdr['CUNIT3'] = wave.cunit
+        wcs_hdr['CTYPE3'] = wave.ctype
+        
+        if 'CD1_1' in wcs_hdr:
+            wcs_hdr['CD3_3'] = wave.cdelt
+            wcs_hdr['CD1_3'] = 0.
+            wcs_hdr['CD2_3'] = 0.
+            wcs_hdr['CD3_1'] = 0.
+            wcs_hdr['CD3_2'] = 0.
+        else:
+            wcs_hdr['CDELT3'] = wave.cdelt
+            
+        return wcs_hdr
+            
+        
 
 class WaveCoord(object):
 
@@ -726,7 +746,7 @@ class WaveCoord(object):
     """
 
     def __init__(self, crpix=1.0, cdelt=1.0, crval=1.0,
-                 cunit='Angstrom', shape=None):
+                 cunit='Angstrom', ctype='LINEAR', shape=None):
         """Creates a WaveCoord object.
 
         Parameters
@@ -751,11 +771,12 @@ class WaveCoord(object):
         self.cdelt = cdelt
         self.crval = crval
         self.cunit = cunit
+        self.ctype = ctype
 
     def copy(self):
         """Copies WaveCoord object in a new one and returns it."""
         return WaveCoord(shape=self.shape, crpix=self.crpix, cdelt=self.cdelt,
-                         crval=self.crval, cunit=self.cunit)
+                         crval=self.crval, cunit=self.cunit, ctype=self.ctype)
 
     def info(self):
         """Prints information."""
@@ -780,7 +801,7 @@ class WaveCoord(object):
         return (self.shape == other.shape and
                 np.allclose(l1, l2, atol=1E-2, rtol=0) and
                 np.allclose(self.cdelt, other.cdelt, atol=1E-2, rtol=0) and
-                self.cunit == other.cunit)
+                self.cunit == other.cunit and self.ctype == other.ctype)
 
     def coord(self, pixel=None):
         """Returns the coordinate corresponding to pixel. If pixel is None
@@ -847,7 +868,7 @@ class WaveCoord(object):
                 raise ValueError('Spectrum with dim < 2')
             cdelt = newlbda[1] - newlbda[0]
             return WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0],
-                             cunit=self.cunit, shape=dim)
+                             cunit=self.cunit, shape=dim, ctype=self.ctype)
         else:
             raise ValueError('Operation forbidden')
 
@@ -875,7 +896,7 @@ class WaveCoord(object):
         # pixel number necessary to cover old range
         dim = np.ceil((lbda[-1] + self.cdelt - (start - step * 0.5)) / step)
         res = WaveCoord(crpix=1.0, cdelt=step, crval=start,
-                        cunit=self.cunit, shape=int(dim))
+                        cunit=self.cunit, shape=int(dim), ctype=self.ctype)
         return res
 
     def get_step(self):

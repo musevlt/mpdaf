@@ -293,11 +293,11 @@ class Spectrum(object):
                             cdelt = hdr.get('CD1_1')
                         else:
                             cdelt = 1.0
-                        crpix = hdr.get('CRPIX1')
-                        crval = hdr.get('CRVAL1')
                         cunit = hdr.get('CUNIT1', '')
-                        self.wave = WaveCoord(crpix, cdelt, crval,
-                                              cunit, self.shape)
+                        ctype = hdr.get('CTYPE1', 'LINEAR')
+                        self.wave = WaveCoord(hdr['CRPIX1'], cdelt,
+                                              hdr['CRVAL1'], cunit,
+                                              ctype, self.shape)
                 else:
                     self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape:
@@ -337,11 +337,10 @@ class Spectrum(object):
                             cdelt = h.get('CD1_1')
                         else:
                             cdelt = 1.0
-                        crpix = h.get('CRPIX1')
-                        crval = h.get('CRVAL1')
                         cunit = h.get('CUNIT1', '')
-                        self.wave = WaveCoord(crpix, cdelt, crval,
-                                              cunit, self.shape)
+                        ctype = h.get('CTYPE1', 'LINEAR')
+                        self.wave = WaveCoord(h['CRPIX1'], cdelt, h['CRVAL1'],
+                                              cunit, ctype, self.shape)
                 else:
                     self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape:
@@ -516,7 +515,7 @@ class Spectrum(object):
             (self.wave.crval, 'Start in world coordinate')
         imahdu.header['CRPIX1'] = (self.wave.crpix, 'Start in pixel')
         imahdu.header['CDELT1'] = (self.wave.cdelt, 'Step in world coordinate')
-        imahdu.header['CTYPE1'] = ('LINEAR', 'world coordinate type')
+        imahdu.header['CTYPE1'] = (self.wave.ctype, 'world coordinate type')
         imahdu.header['CUNIT1'] = (self.wave.cunit, 'world coordinate units')
         if self.unit is not None:
             imahdu.header['BUNIT'] = (self.unit, 'data unit type')
@@ -555,6 +554,10 @@ class Spectrum(object):
                 (self.wave.cdelt, 'Step in world coordinate')
             hdu.header['CUNIT1'] = \
                 (self.wave.cunit, 'world coordinate units')
+            hdu.header['CTYPE1'] = (self.wave.ctype, 'world coordinate type')
+            if self.unit is not None:
+                hdu.header['BUNIT'] = self.unit+'**2'
+            hdu.header['FSCALE'] = (fscale**2, 'scaling factor')
             return hdu
 
     def write(self, filename, fscale=None, savemask='dq'):
@@ -618,6 +621,7 @@ class Spectrum(object):
                 (self.wave.cdelt, 'Step in world coordinate')
             dqhdu.header['CUNIT1'] = \
                 (self.wave.cunit, 'world coordinate units')
+            dqhdu.header['CTYPE1'] = (self.wave.ctype, 'world coordinate type')
             hdulist.append(dqhdu)
 
         # save to disk
@@ -1595,7 +1599,7 @@ out : float or Spectrum
         try:
             crval = self.wave.coord()[0:factor].sum() / factor
             self.wave = WaveCoord(1, self.wave.cdelt * factor, crval,
-                                  self.wave.cunit, self.shape)
+                                  self.wave.cunit, self.wave.ctype, self.shape)
         except:
             self.wave = None
 
@@ -1647,7 +1651,8 @@ out : float or Spectrum
                 try:
                     crval = spe.wave.crval - spe.wave.cdelt
                     wave = WaveCoord(1, spe.wave.cdelt, crval,
-                                     spe.wave.cunit, shape=newshape)
+                                     spe.wave.cunit, spe.wave.ctype,
+                                     shape=newshape)
                 except:
                     wave = None
                 self.shape = newshape
@@ -1668,7 +1673,8 @@ out : float or Spectrum
                     var[-1] = self.var[self.shape - n:].sum() / factor / factor
                 try:
                     wave = WaveCoord(1, spe.wave.cdelt, spe.wave.crval,
-                                     spe.wave.cunit, shape=newshape)
+                                     spe.wave.cunit, spe.wave.ctype,
+                                     shape=newshape)
                 except:
                     wave = None
                 self.shape = newshape
@@ -1690,7 +1696,8 @@ out : float or Spectrum
                 try:
                     crval = spe.wave.crval - spe.wave.cdelt
                     wave = WaveCoord(1, spe.wave.cdelt, crval,
-                                     spe.wave.cunit, shape=newshape)
+                                     spe.wave.cunit, spe.wave.ctype,
+                                     shape=newshape)
                 except:
                     wave = None
                 self.shape = newshape
@@ -1747,7 +1754,8 @@ out : float or Spectrum
         try:
             crval = self.wave.coord()[0:factor].sum() / factor
             self.wave = WaveCoord(1, self.wave.cdelt * factor, crval,
-                                  self.wave.cunit, self.shape)
+                                  self.wave.cunit, self.wave.ctype,
+                                  self.shape)
         except:
             self.wave = None
 

@@ -211,11 +211,10 @@ class Cube(CubeBase):
                             cdelt = hdr.get('CD3_3')
                         else:
                             cdelt = 1.0
-                        crpix = hdr.get('CRPIX3')
-                        crval = hdr.get('CRVAL3')
                         cunit = hdr.get('CUNIT3', '')
-                        self.wave = WaveCoord(crpix, cdelt, crval, cunit,
-                                              self.shape[0])
+                        ctype = hdr.get('CTYPE3', 'LINEAR')
+                        self.wave = WaveCoord(hdr['CRPIX3'], cdelt, hdr['CRVAL3'],
+                                              cunit, ctype, self.shape[0])
                 else:
                     self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape[0]:
@@ -267,11 +266,10 @@ class Cube(CubeBase):
                             cdelt = h.get('CD3_3')
                         else:
                             cdelt = 1.0
-                        crpix = h.get('CRPIX3')
-                        crval = h.get('CRVAL3')
                         cunit = h.get('CUNIT3', '')
-                        self.wave = WaveCoord(crpix, cdelt, crval, cunit,
-                                              self.shape[0])
+                        ctype = h.get('CTYPE3', 'LINEAR')
+                        self.wave = WaveCoord(h['CRPIX3'], cdelt, h['CRVAL3'],
+                                              cunit, ctype, self.shape[0])
                 else:
                     self.wave = wave.copy()
                     if wave.shape is not None and \
@@ -413,6 +411,8 @@ class Cube(CubeBase):
             cub.wave = self.wave.copy()
         except:
             cub.wave = None
+        for key, ima in self.ima:
+            cub.ima[key] = ima.copy()
         return cub
 
     def clone(self, var=False):
@@ -464,7 +464,7 @@ class Cube(CubeBase):
             fscale = self.fscale
 
         # world coordinates
-        wcs_cards = self.wcs.to_header().cards
+        hdr = self.wcs.to_cube_header(self.wave)
 
         # create scube DATA extension
         if savemask == 'nan':
@@ -472,11 +472,10 @@ class Cube(CubeBase):
         else:
             data = self.data.data
         data = (data * np.double(self.fscale / fscale)).astype(np.float32)
-        imahdu = pyfits.ImageHDU(name=name, data=data)
+        imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
 
         for card in self.data_header.cards:
-            to_copy = (card.keyword not in ('CD1_1', 'CD1_2', 'CD2_1', 'CD2_2',
-                                            'CDELT1', 'CDELT2')
+            to_copy = (card.keyword[0:2] not in ('CD','PC')
                        and card.keyword not in imahdu.header)
             if to_copy:
                 try:
@@ -497,45 +496,12 @@ class Cube(CubeBase):
                         self.logger.warning("%s not copied in data header",
                                             card.keyword, extra=d)
 
-        # add world coordinate
-        cd = self.wcs.get_cd()
-        imahdu.header['CTYPE1'] = \
-            (wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
-        imahdu.header['CUNIT1'] = \
-            (wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
-        imahdu.header['CRVAL1'] = \
-            (wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
-        imahdu.header['CRPIX1'] = \
-            (wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
-        imahdu.header['CD1_1'] = \
-            (cd[0, 0], 'partial of first axis coordinate w.r.t. x ')
-        imahdu.header['CD1_2'] = \
-            (cd[0, 1], 'partial of first axis coordinate w.r.t. y')
-        imahdu.header['CTYPE2'] = \
-            (wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
-        imahdu.header['CUNIT2'] = \
-            (wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
-        imahdu.header['CRVAL2'] = \
-            (wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
-        imahdu.header['CRPIX2'] = \
-            (wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
-        imahdu.header['CD2_1'] = \
-            (cd[1, 0], 'partial of second axis coordinate w.r.t. x')
-        imahdu.header['CD2_2'] = \
-            (cd[1, 1], 'partial of second axis coordinate w.r.t. y')
-        imahdu.header['CRVAL3'] = \
-            (self.wave.crval, 'Start in world coordinate')
-        imahdu.header['CRPIX3'] = (self.wave.crpix, 'Start in pixel')
-        imahdu.header['CDELT3'] = \
-            (self.wave.cdelt, 'Step in world coordinate')
-        imahdu.header['CTYPE3'] = ('LINEAR', 'world coordinate type')
-        imahdu.header['CUNIT3'] = (self.wave.cunit, 'world coordinate units')
         if self.unit is not None:
             imahdu.header['BUNIT'] = (self.unit, 'data unit type')
         imahdu.header['FSCALE'] = (fscale, 'Flux scaling factor')
         return imahdu
 
-    def get_stat_hdu(self, name='STAT', fscale=None):
+    def get_stat_hdu(self, name='STAT', fscale=None, header=None):
         """ Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
 
         Parameters
@@ -558,43 +524,39 @@ class Cube(CubeBase):
                 fscale = self.fscale
 
             var = self.var * np.double(self.fscale * self.fscale / fscale / fscale)
-            imahdu = pyfits.ImageHDU(name=name, data=var.astype(np.float32))
 
-            # add world coordinate
-            wcs_cards = self.wcs.to_header().cards
-            cd = self.wcs.get_cd()
-            imahdu.header['CTYPE1'] = \
-                (wcs_cards['CTYPE1'].value, wcs_cards['CTYPE1'].comment)
-            imahdu.header['CUNIT1'] = \
-                (wcs_cards['CUNIT1'].value, wcs_cards['CUNIT1'].comment)
-            imahdu.header['CRVAL1'] = \
-                (wcs_cards['CRVAL1'].value, wcs_cards['CRVAL1'].comment)
-            imahdu.header['CRPIX1'] = \
-                (wcs_cards['CRPIX1'].value, wcs_cards['CRPIX1'].comment)
-            imahdu.header['CD1_1'] = \
-                (cd[0, 0], 'partial of first axis coordinate w.r.t. x ')
-            imahdu.header['CD1_2'] = \
-                (cd[0, 1], 'partial of first axis coordinate w.r.t. y')
-            imahdu.header['CTYPE2'] = \
-                (wcs_cards['CTYPE2'].value, wcs_cards['CTYPE2'].comment)
-            imahdu.header['CUNIT2'] = \
-                (wcs_cards['CUNIT2'].value, wcs_cards['CUNIT2'].comment)
-            imahdu.header['CRVAL2'] = \
-                (wcs_cards['CRVAL2'].value, wcs_cards['CRVAL2'].comment)
-            imahdu.header['CRPIX2'] = \
-                (wcs_cards['CRPIX2'].value, wcs_cards['CRPIX2'].comment)
-            imahdu.header['CD2_1'] = \
-                (cd[1, 0], 'partial of second axis coordinate w.r.t. x')
-            imahdu.header['CD2_2'] = \
-                (cd[1, 1], 'partial of second axis coordinate w.r.t. y')
-            imahdu.header['CRVAL3'] = \
-                (self.wave.crval, 'Start in world coordinate')
-            imahdu.header['CRPIX3'] = (self.wave.crpix, 'Start in pixel')
-            imahdu.header['CDELT3'] = \
-                (self.wave.cdelt, 'Step in world coordinate')
-            imahdu.header['CUNIT3'] = \
-                (self.wave.cunit, 'world coordinate units')
+            # world coordinates
+            if header is None:
+                header = self.wcs.to_cube_header(self.wave)
 
+            imahdu = pyfits.ImageHDU(name=name, data=var.astype(np.float32), header=header)
+            
+            if header is None:
+                for card in self.data_header.cards:
+                    to_copy = (card.keyword[0:2] not in ('CD','PC')
+                       and card.keyword not in imahdu.header)
+                    if to_copy:
+                        try:
+                            card.verify('fix')
+                            imahdu.header[card.keyword] = (card.value, card.comment)
+                        except:
+                            try:
+                                if isinstance(card.value, str):
+                                    n = 80 - len(card.keyword) - 14
+                                    s = card.value[0:n]
+                                    imahdu.header['hierarch %s' % card.keyword] = \
+                                    (s, card.comment)
+                                else:
+                                    imahdu.header['hierarch %s' % card.keyword] = \
+                                    (card.value, card.comment)
+                            except:
+                                d = {'class': 'Cube', 'method': 'write'}
+                                self.logger.warning("%s not copied in data header",
+                                            card.keyword, extra=d)
+            
+            if self.unit is not None:
+                imahdu.header['BUNIT'] = self.unit+'**2'
+            imahdu.header['FSCALE'] = (fscale**2, 'scaling factor')
             return imahdu
 
     def write(self, filename, fscale=None, savemask='dq'):
@@ -642,31 +604,24 @@ class Cube(CubeBase):
         hdulist = [prihdu]
         warnings.simplefilter("default")
 
-        # world coordinates
-        wcs_cards = self.wcs.to_header().cards
-
         # create scube DATA extension
         datahdu = self.get_data_hdu('DATA', fscale, savemask)
         hdulist.append(datahdu)
 
-        self.wcs = WCS(datahdu.header)
-
         # create spectrum STAT extension
         if self.var is not None:
-            stathdu = self.get_stat_hdu('STAT', fscale)
+            stathdu = self.get_stat_hdu('STAT', fscale, datahdu.header)
             hdulist.append(stathdu)
 
         # create DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
-            for card in wcs_cards:
-                dqhdu.header[card.keyword] = (card.value, card.comment)
             hdulist.append(dqhdu)
 
         # save to disk
         hdu = pyfits.HDUList(hdulist)
         warnings.simplefilter("ignore")
-        hdu.writeto(filename, clobber=True, output_verify='fix')
+        hdu.writeto(filename, clobber=True, output_verify='silentfix')
         warnings.simplefilter("default")
 
         self.filename = filename
@@ -1002,6 +957,8 @@ class Cube(CubeBase):
                                   'with different sizes')
                 else:
                     res = Cube(shape=self.shape, fscale=self.fscale)
+                    res.data_header = pyfits.Header(self.data_header)
+                    res.primary_header = pyfits.Header(self.primary_header)
                     # coordinate
                     if self.wave is None or other.wave is None:
                         res.wave = None
@@ -1058,6 +1015,8 @@ class Cube(CubeBase):
                     else:
                         res = Cube(shape=self.shape, wave=self.wave,
                                        fscale=self.fscale)
+                        res.data_header = pyfits.Header(self.data_header)
+                        res.primary_header = pyfits.Header(self.primary_header)
                         # coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
@@ -1106,6 +1065,8 @@ class Cube(CubeBase):
                         else:
                             res = Cube(shape=self.shape, wcs=self.wcs,
                                            fscale=self.fscale)
+                            res.data_header = pyfits.Header(self.data_header)
+                            res.primary_header = pyfits.Header(self.primary_header)
                             # coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
@@ -1187,6 +1148,8 @@ class Cube(CubeBase):
                                   'with different sizes')
                 else:
                     res = Cube(shape=self.shape, fscale=self.fscale)
+                    res.data_header = pyfits.Header(self.data_header)
+                    res.primary_header = pyfits.Header(self.primary_header)
                     # coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
@@ -1243,6 +1206,8 @@ class Cube(CubeBase):
                     else:
                         res = Cube(shape=self.shape, wave=self.wave,
                                        fscale=self.fscale)
+                        res.data_header = pyfits.Header(self.data_header)
+                        res.primary_header = pyfits.Header(self.primary_header)
                         # coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
@@ -1290,6 +1255,8 @@ class Cube(CubeBase):
                         else:
                             res = Cube(shape=self.shape, wcs=self.wcs,
                                            fscale=self.fscale)
+                            res.data_header = pyfits.Header(self.data_header)
+                            res.primary_header = pyfits.Header(self.primary_header)
                             # coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
@@ -1397,6 +1364,8 @@ class Cube(CubeBase):
                                   'with different sizes')
                 else:
                     res = Cube(shape=self.shape, fscale=self.fscale)
+                    res.data_header = pyfits.Header(self.data_header)
+                    res.primary_header = pyfits.Header(self.primary_header)
                     # coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
@@ -1450,6 +1419,8 @@ class Cube(CubeBase):
                     else:
                         res = Cube(shape=self.shape, wave=self.wave,
                                        fscale=self.fscale)
+                        res.data_header = pyfits.Header(self.data_header)
+                        res.primary_header = pyfits.Header(self.primary_header)
                         # coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
@@ -1499,6 +1470,8 @@ class Cube(CubeBase):
                         else:
                             res = Cube(shape=self.shape, wcs=self.wcs,
                                            fscale=self.fscale)
+                            res.data_header = pyfits.Header(self.data_header)
+                            res.primary_header = pyfits.Header(self.primary_header)
                             # coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
@@ -1586,6 +1559,8 @@ class Cube(CubeBase):
                 else:
                     res = Cube(shape=self.shape,
                                fscale=self.fscale)
+                    res.data_header = pyfits.Header(self.data_header)
+                    res.primary_header = pyfits.Header(self.primary_header)
                     # coordinates
                     if self.wave is None or other.wave is None:
                         res.wave = None
@@ -1642,6 +1617,8 @@ class Cube(CubeBase):
                     else:
                         res = Cube(shape=self.shape, wave=self.wave,
                                    fscale=self.fscale)
+                        res.data_header = pyfits.Header(self.data_header)
+                        res.primary_header = pyfits.Header(self.primary_header)
                         # coordinates
                         if self.wcs is None or other.wcs is None:
                             res.wcs = None
@@ -1694,6 +1671,8 @@ class Cube(CubeBase):
                         else:
                             res = Cube(shape=self.shape, wcs=self.wcs,
                                        fscale=self.fscale)
+                            res.data_header = pyfits.Header(self.data_header)
+                            res.primary_header = pyfits.Header(self.primary_header)
                             # coordinates
                             if self.wave is None or other.wave is None:
                                 res.wave = None
@@ -1896,6 +1875,8 @@ class Cube(CubeBase):
                     wave = None
                 res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit,
                            fscale=self.fscale)
+                res.data_header = pyfits.Header(self.data_header)
+                res.primary_header = pyfits.Header(self.primary_header)
                 res.data = data
                 res.var = var
                 res.filename = self.filename
@@ -2401,6 +2382,8 @@ class Cube(CubeBase):
 
         res = Cube(shape=shape, wcs=wcs, wave=wave,
                    unit=self.unit, fscale=self.fscale)
+        res.data_header = pyfits.Header(self.data_header)
+        res.primary_header = pyfits.Header(self.primary_header)
         res.data = data
         res.var = var
 
@@ -2460,7 +2443,7 @@ class Cube(CubeBase):
         self.wcs = self.wcs.rebin_factor(factor[1:])
         crval = self.wave.coord()[0:factor[0]].sum() / factor[0]
         self.wave = WaveCoord(1, self.wave.cdelt * factor[0], crval,
-                              self.wave.cunit, self.shape[0])
+                              self.wave.cunit, self.wave.ctype, self.shape[0])
 
     def _rebin_factor(self, factor, margin='center', flux=False):
         """Shrinks the size of the cube by factor.
@@ -2994,7 +2977,8 @@ class Cube(CubeBase):
         self.wcs = self.wcs.rebin_factor(factor[1:])
         crval = self.wave.coord()[0:factor[0]].sum() / factor[0]
         self.wave = WaveCoord(1, self.wave.cdelt * factor[0],
-                              crval, self.wave.cunit, self.shape[0])
+                              crval, self.wave.cunit, self.wave.ctype,
+                              self.shape[0])
 
     def rebin_median(self, factor, margin='center'):
         """Shrinks the size of the cube by factor.
@@ -3116,10 +3100,9 @@ class Cube(CubeBase):
 
         for sp, pos in iter_spe(self, index=True):
             processlist.append([pos, f, sp.wave.crpix, sp.wave.cdelt,
-                                sp.wave.crval, sp.wave.cunit, sp.data.data,
-                                sp.data.mask, sp.var, sp.fscale, sp.unit,
-                                kargs])
-            # processlist.append([sp, pos, f, kargs])
+                                sp.wave.crval, sp.wave.cunit, sp.wave.ctype,
+                                sp.data.data, sp.data.mask, sp.var, sp.fscale,
+                                sp.unit, kargs])
         num_tasks = len(processlist)
 
         processresult = pool.imap_unordered(_process_spe, processlist)
@@ -3152,12 +3135,13 @@ class Cube(CubeBase):
                 cdelt = out[1]
                 crval = out[2]
                 cunit = out[3]
-                data = out[4]
-                mask = out[5]
-                var = out[6]
-                fscale = out[7]
-                unit = out[8]
-                wave = WaveCoord(crpix, cdelt, crval, cunit, data.shape[0])
+                ctype = out[4]
+                data = out[5]
+                mask = out[6]
+                var = out[7]
+                fscale = out[8]
+                unit = out[9]
+                wave = WaveCoord(crpix, cdelt, crval, cunit, ctype, data.shape[0])
                 spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit,
                                data=data, var=var, fscale=fscale)
                 spe.data.mask = mask
@@ -3175,6 +3159,8 @@ class Cube(CubeBase):
                                       unit=unit, fscale=fscale)
                     init = False
 
+                result.data_header = pyfits.Header(self.data_header)
+                result.primary_header = pyfits.Header(self.primary_header)
                 result[:, p, q] = spe
 
             else:
@@ -3291,18 +3277,21 @@ class Cube(CubeBase):
                 result.data.mask[k, :, :] = mask
                 if self.var is not None:
                     result.var[k, :, :] = var * fscale ** 2 / result.fscale ** 2
+                result.data_header = pyfits.Header(self.data_header)
+                result.primary_header = pyfits.Header(self.primary_header)
             elif dtype == 'spectrum':
                 # f return a Spectrum -> iterator return a list of spectra
                 crpix = out[0]
                 cdelt = out[1]
                 crval = out[2]
                 cunit = out[3]
-                data = out[4]
-                mask = out[5]
-                var = out[6]
-                fscale = out[7]
-                unit = out[8]
-                wave = WaveCoord(crpix, cdelt, crval, cunit, data.shape[0])
+                ctype = out[4]
+                data = out[5]
+                mask = out[6]
+                var = out[7]
+                fscale = out[8]
+                unit = out[9]
+                wave = WaveCoord(crpix, cdelt, crval, cunit, ctype, data.shape[0])
                 spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit,
                                data=data, var=var, fscale=fscale)
                 spe.data.mask = mask
@@ -3411,6 +3400,8 @@ class Cube(CubeBase):
                 var = None
             cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave, unit=self.unit,
                        data=data, var=var, fscale=self.fscale)
+            cub.data_header = pyfits.Header(self.data_header)
+            cub.primary_header = pyfits.Header(self.primary_header)
             return cub
         else:
             return None
@@ -3457,6 +3448,8 @@ class Cube(CubeBase):
             cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave, unit=self.unit,
                        data=data, var=var, fscale=self.fscale)
             cub.data.mask = data.mask
+            cub.data_header = pyfits.Header(self.data_header)
+            cub.primary_header = pyfits.Header(self.primary_header)
             return cub
         else:
             return None
@@ -3498,14 +3491,15 @@ def _process_spe(arglist):
         cdelt = arglist[3]
         crval = arglist[4]
         cunit = arglist[5]
-        data = arglist[6]
-        mask = arglist[7]
-        var = arglist[8]
-        fscale = arglist[9]
-        unit = arglist[10]
-        kargs = arglist[11]
+        ctype = arglist[6]
+        data = arglist[7]
+        mask = arglist[8]
+        var = arglist[9]
+        fscale = arglist[10]
+        unit = arglist[11]
+        kargs = arglist[12]
 
-        wave = WaveCoord(crpix, cdelt, crval, cunit, data.shape[0])
+        wave = WaveCoord(crpix, cdelt, crval, cunit, ctype, data.shape[0])
         spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit, data=data,
                        var=var, fscale=fscale)
         spe.data.mask = mask
@@ -3519,8 +3513,8 @@ def _process_spe(arglist):
             if out.spectrum:
                 return pos, 'spectrum', [
                     out.wave.crpix, out.wave.cdelt, out.wave.crval,
-                    out.wave.cunit, out.data.data, out.data.mask, out.var,
-                    out.fscale, out.unit]
+                    out.wave.cunit, out.wave.ctype, out.data.data,
+                    out.data.mask, out.var, out.fscale, out.unit]
         except:
             # f returns dtype -> iterator returns an array of dtype
             return pos, 'other', [out]
@@ -3566,8 +3560,8 @@ def _process_ima(arglist):
                 if out.spectrum:
                     return k, 'spectrum', [
                         out.wave.crpix, out.wave.cdelt, out.wave.crval,
-                        out.wave.cunit, out.data.data, out.data.mask, out.var,
-                        out.fscale, out.unit]
+                        out.wave.cunit, out.wave.ctype, out.data.data,
+                        out.data.mask, out.var, out.fscale, out.unit]
             except:
                 # f returns dtype -> iterator returns an array of dtype
                 return k, 'other', [out]
@@ -3675,11 +3669,10 @@ class CubeDisk(CubeBase):
                         cdelt = hdr.get('CD3_3')
                     else:
                         cdelt = 1.0
-                    crpix = hdr.get('CRPIX3')
-                    crval = hdr.get('CRVAL3')
                     cunit = hdr.get('CUNIT3', '')
-                    self.wave = WaveCoord(crpix, cdelt, crval, cunit,
-                                          self.shape[0])
+                    ctype = hdr.get('CTYPE3', 'LINEAR')
+                    self.wave = WaveCoord(hdr['CRPIX3'], cdelt, hdr['CRVAL3'],
+                                          cunit, ctype, self.shape[0])
             else:
                 if ext is None:
                     h = f['DATA'].header
@@ -3715,11 +3708,10 @@ class CubeDisk(CubeBase):
                         cdelt = h.get('CD3_3')
                     else:
                         cdelt = 1.0
-                    crpix = h.get('CRPIX3')
-                    crval = h.get('CRVAL3')
                     cunit = h.get('CUNIT3', '')
-                    self.wave = WaveCoord(crpix, cdelt, crval,
-                                          cunit, self.shape[0])
+                    ctype = h.get('CTYPE3', 'LINEAR')
+                    self.wave = WaveCoord(h['CRPIX3'], cdelt, h['CRVAL3'],
+                                          cunit, ctype, self.shape[0])
                 self.var = -1
                 if not notnoise:
                     try:
@@ -3819,6 +3811,8 @@ class CubeDisk(CubeBase):
                     wave = None
                 res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit,
                            fscale=self.fscale, data=data, var=var)
+                res.data_header = pyfits.Header(self.data_header)
+                res.primary_header = pyfits.Header(self.primary_header)
                 return res
         else:
             raise ValueError('Operation forbidden')
