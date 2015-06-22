@@ -475,7 +475,7 @@ class Cube(CubeBase):
         imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
 
         for card in self.data_header.cards:
-            to_copy = (card.keyword[0:2] not in ('CD','PC')
+            to_copy = (card.keyword[0:2] not in ('CD', 'PC')
                        and card.keyword not in imahdu.header)
             if to_copy:
                 try:
@@ -530,7 +530,7 @@ class Cube(CubeBase):
                 header = self.wcs.to_cube_header(self.wave)
 
             imahdu = pyfits.ImageHDU(name=name, data=var.astype(np.float32), header=header)
-            
+
             if header is None:
                 for card in self.data_header.cards:
                     to_copy = (card.keyword[0:2] not in ('CD','PC')
@@ -553,7 +553,7 @@ class Cube(CubeBase):
                                 d = {'class': 'Cube', 'method': 'write'}
                                 self.logger.warning("%s not copied in data header",
                                             card.keyword, extra=d)
-            
+
             if self.unit is not None:
                 imahdu.header['BUNIT'] = self.unit+'**2'
             imahdu.header['FSCALE'] = (fscale**2, 'scaling factor')
@@ -1736,7 +1736,7 @@ class Cube(CubeBase):
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
-                                      'with different sizes')
+                                  'with different sizes')
                 else:
                     return other.__div__(self)
         except IOError as e:
@@ -2102,7 +2102,7 @@ class Cube(CubeBase):
 
             # weights mask
             wmask = np.ma.masked_where(self.data.mask, np.ma.masked_where(w==0, w))
-            
+
         if axis is None:
             if weights is None:
                 return self.data.sum() * self.fscale
@@ -2201,7 +2201,7 @@ class Cube(CubeBase):
                     var = var.filled(np.NaN)
                 else:
                     var = None
-               
+
             res = Spectrum(shape=data.shape[0], wave=self.wave,
                            unit=self.unit, fscale=self.fscale)
             res.data = data
@@ -2290,7 +2290,8 @@ class Cube(CubeBase):
             # return an image
             data = np.ma.median(self.data, axis)
             if self.var is not None:
-                var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(self.var))
+                var = np.ma.masked_where(self.data.mask,
+                                         np.ma.masked_invalid(self.var))
                 var = np.ma.median(var, axis).filled(np.NaN)
             else:
                 var = None
@@ -2303,7 +2304,8 @@ class Cube(CubeBase):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
             if self.var is not None:
-                var = np.ma.masked_where(self.data.mask, np.ma.masked_invalid(self.var))
+                var = np.ma.masked_where(self.data.mask,
+                                         np.ma.masked_invalid(self.var))
                 var = np.ma.median(np.ma.median(var, axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
@@ -2349,7 +2351,7 @@ class Cube(CubeBase):
             imax = self.shape[1]
         if imin >= self.shape[1] or imax <= 0 or imin==imax:
             raise ValueError('sub-cube boundaries are outside the cube')
-            
+
         jmin = int(np.min(pixcrd[:, 1])+0.5)
         if jmin < 0:
             jmin = 0
@@ -2412,7 +2414,7 @@ class Cube(CubeBase):
         return res
 
     def _rebin_factor_(self, factor):
-        """Shrinks the size of the cube by factor. New size is an integer
+        """Shrinks the size of the cube by factor. New size must be an integer
         multiple of the original size.
 
         Parameters
@@ -2421,28 +2423,20 @@ class Cube(CubeBase):
                  Factor in z, y and x.
                  Python notation: (nz,ny,nx)
         """
-        # new size is an integer multiple of the original size
-        assert not np.sometrue(np.mod(self.shape[0], factor[0]))
-        assert not np.sometrue(np.mod(self.shape[1], factor[1]))
-        assert not np.sometrue(np.mod(self.shape[2], factor[2]))
-        # shape
-        self.shape = np.array((self.shape[0] / factor[0],
-                               self.shape[1] / factor[1],
-                               self.shape[2] / factor[2]))
-        # data
+        assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
+        self.shape /= np.asarray(factor)
         self.data = self.data.reshape(self.shape[0], factor[0],
                                       self.shape[1], factor[1],
                                       self.shape[2], factor[2])\
-            .sum(1).sum(2).sum(3) \
-            / factor[0] / factor[1] / factor[2]
-        # variance
+            .sum(1).sum(2).sum(3)
+        self.data /= np.prod(factor)
+
         if self.var is not None:
             self.var = self.var.reshape(self.shape[0], factor[0],
                                         self.shape[1], factor[1],
                                         self.shape[2], factor[2])\
-                .sum(1).sum(2).sum(3) \
-                / factor[0] / factor[1] / factor[2] \
-                / factor[0] / factor[1] / factor[2]
+                .sum(1).sum(2).sum(3)
+            self.var /= np.prod(factor) ** 2
         # coordinates
         # cdelt = self.wcs.get_step()
         self.wcs = self.wcs.rebin_factor(factor[1:])
@@ -2470,8 +2464,9 @@ class Cube(CubeBase):
                  This parameters is used if new size is not an
                  integer multiple of the original size.
 
-                 In 'center' case, cube is truncated/pixels are added on the left
-                 and on the right, on the bottom and of the top of the cube.
+                 In 'center' case, cube is truncated/pixels are added on the
+                 left and on the right, on the bottom and of the top of the
+                 cube.
 
                  In 'origin'case, cube is truncated/pixels are added at the end
                  along each direction
@@ -2913,31 +2908,21 @@ class Cube(CubeBase):
                  If Flux is True, margins are added to the cube
                  to conserve the flux.
         margin : 'center' or 'origin'
-                  This parameters is used if new size is not
-                  an integer multiple of the original size.
+                 This parameters is used if new size is not
+                 an integer multiple of the original size.
 
-                  In 'center' case, cube is truncated/pixels are added on the left
-                  and on the right, on the bottom and of the top of the cube.
+                 In 'center' case, cube is truncated/pixels are added on the
+                 left and on the right, on the bottom and of the top of the
+                 cube.
 
-                  In 'origin'case, cube is truncated/pixels are added
-                  at the end along each direction
+                 In 'origin'case, cube is truncated/pixels are added
+                 at the end along each direction
         """
         if is_int(factor):
             factor = (factor, factor, factor)
         factor = np.array(factor)
-        if factor[0] < 1:
-            factor[0] = 1
-        if factor[0] > self.shape[0]:
-            factor[0] = self.shape[0]
-        if factor[1] < 1:
-            factor[1] = 1
-        if factor[1] > self.shape[1]:
-            factor[1] = self.shape[1]
-        if factor[2] < 1:
-            factor[2] = 1
-        if factor[2] > self.shape[2]:
-            factor[2] = self.shape[2]
-
+        factor = np.maximum(factor, [1, 1, 1])
+        factor = np.minimum(factor, self.shape)
         res = self.copy()
         res._rebin_factor(factor, margin, flux)
         return res
@@ -2948,7 +2933,7 @@ class Cube(CubeBase):
                                       q * qfactor:(q + 1) * qfactor])
 
     def _rebin_median_(self, factor):
-        """Shrinks the size of the cube by factor. New size is an integer
+        """Shrinks the size of the cube by factor. New size must be an integer
         multiple of the original size.
 
         Parameter
@@ -2957,14 +2942,8 @@ class Cube(CubeBase):
                  Factor in z, y and x.
                 Python notation: (nz,ny,nx)
         """
-        # new size is an integer multiple of the original size
-        assert not np.sometrue(np.mod(self.shape[0], factor[0]))
-        assert not np.sometrue(np.mod(self.shape[1], factor[1]))
-        assert not np.sometrue(np.mod(self.shape[2], factor[2]))
-        # shape
-        self.shape = np.array((self.shape[0] / factor[0],
-                               self.shape[1] / factor[1],
-                               self.shape[2] / factor[2]))
+        assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
+        self.shape /= np.asarray(factor)
         # data
         grid = np.lib.index_tricks.nd_grid()
         g = grid[0:self.shape[0], 0:self.shape[1], 0:self.shape[2]]
@@ -3009,18 +2988,8 @@ class Cube(CubeBase):
         if is_int(factor):
             factor = (factor, factor, factor)
         factor = np.array(factor)
-        if factor[0] < 1:
-            factor[0] = 1
-        if factor[0] > self.shape[0]:
-            factor[0] = self.shape[0]
-        if factor[1] < 1:
-            factor[1] = 1
-        if factor[1] > self.shape[1]:
-            factor[1] = self.shape[1]
-        if factor[2] < 1:
-            factor[2] = 1
-        if factor[2] > self.shape[2]:
-            factor[2] = self.shape[2]
+        factor = np.maximum(factor, [1, 1, 1])
+        factor = np.minimum(factor, self.shape)
         if not np.sometrue(np.mod(self.shape[0], factor[0])) \
                 and not np.sometrue(np.mod(self.shape[1], factor[1])) \
                 and not np.sometrue(np.mod(self.shape[2], factor[2])):
@@ -3136,17 +3105,10 @@ class Cube(CubeBase):
             p, q = pos
             if dtype == 'spectrum':
                 # f return a Spectrum -> iterator return a cube
-                crpix = out[0]
-                cdelt = out[1]
-                crval = out[2]
-                cunit = out[3]
-                ctype = out[4]
-                data = out[5]
-                mask = out[6]
-                var = out[7]
-                fscale = out[8]
-                unit = out[9]
-                wave = WaveCoord(crpix, cdelt, crval, cunit, ctype, data.shape[0])
+                crpix, cdelt, crval, cunit, ctype, data, mask, var, fscale, \
+                    unit = out
+                wave = WaveCoord(crpix, cdelt, crval, cunit, ctype,
+                                 data.shape[0])
                 spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit,
                                data=data, var=var, fscale=fscale)
                 spe.data.mask = mask
@@ -3227,7 +3189,6 @@ class Cube(CubeBase):
 
         for ima, k in iter_ima(self, index=True):
             header = ima.wcs.to_header()
-            #processlist.append([ima, k, f, header, kargs])
             processlist.append([k, f, header, ima.data.data, ima.data.mask,
                                 ima.var, ima.fscale, ima.unit, kargs])
         num_tasks = len(processlist)
@@ -3286,17 +3247,10 @@ class Cube(CubeBase):
                 result.primary_header = pyfits.Header(self.primary_header)
             elif dtype == 'spectrum':
                 # f return a Spectrum -> iterator return a list of spectra
-                crpix = out[0]
-                cdelt = out[1]
-                crval = out[2]
-                cunit = out[3]
-                ctype = out[4]
-                data = out[5]
-                mask = out[6]
-                var = out[7]
-                fscale = out[8]
-                unit = out[9]
-                wave = WaveCoord(crpix, cdelt, crval, cunit, ctype, data.shape[0])
+                crpix, cdelt, crval, cunit, ctype, data, mask, var, fscale, \
+                    unit = out
+                wave = WaveCoord(crpix, cdelt, crval, cunit, ctype,
+                                 data.shape[0])
                 spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit,
                                data=data, var=var, fscale=fscale)
                 spe.data.mask = mask
@@ -3329,7 +3283,8 @@ class Cube(CubeBase):
         wave         : (float, float)
                        (lbda1,lbda2) interval of wavelength.
         is_sum       : boolean
-                       if True the sum is computes, otherwise this is the average.
+                       if True the sum is computes, otherwise this is the
+                       average.
         subtract_off : boolean
                        If True, subtracting off nearby data.
         margin       : float
@@ -3348,7 +3303,7 @@ class Cube(CubeBase):
         else:
             k1 = int(k1)
         k2 = int(k2)
-        
+
         msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2)
         self.logger.info(msg, extra=d)
         if is_sum:
@@ -3359,8 +3314,8 @@ class Cube(CubeBase):
         if subtract_off:
             dl = (l2-l1)*3
             lbdas = self.wave.coord()
-            is_off = np.where(((lbdas<l1-margin) & (lbdas>l1-margin-dl/2)) |
-                              ((lbdas>l2+margin) & (lbdas<l2+margin+dl/2)))
+            is_off = np.where(((lbdas < l1-margin) & (lbdas > l1-margin-dl/2)) |
+                              ((lbdas > l2+margin) & (lbdas < l2+margin+dl/2)))
             if is_sum:
                 off_im = self[is_off[0], :, :].sum(axis=0)
             else:
@@ -3370,7 +3325,7 @@ class Cube(CubeBase):
                 ima.var = ima.var + off_im.var
 
         return ima
-    
+
     def subcube(self, center, size, pix=False):
         """Extracts a sub-cube
 
@@ -3402,16 +3357,17 @@ class Cube(CubeBase):
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin+int(size[0]+0.5), jmin+int(size[1]+0.5)],
+            imax, jmax = np.minimum([imin+int(size[0]+0.5),
+                                     jmin+int(size[1]+0.5)],
                                     [self.shape[1], self.shape[2]])
-            
+
             data = self.data[:, imin:imax, jmin:jmax].copy()
             if self.var is not None:
                 var = self.var[:, imin:imax, jmin:jmax].copy()
             else:
                 var = None
-            cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave, unit=self.unit,
-                       data=data, var=var, fscale=self.fscale)
+            cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave,
+                       unit=self.unit, data=data, var=var, fscale=self.fscale)
             cub.data_header = pyfits.Header(self.data_header)
             cub.primary_header = pyfits.Header(self.primary_header)
             return cub
@@ -3442,7 +3398,8 @@ class Cube(CubeBase):
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin+int(2*radius[0]+0.5), jmin+int(2*radius[1]+0.5)],
+            imax, jmax = np.minimum([imin+int(2*radius[0]+0.5),
+                                     jmin+int(2*radius[1]+0.5)],
                                     [self.shape[1], self.shape[2]])
 
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
@@ -3459,8 +3416,8 @@ class Cube(CubeBase):
                 var = self.var[:, imin:imax, jmin:jmax].copy()
             else:
                 var = None
-            cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave, unit=self.unit,
-                       data=data, var=var, fscale=self.fscale)
+            cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave,
+                       unit=self.unit, data=data, var=var, fscale=self.fscale)
             cub.data.mask = data.mask
             cub.data_header = pyfits.Header(self.data_header)
             cub.primary_header = pyfits.Header(self.primary_header)
@@ -3487,7 +3444,7 @@ class Cube(CubeBase):
         if radius > 0:
             cub = self.subcube_aperture(center, radius)
             msg = '%d spaxels summed' % (cub.shape[1] * cub.shape[2])
-            spec = cub.sum(axis=(1,2))
+            spec = cub.sum(axis=(1, 2))
             self.logger.info(msg, extra=d)
         else:
             center = self.wcs.sky2pix(center)[0]
@@ -3499,20 +3456,8 @@ class Cube(CubeBase):
 
 def _process_spe(arglist):
     try:
-        pos = arglist[0]
-        f = arglist[1]
-        crpix = arglist[2]
-        cdelt = arglist[3]
-        crval = arglist[4]
-        cunit = arglist[5]
-        ctype = arglist[6]
-        data = arglist[7]
-        mask = arglist[8]
-        var = arglist[9]
-        fscale = arglist[10]
-        unit = arglist[11]
-        kargs = arglist[12]
-
+        pos, f, crpix, cdelt, crval, cunit, ctype, data, mask, var, fscale, \
+            unit, kargs = arglist
         wave = WaveCoord(crpix, cdelt, crval, cunit, ctype, data.shape[0])
         spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit, data=data,
                        var=var, fscale=fscale)
@@ -3541,15 +3486,7 @@ def _process_spe(arglist):
 
 def _process_ima(arglist):
     try:
-        k = arglist[0]
-        f = arglist[1]
-        header = arglist[2]
-        data = arglist[3]
-        mask = arglist[4]
-        var = arglist[5]
-        fscale = arglist[6]
-        unit = arglist[7]
-        kargs = arglist[8]
+        k, f, header, data, mask, var, fscale, unit, kargs = arglist
         wcs = WCS(header, shape=data.shape)
         obj = Image(shape=data.shape, wcs=wcs, unit=unit, data=data,
                     var=var, fscale=fscale)
@@ -3859,7 +3796,7 @@ class CubeDisk(CubeBase):
             imax = self.shape[1]
         if imin >= self.shape[1] or imax <= 0 or imin==imax:
             raise ValueError('sub-cube boundaries are outside the cube')
-            
+
         jmin = int(np.min(pixcrd[:, 1]))
         if jmin < 0:
             jmin = 0
