@@ -342,7 +342,7 @@ class Cube(CubeBase):
                 self.data = None
                 self.shape = np.array(shape)
             else:
-                self.data = np.array(data, dtype=float)
+                self.data = np.ma.array(data, dtype=float)
                 try:
                     self.shape = np.array(data.shape)
                 except:
