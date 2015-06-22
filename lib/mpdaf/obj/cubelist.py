@@ -5,8 +5,11 @@ import logging
 import numpy as np
 import os
 
+from astropy.stats import sigma_clip
 from astropy.table import Table
+from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
+from numpy import ma
 
 from .cube import CubeDisk, Cube
 from .objs import is_float, is_int
@@ -220,7 +223,7 @@ class CubeList(object):
         libCmethods.mpdaf_merging_median.argtypes = [
             charptr, array_1d_double, array_1d_int, array_1d_int]
         # run C method
-        npixels = self.shape[0]*self.shape[1]*self.shape[2]
+        npixels = np.prod(self.shape)
         data = np.empty(npixels, dtype=np.float64)
         expmap = np.empty(npixels, dtype=np.int32)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
@@ -228,7 +231,7 @@ class CubeList(object):
                                          expmap, valid_pix)
 
         # no valid pixels
-        no_valid_pix = [npixels - npix for npix in valid_pix]
+        no_valid_pix = npixels - valid_pix
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
@@ -264,8 +267,7 @@ class CubeList(object):
                       computed as the variance derived from the comparison
                       of the N individual exposures.
         mad         : boolean
-                      use MAD (median absolute deviation) statistics for sigma-clipping 
-                      
+                      use MAD (median absolute deviation) statistics for sigma-clipping
 
         Returns
         -------
@@ -313,22 +315,25 @@ class CubeList(object):
             var_mean = 1
         else:
             var_mean = 2
-            
+
         # setup argument types
         libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
-                charptr, array_1d_double, array_1d_double, array_1d_int,
-                array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
-                ctypes.c_double, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+            charptr, array_1d_double, array_1d_double, array_1d_int,
+            array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
+            ctypes.c_double, ctypes.c_int, ctypes.c_int, ctypes.c_int]
         # run C method
         libCmethods.mpdaf_merging_sigma_clipping(
-                c_char_p('\n'.join(self.files)), data, vardata, expmap,
-                select_pix, valid_pix, nmax, np.float64(nclip_low),
-                np.float64(nclip_up), nstop, np.int32(var_mean), np.int32(mad))
+            c_char_p('\n'.join(self.files)), data, vardata, expmap,
+            select_pix, valid_pix, nmax, np.float64(nclip_low),
+            np.float64(nclip_up), nstop, np.int32(var_mean), np.int32(mad))
 
         # no valid pixels
-        no_valid_pix = [npixels - npix for npix in valid_pix]
-        rejected_pix = [valid - select for valid, select in zip(valid_pix,
-                                                                select_pix)]
+        rej = (valid_pix - select_pix) / valid_pix.astype(float) * 100.0
+        rej = " ".join("{:.2f}%".format(p) for p in rej)
+        d = {'class': 'CubeList', 'method': 'merging'}
+        self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
+        no_valid_pix = npixels - valid_pix
+        rejected_pix = valid_pix - select_pix
         statpix = Table([self.files, no_valid_pix, rejected_pix],
                         names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
 
@@ -343,3 +348,103 @@ class CubeList(object):
                                        method='obj.cubelist.merging',
                                        keywords=keywords)
         return cube, expmap, statpix
+
+    def pymedian(self):
+        d = {'class': 'CubeList', 'method': 'median'}
+        try:
+            import fitsio
+        except ImportError:
+            self.logger.error('fitsio is required !')
+            raise
+
+        data = [fitsio.FITS(f)[1] for f in self.files]
+        # shape = data[0].get_dims()
+        cube = np.empty(self.shape, dtype=np.float64)
+        expmap = np.empty(self.shape, dtype=np.int32)
+        valid_pix = np.zeros(self.nfiles, dtype=np.int32)
+        nl = self.shape[0]
+
+        self.logger.info('Looping on the %d planes of the cube', nl, extra=d)
+        for l in ProgressBar(xrange(nl)):
+            arr = np.array([c[l, :, :][0] for c in data])
+            cube[l, :, :] = np.nanmedian(arr, axis=0)
+            expmap[l, :, :] = (~np.isnan(arr)).astype(int).sum(axis=0)
+            valid_pix += (~np.isnan(arr)).astype(int).sum(axis=1).sum(axis=1)
+
+        # no valid pixels
+        npixels = np.prod(self.shape)
+        no_valid_pix = npixels - valid_pix
+        stat_pix = Table([self.files, no_valid_pix],
+                         names=['FILENAME', 'NPIX_NAN'])
+
+        expmap = self.save_combined_cube(expmap, method='obj.cubelist.median')
+        cube = self.save_combined_cube(cube, method='obj.cubelist.median')
+        return cube, expmap, stat_pix
+
+    def pycombine(self, nmax=2, nclip=5.0, var='propagate',
+                  cenfunc=ma.median, stdfunc=ma.std):
+        d = {'class': 'CubeList', 'method': 'merging'}
+        try:
+            import fitsio
+        except ImportError:
+            self.logger.error('fitsio is required !', extra=d)
+            raise
+
+        if is_int(nclip) or is_float(nclip):
+            nclip_low = nclip
+            nclip_up = nclip
+        else:
+            nclip_low = nclip[0]
+            nclip_up = nclip[1]
+
+        self.logger.info("Merging cube using sigma clipped mean", extra=d)
+        self.logger.info("nmax = %d", nmax, extra=d)
+        self.logger.info("nclip_low = %f", nclip_low, extra=d)
+        self.logger.info("nclip_high = %f", nclip_up, extra=d)
+
+        data = [fitsio.FITS(f)[1] for f in self.files]
+        # shape = data[0].get_dims()
+        cube = np.ma.empty(self.shape, dtype=np.float64)
+        expmap = np.empty(self.shape, dtype=np.int32)
+        rejmap = np.empty(self.shape, dtype=np.int32)
+        vardata = np.empty(self.shape, dtype=np.float64)
+        valid_pix = np.zeros(self.nfiles, dtype=np.int32)
+        select_pix = np.zeros(self.nfiles, dtype=np.int32)
+        nl = self.shape[0]
+
+        self.logger.info('Looping on the %d planes of the cube', nl, extra=d)
+        for l in ProgressBar(xrange(nl)):
+            arr = ma.masked_invalid([c[l, :, :][0] for c in data], copy=False)
+            valid_pix += arr.count(axis=1).sum(axis=1)
+            rejmap[l, :, :] = arr.count(axis=0)
+            arr = sigma_clip(arr, sigma_lower=nclip_low, copy=False,
+                             cenfunc=cenfunc, stdfunc=stdfunc,
+                             sigma_upper=nclip_up, iters=nmax, axis=0)
+            cube[l, :, :] = ma.mean(arr, axis=0)
+            expmap[l, :, :] = arr.count(axis=0)
+            vardata[l, :, :] = ma.var(arr, axis=0)
+            select_pix += arr.count(axis=1).sum(axis=1)
+
+        rejmap -= expmap
+
+        # no valid pixels
+        rej = (valid_pix - select_pix) / valid_pix.astype(float) * 100.0
+        rej = " ".join("{:.2f}".format(p) for p in rej)
+        self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
+        npixels = np.prod(self.shape)
+        no_valid_pix = npixels - valid_pix
+        rejected_pix = valid_pix - select_pix
+        stat_pix = Table([self.files, no_valid_pix, rejected_pix],
+                         names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
+
+        keywords = [('nmax', nmax, 'max number of clipping iterations'),
+                    ('nclip_low', nclip, 'lower clipping parameter'),
+                    ('nclip_up', nclip, 'upper clipping parameter'),
+                    ('var', var, 'type of variance')]
+        cube = self.save_combined_cube(cube, var=vardata, keywords=keywords,
+                                       method='obj.cubelist.mergingpy')
+        expmap = self.save_combined_cube(expmap, method='obj.cubelist.merging',
+                                         keywords=keywords)
+        rejmap = self.save_combined_cube(rejmap, method='obj.cubelist.merging',
+                                         keywords=keywords)
+        return cube, expmap, stat_pix, rejmap
