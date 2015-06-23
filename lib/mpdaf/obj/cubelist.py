@@ -236,7 +236,7 @@ class CubeList(object):
         cube = self.save_combined_cube(data, method='obj.cubelist.median')
         return cube, expmap, stat_pix
 
-    def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate'):
+    def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate', mad=False):
         """combines cubes in a single data cube using sigma clipped mean.
 
         Parameters
@@ -263,6 +263,8 @@ class CubeList(object):
                       'stat_one': the variance of each combined pixel is
                       computed as the variance derived from the comparison
                       of the N individual exposures.
+        mad         : boolean
+                      
 
         Returns
         -------
@@ -305,31 +307,22 @@ class CubeList(object):
         select_pix = np.zeros(self.nfiles, dtype=np.int32)
 
         if var == 'propagate':
-            # setup argument types
-            libCmethods.mpdaf_merging_sigma_clipping_var.argtypes = [
-                charptr, array_1d_double, array_1d_double, array_1d_int,
-                array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
-                ctypes.c_double, ctypes.c_int]
-            # run C method
-            libCmethods.mpdaf_merging_sigma_clipping_var(
-                c_char_p('\n'.join(self.files)), data, vardata, expmap,
-                select_pix, valid_pix, nmax, np.float64(nclip_low),
-                np.float64(nclip_up), nstop)
+            var_mean = 0
+        elif var == 'stat_mean':
+            var_mean = 1
         else:
-            if var == 'stat_mean':
-                var_mean = 1
-            else:
-                var_mean = 0
-            # setup argument types
-            libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
+            var_mean = 2
+            
+        # setup argument types
+        libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
                 charptr, array_1d_double, array_1d_double, array_1d_int,
                 array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
-                ctypes.c_double, ctypes.c_int, ctypes.c_int]
-            # run C method
-            libCmethods.mpdaf_merging_sigma_clipping(
+                ctypes.c_double, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+        # run C method
+        libCmethods.mpdaf_merging_sigma_clipping(
                 c_char_p('\n'.join(self.files)), data, vardata, expmap,
                 select_pix, valid_pix, nmax, np.float64(nclip_low),
-                np.float64(nclip_up), nstop, np.int32(var_mean))
+                np.float64(nclip_up), nstop, np.int32(var_mean), np.int32(mad))
 
         # no valid pixels
         no_valid_pix = [npixels - npix for npix in valid_pix]

@@ -5,14 +5,6 @@
 #include <stdio.h>
 
 
-// Compare two elements
-//static int qsort_compare (const void * a, const void * b)
-//{
-//        return ( *(double*)a > *(double*)b );
-//}
-
-
-
 // Compute the arithmetic mean
 void mpdaf_mean(double* data, int n, double x[3], int* indx)
 {
@@ -43,15 +35,7 @@ double mpdaf_sum(double* data, int n, int* indx)
   return sum;
 }
 
-// Compute the median
-/*double mpdaf_median(double* data, int n)
-{
-  qsort(data, n, sizeof(double), qsort_compare);
-  if(n%2==1) return data[n / 2];
-  else return (data[n/2-1]+data[n/2])/2.0;
-  }*/
-
-
+// Compute median
 double mpdaf_median(double *data, int  n, int *indx)
 {
         int npts=n;
@@ -66,6 +50,25 @@ double mpdaf_median(double *data, int  n, int *indx)
 	return(med);
 }
 
+// Compute the arithmetic mean and mad sigma
+void mpdaf_mean_mad(double* data, int n, double x[3], int *indx, double* work)
+{
+    double mean=0.0, median=0.0;
+    int i;
+    for(i=0; i<n;i++)
+    {
+      mean+=data[indx[i]];
+    }
+    mean=mean/n;
+
+    median=mpdaf_median(data,n,indx);
+    for(i=0; i<n;i++)
+      {
+	work[indx[i]]=fabs(data[indx[i]]-median);
+      }
+    x[0] = mean;
+    x[1] = mpdaf_median(work,n,indx)*1.4826;
+}
 
 // Iterative sigma-clipping of array elements
 // return x[0]=mean, x[1]=std, x[2]=n
@@ -81,15 +84,6 @@ void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nc
   clip_up = med + (nclip_up*x[1]);
 
   int i, ni = 0; 
-  /*for (i=0; i<n; i++)
-    {
-      if ((data[i]<clip_up) && (data[i]>clip_lo))
-        {
-	  data[ni]=data[i];
-	  id[ni]=id[i];
-	  ni = ni + 1;
-	}
-	}*/
   for (i=0; i<n; i++)
     {
       if ((data[indx[i]]<clip_up) && (data[indx[i]]>clip_lo))
@@ -117,11 +111,48 @@ void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nc
    }
 }
 
+void mpdaf_mean_madsigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx, double* work)
+{
+  double clip_lo, clip_up;
+  mpdaf_mean_mad(data, n, x, indx, work);
+  x[2] = n;
+  double med;
+  med =  mpdaf_median(data,n, indx);
+  clip_lo = med - (nclip_low*x[1]);
+  clip_up = med + (nclip_up*x[1]);
+
+  int i, ni = 0; 
+  for (i=0; i<n; i++)
+    {
+      if ((data[indx[i]]<clip_up) && (data[indx[i]]>clip_lo))
+	{
+	  ni = ni+1;
+	}
+    }
+  if (ni<nstop || ni==n)
+    {
+      return;
+    }
+   if ( nmax > 0 )
+   {
+     ni = 0;
+     for (i=0; i<n; i++)
+     {
+      if ((data[indx[i]]<clip_up) && (data[indx[i]]>clip_lo))
+	{
+	  indx[ni]=indx[i];
+	  ni = ni+1;
+	}
+     }
+     nmax = nmax - 1;
+     mpdaf_mean_madsigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop, indx, work);
+   }
+}
+
 // Iterative sigma-clipping of array elements
 // return x[0]=median, x[1]=std, x[2]=n
 void mpdaf_median_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx)
 {
-  //printf("n = %i med=%g\n",n,mpdaf_median(data,n));
   double clip_lo, clip_up;
   mpdaf_mean(data, n, x, indx);
   x[2] = n;
