@@ -6,6 +6,7 @@
 #include <time.h>
 #include <math.h>
 #include <stdlib.h> /* for exit */
+#include <sys/resource.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -249,8 +250,21 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     }
     printf("nfiles: %d\n",nfiles); 
 
+    struct rlimit limit;
+    /* Get max number of files. */
+    if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
+        printf("getrlimit() failed");
+        return 1;
+    }
+
+    int num_nthreads = limit.rlim_cur/nfiles;
+    if (typ_var==0)
+    {
+      num_nthreads = num_nthreads/2;
+    }
+
     // create threads
-    #pragma omp parallel shared(filenames, nfiles, data, var, expmap, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad)
+    #pragma omp parallel shared(filenames, nfiles, data, var, expmap, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
     {
         int rang = omp_get_thread_num(); // current thread number
         int nthreads = omp_get_num_threads(); // number of threads
