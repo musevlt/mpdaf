@@ -3316,7 +3316,7 @@ class Cube(CubeBase):
                     result[k] = out[0]
         return result
 
-    def get_image(self, wave, is_sum=False, subtract_off=False):
+    def get_image(self, wave, is_sum=False, subtract_off=False, margin=10., fband=3.):
         """Extracts an image from the datacube.
 
         Parameters
@@ -3327,6 +3327,10 @@ class Cube(CubeBase):
                        if True the sum is computes, otherwise this is the average.
         subtract_off : boolean
                        If True, subtracting off nearby data.
+        margin       : float
+                       This off-band is offseted by margin wrt narrow-band limit.
+        fband        : float
+                       The size of the off-band is fband*narrow-band width.
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
@@ -3349,7 +3353,6 @@ class Cube(CubeBase):
 
         if subtract_off:
             dl = (l2-l1)*3
-            margin = 10.0
             lbdas = self.wave.coord()
             is_off = np.where(((lbdas<l1-margin) & (lbdas>l1-margin-dl/2)) |
                               ((lbdas>l2+margin) & (lbdas<l2+margin+dl/2)))
