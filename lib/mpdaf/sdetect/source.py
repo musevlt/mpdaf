@@ -409,13 +409,31 @@ class Source(object):
                 self.logger.info(l, extra=d)
         print '\n'
         for key, spe in self.spectra.iteritems():
-            self.logger.info('spectra[\'%s\']'%key, extra=d)
-            spe.info()
-            print '\n'
+            msg = 'spectra[\'%s\']'%key
+            if spe.wave.cunit is None:
+                unit = ''
+            else:
+                unit = spe.wave.cunit
+            msg += ',%i elements (%0.2f-%0.2f %s)'%(spe.shape, spe.wave.__getitem__(0), spe.wave.__getitem__(self.shape - 1), unit)
+            data = '.data'
+            if spe.data is None:
+                data = 'no data'
+            noise = '.var'
+            if spe.var is None:
+                noise = 'no noise'
+            msg += ' %s %s'%(data, noise)
+            self.logger.info(msg, extra=d)
         for key, ima in self.images.iteritems():
-            self.logger.info('images[\'%s\']'%key, extra=d)
-            ima.info()
-            print '\n'
+            msg = 'images[\'%s\']'%key
+            msg += ' %i X %i' %(ima.shape[0], ima.shape[1])
+            data = '.data'
+            if ima.data is None:
+                data = 'no data'
+            noise = '.var'
+            if ima.var is None:
+                noise = 'no noise'
+            msg += ' %s %s'%(data, noise)
+            self.logger.info(msg, extra=d)
         for key, cub in self.cubes.iteritems():
             self.logger.info('cubes[\'%s\']'%key, extra=d)
             cub.info()
@@ -641,9 +659,15 @@ class Source(object):
                 for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
                     self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True)
         
-    def add_masks(self):
+    def add_masks(self, DIR=None, del_sex=True, save_seg=True):
         """Run SExtractor on all images present in self.images dictionary
-        to create segmentation maps. After that, the list of segmentation maps are used
+        to create segmentation maps. 
+        SExtractor will use the default.nnw, default.param, default.sex
+        and *.conv files present in the current directory.
+        If not present default parameter files are created
+        or copied from the directory given in input (DIR).
+        
+        After that, the list of segmentation maps are used
         to compute the union mask and the intersection mask and  the region
         where no object is detected in any segmentation map is saved in the sky mask.
         
@@ -654,11 +678,20 @@ class Source(object):
         Sky mask is saved as an image of booleans in self.images['MASK_SKY']
         
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+        
+        Parameters
+        ----------
+        DIR      : string
+                   Directory that contains the configuration files of sextractor
+        del_sex  : boolean
+                   If False, configuration files of sextractor are not removed.
+        save_seg : boolean
+                   If True, segmentation maps are saved in the source object.
         """
         d = {'class': 'Source', 'method': 'add_masks'}
         if 'MUSE_WHITE' in self.images:
             from ..sdetect.sea import segmentation
-            segmentation(self)
+            segmentation(self, DIR, del_sex, save_seg)
         else:
             self.logger.warning('add_mask method use the MUSE_WHITE image computed by add_white_image method',
                                 extra=d)

@@ -15,6 +15,7 @@ from astropy.io import fits as pyfits
 import logging
 import numpy as np
 import os
+import shutil
 import subprocess
 
 from ..obj import Image
@@ -23,20 +24,24 @@ from ..sdetect import Source, SourceList
 __version__ = 1.0
 
 
-def setup_config_files():
-    DIR = os.path.dirname(__file__) + '/sea_data/'
-    files = ['default.nnw',    'default.param', 'default.sex', 'gauss_5.0_9x9.conv']
+def setup_config_files(DIR=None):
+    if DIR is None:
+        DIR = os.path.dirname(__file__) + '/sea_data/'
+        files = ['default.nnw', 'default.param', 'default.sex', 'gauss_5.0_9x9.conv']
+    else:
+        files = os.listdir(DIR)
     for f in files:
-        try:
-            os.symlink(DIR+f, './'+f)
-        except:
-            pass
+        if not os.path.isfile(f):
+            shutil.copy(DIR+'/'+f, './'+f)
         
 
-def remove_config_files():
-    files = ['default.nnw',    'default.param', 'default.sex', 'gauss_5.0_9x9.conv']
+def remove_config_files(DIR=None):
+    if DIR is None:
+        files = ['default.nnw', 'default.param', 'default.sex', 'gauss_5.0_9x9.conv']
+    else:
+        files = os.listdir(DIR)
     for f in files:
-        os.unlink(f)
+        os.remove(f)
      
    
 def findCentralDetection(images, tolerance=1):
@@ -186,7 +191,7 @@ detected in any segmentation map as our sky image.
 
     return skymask
 
-def segmentation(source):
+def segmentation(source, DIR, remove, save_seg):
     # suppose that MUSE_WHITE image exists
     try:
         subprocess.check_call(['sex'])
@@ -205,51 +210,59 @@ def segmentation(source):
     
     maps = {}
     nobj = {}
-    setup_config_files()
+    setup_config_files(DIR)
     # size in arcsec
     for tag, ima in source.images.iteritems():
-        tag2 = tag.replace('[','').replace(']','')
+        if 'MASK_' not in tag and 'SEG_' not in tag:
+            tag2 = tag.replace('[','').replace(']','')
         
-        fname = '%04d-%s.fits'%(source.id, tag2)
-        start_ima = ima.wcs.pix2sky([0,0])[0]
-        step_ima = ima.get_step()
-        prihdu = pyfits.PrimaryHDU()
-        hdulist = [prihdu]
-        if ima.shape[0]==dim[0] and  ima.shape[1]==dim[1] and \
-           start_ima[0]==start[0] and start_ima[1]==start[1] and \
-           step_ima[0]==step[0] and step_ima[1]==step[1]:
-            data_hdu = ima.get_data_hdu(name='DATA', savemask='nan')
-        else:
-            ima2 = ima.rebin(dim, start, step, flux=True)
-            data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
-        hdulist.append(data_hdu)
-        hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(fname, clobber=True, output_verify='fix')
+            fname = '%04d-%s.fits'%(source.id, tag2)
+            start_ima = ima.wcs.pix2sky([0,0])[0]
+            step_ima = ima.get_step()
+            prihdu = pyfits.PrimaryHDU()
+            hdulist = [prihdu]
+            if ima.shape[0]==dim[0] and  ima.shape[1]==dim[1] and \
+                start_ima[0]==start[0] and start_ima[1]==start[1] and \
+                step_ima[0]==step[0] and step_ima[1]==step[1]:
+                data_hdu = ima.get_data_hdu(name='DATA', savemask='nan')
+            else:
+                ima2 = ima.rebin(dim, start, step, flux=True)
+                data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
+            hdulist.append(data_hdu)
+            hdu = pyfits.HDUList(hdulist)
+            hdu.writeto(fname, clobber=True, output_verify='fix')
             
-        catalogFile = 'cat-' + fname
-        segFile = 'seg-'+ fname
+            catalogFile = 'cat-' + fname
+            segFile = 'seg-'+ fname
             
-        command = [cmd_sex, "-CHECKIMAGE_NAME", segFile, '-CATALOG_NAME',
+            command = [cmd_sex, "-CHECKIMAGE_NAME", segFile, '-CATALOG_NAME',
                        catalogFile, fname]
-        subprocess.call(command)
-        # remove source file
-        os.remove(fname)
-        try:
-            hdul = pyfits.open(segFile)
-            maps[tag] = hdul[0].data
-            nobj[tag] = np.max(maps[tag])
-            hdul.close()
-        except:
-            print "Something went wrong!"
-        # remove seg file
-        os.remove(segFile)
-        # remove catalog file
-        os.remove(catalogFile)
-    remove_config_files()
+            subprocess.call(command)
+            # remove source file
+            os.remove(fname)
+            try:
+                hdul = pyfits.open(segFile)
+                maps[tag] = hdul[0].data
+                nobj[tag] = np.max(maps[tag])
+                hdul.close()
+            except:
+                raise StandardError("Something went wrong with sextractor!")
+            # remove seg file
+            os.remove(segFile)
+            # remove catalog file
+            os.remove(catalogFile)
+    if remove:
+        remove_config_files(DIR)
            
     #make master segmentation
     # Allow for a tiny margin.
     if len(maps) > 0:
+        
+        if save_seg:
+            for tag, data in maps.iteritems():
+                ima = Image(wcs=wcs, data=data)
+                source.images['SEG_'+tag] = ima
+        
         r = findCentralDetection(maps, tolerance=3)
         
         object_mask = union(r['seg'])
@@ -266,7 +279,7 @@ def segmentation(source):
 
 # def SEA(cat, cube, hst=None, size=5, psf=None):
 #     """
-#     
+#      
 #     Parameters
 #     ----------
 #     cat : astropy.Table
@@ -278,9 +291,9 @@ def segmentation(source):
 #     hst : :class:`dict`
 #           Dictionary containing one or more HST images of the field
 #           which you want to extract stamps.
-# 
+#  
 #           Keys gives the filter ('SRC_WHITE' for white image, TBC)
-#               
+#                
 #           Values are :class:`mpdaf.obj.Image` object
 #     size : float
 #            The size to extract in arcseconds.
@@ -290,25 +303,25 @@ def segmentation(source):
 #            This can be a vector of length equal to the wavelength
 #            axis to give the FWHM of the Gaussian PSF at each
 #            wavelength (in arcsec) or a cube with the PSF to use.
-#           
+#            
 #     Returns
 #     -------
 #     out : :class:`mpdaf.sdetect.SourceList`
 #     """
-# 
+#  
 #     if hst is None:
 #         hst = {}
-#         
+#          
 #     # create source objects
 #     sources = []
 #     origin = ('sea', __version__, os.path.basename(cube.filename))
-#     
+#      
 #     for obj in cat:
-#         
+#          
 #         cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']])[0]
 #         if cen[0] >= 0 and cen[0] <= cube.wcs.naxis1 and \
 #         cen[1] >= 0 and cen[1] <= cube.wcs.naxis2:
-#         
+#          
 #             source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
 #             try:
 #                 z = obj['Z']
@@ -319,13 +332,13 @@ def segmentation(source):
 #             except:
 #                 errz = -9999
 #             source.add_z('CAT', z, errz)
-#             
+#              
 #             # create white image
 #             source.add_white_image(cube, size)
-#             
+#              
 #             # create narrow band images
 #             source.add_narrow_band_images(cube, 'CAT')
-#             
+#              
 #             # extract hst stamps
 #             newdim = source.images['MUSE_WHITE'].shape
 #             newstep = source.images['MUSE_WHITE'].get_step()
@@ -334,15 +347,15 @@ def segmentation(source):
 #             newsize = np.max(cdelt*newdim)
 #             for tag, ima in hst.iteritems():
 #                 source.add_image(ima, 'HST_'+tag, newsize)
-#                     
+#                      
 #             # segmentation maps
 #             source.add_masks()
-#                 
+#                  
 #             # extract spectra
 #             source.extract_spectra(cube, skysub=True, psf=psf)
 #             source.extract_spectra(cube, skysub=False, psf=psf)
-#         
+#          
 #             sources.append(source)
-#         
+#          
 #     # return list of sources
 #     return SourceList(sources)
