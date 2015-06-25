@@ -73,10 +73,20 @@ class CubeList(object):
 
         return np.array([cube[item] for cube in self.cubes])
 
-    def info(self):
+    def info(self, verbose=False):
         """Prints information."""
-        for cube in self.cubes:
-            cube.info()
+        d = {'class': 'CubeList', 'method': 'info'}
+        rows = [(c.filename, 'x'.join(str(s) for s in c.shape),
+                 str(c.wcs.wcs.wcs.crpix), str(c.wcs.wcs.wcs.crval))
+                for c in self.cubes]
+        t = Table(rows=rows, names=('filename', 'shape', 'crpix', 'crval'))
+        for line in t.pformat():
+            self.logger.info(line, extra=d)
+
+        if verbose:
+            self.logger.info('Detailed information per file:', extra=d)
+            for cube in self.cubes:
+                cube.info()
 
     def check_dim(self):
         """Checks if all cubes have same dimensions."""
