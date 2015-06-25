@@ -191,7 +191,7 @@ detected in any segmentation map as our sky image.
 
     return skymask
 
-def segmentation(source, DIR, remove, save_seg):
+def segmentation(source, tags, DIR, remove):
     # suppose that MUSE_WHITE image exists
     try:
         subprocess.check_call(['sex'])
@@ -209,72 +209,69 @@ def segmentation(source, DIR, remove, save_seg):
     wcs = source.images['MUSE_WHITE'].wcs
     
     maps = {}
-    nobj = {}
     setup_config_files(DIR)
     # size in arcsec
-    for tag, ima in source.images.iteritems():
-        if 'MASK_' not in tag and 'SEG_' not in tag:
-            tag2 = tag.replace('[','').replace(']','')
+    for tag in tags:
+        ima = source.images[tag]
+        tag2 = tag.replace('[','').replace(']','')
         
-            fname = '%04d-%s.fits'%(source.id, tag2)
-            start_ima = ima.wcs.pix2sky([0,0])[0]
-            step_ima = ima.get_step()
-            prihdu = pyfits.PrimaryHDU()
-            hdulist = [prihdu]
-            if ima.shape[0]==dim[0] and  ima.shape[1]==dim[1] and \
-                start_ima[0]==start[0] and start_ima[1]==start[1] and \
-                step_ima[0]==step[0] and step_ima[1]==step[1]:
-                data_hdu = ima.get_data_hdu(name='DATA', savemask='nan')
-            else:
-                ima2 = ima.rebin(dim, start, step, flux=True)
-                data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
-            hdulist.append(data_hdu)
-            hdu = pyfits.HDUList(hdulist)
-            hdu.writeto(fname, clobber=True, output_verify='fix')
+        fname = '%04d-%s.fits'%(source.id, tag2)
+        start_ima = ima.wcs.pix2sky([0,0])[0]
+        step_ima = ima.get_step()
+        prihdu = pyfits.PrimaryHDU()
+        hdulist = [prihdu]
+        if ima.shape[0]==dim[0] and  ima.shape[1]==dim[1] and \
+            start_ima[0]==start[0] and start_ima[1]==start[1] and \
+            step_ima[0]==step[0] and step_ima[1]==step[1]:
+            data_hdu = ima.get_data_hdu(name='DATA', savemask='nan')
+        else:
+            ima2 = ima.rebin(dim, start, step, flux=True)
+            data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
+        hdulist.append(data_hdu)
+        hdu = pyfits.HDUList(hdulist)
+        hdu.writeto(fname, clobber=True, output_verify='fix')
             
-            catalogFile = 'cat-' + fname
-            segFile = 'seg-'+ fname
+        catalogFile = 'cat-' + fname
+        segFile = 'seg-'+ fname
             
-            command = [cmd_sex, "-CHECKIMAGE_NAME", segFile, '-CATALOG_NAME',
-                       catalogFile, fname]
-            subprocess.call(command)
-            # remove source file
-            os.remove(fname)
-            try:
-                hdul = pyfits.open(segFile)
-                maps[tag] = hdul[0].data
-                nobj[tag] = np.max(maps[tag])
-                hdul.close()
-            except:
-                raise StandardError("Something went wrong with sextractor!")
-            # remove seg file
-            os.remove(segFile)
-            # remove catalog file
-            os.remove(catalogFile)
+        command = [cmd_sex, "-CHECKIMAGE_NAME", segFile, '-CATALOG_NAME',
+                   catalogFile, fname]
+        subprocess.call(command)
+        # remove source file
+        os.remove(fname)
+        try:
+            hdul = pyfits.open(segFile)
+            maps[tag] = hdul[0].data
+            hdul.close()
+        except:
+            raise StandardError("Something went wrong with sextractor!")
+        # remove seg file
+        os.remove(segFile)
+        # remove catalog file
+        os.remove(catalogFile)
     if remove:
         remove_config_files(DIR)
            
-    #make master segmentation
-    # Allow for a tiny margin.
+    # Save segmentation maps
     if len(maps) > 0:
+        for tag, data in maps.iteritems():
+            ima = Image(wcs=wcs, data=data)
+            source.images['SEG_'+tag] = ima
+       
+def mask_creation(source, maps): 
+    r = findCentralDetection(maps, tolerance=3)
         
-        if save_seg:
-            for tag, data in maps.iteritems():
-                ima = Image(wcs=wcs, data=data)
-                source.images['SEG_'+tag] = ima
+    object_mask = union(r['seg'])
+    small_mask = intersection(r['seg'])
+    sky_mask = findSkyMask(maps)
         
-        r = findCentralDetection(maps, tolerance=3)
-        
-        object_mask = union(r['seg'])
-        small_mask = intersection(r['seg'])
-        sky_mask = findSkyMask(maps)
-        
-        ima = Image(wcs=wcs, data=object_mask)
-        source.images['MASK_UNION'] = ima
-        ima = Image(wcs=wcs, data=sky_mask)
-        source.images['MASK_SKY'] = ima
-        ima = Image(wcs=wcs, data=small_mask)
-        source.images['MASK_INTER'] = ima
+    wcs = source.images['MUSE_WHITE'].wcs
+    ima = Image(wcs=wcs, data=object_mask)
+    source.images['MASK_UNION'] = ima
+    ima = Image(wcs=wcs, data=sky_mask)
+    source.images['MASK_SKY'] = ima
+    ima = Image(wcs=wcs, data=small_mask)
+    source.images['MASK_INTER'] = ima
 
 
 # def SEA(cat, cube, hst=None, size=5, psf=None):

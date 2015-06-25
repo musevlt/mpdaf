@@ -592,7 +592,7 @@ class Source(object):
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images['MUSE_WHITE'] = subcub.sum(axis=0)
         
-    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8):
+    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8, margin=10., fband=3.):
         """Create narrow band images
         
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
@@ -618,7 +618,11 @@ class Source(object):
                 The size to extract in arcseconds.    
                 If None, the size of the white image extension is taken if it exists.
         width : float
-                 Angstrom width
+                 Angstrom total width
+        margin       : float
+                       This off-band is offseted by margin wrt narrow-band limit.
+        fband        : float
+                       The size of the off-band is fband*narrow-band width.
         """
         if size is None:
             try:
@@ -657,19 +661,42 @@ class Source(object):
                 lambda_ranges[1, :] = (1+z)*all_lines[useful]+width/2.0
                 tags = all_tags[useful]
                 for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
-                    self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True)
+                    self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True, margin=margin, fband=fband)
         
-    def add_masks(self, DIR=None, del_sex=True, save_seg=True):
-        """Run SExtractor on all images present in self.images dictionary
+    def add_seg_images(self, tags=None, DIR=None, del_sex=True):
+        """Run SExtractor on all images listed in tags
         to create segmentation maps. 
         SExtractor will use the default.nnw, default.param, default.sex
         and *.conv files present in the current directory.
         If not present default parameter files are created
         or copied from the directory given in input (DIR).
         
-        After that, the list of segmentation maps are used
-        to compute the union mask and the intersection mask and  the region
-        where no object is detected in any segmentation map is saved in the sky mask.
+        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+        
+        Parameters
+        ----------
+        tags : list<string>
+               List of tags of selected images
+        DIR      : string
+                   Directory that contains the configuration files of sextractor
+        del_sex  : boolean
+                   If False, configuration files of sextractor are not removed.
+        """
+        d = {'class': 'Source', 'method': 'add_masks'}
+        if 'MUSE_WHITE' in self.images:
+            if tags is None:
+                tags = [tag for tag in self.images.keys() if tag[0:4]!='SEG_' and 'MASK' not in tag]
+            
+            from ..sdetect.sea import segmentation
+            segmentation(self, tags, DIR, del_sex)
+        else:
+            self.logger.warning('add_seg_images method use the MUSE_WHITE image computed by add_white_image method',
+                                extra=d)
+            
+    def add_masks(self, tags=None):
+        """Use the list of segmentation maps to compute the union mask
+        and the intersection mask and  the region where no object is detected
+        in any segmentation map is saved in the sky mask.
         
         Union is saved as an image of booleans in self.images['MASK_UNION']
         
@@ -681,20 +708,28 @@ class Source(object):
         
         Parameters
         ----------
-        DIR      : string
-                   Directory that contains the configuration files of sextractor
-        del_sex  : boolean
-                   If False, configuration files of sextractor are not removed.
-        save_seg : boolean
-                   If True, segmentation maps are saved in the source object.
+        tags : list<string>
+               List of tags of selected segmentation images
         """
-        d = {'class': 'Source', 'method': 'add_masks'}
-        if 'MUSE_WHITE' in self.images:
-            from ..sdetect.sea import segmentation
-            segmentation(self, DIR, del_sex, save_seg)
+        maps = {}
+        if tags is None:
+            for tag, ima in self.images.iteritems():
+                if tag[0:4]=='SEG_':
+                    maps[tag[4:]] = ima.data.data
         else:
-            self.logger.warning('add_mask method use the MUSE_WHITE image computed by add_white_image method',
+            for tag in tags:
+                if tag[0:4]=='SEG_':
+                    maps[tag[4:]] = self.images[tag].data.data
+                else:
+                    maps[tag] = self.images[tag].data.data
+        d = {'class': 'Source', 'method': 'add_masks'}
+        if len(maps)==0:
+            self.logger.warning('no segmentation images. Use add_seg_images to create them',
                                 extra=d)
+           
+        from ..sdetect.sea import mask_creation
+        mask_creation(self, maps)
+        
         
     def extract_spectra(self, cube,
                         tags_to_try = ['MUSE_WHITE', 'MUSE_LYALPHA1216', 'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
@@ -706,11 +741,11 @@ class Source(object):
         
             The local sky spectrum is saved in self.spectra['MUSE_SKY']
             
-            The no-weighting spectrum is saved in self.spectra['MUSE_TOT_NOSKY']
+            The no-weighting spectrum is saved in self.spectra['MUSE_TOT_SKYSUB']
             
-            The weighted spectra are saved in self.spectra['*_NOSKY'] (for * in tags_to_try)
+            The weighted spectra are saved in self.spectra['*_SKYSUB'] (for * in tags_to_try)
             
-            The potential PSF weighted spectra is saved in self.spectra['MUSE_PSF_NOSKY']
+            The potential PSF weighted spectra is saved in self.spectra['MUSE_PSF_SKYSUB']
             
         else:
         
@@ -774,7 +809,7 @@ class Source(object):
         # No weighting
         spec = subcub.sum(axis=(1,2), weights=object_mask)
         if skysub:
-            self.spectra['MUSE_TOT_NOSKY'] = spec
+            self.spectra['MUSE_TOT_SKYSUB'] = spec
         else:
             self.spectra['MUSE_TOT'] = spec
          
@@ -790,7 +825,7 @@ class Source(object):
                 weight = weight.filled(0)
                 spec = subcub.sum(axis=(1,2), weights=weight)
                 if skysub:
-                    self.spectra[tag+'_NOSKY'] = spec
+                    self.spectra[tag+'_SKYSUB'] = spec
                 else:
                     self.spectra[tag] = spec
              
@@ -825,7 +860,7 @@ class Source(object):
                 weight = white_cube * np.tile(object_mask,(subcub.shape[0],1,1))
                 spec = subcub.sum(axis=(1,2), weights=weight)
                 if skysub:
-                    self.spectra['MUSE_PSF_NOSKY'] = spec
+                    self.spectra['MUSE_PSF_SKYSUB'] = spec
                 else:
                     self.spectra['MUSE_PSF'] = spec
                 # Insert the PSF weighted flux - here re-normalised? 
