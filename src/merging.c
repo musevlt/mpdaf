@@ -36,8 +36,17 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
     }
     printf("nfiles: %d\n",nfiles); 
 
+    struct rlimit limit;
+    /* Get max number of files. */
+    if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
+        printf("getrlimit() failed");
+        return 1;
+    }
+
+    int num_nthreads = limit.rlim_cur/nfiles;
+
     // create threads
-    #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin)
+    #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin) num_threads(num_nthreads)
     {
         int rang = omp_get_thread_num(); //current thread number
         int nthreads = omp_get_num_threads(); //number of threads
