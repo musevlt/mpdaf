@@ -3474,7 +3474,7 @@ class Cube(CubeBase):
         """
         d = {'class': 'Cube', 'method': 'aperture'}
         if radius > 0:
-            cub = self.subcube(center, radius)
+            cub = self.subcube_aperture(center, radius)
             msg = '%d spaxels summed' % (cub.shape[1] * cub.shape[2])
             spec = cub.sum(axis=(1,2))
             self.logger.info(msg, extra=d)
