@@ -414,7 +414,7 @@ class Source(object):
                 unit = ''
             else:
                 unit = spe.wave.cunit
-            msg += ',%i elements (%0.2f-%0.2f %s)'%(spe.shape, spe.wave.__getitem__(0), spe.wave.__getitem__(self.shape - 1), unit)
+            msg += ',%i elements (%0.2f-%0.2f %s)'%(spe.shape, spe.wave.__getitem__(0), spe.wave.__getitem__(spe.shape - 1), unit)
             data = '.data'
             if spe.data is None:
                 data = 'no data'
