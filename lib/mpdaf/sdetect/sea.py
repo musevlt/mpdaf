@@ -274,7 +274,8 @@ def mask_creation(source, maps):
     source.images['MASK_INTER'] = ima
 
 
-def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10., fband=3., DIR=None, psf=None):
+def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
+        fband=3., DIR=None, psf=None, path=None):
     """
       
     Parameters
@@ -318,20 +319,34 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10., fband=3.
            This can be a vector of length equal to the wavelength
            axis to give the FWHM of the Gaussian PSF at each
            wavelength (in arcsec) or a cube with the PSF to use.
+    path : path where the source file will be saved.
+           This option should be used to avoid memory problem
+           (source are saved as we go along) 
             
     Returns
     -------
-    out : :class:`mpdaf.sdetect.SourceList`
+    out : :class:`mpdaf.sdetect.SourceList` if path is None
     """
-  
+    logger = logging.getLogger('mpdaf corelib')
+    d = {'class': '', 'method': 'SEA'}
+    
     if images is None:
         images = {}
           
     # create source objects
     sources = []
     origin = ('sea', __version__, os.path.basename(cube.filename))
+    
+    ntot = len(cat)
+    n = 1
+    
+    write = True
+    if path is None:
+        write=False
       
     for obj in cat:
+        
+        logger.info('%d/%d Doing Source %d'%(n, ntot, obj['ID']), extra=d)
           
         cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']])[0]
         if cen[0] >= 0 and cen[0] <= cube.wcs.naxis1 and \
@@ -340,13 +355,14 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10., fband=3.
             source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
             try:
                 z = obj['Z']
+                try:
+                    errz = obj['Z_ERR']
+                except:
+                    errz = np.nan
+                source.add_z('CAT', z, errz)
             except:
                 z = -9999
-            try:
-                errz = obj['Z_ERR']
-            except:
-                errz = -9999
-            source.add_z('CAT', z, errz)
+            
               
             # create white image
             source.add_white_image(cube, size)
@@ -365,8 +381,17 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10., fband=3.
             # extract spectra
             source.extract_spectra(cube, skysub=True, psf=psf)
             source.extract_spectra(cube, skysub=False, psf=psf)
-          
-            sources.append(source)
+            
+            if write:
+                if not os.path.exists(path):
+                    os.makedirs(path)
+                name = os.path.basename(path)
+                source.write('%s/%s-%04d.fits'%(path, name, source.ID))
+            else:
+                sources.append(source)
+                
           
     # return list of sources
-    return SourceList(sources)
+    if not write:
+        return SourceList(sources)
+    
