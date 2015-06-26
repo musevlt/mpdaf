@@ -50,7 +50,7 @@ double mpdaf_median(double *data, int  n, int *indx)
 	return(med);
 }
 
-// Compute the arithmetic mean and mad sigma
+// Compute the arithmetic mean and MAD sigma
 void mpdaf_mean_mad(double* data, int n, double x[3], int *indx, double* work)
 {
     double mean=0.0, median=0.0;
@@ -111,6 +111,8 @@ void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nc
    }
 }
 
+// Iterative MAD sigma-clipping of array elements
+// return x[0]=median, x[1]=MAD std, x[2]=n
 void mpdaf_mean_madsigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx, double* work)
 {
   double clip_lo, clip_up;
