@@ -274,85 +274,99 @@ def mask_creation(source, maps):
     source.images['MASK_INTER'] = ima
 
 
-# def SEA(cat, cube, hst=None, size=5, psf=None):
-#     """
-#      
-#     Parameters
-#     ----------
-#     cat : astropy.Table
-#           Tables containing positions and names of the objects.
-#           It needs to have at minimum these columns: ID, Z, RA, DEC
-#           for the name, redshift & position of the object.
-#     cube : :class:`mpdaf.obj.Cube`
-#            Data cube.
-#     hst : :class:`dict`
-#           Dictionary containing one or more HST images of the field
-#           which you want to extract stamps.
-#  
-#           Keys gives the filter ('SRC_WHITE' for white image, TBC)
-#                
-#           Values are :class:`mpdaf.obj.Image` object
-#     size : float
-#            The size to extract in arcseconds.
-#            By default 5x5arcsec
-#     psf  : np.array
-#            The PSF to use for PSF-weighted extraction.
-#            This can be a vector of length equal to the wavelength
-#            axis to give the FWHM of the Gaussian PSF at each
-#            wavelength (in arcsec) or a cube with the PSF to use.
-#            
-#     Returns
-#     -------
-#     out : :class:`mpdaf.sdetect.SourceList`
-#     """
-#  
-#     if hst is None:
-#         hst = {}
-#          
-#     # create source objects
-#     sources = []
-#     origin = ('sea', __version__, os.path.basename(cube.filename))
-#      
-#     for obj in cat:
-#          
-#         cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']])[0]
-#         if cen[0] >= 0 and cen[0] <= cube.wcs.naxis1 and \
-#         cen[1] >= 0 and cen[1] <= cube.wcs.naxis2:
-#          
-#             source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
-#             try:
-#                 z = obj['Z']
-#             except:
-#                 z = -9999
-#             try:
-#                 errz = obj['Z_ERR']
-#             except:
-#                 errz = -9999
-#             source.add_z('CAT', z, errz)
-#              
-#             # create white image
-#             source.add_white_image(cube, size)
-#              
-#             # create narrow band images
-#             source.add_narrow_band_images(cube, 'CAT')
-#              
-#             # extract hst stamps
-#             newdim = source.images['MUSE_WHITE'].shape
-#             newstep = source.images['MUSE_WHITE'].get_step()
-#             # size in arcsec
-#             cdelt = np.abs(newstep*3600)
-#             newsize = np.max(cdelt*newdim)
-#             for tag, ima in hst.iteritems():
-#                 source.add_image(ima, 'HST_'+tag, newsize)
-#                      
-#             # segmentation maps
-#             source.add_masks()
-#                  
-#             # extract spectra
-#             source.extract_spectra(cube, skysub=True, psf=psf)
-#             source.extract_spectra(cube, skysub=False, psf=psf)
-#          
-#             sources.append(source)
-#          
-#     # return list of sources
-#     return SourceList(sources)
+def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10., fband=3., DIR=None, psf=None):
+    """
+      
+    Parameters
+    ----------
+    cat : astropy.Table
+          Tables containing positions and names of the objects.
+          It needs to have at minimum these columns: ID, Z, RA, DEC
+          for the name, redshift & position of the object.
+    cube : :class:`mpdaf.obj.Cube`
+           Data cube.
+    images : :class:`dict`
+          Dictionary containing one or more external images of the field
+          which you want to extract stamps.
+  
+          Keys gives the filter ('HST_F814' for example)
+                
+          Values are :class:`mpdaf.obj.Image` object
+    size : float
+           The total size to extract images in arcseconds.
+           By default 10x10 arcsec
+    eml  : dict{float: string}
+           Full catalog of lines used to extract narrow band images.
+           Dictionary: key is the wavelength value in Angstrom,
+           value is the name of the line.
+           If None, the following catalog is used:
+           eml = {1216 : 'Lyalpha1216', 1909: 'CIII]1909', 3727: '[OII]3727',
+                  4861 : 'Hbeta4861' , 5007: '[OIII]5007', 6563: 'Halpha6563',
+                6724 : '[SII]6724'}
+    width : float
+            Angstrom total width used to extract narrow band images.
+    margin : float
+            Parameter used to extract narrow band images.
+            This off-band is offseted by margin wrt narrow-band limit.
+    fband : float
+            Parameter used to extract narrow band images.
+            The size of the off-band is fband*narrow-band width.
+    DIR   : string
+            Directory that contains the configuration files of sextractor
+    psf  : np.array
+           The PSF to use for PSF-weighted extraction.
+           This can be a vector of length equal to the wavelength
+           axis to give the FWHM of the Gaussian PSF at each
+           wavelength (in arcsec) or a cube with the PSF to use.
+            
+    Returns
+    -------
+    out : :class:`mpdaf.sdetect.SourceList`
+    """
+  
+    if images is None:
+        images = {}
+          
+    # create source objects
+    sources = []
+    origin = ('sea', __version__, os.path.basename(cube.filename))
+      
+    for obj in cat:
+          
+        cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']])[0]
+        if cen[0] >= 0 and cen[0] <= cube.wcs.naxis1 and \
+        cen[1] >= 0 and cen[1] <= cube.wcs.naxis2:
+          
+            source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
+            try:
+                z = obj['Z']
+            except:
+                z = -9999
+            try:
+                errz = obj['Z_ERR']
+            except:
+                errz = -9999
+            source.add_z('CAT', z, errz)
+              
+            # create white image
+            source.add_white_image(cube, size)
+              
+            # create narrow band images
+            source.add_narrow_band_images(cube, 'CAT', eml, None, width, margin, fband)
+              
+            # extract images stamps
+            for tag, ima in images.iteritems():
+                source.add_image(ima, 'HST_'+tag)
+                      
+            # segmentation maps
+            source.add_seg_images(DIR=DIR)
+            source.add_masks()
+                  
+            # extract spectra
+            source.extract_spectra(cube, skysub=True, psf=psf)
+            source.extract_spectra(cube, skysub=False, psf=psf)
+          
+            sources.append(source)
+          
+    # return list of sources
+    return SourceList(sources)
