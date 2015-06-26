@@ -167,10 +167,16 @@ class Source(object):
                   Keys give a description of the cube
                   
                   Values are :class:`mpdaf.obj.Cube` objects
+    tables   : :class:`dict`
+                  Dictionary containing tables
+                  
+                  Keys give a description of each table
+                  
+                  Values are astropy.Table objects
     """
     
     def __init__(self, header, lines=None, mag=None, z=None,
-                 spectra=None, images=None, cubes=None):
+                 spectra=None, images=None, cubes=None, tables=None):
         """Classic constructor.
         """
         # FITS header
@@ -201,13 +207,18 @@ class Source(object):
             self.cubes = {}
         else:
             self.cubes = cubes
+        # Dictionary TABLES
+        if tables is None:
+            self.tables = {}
+        else:
+            self.tables = tables
         # logger
         self.logger = logging.getLogger('mpdaf corelib')
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
                  lines=None, mag=None, z=None,
-                 spectra=None, images=None, cubes=None):
+                 spectra=None, images=None, cubes=None, tables=None):
         """
         Source constructor from a list of data.
         
@@ -254,6 +265,12 @@ class Source(object):
                   Keys gives a description of the cube
                   
                   Values are :class:`mpdaf.obj.Cube` objects
+        tables   : :class:`dict`
+                  Dictionary containing tables
+                  
+                  Keys give a description of each table
+                  
+                  Values are astropy.Table objects
         """
         header = pyfits.Header()
         header['ID'] = (ID, 'object ID')
@@ -270,7 +287,7 @@ class Source(object):
             for key, value in extras.iteritems():
                 header[key] = value
             
-        return cls(header, lines, mag, z, spectra, images, cubes)
+        return cls(header, lines, mag, z, spectra, images, cubes, tables)
        
             
     @classmethod
@@ -290,6 +307,7 @@ class Source(object):
         spectra = {}
         images = {}
         cubes = {}
+        tables= {}
         for i in range(1, len(hdulist)):
             hdu = hdulist[i]
             extname = hdu.header['EXTNAME']
@@ -328,8 +346,10 @@ class Source(object):
                 except:
                     ext = i
                 cubes[cub_name] = Cube(filename, ext=ext, ima=False)
+            elif extname[:3] == 'TAB':
+                tables[extname[4:]] = Table(hdu.data)
         hdulist.close()
-        return cls(hdr, lines, mag, z, spectra, images, cubes)
+        return cls(hdr, lines, mag, z, spectra, images, cubes, tables)
                                
         
     def write(self, filename):
@@ -392,6 +412,11 @@ class Source(object):
             stat_hdu = cub.get_stat_hdu(name=ext_name)
             if stat_hdu is not None:
                 hdulist.append(stat_hdu)
+                
+        # tables
+        for key, tab in self.tables.iteritems():
+            tbhdu = pyfits.BinTableHDU(name='TAB_%s'%key, data=np.array(tab))
+            hdulist.append(tbhdu)
             
         # save to disk
         hdu = pyfits.HDUList(hdulist)
@@ -435,8 +460,18 @@ class Source(object):
             msg += ' %s %s'%(data, noise)
             self.logger.info(msg, extra=d)
         for key, cub in self.cubes.iteritems():
-            self.logger.info('cubes[\'%s\']'%key, extra=d)
-            cub.info()
+            msg = 'cubes[\'%s\']'%key
+            msg += ' %i X %i X %i' %(cub.shape[0], cub.shape[1], cub.shape[2])
+            data = '.data'
+            if cub.data is None:
+                data = 'no data'
+            noise = '.var'
+            if cub.var is None:
+                noise = 'no noise'
+            msg += ' %s %s'%(data, noise)
+            self.logger.info(msg, extra=d)
+        for key in self.tables.keys():
+            self.logger.info('tables[\'%s\']'%key, extra=d)
         print '\n'
         if self.lines is not None:
             self.logger.info('lines', extra=d)
@@ -467,7 +502,8 @@ class Source(object):
         """
         if item=='header' or item=='logger' or \
            item=='lines' or item=='mag' or item=='z' or \
-           item=='cubes' or item=='images'or item=='spectra':
+           item=='cubes' or item=='images' or item=='spectra' \
+           or item=='tables':
             return dict.__setattr__(self, item, value)
         else:
             self.header[item] = value
@@ -484,6 +520,31 @@ class Source(object):
         """Remove a comment from the FITS header of the Source object.
         """
         del self.header['COMMENT%03d'%ncomment]
+        
+    def add_attr(self, key, value, desc=None):
+        """Add a new attribute for the current Source object.
+        This attribute will be saved as a keyword in the primary FITS header.
+        This method could also be used to update a simple Source attribute
+        that is saved in the pyfits header.
+        
+        Parameters
+        ----------
+        key : string
+              Attribute name
+        value : integer/float/string
+                Attribute value
+        desc : string
+               Attribute description
+        """
+        if desc is None:
+            self.header[key] = value
+        else:
+            self.header[key] = (value, desc)
+            
+    def remove_attr(self, key):
+        """Remove an Source attribute from the FITS header of the Source object
+        """
+        del self.header[key]
         
     def add_z(self, desc, z, errz):
         """Add a redshift value to the z table.
@@ -534,7 +595,38 @@ class Source(object):
                 self.mag['MAG_ERR'][self.mag['BAND']==band] = errm
             else:
                 self.mag.add_row([band, m, errm])
+                
+    def add_line(self, cols, values):
+        """Add a line to the lines tables
         
+        Parameters
+        ----------
+        cols   : list<string>
+                 Names of the columns
+        values : list<interger/float/string>
+                 List of corresponding values
+        """
+        if self.lines is None:
+            types = []
+            for val in values:
+                if is_int(val):
+                    types.append('<i4')
+                elif is_float(val):
+                    types.append('<f8')
+                else:
+                    types.append('S20')
+            self.lines = Table(rows=[values], names=cols, dtype=types) 
+        else:
+            # add new columns
+            for col in cols:
+                if  col not in self.lines.colnames:
+                    self.lines[col] = [None]*len(self.lines)
+            # add new row
+            row = [None]*len(self.lines.colnames)
+            for col, val in zip(cols, values):
+                row[self.lines.colnames.index(col)] = val
+            self.lines.add_row(row)
+            
     def add_image(self, image, name, size=None):
         """ Extract an image centered on the source center
         and append it to the images dictionary
@@ -548,7 +640,7 @@ class Source(object):
         name  : string
                 Name used to distingish this image
         size  : float or (float, float)
-                The size to extract in arcseconds.
+                The total size to extract in arcseconds.
                 If None, the size of the white image extension is taken if it exists.
         """
         if size is None:
@@ -575,7 +667,7 @@ class Source(object):
         subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
         self.images[name] = subima
         
-    def add_white_image(self, cube, size=5):
+    def add_white_image(self, cube, size=10):
         """ Compute the white images from the MUSE data cube
         and appends it to the images dictionary.
         
@@ -586,8 +678,8 @@ class Source(object):
         cube : :class:`mpdaf.obj.Cube`
                MUSE data cube.
         size : float
-               The size to extract in arcseconds.
-               By default 5x5arcsec
+               The total size to extract in arcseconds.
+               By default 10x10arcsec
         """
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images['MUSE_WHITE'] = subcub.sum(axis=0)
@@ -608,14 +700,14 @@ class Source(object):
                  The redshift value corresponding to this description will be used.
         eml    : dict{float: string}
                  Full catalog of lines
-                 Dictionary: key is the wavelength value in Angtsrom,
+                 Dictionary: key is the wavelength value in Angstrom,
                  value is the name of the line.
                  if None, the following catalog is used:
                  eml = {1216 : 'Lyalpha1216', 1909: 'CIII]1909', 3727: '[OII]3727',
                         4861 : 'Hbeta4861' , 5007: '[OIII]5007', 6563: 'Halpha6563',
                         6724 : '[SII]6724'}
         size  : float
-                The size to extract in arcseconds.    
+                The total size to extract in arcseconds.    
                 If None, the size of the white image extension is taken if it exists.
         width : float
                  Angstrom total width
@@ -624,46 +716,47 @@ class Source(object):
         fband        : float
                        The size of the off-band is fband*narrow-band width.
         """
-        d = {'class': 'Source', 'method': 'add_narrow_band_images'}
-        if size is None:
-            try:
-                size = self.images['SRC_WHITE'].shape
-                pix = True
-            except:
+        if self.z is not None:
+            d = {'class': 'Source', 'method': 'add_narrow_band_images'}
+            if size is None:
                 try:
-                    size = self.images['MUSE_WHITE'].shape
+                    size = self.images['SRC_WHITE'].shape
                     pix = True
                 except:
-                    raise IOError('Size of the image (in arcsec) is required')
-        else:
-            if is_int(size) or is_float(size):
-                size = (size, size)
-                pix = False
+                    try:
+                        size = self.images['MUSE_WHITE'].shape
+                        pix = True
+                    except:
+                        raise IOError('Size of the image (in arcsec) is required')
+            else:
+                if is_int(size) or is_float(size):
+                    size = (size, size)
+                    pix = False
+                
+                    
+            if eml is None:
+                all_lines = np.array([1216, 1909, 3727, 4861, 5007, 6563, 6724])
+                all_tags = np.array(['Lyalpha1216', 'CIII]1909', '[OII]3727', 'Hbeta4861', '[OIII]5007', 'Halpha6563', '[SII]6724'])
+            else:
+                all_lines = np.array(eml.keys())
+                all_tags = np.array(eml.values())
+                    
+            subcub = cube.subcube((self.dec, self.ra), size, pix)
             
-                
-        if eml is None:
-            all_lines = np.array([1216, 1909, 3727, 4861, 5007, 6563, 6724])
-            all_tags = np.array(['Lyalpha1216', 'CIII]1909', '[OII]3727', 'Hbeta4861', '[OIII]5007', 'Halpha6563', '[SII]6724'])
-        else:
-            all_lines = np.array(eml.keys())
-            all_tags = np.array(eml.values())
-                
-        subcub = cube.subcube((self.dec, self.ra), size, pix)
-        
-        z = self.z['Z'][self.z['Z_DESC']==z_desc]
-        
-        if z>0:
-            minl, maxl = subcub.wave.get_range()/(1+z)
-            useful = np.where((all_lines>minl) &  (all_lines<maxl))
-            nlines = len(useful[0])
-            if nlines>0:
-                lambda_ranges = np.empty((2, nlines))
-                lambda_ranges[0, :] = (1+z)*all_lines[useful]-width/2.0
-                lambda_ranges[1, :] = (1+z)*all_lines[useful]+width/2.0
-                tags = all_tags[useful]
-                for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
-                    self.logger.info('Doing MUSE_%s'%tag, extra=d)
-                    self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True, margin=margin, fband=fband)
+            z = self.z['Z'][self.z['Z_DESC']==z_desc]
+            
+            if z>0:
+                minl, maxl = subcub.wave.get_range()/(1+z)
+                useful = np.where((all_lines>minl) &  (all_lines<maxl))
+                nlines = len(useful[0])
+                if nlines>0:
+                    lambda_ranges = np.empty((2, nlines))
+                    lambda_ranges[0, :] = (1+z)*all_lines[useful]-width/2.0
+                    lambda_ranges[1, :] = (1+z)*all_lines[useful]+width/2.0
+                    tags = all_tags[useful]
+                    for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
+                        self.logger.info('Doing MUSE_%s'%tag, extra=d)
+                        self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True, margin=margin, fband=fband)
         
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
         """Run SExtractor on all images listed in tags
@@ -732,6 +825,19 @@ class Source(object):
         from ..sdetect.sea import mask_creation
         mask_creation(self, maps)
         
+    def add_table(self, tab, name):
+        """Append an astropy table to the tables dictionary
+        
+        Parameters
+        ----------
+        tab : astropy.table
+              Input astropy table object.
+        name  : string
+                Name used to distingish this table
+        """
+        self.tables[name] = tab
+        
+    
         
     def extract_spectra(self, cube,
                         tags_to_try = ['MUSE_WHITE', 'MUSE_LYALPHA1216', 'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
