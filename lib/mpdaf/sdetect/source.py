@@ -437,7 +437,7 @@ class Source(object):
         for key, cub in self.cubes.iteritems():
             self.logger.info('cubes[\'%s\']'%key, extra=d)
             cub.info()
-            print '\n'
+        print '\n'
         if self.lines is not None:
             self.logger.info('lines', extra=d)
             for l in self.lines.pformat():
@@ -624,6 +624,7 @@ class Source(object):
         fband        : float
                        The size of the off-band is fband*narrow-band width.
         """
+        d = {'class': 'Source', 'method': 'add_narrow_band_images'}
         if size is None:
             try:
                 size = self.images['SRC_WHITE'].shape
@@ -661,6 +662,7 @@ class Source(object):
                 lambda_ranges[1, :] = (1+z)*all_lines[useful]+width/2.0
                 tags = all_tags[useful]
                 for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
+                    self.logger.info('Doing MUSE_%s'%tag, extra=d)
                     self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True, margin=margin, fband=fband)
         
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
