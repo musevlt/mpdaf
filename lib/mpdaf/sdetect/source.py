@@ -597,7 +597,7 @@ class Source(object):
                 self.mag.add_row([band, m, errm])
                 
     def add_line(self, cols, values):
-        """Add a line to the lines tables
+        """Add a line to the lines table
         
         Parameters
         ----------
