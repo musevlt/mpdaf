@@ -390,6 +390,7 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
             else:
                 sources.append(source)
                 
+        n += 1
           
     # return list of sources
     if not write:
