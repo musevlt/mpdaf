@@ -85,6 +85,7 @@ import shutil
 # import setuptools
 
 from distutils.core import setup, Command, Extension
+from Cython.Build import cythonize
 
 
 #os.environ['DISTUTILS_DEBUG'] = '1'
@@ -179,16 +180,17 @@ setup(name='mpdaf',
       package_dir=package_dir,
       packages=packages,
       package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'],
-                    'mpdaf.sdetect': ['muselet_data/*', 'sea_data/*']},
+                    'mpdaf.sdetect': ['muselet_data/*']},
       maintainer='Laure Piqueras',
       maintainer_email='laure.piqueras@univ-lyon1.fr',
       platforms='any',
       cmdclass={'test': UnitTest},
       scripts=['lib/mpdaf/scripts/make_white_image.py'],
       ext_package='mpdaf',
-      ext_modules=[Extension(
-          'libCmethods',
-          ['src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
-          **options('cfitsio')
-      )],
+      ext_modules=cythonize([
+          Extension('libCmethods', [
+              'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
+              **options('cfitsio')),
+          Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging.pyx'])
+      ]),
       )

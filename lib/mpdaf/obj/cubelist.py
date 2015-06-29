@@ -5,13 +5,14 @@ import logging
 import numpy as np
 import os
 
-from astropy.stats import sigma_clip
+# from astropy.stats import sigma_clip
 from astropy.table import Table
 from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
 from numpy import ma, allclose, array_equal
 
 from .cube import CubeDisk, Cube
+from ..merging import sigma_clip
 from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
@@ -536,7 +537,7 @@ class CubeMosaic(CubeList):
         assert len(np.unique(shapes[:, 0])) == 1, (
             'Cubes must have the same spectral range.')
 
-    def pycombine(self, nmax=2, nclip=5.0, var='propagate',
+    def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2,
                   cenfunc=ma.median, stdfunc=ma.std, nl=None):
         d = {'class': 'CubeMosaic', 'method': 'merging'}
         try:
@@ -576,30 +577,30 @@ class CubeMosaic(CubeList):
         fshape = (self.nfiles, self.shape[1], self.shape[2])
 
         self.logger.info('Looping on the %d planes of the cube', nl, extra=d)
-        for l in ProgressBar(xrange(nl)):
-            arr = ma.empty(fshape, dtype=float)
+        # for l in ProgressBar(xrange(nl)):
+        for l in xrange(nl):
+            print '%d/%d' % (l, nl)
+            arr = np.empty(fshape, dtype=float)
             arr.fill(np.nan)
             for i, f in enumerate(data):
                 x, y = offsets[i]
                 arr[i, x:x+shapes[i][0], y:y+shapes[i][1]] = f[l, :, :][0]
-            arr.mask = np.isnan(arr.data)
+            # arr.mask = np.isnan(arr.data)
 
-            valid_pix += arr.count(axis=1).sum(axis=1)
-            rejmap[l, :, :] = arr.count(axis=0)
-            arr = sigma_clip(arr, sigma_lower=nclip_low, copy=False,
-                             cenfunc=cenfunc, stdfunc=stdfunc,
-                             sigma_upper=nclip_up, iters=nmax, axis=0)
-            cube[l, :, :] = ma.mean(arr, axis=0)
-            expmap[l, :, :] = arr.count(axis=0)
-            vardata[l, :, :] = ma.var(arr, axis=0)
-            select_pix += arr.count(axis=1).sum(axis=1)
-
-        rejmap -= expmap
+            c, v, exp, rej, val, sel = sigma_clip(arr, nmax, nclip_low,
+                                                  nclip_up, nstop)
+            cube[l, :, :] = c
+            expmap[l, :, :] = exp
+            rejmap[l, :, :] = rej
+            vardata[l, :, :] = v
+            valid_pix += val
+            select_pix += sel
 
         # no valid pixels
         rej = (valid_pix - select_pix) / valid_pix.astype(float) * 100.0
         rej = " ".join("{:.2f}".format(p) for p in rej)
         self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
+
         npixels = np.prod(self.shape)
         no_valid_pix = npixels - valid_pix
         rejected_pix = valid_pix - select_pix
