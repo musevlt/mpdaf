@@ -43,28 +43,26 @@ __date__ = '2015/06/17'
 """
 Import the different submodules
 """
-from coords import WCS
-from coords import WaveCoord
-from coords import sexa2deg
-from coords import deg2sexa
-from coords import deg2hms
-from coords import hms2deg
-from coords import deg2dms
-from coords import dms2deg
-from spectrum import Spectrum
-from spectrum import Gauss1D
-from image import Image
-from cube import Cube
-from cube import CubeDisk
-from astropysics_coords import AstropysicsAngularCoordinate
-from image import gauss_image
-from image import moffat_image
-from image import make_image
-from image import composite_image
-from image import mask_image
-from image import Gauss2D
-from image import Moffat2D
-from cube import iter_spe
-from cube import iter_ima
-import plt_zscale
-from cubelist import CubeList
+
+from .import plt_zscale
+from .astropysics_coords import AstropysicsAngularCoordinate
+from .coords import deg2dms
+from .coords import deg2hms
+from .coords import deg2sexa
+from .coords import dms2deg
+from .coords import hms2deg
+from .coords import sexa2deg
+from .coords import WaveCoord
+from .coords import WCS
+from .cube import *
+from .cubelist import *
+from .image import composite_image
+from .image import Gauss2D
+from .image import gauss_image
+from .image import Image
+from .image import make_image
+from .image import mask_image
+from .image import Moffat2D
+from .image import moffat_image
+from .spectrum import Gauss1D
+from .spectrum import Spectrum

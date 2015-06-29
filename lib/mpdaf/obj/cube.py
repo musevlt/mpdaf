@@ -17,6 +17,8 @@ from .objs import is_float, is_int
 from .image import Image
 from .spectrum import Spectrum
 
+__all__ = ['iter_ima', 'iter_ima', 'Cube', 'CubeDisk']
+
 
 class iter_spe(object):
 
