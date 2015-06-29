@@ -264,6 +264,7 @@ class CubeList(object):
                       computed as the variance derived from the comparison
                       of the N individual exposures.
         mad         : boolean
+                      use MAD (median absolute deviation) statistics for sigma-clipping 
                       
 
         Returns
