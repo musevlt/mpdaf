@@ -171,7 +171,7 @@ class CubeList(object):
 
         c = Cube(shape=self.shape, wcs=self.wcs, wave=self.wave,
                  unit=self.unit)
-        c.data = data.reshape(self.shape)
+        c.data = ma.asarray(data.reshape(self.shape))
         c.var = var
 
         hdr = c.primary_header
@@ -537,8 +537,7 @@ class CubeMosaic(CubeList):
         assert len(np.unique(shapes[:, 0])) == 1, (
             'Cubes must have the same spectral range.')
 
-    def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2,
-                  cenfunc=ma.median, stdfunc=ma.std, nl=None):
+    def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None):
         d = {'class': 'CubeMosaic', 'method': 'merging'}
         try:
             import fitsio
@@ -566,11 +565,12 @@ class CubeMosaic(CubeList):
         if nl is not None:
             self.shape[0] = nl
 
-        # shape = data[0].get_dims()
         cube = np.ma.empty(self.shape, dtype=np.float64)
+        vardata = np.empty(self.shape, dtype=np.float64)
+        # cube.fill(np.nan)
+        # vardata.fill(np.nan)
         expmap = np.empty(self.shape, dtype=np.int32)
         rejmap = np.empty(self.shape, dtype=np.int32)
-        vardata = np.empty(self.shape, dtype=np.float64)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
         select_pix = np.zeros(self.nfiles, dtype=np.int32)
         nl = self.shape[0]
@@ -579,20 +579,16 @@ class CubeMosaic(CubeList):
         self.logger.info('Looping on the %d planes of the cube', nl, extra=d)
         # for l in ProgressBar(xrange(nl)):
         for l in xrange(nl):
-            print '%d/%d' % (l, nl)
+            if l % 100 == 0:
+                print '%d/%d' % (l, nl)
             arr = np.empty(fshape, dtype=float)
             arr.fill(np.nan)
             for i, f in enumerate(data):
                 x, y = offsets[i]
                 arr[i, x:x+shapes[i][0], y:y+shapes[i][1]] = f[l, :, :][0]
-            # arr.mask = np.isnan(arr.data)
 
-            c, v, exp, rej, val, sel = sigma_clip(arr, nmax, nclip_low,
-                                                  nclip_up, nstop)
-            cube[l, :, :] = c
-            expmap[l, :, :] = exp
-            rejmap[l, :, :] = rej
-            vardata[l, :, :] = v
+            val, sel = sigma_clip(arr, cube, vardata, expmap, rejmap, l,
+                                  nmax, nclip_low, nclip_up, nstop)
             valid_pix += val
             select_pix += sel
 

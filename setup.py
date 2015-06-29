@@ -191,6 +191,9 @@ setup(name='mpdaf',
           Extension('libCmethods', [
               'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
               **options('cfitsio')),
-          Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging.pyx'])
+          Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging.pyx'],
+                    # extra_compile_args=['-fopenmp'],
+                    # extra_link_args=['-fopenmp']
+                    ),
       ]),
       )
