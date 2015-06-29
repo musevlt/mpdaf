@@ -45,6 +45,16 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 
     int num_nthreads = limit.rlim_cur/nfiles;
 
+    int nthreads;
+    #pragma omp parallel
+    {
+      nthreads = omp_get_num_threads();
+    }
+    if (nthreads < num_nthreads)
+      {
+	num_nthreads=nthreads;
+      }
+
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin) num_threads(num_nthreads)
     {
@@ -271,6 +281,16 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     {
       num_nthreads = num_nthreads/2;
     }
+
+    int nthreads;
+    #pragma omp parallel
+    {
+      nthreads = omp_get_num_threads();
+    }
+    if (nthreads < num_nthreads)
+      {
+	num_nthreads=nthreads;
+      }
 
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, var, expmap, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
