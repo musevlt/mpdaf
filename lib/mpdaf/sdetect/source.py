@@ -638,7 +638,7 @@ class Source(object):
         image : :class:`mpdaf.obj.Image`
                 Input image MPDAF object.
         name  : string
-                Name used to distingish this image
+                Name used to distinguish this image
         size  : float or (float, float)
                 The total size to extract in arcseconds.
                 If None, the size of the white image extension is taken if it exists.
@@ -647,10 +647,12 @@ class Source(object):
             try:
                 white_ima = self.images['SRC_WHITE']
                 size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
+                size[1] /= np.cos(np.deg2rad(self.dec))
             except:
                 try:
                     white_ima = self.images['MUSE_WHITE']
                     size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
+                    size[1] /= np.cos(np.deg2rad(self.dec))
                 except:
                     raise IOError('Size of the image (in arcsec) is required')
         else:
@@ -659,13 +661,60 @@ class Source(object):
         
         size = np.array(size)
         radius = size/2./3600.0
-        radius_ra = radius[1] / np.cos(np.deg2rad(self.dec))
-        ra_min = self.ra - radius_ra
-        ra_max = self.ra + radius_ra
+        ra_min = self.ra - radius[1]
+        ra_max = self.ra + radius[1]
         dec_min = self.dec - radius[0]
         dec_max = self.dec + radius[0]
         subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
         self.images[name] = subima
+        
+    def add_cube(self, cube, name, size=None, lbda=None):
+        """Extract an cube centered on the source center
+        and append it to the cubes dictionary
+        
+        Extracted cube saved in self.cubes['name'].
+        
+        Parameters
+        ----------
+        cube : :class:`mpdaf.obj.Cube` or :class:`mpdaf.obj.CubeDisk`
+                Input cube MPDAF object.
+        name  : string
+                Name used to distinguish this image
+        size  : float or (float, float)
+                The total size to extract in arcseconds.
+                If None, the size of the white image extension is taken if it exists.
+        lbda  : (float, float) or None
+                If not None, tuple giving the wavelength range in Angstrom.
+        """
+        if size is None:
+            try:
+                white_ima = self.images['SRC_WHITE']
+                size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
+                size[1] /= np.cos(np.deg2rad(self.dec))
+            except:
+                try:
+                    white_ima = self.images['MUSE_WHITE']
+                    size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
+                    size[1] /= np.cos(np.deg2rad(self.dec))
+                except:
+                    raise IOError('Size of the image (in arcsec) is required')
+        else:
+            if is_int(size) or is_float(size):
+                size = (size, size)
+        
+        size = np.array(size)
+        radius = size/2./3600.0
+        ra_min = self.ra - radius[1]
+        ra_max = self.ra + radius[1]
+        dec_min = self.dec - radius[0]
+        dec_max = self.dec + radius[0]
+        if lbda is None:
+            lmin, lmax= cube.wave.get_range()
+        else:
+            lmin, lmax = lbda
+        subcub = cube.truncate([[lmin,dec_min,ra_min], [lmax,dec_max,ra_max]], mask=False)
+        self.cubes[name] = subcub
+
         
     def add_white_image(self, cube, size=10):
         """ Compute the white images from the MUSE data cube
@@ -681,6 +730,7 @@ class Source(object):
                The total size to extract in arcseconds.
                By default 10x10arcsec
         """
+        print 'add_white_image', size
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images['MUSE_WHITE'] = subcub.sum(axis=0)
         

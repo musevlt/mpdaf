@@ -310,12 +310,12 @@ class WCS(object):
             sexa = deg2sexa(pixsky)
             ra = sexa[0][1]
             dec = sexa[0][0]
-            # step in arcsec
-            cdelt = self.get_step()
-            dy = np.abs(cdelt[0] * 3600)*np.cos(np.deg2rad(pixsky[0][0]))
-            dx = np.abs(cdelt[1] * 3600)
-            sizex = self.naxis1 * dx
-            sizey = self.naxis2 * dy
+            pixcrd = [[0, 0], [self.naxis2, self.naxis1]]
+            pixsky = self.pix2sky(pixcrd)
+            sizey = np.abs(pixsky[1, 0] - pixsky[0, 0]) * 3600
+            sizex = np.abs(pixsky[1, 1] - pixsky[0, 1]) * 3600
+            dx = sizex / self.naxis1 #ra
+            dy = sizey / self.naxis2 #dec
             msg = 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '\
                 'step in arcsec:(%0.3f,%0.3f) rot:%0.1f' % (dec, ra,
                                                             sizey, sizex,

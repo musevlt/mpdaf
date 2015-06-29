@@ -2347,12 +2347,17 @@ class Cube(CubeBase):
         imax = int(np.max(pixcrd[:, 0])) + 1
         if imax > self.shape[1]:
             imax = self.shape[1]
+        if imin >= self.shape[1] or imax <= 0 or imin==imax:
+            raise ValueError('sub-cube boundaries are outside the cube')
+            
         jmin = int(np.min(pixcrd[:, 1]))
         if jmin < 0:
             jmin = 0
         jmax = int(np.max(pixcrd[:, 1])) + 1
         if jmax > self.shape[2]:
             jmax = self.shape[2]
+        if jmin >= self.shape[2] or jmax <= 0 or jmin==jmax:
+            raise ValueError('sub-cube boundaries are outside the cube')
 
         kmin = max(0, self.wave.pixel(lmin, nearest=True))
         kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True) + 1)
@@ -3385,8 +3390,11 @@ class Cube(CubeBase):
         """
         if is_int(size) or is_float(size):
             size = (size, size)
+        size = np.array(size)
         if size[0]>0 and size[1]>0:
+            cos_delta =  np.cos(np.deg2rad(center[0]))
             center = self.wcs.sky2pix(center)[0]
+            size[1] = size[1] * cos_delta
             if not pix:
                 size = size / np.abs(self.wcs.get_step()) / 3600.
             radius = size/2.
@@ -3395,7 +3403,7 @@ class Cube(CubeBase):
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
             imax, jmax = np.minimum([imin+int(size[0]+0.5), jmin+int(size[1]+0.5)],
                                     [self.shape[1], self.shape[2]])
-            
+            #print imin, imax, jmin, jmax
             data = self.data[:, imin:imax, jmin:jmax].copy()
             if self.var is not None:
                 var = self.var[:, imin:imax, jmin:jmax].copy()
@@ -3425,13 +3433,15 @@ class Cube(CubeBase):
         out : :class:`mpdaf.obj.Cube`
         """
         if radius > 0:
+            cos_delta =  np.cos(np.deg2rad(center[0]))
             center = self.wcs.sky2pix(center)[0]
-            radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
-            radius2 = radius * radius
+            radius = np.array([radius / np.abs(self.wcs.get_step()[0]) / 3600.,
+                               radius / np.abs(self.wcs.get_step()[0]) / 3600. * cos_delta])
+            radius2 = radius[0] * radius[1]
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin+int(2*radius+0.5), jmin+int(2*radius+0.5)],
+            imax, jmax = np.minimum([imin+int(2*radius[0]+0.5), jmin+int(2*radius[1]+0.5)],
                                     [self.shape[1], self.shape[2]])
 
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
@@ -3838,12 +3848,25 @@ class CubeDisk(CubeBase):
         lmax, y_max, x_max = coord[1]
         skycrd = [[y_min, x_min], [y_min, x_max], [y_max, x_min],
                   [y_max, x_max]]
-        pixcrd = self.wcs.sky2pix(skycrd, nearest=True)
+        pixcrd = self.wcs.sky2pix(skycrd)
 
-        imin = np.min(pixcrd[:, 0])
-        imax = np.max(pixcrd[:, 0]) + 1
-        jmin = np.min(pixcrd[:, 1])
-        jmax = np.max(pixcrd[:, 1]) + 1
+        imin = int(np.min(pixcrd[:, 0]))
+        if imin < 0:
+            imin = 0
+        imax = int(np.max(pixcrd[:, 0])) + 1
+        if imax > self.shape[1]:
+            imax = self.shape[1]
+        if imin >= self.shape[1] or imax <= 0 or imin==imax:
+            raise ValueError('sub-cube boundaries are outside the cube')
+            
+        jmin = int(np.min(pixcrd[:, 1]))
+        if jmin < 0:
+            jmin = 0
+        jmax = int(np.max(pixcrd[:, 1])) + 1
+        if jmax > self.shape[2]:
+            jmax = self.shape[2]
+        if jmin >= self.shape[2] or jmax <= 0 or jmin==jmax:
+            raise ValueError('sub-cube boundaries are outside the cube')
 
         kmin = max(0, self.wave.pixel(lmin, nearest=True))
         kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True) + 1)
