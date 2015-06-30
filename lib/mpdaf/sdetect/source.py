@@ -442,10 +442,10 @@ class Source(object):
             msg += ',%i elements (%0.2f-%0.2f %s)'%(spe.shape, spe.wave.__getitem__(0), spe.wave.__getitem__(spe.shape - 1), unit)
             data = '.data'
             if spe.data is None:
-                data = 'no data'
+                data = ''
             noise = '.var'
             if spe.var is None:
-                noise = 'no noise'
+                noise = ''
             msg += ' %s %s'%(data, noise)
             self.logger.info(msg, extra=d)
         for key, ima in self.images.iteritems():
@@ -453,22 +453,24 @@ class Source(object):
             msg += ' %i X %i' %(ima.shape[0], ima.shape[1])
             data = '.data'
             if ima.data is None:
-                data = 'no data'
+                data = ''
             noise = '.var'
             if ima.var is None:
-                noise = 'no noise'
+                noise = ''
             msg += ' %s %s'%(data, noise)
+            msg += 'rot=%0.1f'%ima.wcs.get_rot()
             self.logger.info(msg, extra=d)
         for key, cub in self.cubes.iteritems():
             msg = 'cubes[\'%s\']'%key
             msg += ' %i X %i X %i' %(cub.shape[0], cub.shape[1], cub.shape[2])
             data = '.data'
             if cub.data is None:
-                data = 'no data'
+                data = ''
             noise = '.var'
             if cub.var is None:
-                noise = 'no noise'
+                noise = ''
             msg += ' %s %s'%(data, noise)
+            msg += 'rot=%0.1f'%ima.wcs.get_rot()
             self.logger.info(msg, extra=d)
         for key in self.tables.keys():
             self.logger.info('tables[\'%s\']'%key, extra=d)
@@ -931,22 +933,32 @@ class Source(object):
                       psf=None by default (no PSF-weighted extraction).
         """
         d = {'class': 'Source', 'method': 'add_masks'}
-        try:
-            object_mask = self.images['MASK_UNION'].data.data
-        except:
-            raise IOError('extract_spectra method use the MASK_UNION computed by add_mask method')
+        
         
         wcs = self.images['MASK_UNION'].wcs
         size = self.images['MASK_UNION'].shape
         
         subcub = cube.subcube((self.dec, self.ra), size, pix=True)
         
+        if self.images.has_key('MASK_UNION'):
+            if self.images['MASK_UNION'].wcs.isEqual(subcub.wcs):
+                object_mask = self.images['MASK_UNION'].data.data
+            else:
+                object_mask = self.images['MASK_UNION'].rebin(newdim=(subcub.shape[1], subcub.shape[2]),
+                                                             newstart=subcub.wcs.get_start(),
+                                                             newstep=subcub.wcs.get_step()).data.data
+        else:
+            raise IOError('extract_spectra method use the MASK_UNION computed by add_mask method')
+        
         if skysub:
-            try:
-                sky_mask = self.images['MASK_SKY'].data.data
-                if not self.images['MASK_UNION'].wcs.isEqual(wcs):
-                    raise IOError('MASK_UNION and MASK_SKY have not the same wcs')
-            except:
+            if self.images.has_key('MASK_SKY'):
+                if self.images['MASK_SKY'].wcs.isEqual(subcub.wcs):
+                    sky_mask = self.images['MASK_SKY'].data.data
+                else:
+                    sky_mask = self.images['MASK_SKY'].rebin(newdim=(subcub.shape[1], subcub.shape[2]),
+                                                             newstart=subcub.wcs.get_start(),
+                                                             newstep=subcub.wcs.get_step()).data.data
+            else:
                 raise IOError('extract_spectra method use the MASK_SKY computed by add_mask method')
          
             # Get the sky spectrum to subtract
@@ -977,7 +989,7 @@ class Source(object):
         # Weighted extractions
         ksel = np.where(object_mask==1)
         for tag in nb_tags:
-            if self.images[tag].wcs.isEqual(wcs):
+            if self.images[tag].wcs.isEqual(subcub.wcs):
                 weight = self.images[tag].data * object_mask
                 weight[ksel] = weight[ksel] - np.min(weight[ksel])
                 weight = weight.filled(0)
