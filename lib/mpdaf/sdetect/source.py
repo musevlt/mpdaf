@@ -5,6 +5,7 @@ from matplotlib import cm
 from matplotlib.patches import Ellipse
 
 import datetime
+import glob
 import logging
 import numpy as np
 import os.path
@@ -313,13 +314,22 @@ class Source(object):
             extname = hdu.header['EXTNAME']
             #lines
             if extname == 'LINES':
-                lines = Table(hdu.data)
+                try:
+                    lines = Table(hdu.data)
+                except:
+                    raise IOError('Impossible to open extension %s as a table'%extname)
             # mag
             if extname == 'MAG':
-                mag = Table(hdu.data)
+                try:
+                    mag = Table(hdu.data)
+                except:
+                    raise IOError('Impossible to open extension %s as a table'%extname)
             # Z
             if extname == 'Z':
-                z = Table(hdu.data)
+                try:
+                    z = Table(hdu.data)
+                except:
+                    raise IOError('Impossible to open extension %s as a table'%extname)
             # spectra
             elif extname[:3] == 'SPE' and extname[-4:]=='DATA':
                 spe_name = extname[4:-5]
@@ -328,7 +338,10 @@ class Source(object):
                     ext = (i, ext_var)
                 except:
                     ext = i
-                spectra[spe_name] = Spectrum(filename, ext=ext)
+                try:
+                    spectra[spe_name] = Spectrum(filename, ext=ext)
+                except:
+                    raise IOError('Impossible to open extension %s as a spectrum'%extname)
             #images
             elif extname[:3] == 'IMA' and extname[-4:]=='DATA':
                 ima_name = extname[4:-5]
@@ -337,7 +350,10 @@ class Source(object):
                     ext = (i, ext_var)
                 except:
                     ext = i
-                images[ima_name] = Image(filename, ext=ext)
+                try:
+                    images[ima_name] = Image(filename, ext=ext)
+                except:
+                    raise IOError('Impossible to open extension %s as an image'%extname)
             elif extname[:3] == 'CUB' and extname[-4:]=='DATA':
                 cub_name = extname[4:-5]
                 try:
@@ -345,9 +361,15 @@ class Source(object):
                     ext = (i, ext_var)
                 except:
                     ext = i
-                cubes[cub_name] = Cube(filename, ext=ext, ima=False)
+                try:
+                    cubes[cub_name] = Cube(filename, ext=ext, ima=False)
+                except:
+                    raise IOError('Impossible to open extension %s as a cube'%extname)
             elif extname[:3] == 'TAB':
-                tables[extname[4:]] = Table(hdu.data)
+                try:
+                    tables[extname[4:]] = Table(hdu.data)
+                except:
+                    raise IOError('Impossible to open extension %s as a table'%extname)
         hdulist.close()
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables)
                                
@@ -634,6 +656,9 @@ class Source(object):
         and append it to the images dictionary
         
         Extracted image saved in self.images['name'].
+        
+        The image is assumed to be properly aligned to the MUSE cube.
+        No attempt is made to check for this.
         
         Parameters
         ----------
@@ -1244,4 +1269,24 @@ class SourceList(list):
             # For FITS tables, the maximum number of fields is 999
         except:
             cat.write(fcat.replace('.fits', '.txt'), format='ascii')
+            
+    @classmethod
+    def from_path(cls, path):
+        """Read a SourceList object from the path of a directory containing source files
+        
+        Parameters
+        ----------
+        path : string
+               Directory containing Source files
+        """
+        if not os.path.exists(path):
+            raise IOError("Invalid path: {0}".format(path))
+        
+        slist = cls()
+        for file in glob.glob(path+'/*.fits'):
+            slist.append(Source.from_file(file))
+            
+        return slist
+        
+        
     
