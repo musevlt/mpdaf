@@ -3392,9 +3392,10 @@ class Cube(CubeBase):
             size = (size, size)
         size = np.array(size)
         if size[0]>0 and size[1]>0:
-            cos_delta =  np.cos(np.deg2rad(center[0]))
+            if not pix:
+                cos_delta =  np.cos(np.deg2rad(center[0]))
+                size[1] = size[1] * cos_delta
             center = self.wcs.sky2pix(center)[0]
-            size[1] = size[1] * cos_delta
             if not pix:
                 size = size / np.abs(self.wcs.get_step()) / 3600.
             radius = size/2.
@@ -3403,7 +3404,6 @@ class Cube(CubeBase):
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
             imax, jmax = np.minimum([imin+int(size[0]+0.5), jmin+int(size[1]+0.5)],
                                     [self.shape[1], self.shape[2]])
-            #print imin, imax, jmin, jmax
             data = self.data[:, imin:imax, jmin:jmax].copy()
             if self.var is not None:
                 var = self.var[:, imin:imax, jmin:jmax].copy()
