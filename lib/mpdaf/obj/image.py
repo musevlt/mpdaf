@@ -1886,16 +1886,16 @@ class Image(object):
                   [y_max, x_min], [y_max, x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
 
-        imin = int(np.min(pixcrd[:, 0]))
+        imin = int(np.min(pixcrd[:, 0])+0.5)
         if imin < 0:
             imin = 0
-        imax = int(np.max(pixcrd[:, 0])) + 1
+        imax = int(np.max(pixcrd[:, 0])+0.5) + 1
         if imax > self.shape[0]:
             imax = self.shape[0]
-        jmin = int(np.min(pixcrd[:, 1]))
+        jmin = int(np.min(pixcrd[:, 1])+0.5)
         if jmin < 0:
             jmin = 0
-        jmax = int(np.max(pixcrd[:, 1])) + 1
+        jmax = int(np.max(pixcrd[:, 1])+0.5) + 1
         if jmax > self.shape[1]:
             jmax = self.shape[1]
 

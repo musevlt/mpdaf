@@ -2341,19 +2341,19 @@ class Cube(CubeBase):
                   [y_max, x_min], [y_max, x_max]]
         pixcrd = self.wcs.sky2pix(skycrd)
 
-        imin = int(np.min(pixcrd[:, 0]))
+        imin = int(np.min(pixcrd[:, 0])+0.5)
         if imin < 0:
             imin = 0
-        imax = int(np.max(pixcrd[:, 0])) + 1
+        imax = int(np.max(pixcrd[:, 0])+0.5) + 1
         if imax > self.shape[1]:
             imax = self.shape[1]
         if imin >= self.shape[1] or imax <= 0 or imin==imax:
             raise ValueError('sub-cube boundaries are outside the cube')
             
-        jmin = int(np.min(pixcrd[:, 1]))
+        jmin = int(np.min(pixcrd[:, 1])+0.5)
         if jmin < 0:
             jmin = 0
-        jmax = int(np.max(pixcrd[:, 1])) + 1
+        jmax = int(np.max(pixcrd[:, 1])+0.5) + 1
         if jmax > self.shape[2]:
             jmax = self.shape[2]
         if jmin >= self.shape[2] or jmax <= 0 or jmin==jmax:
@@ -3404,6 +3404,7 @@ class Cube(CubeBase):
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
             imax, jmax = np.minimum([imin+int(size[0]+0.5), jmin+int(size[1]+0.5)],
                                     [self.shape[1], self.shape[2]])
+            
             data = self.data[:, imin:imax, jmin:jmax].copy()
             if self.var is not None:
                 var = self.var[:, imin:imax, jmin:jmax].copy()
