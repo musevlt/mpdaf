@@ -468,7 +468,7 @@ class Source(object):
             noise = '.var'
             if spe.var is None:
                 noise = ''
-            msg += ' %s %s'%(data, noise)
+            msg += ' %s %s '%(data, noise)
             self.logger.info(msg, extra=d)
         for key, ima in self.images.iteritems():
             msg = 'images[\'%s\']'%key
@@ -479,7 +479,7 @@ class Source(object):
             noise = '.var'
             if ima.var is None:
                 noise = ''
-            msg += ' %s %s'%(data, noise)
+            msg += ' %s %s '%(data, noise)
             msg += 'rot=%0.1f'%ima.wcs.get_rot()
             self.logger.info(msg, extra=d)
         for key, cub in self.cubes.iteritems():
@@ -491,8 +491,8 @@ class Source(object):
             noise = '.var'
             if cub.var is None:
                 noise = ''
-            msg += ' %s %s'%(data, noise)
-            msg += 'rot=%0.1f'%ima.wcs.get_rot()
+            msg += ' %s %s '%(data, noise)
+            msg += 'rot=%0.1f'%cub.wcs.get_rot()
             self.logger.info(msg, extra=d)
         for key in self.tables.keys():
             self.logger.info('tables[\'%s\']'%key, extra=d)
@@ -542,6 +542,8 @@ class Source(object):
     
     def remove_comment(self, ncomment):
         """Remove a comment from the FITS header of the Source object.
+        
+        
         """
         del self.header['COMMENT%03d'%ncomment]
         
@@ -550,6 +552,8 @@ class Source(object):
         This attribute will be saved as a keyword in the primary FITS header.
         This method could also be used to update a simple Source attribute
         that is saved in the pyfits header.
+        
+        Equivalent to self.key = (value, comment)
         
         Parameters
         ----------
@@ -668,30 +672,33 @@ class Source(object):
                 Name used to distinguish this image
         size  : float or (float, float)
                 The total size to extract in arcseconds.
+                If size is a float, it corresponds to the size along the delta axis and the image is square.
                 If None, the size of the white image extension is taken if it exists.
         """
         if size is None:
             try:
                 white_ima = self.images['SRC_WHITE']
-                size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
-                size[1] /= np.cos(np.deg2rad(self.dec))
             except:
                 try:
                     white_ima = self.images['MUSE_WHITE']
-                    size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
-                    size[1] /= np.cos(np.deg2rad(self.dec))
                 except:
                     raise IOError('Size of the image (in arcsec) is required')
+            coords = white_ima.get_range()
+            dec_min = coords[0, 0]
+            dec_max = coords[1, 0]
+            ra_min = coords[0, 1]
+            ra_max = coords[1, 1]
+            #size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
+            #size[1] /= np.cos(np.deg2rad(self.dec))
         else:
             if is_int(size) or is_float(size):
-                size = (size, size)
-        
-        size = np.array(size)
-        radius = size/2./3600.0
-        ra_min = self.ra - radius[1]
-        ra_max = self.ra + radius[1]
-        dec_min = self.dec - radius[0]
-        dec_max = self.dec + radius[0]
+                size = (size, size/np.cos(np.deg2rad(self.dec)))
+            size = np.array(size)
+            radius = size/2./3600.0
+            ra_min = self.ra - radius[1]
+            ra_max = self.ra + radius[1]
+            dec_min = self.dec - radius[0]
+            dec_max = self.dec + radius[0]
         subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
         self.images[name] = subima
         
@@ -709,6 +716,7 @@ class Source(object):
                 Name used to distinguish this image
         size  : float or (float, float)
                 The total size to extract in arcseconds.
+                If size is a float, it corresponds to the size along the delta axis and the image is square.
                 If None, the size of the white image extension is taken if it exists.
         lbda  : (float, float) or None
                 If not None, tuple giving the wavelength range in Angstrom.
@@ -716,25 +724,26 @@ class Source(object):
         if size is None:
             try:
                 white_ima = self.images['SRC_WHITE']
-                size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
-                size[1] /= np.cos(np.deg2rad(self.dec))
             except:
                 try:
                     white_ima = self.images['MUSE_WHITE']
-                    size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
-                    size[1] /= np.cos(np.deg2rad(self.dec))
                 except:
                     raise IOError('Size of the image (in arcsec) is required')
+            coords = white_ima.get_range()
+            dec_min = coords[0, 0]
+            dec_max = coords[1, 0]
+            ra_min = coords[0, 1]
+            ra_max = coords[1, 1]
         else:
             if is_int(size) or is_float(size):
-                size = (size, size)
+                size = (size, size/np.cos(np.deg2rad(self.dec)))
         
-        size = np.array(size)
-        radius = size/2./3600.0
-        ra_min = self.ra - radius[1]
-        ra_max = self.ra + radius[1]
-        dec_min = self.dec - radius[0]
-        dec_max = self.dec + radius[0]
+                size = np.array(size)
+                radius = size/2./3600.0
+                ra_min = self.ra - radius[1]
+                ra_max = self.ra + radius[1]
+                dec_min = self.dec - radius[0]
+                dec_max = self.dec + radius[0]
         if lbda is None:
             lmin, lmax= cube.wave.get_range()
         else:
@@ -753,11 +762,13 @@ class Source(object):
         ----------
         cube : :class:`mpdaf.obj.Cube`
                MUSE data cube.
-        size : float
+        size : float or (float, float)
                The total size to extract in arcseconds.
+               If size is a float, it corresponds to the size along the delta axis and the image is square.
                By default 10x10arcsec
         """
-        print 'add_white_image', size
+        if is_int(size) or is_float(size):
+            size = (size, size/np.cos(np.deg2rad(self.dec)))
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images['MUSE_WHITE'] = subcub.sum(axis=0)
         
@@ -785,6 +796,7 @@ class Source(object):
                         6724 : '[SII]6724'}
         size  : float
                 The total size to extract in arcseconds.    
+                If size is a float, it corresponds to the size along the delta axis and the image is square.
                 If None, the size of the white image extension is taken if it exists.
         width : float
                  Angstrom total width
@@ -807,7 +819,7 @@ class Source(object):
                         raise IOError('Size of the image (in arcsec) is required')
             else:
                 if is_int(size) or is_float(size):
-                    size = (size, size)
+                    size = (size, size/np.cos(np.deg2rad(self.dec)))
                     pix = False
                 
                     
