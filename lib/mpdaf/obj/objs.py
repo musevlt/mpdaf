@@ -1,19 +1,21 @@
 """obj.py contains generic methods used in obj package."""
+
 import numpy as np
 
 
 def is_float(x):
-    if type(x) is float or type(x) is np.float32 or type(x) is np.float64:
-        return True
-    else:
-        return False
+    """Test if `x` is a float number."""
+    return isinstance(x, (float, np.float32, np.float64))
 
 
 def is_int(x):
-    if type(x) is int or type(x) is np.int32 or type(x) is np.int64:
-        return True
-    else:
-        return False
+    """Test if `x` is an int number."""
+    return isinstance(x, (int, np.int32, np.int64))
+
+
+def is_number(x):
+    """Test if `x` is a number."""
+    return is_int(x) or is_float(x)
 
 
 def flux2mag(flux, wave):
