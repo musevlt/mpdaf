@@ -29,7 +29,7 @@ def setup_config_files_nb():
     files = ['nb_default.sex', 'nb_default.conv','nb_default.nnw', 'nb_default.param']
     for f in files:
         try:
-            if not os.path.isfile(f):
+            if not os.path.isfile(f[3:]):
                 shutil.copy(DIR+f, './'+f[3:])
         except:
             pass
