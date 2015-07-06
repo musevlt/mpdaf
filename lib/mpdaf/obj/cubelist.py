@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import os
 
-# from astropy.stats import sigma_clip
+from astropy import stats
 from astropy.table import Table
 from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
@@ -165,28 +165,36 @@ class CubeList(object):
         for checker in self.checkers:
             getattr(self, checker)()
 
-    def save_combined_cube(self, data, var=None, method='', keywords=None):
+    def save_combined_cube(self, data, var=None, method='', keywords=None,
+                           expnb=None, object_name=None):
         d = {'class': 'CubeList', 'method': 'merging'}
         self.logger.info('Creating combined cube object', extra=d)
 
+        if data.ndim != 3:
+            data = data.reshape(self.shape)
+        if var is not None and var.ndim != 3:
+            var = var.reshape(self.shape)
+
         c = Cube(shape=self.shape, wcs=self.wcs, wave=self.wave,
                  unit=self.unit)
-        c.data = ma.asarray(data.reshape(self.shape))
+        c.data = ma.asarray(data)
         c.var = var
 
         hdr = c.primary_header
-        nfiles = len(self.files)
-        copy_keywords(self.cubes[0].primary_header, hdr,
-                      ('ORIGIN', 'TELESCOP', 'INSTRUME', 'EQUINOX',
-                       'RADECSYS', 'EXPTIME', 'OBJECT'))
-        try:
-            hdr['EXPTIME'] = hdr['EXPTIME'] * nfiles
-        except:
-            pass
-        try:
+        copy_keywords(
+            self.cubes[0].primary_header, hdr,
+            ('ORIGIN', 'TELESCOP', 'INSTRUME', 'RA', 'DEC', 'EQUINOX',
+             'RADECSYS', 'EXPTIME', 'MJD-OBS', 'DATE-OBS', 'PI-COI',
+             'OBSERVER', 'OBJECT', 'ESO INS DROT POSANG', 'ESO INS MODE'))
+
+        if expnb is not None and 'EXPTIME' in hdr:
+            hdr['EXPTIME'] = hdr['EXPTIME'] * expnb
+
+        if object_name is not None:
+            c.primary_header['OBJECT'] = object_name
+            c.data_header['OBJECT'] = object_name
+        elif 'OBJECT' in self.cubes[0].data_header:
             c.data_header['OBJECT'] = self.cubes[0].data_header['OBJECT']
-        except:
-            pass
 
         if keywords is not None:
             params, values, comments = zip(*keywords)
@@ -194,10 +202,13 @@ class CubeList(object):
             params, values, comments = [], [], []
 
         add_mpdaf_method_keywords(hdr, method, params, values, comments)
+        hdr['NFILES'] = (len(self.files), 'number of files merged in the cube')
 
-        files = ','.join(os.path.basename(f) for f in self.files)
-        hdr['NFILES'] = (nfiles, 'number of files merged in this cube')
-        hdr['FILES'] = (files, 'list of files merged in this cube')
+        # Put the list of merged files in comments instead of using a CONTINUE
+        # keyword, because MuseWise has a size limit for keyword values ...
+        hdr['comment'] = 'List of cubes merged in this cube:'
+        for f in self.files:
+            hdr['comment'] = '- ' + os.path.basename(f)
         return c
 
     def median(self):
@@ -254,8 +265,9 @@ class CubeList(object):
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        expmap = self.save_combined_cube(expmap, method='obj.cubelist.median')
-        cube = self.save_combined_cube(data, method='obj.cubelist.median')
+        kwargs = dict(expnb=expmap.max(), method='obj.cubelist.median')
+        expmap = self.save_combined_cube(expmap, **kwargs)
+        cube = self.save_combined_cube(data, **kwargs)
         return cube, expmap, stat_pix
 
     def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate', mad=False):
@@ -263,30 +275,31 @@ class CubeList(object):
 
         Parameters
         ----------
-        nmax        : integer
-                      maximum number of clipping iterations
-        nclip       : float or (float,float)
-                      Number of sigma at which to clip.
-                      Single clipping parameter or lower / upper clipping
-                      parameters.
-        nstop       : integer
-                      If the number of not rejected pixels is less
-                      than this number, the clipping iterations stop.
-        var         : string
-                      'propagate', 'stat_mean', 'stat_one'
+        nmax  : integer
+                maximum number of clipping iterations
+        nclip : float or (float,float)
+                Number of sigma at which to clip.
+                Single clipping parameter or lower / upper clipping
+                parameters.
+        nstop : integer
+                If the number of not rejected pixels is less
+                than this number, the clipping iterations stop.
+        var   : string
+                'propagate', 'stat_mean', 'stat_one'
 
-                      'propagate': the variance is the sum of the variances
-                      of the N individual exposures divided by N**2.
+                'propagate': the variance is the sum of the variances
+                of the N individual exposures divided by N**2.
 
-                      'stat_mean': the variance of each combined pixel
-                      is computed as the variance derived from the comparison
-                      of the N individual exposures divided N-1.
+                'stat_mean': the variance of each combined pixel
+                is computed as the variance derived from the comparison
+                of the N individual exposures divided N-1.
 
-                      'stat_one': the variance of each combined pixel is
-                      computed as the variance derived from the comparison
-                      of the N individual exposures.
-        mad         : boolean
-                      use MAD (median absolute deviation) statistics for sigma-clipping
+                'stat_one': the variance of each combined pixel is
+                computed as the variance derived from the comparison
+                of the N individual exposures.
+        mad   : boolean
+                use MAD (median absolute deviation) statistics for
+                sigma-clipping
 
         Returns
         -------
@@ -361,11 +374,10 @@ class CubeList(object):
                     ('nclip_up', nclip_up, 'upper clipping parameter'),
                     ('nstop', nstop, 'clipping minimum number'),
                     ('var', var, 'type of variance')]
-        expmap = self.save_combined_cube(expmap, method='obj.cubelist.merging',
-                                         keywords=keywords)
-        cube = self.save_combined_cube(data, var=vardata.reshape(self.shape),
-                                       method='obj.cubelist.merging',
-                                       keywords=keywords)
+        kwargs = dict(expnb=expmap.max(), keywords=keywords,
+                      method='obj.cubelist.merging')
+        expmap = self.save_combined_cube(expmap, **kwargs)
+        cube = self.save_combined_cube(data, var=vardata, **kwargs)
         return cube, expmap, statpix
 
     def pymedian(self):
@@ -396,12 +408,13 @@ class CubeList(object):
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        expmap = self.save_combined_cube(expmap, method='obj.cubelist.median')
-        cube = self.save_combined_cube(cube, method='obj.cubelist.median')
+        kwargs = dict(expnb=expmap.max(), method='obj.cubelist.pymedian')
+        expmap = self.save_combined_cube(expmap, **kwargs)
+        cube = self.save_combined_cube(cube, **kwargs)
         return cube, expmap, stat_pix
 
-    def pycombine(self, nmax=2, nclip=5.0, var='propagate',
-                  cenfunc=ma.median, stdfunc=ma.std):
+    def pycombine(self, nmax=2, nclip=5.0, var='propagate', nl=None,
+                  cenfunc=ma.median, stdfunc=ma.std, object_name=None):
         d = {'class': 'CubeList', 'method': 'merging'}
         try:
             import fitsio
@@ -421,8 +434,10 @@ class CubeList(object):
         self.logger.info("nclip_low = %f", nclip_low, extra=d)
         self.logger.info("nclip_high = %f", nclip_up, extra=d)
 
+        if nl is not None:
+            self.shape[0] = nl
+
         data = [fitsio.FITS(f)[1] for f in self.files]
-        # shape = data[0].get_dims()
         cube = np.ma.empty(self.shape, dtype=np.float64)
         expmap = np.empty(self.shape, dtype=np.int32)
         rejmap = np.empty(self.shape, dtype=np.int32)
@@ -436,9 +451,9 @@ class CubeList(object):
             arr = ma.masked_invalid([c[l, :, :][0] for c in data], copy=False)
             valid_pix += arr.count(axis=1).sum(axis=1)
             rejmap[l, :, :] = arr.count(axis=0)
-            arr = sigma_clip(arr, sigma_lower=nclip_low, copy=False,
-                             cenfunc=cenfunc, stdfunc=stdfunc,
-                             sigma_upper=nclip_up, iters=nmax, axis=0)
+            arr = stats.sigma_clip(arr, sigma_lower=nclip_low, copy=False,
+                                   cenfunc=cenfunc, stdfunc=stdfunc,
+                                   sigma_upper=nclip_up, iters=nmax, axis=0)
             cube[l, :, :] = ma.mean(arr, axis=0)
             expmap[l, :, :] = arr.count(axis=0)
             vardata[l, :, :] = ma.var(arr, axis=0)
@@ -460,12 +475,11 @@ class CubeList(object):
                     ('nclip_low', nclip, 'lower clipping parameter'),
                     ('nclip_up', nclip, 'upper clipping parameter'),
                     ('var', var, 'type of variance')]
-        cube = self.save_combined_cube(cube, var=vardata, keywords=keywords,
-                                       method='obj.cubelist.mergingpy')
-        expmap = self.save_combined_cube(expmap, method='obj.cubelist.merging',
-                                         keywords=keywords)
-        rejmap = self.save_combined_cube(rejmap, method='obj.cubelist.merging',
-                                         keywords=keywords)
+        kwargs = dict(expnb=expmap.max(), object_name=object_name,
+                      keywords=keywords, method='obj.cubelist.pymerging')
+        cube = self.save_combined_cube(cube, var=vardata, **kwargs)
+        expmap = self.save_combined_cube(expmap, **kwargs)
+        rejmap = self.save_combined_cube(rejmap, **kwargs)
         return cube, expmap, stat_pix, rejmap
 
 
@@ -537,7 +551,8 @@ class CubeMosaic(CubeList):
         assert len(np.unique(shapes[:, 0])) == 1, (
             'Cubes must have the same spectral range.')
 
-    def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None):
+    def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
+                  object_name=None):
         d = {'class': 'CubeMosaic', 'method': 'merging'}
         try:
             import fitsio
@@ -580,7 +595,7 @@ class CubeMosaic(CubeList):
         # for l in ProgressBar(xrange(nl)):
         for l in xrange(nl):
             if l % 100 == 0:
-                print '%d/%d' % (l, nl)
+                self.logger.info('%d/%d', l, nl)
             arr = np.empty(fshape, dtype=float)
             arr.fill(np.nan)
             for i, f in enumerate(data):
@@ -607,10 +622,9 @@ class CubeMosaic(CubeList):
                     ('nclip_low', nclip, 'lower clipping parameter'),
                     ('nclip_up', nclip, 'upper clipping parameter'),
                     ('var', var, 'type of variance')]
-        cube = self.save_combined_cube(cube, var=vardata, keywords=keywords,
-                                       method='obj.cubelist.mergingpy')
-        expmap = self.save_combined_cube(expmap, method='obj.cubelist.merging',
-                                         keywords=keywords)
-        rejmap = self.save_combined_cube(rejmap, method='obj.cubelist.merging',
-                                         keywords=keywords)
+        kwargs = dict(expnb=expmap.max(), object_name=object_name,
+                      keywords=keywords, method='obj.cubemosaic.pymerging')
+        cube = self.save_combined_cube(cube, var=vardata, **kwargs)
+        expmap = self.save_combined_cube(expmap, **kwargs)
+        rejmap = self.save_combined_cube(rejmap, **kwargs)
         return cube, expmap, stat_pix, rejmap
