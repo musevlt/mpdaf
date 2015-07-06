@@ -136,6 +136,8 @@ class PixTableAutoCalib(object):
                channel numbers.
     sli      : array of integer or None
                slice numbers.
+    quad      : array of integer or None
+               Detector quadrant numbers.
     npts     : array of integer or None
                number of remaining pixels.
     corr     : array of float or None
@@ -157,6 +159,8 @@ class PixTableAutoCalib(object):
                channel numbers.
     sli      : array of integer
                slice numbers.
+    quad      : array of integer or None
+               Detector quadrant numbers.
     npts     : array of integer
                number of remaining pixels.
     corr     : array of float
@@ -165,7 +169,7 @@ class PixTableAutoCalib(object):
     """
 
     def __init__(self, filename=None, method=None, maskfile=None, skyref=None,
-                 pixtable=None, ifu=None, sli=None, npts=None, corr=None):
+                 pixtable=None, ifu=None, sli=None, quad=None, npts=None, corr=None):
         """Create a PixTableAutoCalib object.
 
         Parameters
@@ -187,6 +191,8 @@ class PixTableAutoCalib(object):
                    channel numbers.
         sli      : array of integer or None
                    slice numbers.
+        quad     : array of integer or None
+                   Detector quadrant numbers.
         npts     : array of integer or None
                    number of remaining pixels.
         corr     : array of float or None
@@ -199,6 +205,7 @@ class PixTableAutoCalib(object):
             self.pixtable = pixtable
             self.ifu = ifu
             self.sli = sli
+            self.quad = quad
             self.npts = npts
             self.corr = corr
         else:
@@ -209,6 +216,10 @@ class PixTableAutoCalib(object):
             self.pixtable = hdulist[0].header['pixtable']
             self.ifu = hdulist['ifu'].data[:, 0]
             self.sli = hdulist['sli'].data[:, 0]
+            try:
+                self.quad = hdulist['quad'].data[:, 0]
+            except:
+                self.quad = None
             self.npts = hdulist['npts'].data[:, 0]
             self.corr = hdulist['corr'].data[:, 0]
 
@@ -235,6 +246,7 @@ class PixTableAutoCalib(object):
             prihdu,
             ImageHDU(name='ifu', data=np.int32(self.ifu.reshape(shape))),
             ImageHDU(name='sli', data=np.int32(self.sli.reshape(shape))),
+            ImageHDU(name='quad', data=np.int32(self.quad.reshape(shape))),
             ImageHDU(name='npts', data=np.int32(self.npts.reshape(shape))),
             ImageHDU(name='corr', data=np.float64(self.corr.reshape(shape)))]
         hdu = pyfits.HDUList(hdulist)
@@ -1796,108 +1808,6 @@ class PixTable(object):
         return PixTableMask(maskfile=maskfile, maskcol=mask,
                             pixtable=self.filename)
 
-    def old_subtract_slice_median(self, pixmask=None, norm='sky'):
-        """Computes the median value for all slices and applies in place a
-        subtractive correction to each slice to bring all slices to the same
-        median value.
-
-        pix(x,y,lbda) -= < pix(x,y,lbda) >_slice (+ < pix(x,y,lbda) >_all)
-
-        Parameters
-        ----------
-        pixmask : :class:`mpdaf.drs.PixTableMask`
-                  column corresponding to a mask file
-                  (previously computed by mask_column)
-        norm    : string
-                  Option for sky subtraction 'sky' or 'zero'
-
-        Returns
-        -------
-        out : :class:`mpdaf.drs.PixTableAutoCalib`
-        """
-        d = {'class': 'PixTable', 'method': 'old_subtract_slice_median'}
-
-        origin = self.get_origin()
-        ifu = self.origin2ifu(origin)
-        sli = self.origin2slice(origin)
-
-        if pixmask is None:
-            maskfile = ''
-            mask = np.zeros(self.nrows, dtype=bool)
-        else:
-            maskfile = os.path.basename(pixmask.maskfile)
-            mask = pixmask.maskcol
-
-        # load the library, using numpy mechanisms
-        path = os.path.dirname(__file__)[:-4]
-        libCmethods = np.ctypeslib.load_library("libCmethods", path)
-
-        # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
-                                                 flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
-                                              flags='CONTIGUOUS')
-
-        # setup the return types and argument types
-        libCmethods.mpdaf_old_subtract_slice_median.restype = None
-        libCmethods.mpdaf_old_subtract_slice_median.argtypes = \
-            [array_1d_double, array_1d_double, array_1d_int,
-             array_1d_int, array_1d_int, array_1d_double,
-             array_1d_double, ctypes.c_int, array_1d_int, ctypes.c_int]
-
-        data = self.get_data()
-        ifu = ifu.astype(np.int32)
-        sli = sli.astype(np.int32)
-        data = data.astype(np.float64)
-        lbda = self.get_lambda()
-        lbda = lbda.astype(np.float64)
-        mask = mask.astype(np.int32)
-        if norm == 'sky':
-            skysub = 1
-        else:
-            skysub = 0
-        skysub = np.int32(skysub)
-
-        result = np.empty_like(data, dtype=np.float64)
-        corr = np.empty(24 * 48, dtype=np.float64)
-        npts = np.empty(24 * 48, dtype=np.int32)
-
-        libCmethods.mpdaf_old_subtract_slice_median(
-            result, corr, npts, ifu, sli, data, lbda,
-            data.shape[0], mask, skysub)
-
-        # set pixtable data
-        self.set_data(result)
-
-        # autocalib file
-        autocalib = PixTableAutoCalib(
-            method='drs.pixtable.old_subtract_slice_median',
-            maskfile=maskfile, skyref=norm,
-            pixtable=os.path.basename(self.filename),
-            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)),
-                                     0, 1)),
-            sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
-            npts=npts, corr=corr)
-        # add keywords
-        add_mpdaf_method_keywords(self.primary_header,
-                                  "drs.pixtable.old_subtract_slice_median",
-                                  ['mask', 'norm'],
-                                  [maskfile, norm],
-                                  ['file to mask out all bright objects',
-                                   'Option for sky subtraction'])
-
-        self.logger.info('pixtable %s updated',
-                         os.path.basename(self.filename), extra=d)
-
-        # close libray
-        # import _ctypes
-        # _ctypes.dlclose(libCmethods._handle)
-        # libCmethods._handle = None
-        # libCmethods._name = None
-        # libCmethods._FuncPtr = None
-        # del libCmethods
-        return autocalib
-
     def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
         """Computes the reference sky spectrum using sigma clipped median.
 
@@ -2015,6 +1925,8 @@ class PixTable(object):
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
+        xpix = self.origin2xpix(origin)
+        ypix = self.origin2ypix(origin)
 
         # mask
         if pixmask is None:
@@ -2035,12 +1947,12 @@ class PixTable(object):
                                               flags='CONTIGUOUS')
 
         # setup the return types and argument types
-        libCmethods.mpdaf_subtract_slice_median.restype = None
-        libCmethods.mpdaf_subtract_slice_median.argtypes = \
-            [array_1d_double, array_1d_double, array_1d_int,
-             array_1d_int, array_1d_int, array_1d_double,
-             array_1d_double, ctypes.c_int, array_1d_int, array_1d_double,
-             array_1d_double, ctypes.c_int]
+        libCmethods.mpdaf_slice_median.restype = None
+        libCmethods.mpdaf_slice_median.argtypes = \
+            [array_1d_double, array_1d_double, array_1d_double, array_1d_int,
+             array_1d_int, array_1d_int, array_1d_double, array_1d_double,
+             ctypes.c_int, array_1d_int, array_1d_double,array_1d_double,
+             ctypes.c_int, array_1d_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
         ifu = ifu.astype(np.int32)
@@ -2052,32 +1964,25 @@ class PixTable(object):
         skyref_flux = skyref.data.data.astype(np.float64)
         skyref_lbda = skyref.wave.coord()
         skyref_n = skyref.shape
+        xpix = xpix.astype(np.int32)
+        ypix = ypix.astype(np.int32)
 
         result = np.empty_like(data, dtype=np.float64)
-        corr = np.empty(24 * 48, dtype=np.float64)
-        npts = np.empty(24 * 48, dtype=np.int32)
+        stat_result = np.empty_like(data, dtype=np.float64)
+        corr = np.ones(24 * 48 * 4, dtype=np.float64) #zeros
+        npts = np.zeros(24 * 48 * 4, dtype=np.int32)
 
-        libCmethods.mpdaf_subtract_slice_median(
-            result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
-            skyref_flux, skyref_lbda, skyref_n)
+        libCmethods.mpdaf_slice_median(
+            result, stat_result, corr, npts, ifu, sli, data, lbda,
+            data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n, xpix, ypix, 1)
 
         # set pixtable data
         self.set_data(result)
 
-        # autocalib file
         if skyref.filename is None:
             skyref_file = ''
         else:
             skyref_file = os.path.basename(skyref.filename)
-
-        autocalib = PixTableAutoCalib(
-            method='drs.pixtable.subtract_slice_median',
-            maskfile=maskfile, skyref=skyref_file,
-            pixtable=os.path.basename(self.filename),
-            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)),
-                                     0, 1)),
-            sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
-            npts=npts, corr=corr)
 
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,
@@ -2086,6 +1991,17 @@ class PixTable(object):
                                   [maskfile, skyref_file],
                                   ['file to mask out all bright objects',
                                    'reference sky spectrum'])
+
+        # autocalib file
+        autocalib = PixTableAutoCalib(
+            method='drs.pixtable.subtract_slice_median',
+            maskfile=maskfile, skyref=skyref_file,
+            pixtable=os.path.basename(self.filename),
+            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48*4, 24)),
+                                     0, 1)),
+            sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int), (4, 24, 48))),
+            quad=np.ravel(np.resize(np.arange(1, 5), (24*48, 4))),
+            npts=npts, corr=corr)
 
         self.logger.info('pixtable %s updated',
                          os.path.basename(self.filename), extra=d)
@@ -2123,6 +2039,8 @@ class PixTable(object):
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
+        xpix = self.origin2xpix(origin)
+        ypix = self.origin2ypix(origin)
 
         # mask
         if pixmask is None:
@@ -2143,12 +2061,12 @@ class PixTable(object):
                                               flags='CONTIGUOUS')
 
         # setup the return types and argument types
-        libCmethods.mpdaf_divide_slice_median.restype = None
-        libCmethods.mpdaf_divide_slice_median.argtypes = \
+        libCmethods.mpdaf_slice_median.restype = None
+        libCmethods.mpdaf_slice_median.argtypes = \
             [array_1d_double, array_1d_double, array_1d_double, array_1d_int,
              array_1d_int, array_1d_int, array_1d_double, array_1d_double,
              ctypes.c_int, array_1d_int, array_1d_double,array_1d_double,
-             ctypes.c_int]
+             ctypes.c_int, array_1d_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
         ifu = ifu.astype(np.int32)
@@ -2160,15 +2078,17 @@ class PixTable(object):
         skyref_flux = skyref.data.data.astype(np.float64)
         skyref_lbda = skyref.wave.coord()
         skyref_n = skyref.shape
+        xpix = xpix.astype(np.int32)
+        ypix = ypix.astype(np.int32)
 
         result = np.empty_like(data, dtype=np.float64)
         result_stat = np.empty_like(data, dtype=np.float64)
-        corr = np.empty(24 * 48, dtype=np.float64)
-        npts = np.empty(24 * 48, dtype=np.int32)
+        corr = np.ones(24 * 48 * 4, dtype=np.float64) #zeros
+        npts = np.zeros(24 * 48 * 4, dtype=np.int32)
 
-        libCmethods.mpdaf_divide_slice_median(
+        libCmethods.mpdaf_slice_median(
             result, result_stat, corr, npts, ifu, sli, data, lbda,
-            data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n)
+            data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n, xpix, ypix, 0)
 
         # set pixtable data
         self.set_data(result)
@@ -2192,9 +2112,10 @@ class PixTable(object):
             method='drs.pixtable.divide_slice_median',
             maskfile=maskfile, skyref=skyref_file,
             pixtable=os.path.basename(self.filename),
-            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48, 24)),
+            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48*4, 24)),
                                      0, 1)),
-            sli=np.ravel(np.resize(np.arange(1, 49), (24, 48))),
+            sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int), (4, 24, 48))),
+            quad=np.ravel(np.resize(np.arange(1, 5), (24*48, 4))),
             npts=npts, corr=corr)
 
         self.logger.info('pixtable %s updated',
