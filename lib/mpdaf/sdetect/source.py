@@ -762,13 +762,11 @@ class Source(object):
         ----------
         cube : :class:`mpdaf.obj.Cube`
                MUSE data cube.
-        size : float or (float, float)
+        size : float
                The total size to extract in arcseconds.
-               If size is a float, it corresponds to the size along the delta axis and the image is square.
+               It corresponds to the size along the delta axis and the image is square.
                By default 10x10arcsec
         """
-        if is_int(size) or is_float(size):
-            size = (size, size/np.cos(np.deg2rad(self.dec)))
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images['MUSE_WHITE'] = subcub.sum(axis=0)
         
@@ -809,19 +807,31 @@ class Source(object):
             d = {'class': 'Source', 'method': 'add_narrow_band_images'}
             if size is None:
                 try:
-                    size = self.images['SRC_WHITE'].shape
-                    pix = True
+                    white_ima = self.images['SRC_WHITE']
                 except:
                     try:
-                        size = self.images['MUSE_WHITE'].shape
-                        pix = True
+                        white_ima = self.images['MUSE_WHITE']
                     except:
                         raise IOError('Size of the image (in arcsec) is required')
+                coords = white_ima.get_range()
+                dec_min = coords[0, 0]
+                dec_max = coords[1, 0]
+                ra_min = coords[0, 1]
+                ra_max = coords[1, 1]
             else:
                 if is_int(size) or is_float(size):
                     size = (size, size/np.cos(np.deg2rad(self.dec)))
-                    pix = False
-                
+        
+                size = np.array(size)
+                radius = size/2./3600.0
+                ra_min = self.ra - radius[1]
+                ra_max = self.ra + radius[1]
+                dec_min = self.dec - radius[0]
+                dec_max = self.dec + radius[0]
+        
+            lmin, lmax= cube.wave.get_range()
+            subcub = cube.truncate([[lmin,dec_min,ra_min], [lmax,dec_max,ra_max]], mask=False)
+                 
                     
             if eml is None:
                 all_lines = np.array([1216, 1909, 3727, 4861, 5007, 6563, 6724])
@@ -830,8 +840,6 @@ class Source(object):
                 all_lines = np.array(eml.keys())
                 all_tags = np.array(eml.values())
                     
-            subcub = cube.subcube((self.dec, self.ra), size, pix)
-            
             z = self.z['Z'][self.z['Z_DESC']==z_desc]
             
             if z>0:
@@ -971,11 +979,14 @@ class Source(object):
         """
         d = {'class': 'Source', 'method': 'add_masks'}
         
-        
-        wcs = self.images['MASK_UNION'].wcs
-        size = self.images['MASK_UNION'].shape
-        
-        subcub = cube.subcube((self.dec, self.ra), size, pix=True)
+        coords = self.images['MASK_UNION'].get_range()
+        dec_min = coords[0, 0]
+        dec_max = coords[1, 0]
+        ra_min = coords[0, 1]
+        ra_max = coords[1, 1]
+            
+        lmin, lmax= cube.wave.get_range()
+        subcub = cube.truncate([[lmin,dec_min,ra_min], [lmax,dec_max,ra_max]], mask=False)
         
         if self.images.has_key('MASK_UNION'):
             if self.images['MASK_UNION'].wcs.isEqual(subcub.wcs):
@@ -1024,7 +1035,7 @@ class Source(object):
         # the object mask and ensure that the weight map within the
         # object mask is >=0.
         # Weighted extractions
-        ksel = np.where(object_mask==1)
+        ksel = np.where(object_mask!=0)
         for tag in nb_tags:
             if self.images[tag].wcs.isEqual(subcub.wcs):
                 weight = self.images[tag].data * object_mask

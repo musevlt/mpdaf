@@ -3334,8 +3334,9 @@ class Cube(CubeBase):
         center : (float,float)
                 Center of the aperture.
                 (dec,ra) is in degrees.
-        size : float or (float,float)
+        size : float
                The size to extract in arcseconds.
+               It corresponds to the size along the delta axis and the image is square.
         pix  : boolean
                if True size is in pixels
 
@@ -3343,24 +3344,18 @@ class Cube(CubeBase):
         -------
         out : :class:`mpdaf.obj.Cube`
         """
-        if is_int(size) or is_float(size):
-            size = (size, size)
-        size = np.array(size)
-        if size[0] > 0 and size[1] > 0:
-            if not pix:
-                cos_delta = np.cos(np.deg2rad(center[0]))
-                size[1] = size[1] * cos_delta
+        if size > 0 :
             center = self.wcs.sky2pix(center)[0]
             if not pix:
-                size = size / np.abs(self.wcs.get_step()) / 3600.
+                size = size / np.abs(self.wcs.get_step()[0]) / 3600.
             radius = size / 2.
+            
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + int(size[0] + 0.5),
-                                     jmin + int(size[1] + 0.5)],
+            imax, jmax = np.minimum([imin + int(size+0.5), jmin + int(size+0.5)],
                                     [self.shape[1], self.shape[2]])
-
+            
             data = self.data[:, imin:imax, jmin:jmax].copy()
             if self.var is not None:
                 var = self.var[:, imin:imax, jmin:jmax].copy()
@@ -3382,24 +3377,22 @@ class Cube(CubeBase):
         center : (float,float)
                 Center of the aperture.
                 (dec,ra) is in degrees.
-        radius : float or (float,float)
-                Radius of the aperture in arcsec.
-
+        radius : float
+                 Radius of the aperture in arcsec.
+                 It corresponds to the radius along the delta axis and the image is square.
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`
         """
         if radius > 0:
-            cos_delta = np.cos(np.deg2rad(center[0]))
             center = self.wcs.sky2pix(center)[0]
-            radius = np.array([radius / np.abs(self.wcs.get_step()[0]) / 3600.,
-                               radius / np.abs(self.wcs.get_step()[0]) / 3600. * cos_delta])
-            radius2 = radius[0] * radius[1]
+            radius /= np.abs(self.wcs.get_step()[0]) / 3600.
+            radius2 = radius * radius
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + int(2 * radius[0] + 0.5),
-                                     jmin + int(2 * radius[1] + 0.5)],
+            imax, jmax = np.minimum([imin + int(2 * radius + 0.5),
+                                     jmin + int(2 * radius + 0.5)],
                                     [self.shape[1], self.shape[2]])
 
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
