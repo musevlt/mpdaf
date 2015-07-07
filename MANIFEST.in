@@ -1,10 +1,15 @@
 graft src
 graft lib
+graft doc
+graft tests
+graft data/obj
+graft mpdaf_user
 
-prune doc
 prune lib/mpdaf/quickViz
-prune tests
-prune data
+prune mpdaf_user/galpak/data
+prune mpdaf_user/galpak/web
+prune mpdaf_user/galpak/build
+prune mpdaf_user/galpak/tests
 
 include README.txt
 
