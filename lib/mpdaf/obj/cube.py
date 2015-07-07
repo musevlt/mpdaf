@@ -3355,7 +3355,7 @@ class Cube(CubeBase):
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
             imax, jmax = np.minimum([imin + int(size+0.5), jmin + int(size+0.5)],
                                     [self.shape[1], self.shape[2]])
-            
+        
             data = self.data[:, imin:imax, jmin:jmax].copy()
             if self.var is not None:
                 var = self.var[:, imin:imax, jmin:jmax].copy()
@@ -3386,7 +3386,8 @@ class Cube(CubeBase):
         """
         if radius > 0:
             center = self.wcs.sky2pix(center)[0]
-            radius /= np.abs(self.wcs.get_step()[0]) / 3600.
+            radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
+            
             radius2 = radius * radius
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
