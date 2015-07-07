@@ -44,7 +44,7 @@ def remove_config_files(DIR=None):
         os.remove(f)
      
    
-def findCentralDetection(images, tolerance=1):
+def findCentralDetection(images, iyc, ixc, tolerance=1):
     """
     Determine which image has a detection close to the centre. We start with the centre for
     all. If all have a value zero there we continue.
@@ -55,16 +55,16 @@ def findCentralDetection(images, tolerance=1):
     min_values = {}
     global_min = 1e30
     global_ix_min = -1
-    global_iy_min = -1
+#     global_iy_min = -1
     
-    count = 0
+#     count = 0
     bad = {}
     for key, im in images.items():
         logger.info('Doing %s'%key, extra=d)
-        if (count == 0):
-            nx, ny = im.shape
-            ixc = nx/2
-            iyc = ny/2 
+#         if (count == 0):
+#             nx, ny = im.shape
+#             ixc = nx/2
+#             iyc = ny/2 
         
         # Find the parts of the segmentation map where there is an object.
         ix, iy = np.where(im > 0)
@@ -87,7 +87,7 @@ def findCentralDetection(images, tolerance=1):
             if (min_dist < global_min):
                 global_min = min_dist
                 global_ix_min = ix_min
-                global_iy_min = iy_min
+#                 global_iy_min = iy_min
                 global_im_index_min = key
                 global_value = val_min
         else:
@@ -95,7 +95,7 @@ def findCentralDetection(images, tolerance=1):
             min_distances[key] = -1e30
             min_values[key] = -1
             
-        count = count+1
+#         count = count+1
         
     # We have now looped through. Time to take stock. First let us check that there
     # was at least one detection.
@@ -206,6 +206,7 @@ def segmentation(source, tags, DIR, remove):
     dim = source.images['MUSE_WHITE'].shape
     start = source.images['MUSE_WHITE'].wcs.pix2sky([0,0])[0]
     step = source.images['MUSE_WHITE'].get_step()
+    rot = source.images['MUSE_WHITE'].get_rot()
     wcs = source.images['MUSE_WHITE'].wcs
     
     maps = {}
@@ -218,14 +219,20 @@ def segmentation(source, tags, DIR, remove):
         fname = '%04d-%s.fits'%(source.id, tag2)
         start_ima = ima.wcs.pix2sky([0,0])[0]
         step_ima = ima.get_step()
+        rot_ima = ima.get_rot()
         prihdu = pyfits.PrimaryHDU()
         hdulist = [prihdu]
         if ima.shape[0]==dim[0] and  ima.shape[1]==dim[1] and \
             start_ima[0]==start[0] and start_ima[1]==start[1] and \
-            step_ima[0]==step[0] and step_ima[1]==step[1]:
+            step_ima[0]==step[0] and step_ima[1]==step[1] and \
+            rot_ima==rot:
             data_hdu = ima.get_data_hdu(name='DATA', savemask='nan')
-        else:
+        elif rot_ima==rot:
             ima2 = ima.rebin(dim, start, step, flux=True)
+            data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
+        else:
+            ima2 = ima.rotate(rot-rot_ima, interp='no', reshape=True)
+            ima2 = ima2.rebin(dim, start, step, flux=True)
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         hdulist.append(data_hdu)
         hdu = pyfits.HDUList(hdulist)
@@ -259,13 +266,15 @@ def segmentation(source, tags, DIR, remove):
             source.images['SEG_'+tag] = ima
        
 def mask_creation(source, maps): 
-    r = findCentralDetection(maps, tolerance=3)
+    wcs = source.images['MUSE_WHITE'].wcs
+    yc, xc = wcs.sky2pix((source.DEC, source.RA))[0]
+    
+    r = findCentralDetection(maps, yc, xc, tolerance=3)
         
     object_mask = union(r['seg'])
     small_mask = intersection(r['seg'])
     sky_mask = findSkyMask(maps)
         
-    wcs = source.images['MUSE_WHITE'].wcs
     ima = Image(wcs=wcs, data=object_mask)
     source.images['MASK_UNION'] = ima
     ima = Image(wcs=wcs, data=sky_mask)
