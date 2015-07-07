@@ -1,0 +1,11 @@
+graft src
+graft lib
+
+prune doc
+prune lib/mpdaf/quickViz
+prune tests
+prune data
+
+include README.txt
+
+global-exclude *.py[cod] __pycache__ *.so

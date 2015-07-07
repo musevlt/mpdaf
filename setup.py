@@ -53,19 +53,23 @@
 # Installation
 # ============
 #
-# To install the mpdaf package, you first run the *setup.py build* command to build everything needed to install:
+# To install the mpdaf package, you first run the *setup.py build* command to
+# build everything needed to install:
 #
 #   /mpdaf$ python setup.py build
 #
-# The setup script tries to use pkg-config to find the correct compiler flags and library flags.
+# The setup script tries to use pkg-config to find the correct compiler flags
+# and library flags.
 #
-# Note that on MAC OS, openmp is not used by default because clang doesn't support OpenMp.
-# To force it, the USEOPENMP environment variable can be set to anything except an empty string:
+# Note that on MAC OS, openmp is not used by default because clang doesn't
+# support OpenMp.  To force it, the USEOPENMP environment variable can be set
+# to anything except an empty string:
 #
 #  /mpdaf$ sudo USEOPENMP=0 CC=<local path of gcc> python setup.py build
 #
 #
-# After building everything, you log as root and install everything from build directory:
+# After building everything, you log as root and install everything from build
+# directory:
 #
 #   root:/mpdaf$ python setup.py install
 #
@@ -85,10 +89,17 @@ import shutil
 # import setuptools
 
 from distutils.core import setup, Command, Extension
-from Cython.Build import cythonize
+
+try:
+    from Cython.Distutils import build_ext
+    from Cython.Build import cythonize
+except ImportError:
+    HAVE_CYTHON = False
+else:
+    HAVE_CYTHON = True
 
 
-#os.environ['DISTUTILS_DEBUG'] = '1'
+# os.environ['DISTUTILS_DEBUG'] = '1'
 
 class UnitTest(Command):
     user_options = []
@@ -170,30 +181,39 @@ def options(*packages, **kw):
     return kw
 
 
-setup(name='mpdaf',
-      version='1.1',
-      description='MUSE Python Data Analysis Framework is a python framework '
-      'in view of the analysis of MUSE data in the context of the GTO.',
-      url='http://urania1.univ-lyon1.fr/mpdaf/login',
-      requires=['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib', 'astropy',
-                'nose', 'PIL'],
-      package_dir=package_dir,
-      packages=packages,
-      package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'],
-                    'mpdaf.sdetect': ['muselet_data/*']},
-      maintainer='Laure Piqueras',
-      maintainer_email='laure.piqueras@univ-lyon1.fr',
-      platforms='any',
-      cmdclass={'test': UnitTest},
-      scripts=['lib/mpdaf/scripts/make_white_image.py'],
-      ext_package='mpdaf',
-      ext_modules=cythonize([
-          Extension('libCmethods', [
-              'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
-              **options('cfitsio')),
-          Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging.pyx'],
-                    # extra_compile_args=['-fopenmp'],
-                    # extra_link_args=['-fopenmp']
-                    ),
-      ]),
-      )
+cmdclass = {'test': UnitTest}
+
+ext = '.pyx' if HAVE_CYTHON else '.c'
+ext_modules = [
+    Extension('libCmethods', [
+        'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
+        **options('cfitsio')),
+    Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
+              # extra_compile_args=['-fopenmp'],
+              # extra_link_args=['-fopenmp']
+              ),
+]
+if HAVE_CYTHON:
+    cmdclass.update({'build_ext': build_ext})
+    ext_modules = cythonize(ext_modules)
+
+setup(
+    name='mpdaf',
+    version='1.1',
+    description='MUSE Python Data Analysis Framework is a python framework '
+    'in view of the analysis of MUSE data in the context of the GTO.',
+    url='http://urania1.univ-lyon1.fr/mpdaf/login',
+    requires=['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib', 'astropy',
+              'nose', 'PIL'],
+    package_dir=package_dir,
+    packages=packages,
+    package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'],
+                  'mpdaf.sdetect': ['muselet_data/*']},
+    maintainer='Laure Piqueras',
+    maintainer_email='laure.piqueras@univ-lyon1.fr',
+    platforms='any',
+    cmdclass=cmdclass,
+    scripts=['lib/mpdaf/scripts/make_white_image.py'],
+    ext_package='mpdaf',
+    ext_modules=ext_modules,
+)

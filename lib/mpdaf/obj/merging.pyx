@@ -1,8 +1,7 @@
-# import fitsio
 import numpy as np
 cimport numpy as np
 cimport cython
-from cython.parallel cimport prange
+# from cython.parallel cimport prange
 from libc.math cimport isnan, NAN
 
 DTYPE = np.float64
