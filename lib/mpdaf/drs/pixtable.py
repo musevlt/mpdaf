@@ -1903,7 +1903,7 @@ class PixTable(object):
         return spe
 
     def subtract_slice_median(self, skyref, pixmask):
-        """Computes the median value for all slices
+        """Computes the median value for all pairs (slice, quadrant)
         and subtracts this factor to each pixel
         to bring all slices to the same median value.
 
@@ -2016,10 +2016,11 @@ class PixTable(object):
         return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
-        """Computes the median value for all slices and divides each pixel
+        """Computes the median value for all pairs (slices,
+        quadrant) and divides each pixel
         by the corresponding factor to bring all slices
         to the same median value.
-        pix(x,y,lbda) /= < pix(x,y,lbda) / skyref(lbda) >_slice
+        pix(x,y,lbda) /= < pix(x,y,lbda) / skyref(lbda) >_slice_quadrant
 
         Algorithm from Kurt Soto (kurt.soto@phys.ethz.ch)
 
