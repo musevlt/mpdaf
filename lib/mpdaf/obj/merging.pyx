@@ -2,7 +2,6 @@ import numpy as np
 cimport numpy as np
 cimport cython
 # from cython.parallel cimport prange
-from libc.math cimport isnan, NAN
 
 DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
@@ -10,6 +9,9 @@ ctypedef np.float64_t DTYPE_t
 cdef extern from "../../../src/tools.h":
     void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx) nogil
 
+cdef extern from "numpy/npy_math.h" nogil:
+    long double NAN "NPY_NAN"
+    bint isnan "npy_isnan"(long double)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
