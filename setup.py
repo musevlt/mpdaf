@@ -208,7 +208,7 @@ setup(
     package_dir=package_dir,
     packages=packages,
     package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'],
-                  'mpdaf.sdetect': ['muselet_data/*']},
+                  'mpdaf.sdetect': ['muselet_data/*', 'sea_data/*']},
     maintainer='Laure Piqueras',
     maintainer_email='laure.piqueras@univ-lyon1.fr',
     platforms='any',
