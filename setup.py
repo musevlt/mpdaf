@@ -199,7 +199,7 @@ if HAVE_CYTHON:
 
 setup(
     name='mpdaf',
-    version='1.1',
+    version='1.1.18',
     description='MUSE Python Data Analysis Framework is a python framework '
     'in view of the analysis of MUSE data in the context of the GTO.',
     url='http://urania1.univ-lyon1.fr/mpdaf/login',
