@@ -86,6 +86,7 @@ import os
 import subprocess
 import sys
 import shutil
+import numpy
 # import setuptools
 
 from distutils.core import setup, Command, Extension
@@ -189,6 +190,7 @@ ext_modules = [
         'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
         **options('cfitsio')),
     Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
+              include_dirs=[numpy.get_include()],
               # extra_compile_args=['-fopenmp'],
               # extra_link_args=['-fopenmp']
               ),
