@@ -44,7 +44,7 @@ __date__ = '2015/07/08'
 Import the different submodules
 """
 
-from .import plt_zscale
+from . import plt_zscale
 from .astropysics_coords import AstropysicsAngularCoordinate
 from .coords import deg2dms
 from .coords import deg2hms
