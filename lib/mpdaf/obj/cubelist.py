@@ -12,7 +12,10 @@ from ctypes import c_char_p
 from numpy import ma, allclose, array_equal
 
 from .cube import CubeDisk, Cube
-from ..merging import sigma_clip
+try:
+    from ..merging import sigma_clip
+except:
+    pass
 from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
