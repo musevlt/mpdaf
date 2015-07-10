@@ -1819,7 +1819,7 @@ class Image(object):
         """
 
         if not pix: # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
-                poly=np.array([[self.wcs.sky2pix((val[0],val[1]))[0][0],self.wcs.sky2pix((val[0],val[1]))[0][1]] for val in poly])
+                poly=np.array([[self.wcs.sky2pix((val[0],val[1]))[0][1],self.wcs.sky2pix((val[0],val[1]))[0][0]] for val in poly])
 
         P,Q=np.meshgrid(range(self.shape[0]),range(self.shape[1]))  
         b=np.dstack([P.ravel(),Q.ravel()])  
