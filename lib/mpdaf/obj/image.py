@@ -1822,7 +1822,7 @@ class Image(object):
                 poly=np.array([[self.wcs.sky2pix((val[0],val[1]))[0][1],self.wcs.sky2pix((val[0],val[1]))[0][0]] for val in poly])
 
         P,Q=np.meshgrid(range(self.shape[0]),range(self.shape[1]))  
-        b=np.dstack([P.ravel(),Q.ravel()])  
+        b=np.dstack([Q.ravel(),P.ravel()])  
 
         polymask=Path(poly)  # use the matplotlib method to create a path wich is the polygon we want to use
         c=polymask.contains_points(b[0]) # go through all pixels in the image to see if there are in the polygon, ouput is a boolean table
@@ -1831,8 +1831,10 @@ class Image(object):
                 c=~np.array(c)
 
         c=c.reshape(self.shape[1],self.shape[0]) # convert the boolean table into a matrix
+        c=c.T
 
         self.data.mask=np.logical_or(c,self.data.mask) # combine the previous mask with the new one
+        return poly
 
 
     def unmask(self):
