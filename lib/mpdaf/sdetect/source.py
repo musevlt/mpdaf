@@ -1190,12 +1190,11 @@ class Source(object):
                 sky.plot(ax=ax2, color='k', alpha=0.2)
             ax2.axis('off')
         if lines is not None:
-            wavelist = self.lines[name]
+            wavelist = self.lines[lines]
             for lbda in wavelist:
-                ax.axvline(lbda, color='r', **kwargs)
-        return
-
-
+                ax.axvline(lbda, color='r')
+        return 
+    
 class SourceList(list):
     """
         list< :class:`mpdaf.sdetect.Source` >
