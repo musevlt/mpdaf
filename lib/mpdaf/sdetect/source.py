@@ -16,24 +16,24 @@ from ..obj import Cube, Image, Spectrum, gauss_image
 from ..obj.objs import is_int, is_float
 from .catalog import Catalog
 
-emlines = {1215.67: 'Lyalpha1216',
+emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
            1909.0: 'CIII]1909',
            2326.0: 'CII2326',
            3726.032: '[OII]3726',
            3728.8149: '[OII]3729',
-           3798.6001: 'Htheta3799',
-           3834.6599: 'Heta3835',
+           3798.6001: 'HTHETA3799',
+           3834.6599: 'HETA3835',
            3869.0: '[NeIII]3869',
-           3888.7: 'Hzeta3888',
+           3888.7: 'HZETA3888',
            3967.0: '[NeIII]3967',
-           4102.0: 'Hdelta4102',
-           4340.0: 'Hgamma4340',
-           4861.3198: 'Hbeta4861',
+           4102.0: 'HDELTA4102',
+           4340.0: 'HGAMMA4340',
+           4861.3198: 'HBETA4861',
            4959.0: '[OIII]4959',
            5007.0: '[OIII]5007',
            6548.0: '[NII]6548',
-           6562.7998: 'Halpha6563',
+           6562.7998: 'HALPHA6563',
            6583.0: '[NII]6583',
            6716.0: '[SII]6716',
            6731.0: '[SII]6731'}
@@ -736,8 +736,8 @@ class Source(object):
                By default 10x10arcsec
         """
         subcub = cube.subcube((self.dec, self.ra), size)
-        self.images['MUSE_WHITE'] = subcub.sum(axis=0)
-
+        self.images['MUSE_WHITE'] = subcub.mean(axis=0)
+        
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8, margin=10., fband=3.):
         """Create narrow band images
 
@@ -758,9 +758,9 @@ class Source(object):
                  value is the name of the line.
                  if None, the following catalog is used::
 
-                    eml = {1216 : 'Lyalpha1216', 1909: 'CIII]1909',
-                           3727: '[OII]3727', 4861: 'Hbeta4861' ,
-                           5007: '[OIII]5007', 6563: 'Halpha6563',
+                    eml = {1216 : 'LYALPHA1216', 1909: 'CIII]1909',
+                           3727: '[OII]3727', 4861: 'HBETA4861' ,
+                           5007: '[OIII]5007', 6563: 'HALPHA6563',
                            6724 : '[SII]6724'}
 
         size   : float
@@ -792,7 +792,7 @@ class Source(object):
 
             if eml is None:
                 all_lines = np.array([1216, 1909, 3727, 4861, 5007, 6563, 6724])
-                all_tags = np.array(['Lyalpha1216', 'CIII]1909', '[OII]3727', 'Hbeta4861', '[OIII]5007', 'Halpha6563', '[SII]6724'])
+                all_tags = np.array(['LYALPHA1216', 'CIII]1909', '[OII]3727', 'HBETA4861', '[OIII]5007', 'HALPHA6563', '[SII]6724'])
             else:
                 all_lines = np.array(eml.keys())
                 all_tags = np.array(eml.values())
@@ -1049,15 +1049,15 @@ class Source(object):
                  value is the name of the line.
                  if None, the following catalog is used::
 
-                    emlines = {1215.67  : 'Lyalpha1216' , 1550.0   : 'CIV1550',
+                    emlines = {1215.67  : 'LYALPHA1216' , 1550.0   : 'CIV1550',
                                 1909.0   : 'CIII]1909'   , 2326.0   : 'CII2326',
                                 3726.032 : '[OII]3726'   , 3728.8149: '[OII]3729',
-                                3798.6001: 'Htheta3799'  , 3834.6599: 'Heta3835',
-                                3869.0   : '[NeIII]3869' , 3888.7   : 'Hzeta3889',
-                                3967.0   : '[NeIII]3967' , 4102.0   : 'Hdelta4102',
-                                4340.0   : 'Hgamma4340'  , 4861.3198: 'Hbeta4861',
+                                3798.6001: 'HTHETA3799'  , 3834.6599: 'HETA3835',
+                                3869.0   : '[NEIII]3869' , 3888.7   : 'HZETA3889',
+                                3967.0   : '[NEIII]3967' , 4102.0   : 'HDELTA4102',
+                                4340.0   : 'HGAMMA4340'  , 4861.3198: 'HBETA4861',
                                 4959.0   : '[OIII]4959'  , 5007.0   : '[OIII]5007',
-                                6548.0   : '[NII6548]'   , 6562.7998: 'Halpha6563',
+                                6548.0   : '[NII6548]'   , 6562.7998: 'HALPHA6563',
                                 6583.0   : '[NII]6583'   , 6716.0   : '[SII]6716',
                                 6731.0   : '[SII]6731'}
 
