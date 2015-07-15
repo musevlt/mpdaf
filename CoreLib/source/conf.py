@@ -26,6 +26,12 @@ intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None)
 }
 
+autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance']
+autosummary_generate = True
+
+numpydoc_show_class_members = False
+numpydoc_class_members_toctree = False
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -109,7 +115,7 @@ html_theme = 'default'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = '../../logo_mpdaf_small.png'
+html_logo = '_static/logo_mpdaf_small.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32

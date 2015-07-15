@@ -1,19 +1,16 @@
 Python interface for raw files
 ==============================
 
-.. toctree::
-	:maxdepth: 2
-	
 
 RawFile class
 -------------
 
 .. autoclass:: mpdaf.drs.RawFile
-	:members: 
+	:members:
 	:special-members:
 
 Channel class
 -------------
 
 .. autoclass:: mpdaf.drs.Channel
-	:members: 
+	:members:

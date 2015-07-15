@@ -1,9 +1,6 @@
 World coordinates conversions
 =============================
 
-.. toctree::
-	:maxdepth: 2
-	
 
 .. autofunction:: mpdaf.obj.deg2sexa
 
