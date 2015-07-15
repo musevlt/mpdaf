@@ -588,10 +588,10 @@ class Image(object):
             ima = Image(wcs=wcs, data=np.zeros(shape=self.shape),
                         var=np.zeros(shape=self.shape), unit=self.unit)
         return ima
-    
+
     def get_data_hdu(self, name='DATA', fscale=None, savemask='dq'):
         """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
-        
+
         Parameters
         ----------
         name     : string
@@ -603,7 +603,7 @@ class Image(object):
                    If 'dq', the mask array is saved in DQ extension.
                    If 'nan', masked data are replaced by nan in DATA extension.
                    If 'none', masked array is not saved.
-                   
+
         Returns
         -------
         out : astropy.io.fits.ImageHDU
@@ -611,7 +611,7 @@ class Image(object):
         # update fscale
         if fscale is None:
             fscale = self.fscale
-            
+
         # world coordinates
         hdr = self.wcs.to_header()
 
@@ -620,10 +620,10 @@ class Image(object):
             data = self.data.filled(fill_value=np.nan)
         else:
             data = self.data.data
-            
+
         data *= np.double(self.fscale / fscale)
         imahdu = pyfits.ImageHDU(name=name, data=data.astype(np.float32), header=hdr)
-        
+
         for card in self.data_header.cards:
             to_copy = (card.keyword[0:2] not in ('CD','PC')
                        and card.keyword not in imahdu.header)
@@ -650,12 +650,12 @@ class Image(object):
         if self.unit is not None:
             imahdu.header['BUNIT'] = (self.unit, 'data unit type')
         imahdu.header['FSCALE'] = (fscale, 'Flux scaling factor')
-        
+
         return imahdu
-    
+
     def get_stat_hdu(self, name='STAT', fscale=None, header=None):
         """ Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
-        
+
         Parameters
         ----------
         name     : string
@@ -663,7 +663,7 @@ class Image(object):
                    STAT by default
         fscale   : float
                    Flux scaling factor.
-                   
+
         Returns
         -------
         out : astropy.io.fits.ImageHDU
@@ -674,16 +674,16 @@ class Image(object):
             # update fscale
             if fscale is None:
                 fscale = self.fscale
-            
+
             # world coordinates
             if header is None:
                 header = self.wcs.to_header()
-        
+
             # create image STAT extension
             var = (self.var * np.double(self.fscale * self.fscale
                                      / fscale / fscale)).astype(np.float32)
             imahdu = pyfits.ImageHDU(name=name, data=var, header=header)
-            
+
             if header is None:
                 for card in self.data_header.cards:
                     to_copy = (card.keyword[0:2] not in ('CD','PC')
@@ -706,12 +706,12 @@ class Image(object):
                                 d = {'class': 'Cube', 'method': 'write'}
                                 self.logger.warning("%s not copied in data header",
                                             card.keyword, extra=d)
-            
+
             if self.unit is not None:
                 imahdu.header['BUNIT'] = self.unit+'**2'
             imahdu.header['FSCALE'] = (fscale**2, 'scaling factor')
             return imahdu
-        
+
 
     def write(self, filename, fscale=None, savemask='dq'):
         """Saves the object in a FITS file.
@@ -728,7 +728,7 @@ class Image(object):
                    If 'none', masked array is not saved.
         """
         warnings.simplefilter("ignore")
-        
+
         # create primary header
         prihdu = pyfits.PrimaryHDU()
         for card in self.primary_header.cards:
@@ -763,7 +763,7 @@ class Image(object):
         stat_hdu = self.get_stat_hdu('STAT', fscale, data_hdu.header)
         if stat_hdu is not None:
             hdulist.append(stat_hdu)
- 
+
         # create DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
             dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
@@ -928,7 +928,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             # image1 + image2 = image3 (image3[j,i]=image1[j,i]+image2[j,i])
             # Dimensions must be the same.
@@ -1018,7 +1018,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             # image1 - image2 = image3 (image3[j,i]=image1[j,i]-image2[j,i])
             # Dimensions must be the same.
@@ -1123,7 +1123,7 @@ class Image(object):
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 return other.__sub__(self)
@@ -1169,7 +1169,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
             # Dimensions must be the same.
@@ -1309,7 +1309,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
             # Dimensions must be the same.
@@ -1420,7 +1420,7 @@ class Image(object):
     def __rdiv__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 return other.__sub__(self)
@@ -1806,7 +1806,7 @@ class Image(object):
 
 
     def mask_polygon(self,poly,pix=True,inside=True):
-        """Masks values inside/outside a polygonal region. 
+        """Masks values inside/outside a polygonal region.
 
         Parameters
         ----------
@@ -1821,8 +1821,8 @@ class Image(object):
         if not pix: # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
                 poly=np.array([[self.wcs.sky2pix((val[0],val[1]))[0][1],self.wcs.sky2pix((val[0],val[1]))[0][0]] for val in poly])
 
-        P,Q=np.meshgrid(range(self.shape[0]),range(self.shape[1]))  
-        b=np.dstack([Q.ravel(),P.ravel()])  
+        P,Q=np.meshgrid(range(self.shape[0]),range(self.shape[1]))
+        b=np.dstack([Q.ravel(),P.ravel()])
 
         polymask=Path(poly)  # use the matplotlib method to create a path wich is the polygon we want to use
         c=polymask.contains_points(b[0]) # go through all pixels in the image to see if there are in the polygon, ouput is a boolean table
@@ -4702,12 +4702,12 @@ class Image(object):
         """
         if ax is None:
             ax = plt.gca()
-        
+
         f = self.data * self.fscale
         xunit = yunit = 'pixel'
         xlabel = 'q (%s)' % xunit
         ylabel = 'p (%s)' % yunit
- 
+
         if self.shape[1] == 1:
             # plot a column
             yaxis = np.arange(self.shape[0], dtype=np.float)
@@ -4732,13 +4732,13 @@ class Image(object):
                 norm = plt_norm.SqrtNorm(vmin=vmin, vmax=vmax)
             else:
                 norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
- 
+
             if var and self.var is not None:
                 wght = 1.0 / (self.var * self.fscale * self.fscale)
                 np.ma.fix_invalid(wght, copy=False, fill_value=0)
- 
+
                 normalpha = mpl.colors.Normalize(wght.min(), wght.max())
- 
+
                 img_array = plt.get_cmap('jet')(norm(f))
                 img_array[:, :, 3] = 1 - normalpha(wght) / 2
                 cax = ax.imshow(img_array, interpolation='nearest',
@@ -4746,7 +4746,7 @@ class Image(object):
             else:
                 cax = ax.imshow(f, interpolation='nearest', origin='lower',
                                  norm=norm, **kwargs)
- 
+
             # create colorbar
             divider = make_axes_locatable(ax)
             if colorbar == "h":
@@ -4760,19 +4760,19 @@ class Image(object):
             elif colorbar == "v":
                 cax2 = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(cax, cax=cax2)
- 
+
             self._ax = cax
- 
+
         if show_xlabel:
             ax.set_xlabel(xlabel)
         if show_ylabel:
             ax.set_ylabel(ylabel)
         if title is not None:
             ax.set_title(title)
- 
+
         ax.format_coord = self._format_coord
         return cax
-            
+
     def _format_coord(self, x, y):
         col = int(x+0.5)
         row = int(y+0.5)
@@ -5517,7 +5517,7 @@ def make_image(x, y, z, steps, deg=True, limits=None,
     smooth : float
             Smoothing parameter for spline interpolation (default 0: no smoothing)
 
-    Results
+    Returns
     -------
     out : obj.Image object (`Image class`_)
     """
@@ -5627,9 +5627,8 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
     lum = np.clip((f - d1) * 100 / (d2 - d1), 0, 100)
     for i in range(ima.shape[0]):
         for j in range(ima.shape[1]):
-            p1.putpixel((i, j),
-                        ImageColor.getrgb('hsl(%d,%d%%,%d%%)'
-                                          % (int(col), int(sat), int(lum[i, j]))))
+            p1.putpixel((i, j), ImageColor.getrgb(
+                'hsl(%d,%d%%,%d%%)' % (int(col), int(sat), int(lum[i, j]))))
 
     for ImaCol in ImaColList[1:]:
         ima, col, sat = ImaCol
@@ -5647,8 +5646,8 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
         lum = np.clip((f - d1) * 100 / (d2 - d1), 0, 100)
         for i in range(ima.shape[0]):
             for j in range(ima.shape[1]):
-                p2.putpixel((i, j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'
-                                                      % (int(col), int(sat), int(lum[i, j]))))
+                p2.putpixel((i, j), ImageColor.getrgb(
+                    'hsl(%d,%d%%,%d%%)' % (int(col), int(sat), int(lum[i, j]))))
         p1 = ImageChops.add(p1, p2)
 
     if bar:
@@ -5661,8 +5660,8 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
             ima, col, sat = ImaCol
             for i in range(i1, i1 + dx):
                 for j in range(nyb):
-                    p3.putpixel((i, j), ImageColor.getrgb('hsl(%d,%d%%,%d%%)'
-                                                          % (int(col), int(sat), 50)))
+                    p3.putpixel((i, j), ImageColor.getrgb(
+                        'hsl(%d,%d%%,%d%%)' % (int(col), int(sat), 50)))
             i1 += dx
 
     if bar:
@@ -5673,7 +5672,9 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
 
 def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
     """Creates a new image from a table of apertures.
+
     ra(deg), dec(deg) and radius(arcsec).
+
     Parameters
     ----------
     shape  : integer or (integer,integer)
@@ -5683,14 +5684,14 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
             shape is ignored and wcs dimensions are used.
     wcs    : :class:`mpdaf.obj.WCS`
             World coordinates.
-    sky      : list of (float, float, float)
-               (y, x, size) describes an aperture on the sky,
-                   defined by a center (y, x) in degrees,
-                   and size (radius) in arcsec.
+    sky    : list of (float, float, float)
+            (y, x, size) describes an aperture on the sky,
+            defined by a center (y, x) in degrees,
+            and size (radius) in arcsec.
+
     Returns
     -------
     out : obj.Image object (`Image class`_)
-    center, radius, pix=False, inside=True):
     """
     if is_int(shape):
         shape = (shape, shape)
@@ -5711,6 +5712,8 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
         imax = min(center[0] + r[0] + 1, shape[0])
         jmin = max(0, center[1] - r[1])
         jmax = min(center[1] + r[1] + 1, shape[1])
-        grid = np.meshgrid(np.arange(imin, imax) - center[0], np.arange(jmin, jmax) - center[1], indexing='ij')
-        data[imin:imax, jmin:jmax] = np.array((grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
+        grid = np.meshgrid(np.arange(imin, imax) - center[0],
+                           np.arange(jmin, jmax) - center[1], indexing='ij')
+        data[imin:imax, jmin:jmax] = np.array(
+            (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
     return Image(data=data, wcs=wcs)

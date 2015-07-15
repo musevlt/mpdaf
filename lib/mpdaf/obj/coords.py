@@ -688,15 +688,15 @@ class WCS(object):
             return self.wcs.wcs.ctype[0] not in ('LINEAR', 'PIXEL')
         except:
             return True
-        
+
     def to_cube_header(self, wave):
         wcs_hdr = self.to_header()
-        wcs_hdr['WCSAXES'] = 3      
-        wcs_hdr['CRVAL3'] = wave.crval    
-        wcs_hdr['CRPIX3'] = wave.crpix       
+        wcs_hdr['WCSAXES'] = 3
+        wcs_hdr['CRVAL3'] = wave.crval
+        wcs_hdr['CRPIX3'] = wave.crpix
         wcs_hdr['CUNIT3'] = wave.cunit
         wcs_hdr['CTYPE3'] = wave.ctype
-        
+
         if 'CD1_1' in wcs_hdr:
             wcs_hdr['CD3_3'] = wave.cdelt
             wcs_hdr['CD1_3'] = 0.
@@ -705,10 +705,9 @@ class WCS(object):
             wcs_hdr['CD3_2'] = 0.
         else:
             wcs_hdr['CDELT3'] = wave.cdelt
-            
+
         return wcs_hdr
-            
-        
+
 
 class WaveCoord(object):
 
@@ -752,10 +751,9 @@ class WaveCoord(object):
         Parameters
         ----------
         crpix : float
-                Reference pixel coordinates. 1.0 by default.
-
-                Note that for crpix definition, the first pixel in the spectrum
-                has pixel coordinates.
+                Reference pixel coordinates. 1.0 by default. Note that for
+                crpix definition, the first pixel in the spectrum has pixel
+                coordinates.
         cdelt : float
                 Step in wavelength (1.0 by default).
         crval : float
@@ -795,7 +793,7 @@ class WaveCoord(object):
         """Returns True if other and self have the same attributes."""
         if not isinstance(other, WaveCoord):
             return False
-        
+
         l1 = self.coord(0)
         l2 = other.coord(0)
         return (self.shape == other.shape and

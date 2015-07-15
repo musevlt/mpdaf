@@ -282,6 +282,7 @@ class CubeList(object):
                 - ``stat_one``: the variance of each combined pixel is
                   computed as the variance derived from the comparison
                   of the N individual exposures.
+
         mad   : boolean
                 use MAD (median absolute deviation) statistics for
                 sigma-clipping
@@ -293,10 +294,10 @@ class CubeList(object):
 
               - ``cube`` will contain the merged cube
               - ``expmap`` will contain an exposure map data cube which counts
-              the number of exposures used for the combination of each pixel.
+                the number of exposures used for the combination of each pixel.
               - ``statpix`` is a table that will give the number of Nan pixels
-              and rejected pixels per exposures (columns are FILENAME, NPIX_NAN
-              and NPIX_REJECTED)
+                and rejected pixels per exposures (columns are FILENAME,
+                NPIX_NAN and NPIX_REJECTED)
 
         """
         if is_int(nclip) or is_float(nclip):

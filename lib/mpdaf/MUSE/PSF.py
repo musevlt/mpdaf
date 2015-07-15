@@ -7,16 +7,15 @@ class LSF(object):
     """This class manages MUSE LSF models.
 
     :param type: type of LSF
+        if type is 'qsim_v1', This is a simple model where the LSF
+        is supposed to be constant over the filed of view.
+        It uses a simple parametric model of variation with wavelength.
 
-            if type is 'qsim_v1', This is a simple model where the LSF
-            is supposed to be constant over the filed of view.
-            It uses a simple parametric model of variation with wavelength.
-
-            The model is a convolution of a step function with a gaussian.
-            The resulting function is then sample by the pixel size.
-            The slit width is assumed to be constant (2.09 pixels).
-            The gaussian sigma parameter is a polynomial approximation
-            of order 3 with wavelength.
+        The model is a convolution of a step function with a gaussian.
+        The resulting function is then sample by the pixel size.
+        The slit width is assumed to be constant (2.09 pixels).
+        The gaussian sigma parameter is a polynomial approximation
+        of order 3 with wavelength.
     :type type: 'qsim_v1'
 
     Attributes
@@ -29,7 +28,6 @@ class LSF(object):
         """Manages LSF model.
 
         :param type: type of LSF
-
             if type is 'qsim_v1', This is a simple model
             where the LSF is supposed
             to be constant over the filed of view.
@@ -55,6 +53,7 @@ class LSF(object):
         :type size: odd integer
         :param kargs: kargs can be used to set LSF parameters.
         :rtype: np.array
+
         """
         if self.type == "qsim_v1":
             T = lambda x: np.exp((-x ** 2) / 2.0) + np.sqrt(2.0 * np.pi) \
@@ -86,12 +85,13 @@ class LSF(object):
         :param step: size of the pixel in A
         :type step: float
         :param epsilon: this factor is used to determine the size of LSF
-        (min(LSF)<max(LSF)*epsilon)
+            (min(LSF)<max(LSF)*epsilon)
         :type epsilon: float
         :rtype: integer
+
         """
         x0 = lbda
-        x = np.array([x0])
+        # x = np.array([x0])
         diff = -1
         k = 0
         while diff < 0:

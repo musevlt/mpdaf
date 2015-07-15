@@ -767,7 +767,7 @@ class Spectrum(object):
                 equal to the spectrum dimension.
                 Wavelength coordinates must be the same.
 
-        Results
+        Returns
         -------
         out : Spectrum or Cube object.
         """
@@ -1009,7 +1009,7 @@ class Spectrum(object):
                 to the spectrum dimension.
                 Wavelength coordinates must be the same.
 
-        Results
+        Returns
         -------
         out : Spectrum or Cube object.
         """
@@ -1102,7 +1102,7 @@ class Spectrum(object):
                 to the spectrum dimension.
                 Wavelength coordinates must be the same.
 
-        Results
+        Returns
         -------
         out : Spectrum or Cube object.
         """
@@ -1313,7 +1313,7 @@ class Spectrum(object):
         lmax : float
             maximum wavelength.
 
-        Results
+        Returns
         -------
         out : float or Spectrum
         """
@@ -1333,7 +1333,7 @@ class Spectrum(object):
     def get_step(self):
         """Return the wavelength step.
 
-        Results
+        Returns
         -------
         out : float
         """
@@ -1345,7 +1345,7 @@ class Spectrum(object):
     def get_start(self):
         """Return the wavelength value of the first pixel.
 
-        Results
+        Returns
         -------
         out : float
         """
@@ -1357,7 +1357,7 @@ class Spectrum(object):
     def get_end(self):
         """Return the wavelength value of the last pixel.
 
-        Results
+        Returns
         -------
         out : float
         """
@@ -1367,9 +1367,9 @@ class Spectrum(object):
             return None
 
     def get_range(self):
-        """Return the wavelength range [Lambda_min,Lambda_max].
+        """Return the wavelength range (Lambda_min, Lambda_max).
 
-        Results
+        Returns
         -------
         out : float array
         """
@@ -1720,7 +1720,7 @@ class Spectrum(object):
 
                  'left': one pixel added on the left of the spectrum.
 
-        Results
+        Returns
         -------
         out : Spectrum
         """
@@ -1770,7 +1770,7 @@ class Spectrum(object):
 
                  'left': one pixel added on the left of the spectrum.
 
-        Results
+        Returns
         -------
         out  :class:`mpdaf.obj.Spectrum`
         """
@@ -2190,7 +2190,7 @@ class Spectrum(object):
                  Linear/spline interpolation
                  to interpolate masked values.
 
-        Results
+        Returns
         -------
         out : magnitude value (out=1) or magnitude,
               mean flux and mean wavelength (out=2).
@@ -3385,7 +3385,7 @@ class Spectrum(object):
                  lmin=None, lmax=None, ax=None, **kwargs):
         """Plot the spectrum with y logarithmic scale.
 
-        Shortcut for :method:`mpdaf.obj.Spectrum.plot` with `stretch='log'`.
+        Shortcut for :meth:`mpdaf.obj.Spectrum.plot` with `stretch='log'`.
         By default, drawstyle is 'steps-mid'.
 
         Parameters

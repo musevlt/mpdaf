@@ -46,17 +46,18 @@ class Channel(object):
     mask    : array of booleans
               Arrays that contents TRUE for overscanned pixels,
               FALSE for the others
+
     """
 
     def __init__(self, extname=None, filename=None, data=None):
         """Creates a Channel object.
 
-           Parameters
-           ----------
-           extname  : string
-                      The extension name.
-           filename : string
-                      The raw FITS file name.
+        Parameters
+        ----------
+        extname  : string
+                   The extension name.
+        filename : string
+                   The raw FITS file name.
 
         """
         self.logger = logging.getLogger('mpdaf corelib')
@@ -300,9 +301,10 @@ class Channel(object):
         """Returns a Channel object containing only reference to the valid
         pixels.
 
-Returns
--------
-out : :class:`mpdaf.drs.Channel`
+        Returns
+        -------
+        out : :class:`mpdaf.drs.Channel`
+
         """
         result = Channel(self.extname)
         result.header = self.header
@@ -316,9 +318,10 @@ out : :class:`mpdaf.drs.Channel`
         """Returns a Channel object containing only reference to the
         overscanned pixels.
 
-Returns
--------
-out : :class:`mpdaf.drs.Channel`
+        Returns
+        -------
+        out : :class:`mpdaf.drs.Channel`
+
         """
         result = Channel(self.extname)
         result.header = self.header
@@ -333,18 +336,19 @@ out : :class:`mpdaf.drs.Channel`
     def get_image(self, det_out=None, bias=False):
         """Returns an Image object.
 
-Parameters
-----------
-det_out : integer in [1,4]
-          Number of output detector.
-          If None, all image is returned.
-bias    : boolean
-          If True, median value of the overscanned pixels
-          is subtracted
+        Parameters
+        ----------
+        det_out : integer in [1,4]
+                  Number of output detector.
+                  If None, all image is returned.
+        bias    : boolean
+                  If True, median value of the overscanned pixels
+                  is subtracted
 
-Returns
--------
-out : :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
+
         """
         wcs = obj.WCS(self.header)
         ima = obj.Image(wcs=wcs, data=self.data.__copy__())
@@ -429,14 +433,15 @@ out : :class:`mpdaf.obj.Image`
     def get_bias_level(self, det_out):
         """computes median value of the overscanned pixels.
 
-Parameters
-----------
-det_out : integer in [1,4]
-          Number of detector taken into account.
+        Parameters
+        ----------
+        det_out : integer in [1,4]
+                  Number of detector taken into account.
 
-Returns
--------
-out : float
+        Returns
+        -------
+        out : float
+
         """
         ima = self.get_image_just_overscan(det_out)
         ksel = np.where(ima.data.mask == False)
@@ -446,21 +451,22 @@ out : float
                           bias=False):
         """Returns an Image object without over scanned pixels.
 
-Parameters
-----------
-det_out        : integer in [1,4]
-                 Number of output detector.
-                 If None, all image is returned.
-bias_substract : boolean
-                 If True, median value
-                 of the overscanned pixels is substracted
-bias           : boolean
-                 If True, median value of the
-                 overscanned pixels is subtracted
+        Parameters
+        ----------
+        det_out        : integer in [1,4]
+                         Number of output detector.
+                         If None, all image is returned.
+        bias_substract : boolean
+                         If True, median value
+                         of the overscanned pixels is substracted
+        bias           : boolean
+                         If True, median value of the
+                         overscanned pixels is subtracted
 
-Returns
--------
-out : :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
+
         """
         # Physical active pixels in X
         nx_data2 = self.header["ESO DET CHIP NX"]
@@ -590,15 +596,16 @@ out : :class:`mpdaf.obj.Image`
     def get_image_mask_overscan(self, det_out=None):
         """Returns an Image object in which overscanned pixels are masked.
 
-Parameters
-----------
-det_out : integer in [1,4]
-          Number of output detector.
-          If None, all image is returned.
+        Parameters
+        ----------
+        det_out : integer in [1,4]
+                  Number of output detector.
+                  If None, all image is returned.
 
-Returns
--------
-out : :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
+
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
@@ -647,15 +654,16 @@ out : :class:`mpdaf.obj.Image`
         """Returns an Image object in which only overscanned pixels are not
         masked.
 
-Parameters
-----------
-det_out : integer in [1,4]
-          Number of output detector.
-          If None, all image is returned.
+        Parameters
+        ----------
+        det_out : integer in [1,4]
+                  Number of output detector.
+                  If None, all image is returned.
 
-Returns
--------
-out : :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
+
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
@@ -740,47 +748,48 @@ class RawFile(object):
 
     """RawFile class manages input/output for raw FITS file.
 
-Parameters
-----------
-filename : string
-           The raw FITS file name.
-           filename=None creates an empty object.
-           The FITS file is opened with memory mapping.
-           Just the primary header and the list of extension name are loaded.
-           Method get_channel(extname) returns the corresponding channel
-           Operator [extnumber] loads and returns the corresponding channel.
+    Parameters
+    ----------
+    filename : string
+        The raw FITS file name.
+        filename=None creates an empty object.
+        The FITS file is opened with memory mapping.
+        Just the primary header and the list of extension name are loaded.
+        Method get_channel(extname) returns the corresponding channel
+        Operator [extnumber] loads and returns the corresponding channel.
 
-Attributes
-----------
-filename       : string
-                 The raw FITS file name. None if any.
-channels       : dict
-                 List of extension (extname,Channel)
-primary_header : pyfits.Header
-                 The primary header
-nx             : integer
-                 Lengths of data in X
-ny             : integer
-                 Lengths of data in Y
-next           : integer
-                 Number of extensions
-progress       : boolean
-                 If True, progress of multiprocessing tasks
-                 are displayed. True by default.
+    Attributes
+    ----------
+    filename       : string
+                     The raw FITS file name. None if any.
+    channels       : dict
+                     List of extension (extname,Channel)
+    primary_header : pyfits.Header
+                     The primary header
+    nx             : integer
+                     Lengths of data in X
+    ny             : integer
+                     Lengths of data in Y
+    next           : integer
+                     Number of extensions
+    progress       : boolean
+                     If True, progress of multiprocessing tasks
+                     are displayed. True by default.
+
     """
 
     def __init__(self, filename=None):
         """Creates a RawFile object.
 
-Parameters
-----------
-filename : string
-           The raw FITS file name.
-           filename=None creates an empty object.
-           The FITS file is opened with memory mapping.
-           Just the primary header and the list of extension name are loaded.
-           Method get_channel(extname) returns the corresponding channel
-           Operator [extnumber] loads and returns the corresponding channel.
+        Parameters
+        ----------
+        filename : string
+            The raw FITS file name.
+            filename=None creates an empty object.
+            The FITS file is opened with memory mapping.
+            Just the primary header and the list of extension name are loaded.
+            Method get_channel(extname) returns the corresponding channel
+            Operator [extnumber] loads and returns the corresponding channel.
 
         """
         self.logger = logging.getLogger('mpdaf corelib')
@@ -868,14 +877,15 @@ filename : string
     def get_channel(self, extname):
         """Returns a Channel object.
 
-Parameters
-----------
-extname : string
-          The extension name.
+        Parameters
+        ----------
+        extname : string
+            The extension name.
 
-Returns
--------
-out : :class:`mpdaf.drs.Channel`
+        Returns
+        -------
+        out : :class:`mpdaf.drs.Channel`
+
         """
         if self.channels[extname] != None:
             return self.channels[extname]
@@ -890,14 +900,15 @@ out : :class:`mpdaf.drs.Channel`
     def __getitem__(self, key):
         """Loads the Channel object if relevant and returns it.
 
-Parameters
-----------
-key : integer
-      The extension number.
+        Parameters
+        ----------
+        key : integer
+              The extension number.
 
-Returns
--------
-out : :class:`mpdaf.drs.Channel`
+        Returns
+        -------
+        out : :class:`mpdaf.drs.Channel`
+
         """
         extname = "CHAN%02d" % key
         if self.channels[extname] == None:
@@ -907,10 +918,13 @@ out : :class:`mpdaf.drs.Channel`
     def __setitem__(self, key, value):
         """Sets the corresponding channel.
 
-        :param key: The extension number.
-        :type key: integer
-        :param value: Channel object or image
-        :type value: `mpdaf.drs.Channel` or array
+        Parameters
+        ----------
+        key : integer
+            The extension number.
+        value : `mpdaf.drs.Channel` or array
+            Channel object or image
+
         """
         extname = "CHAN%02d" % key
         if isinstance(value, Channel):
@@ -1012,7 +1026,10 @@ out : :class:`mpdaf.drs.Channel`
     def trimmed(self):
         """Returns a RawFile object containing only valid pixels.
 
-        :rtype: :class:`mpdaf.drs.RawFile`
+        Returns
+        -------
+        :class:`mpdaf.drs.RawFile`
+
         """
         cpu_count = multiprocessing.cpu_count()
         result = RawFile()
@@ -1036,7 +1053,10 @@ out : :class:`mpdaf.drs.Channel`
     def overscan(self):
         """Returns a RawFile object containing only overscanned pixels.
 
-        :rtype: :class:`mpdaf.drs.RawFile`
+        Returns
+        -------
+        :class:`mpdaf.drs.RawFile`
+
         """
         cpu_count = multiprocessing.cpu_count()
         result = RawFile()
@@ -1062,6 +1082,7 @@ out : :class:`mpdaf.drs.Channel`
 
         :param filename: The FITS filename.
         :type filename: string
+
         """
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -1126,24 +1147,23 @@ out : :class:`mpdaf.drs.Channel`
         :param area: list of pixels [pmin,pmax,qmin,qmax] to zoom.
         :type title: list
         :param scale: The stretch function to use for the scaling
-        (default is 'linear').
+            (default is 'linear').
         :type scale: linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-        :param vmin: Minimum pixel value to use for the scaling.
-
-         If None, vmin is set to min of data.
+        :param vmin: Minimum pixel value to use for the scaling. If None, vmin
+            is set to min of data.
         :type vmin: float
-        :param vmax: Maximum pixel value to use for the scaling.
-
-         If None, vmax is set to max of data.
+        :param vmax: Maximum pixel value to use for the scaling. If None, vmax
+            is set to max of data.
         :type vmax: float
         :param zscale: If true, vmin and vmax are computed
-        using the IRAF zscale algorithm.
+            using the IRAF zscale algorithm.
         :type zscale: bool
         :param colorbar: If 'h'/'v', a horizontal/vertical
-        colorbar is added.
+            colorbar is added.
         :type colorbar: bool
         :param kargs: kargs can be used to set additional Artist properties.
         :type kargs: matplotlib.artist.Artist
+
         """
         fig = plt.figure()
         fig.subplots_adjust(wspace=0.02, hspace=0.01)
@@ -1191,12 +1211,13 @@ out : :class:`mpdaf.drs.Channel`
         """Reconstructs the white image of the FOV using a mask file.
 
         :param mask: mumdatMask_1x1.fits filename used fot this reconstruction
-        (if None, the last file stored in mpdaf is used).
+            (if None, the last file stored in mpdaf is used).
         :type mask: string
         :param verbose: if True, progression is printed.
         :type verbose: boolean
 
         :rtype: :class:`mpdaf.obj.Image`
+
         """
         d = {'class': 'RawFile', 'method': 'reconstruct_white_image'}
         if mask is None:
@@ -1348,9 +1369,10 @@ out : :class:`mpdaf.drs.Channel`
         """Reconstructs the white image of the FOV using a mask file and plots
         this image.
 
-        :param mask: mumdatMask_1x1.fits filename used for
-        this reconstruction (if None, the last file stored in mpdaf is used).
+        :param mask: mumdatMask_1x1.fits filename used for this reconstruction
+            (if None, the last file stored in mpdaf is used).
         :type mask: string
+
         """
         if mask is None:
             path = os.path.dirname(__file__)
