@@ -952,7 +952,7 @@ class PixTable(object):
 
     def select_slices(self, slices, origin=None):
         """Return a mask corresponding to given slices.
-        
+
         Parameters
         ----------
         slices       : list of integers
@@ -980,7 +980,7 @@ class PixTable(object):
         ----------
         ifu      : int or list
                    IFU number.
-                   
+
         Returns
         -------
         out : array of booleans
@@ -998,7 +998,7 @@ class PixTable(object):
 
     def select_exp(self, exp, col_exp):
         """Return a mask corresponding to given exposure numbers.
-        
+
         Parameters
         ----------
         exp      : list of integers
@@ -1020,7 +1020,7 @@ class PixTable(object):
 
     def select_xpix(self, xpix, origin=None):
         """Return a mask corresponding to given detector pixels.
-        
+
         Parameters
         ----------
         xpix     : list
@@ -1052,7 +1052,7 @@ class PixTable(object):
 
     def select_ypix(self, ypix, origin=None):
         """Return a mask corresponding to given detector pixels.
-        
+
         Parameters
         ----------
         ypix     : list
@@ -1084,7 +1084,7 @@ class PixTable(object):
 
     def select_sky(self, sky):
         """Return a mask corresponding to the given aperture on the sky (center, size and shape)
-        
+
         Parameters
         ----------
         sky      : (float, float, float, char)
@@ -1092,7 +1092,7 @@ class PixTable(object):
                    defined by a center (y, x) in degrees/pixel,
                    a shape ('C' for circular, 'S' for square)
                    and size (radius or half side length) in arcsec/pixels.
-        
+
 
         Returns
         -------
@@ -1754,13 +1754,14 @@ class PixTable(object):
         return Image(shape=(image.shape), data=image, wcs=wcs)
 
     def mask_column(self, maskfile=None, verbose=True):
-        """Computes the mask column corresponding to a mask file
+        """Computes the mask column corresponding to a mask file.
 
         Parameters
         ----------
         maskfile : string
-                   mask file to mask out all bright
-                   continuum objects present in the FoV
+                   Path to a FITS image file with WCS information, used to mask
+                   out bright continuum objects present in the FoV. Values must
+                   be 0 for the background and >0 for objects.
         verbose : boolean
                   If True, progression is printed.
 
@@ -1779,9 +1780,12 @@ class PixTable(object):
         ypos_sky = pos[:, 0]
 
         ima_mask = Image(maskfile)
-        label = ndimage.measurements.label(ima_mask.data.data)[0]
+        data = ima_mask.data.data
+        label = ndimage.measurements.label(data)[0]
         ulabel = np.unique(label)
         ulabel = ulabel[ulabel > 0]
+        nlabel = len(ulabel)
+        msg = 'masking object %i/%i %g<x<%g %g<y<%g (%i pixels)'
 
         for i in ulabel:
             try:
@@ -1796,12 +1800,11 @@ class PixTable(object):
                 ksel = np.where((xpos_sky > x0) & (xpos_sky < x1) &
                                 (ypos_sky > y0) & (ypos_sky < y1))
                 if verbose:
-                    msg = 'masking object %i/%i %g<x<%g %g<y<%g (%i pixels)' % (
-                        i, len(ulabel), x0, x1, y0, y1, len(ksel[0]))
-                    self.logger.info(msg, extra=d)
+                    self.logger.info(msg, i, nlabel, x0, x1, y0, y1,
+                                     len(ksel[0]), extra=d)
                 if len(ksel[0]) != 0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
-                    mask[ksel] |= (ima_mask.data.data[pix[:, 0], pix[:, 1]] != 0)
+                    mask[ksel] |= (data[pix[:, 0], pix[:, 1]] != 0)
             except Exception:
                 self.logger.warning('masking object %i failed', i, extra=d)
 
