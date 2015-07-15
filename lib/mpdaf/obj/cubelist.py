@@ -12,10 +12,6 @@ from ctypes import c_char_p
 from numpy import ma, allclose, array_equal
 
 from .cube import CubeDisk, Cube
-try:
-    from ..merging import sigma_clip
-except:
-    pass
 from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
@@ -24,7 +20,10 @@ __all__ = ['CubeList', 'CubeMosaic']
 
 class CubeList(object):
 
-    """This class manages a list of cube FITS filenames.
+    """Manages a list of cubes and handles the combination.
+
+    To run the combination, all the cubes must have the same dimensions and be
+    on the same WCS grid.
 
     Parameters
     ----------
@@ -34,20 +33,20 @@ class CubeList(object):
     Attributes
     ----------
     files  : list of strings
-             List of cubes fits filenames
+        List of cubes fits filenames
     nfiles : integer
-             Number of files.
+        Number of files.
     shape  : array of 3 integers)
-             Lengths of data in Z and Y and X
-             (python notation (nz,ny,nx)).
+        Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
     fscale : float
-             Flux scaling factor (1 by default).
+        Flux scaling factor (1 by default).
     wcs    : :class:`mpdaf.obj.WCS`
-             World coordinates.
+        World coordinates.
     wave   : :class:`mpdaf.obj.WaveCoord`
-             Wavelength coordinates
+        Wavelength coordinates
     unit   : string
-             Possible data unit type. None by default.
+        Possible data unit type. None by default.
+
     """
 
     checkers = ('check_dim', 'check_wcs', 'check_fscale')
@@ -64,10 +63,10 @@ class CubeList(object):
         self.files = files
         self.nfiles = len(files)
         self.cubes = [CubeDisk(f) for f in self.files]
-        self.set_defaults()
+        self._set_defaults()
         self.check_compatibility()
 
-    def set_defaults(self):
+    def _set_defaults(self):
         self.shape = self.cubes[0].shape
         self.wcs = self.cubes[0].wcs
         self.wave = self.cubes[0].wave
@@ -215,33 +214,19 @@ class CubeList(object):
         return c
 
     def median(self):
-        """combines cubes in a single data cube using median.
-
-        Parameters
-        ----------
-        output      : string
-                      DATACUBE_<output>.fits will contain the merged cube
-
-                      EXPMAP_<output>.fits will contain an exposure map
-                      data cube which counts the number of exposures used
-                      for the combination of each pixel.
-        output_path : string
-                      Output path where resulted cubes are stored.
+        """Combines cubes in a single data cube using median.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, Table
               cube, expmap, statpix
 
-              cube will contain the merged cube
+              - ``cube`` will contain the merged cube
+              - ``expmap`` will contain an exposure map data cube which counts
+                the number of exposures used for the combination of each pixel.
+              - ``statpix`` is a table that will give the number of Nan pixels
+                pixels per exposures (columns are FILENAME and NPIX_NAN)
 
-              expmap will contain an exposure map
-              data cube which counts the number of exposures used
-              for the combination of each pixel.
-
-              statpix is a table that will give the number of Nan
-              pixels pixels per exposures
-              (columns are FILENAME and NPIX_NAN)
         """
         # load the library, using numpy mechanisms
         path = os.path.dirname(__file__)[:-4]
@@ -282,24 +267,21 @@ class CubeList(object):
                 maximum number of clipping iterations
         nclip : float or (float,float)
                 Number of sigma at which to clip.
-                Single clipping parameter or lower / upper clipping
-                parameters.
+                Single clipping parameter or lower / upper clipping parameters.
         nstop : integer
                 If the number of not rejected pixels is less
                 than this number, the clipping iterations stop.
         var   : string
-                'propagate', 'stat_mean', 'stat_one'
+                ``propagate``, ``stat_mean``, ``stat_one``
 
-                'propagate': the variance is the sum of the variances
-                of the N individual exposures divided by N**2.
-
-                'stat_mean': the variance of each combined pixel
-                is computed as the variance derived from the comparison
-                of the N individual exposures divided N-1.
-
-                'stat_one': the variance of each combined pixel is
-                computed as the variance derived from the comparison
-                of the N individual exposures.
+                - ``propagate``: the variance is the sum of the variances
+                  of the N individual exposures divided by N**2.
+                - ``stat_mean``: the variance of each combined pixel
+                  is computed as the variance derived from the comparison
+                  of the N individual exposures divided N-1.
+                - ``stat_one``: the variance of each combined pixel is
+                  computed as the variance derived from the comparison
+                  of the N individual exposures.
         mad   : boolean
                 use MAD (median absolute deviation) statistics for
                 sigma-clipping
@@ -309,15 +291,13 @@ class CubeList(object):
         out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, astropy.table
               cube, expmap, statpix
 
-              cube will contain the merged cube
+              - ``cube`` will contain the merged cube
+              - ``expmap`` will contain an exposure map data cube which counts
+              the number of exposures used for the combination of each pixel.
+              - ``statpix`` is a table that will give the number of Nan pixels
+              and rejected pixels per exposures (columns are FILENAME, NPIX_NAN
+              and NPIX_REJECTED)
 
-              expmap will contain an exposure map
-              data cube which counts the number of exposures used
-              for the combination of each pixel.
-
-              statpix is a table that will give the number of Nan
-              pixels and rejected pixels per exposures
-              (columns are FILENAME, NPIX_NAN and NPIX_REJECTED)
         """
         if is_int(nclip) or is_float(nclip):
             nclip_low = nclip
@@ -488,9 +468,53 @@ class CubeList(object):
 
 class CubeMosaic(CubeList):
 
+    """Manages a list of cubes and handles the combination to make a mosaic.
+
+    To run the combination, all the cubes must be on the same WCS grid. The
+    values from the ``CRPIX`` keywords will be used as offsets to put a cube
+    inside the combined cube.
+
+    This class inherits from :class:`mpdaf.obj.Cube`.
+
+    Parameters
+    ----------
+    files : list of strings
+            List of cubes fits filenames
+
+    Attributes
+    ----------
+    files  : list of strings
+        List of cubes fits filenames
+    nfiles : integer
+        Number of files.
+    shape  : array of 3 integers)
+        Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
+    fscale : float
+        Flux scaling factor (1 by default).
+    wcs    : :class:`mpdaf.obj.WCS`
+        World coordinates.
+    wave   : :class:`mpdaf.obj.WaveCoord`
+        Wavelength coordinates
+    unit   : string
+        Possible data unit type. None by default.
+
+    """
+
     checkers = ('check_dim', 'check_wcs', 'check_fscale')
 
     def __init__(self, files, output_wcs):
+        """Creates a CubeMosaic object.
+
+        Parameters
+        ----------
+        files : list of strings
+            List of cubes fits filenames.
+        output_wcs : str
+            Path to a cube FITS file, this cube is used to define the output
+            cube: shape, WCS, fscale and unit are needed, it must have the XCS
+            grid as the input cubes.
+
+        """
         self.out = CubeDisk(output_wcs)
         super(CubeMosaic, self).__init__(files)
 
@@ -506,7 +530,7 @@ class CubeMosaic(CubeList):
         self.logger.info('- crpix: %s', self.wcs.wcs.wcs.crpix, extra=d)
         self.logger.info('- crval: %s', self.wcs.wcs.wcs.crval, extra=d)
 
-    def set_defaults(self):
+    def _set_defaults(self):
         self.shape = self.out.shape
         self.wcs = self.out.wcs
         self.wave = self.out.wave
@@ -561,6 +585,13 @@ class CubeMosaic(CubeList):
             import fitsio
         except ImportError:
             self.logger.error('fitsio is required !', extra=d)
+            raise
+
+        try:
+            from ..merging import sigma_clip
+        except:
+            self.logger.error('The `merging` module must have been compiled to'
+                              'use this method', extra=d)
             raise
 
         if is_int(nclip) or is_float(nclip):

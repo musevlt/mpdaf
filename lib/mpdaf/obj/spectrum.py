@@ -1962,8 +1962,6 @@ class Spectrum(object):
         -------
         out : float
         """
-        if self.var is None:
-            weight = False
         if lmin is None:
             i1 = 0
         else:
@@ -1976,7 +1974,7 @@ class Spectrum(object):
         # replace masked values by interpolated values
         data = self._interp_data(spline)
 
-        if weight:
+        if weight and self.var is not None:
             weights = 1.0 / self.var[i1:i2]
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
             flux = (i2 - i1) * np.average(data[i1:i2], weights=weights) * self.fscale
@@ -2166,8 +2164,8 @@ class Spectrum(object):
               mean flux and mean wavelength (out=2).
         """
         data = self._interp_data(spline)
-        i1 = max(0, self.wave.pixel(lbda - dlbda / 2, nearest=True))
-        i2 = min(self.shape, self.wave.pixel(lbda + dlbda / 2, nearest=True))
+        i1 = max(0, self.wave.pixel(lbda - dlbda / 2.0, nearest=True))
+        i2 = min(self.shape, self.wave.pixel(lbda + dlbda / 2.0, nearest=True))
         if i1 == i2:
             return 99
         else:
