@@ -8,7 +8,8 @@ Download the code
 Trac system
 -----------
 
-The Trac repository browser `Browse Source <http://urania1.univ-lyon1.fr/mpdaf/browser>`_ can be used to navigate through the directory structure.
+The `Trac repository browser <http://urania1.univ-lyon1.fr/mpdaf/browser>`_ can
+be used to navigate through the directory structure.
 
 
 Wiki page
@@ -36,7 +37,6 @@ mpdaf contains user packages:
 +-------------------+--------------------+-----------------------------------------------------------------------+
 
 These user packages are included in the mpdaf tarball.
-
 
 However mpdaf contains also a large package that is not present in tarball:
 
@@ -94,6 +94,21 @@ After building everything, you log as root and install everything from build
 directory::
 
   root:/mpdaf$ python setup.py install
+
+Tips for Mac OS users
+---------------------
+
+- First, XCode is needed to get some developper tools (compiler, ...). On
+  recent Mac OS versions, this can be done with ``$ xcode-select --install``.
+
+- A great package manager can be used to install packages like cfitsio or
+  pkg-config: `Homebrew <http://brew.sh/>`_. Then, ``brew install cfitsio
+  pkgconfig``.  - It is also possible to install and use gcc to compile MPDAF
+  with OpenMP support (for parallelized functions). Otherwise clang is used.
+
+- `Anaconda <http://continuum.io/downloads>`_ is a great scientific python
+  distribution, it comes with up-to-date and precompiled versions of numpy,
+  scipy, astropy and more.
 
 
 Unit tests
