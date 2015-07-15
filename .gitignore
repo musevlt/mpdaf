@@ -2,4 +2,3 @@
 *.pyc
 .directory
 CoreLib/build/*
-sphinxext/*
