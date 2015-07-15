@@ -27,14 +27,14 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
     const char s[2] = "\n";
     char *token;
     token = strtok(input, s);
-    while( token != NULL ) 
+    while( token != NULL )
     {
         filenames[nfiles] = strdup(token);
         nfiles++;
         printf("%3d: %s\n", nfiles, filenames[nfiles-1]);
         token = strtok(NULL, s);
     }
-    printf("nfiles: %d\n",nfiles); 
+    printf("nfiles: %d\n",nfiles);
 
     struct rlimit limit;
     /* Get max number of files. */
@@ -77,8 +77,9 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         {
             printf("Read fits files\n");
         }
-        strcpy(filename, filenames[0]);
-        strcat(filename,"[data]\0" );
+        sprintf(filename, "%s[data]", filenames[0]);
+        /* strcpy(filename, filenames[0]); */
+        /* strcat(filename,"[data]\0" ); */
         fits_open_file(&(fdata[0]), filename, READONLY, &status); // open DATA extension
         if (status)
         {
@@ -100,8 +101,9 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
        // read other files
        for (i=1; i<nfiles; i++)
        {
-          strcpy(filename, filenames[i]);
-          strcat(filename,"[data]\0" );
+          sprintf(filename, "%s[data]", filenames[i]);
+          /* strcpy(filename, filenames[i]); */
+          /* strcat(filename,"[data]\0" ); */
           fits_open_file(&(fdata[i]), filename, READONLY, &status); // open data extension
           if (status)
           {
@@ -115,13 +117,13 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
               exit(EXIT_FAILURE);
           }
           fits_get_img_size(fdata[i], 3, bnaxes, &status); //compare that the shape is the same
-          if ( naxes[0] != bnaxes[0] || 
-	       naxes[1] != bnaxes[1] || 
+          if ( naxes[0] != bnaxes[0] ||
+	       naxes[1] != bnaxes[1] ||
 	       naxes[2] != bnaxes[2] )
           {
 	      printf("Error: %s don't have same size\n", filename);
 	      exit(EXIT_FAILURE);
-	  } 
+	  }
        }
 
        // start and end of the loop for the current thread
@@ -137,7 +139,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 	   start = rang+1;
 	   end = MIN(rang+2, naxes[2]);
        }
-       
+
        firstpix[0] = 1;
 
        //initialization
@@ -186,7 +188,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 		   {
 		       data[index] = NAN; //mean value
 		       expmap[index] = 0; //exp map
-		   } 
+		   }
 	           else if (n==1)
 	           {
 		       data[index] = wdata[0]; //mean value
@@ -223,8 +225,8 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
     {
         free(pix[i]);
         fits_close_file(fdata[i], &status);
-    } 
-   
+    }
+
     if (status)
     {
         fits_report_error(stderr, status);
@@ -245,7 +247,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     char* filenames[500];
     char buffer[80], begin[80];
     int nfiles;
-  
+
     time_t now;
     struct tm *info;
 
@@ -260,14 +262,14 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     const char s[2] = "\n";
     char *token;
     token = strtok(input, s);
-    while( token != NULL ) 
+    while( token != NULL )
     {
         filenames[nfiles] = strdup(token);
         nfiles++;
         printf("%3d: %s\n", nfiles, filenames[nfiles-1]);
         token = strtok(NULL, s);
     }
-    printf("nfiles: %d\n",nfiles); 
+    printf("nfiles: %d\n",nfiles);
 
     struct rlimit limit;
     /* Get max number of files. */
@@ -314,8 +316,9 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	  printf("Read fits files\n");
 	}
 	// read first file
-	strcpy(filename, filenames[0]);
-	strcat(filename,"[data]\0" );
+    sprintf(filename, "%s[data]", filenames[0]);
+	/* strcpy(filename, filenames[0]); */
+	/* strcat(filename,"[data]\0" ); */
 	fits_open_file(&(fdata[0]), filename, READONLY, &status); // open data extension
 	if (status)
 	{
@@ -337,8 +340,9 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	// read other files
 	for (i=1; i<nfiles; i++)
         {
-            strcpy(filename, filenames[i]);
-	    strcat(filename,"[data]\0" );
+            sprintf(filename, "%s[data]", filenames[i]);
+            /* strcpy(filename, filenames[i]); */
+            /* strcat(filename,"[data]\0" ); */
 	    fits_open_file(&(fdata[i]), filename, READONLY, &status); // open data extension
 	    if (status)
 	    {
@@ -352,13 +356,13 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 		exit(EXIT_FAILURE);
             }
 	    fits_get_img_size(fdata[i], 3, bnaxes, &status);
-	    if ( naxes[0] != bnaxes[0] || 
-		 naxes[1] != bnaxes[1] || 
+	    if ( naxes[0] != bnaxes[0] ||
+		 naxes[1] != bnaxes[1] ||
 		 naxes[2] != bnaxes[2] )
 	    {
 	        printf("Error: %s don't have same size\n", filename);
 		exit(EXIT_FAILURE);
-	    } 
+	    }
 	}
 
 	if (typ_var==0)
@@ -366,8 +370,9 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	    // read variance extension
 	    for (i=0; i<nfiles; i++)
 	    {
-	        strcpy(filename, filenames[i]);
-	        strcat(filename,"[stat]\0" );
+            sprintf(filename, "%s[stat]", filenames[i]);
+	        /* strcpy(filename, filenames[i]); */
+	        /* strcat(filename,"[stat]\0" ); */
 	        fits_open_file(&(fvar[i]), filename, READONLY, &status);
 	        if (status)
 	        {
@@ -381,13 +386,13 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 		    exit(EXIT_FAILURE);
 	        }
 	        fits_get_img_size(fvar[i], 3, bnaxes, &status);
-	        if ( naxes[0] != bnaxes[0] || 
-		     naxes[1] != bnaxes[1] || 
+	        if ( naxes[0] != bnaxes[0] ||
+		     naxes[1] != bnaxes[1] ||
 		     naxes[2] != bnaxes[2] )
 	        {
 	            printf("Error: %s don't have same size\n", filename);
 		    exit(EXIT_FAILURE);
-	        } 
+	        }
 	    }
 	}
 
@@ -486,7 +491,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 		        data[index] = NAN; //mean value
 		        expmap[index] = 0; //exp map
 			var[index] = NAN;//var
-		    } 
+		    }
 		    else if (n==1)
 	            {
 		        data[index] = wdata[0]; //mean value
@@ -519,7 +524,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 				  {
 				      var[index] /= (x[2]-1);
 				  }
-			    } 
+			    }
 			    else
 			    {
 			        var[index] = NAN;//var
@@ -559,7 +564,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	{
 	    free(pix[i]);
 	    fits_close_file(fdata[i], &status);
-	} 
+	}
 	if (typ_var==0)
 	{
 	  free(wvar);
@@ -567,13 +572,13 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	  {
 	      free(pixvar[i]);
 	      fits_close_file(fvar[i], &status);
-	  } 
+	  }
 	}
 	if (mad==1)
 	{
 	  free(wmad);
 	}
-   
+
 	if (status)
 	{
 	    fits_report_error(stderr, status);
