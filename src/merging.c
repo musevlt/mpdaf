@@ -279,6 +279,9 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     }
 
     int num_nthreads = limit.rlim_cur/nfiles;
+    printf("limit.rlim_cur: %ld\n", limit.rlim_cur);
+    printf("num_nthreads: %d\n", num_nthreads);
+
     if (typ_var==0)
     {
       num_nthreads = num_nthreads/2;
@@ -289,10 +292,12 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     {
       nthreads = omp_get_num_threads();
     }
+    printf("omp_get_num_threads: %d\n", nthreads);
     if (nthreads < num_nthreads)
-      {
-	num_nthreads=nthreads;
-      }
+    {
+        num_nthreads=nthreads;
+    }
+    printf("Using %d threads\n", num_nthreads);
 
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, var, expmap, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
