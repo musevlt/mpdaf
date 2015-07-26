@@ -575,7 +575,7 @@ class Source(object):
         """
         del self.header[key]
 
-    def add_z(self, desc, z, errz):
+    def add_z(self, desc, z, errz=0):
         """Add a redshift value to the z table.
 
         Parameters
@@ -584,21 +584,30 @@ class Source(object):
                Redshift description.
         z    : float
                Redshidt value.
-        errz : float
-               Redshift error.
+        errz : float or (float,float)
+               Redshift error (deltaz) or redshift interval (zmin,zmax).
         """
+        if type(errz) in [float,int]:
+            zmin = z - errz
+            zmax = z + errz
+        elif type(errz) in [tuple,list,np.ndarray]:
+            zmin,zmax = errz
+        else:
+            raise ValueError,'Wrong type for errz in add_z'
         if self.z is None:
-            self.z = Table(names=['Z_DESC', 'Z', 'Z_ERR'],
-                           rows=[[desc, z, errz]],
-                           dtype=('S20', 'f6', 'f6'))
+            self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
+                           rows=[[desc, z, zmin, zmax]],
+                           dtype=('S20', 'f6', 'f6', 'f6'))
             self.z['Z'].format = '%.6f'
-            self.z['Z_ERR'].format = '%.6f'
+            self.z['Z_MIN'].format = '%.6f'
+            self.z['Z_MAX'].format = '%.6f'
         else:
             if desc in self.z['Z_DESC']:
                 self.z['Z'][self.z['Z_DESC']==desc] = z
-                self.z['Z_ERR'][self.z['Z_DESC']==desc] = errz
+                self.z['Z_MIN'][self.z['Z_DESC']==desc] = zmin
+                self.z['Z_MAX'][self.z['Z_DESC']==desc] = zmax
             else:
-                self.z.add_row([desc, z, errz])
+                self.z.add_row([desc, z, zmin, zmax])
 
     def add_mag(self, band, m, errm):
         """Add a magnitude value to the mag table.
