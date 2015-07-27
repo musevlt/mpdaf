@@ -16,8 +16,9 @@ cdef extern from "numpy/npy_math.h" nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def sigma_clip(double[:,:,:] data, double[:,:,:] cube, double[:,:,:] var,
-               int[:,:,:] expmap, int[:,:,:] rejmap, int l,
-               int nmax, double nclip_low, double nclip_up, int nstop):
+               int[:,:,:] expmap, int[:,:,:] rejmap, int[:] valid_pix,
+               int[:] select_pix, int l, int nmax, double nclip_low,
+               double nclip_up, int nstop):
     cdef unsigned int i, x, y, n, nuse
     cdef unsigned int nfiles = data.shape[0]
     cdef unsigned int ymax = data.shape[1]
@@ -28,8 +29,8 @@ def sigma_clip(double[:,:,:] data, double[:,:,:] cube, double[:,:,:] var,
     cdef unsigned int[:] files_id = np.empty([nfiles], dtype=np.uint32)
     cdef double[:] wdata = np.empty([nfiles], dtype=DTYPE)
 
-    cdef int[:] valid_pix = np.zeros([nfiles], dtype=np.int32)
-    cdef int[:] select_pix = np.zeros([nfiles], dtype=np.int32)
+    # cdef int[:] valid_pix = np.zeros([nfiles], dtype=np.int32)
+    # cdef int[:] select_pix = np.zeros([nfiles], dtype=np.int32)
 
     # with nogil:
     for y in range(ymax):
@@ -63,4 +64,4 @@ def sigma_clip(double[:,:,:] data, double[:,:,:] cube, double[:,:,:] var,
                 cube[l, y, x] = NAN
                 var[l, y, x] = NAN
 
-    return valid_pix, select_pix
+    # return valid_pix, select_pix

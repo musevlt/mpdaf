@@ -5,7 +5,6 @@ import logging
 import numpy as np
 import os
 
-from astropy import stats
 from astropy.table import Table
 from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
@@ -397,13 +396,20 @@ class CubeList(object):
         cube = self.save_combined_cube(cube, **kwargs)
         return cube, expmap, stat_pix
 
-    def pycombine(self, nmax=2, nclip=5.0, var='propagate', nl=None,
-                  cenfunc=ma.median, stdfunc=ma.std, object_name=None):
+    def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
+                  object_name=None):
         d = {'class': 'CubeList', 'method': 'merging'}
         try:
             import fitsio
         except ImportError:
             self.logger.error('fitsio is required !', extra=d)
+            raise
+
+        try:
+            from ..merging import sigma_clip
+        except:
+            self.logger.error('The `merging` module must have been compiled to'
+                              'use this method', extra=d)
             raise
 
         if is_int(nclip) or is_float(nclip):
@@ -429,29 +435,35 @@ class CubeList(object):
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
         select_pix = np.zeros(self.nfiles, dtype=np.int32)
         nl = self.shape[0]
+        fshape = (self.nfiles, self.shape[1], self.shape[2])
 
         self.logger.info('Looping on the %d planes of the cube', nl, extra=d)
-        for l in ProgressBar(xrange(nl)):
-            arr = ma.masked_invalid([c[l, :, :][0] for c in data], copy=False)
-            valid_pix += arr.count(axis=1).sum(axis=1)
-            rejmap[l, :, :] = arr.count(axis=0)
-            arr = stats.sigma_clip(arr, sigma_lower=nclip_low, copy=False,
-                                   cenfunc=cenfunc, stdfunc=stdfunc,
-                                   sigma_upper=nclip_up, iters=nmax, axis=0)
-            cube[l, :, :] = ma.mean(arr, axis=0)
-            expmap[l, :, :] = arr.count(axis=0)
-            vardata[l, :, :] = ma.var(arr, axis=0)
-            select_pix += arr.count(axis=1).sum(axis=1)
+        # for l in ProgressBar(xrange(nl)):
+        for l in xrange(nl):
+            if l % 100 == 0:
+                self.logger.info('%d/%d', l, nl)
+            arr = np.empty(fshape, dtype=float)
+            for i, f in enumerate(data):
+                arr[i, :, :] = f[l, :, :][0]
 
-        rejmap -= expmap
+            sigma_clip(arr, cube, vardata, expmap, rejmap, valid_pix,
+                       select_pix, l, nmax, nclip_low, nclip_up, nstop)
+            # val, sel = sigma_clip(arr, cube, vardata, expmap, rejmap, l,
+            #                       nmax, nclip_low, nclip_up, nstop)
+            # valid_pix += val
+            # select_pix += sel
+
+        arr = None
+        data = None
 
         # no valid pixels
-        rej = (valid_pix - select_pix) / valid_pix.astype(float) * 100.0
-        rej = " ".join("{:.2f}".format(p) for p in rej)
-        self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
         npixels = np.prod(self.shape)
         no_valid_pix = npixels - valid_pix
         rejected_pix = valid_pix - select_pix
+        rej = rejected_pix / valid_pix.astype(float) * 100.0
+        rej = " ".join("{:.2f}".format(p) for p in rej)
+        self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
+
         stat_pix = Table([self.files, no_valid_pix, rejected_pix],
                          names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
 
@@ -607,18 +619,16 @@ class CubeMosaic(CubeList):
         self.logger.info("nclip_low = %f", nclip_low, extra=d)
         self.logger.info("nclip_high = %f", nclip_up, extra=d)
 
+        if nl is not None:
+            self.shape[0] = nl
+
         data = [fitsio.FITS(f)[1] for f in self.files]
         offsets = np.array([-cube.wcs.wcs.wcs.crpix[::-1]
                             for cube in self.cubes], dtype=int)
         shapes = np.array([cube.shape[1:] for cube in self.cubes])
 
-        if nl is not None:
-            self.shape[0] = nl
-
         cube = np.ma.empty(self.shape, dtype=np.float64)
         vardata = np.empty(self.shape, dtype=np.float64)
-        # cube.fill(np.nan)
-        # vardata.fill(np.nan)
         expmap = np.empty(self.shape, dtype=np.int32)
         rejmap = np.empty(self.shape, dtype=np.int32)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
@@ -637,19 +647,23 @@ class CubeMosaic(CubeList):
                 x, y = offsets[i]
                 arr[i, x:x+shapes[i][0], y:y+shapes[i][1]] = f[l, :, :][0]
 
-            val, sel = sigma_clip(arr, cube, vardata, expmap, rejmap, l,
-                                  nmax, nclip_low, nclip_up, nstop)
-            valid_pix += val
-            select_pix += sel
+            sigma_clip(arr, cube, vardata, expmap, rejmap, valid_pix,
+                       select_pix, l, nmax, nclip_low, nclip_up, nstop)
+            # val, sel = sigma_clip(arr, cube, vardata, expmap, rejmap, l,
+            #                       nmax, nclip_low, nclip_up, nstop)
+            # valid_pix += val
+            # select_pix += sel
+
+        arr = None
+        data = None
 
         # no valid pixels
-        rej = (valid_pix - select_pix) / valid_pix.astype(float) * 100.0
-        rej = " ".join("{:.2f}".format(p) for p in rej)
-        self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
-
         npixels = np.prod(self.shape)
         no_valid_pix = npixels - valid_pix
         rejected_pix = valid_pix - select_pix
+        rej = rejected_pix / valid_pix.astype(float) * 100.0
+        rej = " ".join("{:.2f}".format(p) for p in rej)
+        self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
         stat_pix = Table([self.files, no_valid_pix, rejected_pix],
                          names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
 
