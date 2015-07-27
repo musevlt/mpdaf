@@ -43,7 +43,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         return 1;
     }
 
-    int num_nthreads = limit.rlim_cur/nfiles;
+    int num_nthreads = limit.rlim_cur/nfiles * 0.9;
 
     int nthreads;
     #pragma omp parallel
@@ -278,7 +278,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
         return 1;
     }
 
-    int num_nthreads = limit.rlim_cur/nfiles;
+    int num_nthreads = limit.rlim_cur/nfiles * 0.9;
     printf("limit.rlim_cur: %ld\n", limit.rlim_cur);
     printf("num_nthreads: %d\n", num_nthreads);
 
