@@ -3354,7 +3354,7 @@ class Spectrum(object):
             snr = False
         if snr:
             f /= np.sqrt(res.var)
-        if max != None:
+        if max is not None:
             f = f * max / f.max()
 
         # default plot arguments

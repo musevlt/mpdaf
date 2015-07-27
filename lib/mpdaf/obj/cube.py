@@ -3277,7 +3277,8 @@ class Cube(CubeBase):
                     result[k] = out[0]
         return result
 
-    def get_image(self, wave, is_sum=False, subtract_off=False, margin=10., fband=3.):
+    def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
+                  fband=3.):
         """Extracts an image from the datacube.
 
         Parameters
@@ -3290,7 +3291,8 @@ class Cube(CubeBase):
         subtract_off : boolean
                        If True, subtracting off nearby data.
         margin       : float
-                       This off-band is offseted by margin wrt narrow-band limit.
+                       This off-band is offseted by margin wrt narrow-band
+                       limit.
         fband        : float
                        The size of the off-band is fband*narrow-band width.
         Returns
@@ -3316,15 +3318,17 @@ class Cube(CubeBase):
         if subtract_off:
             dl = (l2 - l1) * 3
             lbdas = self.wave.coord()
-            is_off = np.where(((lbdas < l1 - margin) & (lbdas > l1 - margin - dl / 2)) |
-                              ((lbdas > l2 + margin) & (lbdas < l2 + margin + dl / 2)))
+            is_off = np.where(((lbdas < l1 - margin) &
+                               (lbdas > l1 - margin - dl / 2)) |
+                              ((lbdas > l2 + margin) &
+                               (lbdas < l2 + margin + dl / 2)))
             if is_sum:
                 off_im = self[is_off[0], :, :].sum(axis=0)
             else:
                 off_im = self[is_off[0], :, :].mean(axis=0)
-            ima.data = ima.data - off_im.data
+            ima.data -= off_im.data
             if ima.var is not None:
-                ima.var = ima.var + off_im.var
+                ima.var += off_im.var
 
         return ima
 
@@ -3353,13 +3357,13 @@ class Cube(CubeBase):
             if not pix:
                 size = size / np.abs(self.wcs.get_step()[0]) / 3600.
             radius = size / 2.
-            
+
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
             imax, jmax = np.minimum([imin + int(size+0.5), jmin + int(size+0.5)],
                                     [self.shape[1], self.shape[2]])
-            
+
             if lbda is None:
                 data = self.data[:, imin:imax, jmin:jmax].copy()
                 if self.var is not None:
@@ -3406,7 +3410,7 @@ class Cube(CubeBase):
         if radius > 0:
             center = self.wcs.sky2pix(center)[0]
             radius = radius / np.abs(self.wcs.get_step()[0]) / 3600.
-            
+
             radius2 = radius * radius
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
