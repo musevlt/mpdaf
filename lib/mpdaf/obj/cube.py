@@ -3328,7 +3328,7 @@ class Cube(CubeBase):
 
         return ima
 
-    def subcube(self, center, size, pix=False):
+    def subcube(self, center, size, pix=False, lbda=None):
         """Extracts a sub-cube
 
         Parameters
@@ -3341,6 +3341,8 @@ class Cube(CubeBase):
                It corresponds to the size along the delta axis and the image is square.
         pix  : boolean
                if True size is in pixels
+        lbda  : (float, float) or None
+                If not None, tuple giving the wavelength range in Angstrom.
 
         Returns
         -------
@@ -3357,17 +3359,32 @@ class Cube(CubeBase):
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
             imax, jmax = np.minimum([imin + int(size+0.5), jmin + int(size+0.5)],
                                     [self.shape[1], self.shape[2]])
-        
-            data = self.data[:, imin:imax, jmin:jmax].copy()
-            if self.var is not None:
-                var = self.var[:, imin:imax, jmin:jmax].copy()
-            else:
-                var = None
-            cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave,
+            
+            if lbda is None:
+                data = self.data[:, imin:imax, jmin:jmax].copy()
+                if self.var is not None:
+                    var = self.var[:, imin:imax, jmin:jmax].copy()
+                else:
+                    var = None
+                cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave,
                        unit=self.unit, data=data, var=var, fscale=self.fscale)
-            cub.data_header = pyfits.Header(self.data_header)
-            cub.primary_header = pyfits.Header(self.primary_header)
-            return cub
+                cub.data_header = pyfits.Header(self.data_header)
+                cub.primary_header = pyfits.Header(self.primary_header)
+                return cub
+            else:
+                lmin, lmax = lbda
+                kmin = self.wave.pixel(lmin, nearest=True)
+                kmax = self.wave.pixel(lmax, nearest=True)+1
+                data = self.data[kmin:kmax, imin:imax, jmin:jmax].copy()
+                if self.var is not None:
+                    var = self.var[kmin:kmax, imin:imax, jmin:jmax].copy()
+                else:
+                    var = None
+                cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave[kmin:kmax],
+                       unit=self.unit, data=data, var=var, fscale=self.fscale)
+                cub.data_header = pyfits.Header(self.data_header)
+                cub.primary_header = pyfits.Header(self.primary_header)
+                return cub
         else:
             return None
 

@@ -1947,6 +1947,49 @@ class Image(object):
         res = self.copy()
         res._truncate(y_min, y_max, x_min, x_max, mask)
         return res
+    
+    def subimage(self, center, size, pix=False):
+        """Extracts a sub-image
+
+        Parameters
+        ----------
+        center : (float,float)
+                Center of the aperture.
+                (dec,ra) is in degrees.
+        size : float
+               The size to extract in arcseconds.
+               It corresponds to the size along the delta axis and the image is square.
+        pix  : boolean
+               if True size is in pixels
+
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
+        """
+        if size > 0 :
+            center = self.wcs.sky2pix(center)[0]
+            if not pix:
+                size = size / np.abs(self.wcs.get_step()[0]) / 3600.
+            radius = size / 2.
+            
+            imin, jmin = np.maximum(np.minimum(
+                (center - radius + 0.5).astype(int),
+                [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
+            imax, jmax = np.minimum([imin + int(size+0.5), jmin + int(size+0.5)],
+                                    [self.shape[0], self.shape[1]])
+            
+            data = self.data[imin:imax, jmin:jmax].copy()
+            if self.var is not None:
+                var = self.var[imin:imax, jmin:jmax].copy()
+            else:
+                var = None
+            ima = Image(wcs=self.wcs[imin:imax, jmin:jmax],
+                       unit=self.unit, data=data, var=var, fscale=self.fscale)
+            ima.data_header = pyfits.Header(self.data_header)
+            ima.primary_header = pyfits.Header(self.primary_header)
+            return ima
+        else:
+            return None
 
     def rotate_wcs(self, theta):
         """Rotates WCS coordinates to new orientation given by theta (in

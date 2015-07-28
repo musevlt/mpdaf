@@ -684,23 +684,8 @@ class Source(object):
                     white_ima = self.images['MUSE_WHITE']
                 except:
                     raise IOError('Size of the image (in arcsec) is required')
-            coords = white_ima.get_range()
-            dec_min = coords[0, 0]
-            dec_max = coords[1, 0]
-            ra_min = coords[0, 1]
-            ra_max = coords[1, 1]
-            #size = np.abs(white_ima.get_step() * white_ima.shape)*3600.0
-            #size[1] /= np.cos(np.deg2rad(self.dec))
-        else:
-            if is_int(size) or is_float(size):
-                size = (size, size/np.cos(np.deg2rad(self.dec)))
-            size = np.array(size)
-            radius = size/2./3600.0
-            ra_min = self.ra - radius[1]
-            ra_max = self.ra + radius[1]
-            dec_min = self.dec - radius[0]
-            dec_max = self.dec + radius[0]
-        subima = image.truncate(dec_min, dec_max, ra_min, ra_max, mask=False)
+            size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
+        subima = image.subimage((self.dec, self.ra), size)
         self.images[name] = subima
 
     def add_cube(self, cube, name, size=None, lbda=None):
@@ -730,26 +715,8 @@ class Source(object):
                     white_ima = self.images['MUSE_WHITE']
                 except:
                     raise IOError('Size of the image (in arcsec) is required')
-            coords = white_ima.get_range()
-            dec_min = coords[0, 0]
-            dec_max = coords[1, 0]
-            ra_min = coords[0, 1]
-            ra_max = coords[1, 1]
-        else:
-            if is_int(size) or is_float(size):
-                size = (size, size/np.cos(np.deg2rad(self.dec)))
-
-                size = np.array(size)
-                radius = size/2./3600.0
-                ra_min = self.ra - radius[1]
-                ra_max = self.ra + radius[1]
-                dec_min = self.dec - radius[0]
-                dec_max = self.dec + radius[0]
-        if lbda is None:
-            lmin, lmax= cube.wave.get_range()
-        else:
-            lmin, lmax = lbda
-        subcub = cube.truncate([[lmin,dec_min,ra_min], [lmax,dec_max,ra_max]], mask=False)
+            size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
+        subcub = cube.subcube((self.dec, self.ra), size, False, lbda)
         self.cubes[name] = subcub
 
 
@@ -818,24 +785,9 @@ class Source(object):
                         white_ima = self.images['MUSE_WHITE']
                     except:
                         raise IOError('Size of the image (in arcsec) is required')
-                coords = white_ima.get_range()
-                dec_min = coords[0, 0]
-                dec_max = coords[1, 0]
-                ra_min = coords[0, 1]
-                ra_max = coords[1, 1]
-            else:
-                if is_int(size) or is_float(size):
-                    size = (size, size/np.cos(np.deg2rad(self.dec)))
-
-                size = np.array(size)
-                radius = size/2./3600.0
-                ra_min = self.ra - radius[1]
-                ra_max = self.ra + radius[1]
-                dec_min = self.dec - radius[0]
-                dec_max = self.dec + radius[0]
-
-            lmin, lmax= cube.wave.get_range()
-            subcub = cube.truncate([[lmin,dec_min,ra_min], [lmax,dec_max,ra_max]], mask=False)
+                size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
+                
+            subcub = cube.subcube((self.dec, self.ra), size)
 
 
             if eml is None:
@@ -984,16 +936,9 @@ class Source(object):
         """
         d = {'class': 'Source', 'method': 'add_masks'}
 
-        coords = self.images['MASK_UNION'].get_range()
-        dec_min = coords[0, 0]
-        dec_max = coords[1, 0]
-        ra_min = coords[0, 1]
-        ra_max = coords[1, 1]
-
-        lmin, lmax= cube.wave.get_range()
-        subcub = cube.truncate([[lmin,dec_min,ra_min], [lmax,dec_max,ra_max]], mask=False)
-
         if self.images.has_key('MASK_UNION'):
+            size = self.images['MASK_UNION'].get_step()[0] * 3600 * self.images['MASK_UNION'].shape[0]
+            subcub = cube.subcube((self.dec, self.ra), size)
             if self.images['MASK_UNION'].wcs.isEqual(subcub.wcs):
                 object_mask = self.images['MASK_UNION'].data.data
             else:
