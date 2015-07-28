@@ -714,7 +714,7 @@ class Source(object):
         self.cubes[name] = subcub
 
 
-    def add_white_image(self, cube, size=10):
+    def add_white_image(self, cube, size=5):
         """ Compute the white images from the MUSE data cube
         and appends it to the images dictionary.
 
@@ -727,7 +727,7 @@ class Source(object):
         size : float
                The total size to extract in arcseconds.
                It corresponds to the size along the delta axis and the image is square.
-               By default 10x10arcsec
+               By default 5x5arcsec
         """
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
