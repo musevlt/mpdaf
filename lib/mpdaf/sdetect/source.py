@@ -160,7 +160,7 @@ class Source(object):
     images  : :class:`dict`
               Dictionary containing images.
 
-              Keys give filter names ('SRC_WHITE' for white image, TBC)
+              Keys give filter names ('MUSE_WHITE' for white image, TBC)
 
               Values are :class:`mpdaf.obj.Image` object
     cubes   : :class:`dict`
@@ -258,7 +258,7 @@ class Source(object):
         images  : :class:`dict`
                   Dictionary containing small images.
 
-                  Keys gives the filter ('SRC_WHITE' for white image, TBC)
+                  Keys gives the filter ('MUSE_WHITE' for white image, TBC)
 
                   Values are :class:`mpdaf.obj.Image` object
         cubes   : :class:`dict`
@@ -678,12 +678,9 @@ class Source(object):
         """
         if size is None:
             try:
-                white_ima = self.images['SRC_WHITE']
+                white_ima = self.images['MUSE_WHITE']
             except:
-                try:
-                    white_ima = self.images['MUSE_WHITE']
-                except:
-                    raise IOError('Size of the image (in arcsec) is required')
+                raise IOError('Size of the image (in arcsec) is required')
             size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
         subima = image.subimage((self.dec, self.ra), size)
         self.images[name] = subima
@@ -709,12 +706,9 @@ class Source(object):
         """
         if size is None:
             try:
-                white_ima = self.images['SRC_WHITE']
+                white_ima = self.images['MUSE_WHITE']
             except:
-                try:
-                    white_ima = self.images['MUSE_WHITE']
-                except:
-                    raise IOError('Size of the image (in arcsec) is required')
+                raise IOError('Size of the image (in arcsec) is required')
             size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
         subcub = cube.subcube((self.dec, self.ra), size, False, lbda)
         self.cubes[name] = subcub
@@ -739,7 +733,7 @@ class Source(object):
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
         
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8, margin=10., fband=3.):
-        """Create narrow band images
+        """Create narrow band images from a redshift value and a catalog of lines.
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
 
@@ -779,12 +773,9 @@ class Source(object):
             d = {'class': 'Source', 'method': 'add_narrow_band_images'}
             if size is None:
                 try:
-                    white_ima = self.images['SRC_WHITE']
+                    white_ima = self.images['MUSE_WHITE']
                 except:
-                    try:
-                        white_ima = self.images['MUSE_WHITE']
-                    except:
-                        raise IOError('Size of the image (in arcsec) is required')
+                    raise IOError('Size of the image (in arcsec) is required')
                 size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
                 
             subcub = cube.subcube((self.dec, self.ra), size)
@@ -811,6 +802,50 @@ class Source(object):
                     for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
                         self.logger.info('Doing MUSE_%s'%tag, extra=d)
                         self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True, margin=margin, fband=fband)
+
+    def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None, width=8, margin=10., fband=3.):
+        """Create narrow band image around an observed wavelength value.
+
+        Narrow-band images are saved in self.images['MUSE_*'].
+
+        Parameters
+        ----------
+        cube   : :class:`mpdaf.obj.Cube`
+                 MUSE data cube.
+        tag   : string
+                key used to identify the new narrow band image in the images dictionary.
+        lbda  : float
+                Observed wavelength value in angstrom.
+        size  : float
+                The total size to extract in arcseconds.    
+                If size is a float, it corresponds to the size along the delta axis and the image is square.
+                If None, the size of the white image extension is taken if it exists.
+        width : float
+                 Angstrom total width
+        margin       : float
+                       This off-band is offseted by margin wrt narrow-band limit.
+        fband        : float
+                       The size of the off-band is fband*narrow-band width.
+        """
+        d = {'class': 'Source', 'method': 'add_narrow_band_images'}
+        self.logger.info('Doing %s'%tag, extra=d)
+        if size is None:
+            try:
+                white_ima = self.images['MUSE_WHITE']
+            except:
+                raise IOError('Size of the image (in arcsec) is required')
+            size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
+        
+        l1 = lbda-width/2.0
+        l2 = lbda+width/2.0
+        lmin, lmax= cube.wave.get_range()
+        if l1<lmin or l2>lmax:
+            self.logger.info('Wavelength range outside cube interval - nothing done', extra=d)
+            return
+        
+        subcub = cube.subcube((self.dec, self.ra), size)
+        self.images[tag] = subcub.get_image(wave=(l1, l2), subtract_off=True, margin=margin, fband=fband)
+
 
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
         """Run SExtractor on all images listed in tags
