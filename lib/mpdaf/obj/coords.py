@@ -324,7 +324,21 @@ class WCS(object):
 
     def to_header(self):
         """Generates a pyfits header object with the WCS information."""
-        return self.wcs.to_header()
+        has_cd = self.wcs.wcs.has_cd()
+        hdr = self.wcs.to_header()
+        if has_cd:
+            for c in ['1_1', '1_2', '2_1', '2_2']:
+                try:
+                    val = hdr['PC'+c]
+                    del hdr['PC'+c]
+                except KeyError:
+                    if c=='1_1' or c == '2_2':
+                        val = 1.
+                    else:
+                        val = 0.
+                hdr['CD'+c] = val
+        return hdr
+
 
     def sky2pix(self, x, nearest=False):
         """Converts world coordinates (dec,ra) to pixel coordinates.
