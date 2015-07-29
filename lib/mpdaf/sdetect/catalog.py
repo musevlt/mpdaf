@@ -83,7 +83,10 @@ class Catalog(Table):
             names_z = list(set(np.concatenate([source.z['Z_DESC'] for source in sources
                                                if source.z is not None])))
             names_z = ['Z_%s' % z for z in names_z]
-            names_z += ['%s_ERR' % z for z in names_z]
+            names_min = ['%s_MIN' % z for z in names_z]
+            names_max = ['%s_MAX' % z for z in names_z]
+            names_z += names_min
+            names_z += names_max
             names_z.sort()
         else:
             names_z = []
@@ -139,8 +142,10 @@ class Catalog(Table):
                         key = key[2:]
                         if key in keys:
                             row += [float(source.z['Z'][source.z['Z_DESC'] == key])]
-                        elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [float(source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]])]
+                        elif key[-4:] == '_MAX' and key[:-4] in keys:
+                            row += [float(source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]])]
+                        elif key[-4:] == '_MIN' and key[:-4] in keys:
+                            row += [float(source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]])]
                         else:
                             row += [None]
             # lines
