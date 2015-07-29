@@ -464,6 +464,11 @@ class Cube(CubeBase):
         # update fscale
         if fscale is None:
             fscale = self.fscale
+        else:
+            self.data *= np.double(self.fscale / fscale)
+
+        if self.data.dtype == np.float64:
+            self.data = self.data.astype(np.float32)
 
         # world coordinates
         hdr = self.wcs.to_cube_header(self.wave)
@@ -473,12 +478,11 @@ class Cube(CubeBase):
             data = self.data.filled(fill_value=np.nan)
         else:
             data = self.data.data
-        data = (data * np.double(self.fscale / fscale)).astype(np.float32)
         imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
 
         for card in self.data_header.cards:
-            to_copy = (card.keyword[0:2] not in ('CD', 'PC')
-                       and card.keyword not in imahdu.header)
+            to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
+                       card.keyword not in imahdu.header)
             if to_copy:
                 try:
                     card.verify('fix')
@@ -520,46 +524,50 @@ class Cube(CubeBase):
         """
         if self.var is None:
             return None
+
+        d = {'class': 'Cube', 'method': 'write'}
+
+        # update fscale
+        if fscale is None:
+            fscale = self.fscale
         else:
-            # update fscale
-            if fscale is None:
-                fscale = self.fscale
+            self.var *= np.double(self.fscale * self.fscale / fscale / fscale)
 
-            var = self.var * np.double(self.fscale * self.fscale / fscale / fscale)
+        if self.var.dtype == np.float64:
+            self.var = self.var.astype(np.float32)
 
-            # world coordinates
-            if header is None:
-                header = self.wcs.to_cube_header(self.wave)
+        # world coordinates
+        if header is None:
+            header = self.wcs.to_cube_header(self.wave)
 
-            imahdu = pyfits.ImageHDU(name=name, data=var.astype(np.float32), header=header)
+        imahdu = pyfits.ImageHDU(name=name, data=self.var, header=header)
 
-            if header is None:
-                for card in self.data_header.cards:
-                    to_copy = (card.keyword[0:2] not in ('CD', 'PC')
-                               and card.keyword not in imahdu.header)
-                    if to_copy:
+        if header is None:
+            for card in self.data_header.cards:
+                to_copy = (card.keyword[0:2] not in ('CD', 'PC')
+                           and card.keyword not in imahdu.header)
+                if to_copy:
+                    try:
+                        card.verify('fix')
+                        imahdu.header[card.keyword] = (card.value, card.comment)
+                    except:
                         try:
-                            card.verify('fix')
-                            imahdu.header[card.keyword] = (card.value, card.comment)
+                            if isinstance(card.value, str):
+                                n = 80 - len(card.keyword) - 14
+                                s = card.value[0:n]
+                                imahdu.header['hierarch %s' % card.keyword] = \
+                                    (s, card.comment)
+                            else:
+                                imahdu.header['hierarch %s' % card.keyword] = \
+                                    (card.value, card.comment)
                         except:
-                            try:
-                                if isinstance(card.value, str):
-                                    n = 80 - len(card.keyword) - 14
-                                    s = card.value[0:n]
-                                    imahdu.header['hierarch %s' % card.keyword] = \
-                                        (s, card.comment)
-                                else:
-                                    imahdu.header['hierarch %s' % card.keyword] = \
-                                        (card.value, card.comment)
-                            except:
-                                d = {'class': 'Cube', 'method': 'write'}
-                                self.logger.warning("%s not copied in data header",
-                                                    card.keyword, extra=d)
+                            self.logger.warning("%s not copied in data header",
+                                                card.keyword, extra=d)
 
-            if self.unit is not None:
-                imahdu.header['BUNIT'] = self.unit + '**2'
-            imahdu.header['FSCALE'] = (fscale**2, 'scaling factor')
-            return imahdu
+        if self.unit is not None:
+            imahdu.header['BUNIT'] = self.unit + '**2'
+        imahdu.header['FSCALE'] = (fscale**2, 'scaling factor')
+        return imahdu
 
     def write(self, filename, fscale=None, savemask='dq'):
         """Saves the cube in a FITS file.
