@@ -232,7 +232,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         wlmin = c.wave.crval
         dw = c.wave.cdelt
         nslices = c.shape[0]
-        step = c.wcs.get_step()
+        step = c.wcs.get_step()[0]
         
         ima_size = ima_size * step * 3600.0
 
