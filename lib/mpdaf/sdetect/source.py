@@ -587,13 +587,14 @@ class Source(object):
         errz : float or (float,float)
                Redshift error (deltaz) or redshift interval (zmin,zmax).
         """
-        if type(errz) in [float,int]:
+        if is_float(errz) or is_int(errz):
             zmin = z - errz
             zmax = z + errz
-        elif type(errz) in [tuple,list,np.ndarray]:
-            zmin,zmax = errz
         else:
-            raise ValueError,'Wrong type for errz in add_z'
+            try:
+                zmin, zmax = errz
+            except:
+                raise ValueError,'Wrong type for errz in add_z'
         if self.z is None:
             self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
                            rows=[[desc, z, zmin, zmax]],
