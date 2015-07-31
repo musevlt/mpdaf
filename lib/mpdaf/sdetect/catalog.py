@@ -36,6 +36,7 @@ class Catalog(Table):
         ----------
         sources : list< :class:`mpdaf.sdetect.Source` >
         """
+        invalid = {type(1): -9999, type(1.0): np.nan, type('1'): '', type(False): -1}
         # union of all headers keywords without mandatory FITS keywords
 
         h = sources[0].header
@@ -66,7 +67,7 @@ class Catalog(Table):
         index = names_hdr.index('CUBE')
         names_hdr.insert(5, names_hdr.pop(index))
         dtype_hdr.insert(5, dtype_hdr.pop(index))
-
+        
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
         if len(lmag) != 0:
@@ -83,8 +84,17 @@ class Catalog(Table):
             names_z = list(set(np.concatenate([source.z['Z_DESC'] for source in sources
                                                if source.z is not None])))
             names_z = ['Z_%s' % z for z in names_z]
-            names_min = ['%s_MIN' % z for z in names_z]
-            names_max = ['%s_MAX' % z for z in names_z]
+            if 'Z_ERR' in source.z.colnames:
+                names_err = ['%s_ERR' % z for z in names_z]
+            else:
+                names_err = []
+            if 'Z_MIN' in source.z.colnames:
+                names_min = ['%s_MIN' % z for z in names_z]
+                names_max = ['%s_MAX' % z for z in names_z]
+            else:
+                names_min = []
+                names_max = []
+            names_z += names_err
             names_z += names_min
             names_z += names_max
             names_z.sort()
@@ -118,7 +128,7 @@ class Catalog(Table):
             # header
             h = source.header
             keys = h.keys()
-            row = [h[key] if key in keys else None for key in names_hdr]
+            row = [h[key] if key in keys else invalid[typ] for key,typ in zip(names_hdr, dtype_hdr)]
             # magnitudes
             if len(lmag) != 0:
                 if source.mag is None:
@@ -146,6 +156,8 @@ class Catalog(Table):
                             row += [float(source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]])]
                         elif key[-4:] == '_MIN' and key[:-4] in keys:
                             row += [float(source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]])]
+                        elif key[-4:] == '_ERR' and key[:-4] in keys:
+                            row += [float(source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]])]
                         else:
                             row += [None]
             # lines
@@ -170,10 +182,11 @@ class Catalog(Table):
                                 row += [lines[key[:-3]][int(key[-3:]) - 1]]
                             elif typ == 'S20':
                                 row += ['']
+                            elif typ == 'i4':
+                                row += [-99999]
                             else:
                                 row += [None]
-                        #row += [lines[key[:-3]][int(key[-3:])-1] if key[:-3] in keys and int(key[-3:])<=n else None for key in names_lines]
-
+                        
             # final row
             data_rows.append(row)
 
@@ -181,17 +194,17 @@ class Catalog(Table):
 
         # magnitudes
         if len(lmag) != 0:
-            dtype += ['<f8' for i in range(len(names_mag))]
+            dtype += ['f8' for i in range(len(names_mag))]
         # redshifts
         if len(lz) != 0:
-            dtype += ['<f8' for i in range(len(names_z))]
+            dtype += ['f8' for i in range(len(names_z))]
         # lines
         if len(llines) != 0:
-            #             dtype += ['<f8' for i in range(len(names_lines))]
             dtype += dtype_lines
 
         # create Table
         names = names_hdr + names_mag + names_z + names_lines
+        
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
