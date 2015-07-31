@@ -1,13 +1,15 @@
-CubeList object
-***************
+Cube lists and combination
+**************************
 
-This class manages a list of cube FITS filenames.
+The :class:`~mpdaf.obj.CubeList` and :class:`~mpdaf.obj.CubeMosaic` classes
+allows to manages a list of cube FITS filenames, and to combine the cubes using
+several methods (median, sigma clipping).
 
 
 CubeList object format
 ======================
 
-A cube object O consist of:
+A cube object `O` consist of:
 
 +------------+--------------------------------------------------------------------------------------------------+
 | Component  | Description                                                                                      |
@@ -31,15 +33,15 @@ Dimensions, scaling factor and coordinates must be the same for all cubes.
 Examples
 ========
 
-54 exposures of MUSE were reduced with the muse standard pipeline.
-The result was 54 data cubes with the same coordinates.
-We create a CubeList object containing these 54 cubes::
+54 exposures of MUSE were reduced with the muse standard pipeline. The result
+was 54 data cubes with the same coordinates.  We create a CubeList object
+containing these 54 cubes::
 
  >>> import glob
- >>> cubs = glob.glob('HDFS/DATACUBE-MUSE*')
+ >>> cubes = glob.glob('HDFS/DATACUBE-MUSE*')
  >>> from mpdaf.obj import CubeList
- >>> l = CubeList(cubs)
- 
+ >>> l = CubeList(cubes)
+
 We merge these cubes in a single data cube containing median values of each voxel::
 
  >>> cube, expmap, statpix = l.median()
@@ -241,45 +243,61 @@ It is also possible to merge these cubes using sigma clipped mean::
  12/15/14 - 11:17AM 100%
 
 
- 
 The process prints the main parameters:
  - nmax: maximum number of clipping iterations
  - nclip: number of sigma at which to clip.
- - nstop: if the number of not rejected pixels is less than this number, the clipping iterations stop.   
- 
+ - nstop: if the number of not rejected pixels is less than this number, the clipping iterations stop.
+
 The resulted cube contains an additional extension for the variance.
 3 options are proposed to compute the variance:
 
- - 'propagate': the variance is the mean of the variances of the N individual exposures divided by N**2.
- - 'stat_mean': the variance of each combined pixel is computed as the variance derived from the comparison of the N individual exposures divided N-1.
- - 'stat_one': the variance of each combined pixel is computed as the variance derived from the comparison of the N individual exposures.
- 
-N is the number of voxel left after the sigma-clipping.
+ - ``propagate``: the variance is the mean of the variances of the N individual
+   exposures divided by N**2.
+
+ - ``stat_mean``: the variance of each combined pixel is computed as the
+   variance derived from the comparison of the N individual exposures divided
+   N-1.
+
+ - ``stat_one``: the variance of each combined pixel is computed as the
+   variance derived from the comparison of the N individual exposures.
+
+`N` is the number of voxel left after the sigma-clipping.
 
 
 Reference
 =========
 
-:func:`mpdaf.obj.CubeList <mpdaf.obj.CubeList>` is the classic cubes list constructor.
+.. autosummary::
 
-:func:`mpdaf.obj.CubeList.info <mpdaf.obj.CubeList.info>` prints information.
+   mpdaf.obj.cube
+   mpdaf.obj.Cube
+   mpdaf.obj.CubeList
 
+- :class:`mpdaf.obj.CubeList` is the constructor.
+- :class:`mpdaf.obj.CubeMosaic` is the constructor.
+- :func:`mpdaf.obj.CubeList.info` prints information.
 
 Checking
 --------
 
-:func:`mpdaf.obj.CubeList.check_dim <mpdaf.obj.CubeList.check_dim>` checks if all cubes have same dimensions.
-
-:func:`mpdaf.obj.CubeList.check_wcs <mpdaf.obj.CubeList.check_wcs>` checks if all cubes have same world coordinates.
-
-:func:`mpdaf.obj.CubeList.check_fscale <mpdaf.obj.CubeList.check_fscale>` checks if all cubes have same scale factor.
-
-:func:`mpdaf.obj.CubeList.check_compatibility <mpdaf.obj.CubeList.check_compatibility>` checks if all cubes are compatible.
-
+- :func:`mpdaf.obj.CubeList.check_dim` checks if all cubes have same dimensions.
+- :func:`mpdaf.obj.CubeList.check_wcs` checks if all cubes have same world coordinates.
+- :func:`mpdaf.obj.CubeList.check_fscale` checks if all cubes have same scale factor.
+- :func:`mpdaf.obj.CubeList.check_compatibility` checks if all cubes are compatible.
 
 Merging
 -------
 
-:func:`mpdaf.obj.CubeList.median <mpdaf.obj.CubeList.median>` combines cubes in a single data cube using median.
+- :func:`mpdaf.obj.CubeList.median` combines cubes in a single data cube using median.
+- :func:`mpdaf.obj.CubeList.combine` combines cubes in a single data cube using sigma clipped mean.
 
-:func:`mpdaf.obj.CubeList.combine <mpdaf.obj.CubeList.combine>` combines cubes in a single data cube using sigma clipped mean.
+
+CubeList class
+--------------
+
+.. autoclass:: mpdaf.obj.CubeList
+
+CubeMosaic class
+----------------
+
+.. autoclass:: mpdaf.obj.CubeMosaic

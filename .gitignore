@@ -1,6 +1,4 @@
 *~
 *.pyc
 .directory
-drs/build/*
-obj/build/*
-sphinxext/*
+CoreLib/build/*

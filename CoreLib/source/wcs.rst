@@ -1,9 +1,6 @@
 WCS class
 =========
 
-.. toctree::
-	:maxdepth: 2
-	
 Examples::
 
   from mpdaf.obj import WCS
@@ -13,4 +10,4 @@ Examples::
 
 .. autoclass:: mpdaf.obj.WCS
 	:members:
-	
+

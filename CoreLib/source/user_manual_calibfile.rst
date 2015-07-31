@@ -4,8 +4,8 @@ Python interface for calibration files
 .. warning::
 
    To be done
-   
-   
+
+
 Format
 ======
 

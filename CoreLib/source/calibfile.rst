@@ -1,9 +1,6 @@
 Python interface for calibration files
 ======================================
 
-.. toctree::
-	:maxdepth: 2
-	
 
 CalibFile class
 ---------------
