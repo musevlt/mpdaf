@@ -167,7 +167,7 @@ class CubeList(object):
             getattr(self, checker)()
 
     def save_combined_cube(self, data, var=None, method='', keywords=None,
-                           expnb=None, object_name=None):
+                           expnb=None, object_name=None, save_unit=True):
         d = {'class': 'CubeList', 'method': 'merging'}
         self.logger.info('Creating combined cube object', extra=d)
 
@@ -177,7 +177,7 @@ class CubeList(object):
             var = var.reshape(self.shape)
 
         c = Cube(shape=self.shape, wcs=self.wcs, wave=self.wave,
-                 unit=self.unit)
+                 unit=self.unit if save_unit else None)
         c.data = ma.asarray(data)
         c.var = var
 
@@ -253,7 +253,7 @@ class CubeList(object):
                          names=['FILENAME', 'NPIX_NAN'])
 
         kwargs = dict(expnb=expmap.max(), method='obj.cubelist.median')
-        expmap = self.save_combined_cube(expmap, **kwargs)
+        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
         cube = self.save_combined_cube(data, **kwargs)
         return cube, expmap, stat_pix
 
@@ -359,7 +359,7 @@ class CubeList(object):
                     ('var', var, 'type of variance')]
         kwargs = dict(expnb=expmap.max(), keywords=keywords,
                       method='obj.cubelist.merging')
-        expmap = self.save_combined_cube(expmap, **kwargs)
+        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
         cube = self.save_combined_cube(data, var=vardata, **kwargs)
         return cube, expmap, statpix
 
@@ -392,7 +392,7 @@ class CubeList(object):
                          names=['FILENAME', 'NPIX_NAN'])
 
         kwargs = dict(expnb=expmap.max(), method='obj.cubelist.pymedian')
-        expmap = self.save_combined_cube(expmap, **kwargs)
+        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
         cube = self.save_combined_cube(cube, **kwargs)
         return cube, expmap, stat_pix
 
@@ -468,8 +468,8 @@ class CubeList(object):
         kwargs = dict(expnb=expmap.max(), object_name=object_name,
                       keywords=keywords, method='obj.cubelist.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
-        expmap = self.save_combined_cube(expmap, **kwargs)
-        rejmap = self.save_combined_cube(rejmap, **kwargs)
+        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
+        rejmap = self.save_combined_cube(rejmap, save_unit=False, **kwargs)
         return cube, expmap, stat_pix, rejmap
 
 
@@ -662,6 +662,6 @@ class CubeMosaic(CubeList):
         kwargs = dict(expnb=expmap.max(), object_name=object_name,
                       keywords=keywords, method='obj.cubemosaic.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
-        expmap = self.save_combined_cube(expmap, **kwargs)
-        rejmap = self.save_combined_cube(rejmap, **kwargs)
+        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
+        rejmap = self.save_combined_cube(rejmap, save_unit=False, **kwargs)
         return cube, expmap, stat_pix, rejmap
