@@ -35,6 +35,58 @@ A Source object O consist of:
 |           | Keys give description of the cubes.                           |
 |           | Values are :class:`mpdaf.obj.Cube` object                     |
 +-----------+---------------------------------------------------------------+
+| O.tables  | Dictionary that contains astropy tables.                      |
+|           | Keys give description of the tables.                          |
+|           | Values are astropy table objects.                             |
++-----------+---------------------------------------------------------------+
+
+
+Reference
+=========
+
+:func:`mpdaf.sdetect.Source.from_data <mpdaf.sdetect.Source.from_data>` constructs a Source object from a list of data.
+
+:func:`mpdaf.sdetect.Source.from_file <mpdaf.sdetect.Source.from_file>` constructs a Source object from a FITS file.
+
+:func:`mpdaf.sdetect.Source.write <mpdaf.sdetect.Source.write>` writes the Source object in a FITS file.
+
+:func:`mpdaf.sdetect.Source.info <mpdaf.sdetect.Source.info>` prints information about the Source object.
+
+:func:`mpdaf.sdetect.Source.add_comment <mpdaf.sdetect.Source.add_comment>` adds a user comment to the FITS header of the Source object.
+
+:func:`mpdaf.sdetect.Source.remove_comment <mpdaf.sdetect.Source.remove_comment>` removes a user comment from the FITS header of the Source object.
+
+:func:`mpdaf.sdetect.Source.add_attr <mpdaf.sdetect.Source.add_attr>` adds a new attribute as a keyword in the primary FITS header.
+
+:func:`mpdaf.sdetect.Source.remove_attr <mpdaf.sdetect.Source.remove_attr>` removes an attribute from the FITS header of the Source object.
+
+:func:`mpdaf.sdetect.Source.add_z <mpdaf.sdetect.Source.add_z>` adds a redshift value to the z table.
+
+:func:`mpdaf.sdetect.Source.add_mag <mpdaf.sdetect.Source.add_mag>` adds a magnitude value to the mag table.
+
+:func:`mpdaf.sdetect.Source.add_line <mpdaf.sdetect.Source.add_line>` adds a line to the lines table.
+
+:func:`mpdaf.sdetect.Source.add_image <mpdaf.sdetect.Source.add_image>` extracts an image centered on the source center and appends it to the images dictionary.
+
+:func:`mpdaf.sdetect.Source.add_white_image <mpdaf.sdetect.Source.add_white_image>` computes the white images from the MUSE data cube and appends it to the images dictionary.
+
+:func:`mpdaf.sdetect.Source.add_narrow_band_images <mpdaf.sdetect.Source.add_narrow_band_images>` creates narrow band images.
+
+:func:`mpdaf.sdetect.Source.add_seg_images <mpdaf.sdetect.Source.add_seg_images>` runs SExtractor to create segmentation maps.
+
+:func:`mpdaf.sdetect.Source.add_masks <mpdaf.sdetect.Source.add_masks>` runs SExtractor on all images present in images dictionary to create masked images.
+
+:func:`mpdaf.sdetect.Source.add_table <mpdaf.sdetect.Source.add_table>` appends an astropy table to the tables dictionary.
+
+:func:`mpdaf.sdetect.Source.extract_spectra <mpdaf.sdetect.Source.extract_spectra>` extracts spectra from the MUSE data cube.
+
+:func:`mpdaf.sdetect.Source.crack_z <mpdaf.sdetect.Source.crack_z>` estimates the best redshift matching the list of emission lines.
+
+:func:`mpdaf.sdetect.Source.sort_lines <mpdaf.sdetect.Source.sort_lines>` sorts the lines by flux in descending order.
+
+:func:`mpdaf.sdetect.Source.show_ima <mpdaf.sdetect.Source.show_ima>` shows image.
+
+:func:`mpdaf.sdetect.Source.show_spec <mpdaf.sdetect.Source.show_spec>` displays a spectra.
 
 
 Examples
@@ -96,10 +148,11 @@ We can also extract an HST image centered on the source center and append it to 
  [INFO] .data(25,25) (10**(-20)*erg/s/cm**2/Angstrom) fscale=1, .var(25,25)
  [INFO] center:(02:36:11.9131,10:00:13.5686) size in arcsec:(5.000,5.000) step in arcsec:(0.200,0.200) rot:0.0
  
-:func:`Source.add_masks <mpdaf.sdetect.Source.add_masks>` method runs SExtractor on all images present in self.images dictionary to create segmentation maps.
-After that, the list of segmentation maps are used to compute the union mask and the intersection mask and  the region where no object is detected in any segmentation map is saved in the sky mask.
+:func:`Source.add_seg_images <mpdaf.sdetect.Source.add_seg_images>` method runs SExtractor on all images present in self.images dictionary to create segmentation maps.
+After that, :func:`Source.add_masks <mpdaf.sdetect.Source.add_masks>` uses the list of segmentation maps to compute the union mask and the intersection mask and  the region where no object is detected in any segmentation map is saved in the sky mask.
 Union is saved as an image of booleans nammed 'MASK_UNION', intersection is saved as 'MASK_INTER' and sky mask is saved as 'MASK_SKY'::
  
+ >>> s.add_seg_images()
  >>> s.add_masks()
 
  SExtractor  version 2.19.5 (2014-03-21)
@@ -162,44 +215,6 @@ The source can be saved as a FITS file::
 Later we can load it like this::
 
  >>> s = Source.from_file('test.fits')
- 
-
-Reference
-=========
-
-:func:`mpdaf.sdetect.Source.from_data <mpdaf.sdetect.Source.from_data>` constructs a Source object from a list of data.
-
-:func:`mpdaf.sdetect.Source.from_data <mpdaf.sdetect.Source.from_file>` constructs a Source object from a FITS file.
-
-:func:`mpdaf.sdetect.Source.write <mpdaf.sdetect.Source.write>` writes the Source object in a FITS file.
-
-:func:`mpdaf.sdetect.Source.info <mpdaf.sdetect.Source.info>` prints information about the Source object.
-
-:func:`mpdaf.sdetect.Source.add_comment <mpdaf.sdetect.Source.add_comment>` adds a user comment to the FITS header of the Source object.
-
-:func:`mpdaf.sdetect.Source.remove_comment <mpdaf.sdetect.Source.remove_comment>` removes a user comment from the FITS header of the Source object.
-
-:func:`mpdaf.sdetect.Source.add_z <mpdaf.sdetect.Source.add_z>` adds a redshift value to the z table.
-
-:func:`mpdaf.sdetect.Source.add_mag <mpdaf.sdetect.Source.add_mag>` adds a magnitude value to the mag table.
-
-:func:`mpdaf.sdetect.Source.add_image <mpdaf.sdetect.Source.add_image>` extracts an image centered on the source center and appends it to the images dictionary.
-
-:func:`mpdaf.sdetect.Source.add_white_image <mpdaf.sdetect.Source.add_white_image>` computes the white images from the MUSE data cube and appends it to the images dictionary.
-
-:func:`mpdaf.sdetect.Source.add_narrow_band_images <mpdaf.sdetect.Source.add_narrow_band_images>` creates narrow band images.
-
-:func:`mpdaf.sdetect.Source.add_masks <mpdaf.sdetect.Source.add_masks>` runs SExtractor on all images present in images dictionary to create masked images.
-
-:func:`mpdaf.sdetect.Source.extract_spectra <mpdaf.sdetect.Source.extract_spectra>` extracts spectra from the MUSE data cube.
-
-:func:`mpdaf.sdetect.Source.crack_z <mpdaf.sdetect.Source.crack_z>` estimates the best redshift matching the list of emission lines.
-
-:func:`mpdaf.sdetect.Source.sort_lines <mpdaf.sdetect.Source.sort_lines>` sorts the lines by flux in descending order.
-
-:func:`mpdaf.sdetect.Source.show_ima <mpdaf.sdetect.Source.show_ima>` shows image.
-
-:func:`mpdaf.sdetect.Source.show_spec <mpdaf.sdetect.Source.show_spec>` displays a spectra.
 
 
 SourceList class
