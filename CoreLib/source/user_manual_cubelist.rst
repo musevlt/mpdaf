@@ -140,7 +140,7 @@ This process is multithreaded. It needs 30 minutes on a machine with 32 cpus.
 
 It is also possible to merge these cubes using sigma clipped mean::
 
- >>> cube, expmap, statpix = l.merging(output='merging', nmax=2, nclip=5.0, nstop=2, var='stat_mean')
+ >>> cube, expmap, statpix = l.combine(nmax=2, nclip=5.0, nstop=2, var='stat_mean')
   1: HDFS/DATACUBE-MUSE.2014-07-26T05:08:59.778.fits
   2: HDFS/DATACUBE-MUSE.2014-07-28T05:28:57.448.fits
   3: HDFS/DATACUBE-MUSE.2014-08-01T05:08:41.575.fits
