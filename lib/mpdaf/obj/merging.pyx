@@ -20,9 +20,9 @@ def sigma_clip(double[:,:,:] data, double[:,:,:] cube, double[:,:,:] var,
                int[:] select_pix, int l, int nmax, double nclip_low,
                double nclip_up, int nstop):
     cdef unsigned int i, x, y, n, nuse
-    cdef unsigned int nfiles = data.shape[0]
-    cdef unsigned int ymax = data.shape[1]
-    cdef unsigned int xmax = data.shape[2]
+    cdef unsigned int ymax = data.shape[0]
+    cdef unsigned int xmax = data.shape[1]
+    cdef unsigned int nfiles = data.shape[2]
     cdef double res[3]
 
     cdef int[:] ind = np.empty([nfiles], dtype=np.int32)
@@ -38,8 +38,8 @@ def sigma_clip(double[:,:,:] data, double[:,:,:] cube, double[:,:,:] var,
             n = 0
             # print '-->', y, x
             for i in range(nfiles):
-                if not isnan(data[i, y, x]):
-                    wdata[n] = data[i, y, x]
+                if not isnan(data[y, x, i]):
+                    wdata[n] = data[y, x, i]
                     files_id[n] = i
                     ind[n] = n
                     valid_pix[i] = valid_pix[i] + 1

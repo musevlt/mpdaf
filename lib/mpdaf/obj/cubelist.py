@@ -413,45 +413,39 @@ class CubeList(object):
             raise
 
         if is_int(nclip) or is_float(nclip):
-            nclip_low = nclip
-            nclip_up = nclip
+            nclip_low, nclip_up = nclip, nclip
         else:
-            nclip_low = nclip[0]
-            nclip_up = nclip[1]
+            nclip_low, nclip_up = nclip
 
-        self.logger.info("Merging cube using sigma clipped mean", extra=d)
-        self.logger.info("nmax = %d", nmax, extra=d)
-        self.logger.info("nclip_low = %f", nclip_low, extra=d)
-        self.logger.info("nclip_high = %f", nclip_up, extra=d)
+        info = self.logger.info
+        info("Merging cube using sigma clipped mean", extra=d)
+        info("nmax = %d", nmax, extra=d)
+        info("nclip_low = %f", nclip_low, extra=d)
+        info("nclip_high = %f", nclip_up, extra=d)
 
         if nl is not None:
             self.shape[0] = nl
 
         data = [fitsio.FITS(f)[1] for f in self.files]
         cube = np.ma.empty(self.shape, dtype=np.float64)
-        expmap = np.empty(self.shape, dtype=np.int32)
-        rejmap = np.empty(self.shape, dtype=np.int32)
+        expmap = np.zeros(self.shape, dtype=np.int32)
+        rejmap = np.zeros(self.shape, dtype=np.int32)
         vardata = np.empty(self.shape, dtype=np.float64)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
         select_pix = np.zeros(self.nfiles, dtype=np.int32)
         nl = self.shape[0]
-        fshape = (self.nfiles, self.shape[1], self.shape[2])
+        fshape = (self.shape[1], self.shape[2], self.nfiles)
+        arr = np.empty(fshape, dtype=float)
 
-        self.logger.info('Looping on the %d planes of the cube', nl, extra=d)
-        # for l in ProgressBar(xrange(nl)):
+        info('Looping on the %d planes of the cube', nl, extra=d)
         for l in xrange(nl):
             if l % 100 == 0:
-                self.logger.info('%d/%d', l, nl)
-            arr = np.empty(fshape, dtype=float)
+                info('%d/%d', l, nl, extra=d)
             for i, f in enumerate(data):
-                arr[i, :, :] = f[l, :, :][0]
+                arr[:, :, i] = f[l, :, :][0]
 
             sigma_clip(arr, cube, vardata, expmap, rejmap, valid_pix,
                        select_pix, l, nmax, nclip_low, nclip_up, nstop)
-            # val, sel = sigma_clip(arr, cube, vardata, expmap, rejmap, l,
-            #                       nmax, nclip_low, nclip_up, nstop)
-            # valid_pix += val
-            # select_pix += sel
 
         arr = None
         data = None
@@ -462,7 +456,7 @@ class CubeList(object):
         rejected_pix = valid_pix - select_pix
         rej = rejected_pix / valid_pix.astype(float) * 100.0
         rej = " ".join("{:.2f}".format(p) for p in rej)
-        self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
+        info("%% of rejected pixels per files: %s", rej, extra=d)
 
         stat_pix = Table([self.files, no_valid_pix, rejected_pix],
                          names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
@@ -608,16 +602,15 @@ class CubeMosaic(CubeList):
             raise
 
         if is_int(nclip) or is_float(nclip):
-            nclip_low = nclip
-            nclip_up = nclip
+            nclip_low, nclip_up = nclip, nclip
         else:
-            nclip_low = nclip[0]
-            nclip_up = nclip[1]
+            nclip_low, nclip_up = nclip
 
-        self.logger.info("Merging cube using sigma clipped mean", extra=d)
-        self.logger.info("nmax = %d", nmax, extra=d)
-        self.logger.info("nclip_low = %f", nclip_low, extra=d)
-        self.logger.info("nclip_high = %f", nclip_up, extra=d)
+        info = self.logger.info
+        info("Merging cube using sigma clipped mean", extra=d)
+        info("nmax = %d", nmax, extra=d)
+        info("nclip_low = %f", nclip_low, extra=d)
+        info("nclip_high = %f", nclip_up, extra=d)
 
         if nl is not None:
             self.shape[0] = nl
@@ -634,25 +627,20 @@ class CubeMosaic(CubeList):
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
         select_pix = np.zeros(self.nfiles, dtype=np.int32)
         nl = self.shape[0]
-        fshape = (self.nfiles, self.shape[1], self.shape[2])
+        fshape = (self.shape[1], self.shape[2], self.nfiles)
+        arr = np.empty(fshape, dtype=float)
 
-        self.logger.info('Looping on the %d planes of the cube', nl, extra=d)
-        # for l in ProgressBar(xrange(nl)):
+        info('Looping on the %d planes of the cube', nl, extra=d)
         for l in xrange(nl):
             if l % 100 == 0:
-                self.logger.info('%d/%d', l, nl)
-            arr = np.empty(fshape, dtype=float)
+                info('%d/%d', l, nl)
             arr.fill(np.nan)
             for i, f in enumerate(data):
                 x, y = offsets[i]
-                arr[i, x:x+shapes[i][0], y:y+shapes[i][1]] = f[l, :, :][0]
+                arr[x:x+shapes[i][0], y:y+shapes[i][1], i] = f[l, :, :][0]
 
             sigma_clip(arr, cube, vardata, expmap, rejmap, valid_pix,
                        select_pix, l, nmax, nclip_low, nclip_up, nstop)
-            # val, sel = sigma_clip(arr, cube, vardata, expmap, rejmap, l,
-            #                       nmax, nclip_low, nclip_up, nstop)
-            # valid_pix += val
-            # select_pix += sel
 
         arr = None
         data = None
@@ -663,7 +651,7 @@ class CubeMosaic(CubeList):
         rejected_pix = valid_pix - select_pix
         rej = rejected_pix / valid_pix.astype(float) * 100.0
         rej = " ".join("{:.2f}".format(p) for p in rej)
-        self.logger.info("%% of rejected pixels per files: %s", rej, extra=d)
+        info("%% of rejected pixels per files: %s", rej, extra=d)
         stat_pix = Table([self.files, no_valid_pix, rejected_pix],
                          names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
 
