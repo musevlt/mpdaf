@@ -666,7 +666,7 @@ class Source(object):
                 row[self.lines.colnames.index(col)] = val
             self.lines.add_row(row)
 
-    def add_image(self, image, name, size=None):
+    def add_image(self, image, name, size=None, minsize=2.0, rotate=False):
         """ Extract an image centered on the source center
         and append it to the images dictionary
 
@@ -685,14 +685,35 @@ class Source(object):
                 The total size to extract in arcseconds.
                 If size is a float, it corresponds to the size along the delta axis and the image is square.
                 If None, the size of the white image extension is taken if it exists.
+        minsize : float 
+                The minimum size of the output image in arcseconds.
+        rotate : bool 
+                if True, the image is rotated to the same PA as the white-light image
         """
+        d = {'class': 'Source', 'method': 'add_image'}
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
             except:
                 raise IOError('Size of the image (in arcsec) is required')
             size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
-        subima = image.subimage((self.dec, self.ra), size)
+        if rotate:
+            try:
+                white_ima = self.images['MUSE_WHITE']
+            except:
+                raise IOError('MUSE_WHITE image is required to get the PA')
+            pa_white = white_ima.get_rot()
+            pa = image.get_rot()
+            if np.abs(pa_white-pa) > 1.e-3:
+                subima = image.subimage((self.dec, self.ra), size*1.5, minsize=minsize)
+                subima = subima.rotate(pa-pa_white)
+                subima = subima.subimage((self.dec, self.ra), size, minsize=minsize)
+        else:
+            subima = image.subimage((self.dec, self.ra), size, minsize=minsize)
+        if subima is None:
+            self.logger.warning('Image %s not added. Source outside or at the edges'%(name),
+                                 extra=d)
+            return
         self.images[name] = subima
 
     def add_cube(self, cube, name, size=None, lbda=None):
