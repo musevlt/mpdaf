@@ -1948,7 +1948,7 @@ class Image(object):
         res._truncate(y_min, y_max, x_min, x_max, mask)
         return res
     
-    def subimage(self, center, size, pix=False):
+    def subimage(self, center, size, pix=False, minsize=2.0):
         """Extracts a sub-image
 
         Parameters
@@ -1961,16 +1961,22 @@ class Image(object):
                It corresponds to the size along the delta axis and the image is square.
         pix  : boolean
                if True size is in pixels
+        minsize : float
+               The minimum size in arcseconds or in pixel of the output image.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
         """
         if size > 0 :
+            if not self.inside(center):
+                return None
             center = self.wcs.sky2pix(center)[0]
             if not pix:
                 size = size / np.abs(self.wcs.get_step()[0]) / 3600.
-            radius = size / 2.
+                minsize = minsize / np.abs(self.wcs.get_step()[0]) / 3600.
+            radius = np.rint(size / 2.)
+            size = 2*radius
             
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
@@ -1979,6 +1985,8 @@ class Image(object):
                                     [self.shape[0], self.shape[1]])
             
             data = self.data[imin:imax, jmin:jmax].copy()
+            if data.shape[0] < minsize or data.shape[1] < minsize:
+                return None
             if self.var is not None:
                 var = self.var[imin:imax, jmin:jmax].copy()
             else:
