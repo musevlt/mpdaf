@@ -14,7 +14,7 @@ import warnings
 
 from ..obj import Cube, Image, Spectrum, gauss_image
 from ..obj.objs import is_int, is_float
-from .catalog import Catalog
+
 
 emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
@@ -320,13 +320,13 @@ class Source(object):
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
             # mag
-            if extname == 'MAG':
+            elif extname == 'MAG':
                 try:
                     mag = Table(hdu.data)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
             # Z
-            if extname == 'Z':
+            elif extname == 'Z':
                 try:
                     z = Table(hdu.data)
                 except:
@@ -373,6 +373,53 @@ class Source(object):
                     raise IOError('Impossible to open extension %s as a table'%extname)
         hdulist.close()
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables)
+    
+    @classmethod
+    def _light_from_file(cls, filename):
+        """Source constructor from a FITS file.
+        Light: Only data that are stored in catalog were loaded
+
+        Parameters
+        ----------
+        filename : string
+                   FITS filename
+        """
+        hdulist = pyfits.open(filename)
+        hdr = hdulist[0].header
+        lines = None
+        mag = None
+        z = None
+
+        tables= {}
+        for i in range(1, len(hdulist)):
+            hdu = hdulist[i]
+            extname = hdu.header['EXTNAME']
+            #lines
+            if extname == 'LINES':
+                try:
+                    lines = Table(hdu.data)
+                except:
+                    raise IOError('Impossible to open extension %s as a table'%extname)
+            # mag
+            elif extname == 'MAG':
+                try:
+                    mag = Table(hdu.data)
+                except:
+                    raise IOError('Impossible to open extension %s as a table'%extname)
+            # Z
+            elif extname == 'Z':
+                try:
+                    z = Table(hdu.data)
+                except:
+                    raise IOError('Impossible to open extension %s as a table'%extname)
+            
+            elif extname[:3] == 'TAB':
+                try:
+                    tables[extname[4:]] = Table(hdu.data)
+                except:
+                    raise IOError('Impossible to open extension %s as a table'%extname)
+        hdulist.close()
+        return cls(hdr, lines, mag, z, None, None, None, tables)
 
 
     def write(self, filename):
@@ -1305,6 +1352,8 @@ class SourceList(list):
         fcat = '%s/%s.fits'%(path, name)
         if overwrite and os.path.isfile(fcat) :
             os.remove(fcat)
+            
+        from .catalog import Catalog
         cat = Catalog.from_sources(self)
         try:
             cat.write(fcat)

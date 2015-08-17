@@ -5,8 +5,10 @@ from astropy import units as u
 
 from matplotlib.patches import Ellipse
 
+import glob
 import logging
 import numpy as np
+import os.path
 
 
 class Catalog(Table):
@@ -218,6 +220,28 @@ class Catalog(Table):
                 t[names].format = '%0.2f'
             if names[:4] == 'FLUX':
                 t[names].format = '%0.4f'
+        return t
+    
+    @classmethod
+    def from_path(cls, path):
+        """Create a Catalog object from the path of a directory containing source files
+
+        Parameters
+        ----------
+        path : string
+               Directory containing Source files
+        """
+        if not os.path.exists(path):
+            raise IOError("Invalid path: {0}".format(path))
+        
+        from .source import Source
+
+        slist = []
+        for f in glob.glob(path+'/*.fits'):
+            slist.append(Source._light_from_file(f))
+
+        t = cls.from_sources(slist)
+
         return t
 
     def match(self, cat2, radius=1):
