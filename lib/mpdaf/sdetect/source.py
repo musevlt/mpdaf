@@ -708,6 +708,8 @@ class Source(object):
                 subima = image.subimage((self.dec, self.ra), size*1.5, minsize=minsize)
                 subima = subima.rotate(pa-pa_white)
                 subima = subima.subimage((self.dec, self.ra), size, minsize=minsize)
+            else:
+                subima = image.subimage((self.dec, self.ra), size, minsize=minsize)
         else:
             subima = image.subimage((self.dec, self.ra), size, minsize=minsize)
         if subima is None:
