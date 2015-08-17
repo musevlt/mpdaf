@@ -2010,7 +2010,7 @@ class Image(object):
         """
         self.wcs.rotate(theta)
 
-    def _rotate(self, theta, interp='no', reshape=False):
+    def _rotate(self, theta, interp='no', reshape=False, pivot=None):
         """ Rotates the image using spline interpolation
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
@@ -2026,6 +2026,9 @@ class Image(object):
                 if reshape is true, the output image is adapted
                 so that the input image is contained completely in the output.
                 Default is False.
+        pivot : (int, int)
+                 rotation center in pixels
+                 if None, rotation will be done around the center of the image. 
         """
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -2033,16 +2036,40 @@ class Image(object):
             data = self._interp_data(spline=True)
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
-
+            
         mask = np.array(1 - self.data.mask, dtype=bool)
-        mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
-        data_rot = ndimage.rotate(data, -theta, reshape=reshape)
+            
+        if pivot is None:
+            mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
+            data_rot = ndimage.rotate(data, -theta, reshape=reshape)
+        
+            center = np.array([self.shape[0], self.shape[1]]) / 2.
+            center_pix = center + 1
+            center_coord = self.wcs.pix2sky([center])
+        else:
+            
+            padX = [self.shape[1] - pivot[0], pivot[0]]
+            padY = [self.shape[0] - pivot[1], pivot[1]]
+            
+            data_rot = np.pad(data, [padY, padX], 'constant')
+            data_rot = ndimage.rotate(data_rot, -theta, reshape=reshape)
+            
+            mask_rot = np.pad(mask, [padY, padX], 'constant')
+            mask_rot = ndimage.rotate(mask_rot, -theta, reshape=reshape, order=0)
+            
+            center_coord = self.wcs.pix2sky([pivot])
+            
+            if reshape is False:
+                data_rot = data_rot[padY[0] : -padY[1], padX[0] : -padX[1]]
+                mask_rot = mask_rot[padY[0] : -padY[1], padX[0] : -padX[1]]
+                center_pix = pivot + 1
+            else:
+                center_pix = pivot + 1 + [padY[0], padX[0]]
+            
         mask_ma = np.ma.make_mask(1 - mask_rot)
         self.data = np.ma.array(data_rot, mask=mask_ma)
 
         try:
-            center_pix = (np.array([self.shape[0], self.shape[1]]) + 1) / 2.
-            center_coord = self.wcs.pix2sky([center_pix - 1])
             old_crpix = self.wcs.wcs.wcs.crpix.copy()
             self.wcs.set_crpix1(center_pix[1])
             self.wcs.set_crpix2(center_pix[0])
@@ -2065,8 +2092,12 @@ class Image(object):
         except:
             self.shape = np.array(data_rot.shape)
             self.wcs = None
+                
+        if reshape:
+            self.resize()
+            
 
-    def rotate(self, theta, interp='no', reshape=False):
+    def rotate(self, theta, interp='no', reshape=False, pivot=None):
         """ Returns rotated image
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
@@ -2082,13 +2113,18 @@ class Image(object):
                 if reshape is true, the output image is adapted
                 so that the input image is contained completely in the output.
                 Default is False.
+        pivot : (double, double)
+                 rotation center in degrees
+                 if None, rotation will be done around the center of the image. 
 
         Returns
         -------
         out : Image
         """
         res = self.copy()
-        res._rotate(theta, interp, reshape)
+        if pivot is not None:
+            pivot = self.wcs.sky2pix([np.array(pivot)], nearest=True)[0]
+        res._rotate(theta, interp, reshape, pivot)
         return res
 
     def sum(self, axis=None):
