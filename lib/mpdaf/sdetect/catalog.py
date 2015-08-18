@@ -237,11 +237,14 @@ class Catalog(Table):
         from .source import Source
 
         slist = []
+        files = []
         for f in glob.glob(path+'/*.fits'):
             slist.append(Source._light_from_file(f))
+            files.append(os.path.basename(f))
 
         t = cls.from_sources(slist)
-
+        t['FILENAME'] = files
+        
         return t
 
     def match(self, cat2, radius=1):
