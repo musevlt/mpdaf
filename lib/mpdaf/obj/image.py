@@ -2043,9 +2043,9 @@ class Image(object):
             mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
             data_rot = ndimage.rotate(data, -theta, reshape=reshape)
         
-            center = np.array([self.shape[0], self.shape[1]]) / 2.
-            center_pix = center + 1
-            center_coord = self.wcs.pix2sky([center])
+            crpix1 = self.shape[1]/2. + 0.5
+            crpix2 = self.shape[0]/2. + 0.5
+            
         else:
             
             padX = [self.shape[1] - pivot[0], pivot[0]]
@@ -2059,36 +2059,32 @@ class Image(object):
             
             center_coord = self.wcs.pix2sky([pivot])
             
+            shape = np.array(data_rot.shape)
+            
             if reshape is False:
                 data_rot = data_rot[padY[0] : -padY[1], padX[0] : -padX[1]]
                 mask_rot = mask_rot[padY[0] : -padY[1], padX[0] : -padX[1]]
-                center_pix = pivot + 1
+                crpix1 = shape[1]/2. + 0.5 - padX[0]
+                crpix2 = shape[0]/2. + 0.5 - padY[0]
             else:
-                center_pix = pivot + 1 + [padY[0], padX[0]]
+                crpix1 = shape[1]/2. + 0.5
+                crpix2 = shape[0]/2. + 0.5
             
         mask_ma = np.ma.make_mask(1 - mask_rot)
         self.data = np.ma.array(data_rot, mask=mask_ma)
 
         try:
-            old_crpix = self.wcs.wcs.wcs.crpix.copy()
-            self.wcs.set_crpix1(center_pix[1])
-            self.wcs.set_crpix2(center_pix[0])
-            self.wcs.set_crval1(center_coord[0][1])
-            self.wcs.set_crval2(center_coord[0][0])
-            # rotate the wcs
-            self.wcs.rotate(-theta)
-            # translate the new wcs
+            
+            center_coord = self.wcs.pix2sky([[crpix2-1,crpix1-1]])
             self.shape = np.array(data_rot.shape)
             self.wcs.set_naxis1(self.shape[1])
             self.wcs.set_naxis2(self.shape[0])
-            self.wcs.set_crpix1((self.shape[1] + 1) / 2.)
-            self.wcs.set_crpix2((self.shape[0] + 1) / 2.)
-            # compute the new value of the old crpix
-            new_crval = self.wcs.pix2sky([old_crpix[1] - 1, old_crpix[0] - 1])
-            self.wcs.set_crpix1(old_crpix[0])
-            self.wcs.set_crpix2(old_crpix[1])
-            self.wcs.set_crval1(new_crval[0][1])
-            self.wcs.set_crval2(new_crval[0][0])
+            self.wcs.set_crpix1(crpix1)
+            self.wcs.set_crpix2(crpix2)
+            self.wcs.set_crval1(center_coord[0][1])
+            self.wcs.set_crval2(center_coord[0][0])
+            self.wcs.rotate(-theta)
+              
         except:
             self.shape = np.array(data_rot.shape)
             self.wcs = None

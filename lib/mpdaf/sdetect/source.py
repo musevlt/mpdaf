@@ -753,7 +753,7 @@ class Source(object):
             pa = image.get_rot()
             if np.abs(pa_white-pa) > 1.e-3:
                 subima = image.subimage((self.dec, self.ra), size*1.5, minsize=minsize)
-                subima = subima.rotate(pa_white-pa)
+                subima = subima.rotate(pa-pa_white)
                 subima = subima.subimage((self.dec, self.ra), size, minsize=minsize)
             else:
                 subima = image.subimage((self.dec, self.ra), size, minsize=minsize)
