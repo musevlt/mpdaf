@@ -9,6 +9,7 @@ import glob
 import logging
 import numpy as np
 import os.path
+import sys
 
 
 class Catalog(Table):
@@ -39,6 +40,7 @@ class Catalog(Table):
         sources : list< :class:`mpdaf.sdetect.Source` >
         """
         invalid = {type(1): -9999, type(1.0): np.nan, type('1'): '', type(False): -1}
+        #invalid = {type(1): np.ma.masked_array([-9999], mask=[1], fill_value=-9999), type(1.0): np.ma.masked_array([np.nan], mask=[1], fill_value=np.nan), type('1'): '', type(False): -1}
         # union of all headers keywords without mandatory FITS keywords
 
         h = sources[0].header
@@ -207,6 +209,8 @@ class Catalog(Table):
         # create Table
         names = names_hdr + names_mag + names_z + names_lines
         
+        
+        
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
@@ -220,6 +224,14 @@ class Catalog(Table):
                 t[names].format = '%0.2f'
             if names[:4] == 'FLUX':
                 t[names].format = '%0.4f'
+                
+        # mask nan
+        for col in t.colnames:
+            try:
+                t[col] = np.ma.masked_invalid(t[col])
+            except:
+                pass
+            
         return t
     
     @classmethod
@@ -237,13 +249,22 @@ class Catalog(Table):
         from .source import Source
 
         slist = []
-        files = []
-        for f in glob.glob(path+'/*.fits'):
+        filenames = []
+        files = glob.glob(path+'/*.fits')
+        n = len(files)
+        
+        for f in files:
             slist.append(Source._light_from_file(f))
-            files.append(os.path.basename(f))
+            filenames.append(os.path.basename(f))
+            sys.stdout.write("\r\x1b[K %i%%"%(100*len(filenames)/n))
+            sys.stdout.flush()
+            
+        #output = ""
+        sys.stdout.write("\r\x1b[K ")
+        sys.stdout.flush()
 
         t = cls.from_sources(slist)
-        t['FILENAME'] = files
+        t['FILENAME'] = filenames
         
         return t
 
