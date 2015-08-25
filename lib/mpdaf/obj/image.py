@@ -4108,7 +4108,7 @@ class Image(object):
         res._rebin_median_(factor)
         return res
 
-    def _rebin_without_rot(self, newdim, newstart, newstep,
+    def _rebin(self, newdim, newstart, newstep,
                flux=False, order=3, interp='no'):
         """Rebins the image to a new coordinate system.
         Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
@@ -4156,66 +4156,26 @@ class Image(object):
         mask = np.array(1 - self.data.mask, dtype=bool)
 
         theta = self.wcs.get_rot()
-        wcs = WCS(crpix=[1, 1], crval=newstart, cdelt=newstep, deg=self.wcs.is_deg(), rot=theta, shape=newdim)
+        
         pstep = newstep / self.wcs.get_step()
-        poffset = self.wcs.sky2pix(newstart)[0] / pstep  # ok without rotation
-            
+        #poffset = ((self.wcs.sky2pix(newstart)[0]+0.5)) / pstep - 0.5 
+        
+        poffset = ((self.wcs.sky2pix(newstart)[0]+0.5)) / pstep
+             
         data = ndimage.affine_transform(data, pstep, poffset,
                                         output_shape=newdim, order=order)
-        
+         
         newmask = ndimage.affine_transform(mask, pstep, poffset,
                                            output_shape=newdim, order=0)
-            
         mask = np.ma.make_mask(1 - newmask)
 
         if flux:
             data *= newstep.prod() / self.wcs.get_step().prod()
 
         self.shape = newdim
-        self.wcs = wcs
+        self.wcs = WCS(crpix=[1, 1], crval=newstart, cdelt=newstep, deg=self.wcs.is_deg(), rot=theta, shape=newdim)
         self.data = np.ma.array(data, mask=mask)
         self.var = None
-        
-    def _rebin(self, newdim, newstart, newstep,
-               flux=False, order=3, interp='no'):
-        """Rebins the image to a new coordinate system.
-        Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
-
-        Parameters
-        ----------
-        newdim   : integer or (integer,integer)
-                New dimensions. Python notation: (ny,nx)
-        newstart : float or (float, float)
-                New positions (y,x) for the pixel (0,0).
-                If None, old position is used.
-        newstep  : float or (float, float)
-                New step (dy,dx).
-        flux     : boolean
-                if flux is True, the flux is conserved.
-        order    : integer
-                The order of the spline interpolation, default is 3.
-                The order has to be in the range 0-5.
-        interp   : 'no' | 'linear' | 'spline'
-                if 'no', data median value replaced masked values.
-                if 'linear', linear interpolation of the masked values.
-                if 'spline', spline interpolation of the masked values.
-        """
-        theta = self.wcs.get_rot()
-        if np.abs(theta) > 1.e-3:
-              
-            self._rotate(theta, reshape=True)
-            center = self.wcs.pix2sky([np.array(self.shape/2-0.5, dtype=np.int)])[0]
-               
-            d = np.sqrt((newstart[0]-center[0])**2 + (newstart[1]-center[1])**2)
-            newstart[0] =  d * np.sin(np.deg2rad(-theta)) + center[0]
-            newstart[1] =  d * np.cos(np.deg2rad(-theta)) + center[1]
-               
-            dim_tmp = np.array(1+self.shape*self.wcs.get_step()/newstep, dtype=np.int)
-            self._rebin_without_rot(dim_tmp, newstart, newstep, flux, order, interp)
-            self._rotate(-theta, reshape=True)
-            self = self[:newdim[0],:newdim[1]]
-        else:
-            self._rebin_without_rot(newdim, newstart, newstep, flux, order, interp)
 
     def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no'):
@@ -4471,11 +4431,6 @@ class Image(object):
                 self_cdelt = self.wcs.get_step()
                 ima_cdelt = ima.wcs.get_step()
                 
-                [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0, 0]]))
-                l1 = int(l1 + 0.5)
-                k1 = int(k1 + 0.5)
-                newstart = self.wcs.pix2sky([[k1, l1]])[0]
-                
                 if (self_cdelt != ima_cdelt).all():
                     try:
                         factor = self_cdelt / ima_cdelt
@@ -4489,9 +4444,11 @@ class Image(object):
                             raise ValueError('steps are not integer multiple')
                     except:
                         newdim = np.array(0.5 + ima.shape / factor, dtype=np.int)
+                        newstart = self.wcs.get_start()
                         ima = ima.rebin(newdim, newstart, self_cdelt, flux=True)
                 
                 # here ima and self have the same step and the same rotation
+                
                 [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0, 0]]))
                 l1 = int(l1 + 0.5)
                 k1 = int(k1 + 0.5)
