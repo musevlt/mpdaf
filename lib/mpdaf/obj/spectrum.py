@@ -2573,7 +2573,7 @@ class Spectrum(object):
         self.data[imin:imax] = self.data[imin:imax] \
             + gauss(v, wave) / self.fscale
 
-    def gauss_dfit(self, lmin, lmax, lineratio, lpeak_1=None,
+    def gauss_dfit(self, lmin, lmax, wratio, lpeak_1=None,
                          flux_1=None, fratio=1., fwhm=None, cont=None,
                          peak=False, spline=False, weight=True,
                          plot=False, plot_factor=10):
@@ -2591,8 +2591,8 @@ class Spectrum(object):
         lmax        : float or (float,float)
                     Maximum wavelength or wavelength range
                     used to initialize the gaussian right value.
-        lineratio   : float
-                    Ration between the two gaussian centers
+        wratio   : float
+                    Ratio between the two gaussian centers
         lpeak_1     : float
                     Input gaussian center of the first gaussian.
                     if None it is estimated
@@ -2690,7 +2690,7 @@ class Spectrum(object):
         # 1d gaussian function
         # p[0]: flux 1, p[1]:center 1, p[2]: fwhm, p[3] = peak 2
         gaussfit = lambda p, x: cont0 + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) \
-                                      + p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - (p[1] * lineratio)) ** 2 / (2 * p[2] ** 2))
+                                      + p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
 
         # 1d gaussian fit
         if spec.var is not None and weight:
@@ -2724,7 +2724,7 @@ class Spectrum(object):
         flux_1 = v[0] * self.fscale
         flux_2 = v[3] * self.fscale
         lpeak_1 = v[1]
-        lpeak_2 = lpeak_1 * lineratio
+        lpeak_2 = lpeak_1 * wratio
         sigma = np.abs(v[2])
         fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
         peak_1 = flux_1 / np.sqrt(2 * np.pi * (sigma ** 2))
@@ -2734,7 +2734,7 @@ class Spectrum(object):
             err_flux_1 = err[0] * self.fscale
             err_flux_2 = err[3] * self.fscale
             err_lpeak_1 = err[1]
-            err_lpeak_2 = err[1] * lineratio
+            err_lpeak_2 = err[1] * wratio
             err_sigma = err[2]
             err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
             err_peak_1 = np.abs(1. / np.sqrt(2 * np.pi) * (err_flux_1 * sigma - flux_1 * err_sigma) / sigma / sigma)
