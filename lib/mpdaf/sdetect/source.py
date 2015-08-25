@@ -766,7 +766,7 @@ class Source(object):
         self.images[name] = subima
 
     def add_cube(self, cube, name, size=None, lbda=None):
-        """Extract an cube centered on the source center
+        """Extract a cube centered on the source center
         and append it to the cubes dictionary
 
         Extracted cube saved in self.cubes['name'].
