@@ -1202,7 +1202,7 @@ class Source(object):
                     self.spectra['MUSE_PSF'] = spec
                 # Insert the PSF weighted flux - here re-normalised?
 
-    def crack_z(self, eml=None, nlines=np.inf):
+    def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS','FLUX'), z_desc='EMI'):
         """Estimate the best redshift matching the list of emission lines
 
         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr).
@@ -1233,16 +1233,26 @@ class Source(object):
         nlines  : integer
                   estimated the redshift if the number of emission lines is
                   inferior to this value
+        cols    : (string, string)
+                  tuple (wavelength column name, flux column name)
+                  Two columns of self.lines that will be used to define the emission lines.
+        z_desc  : string
+                  Estimated redshift will be saved in self.z table under these name.
         """
         d = {'class': 'Source', 'method': 'crack_z'}
         nline_max = nlines
         if eml is None:
             eml = emlines
+        col_lbda, col_flux = cols
+        if col_lbda not in self.lines.colnames:
+            raise IOError('invalid colum name %s'%col_lbda)
+        if col_flux not in self.lines.colnames:
+            raise IOError('invalid colum name %s'%col_flux)
 
         try:
             #vacuum wavelengths
-            wl = air2vacuum(np.array(self.lines['LBDA_OBS']))
-            flux = np.array(self.lines['FLUX'])
+            wl = air2vacuum(np.array(self.lines[col_lbda]))
+            flux = np.array(self.lines[col_flux])
             nlines = len(wl)
         except:
             self.logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
@@ -1255,7 +1265,7 @@ class Source(object):
         if nlines > 0:
             if nlines < nline_max:
                 #redshift
-                self.add_z('EMI', z, errz)
+                self.add_z(z_desc, z, errz)
                 self.logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
                 #line names
                 if 'LINE' not in self.lines.colnames:
@@ -1265,7 +1275,7 @@ class Source(object):
                                        name='LINE', dtype='S20')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
-                    self.lines['LINE'][self.lines['LBDA_OBS']==w] = name
+                    self.lines['LINE'][self.lines[col_lbda]==w] = name
                 self.logger.info('crack_z: lines', extra=d)
                 for l in self.lines.pformat():
                     self.logger.info(l, extra=d)
