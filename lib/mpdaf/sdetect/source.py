@@ -194,6 +194,12 @@ class Source(object):
         self.mag = mag
         # Table Z
         self.z = z
+        if self.z is not None and 'Z' in self.z.colnames:
+            self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
+        if self.z is not None and 'Z_MIN' in self.z.colnames:
+            self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
+        if self.z is not None and 'Z_MAX' in self.z.colnames:
+            self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
         # Dictionary SPECTRA
         if spectra is None:
             self.spectra = {}
@@ -316,19 +322,19 @@ class Source(object):
             #lines
             if extname == 'LINES':
                 try:
-                    lines = Table(hdu.data)
+                    lines = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
             # mag
             elif extname == 'MAG':
                 try:
-                    mag = Table(hdu.data)
+                    mag = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
             # Z
             elif extname == 'Z':
                 try:
-                    z = Table(hdu.data)
+                    z = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
             # spectra
@@ -368,7 +374,7 @@ class Source(object):
                     raise IOError('Impossible to open extension %s as a cube'%extname)
             elif extname[:3] == 'TAB':
                 try:
-                    tables[extname[4:]] = Table(hdu.data)
+                    tables[extname[4:]] = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
         hdulist.close()
@@ -397,25 +403,25 @@ class Source(object):
             #lines
             if extname == 'LINES':
                 try:
-                    lines = Table(hdu.data)
+                    lines = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
             # mag
             elif extname == 'MAG':
                 try:
-                    mag = Table(hdu.data)
+                    mag = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
             # Z
             elif extname == 'Z':
                 try:
-                    z = Table(hdu.data)
+                    z = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
             
             elif extname[:3] == 'TAB':
                 try:
-                    tables[extname[4:]] = Table(hdu.data)
+                    tables[extname[4:]] = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
         hdulist.close()
@@ -635,8 +641,12 @@ class Source(object):
                Redshift error (deltaz) or redshift interval (zmin,zmax).
         """
         if is_float(errz) or is_int(errz):
-            zmin = z - errz
-            zmax = z + errz
+            if errz==-9999:
+                zmin=-9999
+                zmax=-9999
+            else:
+                zmin = z - errz
+                zmax = z + errz
         else:
             try:
                 zmin, zmax = errz
@@ -645,7 +655,8 @@ class Source(object):
         if self.z is None:
             self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
                            rows=[[desc, z, zmin, zmax]],
-                           dtype=('S20', 'f6', 'f6', 'f6'))
+                           dtype=('S20', 'f6', 'f6', 'f6'),
+                           masked=True)
             self.z['Z'].format = '%.6f'
             self.z['Z_MIN'].format = '%.6f'
             self.z['Z_MAX'].format = '%.6f'
@@ -656,6 +667,10 @@ class Source(object):
                 self.z['Z_MAX'][self.z['Z_DESC']==desc] = zmax
             else:
                 self.z.add_row([desc, z, zmin, zmax])
+                
+        self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
+        self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
+        self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
 
     def add_mag(self, band, m, errm):
         """Add a magnitude value to the mag table.
@@ -672,7 +687,8 @@ class Source(object):
         if self.mag is None:
             self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
                            rows=[[band, m, errm]],
-                           dtype=('S20', 'f6', 'f6'))
+                           dtype=('S20', 'f6', 'f6'),
+                           masked=True)
             self.mag['MAG'].format = '%.6f'
             self.mag['MAG_ERR'].format = '%.6f'
         else:
@@ -701,7 +717,7 @@ class Source(object):
                     types.append('<f8')
                 else:
                     types.append('S20')
-            self.lines = Table(rows=[values], names=cols, dtype=types)
+            self.lines = Table(rows=[values], names=cols, dtype=types, masked=True)
         else:
             # add new columns
             for col in cols:
@@ -1177,17 +1193,21 @@ class Source(object):
                                 6731.0   : '[SII]6731'}
 
         nlines  : integer
-                  estimated the redshift if the list of emission lines is
+                  estimated the redshift if the number of emission lines is
                   inferior to this value
         """
-        #d = {'class': 'Source', 'method': 'crack_z'}
+        d = {'class': 'Source', 'method': 'crack_z'}
         nline_max = nlines
         if eml is None:
             eml = emlines
 
-        wl = np.array(self.lines['LBDA_OBS'])
-        flux = np.array(self.lines['FLUX'])
-        nlines = len(wl)
+        try:
+            wl = np.array(self.lines['LBDA_OBS'])
+            flux = np.array(self.lines['FLUX'])
+            nlines = len(wl)
+        except:
+            self.logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
+            return
 
         z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml)
 
@@ -1195,16 +1215,20 @@ class Source(object):
             if nlines < nline_max:
                 #redshift
                 self.add_z('EMI', z, errz)
-                #self.logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
+                self.logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
                 #line names
                 if 'LINE' not in self.lines.colnames:
                     col = Column(data=None, name='LINE', dtype='S20', length=len(self.lines))
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
                     self.lines['LINE'][self.lines['LBDA_OBS']==w] = name
-                #self.logger.info('crack_z: lines', extra=d)
-                #for l in self.lines.pformat():
-                #    self.logger.info(l, extra=d)
+                self.logger.info('crack_z: lines', extra=d)
+                for l in self.lines.pformat():
+                    self.logger.info(l, extra=d)
+            else:
+                self.logger.info('Impossible to estimate the redshift, the number of emission lines is inferior to %d'%nline_max, extra=d)
+        else:
+            self.logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
 
     def sort_lines(self, nlines_max=25):
         """Sort lines by flux in descending order.
