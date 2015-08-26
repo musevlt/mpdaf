@@ -1222,6 +1222,8 @@ class Source(object):
             return
 
         z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml)
+        #observed wavelengths
+        wl = vacuum2air(wl)
 
         if nlines > 0:
             if nlines < nline_max:
