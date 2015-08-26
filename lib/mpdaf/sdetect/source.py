@@ -38,6 +38,17 @@ emlines = {1215.67: 'LYALPHA1216',
            6716.0: '[SII]6716',
            6731.0: '[SII]6731'}
 
+def vacuum2air(vac):
+    return vac / (1.0 + 2.735182e-4 + 131.4182/(vac**2) + 2.76249e8/(vac**4))
+
+def air2vacuum(air):
+    vactest = air + (air - vacuum2air(air))
+    x = np.abs(air - vacuum2air(vactest))
+    for i in range(10):
+        vactest = vactest + x
+        x = np.abs(air-vacuum2air(vactest))
+    return vactest
+
 
 def matchlines(nlines, wl, z, eml):
     """ try to match all the lines given :
@@ -1202,7 +1213,8 @@ class Source(object):
             eml = emlines
 
         try:
-            wl = np.array(self.lines['LBDA_OBS'])
+            #vacuum wavelengths
+            wl = air2vacuum(np.array(self.lines['LBDA_OBS']))
             flux = np.array(self.lines['FLUX'])
             nlines = len(wl)
         except:
