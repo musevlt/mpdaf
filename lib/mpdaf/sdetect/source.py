@@ -1,5 +1,5 @@
 from astropy.io import fits as pyfits
-from astropy.table import Table, Column, vstack
+from astropy.table import Table, MaskedColumn, vstack
 
 from matplotlib import cm
 from matplotlib.patches import Ellipse
@@ -709,15 +709,18 @@ class Source(object):
             else:
                 self.mag.add_row([band, m, errm])
 
-    def add_line(self, cols, values):
+    def add_line(self, cols, values, match=None):
         """Add a line to the lines table
 
         Parameters
         ----------
         cols   : list<string>
                  Names of the columns
-        values : list<interger/float/string>
+        values : list<integer/float/string>
                  List of corresponding values
+        match  : (string,float/integer/string)
+                 Tuple (key,vlaue) that gives the key to match the added line with an existing line.
+                 eg ('LINE','LYALPHA1216')
         """
         if self.lines is None:
             types = []
@@ -731,14 +734,38 @@ class Source(object):
             self.lines = Table(rows=[values], names=cols, dtype=types, masked=True)
         else:
             # add new columns
-            for col in cols:
-                if  col not in self.lines.colnames:
-                    self.lines[col] = [None]*len(self.lines)
-            # add new row
-            row = [None]*len(self.lines.colnames)
             for col, val in zip(cols, values):
-                row[self.lines.colnames.index(col)] = val
-            self.lines.add_row(row)
+                if  col not in self.lines.colnames:
+                    nlines = len(self.lines)
+                    if is_int(val):
+                        typ = '<i4'
+                    elif is_float(val):
+                        typ = '<f8'
+                    else:
+                        typ = 'S20'
+                    col = MaskedColumn(np.ma.masked_array(np.empty(nlines),
+                                                          mask=np.ones(nlines)),
+                                       name=col, dtype=typ)
+                    self.lines.add_column(col)
+                    
+            if match is not None:
+                matchkey, matchval = match
+            
+            if match is not None and matchkey in self.lines.colnames:
+                l = np.argwhere(self.lines[matchkey]==matchval)
+                if len(l) > 0:
+                    for col, val in zip(cols, values):
+                        self.lines[col][l] = val
+            else:            
+                # add new row
+                ncol = len(self.lines.colnames)
+                row = [None]*ncol
+                mask=np.ones(ncol)
+                for col, val in zip(cols, values):
+                    i = self.lines.colnames.index(col)
+                    row[i] = val
+                    mask[i] = 0
+                self.lines.add_row(row, mask=mask)
 
     def add_image(self, image, name, size=None, minsize=2.0, rotate=False):
         """ Extract an image centered on the source center
@@ -1232,7 +1259,10 @@ class Source(object):
                 self.logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
                 #line names
                 if 'LINE' not in self.lines.colnames:
-                    col = Column(data=None, name='LINE', dtype='S20', length=len(self.lines))
+                    nlines = len(self.lines)
+                    col = MaskedColumn(np.ma.masked_array(np.empty(nlines),
+                                                          mask=np.ones(nlines)),
+                                       name='LINE', dtype='S20')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
                     self.lines['LINE'][self.lines['LBDA_OBS']==w] = name
