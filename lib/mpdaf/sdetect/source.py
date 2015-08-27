@@ -39,9 +39,11 @@ emlines = {1215.67: 'LYALPHA1216',
            6731.0: '[SII]6731'}
 
 def vacuum2air(vac):
+    vac = np.array(vac)
     return vac / (1.0 + 2.735182e-4 + 131.4182/(vac**2) + 2.76249e8/(vac**4))
 
 def air2vacuum(air):
+    air = np.array(air)
     vactest = air + (air - vacuum2air(air))
     x = np.abs(air - vacuum2air(vactest))
     for i in range(10):
