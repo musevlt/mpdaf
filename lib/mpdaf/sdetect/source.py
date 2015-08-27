@@ -665,7 +665,7 @@ class Source(object):
                 zmin, zmax = errz
             except:
                 raise ValueError,'Wrong type for errz in add_z'
-        if self.z is None:
+        if self.z is None and z!=-9999:
             self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
                            rows=[[desc, z, zmin, zmax]],
                            dtype=('S20', 'f6', 'f6', 'f6'),
@@ -675,11 +675,16 @@ class Source(object):
             self.z['Z_MAX'].format = '%.6f'
         else:
             if desc in self.z['Z_DESC']:
-                self.z['Z'][self.z['Z_DESC']==desc] = z
-                self.z['Z_MIN'][self.z['Z_DESC']==desc] = zmin
-                self.z['Z_MAX'][self.z['Z_DESC']==desc] = zmax
+                if z!=-9999:
+                    self.z['Z'][self.z['Z_DESC']==desc] = z
+                    self.z['Z_MIN'][self.z['Z_DESC']==desc] = zmin
+                    self.z['Z_MAX'][self.z['Z_DESC']==desc] = zmax
+                else:
+                    index = np.where((self.z['Z_DESC']==desc))[0][0]
+                    self.z.remove_row(index)
             else:
-                self.z.add_row([desc, z, zmin, zmax])
+                if z!=-9999:
+                    self.z.add_row([desc, z, zmin, zmax])
                 
         self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
         self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
