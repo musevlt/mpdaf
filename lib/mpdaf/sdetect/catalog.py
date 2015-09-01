@@ -75,17 +75,17 @@ class Catalog(Table):
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
         if len(lmag) != 0:
-            names_mag = list(set(np.concatenate([source.mag['BAND'] for source in sources
+            names_mag = list(set(np.concatenate([source.mag['BAND'].data.data for source in sources
                                                  if source.mag is not None])))
             names_mag += ['%s_ERR' % mag for mag in names_mag]
             names_mag.sort()
         else:
             names_mag = []
-
+ 
         # redshifts
         lz = [len(source.z) for source in sources if source.z is not None]
         if len(lz) != 0:
-            names_z = list(set(np.concatenate([source.z['Z_DESC'] for source in sources
+            names_z = list(set(np.concatenate([source.z['Z_DESC'].data.data for source in sources
                                                if source.z is not None])))
             names_z = ['Z_%s' % z for z in names_z]
             if 'Z_ERR' in source.z.colnames:
@@ -104,7 +104,7 @@ class Catalog(Table):
             names_z.sort()
         else:
             names_z = []
-
+ 
         # lines
         llines = [len(source.lines) for source in sources if source.lines is not None]
         if len(llines) != 0:
@@ -132,11 +132,17 @@ class Catalog(Table):
             # header
             h = source.header
             keys = h.keys()
-            row = [h[key] if key in keys else invalid[typ] for key,typ in zip(names_hdr, dtype_hdr)]
+            row = []
+            for key,typ in zip(names_hdr, dtype_hdr):
+                if typ==type('1'):
+                    row += ['%s'%h[key] if key in keys else invalid[typ]]
+                else:
+                    row += [h[key] if key in keys else invalid[typ]]
+#            row = [h[key] if key in keys else invalid[typ] for key,typ in zip(names_hdr, dtype_hdr)]
             # magnitudes
             if len(lmag) != 0:
                 if source.mag is None:
-                    row += [None for key in names_mag]
+                    row += ['' for key in names_mag]
                 else:
                     keys = source.mag['BAND']
                     for key in names_mag:
@@ -145,11 +151,11 @@ class Catalog(Table):
                         elif key[-4:] == '_ERR' and key[:-4] in keys:
                             row += [float(source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]])]
                         else:
-                            row += [None]
+                            row += [np.nan]
             # redshifts
             if len(lz) != 0:
                 if source.z is None:
-                    row += [None for key in names_z]
+                    row += ['' for key in names_z]
                 else:
                     keys = source.z['Z_DESC']
                     for key in names_z:
@@ -163,7 +169,7 @@ class Catalog(Table):
                         elif key[-4:] == '_ERR' and key[:-4] in keys:
                             row += [float(source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]])]
                         else:
-                            row += [None]
+                            row += [np.nan]
             # lines
             if len(llines) != 0:
                 if source.lines is None:
@@ -179,7 +185,7 @@ class Catalog(Table):
                             lines = vstack([subtab1, subtab2])
                         except:
                             lines = source.lines
-
+ 
                         n = len(lines)
                         for key, typ in zip(names_lines, dtype_lines):
                             if key[:-3] in keys and int(key[-3:]) <= n:
@@ -210,7 +216,6 @@ class Catalog(Table):
         names = names_hdr + names_mag + names_z + names_lines
         
         
-        
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
@@ -229,6 +234,11 @@ class Catalog(Table):
         for col in t.colnames:
             try:
                 t[col] = np.ma.masked_invalid(t[col])
+                t[col] = np.ma.masked_equal(t[col], None)
+                t[col] = np.ma.masked_equal(t[col], 'None')
+                t[col] = np.ma.masked_equal(t[col], -9999)
+                t[col] = np.ma.masked_equal(t[col], np.nan)
+                t[col] = np.ma.masked_equal(t[col], '')
             except:
                 pass
             
