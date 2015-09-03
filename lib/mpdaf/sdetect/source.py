@@ -1459,8 +1459,8 @@ class SourceList(list):
             raise IOError("Invalid path: {0}".format(path))
 
         slist = cls()
-        for file in glob.glob(path+'/*.fits'):
-            slist.append(Source.from_file(file))
+        for f in glob.glob(path+'/*.fits'):
+            slist.append(Source.from_file(f))
 
         return slist
 

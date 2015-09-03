@@ -39,7 +39,10 @@ class Catalog(Table):
         ----------
         sources : list< :class:`mpdaf.sdetect.Source` >
         """
-        invalid = {type(1): -9999, type(1.0): np.nan, type('1'): '', type(False): -1}
+        invalid = {type(1): -9999, np.int_: -9999, 
+                   type(1.0): np.nan, np.float_: np.nan,
+                   type('1'): '', np.str_: '',
+                   type(False): -9999, np.bool_: -9999}
         #invalid = {type(1): np.ma.masked_array([-9999], mask=[1], fill_value=-9999), type(1.0): np.ma.masked_array([np.nan], mask=[1], fill_value=np.nan), type('1'): '', type(False): -1}
         # union of all headers keywords without mandatory FITS keywords
 
@@ -107,25 +110,26 @@ class Catalog(Table):
  
         # lines
         llines = [len(source.lines) for source in sources if source.lines is not None]
+        names_lines = []
+        dtype_lines = []
         if len(llines) != 0:
-            lmax = max(llines)
             d = {}
             for source in sources:
-                if source.lines is not None:
-                    for col in source.lines.colnames:
+                if source.lines is not None and 'LINE' in source.lines.colnames:
+                    colnames = source.lines.colnames
+                    colnames.remove('LINE')
+                    
+                    for col in colnames:
                         d[col] = source.lines.dtype[col]
-            if lmax == 1:
-                names_lines = sorted(d)
-                dtype_lines = [d[key] for key in sorted(d)]
-            else:
-                names_lines = []
-                inames_lines = sorted(d)
-                for i in range(1, lmax + 1):
-                    names_lines += [col + '%03d' % i for col in inames_lines]
-                dtype_lines = [d[key] for key in sorted(d)] * lmax
-        else:
-            names_lines = []
-            dtype_lines = []
+                    
+                    for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
+                        if not mask:
+                            names_lines += ['%s_%s'%(line,col) for col in colnames]
+                            
+            names_lines = list(set(np.concatenate([names_lines])))
+            names_lines.sort()
+            dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
+
 
         data_rows = []
         for source in sources:
@@ -138,7 +142,7 @@ class Catalog(Table):
                     row += ['%s'%h[key] if key in keys else invalid[typ]]
                 else:
                     row += [h[key] if key in keys else invalid[typ]]
-#            row = [h[key] if key in keys else invalid[typ] for key,typ in zip(names_hdr, dtype_hdr)]
+
             # magnitudes
             if len(lmag) != 0:
                 if source.mag is None:
@@ -173,29 +177,19 @@ class Catalog(Table):
             # lines
             if len(llines) != 0:
                 if source.lines is None:
-                    row += [None for key in names_lines]
+                    for typ in dtype_lines:
+                        row += [invalid[typ.type]]
+                    #row += [None for key in names_lines]
                 else:
-                    keys = source.lines.colnames
-                    if lmax == 1:
-                        row += [source.lines[key][0] if key in keys else None for key in names_lines]
-                    else:
-                        try:
-                            subtab1 = source.lines[source.lines['LINE'] != ""]
-                            subtab2 = source.lines[source.lines['LINE'] == ""]
-                            lines = vstack([subtab1, subtab2])
-                        except:
-                            lines = source.lines
- 
-                        n = len(lines)
-                        for key, typ in zip(names_lines, dtype_lines):
-                            if key[:-3] in keys and int(key[-3:]) <= n:
-                                row += [lines[key[:-3]][int(key[-3:]) - 1]]
-                            elif typ == 'S20':
-                                row += ['']
-                            elif typ == 'i4':
-                                row += [-99999]
-                            else:
-                                row += [None]
+                    for name, typ in zip(names_lines, dtype_lines):
+                        colname = '_'.join(name.split('_')[1:])
+                        line = name.split('_')[0]
+                        if 'LINE' in source.lines.colnames and \
+                           colname in source.lines.colnames and \
+                           line in source.lines['LINE'].data.data:
+                            row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
+                        else:
+                            row += [invalid[typ.type]]
                         
             # final row
             data_rows.append(row)
@@ -215,7 +209,6 @@ class Catalog(Table):
         # create Table
         names = names_hdr + names_mag + names_z + names_lines
         
-        
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
@@ -234,8 +227,8 @@ class Catalog(Table):
         for col in t.colnames:
             try:
                 t[col] = np.ma.masked_invalid(t[col])
-                t[col] = np.ma.masked_equal(t[col], None)
-                t[col] = np.ma.masked_equal(t[col], 'None')
+#                 t[col] = np.ma.masked_equal(t[col], None)
+#                 t[col] = np.ma.masked_equal(t[col], 'None')
                 t[col] = np.ma.masked_equal(t[col], -9999)
                 t[col] = np.ma.masked_equal(t[col], np.nan)
                 t[col] = np.ma.masked_equal(t[col], '')
