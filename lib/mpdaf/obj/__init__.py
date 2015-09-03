@@ -45,7 +45,6 @@ Import the different submodules
 """
 
 from . import plt_zscale
-from .astropysics_coords import AstropysicsAngularCoordinate
 from .coords import deg2dms
 from .coords import deg2hms
 from .coords import deg2sexa
