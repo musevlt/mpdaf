@@ -151,9 +151,9 @@ class Catalog(Table):
                     keys = source.mag['BAND']
                     for key in names_mag:
                         if key in keys:
-                            row += [float(source.mag['MAG'][source.mag['BAND'] == key])]
+                            row += [source.mag['MAG'][source.mag['BAND'] == key].data.data[0]]
                         elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [float(source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]])]
+                            row += [source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]].data.data[0]]
                         else:
                             row += [np.nan]
             # redshifts
@@ -165,13 +165,13 @@ class Catalog(Table):
                     for key in names_z:
                         key = key[2:]
                         if key in keys:
-                            row += [float(source.z['Z'][source.z['Z_DESC'] == key])]
+                            row += [source.z['Z'][source.z['Z_DESC'] == key].data.data[0]]
                         elif key[-4:] == '_MAX' and key[:-4] in keys:
-                            row += [float(source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]])]
+                            row += [source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
                         elif key[-4:] == '_MIN' and key[:-4] in keys:
-                            row += [float(source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]])]
+                            row += [source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
                         elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [float(source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]])]
+                            row += [source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
                         else:
                             row += [np.nan]
             # lines
@@ -246,6 +246,9 @@ class Catalog(Table):
         path : string
                Directory containing Source files
         """
+        logger = logging.getLogger('mpdaf corelib')
+        d = {'class': 'Catalog', 'method': 'from_path'}
+        
         if not os.path.exists(path):
             raise IOError("Invalid path: {0}".format(path))
         
@@ -255,6 +258,8 @@ class Catalog(Table):
         filenames = []
         files = glob.glob(path+'/*.fits')
         n = len(files)
+        
+        logger.info('Building catalog from path %s'%path ,extra=d)
         
         for f in files:
             slist.append(Source._light_from_file(f))
