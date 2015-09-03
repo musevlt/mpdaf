@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import interpolate
 
-
 def mag_RJohnson():
     lbda = 6940.
     lmin = 5200.
@@ -76,7 +75,6 @@ if __name__ == '__main__':
 
     lbda = np.arange(20) * 100. + 5200.
 
-    from scipy import interpolate
     f = interpolate.splev(lbda, tck, der=0)
 
     lbdafilter = np.arange(23) * 200. + 5200.

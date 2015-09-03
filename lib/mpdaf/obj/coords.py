@@ -1,5 +1,6 @@
 """coords.py Manages coordinates."""
 
+from astropy.coordinates import Angle
 import astropy.wcs as pywcs
 import logging
 import numpy as np
@@ -74,7 +75,6 @@ def deg2hms(x):
     -------
     out : string
     """
-    from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
     hms = ac.to_string(unit='hour', sep=':', pad=True)
     return str(hms)
@@ -93,7 +93,6 @@ def hms2deg(x):
     -------
     out : float
     """
-    from astropy.coordinates import Angle
     ac = Angle(x, unit='hour')
     deg = float(ac.to_string(unit='degree', decimal=True))
     return deg
@@ -112,7 +111,6 @@ def deg2dms(x):
     -------
     out : string
     """
-    from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
     dms = ac.to_string(unit='degree', sep=':', pad=True)
     return str(dms)
@@ -131,7 +129,6 @@ def dms2deg(x):
     -------
     out : float
     """
-    from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
     deg = float(ac.to_string(unit='degree', decimal=True))
     return deg
