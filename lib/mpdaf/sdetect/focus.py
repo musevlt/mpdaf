@@ -8,12 +8,14 @@ The project is funded by the ERC MUSICOS (Roland Bacon, CRAL). Please contact
 Carole for more info at carole.clastres@univ-lyon1.fr
 """
 
-import numpy as np
+import astropy.units as u
+from astropy.table import Table
+
 import logging
+import numpy as np
+import os.path
 from scipy.stats import t
 from scipy import ndimage
-import os.path
-from astropy.table import Table
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
@@ -151,7 +153,7 @@ class FOCUS(object):
  
         # Detection test
         # Test : Detect if p-values<p0
-        wavelength = self.cube.wave.coord(lambda_cube)
+        wavelength = self.cube.wave.coord(lambda_cube.ravel(), unit=u.angstrom).reshape(lambda_cube.shape)
         filtre = np.where((cartemin > -8) & (cartemax < 80) & (pval_inf_t < p0))
         detect = np.zeros((Ny, Nx))
         detect[filtre] = wavelength[filtre]
@@ -181,11 +183,12 @@ class FOCUS(object):
             if (len(ksel[0]) > 1):
                 n += 1
                 Obj[ksel] = detect[ksel]
-                coord = self.cube.wcs.pix2sky(pos[i - 1])[0]
+                coord = self.cube.wcs.pix2sky(pos[i - 1], unit=u.deg)[0]
                 #create source object
                 ra = coord[1]
                 dec = coord[0]
                 lines = Table([np.unique(detect[ksel])], names=['LBDA_OBS'])
+                lines['LBDA_OBS'].unit = u.angstrom
                 extras = {}
                 extras['pvalues'] = (pval_file, 'p_values')
                 extras['p0'] = (p0, 'p0')
@@ -195,7 +198,7 @@ class FOCUS(object):
         self.logger.info('FOCUS - %d objects detected' % n, extra=d)
  
         # resulted image
-        imaobj = Image(wcs=self.cube.wcs, data=Obj)
+        imaobj = Image(wcs=self.cube.wcs, data=Obj, unit=u.angstrom)
         ksel = np.where(Obj == 0)
         imaobj.mask_selection(ksel)
         #imaobj.plot(vmin=4900, vmax=9300, colorbar='v')

@@ -119,6 +119,7 @@ class Catalog(Table):
             if fmt == 'default':
                 names_lines = []
                 d = {}
+                unit = {}
                 for source in sources:
                     if source.lines is not None and 'LINE' in source.lines.colnames:
                         colnames = source.lines.colnames
@@ -126,6 +127,7 @@ class Catalog(Table):
                         
                         for col in colnames:
                             d[col] = source.lines.dtype[col]
+                            unit[col] = source.lines[col].unit
                         
                         for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
                             if not mask:
@@ -134,22 +136,27 @@ class Catalog(Table):
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
                 dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
+                units_lines = [unit['_'.join(name.split('_')[1:])] for name in names_lines]
             elif fmt == 'working':
                 lmax = max(llines)
                 d = {}
+                unit = {}
                 for source in sources:
                     if source.lines is not None:
                         for col in source.lines.colnames:
                             d[col] = source.lines.dtype[col]
+                            unit[col] = source.lines[col].unit
                 if lmax == 1:
                     names_lines = sorted(d)
                     dtype_lines = [d[key] for key in sorted(d)]
+                    units_lines = [unit[key] for key in sorted(d)]
                 else:
                     names_lines = []
                     inames_lines = sorted(d)
                     for i in range(1, lmax + 1):
                         names_lines += [col + '%03d' % i for col in inames_lines]
                     dtype_lines = [d[key] for key in sorted(d)] * lmax
+                    units_lines = [unit[key] for key in sorted(d)] * lmax
             else:
                 raise IOError('Catalog creation: invalid format. It must be dafault or working.')
 
@@ -257,10 +264,13 @@ class Catalog(Table):
         # format
         t['ID'].format = '%d'
         t['RA'].format = '%.7f'
+        t['RA'].unit = u.deg 
         t['DEC'].format = '%.7f'
+        t['DEC'].unit = u.deg 
         for names in names_z:
             t[names].format = '%.6f'
-        for names in names_lines:
+        for names, unit in zip(names_lines, units_lines):
+            t[names].unit = unit
             if names[:4] == 'LBDA':
                 t[names].format = '%0.2f'
             if names[:4] == 'FLUX':
@@ -375,9 +385,9 @@ class Catalog(Table):
         wcs : :class:`mpdaf.obj.WCS`
               Image WCS
         ra  : string
-              Name of the column that contains RA values
+              Name of the column that contains RA values in degrees
         dec : string
-              Name of the column that contains DEC values
+              Name of the column that contains DEC values in degrees
 
         Returns
         -------
@@ -385,14 +395,14 @@ class Catalog(Table):
         """
         ksel = []
         for k, src in enumerate(self):
-            cen = wcs.sky2pix([src[dec], src[ra]])[0]
+            cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
             if cen[0] >= 0 and cen[0] <= wcs.naxis1 and cen[1] >= 0 \
                     and cen[1] <= wcs.naxis2:
                 ksel.append(k)
         return self[ksel]
 
-    def plot_symb(self, ax, wcs, ra='RA', dec='DEC', symb=0.4, col='k',
-                  alpha=1.0, **kwargs):
+    def plot_symb(self, ax, wcs, ra='RA', dec='DEC',
+                  symb=0.4, col='k', alpha=1.0, **kwargs):
         """This function plots the sources location from the catalog
 
         Parameters
@@ -402,9 +412,9 @@ class Catalog(Table):
         wcs : :class:`mpdaf.obj.WCS`
               Image WCS
         ra  : string
-              Name of the column that contains RA values
+              Name of the column that contains RA values (in degrees)
         dec : string
-              Name of the column that contains DEC values
+              Name of the column that contains DEC values (in degrees)
         symb : list or string or float
 
                - List of 3 columns names containing FWHM1,
@@ -438,18 +448,19 @@ class Catalog(Table):
         if dec not in self.colnames:
             raise IOError('column %s not found in catalog' % dec)
 
+        step = wcs.get_step(unit=u.arcsec)
         for src in self:
-            cen = wcs.sky2pix([src[dec], src[ra]])[0]
+            cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
             if stype == 'ellipse':
-                f1 = src[fwhm1] / (3600.0 * wcs.get_step()[0])  # /cos(dec) ?
-                f2 = src[fwhm2] / (3600.0 * wcs.get_step()[1])
+                f1 = src[fwhm1] / step[0]  # /cos(dec) ?
+                f2 = src[fwhm2] / step[1]
                 pa = src[angle] * 180 / np.pi
             elif stype == 'circle':
-                f1 = src[fwhm] / (3600.0 * wcs.get_step()[0])
+                f1 = src[fwhm] / step[0]
                 f2 = f1
                 pa = 0
             elif stype == 'fix':
-                f1 = size / (3600.0 * wcs.get_step()[0])
+                f1 = size / step[0]
                 f2 = f1
                 pa = 0
             ell = Ellipse((cen[1], cen[0]), 2 * f1, 2 * f2, pa, fill=False)
@@ -458,8 +469,8 @@ class Catalog(Table):
             ell.set_alpha(alpha)
             ell.set_edgecolor(col)
 
-    def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
-                alpha=0.5, col='k', **kwargs):
+    def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC',
+                symb=0.2, alpha=0.5, col='k', **kwargs):
         """ This function displays the id of the catalog
 
         Parameters
@@ -492,9 +503,9 @@ class Catalog(Table):
             raise IOError('column %s not found in catalog' % iden)
 
         cat = self.select(wcs)
-        size = 2 * symb / (3600.0 * wcs.get_step()[0])
+        size = 2 * symb / wcs.get_step(unit=u.arcsec)[0]
         for src in cat:
-            cen = wcs.sky2pix([src[dec], src[ra]])[0]
+            cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
             ax.text(cen[1], cen[0] + size, src[iden], ha='center', color=col,
                     **kwargs)
             ell = Ellipse((cen[1], cen[0]), size, size, 0, fill=False)

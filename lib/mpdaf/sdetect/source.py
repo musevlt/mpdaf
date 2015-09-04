@@ -1,5 +1,6 @@
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, vstack
+import astropy.units as u
 
 from matplotlib import cm
 from matplotlib.patches import Ellipse
@@ -337,6 +338,11 @@ class Source(object):
                     lines = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
+                for i,colname in enumerate(lines.colnames):
+                    try:
+                        lines[colname].unit = hdu.header['TUNIT%d'%(i+1)]
+                    except:
+                        pass
             # mag
             elif extname == 'MAG':
                 try:
@@ -457,7 +463,17 @@ class Source(object):
 
         # lines
         if self.lines is not None:
-            tbhdu = pyfits.BinTableHDU(name='LINES', data=np.array(self.lines))
+            cols = []
+            for colname in self.lines.colnames:
+                col = self.lines[colname]
+                try:
+                    cols.append(pyfits.Column(name=col.name, format=col.dtype.char, unit="{}".format(col.unit), array=np.array(col)))
+                except:
+                    cols.append(pyfits.Column(name=col.name, format='A20', unit="{}".format(col.unit), array=np.array(col)))
+
+            coldefs = pyfits.ColDefs(cols)
+            tbhdu = pyfits.BinTableHDU.from_columns(name='LINES', columns=coldefs)
+            #tbhdu = pyfits.BinTableHDU(name='LINES', data=np.array(self.lines))
             hdulist.append(tbhdu)
 
         # magnitudes
@@ -520,12 +536,8 @@ class Source(object):
                 self.logger.info(card, extra=d)
         print '\n'
         for key, spe in self.spectra.iteritems():
-            msg = 'spectra[\'%s\']' % key
-            if spe.wave.cunit is None:
-                unit = ''
-            else:
-                unit = spe.wave.cunit
-            msg += ',%i elements (%0.2f-%0.2f %s)'%(spe.shape, spe.wave.__getitem__(0), spe.wave.__getitem__(spe.shape - 1), unit)
+            msg = 'spectra[\'%s\']'%key
+            msg += ',%i elements (%0.2f-%0.2f A)'%(spe.shape, spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom))
             data = '.data'
             if spe.data is None:
                 data = ''
@@ -544,7 +556,7 @@ class Source(object):
             if ima.var is None:
                 noise = ''
             msg += ' %s %s '%(data, noise)
-            msg += 'rot=%0.1f'%ima.wcs.get_rot()
+            msg += 'rot=%0.1f deg'%ima.wcs.get_rot()
             self.logger.info(msg, extra=d)
         for key, cub in self.cubes.iteritems():
             msg = 'cubes[\'%s\']'%key
@@ -556,7 +568,7 @@ class Source(object):
             if cub.var is None:
                 noise = ''
             msg += ' %s %s '%(data, noise)
-            msg += 'rot=%0.1f'%cub.wcs.get_rot()
+            msg += 'rot=%0.1f deg'%cub.wcs.get_rot()
             self.logger.info(msg, extra=d)
         for key in self.tables.keys():
             self.logger.info('tables[\'%s\']'%key, extra=d)
@@ -714,7 +726,7 @@ class Source(object):
             else:
                 self.mag.add_row([band, m, errm])
 
-    def add_line(self, cols, values, match=None):
+    def add_line(self, cols, values, units=None, match=None):
         """Add a line to the lines table
 
         Parameters
@@ -723,8 +735,10 @@ class Source(object):
                  Names of the columns
         values : list<integer/float/string>
                  List of corresponding values
+        units  : list<astropy.units>
+                 Unity of each column
         match  : (string,float/integer/string)
-                 Tuple (key,vlaue) that gives the key to match the added line with an existing line.
+                 Tuple (key,value) that gives the key to match the added line with an existing line.
                  eg ('LINE','LYALPHA1216')
         """
         if self.lines is None:
@@ -737,9 +751,14 @@ class Source(object):
                 else:
                     types.append('S20')
             self.lines = Table(rows=[values], names=cols, dtype=types, masked=True)
+            if units is not None:
+                for colname, unit in zip(self.lines.colnames, units):
+                    self.lines[colname].unit = unit
         else:
             # add new columns
-            for col, val in zip(cols, values):
+            if units is None:
+                units = [None]*len(cols)
+            for col, val, unit in zip(cols, values, units):
                 if  col not in self.lines.colnames:
                     nlines = len(self.lines)
                     if is_int(val):
@@ -750,7 +769,7 @@ class Source(object):
                         typ = 'S20'
                     col = MaskedColumn(np.ma.masked_array(np.empty(nlines),
                                                           mask=np.ones(nlines)),
-                                       name=col, dtype=typ)
+                                       name=col, dtype=typ, unit=unit)
                     self.lines.add_column(col)
 
             if match is not None:
@@ -759,20 +778,26 @@ class Source(object):
             if match is not None and matchkey in self.lines.colnames:
                 l = np.argwhere(self.lines[matchkey]==matchval)
                 if len(l) > 0:
-                    for col, val in zip(cols, values):
-                        self.lines[col][l] = val
+                    for col, val, unit in zip(cols, values, units):
+                        if unit is None or unit==self.lines[col].unit:
+                            self.lines[col][l] = val
+                        else:
+                            self.lines[col][l] = (val*unit).to(self.lines[col].unit).value
             else:
                 # add new row
                 ncol = len(self.lines.colnames)
                 row = [None]*ncol
                 mask=np.ones(ncol)
-                for col, val in zip(cols, values):
+                for col, val, unit in zip(cols, values, units):
                     i = self.lines.colnames.index(col)
-                    row[i] = val
+                    if unit is None or unit==self.lines[col].unit:
+                        row[i] = val
+                    else:
+                        row[i] = (val*unit).to(self.lines[col].unit).value
                     mask[i] = 0
                 self.lines.add_row(row, mask=mask)
 
-    def add_image(self, image, name, size=None, minsize=2.0, rotate=False):
+    def add_image(self, image, name, size=None, minsize=2.0, unit_size=u.arcsec, rotate=False):
         """ Extract an image centered on the source center
         and append it to the images dictionary
 
@@ -787,12 +812,15 @@ class Source(object):
                 Input image MPDAF object.
         name  : string
                 Name used to distinguish this image
-        size  : float or (float, float)
-                The total size to extract in arcseconds.
-                If size is a float, it corresponds to the size along the delta axis and the image is square.
-                If None, the size of the white image extension is taken if it exists.
-        minsize : float
-                The minimum size of the output image in arcseconds.
+        size        : float
+                      The size to extract.
+                      It corresponds to the size along the delta axis and the image is square.
+                      If None, the size of the white image extension is taken if it exists.
+        unit_size   : astropy.units
+                      Size and minsize unit.
+                      Arcseconds by default (use None for size in pixels)
+        minsize     : float
+                      The minimum size of the output image.
         rotate : bool
                 if True, the image is rotated to the same PA as the white-light image
         """
@@ -802,7 +830,18 @@ class Source(object):
                 white_ima = self.images['MUSE_WHITE']
             except:
                 raise IOError('Size of the image (in arcsec) is required')
-            size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
+            if white_ima.wcs.get_cunit() == image.wcs.get_cunit():
+                size = white_ima.shape[0]
+                minsize /= white_ima.wcs.get_step(unit=unit_size)[0]
+                unit_size = None
+            else:
+                size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
+                if unit_size is None:
+                    minsize *= image.wcs.get_step(unit=u.arcsec)[0]
+                else:
+                    if unit_size != u.arcsec:
+                        minsize = (minsize*unit_size).to(u.arcsec).value
+                unit_size = u.arcsec
         if rotate:
             try:
                 white_ima = self.images['MUSE_WHITE']
@@ -811,20 +850,24 @@ class Source(object):
             pa_white = white_ima.get_rot()
             pa = image.get_rot()
             if np.abs(pa_white-pa) > 1.e-3:
-                subima = image.subimage((self.dec, self.ra), size*1.5, minsize=minsize)
+                subima = image.subimage((self.dec, self.ra), size*1.5, minsize=minsize,
+                                        unit_center=u.deg, unit_size=unit_size)
                 subima = subima.rotate(pa-pa_white)
-                subima = subima.subimage((self.dec, self.ra), size, minsize=minsize)
+                subima = subima.subimage((self.dec, self.ra), size, minsize=minsize,
+                                         unit_center=u.deg, unit_size=unit_size)
             else:
-                subima = image.subimage((self.dec, self.ra), size, minsize=minsize)
+                subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
+                                        unit_center=u.deg, unit_size=unit_size)
         else:
-            subima = image.subimage((self.dec, self.ra), size, minsize=minsize)
+            subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
+                                    unit_center=u.deg, unit_size=unit_size)
         if subima is None:
             self.logger.warning('Image %s not added. Source outside or at the edges'%(name),
                                  extra=d)
             return
         self.images[name] = subima
 
-    def add_cube(self, cube, name, size=None, lbda=None):
+    def add_cube(self, cube, name, size=None, lbda=None, unit_size=u.arcsec, unit_wave=u.angstrom):
         """Extract a cube centered on the source center
         and append it to the cubes dictionary
 
@@ -836,24 +879,37 @@ class Source(object):
                 Input cube MPDAF object.
         name  : string
                 Name used to distinguish this image
-        size  : float or (float, float)
-                The total size to extract in arcseconds.
-                If size is a float, it corresponds to the size along the delta axis and the image is square.
-                If None, the size of the white image extension is taken if it exists.
-        lbda  : (float, float) or None
-                If not None, tuple giving the wavelength range in Angstrom.
+        size        : float
+                      The size to extract.
+                      It corresponds to the size along the delta axis and the image is square.
+                      If None, the size of the white image extension is taken if it exists.
+        lbda        : (float, float) or None
+                      If not None, tuple giving the wavelength range.
+        unit_size   : astropy.units
+                      unit of the size value (arcseconds by default)
+                       If None, size is in pixels
+        unit_wave   : astropy.units
+                      Wavelengths unit (angstrom by default)
+                      If None, inputs are in pixels
         """
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
             except:
                 raise IOError('Size of the image (in arcsec) is required')
-            size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
-        subcub = cube.subcube((self.dec, self.ra), size, False, lbda)
+            if white_ima.wcs.get_cunit() == cube.wcs.get_cunit():
+                size = white_ima.shape[0]
+                unit_size = None
+            else:
+                size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
+                unit_size = u.arcsec
+
+        subcub = cube.subcube(center=(self.dec, self.ra), size=size, lbda=lbda,
+                              unit_center=u.deg, unit_size=unit_size, unit_wave=unit_wave)
         self.cubes[name] = subcub
 
 
-    def add_white_image(self, cube, size=5):
+    def add_white_image(self, cube, size=5, unit_size=u.arcsec):
         """ Compute the white images from the MUSE data cube
         and appends it to the images dictionary.
 
@@ -867,11 +923,16 @@ class Source(object):
                The total size to extract in arcseconds.
                It corresponds to the size along the delta axis and the image is square.
                By default 5x5arcsec
+        unit_size   : astropy.units
+                      unit of the size value (arcseconds by default)
+                      If None, size is in pixels
         """
-        subcub = cube.subcube((self.dec, self.ra), size)
+        subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+                              unit_center=u.deg, unit_size=unit_size)
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
 
-    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
+    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, unit_size=u.arcsec,
+                               width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
         """Create narrow band images from a redshift value and a catalog of lines.
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
@@ -897,21 +958,30 @@ class Source(object):
                            6724 : '[SII]6724'}
 
         size   : float
-                 The total size to extract in arcseconds.
-                 If size is a float, it corresponds to the size along the delta axis and the image is square.
+                 The total size to extract.
+                 It corresponds to the size along the delta axis and the image is square.
                  If None, the size of the white image extension is taken if it exists.
+        unit_size : astropy.units
+                    unit of the size value (arcseconds by default)
+                      If None, size is in pixels
         width  : float
-                 Angstrom total width.
+                 Narrow-band width(in angstrom).
         is_sum       : boolean
-                       if True the sum is computes, otherwise this is the
-                       average.
+                       if True the image is computed as the sum over the wavelength axis, otherwise this is the average.
         subtract_off : boolean
                        If True, subtracting off nearby data.
+                       The method computes the subtracted flux by using the algorithm
+                       from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
+                       if is_sum is False
+                       sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
+                                       flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
+                       or if is_sum is True:
+                       sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
+                                      flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
         margin : float
-                 This off-band is offseted by margin wrt narrow-band limit.
+                 This off-band is offseted by margin wrt narrow-band limit(in angstrom).
         fband  : float
-                 The size of the off-band is fband x narrow-band width.
-
+                 The size of the off-band is fband x narrow-band width (in angstrom).
         """
         if self.z is not None:
             d = {'class': 'Source', 'method': 'add_narrow_band_images'}
@@ -920,22 +990,32 @@ class Source(object):
                     white_ima = self.images['MUSE_WHITE']
                 except:
                     raise IOError('Size of the image (in arcsec) is required')
-                size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
+                if white_ima.wcs.get_cunit() == cube.wcs.get_cunit():
+                    size = white_ima.shape[0]
+                    unit_size = None
+                else:
+                    size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
+                    unit_size = u.arcsec
 
-            subcub = cube.subcube((self.dec, self.ra), size)
-
-
-            if eml is None:
-                all_lines = np.array([1216, 1909, 3727, 4861, 5007, 6563, 6724])
-                all_tags = np.array(['LYALPHA1216', 'CIII]1909', '[OII]3727', 'HBETA4861', '[OIII]5007', 'HALPHA6563', '[SII]6724'])
-            else:
-                all_lines = np.array(eml.keys())
-                all_tags = np.array(eml.values())
+            subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+                              unit_center=u.deg, unit_size=unit_size)
 
             z = self.z['Z'][self.z['Z_DESC']==z_desc]
 
             if z>0:
-                minl, maxl = subcub.wave.get_range()/(1+z)
+
+                if eml is None:
+                    all_lines = np.array([1216, 1909, 3727, 4861, 5007,
+                                          6563, 6724])
+                    all_tags = np.array(['LYALPHA1216', 'CIII]1909',
+                                         '[OII]3727', 'HBETA4861',
+                                         '[OIII]5007', 'HALPHA6563',
+                                         '[SII]6724'])
+                else:
+                    all_lines = np.array(eml.keys())
+                    all_tags = np.array(eml.values())
+
+                minl, maxl = subcub.wave.get_range(unit=u.angstrom) / (1+z)
                 useful = np.where((all_lines>minl) &  (all_lines<maxl))
                 nlines = len(useful[0])
                 if nlines>0:
@@ -945,9 +1025,12 @@ class Source(object):
                     tags = all_tags[useful]
                     for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
                         self.logger.info('Doing MUSE_%s'%tag, extra=d)
-                        self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum, subtract_off=subtract_off, margin=margin, fband=fband)
+                        self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
+                                                                    subtract_off=subtract_off, margin=margin,
+                                                                    fband=fband, unit_wave=u.angstrom)
 
-    def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None, width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
+
+    def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None, unit_size=u.arcsec, width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
         """Create narrow band image around an observed wavelength value.
 
         Narrow-band images are saved in self.images['MUSE_*'].
@@ -962,20 +1045,21 @@ class Source(object):
                 Observed wavelength value in angstrom.
         size  : float
                 The total size to extract in arcseconds.
-                If size is a float, it corresponds to the size along the delta axis and the image is square.
+                It corresponds to the size along the delta axis and the image is square.
                 If None, the size of the white image extension is taken if it exists.
+        unit_size : astropy.units
+                    unit of the size value (arcseconds by default)
+                      If None, size is in pixels
         width : float
                  Angstrom total width
         is_sum       : boolean
-                       if True the sum is computes, otherwise this is the
-                       average.
+                       if True the image is computed as the sum over the wavelength axis, otherwise this is the average.
         subtract_off : boolean
                        If True, subtracting off nearby data.
         margin       : float
-                       This off-band is offseted by margin wrt narrow-band limit.
+                       This off-band is offseted by margin wrt narrow-band limit (in angstrom)
         fband        : float
-                       The size of the off-band is fband*narrow-band width.
-
+                       The size of the off-band is fband*narrow-band width (in angstrom).
         """
         d = {'class': 'Source', 'method': 'add_narrow_band_images'}
         self.logger.info('Doing %s'%tag, extra=d)
@@ -984,18 +1068,27 @@ class Source(object):
                 white_ima = self.images['MUSE_WHITE']
             except:
                 raise IOError('Size of the image (in arcsec) is required')
-            size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
+            if white_ima.wcs.get_cunit() == cube.wcs.get_cunit():
+                size = white_ima.shape[0]
+                unit_size = None
+            else:
+                size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
+                unit_size = u.arcsec
 
         l1 = lbda-width/2.0
         l2 = lbda+width/2.0
-        lmin, lmax= cube.wave.get_range()
+
+        lmin, lmax= cube.wave.get_range(unit=u.angstrom)
         if l1<lmin:
             l1=lmin
         if l2>lmax:
             l2=lmax
 
-        subcub = cube.subcube((self.dec, self.ra), size)
-        self.images[tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum, subtract_off=subtract_off, margin=margin, fband=fband)
+        subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+                              unit_center=u.deg, unit_size=unit_size)
+        self.images[tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
+                                            subtract_off=subtract_off, margin=margin,
+                                            fband=fband, unit_wave=u.angstrom)
 
 
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
@@ -1123,14 +1216,23 @@ class Source(object):
         d = {'class': 'Source', 'method': 'add_masks'}
 
         if self.images.has_key('MASK_UNION'):
-            size = self.images['MASK_UNION'].get_step()[0] * 3600 * self.images['MASK_UNION'].shape[0]
-            subcub = cube.subcube((self.dec, self.ra), size)
-            if self.images['MASK_UNION'].wcs.isEqual(subcub.wcs):
-                object_mask = self.images['MASK_UNION'].data.data
+            ima = self.images['MASK_UNION']
+            if ima.wcs.get_cunit() == cube.wcs.get_cunit():
+                size = ima.shape[0]
+                unit_size = None
             else:
-                object_mask = self.images['MASK_UNION'].rebin(newdim=(subcub.shape[1], subcub.shape[2]),
-                                                             newstart=subcub.wcs.get_start(),
-                                                             newstep=subcub.wcs.get_step()).data.data
+                size = ima.wcs.get_step(unit=u.arcsec)[0] * ima.shape[0]
+                unit_size = u.arcsec
+            subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+                              unit_center=u.deg, unit_size=unit_size)
+            if ima.wcs.isEqual(subcub.wcs):
+                object_mask = ima.data.data
+            else:
+                unit = ima.wcs.get_cunit1()
+                object_mask = ima.resample(newdim=(subcub.shape[1], subcub.shape[2]),
+                                        newstart=subcub.wcs.get_start(unit=u.deg),
+                                        newstep=subcub.wcs.get_step(unit=u.arcsec),
+                                        order=0).data.data
         else:
             raise IOError('extract_spectra method use the MASK_UNION computed by add_mask method')
 
@@ -1139,9 +1241,11 @@ class Source(object):
                 if self.images['MASK_SKY'].wcs.isEqual(subcub.wcs):
                     sky_mask = self.images['MASK_SKY'].data.data
                 else:
-                    sky_mask = self.images['MASK_SKY'].rebin(newdim=(subcub.shape[1], subcub.shape[2]),
-                                                             newstart=subcub.wcs.get_start(),
-                                                             newstep=subcub.wcs.get_step()).data.data
+                    unit = self.images['MASK_SKY'].wcs.get_cunit1()
+                    sky_mask = self.images['MASK_SKY'].resample(newdim=(subcub.shape[1], subcub.shape[2]),
+                                                             newstart=subcub.wcs.get_start(unit=u.deg),
+                                                             newstep=subcub.wcs.get_step(unit=u.arcsec),
+                                                             order=0).data.data
             else:
                 raise IOError('extract_spectra method use the MASK_SKY computed by add_mask method')
 
@@ -1203,7 +1307,8 @@ class Source(object):
                 white_cube = np.zeros_like(subcub.data.data)
                 for l in range(subcub.shape[0]):
                     gauss_ima = gauss_image(shape=(subcub.shape[1], subcub.shape[2]),
-                                            wcs=subcub.wcs, fwhm=(psf[l], psf[l]), peak=False)
+                                            wcs=subcub.wcs, fwhm=(psf[l], psf[l]),
+                                            peak=False, unit_fwhm=u.arcsec)
                     white_cube[l,:,:] = gauss_ima.data.data
             else:
                 msg = 'Incorrect dimensions for the PSF vector (%i) (it must be (%i)) '\
@@ -1356,7 +1461,7 @@ class Source(object):
         if showcenter is not None:
             rad, col = showcenter
             pix = zima.wcs.sky2pix((self.DEC, self.RA))[0]
-            rpix = rad/(3600.0*zima.get_step()[0])
+            rpix = rad/zima.wcs.get_step(unit=u.arcsec)[0]
             ell = Ellipse((pix[1],pix[0]), 2*rpix, 2*rpix, 0, fill=False)
             ax.add_artist(ell)
             ell.set_clip_box(ax.bbox)

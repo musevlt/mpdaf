@@ -11,6 +11,7 @@ extraction apertures.
 Please contact Jarle for more info at jarle@strw.leidenuniv.nl
 """
 from astropy.io import fits as pyfits
+import astropy.units as u
 
 import logging
 import numpy as np
@@ -204,8 +205,8 @@ def segmentation(source, tags, DIR, remove):
             raise OSError('SExtractor not found')
         
     dim = source.images['MUSE_WHITE'].shape
-    start = source.images['MUSE_WHITE'].wcs.pix2sky([0,0])[0]
-    step = source.images['MUSE_WHITE'].get_step()
+    start = source.images['MUSE_WHITE'].wcs.pix2sky([0,0], unit=u.deg)[0]
+    step = source.images['MUSE_WHITE'].get_step(unit=u.arcsec)
     rot = source.images['MUSE_WHITE'].get_rot()
     wcs = source.images['MUSE_WHITE'].wcs
     
@@ -217,8 +218,8 @@ def segmentation(source, tags, DIR, remove):
         tag2 = tag.replace('[','').replace(']','')
         
         fname = '%04d-%s.fits'%(source.id, tag2)
-        start_ima = ima.wcs.pix2sky([0,0])[0]
-        step_ima = ima.get_step()
+        start_ima = ima.wcs.pix2sky([0,0], unit=u.deg)[0]
+        step_ima = ima.get_step(unit=u.arcsec)
         rot_ima = ima.get_rot()
         prihdu = pyfits.PrimaryHDU()
         hdulist = [prihdu]
@@ -228,11 +229,11 @@ def segmentation(source, tags, DIR, remove):
             rot_ima==rot:
             data_hdu = ima.get_data_hdu(name='DATA', savemask='nan')
         elif rot_ima==rot:
-            ima2 = ima.rebin(dim, start, step, flux=True)
+            ima2 = ima.resample(dim, start, step, flux=True)
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         else:
             ima2 = ima.rotate(rot-rot_ima, interp='no', reshape=True)
-            ima2 = ima2.rebin(dim, start, step, flux=True)
+            ima2 = ima2.resample(dim, start, step, flux=True)
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         hdulist.append(data_hdu)
         hdu = pyfits.HDUList(hdulist)
@@ -262,12 +263,12 @@ def segmentation(source, tags, DIR, remove):
     # Save segmentation maps
     if len(maps) > 0:
         for tag, data in maps.iteritems():
-            ima = Image(wcs=wcs, data=data)
+            ima = Image(wcs=wcs, data=data, unit=None)
             source.images['SEG_'+tag] = ima
        
 def mask_creation(source, maps): 
     wcs = source.images['MUSE_WHITE'].wcs
-    yc, xc = wcs.sky2pix((source.DEC, source.RA))[0]
+    yc, xc = wcs.sky2pix((source.DEC, source.RA), unit=u.deg)[0]
     
     r = findCentralDetection(maps, yc, xc, tolerance=3)
         
@@ -275,11 +276,11 @@ def mask_creation(source, maps):
     small_mask = intersection(r['seg'])
     sky_mask = findSkyMask(maps)
         
-    ima = Image(wcs=wcs, data=object_mask)
+    ima = Image(wcs=wcs, data=object_mask, unit=None)
     source.images['MASK_UNION'] = ima
-    ima = Image(wcs=wcs, data=sky_mask)
+    ima = Image(wcs=wcs, data=sky_mask, unit=None)
     source.images['MASK_SKY'] = ima
-    ima = Image(wcs=wcs, data=small_mask)
+    ima = Image(wcs=wcs, data=small_mask, unit=None)
     source.images['MASK_INTER'] = ima
 
 
@@ -357,7 +358,7 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
         
         logger.info('%d/%d Doing Source %d'%(n, ntot, obj['ID']), extra=d)
           
-        cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']])[0]
+        cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']], unit=u.deg)[0]
         if cen[0] >= 0 and cen[0] <= cube.wcs.naxis1 and \
         cen[1] >= 0 and cen[1] <= cube.wcs.naxis2:
           
@@ -374,10 +375,13 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
             
               
             # create white image
-            source.add_white_image(cube, size)
+            source.add_white_image(cube, size, unit_size=u.arcsec)
               
             # create narrow band images
-            source.add_narrow_band_images(cube, 'CAT', eml, None, width, margin, fband)
+            source.add_narrow_band_images(cube=cube, z_desc='CAT', eml=eml,
+                                          size=None, unit_size=u.arcsec,
+                                          width=width, margin=margin,
+                                          fband=fband, is_sum=False)
               
             # extract images stamps
             for tag, ima in images.iteritems():

@@ -5,34 +5,48 @@ from nose.plugins.attrib import attr
 
 import numpy as np
 from astropy import wcs as pywcs
+import astropy.io.fits as pyfits
+import astropy.units as u
 from mpdaf.obj import WCS, WaveCoord, deg2sexa, sexa2deg
 from numpy.testing import assert_allclose, assert_array_equal
 
 
 class TestWCS(object):
 
-    def setUp(self):
-        self.wcs = WCS(crval=(0, 0))
-        self.wcs.naxis1 = 6
-        self.wcs.naxis2 = 5
-
+    @attr(speed='fast')
+    def test_from_hdr(self):
+        """WCS class: testing constructor """
+        f = pyfits.open('data/obj/a370II.fits')
+        h = f[0].header
+        f.close
+        wcs = WCS(h)
+        h2 = wcs.to_header()
+        wcs2 = WCS(h2)
+        nose.tools.assert_true(wcs.isEqual(wcs2))
+        
     @attr(speed='fast')
     def test_copy(self):
         """WCS class: tests copy"""
-        wcs2 = self.wcs.copy()
-        nose.tools.assert_true(self.wcs.isEqual(wcs2))
+        wcs = WCS(crval=(0, 0))
+        wcs.naxis1 = 6
+        wcs.naxis2 = 5
+        wcs2 = wcs.copy()
+        nose.tools.assert_true(wcs.isEqual(wcs2))
 
     @attr(speed='fast')
     def test_coordTransform(self):
-        """WCS class: tests coordinates transformations"""
+        """WCS class: testing coordinates transformations"""
+        wcs = WCS(crval=(0, 0))
+        wcs.naxis1 = 6
+        wcs.naxis2 = 5
         pixcrd = [[0, 0], [2, 3], [3, 2]]
-        pixsky = self.wcs.pix2sky(pixcrd)
-        pixcrd2 = self.wcs.sky2pix(pixsky)
+        pixsky = wcs.pix2sky(pixcrd)
+        pixcrd2 = wcs.sky2pix(pixsky)
         assert_array_equal(pixcrd, pixcrd2)
 
     @attr(speed='fast')
     def test_coordTransform2(self):
-        """WCS class: tests transformations with a more complete header."""
+        """WCS class: testing transformations with a more complete header."""
 
         w = pywcs.WCS(naxis=2)
         w.wcs.crpix = [167.401033093, 163.017401336]
@@ -54,60 +68,125 @@ class TestWCS(object):
         assert_allclose(wcs.wcs.wcs_pix2world(pix, 0), ref, rtol=1e-4)
         assert_allclose(sky, ref2, rtol=1e-4)
         assert_allclose(wcs.sky2pix(wcs.pix2sky(pix2)), pix2)
-        print wcs.sky2pix(sky, nearest=True), pixint
         assert_allclose(wcs.sky2pix(sky, nearest=True), pixint)
 
     @attr(speed='fast')
     def test_get(self):
-        """WCS class: tests getters"""
-        assert_array_equal(self.wcs.get_step(), [1.0, 1.0])
-        assert_array_equal(self.wcs.get_start(), [0.0, 0.0])
-        assert_array_equal(self.wcs.get_end(), [4.0, 5.0])
+        """WCS class: testing getters"""
+        wcs = WCS(crval=(0, 0))
+        wcs.naxis1 = 6
+        wcs.naxis2 = 5
+        
+        assert_array_equal(wcs.get_step(), [1.0, 1.0])
+        assert_array_equal(wcs.get_start(), [0.0, 0.0])
+        assert_array_equal(wcs.get_end(), [4.0, 5.0])
 
         wcs2 = WCS(crval=(0, 0), shape=(5, 6))
         assert_array_equal(wcs2.get_step(), [1.0, 1.0])
         assert_array_equal(wcs2.get_start(), [-2.0, -2.5])
         assert_array_equal(wcs2.get_end(), [2.0, 2.5])
+        
+        wcs2.set_step([0.5,2.5])
+        assert_array_equal(wcs2.get_step(), [0.5, 2.5])
+        
+        wcs2.set_crval2(-2, unit=2*u.pix)
+        assert_array_equal(wcs2.get_crval2(), -4.0)
+        
+    @attr(speed='fast')
+    def test_rotation(self):
+        """WCS class: testing rotation"""
+        wcs = WCS(crval=(0, 0), rot=20)
+        wcs.naxis1 = 6
+        wcs.naxis2 = 5
+        wcs.rotate(-20)
+        assert_array_equal(wcs.get_rot(), 0)
+        
+        
+    @attr(speed='fast')
+    def test_resample(self):
+        """WCS class: testing resampling method"""
+        wcs = WCS(crval=(0, 0), rot=20)
+        wcs.naxis1 = 6
+        wcs.naxis2 = 5
+        wcs2 = wcs.resample(start=[1,0.5], step=[0.25,0.25])
+        assert_array_equal(wcs2.get_step(), [0.25, 0.25])
+        assert_array_equal(wcs2.get_start(), [1.0, 0.5])
+        assert_array_equal(wcs2.naxis1, 22)
+        assert_array_equal(wcs2.naxis2, 16)
+        
 
 
 class TestWaveCoord(object):
-
-    def setUp(self):
-        self.wave = WaveCoord(crval=0)
-        self.wave.shape = 10
+    
+    attr(speed='fast')
+    def test_from_hdr(self):
+        """WaveCoord class: testing constructor """
+        f = pyfits.open('data/obj/Spectrum_Novariance.fits')
+        h = f[0].header
+        f.close
+        wave = WaveCoord(h)
+        h2 = wave.to_header()
+        wave2 = WaveCoord(h2)
+        nose.tools.assert_true(wave.isEqual(wave2))
 
     @attr(speed='fast')
     def test_copy(self):
-        """WaveCoord class: tests copy"""
-        wave2 = self.wave.copy()
-        nose.tools.assert_true(self.wave.isEqual(wave2))
+        """WaveCoord class: testing copy"""
+        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm)
+        wave.shape = 10
+        wave2 = wave.copy()
+        nose.tools.assert_true(wave.isEqual(wave2))
 
     @attr(speed='fast')
     def test_coord_transform(self):
-        """WaveCoord class: tests coordinates transformations"""
-        pixel = self.wave.pixel(self.wave.coord(5), nearest=True)
+        """WaveCoord class: testing coordinates transformations"""
+        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm)
+        wave.shape = 10
+        pixel = wave.pixel(wave.coord(5, unit=u.nm), nearest=True, unit=u.nm)
         nose.tools.assert_equal(pixel, 5)
 
-        wave = np.arange(10)
-        pixel = self.wave.pixel(self.wave.coord(wave), nearest=True)
-        np.testing.assert_array_equal(pixel, wave)
+        wave2 = np.arange(10)
+        pixel = wave.pixel(wave.coord(wave2, unit=u.nm), nearest=True, unit=u.nm)
+        np.testing.assert_array_equal(pixel, wave2)
 
-        pix = np.arange(self.wave.shape, dtype=np.float)
-        np.testing.assert_allclose(self.wave.pixel(self.wave.coord()), pix)
+        pix = np.arange(wave.shape, dtype=np.float)
+        np.testing.assert_allclose(wave.pixel(wave.coord(unit=u.nm), unit=u.nm), pix)
 
     @attr(speed='fast')
     def test_get(self):
-        """WaveCoord class: tests getters"""
-        nose.tools.assert_equal(self.wave.get_step(), 1.0)
-        nose.tools.assert_equal(self.wave.get_start(), 0.0)
-        nose.tools.assert_equal(self.wave.get_end(), 9.0)
-
+        """WaveCoord class: testing getters"""
+        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm)
+        wave.shape = 10
+        nose.tools.assert_equal(wave.get_step(unit=u.nm), 1.0)
+        nose.tools.assert_equal(wave.get_start(unit=u.nm), 0.0)
+        nose.tools.assert_equal(wave.get_end(unit=u.nm), 9.0)
+        
+    @attr(speed='fast')
+    def test_rebin(self):
+        """WCS class: testing rebin method"""
+        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm)
+        wave.shape = 10
+        wave.rebin(factor=2)
+        nose.tools.assert_equal(wave.get_step(unit=u.nm), 2.0)
+        nose.tools.assert_equal(wave.get_start(unit=u.nm), 0.5)
+        nose.tools.assert_equal(wave.coord(2,unit=u.nm), 4.5)
+        nose.tools.assert_equal(wave.shape, 5)
+        
+    @attr(speed='fast')
+    def test_resample(self):
+        """WCS class: testing resampling method"""
+        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm)
+        wave.shape = 10
+        wave2 = wave.resample(step=2.5, start=20, unit=u.angstrom)
+        nose.tools.assert_equal(wave2.get_step(unit=u.nm), 0.25)
+        nose.tools.assert_equal(wave2.get_start(unit=u.nm), 2.0)
+        nose.tools.assert_equal(wave2.shape, 32)
 
 class TestCoord(object):
 
     @attr(speed='fast')
     def test_deg_sexa(self):
-        """tests degree/sexagesimal transformations"""
+        """testing degree/sexagesimal transformations"""
         ra = '23:51:41.268'
         dec = '-26:04:43.032'
         deg = sexa2deg([dec, ra])
