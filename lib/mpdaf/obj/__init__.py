@@ -44,7 +44,6 @@ __date__ = '2015/07/31'
 Import the different submodules
 """
 
-from . import plt_zscale
 from .coords import deg2dms
 from .coords import deg2hms
 from .coords import deg2sexa

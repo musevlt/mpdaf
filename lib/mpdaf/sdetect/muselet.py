@@ -1,4 +1,5 @@
 from astropy.table import Table
+import astropy.units as u
 import logging
 import numpy as np
 import os
@@ -118,19 +119,19 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         
         logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images", extra=d)
         weight_data = np.ma.average(c.data[1:size1 - 1, :, :], weights=1. / mvar[1:size1 - 1, :, :], axis=0)
-        weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), shape=imsum.shape, fscale=imsum.fscale)
+        weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), shape=imsum.shape, unit=imsum.unit)
         weight.write('white.fits', savemask='nan')
 
         fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
-        fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), shape=imsum.shape, fscale=imsum.fscale ** 2.0)
+        fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), shape=imsum.shape, unit=1/imsum.unit**2)
         fullvar.write('inv_variance.fits', savemask='nan')
 
         bdata = np.ma.average(c.data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)
         gdata = np.ma.average(c.data[nsfilter:2 * nsfilter, :, :], weights=1. / mvar[nsfilter:2 * nsfilter, :, :], axis=0)
         rdata = np.ma.average(c.data[2 * nsfilter:size1 - 1, :, :], weights=1. / mvar[2 * nsfilter:size1 - 1, :, :], axis=0)
-        r = Image(wcs=imsum.wcs, data=np.ma.filled(rdata, np.nan), shape=imsum.shape, fscale=imsum.fscale)
-        g = Image(wcs=imsum.wcs, data=np.ma.filled(gdata, np.nan), shape=imsum.shape, fscale=imsum.fscale)
-        b = Image(wcs=imsum.wcs, data=np.ma.filled(bdata, np.nan), shape=imsum.shape, fscale=imsum.fscale)
+        r = Image(wcs=imsum.wcs, data=np.ma.filled(rdata, np.nan), shape=imsum.shape, unit=imsum.unit)
+        g = Image(wcs=imsum.wcs, data=np.ma.filled(gdata, np.nan), shape=imsum.shape, unit=imsum.unit)
+        b = Image(wcs=imsum.wcs, data=np.ma.filled(bdata, np.nan), shape=imsum.shape, unit=imsum.unit)
         r.write('whiter.fits', savemask='nan')
         g.write('whiteg.fits', savemask='nan')
         b.write('whiteb.fits', savemask='nan')
@@ -165,7 +166,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             sizeleft = leftmax - leftmin
             sizeright = rightmax - rightmin
             contmean = (sizeleft * contleft + sizeright * contright) / (sizeleft + sizeright)
-            imnb = Image(wcs=imsum.wcs, fscale=imsum.fscale, data=np.ma.filled(imslice - contmean, np.nan), shape=imsum.shape)
+            imnb = Image(wcs=imsum.wcs, data=np.ma.filled(imslice - contmean, np.nan),
+                         shape=imsum.shape, unit=imsum.unit)
             kstr = "%04d" % k
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
             f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
@@ -229,12 +231,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             logger.info("muselet - Opening: " + cubename, extra=d)
             c = CubeDisk(cubename)
         
-        wlmin = c.wave.crval
-        dw = c.wave.cdelt
+        wlmin = c.wave.get_start(unit=u.angstrom)
+        dw = c.wave.get_step(unit=u.angstrom)
         nslices = c.shape[0]
-        step = c.wcs.get_step()[0]
         
-        ima_size = ima_size * step * 3600.0
+        ima_size = ima_size * c.wcs.get_step(unit=u.arcsec)[0]
 
         tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
@@ -346,7 +347,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         for i in range(nC):
             if (flags[i] == 1): 
                 idraw=idraw+1
-                dec, ra = c.wcs.pix2sky([C_yline[i]-1, C_xline[i]-1])[0]
+                dec, ra = c.wcs.pix2sky([C_yline[i]-1, C_xline[i]-1], unit=u.deg)[0]
                 s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
                 s.add_mag('MUSEB', C_magB[i], C_emagB[i])
                 s.add_mag('MUSEG', C_magG[i], C_emagG[i])
@@ -361,8 +362,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                                      'FLUX', 'FLUX_ERR'],
                               dtype=['<f8', '<f8','<f8', '<f8'])
                 lines['LBDA_OBS'].format = '.2f'
+                lines['LBDA_OBS'].unit = u.angstrom
                 lines['LBDA_OBS_ERR'].format = '.2f'
+                lines['LBDA_OBS_ERR'].unit = u.angstrom
                 lines['FLUX'].format = '.4f'
+                #lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!! 
                 lines['FLUX_ERR'].format = '.4f'
                 s.lines = lines
                 raw_catalog.append(s)
@@ -374,7 +378,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             for i in range(nC):
                 if (C_idmin[i] == r) and (flags[i] == 1):
                     if len(lbdas) == 0:
-                        dec, ra = c.wcs.pix2sky([C_yline[i]-1, C_xline[i]-1])[0]
+                        dec, ra = c.wcs.pix2sky([C_yline[i]-1, C_xline[i]-1], unit=u.deg)[0]
                         s = Source.from_data(ID=r, ra=ra, dec=dec, origin=origin)
                         s.add_mag('MUSEB', C_magB[i], C_emagB[i])
                         s.add_mag('MUSEG', C_magG[i], C_emagG[i])
@@ -390,8 +394,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                                      'FLUX', 'FLUX_ERR'],
                               dtype=['<f8', '<f8','<f8', '<f8'])
                 lines['LBDA_OBS'].format = '.2f'
+                lines['LBDA_OBS'].unit = u.angstrom
                 lines['LBDA_OBS_ERR'].format = '.2f'
+                lines['LBDA_OBS_ERR'].unit = u.angstrom
                 lines['FLUX'].format = '.4f'
+                #lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 lines['FLUX_ERR'].format = '.4f'
                 s.lines = lines
                 continuum_lines.append(s)
@@ -434,7 +441,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         nlines = len(S2_ll)
         for i in range(nlines):
                 idraw=idraw+1
-                dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1])[0]
+                dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1], unit=u.deg)[0]
                 s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
                 lbdas=[S2_ll[i]]
                 fluxes=[S2_fline[i]]
@@ -446,8 +453,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                                      'FLUX', 'FLUX_ERR'],
                               dtype=['<f8', '<f8', '<f8', '<f8'])
                 lines['LBDA_OBS'].format = '.2f'
+                lines['LBDA_OBS'].unit = u.angstrom
                 lines['LBDA_OBS_ERR'].format = '.2f'
+                lines['LBDA_OBS_ERR'].unit = u.angstrom
                 lines['FLUX'].format = '.4f'
+                #lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 lines['FLUX_ERR'].format = '.4f'
                 s.lines = lines
                 raw_catalog.append(s)
@@ -461,7 +471,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 lbdas = []
                 fluxes = []
                 err_fluxes = []
-                dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1])[0]
+                dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1], unit=u.deg)[0]
                 s = Source.from_data(ID=i, ra=ra, dec=dec, origin=origin)
                 lbdas.append(S2_ll[i])
                 fluxes.append(S2_fline[i])
@@ -482,8 +492,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                                      'FLUX', 'FLUX_ERR'],
                               dtype=['<f8', '<f8', '<f8', '<f8'])
                 lines['LBDA_OBS'].format = '.2f'
+                lines['LBDA_OBS'].unit = u.angstrom
                 lines['LBDA_OBS_ERR'].format = '.2f'
+                lines['LBDA_OBS_ERR'].unit = u.angstrom
                 lines['FLUX'].format = '.4f'
+                #lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 lines['FLUX_ERR'].format = '.4f'
                 s.lines = lines
                 single_lines.append(s)

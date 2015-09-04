@@ -1,5 +1,6 @@
 """pixtable.py Manages MUSE pixel table files."""
 
+
 import ctypes
 import datetime
 import itertools
@@ -7,10 +8,11 @@ import logging
 import os.path
 import numpy as np
 import warnings
+from scipy import interpolate, ndimage
 
+import astropy.units as u
 from astropy.io import fits as pyfits
 from astropy.io.fits import Column, ImageHDU
-from scipy import interpolate, ndimage
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
 from ..obj.objs import is_float, is_int
@@ -255,8 +257,8 @@ class PixTableAutoCalib(object):
 
 
 def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
-          primary_header=None, save_as_ima=True, wcs='pix', wave='Angstrom',
-          unit_data='count', unit_stat='count**2'):
+          primary_header=None, save_as_ima=True, wcs=u.pix, wave=u.angstrom,
+          unit_data=u.count):
     """Save the object in a FITS file.
 
     Parameters
@@ -310,29 +312,28 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
                 ImageHDU(name='weight',
                          data=np.float32(weight.reshape((nrows, 1)))))
         hdu = pyfits.HDUList(hdulist)
-        hdu[1].header['BUNIT'] = wcs
-        hdu[2].header['BUNIT'] = wcs
-        hdu[3].header['BUNIT'] = wave
-        hdu[4].header['BUNIT'] = unit_data
-        hdu[6].header['BUNIT'] = unit_stat
-        if weight is not None:
-            hdu[8].header['BUNIT'] = unit_data
+        hdu[1].header['BUNIT'] = "{}".format(wcs)
+        hdu[2].header['BUNIT'] = "{}".format(wcs)
+        hdu[3].header['BUNIT'] = "{}".format(wave)
+        hdu[4].header['BUNIT'] = "{}".format(unit_data)
+        hdu[6].header['BUNIT'] = "{}".format(unit_data**2)
+        
     else:
         cols = [
-            Column(name='xpos', format='1E', unit=wcs, array=np.float32(xpos)),
-            Column(name='ypos', format='1E', unit=wcs, array=np.float32(ypos)),
-            Column(name='lambda', format='1E', unit=wave, array=lbda),
-            Column(name='data', format='1E', unit=unit_data,
+            Column(name='xpos', format='1E', unit="{}".format(wcs), array=np.float32(xpos)),
+            Column(name='ypos', format='1E', unit="{}".format(wcs), array=np.float32(ypos)),
+            Column(name='lambda', format='1E', unit="{}".format(wave), array=lbda),
+            Column(name='data', format='1E', unit="{}".format(unit_data),
                    array=np.float32(data)),
             Column(name='dq', format='1J', array=np.int32(dq)),
-            Column(name='stat', format='1E', unit=unit_stat,
+            Column(name='stat', format='1E', unit="{}".format(unit_data**2),
                    array=np.float32(stat)),
             Column(name='origin', format='1J', array=np.int32(origin)),
         ]
 
         if weight is not None:
             cols.append(Column(name='weight', format='1E',
-                               unit='count', array=np.float32(weight)))
+                               array=np.float32(weight)))
         coltab = pyfits.ColDefs(cols)
         tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
         hdu = pyfits.HDUList([prihdu, tbhdu])
@@ -367,10 +368,10 @@ class PixTable(object):
                      If True, this pixel table was sky-subtracted.
     fluxcal        : boolean
                      If True, this pixel table was flux-calibrated.
-    wcs            : string
+    wcs            : astropy.units
                      Type of spatial coordinates of this pixel table
-                     ('pix', 'deg' or 'rad')
-    wave           : string
+                     (u.pix, u.deg or u.rad)
+    wave           : astropy.units
                      Type of spectral coordinates of this pixel table
     ima            : boolean
                      If True, pixtable is saved as multi-extension FITS image
@@ -379,8 +380,8 @@ class PixTable(object):
 
     def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None,
                  dq=None, stat=None, origin=None, weight=None,
-                 primary_header=None, save_as_ima=True, wcs='pix',
-                 wave='Angstrom', unit_data='count', unit_stat='count**2'):
+                 primary_header=None, save_as_ima=True, wcs=u.pix,
+                 wave=u.angstrom, unit_data=u.count):
         """Create a PixTable object.
 
         Parameters
@@ -412,7 +413,6 @@ class PixTable(object):
         self.skysub = False
         self.fluxcal = False
         self.unit_data = unit_data
-        self.unit_stat = unit_stat
         self.xc = 0.0
         self.yc = 0.0
 
@@ -427,15 +427,13 @@ class PixTable(object):
             self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
 
             if self.ima:
-                self.wcs = self.hdulist['xpos'].header['BUNIT']
-                self.wave = self.hdulist['lambda'].header['BUNIT']
-                self.unit_data = self.hdulist['data'].header['BUNIT']
-                self.unit_stat = self.hdulist['stat'].header['BUNIT']
+                self.wcs = u.Unit(self.hdulist['xpos'].header['BUNIT'])
+                self.wave = u.Unit(self.hdulist['lambda'].header['BUNIT'])
+                self.unit_data = u.Unit(self.hdulist['data'].header['BUNIT'])
             else:
-                self.wcs = self.hdulist[1].header['TUNIT1']
-                self.wave = self.hdulist[1].header['TUNIT3']
-                self.unit_data = self.hdulist[1].header['TUNIT4']
-                self.unit_stat = self.hdulist[1].header['TUNIT6']
+                self.wcs = u.Unit(self.hdulist[1].header['TUNIT1'])
+                self.wave = u.Unit(self.hdulist[1].header['TUNIT3'])
+                self.unit_data = u.Unit(self.hdulist[1].header['TUNIT4'])
         else:
             self.hdulist = None
             if (xpos is None or ypos is None or lbda is None or
@@ -493,24 +491,26 @@ class PixTable(object):
             except:
                 self.fluxcal = False
 
-            # center in degrees
             try:
-                cunit = self.get_keywords("CUNIT1")
+                # center in degrees
+                cunit = u.Unit(self.get_keywords("CUNIT1"))
+                self.xc = (self.primary_header['RA']*cunit).to(u.deg).value
+                self.yc = (self.primary_header['DEC']*cunit).to(u.deg).value
             except:
-                cunit = 'pix'
+                try:
+                    # center in pixels
+                    self.xc = self.primary_header['RA']
+                    self.yc = self.primary_header['DEC']
+                except:
+                    pass
 
-            if cunit == 'rad':
-                self.xc = self.primary_header['RA'] * 180 / np.pi
-                self.yc = self.primary_header['DEC'] * 180 / np.pi
-            elif cunit == 'deg':
-                self.xc = self.primary_header['RA']
-                self.yc = self.primary_header['DEC']
 
     def copy(self):
         """Copy PixTable object in a new one and returns it."""
         result = PixTable(self.filename)
         result.wcs = self.wcs
         result.wave = self.wave
+        result.unit_data = self.unit_data
         result.ima = self.ima
 
         if self.xpos is not None:
@@ -534,8 +534,6 @@ class PixTable(object):
         result.nifu = self.nifu
         result.skysub = self.skysub
         result.fluxcal = self.fluxcal
-        result.unit_data = self.unit_data
-        result.unit_stat = self.unit_stat
 
         result.primary_header = pyfits.Header(self.primary_header)
 
@@ -584,7 +582,7 @@ class PixTable(object):
               self.get_lambda(), self.get_data(), self.get_dq(),
               self.get_stat(), self.get_origin(), self.get_weight(),
               self.primary_header, save_as_ima, self.wcs, self.wave,
-              self.unit_data, self.unit_stat)
+              self.unit_data)
 
         self.filename = filename
         self.ima = save_as_ima
@@ -649,21 +647,26 @@ class PixTable(object):
             attr = getattr(self, attr_name)
             attr[ksel] = data
 
-    def get_xpos(self, ksel=None):
+    def get_xpos(self, ksel=None, unit=None):
         """Load the xpos column and return it.
 
         Parameters
         ----------
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               Unit of the returned data.
 
         Returns
         -------
         out : numpy.array
         """
-        return self.get_column('xpos', ksel=ksel)
+        if unit is None:
+            return self.get_column('xpos', ksel=ksel)
+        else:
+            return (self.get_column('xpos', ksel=ksel) * self.wcs).to(unit).value
 
-    def set_xpos(self, xpos, ksel=None):
+    def set_xpos(self, xpos, ksel=None, unit=None):
         """Set xpos column (or a part of it).
 
         Parameters
@@ -672,28 +675,37 @@ class PixTable(object):
                xpos values
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               unit of the xpos column in input.
         """
+        if unit is not None:
+            xpos = (xpos * unit).to(self.wcs).value
         self.set_column('xpos', xpos, ksel=ksel)
         self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW']\
             = float(self.xpos.min())
         self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH']\
             = float(self.xpos.max())
 
-    def get_ypos(self, ksel=None):
+    def get_ypos(self, ksel=None, unit=None):
         """Load the ypos column and return it.
 
         Parameters
         ----------
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               Unit of the returned data.
 
         Returns
         -------
         out : numpy.array
         """
-        return self.get_column('ypos', ksel=ksel)
+        if unit is None:
+            return self.get_column('ypos', ksel=ksel)
+        else:
+            return (self.get_column('ypos', ksel=ksel) * self.wcs).to(unit).value
 
-    def set_ypos(self, ypos, ksel=None):
+    def set_ypos(self, ypos, ksel=None, unit=None):
         """Set ypos column (or a part of it).
 
         Parameters
@@ -702,28 +714,37 @@ class PixTable(object):
                ypos values
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               unit of the ypos column in input.
         """
+        if unit is not None:
+            ypos = (ypos * unit).to(self.wcs).value
         self.set_column('ypos', ypos, ksel=ksel)
         self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW']\
             = float(self.ypos.min())
         self.primary_header['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH']\
             = float(self.ypos.max())
 
-    def get_lambda(self, ksel=None):
+    def get_lambda(self, ksel=None, unit=None):
         """Load the lambda column and return it.
 
         Parameters
         ----------
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               Unit of the returned data.
 
         Returns
         -------
         out : numpy.array
         """
-        return self.get_column('lambda', ksel=ksel)
+        if unit is None:
+            return self.get_column('lambda', ksel=ksel)
+        else:
+            return (self.get_column('lambda', ksel=ksel) * self.wave).to(unit).value
 
-    def set_lambda(self, lbda, ksel=None):
+    def set_lambda(self, lbda, ksel=None, unit=None):
         """Set lambda column (or a part of it).
 
         Parameters
@@ -732,7 +753,11 @@ class PixTable(object):
                lbda values
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               unit of the lambda column in input.
         """
+        if unit is not None:
+            lbda = (lbda  * unit).to(self.wave).value
         self.set_column('lambda', lbda, ksel=ksel)
         self.primary_header['HIERARCH ESO DRS MUSE '
                             'PIXTABLE LIMITS LAMBDA LOW']\
@@ -741,21 +766,26 @@ class PixTable(object):
                             'PIXTABLE LIMITS LAMBDA HIGH']\
             = float(self.lbda.max())
 
-    def get_data(self, ksel=None):
+    def get_data(self, ksel=None, unit=None):
         """Load the data column and return it.
 
         Parameters
         ----------
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               Unit of the returned data.
 
         Returns
         -------
         out : numpy.array
         """
-        return self.get_column('data', ksel=ksel)
+        if unit is None:
+            return self.get_column('data', ksel=ksel)
+        else:
+            return (self.get_column('data', ksel=ksel) * self.unit_data).to(unit).value
 
-    def set_data(self, data, ksel=None):
+    def set_data(self, data, ksel=None, unit=None):
         """Set data column (or a part of it).
 
         Parameters
@@ -764,24 +794,33 @@ class PixTable(object):
                data values
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               unit of the data column in input.
         """
+        if unit is not None:
+            data = (data * unit).to(self.unit_data).value
         self.set_column('data', data, ksel=ksel)
 
-    def get_stat(self, ksel=None):
+    def get_stat(self, ksel=None, unit=None):
         """Load the stat column and return it.
 
         Parameters
         ----------
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               Unit of the returned data.
 
         Returns
         -------
         out : numpy.array
         """
-        return self.get_column('stat', ksel=ksel)
+        if unit is None:
+            return self.get_column('stat', ksel=ksel)
+        else:
+            return (self.get_column('stat', ksel=ksel) * (self.unit_data**2)).to(unit).value
 
-    def set_stat(self, stat, ksel=None):
+    def set_stat(self, stat, ksel=None, unit=None):
         """Set stat column (or a part of it).
 
         Parameters
@@ -790,7 +829,11 @@ class PixTable(object):
                stat values
         ksel : output of np.where
                Elements depending on a condition.
+        unit : astropy.units
+               unit of the stat column in input.
         """
+        if unit is not None:
+            stat = (stat * unit).to(self.unit_data**2).value
         self.set_column('stat', stat, ksel=ksel)
 
     def get_dq(self, ksel=None):
@@ -906,13 +949,15 @@ class PixTable(object):
             exp = None
         return exp
 
-    def select_lambda(self, lbda):
+    def select_lambda(self, lbda, unit=u.angstrom):
         """Return a mask corresponding to the given wavelength range
 
         Parameters
         ----------
         lbda     : (float, float)
-                   (min, max) wavelength range in wavelength unit.
+                   (min, max) wavelength range in angstrom.
+        unit : astropy.units
+               Unit of the wavelengths in input.
 
         Returns
         -------
@@ -923,9 +968,13 @@ class PixTable(object):
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
             for l1, l2 in lbda:
+                l1 = (l1 * unit).to(self.wave).value
+                l2 = (l2 * unit).to(self.wave).value
                 mask |= numexpr.evaluate('(arr >= l1) & (arr < l2)')
         else:
             for l1, l2 in lbda:
+                l1 = (l1 * unit).to(self.wave).value
+                l2 = (l2 * unit).to(self.wave).value
                 mask |= (arr >= l1) & (arr < l2)
         return mask
 
@@ -1093,7 +1142,6 @@ class PixTable(object):
                    a shape ('C' for circular, 'S' for square)
                    and size (radius or half side length) in arcsec/pixels.
 
-
         Returns
         -------
         out : array of booleans
@@ -1105,11 +1153,11 @@ class PixTable(object):
             pi = np.pi  # NOQA
             for y0, x0, size, shape in sky:
                 if shape == 'C':
-                    if self.wcs == 'deg':
+                    if self.wcs == u.deg:
                         mask |= numexpr.evaluate(
                             '(((xpos - x0) * 3600 * cos(y0 * pi / 180.)) ** 2 '
                             '+ ((ypos - y0) * 3600) ** 2) < size ** 2')
-                    elif self.wcs == 'rad':
+                    elif self.wcs == u.rad:
                         mask |= numexpr.evaluate(
                             '(((xpos - x0) * 3600 * 180 / pi * cos(y0)) ** 2 '
                             '+ ((ypos - y0) * 3600 * 180 / pi)** 2) < size ** 2')
@@ -1117,11 +1165,11 @@ class PixTable(object):
                         mask |= numexpr.evaluate(
                             '((xpos - x0) ** 2 + (ypos - y0) ** 2) < size ** 2')
                 elif shape == 'S':
-                    if self.wcs == 'deg':
+                    if self.wcs == u.deg:
                         mask |= numexpr.evaluate(
                             '(abs((xpos - x0) * 3600 * cos(y0 * pi / 180.)) < size) '
                             '& (abs((ypos - y0) * 3600) < size)')
-                    elif self.wcs == 'rad':
+                    elif self.wcs == u.rad:
                         mask |= numexpr.evaluate(
                             '(abs((xpos - x0) * 3600 * 180 / pi * cos(y0)) < size) '
                             '& (abs((ypos - y0) * 3600 * 180 / pi) < size)')
@@ -1133,12 +1181,12 @@ class PixTable(object):
         else:
             for y0, x0, size, shape in sky:
                 if shape == 'C':
-                    if self.wcs == 'deg':
+                    if self.wcs == u.deg:
                         mask |= (((xpos - x0) * 3600
                                   * np.cos(y0 * np.pi / 180.)) ** 2
                                  + ((ypos - y0) * 3600) ** 2) \
                             < size ** 2
-                    elif self.wcs == 'rad':
+                    elif self.wcs == u.rad:
                         mask |= (((xpos - x0) * 3600 * 180 / np.pi
                                   * np.cos(y0)) ** 2
                                  + ((ypos - y0) * 3600 * 180 / np.pi)
@@ -1147,11 +1195,11 @@ class PixTable(object):
                         mask |= ((xpos - x0) ** 2
                                  + (ypos - y0) ** 2) < size ** 2
                 elif shape == 'S':
-                    if self.wcs == 'deg':
+                    if self.wcs == u.deg:
                         mask |= (np.abs((xpos - x0) * 3600
                                         * np.cos(y0 * np.pi / 180.)) < size) \
                             & (np.abs((ypos - y0) * 3600) < size)
-                    elif self.wcs == 'rad':
+                    elif self.wcs == u.rad:
                         mask |= (np.abs((xpos - x0) * 3600 * 180
                                         / np.pi * np.cos(y0)) < size) \
                             & (np.abs((ypos - y0) * 3600 * 180 / np.pi) < size)
@@ -1235,7 +1283,7 @@ class PixTable(object):
         weight = self.get_weight(ksel)
         return PixTable(None, xpos, ypos, lbda, data, dq, stat, origin,
                         weight, hdr, self.ima, self.wcs, self.wave,
-                        unit_data=self.unit_data, unit_stat=self.unit_stat)
+                        unit_data=self.unit_data)
 
     def extract(self, filename=None, sky=None, lbda=None, ifu=None, sl=None,
                 xpix=None, ypix=None, exp=None, stack=None, method='and'):
@@ -1262,7 +1310,7 @@ class PixTable(object):
                    a shape ('C' for circular, 'S' for square)
                    and size (radius or half side length) in arcsec/pixels.
         lbda     : (float, float)
-                   (min, max) wavelength range in wavelength unit.
+                   (min, max) wavelength range in angstrom.
         ifu      : int or list
                    IFU number.
         sl       : int or list
@@ -1306,7 +1354,7 @@ class PixTable(object):
 
         # Do the selection on wavelengths
         if lbda is not None:
-            lfunc(kmask, self.select_lambda(lbda), out=kmask)
+            lfunc(kmask, self.select_lambda(lbda, unit=u.angstrom), out=kmask)
 
         # Do the selection on the origin column
         if (ifu is not None) or (sl is not None) or (stack is not None) or \
@@ -1458,11 +1506,11 @@ class PixTable(object):
             ypos_sky = np.arcsin(np.sin(theta) * np.sin(dp) -
                                  np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
         else:
-            if self.wcs == 'deg':
+            if self.wcs == u.deg:
                 dp = self.yc * np.pi / 180
                 xpos_sky = self.xc + xpos / np.cos(dp)
                 ypos_sky = self.yc + ypos
-            elif self.wcs == 'rad':
+            elif self.wcs == u.rad:
                 dp = self.yc * np.pi / 180
                 xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(dp)
                 ypos_sky = self.yc + ypos * 180 / np.pi
@@ -1488,11 +1536,11 @@ class PixTable(object):
             xpos_sky = numexpr.evaluate("xc + ra")
             ypos_sky = numexpr.evaluate("arcsin(sin(theta) * sin(dp) - cos(theta) * cos(dp) * cos(phi)) * 180 / pi")
         else:
-            if self.wcs == 'deg':
+            if self.wcs == u.deg:
                 dp = numexpr.evaluate("yc * pi / 180")
                 xpos_sky = numexpr.evaluate("xc + xpos / cos(dp)")
                 ypos_sky = numexpr.evaluate("yc + ypos")
-            elif self.wcs == 'rad':
+            elif self.wcs == u.rad:
                 dp = numexpr.evaluate("yc * pi / 180")
                 xpos_sky = numexpr.evaluate("xc + xpos * 180 / pi / cos(dp)")
                 ypos_sky = numexpr.evaluate("yc + ypos * 180 / pi")
@@ -1593,84 +1641,86 @@ class PixTable(object):
                 raise
             return self.primary_header[alternate_key]
 
-    def reconstruct_sky_image(self, lbda=None, step=None):
-        """Reconstructs the image on the sky from the pixtable.
-
-        Parameters
-        ----------
-        lbda : (float,float)
-               (min, max) wavelength range in Angstrom.
-               If None, the image is reconstructed for all wavelengths.
-        step : (float,float)
-               Pixel steps of the final image
-               (in arcsec if the coordinates of this pixel table
-               are world coordinates on the sky ).
-               If None, the value corresponding to the keyword
-               "HIERARCH ESO INS PIXSCALE" is used.
-
-        Returns
-        -------
-        out : :class:`mpdaf.obj.Image`
-        """
-        # TODO replace by DRS
-        # step in arcsec
-
-        if step is None:
-            step = self.get_keywords('HIERARCH ESO OCS IPS PIXSCALE')
-            if step <= 0:
-                raise ValueError('INS PIXSCALE not valid')
-            xstep = step
-            ystep = step
-        else:
-            ystep, xstep = step
-
-        col_dq = self.get_dq()
-        if lbda is None:
-            ksel = np.where((col_dq == 0))
-        else:
-            l1, l2 = lbda
-            col_lambda = self.get_lambda()
-            ksel = np.where((col_dq == 0) & (col_lambda > l1) &
-                            (col_lambda < l2))
-            del col_lambda
-        del col_dq
-
-        x = self.get_xpos(ksel)
-        y = self.get_ypos(ksel)
-        data = self.get_data(ksel)
-
-        xmin = np.min(x)
-        xmax = np.max(x)
-        ymin = np.min(y)
-        ymax = np.max(y)
-
-        if self.wcs == "deg":  # arcsec to deg
-            xstep /= (-3600. * np.cos((ymin + ymax) * np.pi / 180. / 2.))
-            ystep /= 3600.
-        elif self.wcs == "rad":  # arcsec to rad
-            xstep /= (-3600. * 180. / np.pi * np.cos((ymin + ymax) / 2.))
-            ystep /= (3600. * 180. / np.pi)
-        else:  # pix
-            pass
-
-        nx = 1 + int((xmin - xmax) / xstep)
-        grid_x = np.arange(nx) * xstep + xmax
-        ny = 1 + int((ymax - ymin) / ystep)
-        grid_y = np.arange(ny) * ystep + ymin
-        shape = (ny, nx)
-
-        points = np.empty((len(ksel[0]), 2), dtype=float)
-        points[:, 0] = y
-        points[:, 1] = x
-
-        new_data = interpolate.griddata(points, data,
-                                        np.meshgrid(grid_y, grid_x),
-                                        method='linear').T
-
-        wcs = WCS(crpix=(1.0, 1.0), crval=(ymin, xmax),
-                  cdelt=(ystep, xstep), shape=shape)
-        ima = Image(data=new_data, wcs=wcs)
-        return ima
+#     def reconstruct_sky_image(self, lbda=None, step=None):
+#         """Reconstructs the image on the sky from the pixtable.
+# 
+#         Parameters
+#         ----------
+#         lbda : (float,float)
+#                (min, max) wavelength range in Angstrom.
+#                If None, the image is reconstructed for all wavelengths.
+#         step : (float,float)
+#                Pixel steps of the final image
+#                (in arcsec if the coordinates of this pixel table
+#                are world coordinates on the sky ).
+#                If None, the value corresponding to the keyword
+#                "HIERARCH ESO INS PIXSCALE" is used.
+# 
+#         Returns
+#         -------
+#         out : :class:`mpdaf.obj.Image`
+#         """
+#         # TODO replace by DRS
+#         # step in arcsec
+# 
+#         if step is None:
+#             step = self.get_keywords('HIERARCH ESO OCS IPS PIXSCALE')
+#             if step <= 0:
+#                 raise ValueError('INS PIXSCALE not valid')
+#             xstep = step
+#             ystep = step
+#         else:
+#             ystep, xstep = step
+# 
+#         col_dq = self.get_dq()
+#         if lbda is None:
+#             ksel = np.where((col_dq == 0))
+#         else:
+#             l1, l2 = lbda
+#             l1 = l1 * (u.angstrom).to(self.wave)
+#             l2 = l2 * (u.angstrom).to(self.wave)
+#             col_lambda = self.get_lambda()
+#             ksel = np.where((col_dq == 0) & (col_lambda > l1) &
+#                             (col_lambda < l2))
+#             del col_lambda
+#         del col_dq
+# 
+#         x = self.get_xpos(ksel) # deg ???
+#         y = self.get_ypos(ksel)
+#         data = self.get_data(ksel)
+# 
+#         xmin = np.min(x)
+#         xmax = np.max(x)
+#         ymin = np.min(y)
+#         ymax = np.max(y)
+# 
+#         if self.wcs == u.deg:  # arcsec to deg
+#             xstep /= (-3600. * np.cos((ymin + ymax) * np.pi / 180. / 2.))
+#             ystep /= 3600.
+#         elif self.wcs == u.rad:  # arcsec to rad
+#             xstep /= (-3600. * 180. / np.pi * np.cos((ymin + ymax) / 2.))
+#             ystep /= (3600. * 180. / np.pi)
+#         else:  # pix
+#             pass
+# 
+#         nx = 1 + int((xmin - xmax) / xstep)
+#         grid_x = np.arange(nx) * xstep + xmax
+#         ny = 1 + int((ymax - ymin) / ystep)
+#         grid_y = np.arange(ny) * ystep + ymin
+#         shape = (ny, nx)
+# 
+#         points = np.empty((len(ksel[0]), 2), dtype=float)
+#         points[:, 0] = y
+#         points[:, 1] = x
+# 
+#         new_data = interpolate.griddata(points, data,
+#                                         np.meshgrid(grid_y, grid_x),
+#                                         method='linear').T
+# 
+#         wcs = WCS(crpix=(1.0, 1.0), crval=(ymin, xmax),
+#                   cdelt=(ystep, xstep), shape=shape)
+#         ima = Image(data=new_data, wcs=wcs, unit=self.data_unit)
+#         return ima
 
     def reconstruct_det_image(self, xstart=None, ystart=None,
                               xstop=None, ystop=None):
@@ -1714,7 +1764,7 @@ class PixTable(object):
         image[ypix - ystart, xpix - xstart] = col_data
 
         wcs = WCS(crval=(ystart, xstart))
-        return Image(shape=(image.shape), data=image, wcs=wcs)
+        return Image(shape=(image.shape), data=image, wcs=wcs, unit=self.unit_data)
 
     def reconstruct_det_waveimage(self):
         """Reconstructs an image of wavelength values on the detector from the
@@ -1751,7 +1801,7 @@ class PixTable(object):
 
         wcs = WCS(crval=(ystart, xstart))
 
-        return Image(shape=(image.shape), data=image, wcs=wcs)
+        return Image(shape=(image.shape), data=image, wcs=wcs, unit=self.wave)
 
     def mask_column(self, maskfile=None, verbose=True):
         """Computes the mask column corresponding to a mask file.
@@ -1780,6 +1830,7 @@ class PixTable(object):
         ypos_sky = pos[:, 0]
 
         ima_mask = Image(maskfile)
+        
         data = ima_mask.data.data
         label = ndimage.measurements.label(data)[0]
         ulabel = np.unique(label)
@@ -1793,8 +1844,8 @@ class PixTable(object):
                 item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),
                         slice(min(ksel[1]), max(ksel[1]) + 1, None))
                 wcs = ima_mask.wcs[item]
-                coord = wcs.get_range()
-                step = wcs.get_step()
+                coord = wcs.get_range(unit=u.deg)
+                step = wcs.get_step(unit=u.deg)
                 y0, x0 = coord.min(axis=0) - step / 2
                 y1, x1 = coord.max(axis=0) + step / 2
                 ksel = np.where((xpos_sky > x0) & (xpos_sky < x1) &
@@ -1803,7 +1854,7 @@ class PixTable(object):
                     self.logger.info(msg, i, nlabel, x0, x1, y0, y1,
                                      len(ksel[0]), extra=d)
                 if len(ksel[0]) != 0:
-                    pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True)
+                    pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True, unit=u.deg)
                     mask[ksel] |= (data[pix[:, 0], pix[:, 1]] != 0)
             except Exception:
                 self.logger.warning('masking object %i failed', i, extra=d)
@@ -1822,7 +1873,7 @@ class PixTable(object):
                    column corresponding to a mask file
                    (previously computed by mask_column)
         dlbda    : double
-                   wavelength step
+                   wavelength step in angstrom
         nmax     : integer
                    maximum number of clipping iterations
         nclip    : float or (float,float)
@@ -1852,7 +1903,7 @@ class PixTable(object):
             nclip_low = nclip[0]
             nclip_up = nclip[1]
         # wavelength step
-        lbda = self.get_lambda()
+        lbda = self.get_lambda(unit=u.angstrom)
         lmin = np.min(lbda) - dlbda / 2.0
         lmax = np.max(lbda) + dlbda / 2.0
         n = (int)((lmax - lmin) / dlbda)
@@ -1887,9 +1938,9 @@ class PixTable(object):
                                   np.float64(nclip_low),
                                   np.float64(nclip_up), nstop, result)
         wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda),
-                         cunit='Angstrom', shape=n)
+                         cunit=u.angstrom, shape=n)
 
-        spe = Spectrum(shape=n, data=result, wave=wave)
+        spe = Spectrum(shape=n, data=result, wave=wave, cunit=self.unit_data)
         add_mpdaf_method_keywords(spe.primary_header,
                                   "drs.pixtable.sky_ref",
                                   ['pixtable', 'mask', 'dlbda', 'nmax',
@@ -1964,8 +2015,8 @@ class PixTable(object):
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
         mask = maskcol.astype(np.int32)
-        skyref_flux = skyref.data.data.astype(np.float64)
-        skyref_lbda = skyref.wave.coord()
+        skyref_flux = (skyref.data.data.astype(np.float64)*skyref.unit).to(self.unit_data).value
+        skyref_lbda = skyref.wave.coord(unit=self.wave)
         skyref_n = skyref.shape
         xpix = xpix.astype(np.int32)
         ypix = ypix.astype(np.int32)
@@ -2079,8 +2130,8 @@ class PixTable(object):
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
         mask = maskcol.astype(np.int32)
-        skyref_flux = skyref.data.data.astype(np.float64)
-        skyref_lbda = skyref.wave.coord()
+        skyref_flux = (skyref.data.data.astype(np.float64)*skyref.unit).to(self.unit_data).value
+        skyref_lbda = skyref.wave.coord(unit=self.wave)
         skyref_n = skyref.shape
         xpix = xpix.astype(np.int32)
         ypix = ypix.astype(np.int32)

@@ -1,11 +1,16 @@
-from mpdaf.obj import CubeDisk
 from mpdaf.drs import PixTable
 from mpdaf.MUSE import Slicer
+from mpdaf.obj import CubeDisk
+from mpdaf.obj import plt_zscale
+
+import astropy.units as u
+import logging
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
-from mpdaf.obj import plt_zscale
-import matplotlib.cm as cm
-import logging
+
+
+
 
 
 class DisplayPixTable(object):
@@ -128,7 +133,7 @@ det_vmax  : float
 
         iplot = 0
         for ifu, detima in zip(list_ifu, list_detima):
-            limits = detima.wcs.get_range()
+            limits = detima.wcs.get_range(unit=self.pixtable.wcs)
             plt.subplot2grid((5, nplots), (2, iplot), rowspan=2)
             im = detima.plot(title='%02d' % ifu, scale=det_scale,
                              vmin=det_vmin, vmax=det_vmax,
@@ -158,8 +163,8 @@ det_vmax  : float
         plt.subplot2grid((5, nplots), (0, 0), colspan=colspan_ima, rowspan=2)
         for ifu in list_ifu:  # plot ifus limits on image
             ymin, ymax = ifu_limits[ifu]
-            ymin = int(ima.wcs.sky2pix((ymin, 0))[0][0])
-            ymax = int(ima.wcs.sky2pix((ymax, 0))[0][0])
+            ymin = int(ima.wcs.sky2pix((ymin, 0), unit=self.pixtable.wcs)[0][0])
+            ymax = int(ima.wcs.sky2pix((ymax, 0), unit=self.pixtable.wcs)[0][0])
             plt.plot(np.arange(0, l), np.ones(l) * ymin, 'b-')
             plt.plot(np.arange(0, l), np.ones(l) * ymax, 'b-')
             ymin = max(0, ymin)
@@ -234,9 +239,9 @@ det_vmax  : float
         pmax = np.arange(1, nifu + 1) * dp_ifu
         c = np.zeros((nifu, 2))
         c[:, 0] = pmin
-        ymin = cub.wcs.pix2sky(c)[:, 0]
+        ymin = cub.wcs.pix2sky(c, unit=self.pixtable.wcs)[:, 0]
         c[:, 0] = pmax
-        ymax = cub.wcs.pix2sky(c)[:, 0]
+        ymax = cub.wcs.pix2sky(c, unit=self.pixtable.wcs)[:, 0]
         ifu_limits = dict((_ifu, (_ymin, _ymax)) for _ifu, _ymin, _ymax
                           in zip(np.arange(ifu_high, ifu_low - 1, -1),
                                  ymin, ymax))
@@ -255,10 +260,13 @@ det_vmax  : float
         spe = subcub.sum(axis=(1, 2))
 
         if shape == 'C':
-            center = ima.wcs.sky2pix((y, x))[0]
-            radius = size / np.abs(ima.wcs.get_step())[0]
-            if is_deg:
-                radius /= 3600.
+            center = ima.wcs.sky2pix((y, x), unit=self.pixtable.wcs)[0]
+            step = ima.wcs.get_step(unit=self.pixtable.wcs)
+            try:
+                radius = size / np.abs(step[0].to(u.deg).value) / 3600.0
+            except:
+                radius = size / np.abs(step[0].value)
+                
             ima.mask(center=center, radius=radius, pix=True, inside=False)
         l = ima.shape[1]
 
@@ -316,7 +324,7 @@ Parameters
             for slice_ccd in list_slice:
                 sli = Slicer.ccd2sky(slice_ccd)
                 p, q = slice_limits[(ifu, sli)]
-                p, q = ima.wcs.sky2pix((p, q))[0]
+                p, q = ima.wcs.sky2pix((p, q), unit=self.pixtable.wcs)[0]
                 d = np.abs((p - ima_center_p) ** 2 + (q - ima_center_q) ** 2)
                 distance.append((d, ifu, slice_ccd, p))
 
@@ -390,7 +398,7 @@ Parameters
         iplot = 0
         for ifu, sli, sliceima in zip(distance[:, 1], distance[:, 2],
                                       list_sliceima):
-            limits = sliceima.wcs.get_range()
+            limits = sliceima.wcs.get_range(unit=self.pixtable.wcs)
             plt.subplot2grid((9, nplots), (4, iplot), rowspan=3)
             im = sliceima.plot(title='%02d/%02d' % (ifu, sli),
                                scale=slice_scale,
@@ -507,7 +515,7 @@ slice_vmax  : float
         coord_pix = np.zeros((nifu * 48, 2))
         coord_pix[:, 0] = list_p
         coord_pix[:, 1] = list_q
-        coord_sky = cub.wcs.pix2sky(coord_pix)
+        coord_sky = cub.wcs.pix2sky(coord_pix, unit=self.pixtable.wcs)
         list_p = coord_sky[:, 0]
         list_q = coord_sky[:, 1]
 
@@ -528,10 +536,14 @@ slice_vmax  : float
         spe = subcub.sum(axis=(1, 2))
 
         if shape == 'C':
-            center = ima.wcs.sky2pix((y, x))[0]
-            radius = size / np.abs(ima.wcs.get_step())[0]
-            if is_deg:
-                radius /= 3600.
+            center = ima.wcs.sky2pix((y, x), unit=self.pixtable.wcs)[0]
+            
+            step = ima.wcs.get_step(unit=self.pixtable.wcs)
+            try:
+                radius = size / np.abs(step[0].to(u.deg).value) / 3600.
+            except:
+                radius = size / np.abs(step[0].value)
+            
             ima.mask(center=center, radius=radius, pix=True, inside=False)
         ima_center_p = ima.shape[0] / 2.0
         ima_center_q = ima.shape[1] / 2.0

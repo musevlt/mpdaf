@@ -76,7 +76,7 @@ filename : string
         self.stat = None
         self.nx = 0
         self.ny = 0
-        if filename != None:
+        if filename is not None:
             try:
                 hdulist = pyfits.open(self.filename, memmap=1)
                 self.primary_header = hdulist[0].header
@@ -112,11 +112,11 @@ filename : string
     def __del__(self):
         """removes temporary files used for memory mapping."""
         try:
-            if self.data != None:
+            if self.data is not None:
                 os.remove(self.data)
-            if self.dq != None:
+            if self.dq is not None:
                 os.remove(self.dq)
-            if self.stat != None:
+            if self.stat is not None:
                 os.remove(self.stat)
         except:
             pass
@@ -154,7 +154,7 @@ filename : string
     def info(self):
         """Prints information."""
         d = {'class': 'CalibFile', 'method': 'info'}
-        if self.filename != None:
+        if self.filename is not None:
             hdulist = pyfits.open(self.filename, memmap=1)
             self.logger.info(hdulist.info(), extra=d)
             hdulist.close()
@@ -169,8 +169,8 @@ filename : string
     def get_data(self):
         """Opens the FITS file with memory mapping, loads the data array and
         returns it."""
-        if self.filename == None:
-            if self.data == None:
+        if self.filename is None:
+            if self.data is None:
                 raise IOError('format error: empty DATA extension')
             else:
                 data = np.memmap(self.data, dtype="float32",
@@ -185,8 +185,8 @@ filename : string
     def get_dq(self):
         """Opens the FITS file with memory mapping, loads the dq array and
         returns it."""
-        if self.filename == None:
-            if self.dq == None:
+        if self.filename is None:
+            if self.dq is None:
                 raise IOError('format error: empty DQ extension')
             else:
                 dq = np.memmap(self.dq, dtype="int32",
@@ -201,8 +201,8 @@ filename : string
     def get_stat(self):
         """Opens the FITS file with memory mapping, loads the stat array and
         returns it."""
-        if self.filename == None:
-            if self.stat == None:
+        if self.filename is None:
+            if self.stat is None:
                 raise IOError('format error: empty STAT extension')
             else:
                 stat = np.memmap(self.stat, dtype="float32",
@@ -259,11 +259,11 @@ filename : string
         hdu.writeto(filename, clobber=True, output_verify='fix')
         # update attributes
         self.filename = filename
-        if self.data != None:
+        if self.data is not None:
             os.remove(self.data)
-        if self.dq != None:
+        if self.dq is not None:
             os.remove(self.dq)
-        if self.stat != None:
+        if self.stat is not None:
             os.remove(self.stat)
         self.data = None
         self.dq = None
@@ -541,7 +541,7 @@ dirname : string
         self.progress = True
         self.type = typ
         self.files = dict()
-        if dirname != None:
+        if dirname is not None:
             for i in range(24):
                 ifu = i + 1
                 filename = "%s/%s_%02d.fits" % (dirname, typ, ifu)
@@ -635,7 +635,7 @@ dirname : string
                     (fd, out.stat) = tempfile.mkstemp(prefix='mpdaf')
                     rstat = np.memmap(out.stat, dtype="float32",
                                       shape=(out.ny, out.nx))
-                    if stat != None:
+                    if stat is not None:
                         rstat[:] = stat[:]
                     else:
                         rstat[:] = self.files[k].get_stat()[:]
@@ -644,7 +644,7 @@ dirname : string
                     (fd, out.dq) = tempfile.mkstemp(prefix='mpdaf')
                     rdq = np.memmap(out.dq, dtype="int32",
                                     shape=(out.ny, out.nx))
-                    if dq != None:
+                    if dq is not None:
                         rdq[:] = dq[:]
                     else:
                         rdq[:] = self.files[k].get_dq()[:]
@@ -682,14 +682,14 @@ dirname : string
                 rstat = np.memmap(out.stat, dtype="float32",
                                   shape=(out.ny, out.nx))
                 os.close(fd)
-                if stat != None:
+                if stat is not None:
                     rstat[:] = stat[:]
                 else:
                     rstat[:] = self.files[k].get_stat()[:]
                 # pixel quality
                 (fd, out.dq) = tempfile.mkstemp(prefix='mpdaf')
                 rdq = np.memmap(out.dq, dtype="int32", shape=(out.ny, out.nx))
-                if dq != None:
+                if dq is not None:
                     rdq[:] = dq[:]
                 else:
                     rdq[:] = self.files[k].get_dq()[:]

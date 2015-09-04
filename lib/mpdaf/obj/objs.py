@@ -36,3 +36,10 @@ def mag2flux(mag, wave):
     """
     cs = c.to('Angstrom/s').value  # speed of light in A/s
     return 10 ** (-0.4 * (mag + 48.60)) * cs / wave ** 2
+
+def UnitArray(array, old_unit, new_unit):
+    return (array*old_unit).to(new_unit).value
+    
+def UnitMaskedArray(mask_array, old_unit, new_unit):
+    return np.ma.array((mask_array.data[:]*old_unit).to(new_unit).value,
+                        mask=mask_array.mask)

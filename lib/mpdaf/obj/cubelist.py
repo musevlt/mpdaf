@@ -553,6 +553,7 @@ class CubeMosaic(CubeList):
         d = {'class': 'CubeMosaic', 'method': 'check_wcs'}
         wcs = self.wcs
         cdelt1 = wcs.get_step()
+        cunit = wcs.get_cunit1()
         rot = wcs.get_rot()
 
         for f, cube in zip(self.files, self.cubes):
@@ -560,7 +561,7 @@ class CubeMosaic(CubeList):
             valid = [allclose(wcs.wcs.wcs.crval, cw.wcs.wcs.crval),
                      # allclose(wcs.wcs.wcs.cd, cw.wcs.wcs.cd),
                      array_equal(wcs.wcs.wcs.ctype, cw.wcs.wcs.ctype),
-                     allclose(cdelt1, cw.get_step()),
+                     allclose(cdelt1, cw.get_step(unit=cunit)),
                      allclose(rot, cw.get_rot())]
             if not all(valid):
                 msg = 'all cubes have not same spatial coordinates'
