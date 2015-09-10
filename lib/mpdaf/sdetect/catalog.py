@@ -297,9 +297,8 @@ class Catalog(Table):
                                    3- sub-table of non matched elements of the catalog cat2
         """
         d = {'class': 'Catalog', 'method': 'match'}
-
-        coord1 = SkyCoord(ra=self['RA'] * u.degree, dec=self['DEC'] * u.degree)
-        coord2 = SkyCoord(ra=cat2['RA'] * u.degree, dec=cat2['DEC'] * u.degree)
+        coord1 = SkyCoord(zip(self['RA'],self['DEC']), unit=(u.degree,u.degree))
+        coord2 = SkyCoord(zip(cat2['RA'],cat2['DEC']), unit=(u.degree,u.degree))
         id1, id2, d2d, d3d = search_around_sky(coord1, coord2, radius * u.arcsec)
         id1_notin_2 = np.in1d(range(len(self)), id1, invert=True)
         id2_notin_1 = np.in1d(range(len(cat2)), id2, invert=True)
