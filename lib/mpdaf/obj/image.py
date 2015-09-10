@@ -2010,7 +2010,7 @@ class Image(object):
         """
         self.wcs.rotate(theta)
 
-    def _rotate(self, theta, interp='no', reshape=False, pivot=None):
+    def _rotate(self, theta, interp='no', reshape=False, order=3, pivot=None):
         """ Rotates the image using spline interpolation
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
@@ -2026,6 +2026,9 @@ class Image(object):
                 if reshape is true, the output image is adapted
                 so that the input image is contained completely in the output.
                 Default is False.
+        order : int in the range 0-5.
+                The order of the spline interpolation that is used by the rotation
+                Default is 3
         pivot : (int, int)
                  rotation center in pixels
                  if None, rotation will be done around the center of the image. 
@@ -2044,7 +2047,7 @@ class Image(object):
             center_coord = self.wcs.pix2sky([np.array(self.shape/2. - 0.5)])
             
             mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
-            data_rot = ndimage.rotate(data, -theta, reshape=reshape)
+            data_rot = ndimage.rotate(data, -theta, reshape=reshape, order=order)
             
             shape = np.array(data_rot.shape)
         
@@ -2057,7 +2060,7 @@ class Image(object):
             padY = [self.shape[0] - pivot[1], pivot[1]]
             
             data_rot = np.pad(data, [padY, padX], 'constant')
-            data_rot = ndimage.rotate(data_rot, -theta, reshape=reshape)
+            data_rot = ndimage.rotate(data_rot, -theta, reshape=reshape, order=order)
             
             mask_rot = np.pad(mask, [padY, padX], 'constant')
             mask_rot = ndimage.rotate(mask_rot, -theta, reshape=reshape, order=0)
@@ -2096,7 +2099,7 @@ class Image(object):
             self.resize()
             
 
-    def rotate(self, theta, interp='no', reshape=False, pivot=None):
+    def rotate(self, theta, interp='no', reshape=False, order=3, pivot=None):
         """ Returns rotated image
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
@@ -2112,6 +2115,9 @@ class Image(object):
                 if reshape is true, the output image is adapted
                 so that the input image is contained completely in the output.
                 Default is False.
+        order : int in the range 0-5.
+                The order of the spline interpolation that is used by the rotation
+                Default is 3
         pivot : (double, double)
                  rotation center in degrees
                  if None, rotation will be done around the center of the image. 
@@ -2123,7 +2129,7 @@ class Image(object):
         res = self.copy()
         if pivot is not None:
             pivot = self.wcs.sky2pix([np.array(pivot)], nearest=True)[0]
-        res._rotate(theta, interp, reshape, pivot)
+        res._rotate(theta, interp, reshape, order, pivot)
         return res
 
     def sum(self, axis=None):

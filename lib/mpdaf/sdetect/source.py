@@ -1,5 +1,5 @@
 from astropy.io import fits as pyfits
-from astropy.table import Table, Column, vstack
+from astropy.table import Table, MaskedColumn, vstack
 
 from matplotlib import cm
 from matplotlib.patches import Ellipse
@@ -37,6 +37,19 @@ emlines = {1215.67: 'LYALPHA1216',
            6583.0: '[NII]6583',
            6716.0: '[SII]6716',
            6731.0: '[SII]6731'}
+
+def vacuum2air(vac):
+    vac = np.array(vac)
+    return vac / (1.0 + 2.735182e-4 + 131.4182/(vac**2) + 2.76249e8/(vac**4))
+
+def air2vacuum(air):
+    air = np.array(air)
+    vactest = air + (air - vacuum2air(air))
+    x = np.abs(air - vacuum2air(vactest))
+    for i in range(10):
+        vactest = vactest + x
+        x = np.abs(air-vacuum2air(vactest))
+    return vactest
 
 
 def matchlines(nlines, wl, z, eml):
@@ -652,7 +665,7 @@ class Source(object):
                 zmin, zmax = errz
             except:
                 raise ValueError,'Wrong type for errz in add_z'
-        if self.z is None:
+        if self.z is None and z!=-9999:
             self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
                            rows=[[desc, z, zmin, zmax]],
                            dtype=('S20', 'f6', 'f6', 'f6'),
@@ -662,11 +675,16 @@ class Source(object):
             self.z['Z_MAX'].format = '%.6f'
         else:
             if desc in self.z['Z_DESC']:
-                self.z['Z'][self.z['Z_DESC']==desc] = z
-                self.z['Z_MIN'][self.z['Z_DESC']==desc] = zmin
-                self.z['Z_MAX'][self.z['Z_DESC']==desc] = zmax
+                if z!=-9999:
+                    self.z['Z'][self.z['Z_DESC']==desc] = z
+                    self.z['Z_MIN'][self.z['Z_DESC']==desc] = zmin
+                    self.z['Z_MAX'][self.z['Z_DESC']==desc] = zmax
+                else:
+                    index = np.where((self.z['Z_DESC']==desc))[0][0]
+                    self.z.remove_row(index)
             else:
-                self.z.add_row([desc, z, zmin, zmax])
+                if z!=-9999:
+                    self.z.add_row([desc, z, zmin, zmax])
                 
         self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
         self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
@@ -698,15 +716,18 @@ class Source(object):
             else:
                 self.mag.add_row([band, m, errm])
 
-    def add_line(self, cols, values):
+    def add_line(self, cols, values, match=None):
         """Add a line to the lines table
 
         Parameters
         ----------
         cols   : list<string>
                  Names of the columns
-        values : list<interger/float/string>
+        values : list<integer/float/string>
                  List of corresponding values
+        match  : (string,float/integer/string)
+                 Tuple (key,vlaue) that gives the key to match the added line with an existing line.
+                 eg ('LINE','LYALPHA1216')
         """
         if self.lines is None:
             types = []
@@ -720,14 +741,38 @@ class Source(object):
             self.lines = Table(rows=[values], names=cols, dtype=types, masked=True)
         else:
             # add new columns
-            for col in cols:
-                if  col not in self.lines.colnames:
-                    self.lines[col] = [None]*len(self.lines)
-            # add new row
-            row = [None]*len(self.lines.colnames)
             for col, val in zip(cols, values):
-                row[self.lines.colnames.index(col)] = val
-            self.lines.add_row(row)
+                if  col not in self.lines.colnames:
+                    nlines = len(self.lines)
+                    if is_int(val):
+                        typ = '<i4'
+                    elif is_float(val):
+                        typ = '<f8'
+                    else:
+                        typ = 'S20'
+                    col = MaskedColumn(np.ma.masked_array(np.empty(nlines),
+                                                          mask=np.ones(nlines)),
+                                       name=col, dtype=typ)
+                    self.lines.add_column(col)
+                    
+            if match is not None:
+                matchkey, matchval = match
+            
+            if match is not None and matchkey in self.lines.colnames:
+                l = np.argwhere(self.lines[matchkey]==matchval)
+                if len(l) > 0:
+                    for col, val in zip(cols, values):
+                        self.lines[col][l] = val
+            else:            
+                # add new row
+                ncol = len(self.lines.colnames)
+                row = [None]*ncol
+                mask=np.ones(ncol)
+                for col, val in zip(cols, values):
+                    i = self.lines.colnames.index(col)
+                    row[i] = val
+                    mask[i] = 0
+                self.lines.add_row(row, mask=mask)
 
     def add_image(self, image, name, size=None, minsize=2.0, rotate=False):
         """ Extract an image centered on the source center
@@ -1164,7 +1209,7 @@ class Source(object):
                     self.spectra['MUSE_PSF'] = spec
                 # Insert the PSF weighted flux - here re-normalised?
 
-    def crack_z(self, eml=None, nlines=np.inf):
+    def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS','FLUX'), z_desc='EMI'):
         """Estimate the best redshift matching the list of emission lines
 
         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr).
@@ -1195,33 +1240,49 @@ class Source(object):
         nlines  : integer
                   estimated the redshift if the number of emission lines is
                   inferior to this value
+        cols    : (string, string)
+                  tuple (wavelength column name, flux column name)
+                  Two columns of self.lines that will be used to define the emission lines.
+        z_desc  : string
+                  Estimated redshift will be saved in self.z table under these name.
         """
         d = {'class': 'Source', 'method': 'crack_z'}
         nline_max = nlines
         if eml is None:
             eml = emlines
+        col_lbda, col_flux = cols
+        if col_lbda not in self.lines.colnames:
+            raise IOError('invalid colum name %s'%col_lbda)
+        if col_flux not in self.lines.colnames:
+            raise IOError('invalid colum name %s'%col_flux)
 
         try:
-            wl = np.array(self.lines['LBDA_OBS'])
-            flux = np.array(self.lines['FLUX'])
+            #vacuum wavelengths
+            wl = air2vacuum(np.array(self.lines[col_lbda]))
+            flux = np.array(self.lines[col_flux])
             nlines = len(wl)
         except:
             self.logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
             return
 
         z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml)
+        #observed wavelengths
+        wl = vacuum2air(wl)
 
         if nlines > 0:
             if nlines < nline_max:
                 #redshift
-                self.add_z('EMI', z, errz)
+                self.add_z(z_desc, z, errz)
                 self.logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
                 #line names
                 if 'LINE' not in self.lines.colnames:
-                    col = Column(data=None, name='LINE', dtype='S20', length=len(self.lines))
+                    nlines = len(self.lines)
+                    col = MaskedColumn(np.ma.masked_array(np.empty(nlines),
+                                                          mask=np.ones(nlines)),
+                                       name='LINE', dtype='S20')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
-                    self.lines['LINE'][self.lines['LBDA_OBS']==w] = name
+                    self.lines['LINE'][self.lines[col_lbda]==w] = name
                 self.logger.info('crack_z: lines', extra=d)
                 for l in self.lines.pformat():
                     self.logger.info(l, extra=d)
@@ -1398,8 +1459,8 @@ class SourceList(list):
             raise IOError("Invalid path: {0}".format(path))
 
         slist = cls()
-        for file in glob.glob(path+'/*.fits'):
-            slist.append(Source.from_file(file))
+        for f in glob.glob(path+'/*.fits'):
+            slist.append(Source.from_file(f))
 
         return slist
 

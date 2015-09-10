@@ -39,7 +39,10 @@ class Catalog(Table):
         ----------
         sources : list< :class:`mpdaf.sdetect.Source` >
         """
-        invalid = {type(1): -9999, type(1.0): np.nan, type('1'): '', type(False): -1}
+        invalid = {type(1): -9999, np.int_: -9999, 
+                   type(1.0): np.nan, np.float_: np.nan,
+                   type('1'): '', np.str_: '',
+                   type(False): -9999, np.bool_: -9999}
         #invalid = {type(1): np.ma.masked_array([-9999], mask=[1], fill_value=-9999), type(1.0): np.ma.masked_array([np.nan], mask=[1], fill_value=np.nan), type('1'): '', type(False): -1}
         # union of all headers keywords without mandatory FITS keywords
 
@@ -75,17 +78,17 @@ class Catalog(Table):
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
         if len(lmag) != 0:
-            names_mag = list(set(np.concatenate([source.mag['BAND'] for source in sources
+            names_mag = list(set(np.concatenate([source.mag['BAND'].data.data for source in sources
                                                  if source.mag is not None])))
             names_mag += ['%s_ERR' % mag for mag in names_mag]
             names_mag.sort()
         else:
             names_mag = []
-
+ 
         # redshifts
         lz = [len(source.z) for source in sources if source.z is not None]
         if len(lz) != 0:
-            names_z = list(set(np.concatenate([source.z['Z_DESC'] for source in sources
+            names_z = list(set(np.concatenate([source.z['Z_DESC'].data.data for source in sources
                                                if source.z is not None])))
             names_z = ['Z_%s' % z for z in names_z]
             if 'Z_ERR' in source.z.colnames:
@@ -104,92 +107,89 @@ class Catalog(Table):
             names_z.sort()
         else:
             names_z = []
-
+ 
         # lines
         llines = [len(source.lines) for source in sources if source.lines is not None]
+        names_lines = []
+        dtype_lines = []
         if len(llines) != 0:
-            lmax = max(llines)
             d = {}
             for source in sources:
-                if source.lines is not None:
-                    for col in source.lines.colnames:
+                if source.lines is not None and 'LINE' in source.lines.colnames:
+                    colnames = source.lines.colnames
+                    colnames.remove('LINE')
+                    
+                    for col in colnames:
                         d[col] = source.lines.dtype[col]
-            if lmax == 1:
-                names_lines = sorted(d)
-                dtype_lines = [d[key] for key in sorted(d)]
-            else:
-                names_lines = []
-                inames_lines = sorted(d)
-                for i in range(1, lmax + 1):
-                    names_lines += [col + '%03d' % i for col in inames_lines]
-                dtype_lines = [d[key] for key in sorted(d)] * lmax
-        else:
-            names_lines = []
-            dtype_lines = []
+                    
+                    for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
+                        if not mask:
+                            names_lines += ['%s_%s'%(line,col) for col in colnames]
+                            
+            names_lines = list(set(np.concatenate([names_lines])))
+            names_lines.sort()
+            dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
+
 
         data_rows = []
         for source in sources:
             # header
             h = source.header
             keys = h.keys()
-            row = [h[key] if key in keys else invalid[typ] for key,typ in zip(names_hdr, dtype_hdr)]
+            row = []
+            for key,typ in zip(names_hdr, dtype_hdr):
+                if typ==type('1'):
+                    row += ['%s'%h[key] if key in keys else invalid[typ]]
+                else:
+                    row += [h[key] if key in keys else invalid[typ]]
+
             # magnitudes
             if len(lmag) != 0:
                 if source.mag is None:
-                    row += [None for key in names_mag]
+                    row += ['' for key in names_mag]
                 else:
                     keys = source.mag['BAND']
                     for key in names_mag:
                         if key in keys:
-                            row += [float(source.mag['MAG'][source.mag['BAND'] == key])]
+                            row += [source.mag['MAG'][source.mag['BAND'] == key].data.data[0]]
                         elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [float(source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]])]
+                            row += [source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]].data.data[0]]
                         else:
-                            row += [None]
+                            row += [np.nan]
             # redshifts
             if len(lz) != 0:
                 if source.z is None:
-                    row += [None for key in names_z]
+                    row += ['' for key in names_z]
                 else:
                     keys = source.z['Z_DESC']
                     for key in names_z:
                         key = key[2:]
                         if key in keys:
-                            row += [float(source.z['Z'][source.z['Z_DESC'] == key])]
+                            row += [source.z['Z'][source.z['Z_DESC'] == key].data.data[0]]
                         elif key[-4:] == '_MAX' and key[:-4] in keys:
-                            row += [float(source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]])]
+                            row += [source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
                         elif key[-4:] == '_MIN' and key[:-4] in keys:
-                            row += [float(source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]])]
+                            row += [source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
                         elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [float(source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]])]
+                            row += [source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
                         else:
-                            row += [None]
+                            row += [np.nan]
             # lines
             if len(llines) != 0:
                 if source.lines is None:
-                    row += [None for key in names_lines]
+                    for typ in dtype_lines:
+                        row += [invalid[typ.type]]
+                    #row += [None for key in names_lines]
                 else:
-                    keys = source.lines.colnames
-                    if lmax == 1:
-                        row += [source.lines[key][0] if key in keys else None for key in names_lines]
-                    else:
-                        try:
-                            subtab1 = source.lines[source.lines['LINE'] != ""]
-                            subtab2 = source.lines[source.lines['LINE'] == ""]
-                            lines = vstack([subtab1, subtab2])
-                        except:
-                            lines = source.lines
-
-                        n = len(lines)
-                        for key, typ in zip(names_lines, dtype_lines):
-                            if key[:-3] in keys and int(key[-3:]) <= n:
-                                row += [lines[key[:-3]][int(key[-3:]) - 1]]
-                            elif typ == 'S20':
-                                row += ['']
-                            elif typ == 'i4':
-                                row += [-99999]
-                            else:
-                                row += [None]
+                    for name, typ in zip(names_lines, dtype_lines):
+                        colname = '_'.join(name.split('_')[1:])
+                        line = name.split('_')[0]
+                        if 'LINE' in source.lines.colnames and \
+                           colname in source.lines.colnames and \
+                           line in source.lines['LINE'].data.data:
+                            row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
+                        else:
+                            row += [invalid[typ.type]]
                         
             # final row
             data_rows.append(row)
@@ -209,8 +209,6 @@ class Catalog(Table):
         # create Table
         names = names_hdr + names_mag + names_z + names_lines
         
-        
-        
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
@@ -229,6 +227,11 @@ class Catalog(Table):
         for col in t.colnames:
             try:
                 t[col] = np.ma.masked_invalid(t[col])
+#                 t[col] = np.ma.masked_equal(t[col], None)
+#                 t[col] = np.ma.masked_equal(t[col], 'None')
+                t[col] = np.ma.masked_equal(t[col], -9999)
+                t[col] = np.ma.masked_equal(t[col], np.nan)
+                t[col] = np.ma.masked_equal(t[col], '')
             except:
                 pass
             
@@ -243,6 +246,9 @@ class Catalog(Table):
         path : string
                Directory containing Source files
         """
+        logger = logging.getLogger('mpdaf corelib')
+        d = {'class': 'Catalog', 'method': 'from_path'}
+        
         if not os.path.exists(path):
             raise IOError("Invalid path: {0}".format(path))
         
@@ -252,6 +258,8 @@ class Catalog(Table):
         filenames = []
         files = glob.glob(path+'/*.fits')
         n = len(files)
+        
+        logger.info('Building catalog from path %s'%path ,extra=d)
         
         for f in files:
             slist.append(Source._light_from_file(f))
