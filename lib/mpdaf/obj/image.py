@@ -1975,8 +1975,7 @@ class Image(object):
             if not pix:
                 size = size / np.abs(self.wcs.get_step()[0]) / 3600.
                 minsize = minsize / np.abs(self.wcs.get_step()[0]) / 3600.
-            radius = np.rint(size / 2.)
-            size = 2*radius
+            radius = size / 2.
             
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
