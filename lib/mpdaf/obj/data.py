@@ -4,6 +4,7 @@ import numpy as np
 import os
 import warnings
 
+from astropy import units as u
 from astropy.io import fits as pyfits
 from numpy import ma
 
@@ -88,7 +89,7 @@ class DataArray(object):
     _ndim = None
 
     def __init__(self, filename=None, ext=None, notnoise=False,
-                 wcs=None, wave=None, unit=None, data=None, var=None,
+                 wcs=None, wave=None, unit=u.count, data=None, var=None,
                  shape=None, copy=True, dtype=float):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
@@ -140,7 +141,7 @@ class DataArray(object):
                 self._var_ext = None
 
             self.data_header = hdr = hdulist[self._data_ext].header
-            self.unit = hdr.get('BUNIT', None)
+            self.unit = u.Unit(hdr.get('BUNIT', 'count'))
             self.fscale = hdr.get('FSCALE', 1.0)
             self._shape = hdulist[self._data_ext].data.shape
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
@@ -160,16 +161,17 @@ class DataArray(object):
 
             # Wavelength coordinates
             if 'CRPIX3' in hdr and 'CRVAL3' in hdr:
-                if 'CDELT3' in hdr:
-                    cdelt = hdr.get('CDELT3')
-                elif 'CD3_3' in hdr:
-                    cdelt = hdr.get('CD3_3')
-                else:
-                    cdelt = 1.0
-                cunit = hdr.get('CUNIT3', '')
-                ctype = hdr.get('CTYPE3', 'LINEAR')
-                self.wave = WaveCoord(hdr['CRPIX3'], cdelt, hdr['CRVAL3'],
-                                      cunit, ctype, self._shape[0])
+                # if 'CDELT3' in hdr:
+                #     cdelt = hdr.get('CDELT3')
+                # elif 'CD3_3' in hdr:
+                #     cdelt = hdr.get('CD3_3')
+                # else:
+                #     cdelt = 1.0
+                # cunit = hdr.get('CUNIT3', '')
+                # ctype = hdr.get('CTYPE3', 'LINEAR')
+                # self.wave = WaveCoord(hdr['CRPIX3'], cdelt, hdr['CRVAL3'],
+                #                       cunit, ctype, self._shape[0])
+                self.wave = WaveCoord(hdr)
 
             hdulist.close()
         else:
