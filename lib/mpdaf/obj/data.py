@@ -2,6 +2,7 @@
 import logging
 import numpy as np
 import os
+import warnings
 
 from astropy.io import fits as pyfits
 from numpy import ma
@@ -88,7 +89,7 @@ class DataArray(object):
 
     def __init__(self, filename=None, ext=None, notnoise=False,
                  wcs=None, wave=None, unit=None, data=None, var=None,
-                 copy=True, dtype=float):
+                 shape=None, copy=True, dtype=float):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
@@ -101,8 +102,13 @@ class DataArray(object):
         self.wave = None
         self.dtype = dtype
         self.unit = unit
+        self.fscale = 1.0
         self.data_header = pyfits.Header()
         self.primary_header = pyfits.Header()
+
+        if shape is not None:
+            warnings.warn('The shape parameter is no more used, it is derived '
+                          'from the data instead', DeprecationWarning)
 
         if filename is not None:
             if not is_valid_fits_file(filename):
@@ -135,7 +141,10 @@ class DataArray(object):
 
             self.data_header = hdr = hdulist[self._data_ext].header
             self.unit = hdr.get('BUNIT', None)
+            self.fscale = hdr.get('FSCALE', 1.0)
             self._shape = hdulist[self._data_ext].data.shape
+            # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
+            #                        hdr['NAXIS1']])
 
             if self._ndim is not None and hdr['NAXIS'] != self._ndim:
                 raise IOError('Wrong dimension number, should be %s'
@@ -240,3 +249,34 @@ class DataArray(object):
             self._var = var
 
         return self._var
+
+    def copy(self):
+        """Returns a new copy of the object."""
+        obj = self.__class__(
+            data=self.data.copy(),
+            unit=self.unit,
+            var=None if self.var is None else self.var.copy(),
+            wcs=None if self.wcs is None else self.wcs.copy(),
+            wave=None if self.wave is None else self.wave.copy()
+        )
+        obj.filename = self.filename
+        obj.data_header = pyfits.Header(self.data_header)
+        obj.primary_header = pyfits.Header(self.primary_header)
+        return obj
+
+    def clone(self, var=False):
+        """Returns a new cube of the same shape and coordinates, filled with
+        zeros.
+
+        Parameters
+        ----------
+        var : bool
+        Presence of the variance extension.
+        """
+        return self.__class__(
+            data=np.zeros(shape=self.shape),
+            unit=self.unit,
+            var=None if var else np.zeros(shape=self.shape),
+            wcs=None if self.wcs is None else self.wcs.copy(),
+            wave=None if self.wave is None else self.wave.copy()
+        )
