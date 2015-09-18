@@ -157,8 +157,12 @@ class Cube(DataArray, CubeBase):
                      dictionary of images
     """
 
-    def __init__(self, filename=None, ext=None, notnoise=False,
-                 wcs=None, wave=None, unit=u.count, data=None, var=None,
+    _ndim = 3
+    _has_wcs = True
+    _has_wave = True
+
+    def __init__(self, filename=None, ext=None, notnoise=False, wcs=None,
+                 wave=None, unit=u.count, data=None, var=None,
                  shape=None, ima=True, copy=True, dtype=float):
         super(Cube, self).__init__(
             filename=filename, ext=ext, notnoise=notnoise, wcs=wcs, wave=wave,
