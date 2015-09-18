@@ -131,8 +131,6 @@ class Cube(DataArray, CubeBase):
                 default.
     var      : float array
                 Array containing the variance. None by default.
-    fscale   : float
-                Flux scaling factor (1 by default).
 
     Attributes
     ----------
@@ -161,7 +159,7 @@ class Cube(DataArray, CubeBase):
 
     def __init__(self, filename=None, ext=None, notnoise=False,
                  wcs=None, wave=None, unit=u.count, data=None, var=None,
-                 fscale=1.0, shape=None, ima=True, copy=True, dtype=float):
+                 shape=None, ima=True, copy=True, dtype=float):
         super(Cube, self).__init__(
             filename=filename, ext=ext, notnoise=notnoise, wcs=wcs, wave=wave,
             unit=unit, data=data, var=var, copy=copy, dtype=dtype, shape=shape)

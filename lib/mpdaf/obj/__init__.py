@@ -54,6 +54,7 @@ from .coords import WaveCoord
 from .coords import WCS
 from .cube import *
 from .cubelist import *
+from .data import *
 from .image import composite_image
 from .image import Gauss2D
 from .image import gauss_image

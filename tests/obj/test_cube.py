@@ -130,7 +130,7 @@ def test_get_Cube():
     nose.tools.assert_equal(a.get_end()[0],6.5)
     nose.tools.assert_equal(a.get_end()[1],1)
     nose.tools.assert_equal(a.get_end()[2],3)
-     
+
 @attr(speed='fast')
 def test_iterator():
     """Cube class: tests iterators"""
@@ -149,7 +149,7 @@ def test_iterator():
         for j in range(6):
             for i in range(5):
                 nose.tools.assert_almost_equal(cube1[k,j,i],k+i+j)
-                 
+
 @attr(speed='fast')
 def test_clone():
     """Cube class: tests clone method."""
@@ -161,7 +161,7 @@ def test_clone():
         for j in range(6):
             for i in range(5):
                 nose.tools.assert_almost_equal(cube2[k,j,i],0)
-                 
+
 @attr(speed='fast')
 def test_resize():
     """Cube class: tests resize method."""
@@ -171,7 +171,7 @@ def test_resize():
     cube1.data.mask[0,:,:] = True
     cube1.resize()
     nose.tools.assert_equal(cube1.shape[0],9)
-     
+
 @attr(speed='fast')
 def test_multiprocess():
     """Cube class: tests multiprocess"""
@@ -193,8 +193,8 @@ def test_multiprocess():
     f = Spectrum.resample
     out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
     nose.tools.assert_equal(out[8,3,2], cube1[:,3,2].resample(step=1)[8])
-    
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_mask():
     """Cube class: testing mask functionalities"""
     wcs = WCS()
@@ -219,8 +219,8 @@ def test_mask():
     cube1.unmask()
     cube1.mask_selection(ksel)
     nose.tools.assert_equal(cube1.sum(),2*7*3)
-    
-@attr(speed='fast')  
+
+@attr(speed='fast')
 def test_truncate():
     """Cube class: testing truncation"""
     wave = WaveCoord(crval=1)
@@ -238,8 +238,8 @@ def test_truncate():
     nose.tools.assert_equal(cube2.get_end()[0],5)
     nose.tools.assert_equal(cube2.get_end()[1],1)
     nose.tools.assert_equal(cube2.get_end()[2],3)
- 
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_sum():
     """Cube class: testing sum, mean and median methods"""
     wave = WaveCoord(crval=1)
@@ -253,23 +253,23 @@ def test_sum():
     sum2 = cube1.sum(axis=0)
     nose.tools.assert_equal(sum2.shape[0],6)
     nose.tools.assert_equal(sum2.shape[1],5)
-    
+
     weights = np.ones(shape=(10,6,5))
     sum1 = cube1.sum(weights=weights)
     nose.tools.assert_equal(sum1,6*5*45)
-    
+
     weights = np.ones(shape=(10,6,5))*2
     sum1 = cube1.sum(weights=weights)
     nose.tools.assert_equal(sum1,6*5*45)
-    
+
     m = cube1.mean(axis=(1,2))
     for i in range(10):
         nose.tools.assert_equal(m[i],i)
-        
+
     m = cube1.median(axis=0)
     nose.tools.assert_equal(m[3,3], np.median(np.arange(10)))
-    
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_rebin():
     """Cube class: testing rebin methods"""
     wave = WaveCoord(crval=1)
@@ -288,8 +288,8 @@ def test_rebin():
     nose.tools.assert_equal(start[0],1.5)
     nose.tools.assert_equal(start[1],0.5)
     nose.tools.assert_equal(start[2],0.5)
-    
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_get_image():
     """Cube class: testing get_image method"""
     wave = WaveCoord(crpix=1, cdelt=0.3, crval=200, cunit=u.nm)
@@ -338,7 +338,7 @@ def test_subcube():
     nose.tools.assert_equal(shape[0],10)
     nose.tools.assert_equal(shape[1],2)
     nose.tools.assert_equal(shape[2],2)
-    
+
 @attr(speed='fast')
 def test_aperture():
     """Cube class: testing spectrum extraction"""

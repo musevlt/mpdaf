@@ -98,12 +98,11 @@ class DataArray(object):
         self._data_ext = None
         self._var = None
         self._var_ext = None
-        self._shape = None
+        self._shape = shape
         self.wcs = None
         self.wave = None
         self.dtype = dtype
         self.unit = unit
-        self.fscale = 1.0
         self.data_header = pyfits.Header()
         self.primary_header = pyfits.Header()
 
@@ -142,11 +141,11 @@ class DataArray(object):
 
             self.data_header = hdr = hdulist[self._data_ext].header
             self.unit = u.Unit(hdr.get('BUNIT', 'count'))
-            self.fscale = hdr.get('FSCALE', 1.0)
             self._shape = hdulist[self._data_ext].data.shape
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
             #                        hdr['NAXIS1']])
 
+            self.ndim = hdr['NAXIS']
             if self._ndim is not None and hdr['NAXIS'] != self._ndim:
                 raise IOError('Wrong dimension number, should be %s'
                               % self._ndim)
@@ -176,7 +175,10 @@ class DataArray(object):
             hdulist.close()
         else:
             if data is not None:
-                self._data = ma.MaskedArray(data, dtype=dtype, copy=copy)
+                # set mask=False to force the expansion of the mask array with
+                # the same dimension as the data
+                self._data = ma.MaskedArray(data, mask=False, dtype=dtype,
+                                            copy=copy)
                 self._shape = self._data.shape
 
             if not notnoise and var is not None:
@@ -252,6 +254,10 @@ class DataArray(object):
 
         return self._var
 
+    @var.setter
+    def var(self, value):
+        self._var = value
+
     def copy(self):
         """Returns a new copy of the object."""
         obj = self.__class__(
@@ -275,10 +281,13 @@ class DataArray(object):
         var : bool
         Presence of the variance extension.
         """
-        return self.__class__(
+        obj = self.__class__(
             data=np.zeros(shape=self.shape),
             unit=self.unit,
             var=None if var else np.zeros(shape=self.shape),
             wcs=None if self.wcs is None else self.wcs.copy(),
             wave=None if self.wave is None else self.wave.copy()
         )
+        obj.data_header = pyfits.Header(self.data_header)
+        obj.primary_header = pyfits.Header(self.primary_header)
+        return obj
