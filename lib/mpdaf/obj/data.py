@@ -87,10 +87,12 @@ class DataArray(object):
     """
 
     _ndim = None
+    _has_wcs = False
+    _has_wave = False
 
-    def __init__(self, filename=None, ext=None, notnoise=False,
-                 wcs=None, wave=None, unit=u.count, data=None, var=None,
-                 shape=None, copy=True, dtype=float):
+    def __init__(self, filename=None, ext=None, notnoise=False, unit=u.count,
+                 data=None, var=None, shape=None, copy=True, dtype=float,
+                 **kwargs):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
@@ -150,16 +152,17 @@ class DataArray(object):
                 raise IOError('Wrong dimension number, should be %s'
                               % self._ndim)
 
-            try:
-                self.wcs = WCS(hdr)  # WCS object from data header
-            except pyfits.VerifyError as e:
-                # Workaround for
-                # https://github.com/astropy/astropy/issues/887
-                self.logger.warning(e, extra=d)
-                self.wcs = WCS(hdr)
+            if self._has_wcs:
+                try:
+                    self.wcs = WCS(hdr)  # WCS object from data header
+                except pyfits.VerifyError as e:
+                    # Workaround for
+                    # https://github.com/astropy/astropy/issues/887
+                    self.logger.warning(e, extra=d)
+                    self.wcs = WCS(hdr)
 
             # Wavelength coordinates
-            if 'CRPIX3' in hdr and 'CRVAL3' in hdr:
+            if self._has_wave and 'CRPIX3' in hdr and 'CRVAL3' in hdr:
                 # if 'CDELT3' in hdr:
                 #     cdelt = hdr.get('CDELT3')
                 # elif 'CD3_3' in hdr:
@@ -184,6 +187,7 @@ class DataArray(object):
             if not notnoise and var is not None:
                 self._var = np.array(var, dtype=dtype, copy=copy)
 
+        wcs = kwargs.pop('wcs', None)
         if wcs is not None:
             try:
                 self.wcs = wcs.copy()
@@ -199,6 +203,7 @@ class DataArray(object):
                 self.logger.warning('world coordinates not copied',
                                     exc_info=True, extra=d)
 
+        wave = kwargs.pop('wave', None)
         if wave is not None:
             try:
                 self.wave = wave.copy()
