@@ -32,7 +32,7 @@ class Catalog(Table):
             self.rename_column('z', 'Z')
 
     @classmethod
-    def from_sources(cls, sources):
+    def from_sources(cls, sources, fmt='default'):
         """Construct a catalog from a list of source objects.
 
         Parameters
@@ -110,25 +110,46 @@ class Catalog(Table):
  
         # lines
         llines = [len(source.lines) for source in sources if source.lines is not None]
-        names_lines = []
-        dtype_lines = []
-        if len(llines) != 0:
-            d = {}
-            for source in sources:
-                if source.lines is not None and 'LINE' in source.lines.colnames:
-                    colnames = source.lines.colnames
-                    colnames.remove('LINE')
-                    
-                    for col in colnames:
-                        d[col] = source.lines.dtype[col]
-                    
-                    for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
-                        if not mask:
-                            names_lines += ['%s_%s'%(line,col) for col in colnames]
-                            
-            names_lines = list(set(np.concatenate([names_lines])))
-            names_lines.sort()
-            dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
+        if len(llines) == 0:
+            names_lines = []
+            dtype_lines = []
+        else:
+            if fmt == 'default':
+                names_lines = []
+                d = {}
+                for source in sources:
+                    if source.lines is not None and 'LINE' in source.lines.colnames:
+                        colnames = source.lines.colnames
+                        colnames.remove('LINE')
+                        
+                        for col in colnames:
+                            d[col] = source.lines.dtype[col]
+                        
+                        for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
+                            if not mask:
+                                names_lines += ['%s_%s'%(line,col) for col in colnames]
+                                
+                names_lines = list(set(np.concatenate([names_lines])))
+                names_lines.sort()
+                dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
+            elif fmt == 'working':
+                lmax = max(llines)
+                d = {}
+                for source in sources:
+                    if source.lines is not None:
+                        for col in source.lines.colnames:
+                            d[col] = source.lines.dtype[col]
+                if lmax == 1:
+                    names_lines = sorted(d)
+                    dtype_lines = [d[key] for key in sorted(d)]
+                else:
+                    names_lines = []
+                    inames_lines = sorted(d)
+                    for i in range(1, lmax + 1):
+                        names_lines += [col + '%03d' % i for col in inames_lines]
+                    dtype_lines = [d[key] for key in sorted(d)] * lmax
+            else:
+                raise IOError('Catalog creation: invalid format. It must be dafault or working.')
 
 
         data_rows = []
@@ -181,15 +202,35 @@ class Catalog(Table):
                         row += [invalid[typ.type]]
                     #row += [None for key in names_lines]
                 else:
-                    for name, typ in zip(names_lines, dtype_lines):
-                        colname = '_'.join(name.split('_')[1:])
-                        line = name.split('_')[0]
-                        if 'LINE' in source.lines.colnames and \
-                           colname in source.lines.colnames and \
-                           line in source.lines['LINE'].data.data:
-                            row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
+                    if fmt=='default':
+                        for name, typ in zip(names_lines, dtype_lines):
+                            colname = '_'.join(name.split('_')[1:])
+                            line = name.split('_')[0]
+                            if 'LINE' in source.lines.colnames and \
+                               colname in source.lines.colnames and \
+                               line in source.lines['LINE'].data.data:
+                                row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
+                            else:
+                                row += [invalid[typ.type]]
+                    elif fmt=='working':
+                        keys = source.lines.colnames
+                        if lmax == 1:
+                            row += [source.lines[key][0] if key in keys else invalid[typ.type] for key,typ in zip(names_lines, dtype_lines)]
                         else:
-                            row += [invalid[typ.type]]
+                            try:
+                                subtab1 = source.lines[source.lines['LINE'] != ""]
+                                subtab2 = source.lines[source.lines['LINE'] == ""]
+                                lines = vstack([subtab1, subtab2])
+                            except:
+                                lines = source.lines
+                            n = len(lines)
+                            for key, typ in zip(names_lines, dtype_lines):
+                                if key[:-3] in keys and int(key[-3:]) <= n:
+                                    row += [lines[key[:-3]][int(key[-3:]) - 1]]
+                                else:
+                                    row += [invalid[typ.type]]
+                    else:
+                        pass
                         
             # final row
             data_rows.append(row)
@@ -238,7 +279,7 @@ class Catalog(Table):
         return t
     
     @classmethod
-    def from_path(cls, path):
+    def from_path(cls, path, fmt='default'):
         """Create a Catalog object from the path of a directory containing source files
 
         Parameters
@@ -271,7 +312,7 @@ class Catalog(Table):
         sys.stdout.write("\r\x1b[K ")
         sys.stdout.flush()
 
-        t = cls.from_sources(slist)
+        t = cls.from_sources(slist, fmt)
         t['FILENAME'] = filenames
         
         return t

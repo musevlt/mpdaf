@@ -665,14 +665,15 @@ class Source(object):
                 zmin, zmax = errz
             except:
                 raise ValueError,'Wrong type for errz in add_z'
-        if self.z is None and z!=-9999:
-            self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
+        if self.z is None:
+            if z!=-9999:
+                self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
                            rows=[[desc, z, zmin, zmax]],
                            dtype=('S20', 'f6', 'f6', 'f6'),
                            masked=True)
-            self.z['Z'].format = '%.6f'
-            self.z['Z_MIN'].format = '%.6f'
-            self.z['Z_MAX'].format = '%.6f'
+                self.z['Z'].format = '%.6f'
+                self.z['Z_MIN'].format = '%.6f'
+                self.z['Z_MAX'].format = '%.6f'
         else:
             if desc in self.z['Z_DESC']:
                 if z!=-9999:
@@ -1400,7 +1401,7 @@ class SourceList(list):
         list< :class:`mpdaf.sdetect.Source` >
     """
 
-    def write(self, name, path='.', overwrite=True):
+    def write(self, name, path='.', overwrite=True, fmt='default'):
         """ Create the directory and saves all sources files and the catalog file in this folder.
 
         path/name.fits: catalog file
@@ -1439,7 +1440,7 @@ class SourceList(list):
             os.remove(fcat)
             
         from .catalog import Catalog
-        cat = Catalog.from_sources(self)
+        cat = Catalog.from_sources(self, fmt)
         try:
             cat.write(fcat)
             # For FITS tables, the maximum number of fields is 999
