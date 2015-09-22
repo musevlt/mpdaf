@@ -30,6 +30,7 @@ class Catalog(Table):
             self.rename_column('dec', 'DEC')
         if self.colnames.count('z') != 0:
             self.rename_column('z', 'Z')
+        self.masked_invalid()
 
     @classmethod
     def from_sources(cls, sources, fmt='default'):
@@ -91,11 +92,12 @@ class Catalog(Table):
             names_z = list(set(np.concatenate([source.z['Z_DESC'].data.data for source in sources
                                                if source.z is not None])))
             names_z = ['Z_%s' % z for z in names_z]
-            if 'Z_ERR' in source.z.colnames:
+            colnames = list(set(np.concatenate([source.z.colnames for source in sources if source.z is not None])))
+            if 'Z_ERR' in colnames:
                 names_err = ['%s_ERR' % z for z in names_z]
             else:
                 names_err = []
-            if 'Z_MIN' in source.z.colnames:
+            if 'Z_MIN' in colnames:
                 names_min = ['%s_MIN' % z for z in names_z]
                 names_max = ['%s_MAX' % z for z in names_z]
             else:
@@ -167,7 +169,7 @@ class Catalog(Table):
             # magnitudes
             if len(lmag) != 0:
                 if source.mag is None:
-                    row += ['' for key in names_mag]
+                    row += [np.nan for key in names_mag]
                 else:
                     keys = source.mag['BAND']
                     for key in names_mag:
@@ -180,7 +182,7 @@ class Catalog(Table):
             # redshifts
             if len(lz) != 0:
                 if source.z is None:
-                    row += ['' for key in names_z]
+                    row += [np.nan for key in names_z]
                 else:
                     keys = source.z['Z_DESC']
                     for key in names_z:
@@ -316,6 +318,16 @@ class Catalog(Table):
         t['FILENAME'] = filenames
         
         return t
+    
+    def masked_invalid(self):
+        for col in self.colnames:
+            try:
+                self[col] = np.ma.masked_invalid(self[col])
+                self[col] = np.ma.masked_equal(self[col], -9999)
+                self[col] = np.ma.masked_equal(self[col], np.nan)
+                self[col] = np.ma.masked_equal(self[col], '')
+            except:
+                pass
 
     def match(self, cat2, radius=1):
         """Match elements of the current catalog with an other (in RA, DEC).

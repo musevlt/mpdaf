@@ -686,10 +686,11 @@ class Source(object):
             else:
                 if z!=-9999:
                     self.z.add_row([desc, z, zmin, zmax])
-                
-        self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
-        self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
-        self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
+           
+        if self.z is not None:     
+            self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
+            self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
+            self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
 
     def add_mag(self, band, m, errm):
         """Add a magnitude value to the mag table.
