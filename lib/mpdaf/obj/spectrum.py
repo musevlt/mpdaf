@@ -2962,6 +2962,173 @@ class Spectrum(object):
         v = [flux, lpeak, sigma_right, sigma_left]
         self.data[imin:imax] = self.data[imin:imax] \
             + asym_gauss(v, wave) / self.fscale
+            
+    def line_gauss_fit(self, lpeak, lmin, lmax, flux=None, fwhm=None,
+                  cont=None, peak=False, spline=False, weight=True,
+                  plot=False, plot_factor=10):
+        """Perform a Gaussian fit on a line (fixed Gaussian center).
+
+        Uses `scipy.optimize.leastsq <http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html>`_ to minimize the sum of squares.
+
+        Parameters
+        ----------
+        lmin        : float or (float,float)
+                    Minimum wavelength value or wavelength range
+                    used to initialize the gaussian left value.
+        lmax        : float or (float,float)
+                    Maximum wavelength or wavelength range
+                    used to initialize the gaussian right value.
+        lpeak       : float
+                    Input gaussian center, if None it is estimated
+                    with the wavelength corresponding to the maximum value
+                    in [max(lmin), min(lmax)]
+        flux        : float
+                    Integrated gaussian flux
+                    or gaussian peak value if peak is True.
+        fwhm        : float
+                    Input gaussian fwhm, if None it is estimated.
+        peak        : boolean
+                    If true, flux contains the gaussian peak value .
+        cont        : float
+                    Continuum value, if None it is estimated
+                    by the line through points (max(lmin),mean(data[lmin]))
+                    and (min(lmax),mean(data[lmax])).
+        spline      : boolean
+                    Linear/spline interpolation
+                    to interpolate masked values.
+        weight      : boolean
+                    If weight is True, the weight
+                    is computed as the inverse of variance.
+        plot        : boolean
+                    If True, the Gaussian is plotted.
+        plot_factor : double
+                    oversampling factor for the overplotted fit
+
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Gauss1D`
+        """
+        # truncate the spectrum and compute right and left gaussian values
+        if is_int(lmin) or is_float(lmin):
+            fmin = None
+        else:
+            lmin = np.array(lmin, dtype=float)
+            fmin = self.mean(lmin[0], lmin[1])
+            lmin = (lmin[0] + lmin[1]) / 2.
+
+        if is_int(lmax) or is_float(lmax):
+            fmax = None
+        else:
+            lmax = np.array(lmax, dtype=float)
+            fmax = self.mean(lmax[0], lmax[1])
+            lmax = (lmax[0] + lmax[1]) / 2.
+
+        # spec = self.truncate(lmin, lmax)
+        spec = self.get_lambda(lmin, lmax)
+        data = spec._interp_data(spline)
+        l = spec.wave.coord()
+        d = data
+
+        lmin = l[0]
+        lmax = l[-1]
+        if fmin is None:
+            fmin = d[0]
+        if fmax is None:
+            fmax = d[-1]
+
+        # continuum value
+        if cont is None:
+            cont0 = ((fmax - fmin) * lpeak + lmax
+                     * fmin - lmin * fmax) / (lmax - lmin)
+        else:
+            cont /= self.fscale
+            cont0 = cont
+
+        # initial sigma value
+        if fwhm is None:
+            try:
+                fwhm = spec.fwhm(lpeak, cont0 * self.fscale, spline)
+            except:
+                lpeak = l[d.argmin()]
+                fwhm = spec.fwhm(lpeak, cont0 * self.fscale, spline)
+        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+
+        # initial gaussian integrated flux
+        if flux is None:
+            pixel = spec.wave.pixel(lpeak, nearest=True)
+            peak = d[pixel] - cont0
+            flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
+        elif peak is True:
+            peak = flux / self.fscale - cont0
+            flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
+        else:
+            pass
+
+        # 1d gaussian function
+        if cont is None:
+            gaussfit = lambda p, x: \
+                ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
+                / (lmax - lmin) + np.abs(p[0]) \
+                * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
+        else:
+            gaussfit = lambda p, x: \
+                cont + np.abs(p[0]) * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
+        # 1d Gaussian fit
+        if spec.var is not None and weight:
+            wght = 1.0 / np.sqrt(np.abs(spec.var))
+            np.ma.fix_invalid(wght, copy=False, fill_value=0)
+        else:
+            wght = np.ones(spec.shape)
+        e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
+
+        # inital guesses for Gaussian Fit
+        v0 = [flux, sigma]
+        # Minimize the sum of squares
+        v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:],
+                                                args=(l, d, wght),
+                                                maxfev=100000, full_output=1)
+
+        # calculate the errors from the estimated covariance matrix
+        chisq = sum(info["fvec"] * info["fvec"])
+        dof = len(info["fvec"]) - len(v)
+        if covar is not None:
+            err = np.array([np.sqrt(np.abs(covar[i, i]))
+                            * np.sqrt(np.abs(chisq / dof))
+                            for i in range(len(v))])
+        else:
+            err = None
+
+        # plot
+        if plot:
+            xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
+            ccc = gaussfit(v, xxx) * self.fscale
+            plt.plot(xxx, ccc, 'r--')
+
+        # return a Gauss1D object
+        flux = np.abs(v[0]) * self.fscale
+        sigma = np.abs(v[1])
+        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
+        peak = flux / np.sqrt(2 * np.pi * (sigma ** 2))
+        cont0 *= self.fscale
+        if err is not None:
+            err_flux = np.abs(err[0]) * self.fscale
+            err_lpeak = 0
+            err_sigma = err[1]
+            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
+            err_peak = np.abs(1. / np.sqrt(2 * np.pi)
+                              * (err_flux * sigma - flux * err_sigma)
+                              / sigma / sigma)
+        else:
+            err_flux = np.NAN
+            err_lpeak = np.NAN
+            err_sigma = np.NAN
+            err_fwhm = np.NAN
+            err_peak = np.NAN
+
+        return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
+                       err_peak, err_flux, err_fwhm, chisq, dof)
 
     def _median_filter(self, kernel_size=1., pixel=True, spline=False):
         """Perform a median filter on the spectrum.
