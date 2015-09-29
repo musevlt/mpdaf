@@ -196,13 +196,13 @@ class DataArray(object):
             try:
                 self.wcs = wcs.copy()
                 if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
-                    (wcs.naxis1 != self._shape[2] or
-                        wcs.naxis2 != self._shape[1]):
+                    (wcs.naxis1 != self._shape[-1] or
+                        wcs.naxis2 != self._shape[-2]):
                     self.logger.warning(
                         'world coordinates and data have not the same '
                         'dimensions: shape of WCS object is modified', extra=d)
-                self.wcs.naxis1 = self._shape[2]
-                self.wcs.naxis2 = self._shape[1]
+                self.wcs.naxis1 = self._shape[-1]
+                self.wcs.naxis2 = self._shape[-2]
             except:
                 self.logger.warning('world coordinates not copied',
                                     exc_info=True, extra=d)
