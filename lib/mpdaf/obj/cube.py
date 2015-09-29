@@ -377,49 +377,45 @@ class Cube(DataArray):
     def resize(self):
         """Resizes the cube to have a minimum number of masked values."""
         if self.data is not None:
-            ksel = np.where(self.data.mask == False)
-            try:
-                item = (slice(ksel[0][0], ksel[0][-1] + 1, None),
-                        slice(ksel[1][0], ksel[1][-1] + 1, None),
-                        slice(ksel[2][0], ksel[2][-1] + 1, None))
-                self.data = self.data[item]
-                if is_int(item[0]):
-                    if is_int(item[1]):
-                        self.shape = np.array((1, 1, self.data.shape[0]))
-                    elif is_int(item[2]):
-                        self.shape = np.array((1, self.data.shape[0], 1))
-                    else:
-                        self.shape = np.array((1, self.data.shape[0],
-                                               self.data.shape[1]))
-                elif is_int(item[1]):
-                    if is_int(item[2]):
-                        self.shape = np.array((self.data.shape[0], 1, 1))
-                    else:
-                        self.shape = np.array((self.data.shape[0], 1,
-                                               self.data.shape[1]))
+            ksel = np.where(~self.data.mask)
+            item = (slice(ksel[0][0], ksel[0][-1] + 1, None),
+                    slice(ksel[1][0], ksel[1][-1] + 1, None),
+                    slice(ksel[2][0], ksel[2][-1] + 1, None))
+
+            self.data = self.data[item]
+            if is_int(item[0]):
+                if is_int(item[1]):
+                    self.data = self.data[np.newaxis, np.newaxis, :]
                 elif is_int(item[2]):
-                    self.shape = np.array((self.data.shape[0],
-                                           self.data.shape[1], 1))
+                    self.data = self.data[np.newaxis, :, np.newaxis]
                 else:
-                    self.shape = self.data.shape
-                if self.var is not None:
-                    self.var = self.var[item]
-                try:
-                    self.wcs = self.wcs[item[1], item[2]]
-                except:
-                    self.wcs = None
-                    d = {'class': 'Cube', 'method': 'resize'}
-                    self.logger.warning("wcs not copied: %s",
-                                        "wcs attribute is None", extra=d)
-                try:
-                    self.wave = self.wave[item[0]]
-                except:
-                    self.wave = None
-                    d = {'class': 'Cube', 'method': 'resize'}
-                    self.logger.warning("wavelength solution not copied: %s",
-                                        "wave attribute is None", extra=d)
+                    self.data = self.data[np.newaxis, :, :]
+            elif is_int(item[1]):
+                if is_int(item[2]):
+                    self.data = self.data[:, np.newaxis, np.newaxis]
+                else:
+                    self.data = self.data[:, np.newaxis, :]
+            elif is_int(item[2]):
+                self.data = self.data[:, :, np.newaxis]
+
+            if self.var is not None:
+                self.var = self.var[item]
+
+            try:
+                self.wcs = self.wcs[item[1], item[2]]
             except:
-                pass
+                self.wcs = None
+                d = {'class': 'Cube', 'method': 'resize'}
+                self.logger.warning("wcs not copied: wcs attribute is None",
+                                    extra=d)
+
+            try:
+                self.wave = self.wave[item[0]]
+            except:
+                self.wave = None
+                d = {'class': 'Cube', 'method': 'resize'}
+                self.logger.warning("wavelength solution not copied: "
+                                    "wave attribute is None", extra=d)
 
     def unmask(self):
         """Unmasks the cube (just invalid data (nan,inf) are masked)."""
