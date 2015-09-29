@@ -171,16 +171,16 @@ class Cube(DataArray, CubeBase):
         self.ima = {}
 
         if filename is not None and ima:
-            f = pyfits.open(filename)
-            for i in range(len(f)):
+            hdulist = pyfits.open(filename)
+            for hdu in hdulist:
                 try:
-                    hdr = f[i].header
+                    hdr = hdu.header
                     if hdr['NAXIS'] == 2 and hdr['XTENSION'] == 'IMAGE':
                         self.ima[hdr.get('EXTNAME')] = Image(
                             filename, ext=hdr.get('EXTNAME'), notnoise=True)
                 except:
                     pass
-            f.close()
+            hdulist.close()
 
     def copy(self):
         """Returns a new copy of a Cube object."""

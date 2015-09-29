@@ -5,7 +5,6 @@ import logging
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import warnings
 
 import astropy.units as u
@@ -18,6 +17,7 @@ from scipy.optimize import leastsq
 
 from . import plt_norm, plt_zscale
 from .coords import WCS, WaveCoord
+from .data import DataArray, is_valid_fits_file
 from .objs import is_float, is_int, UnitArray, UnitMaskedArray
 
 
@@ -267,10 +267,9 @@ class Moffat2D(object):
         self.logger.info(msg, extra=d)
 
 
-class Image(object):
+class Image(DataArray):
 
-    """Image class manages image, optionally including a variance and a bad
-    pixel mask.
+    """Manages image, optionally including a variance and a bad pixel mask.
 
     Parameters
     ----------
@@ -315,263 +314,25 @@ class Image(object):
     wcs            : :class:`mpdaf.obj.WCS`
                     World coordinates.
     """
-
-    def __init__(self, filename=None, ext=None, notnoise=False,
-                 shape=(101, 101), wcs=None, unit=u.count, data=None,
-                 var=None):
-        """Creates a Image object.
-
-        Parameters
-        ----------
-        filename : string
-                Possible filename (.fits, .png or .bmp).
-        ext      : integer or (integer,integer) or string or (string,string)
-                Number/name of the data extension or numbers/names
-                of the data and variance extensions.
-        notnoise : boolean
-                True if the noise Variance image is not read (if it exists).
-                Use notnoise=True to create image without variance extension.
-        shape    : integer or (integer,integer)
-                Lengths of data in Y and X.
-                Python notation is used: (ny,nx). (101,101) by default.
-        wcs      : :class:`mpdaf.obj.WCS`
-                World coordinates.
-        unit     : string
-                Possible data unit type. None by default.
-        data     : float array
-                Array containing the pixel values of the image.
-                None by default.
-        var      : float array
-                Array containing the variance. None by default.
-        """
-        d = {'class': 'Image', 'method': '__init__'}
-        self.logger = logging.getLogger('mpdaf corelib')
+    def __init__(self, filename=None, ext=None, notnoise=False, wcs=None,
+                 unit=u.count, data=None, var=None, fscale=1.0, shape=None,
+                 copy=True, dtype=float):
         self.image = True
         self._clicks = None
         self._selector = None
-        # possible FITS filename
-        self.filename = filename
-        if filename is not None:
-            if not os.path.isfile(filename):
-                raise IOError('No such file or directory: %s' % filename)
-            if filename[-4:] == "fits" or filename[-7:] == "fits.gz":
-                f = pyfits.open(filename)
-                # primary header
-                hdr = f[0].header
-                if len(f) == 1:
-                    # if the number of extension is 1,
-                    # we just read the data from the primary header
-                    # test if image
-                    if hdr['NAXIS'] != 2:
-                        raise IOError('not an image')
-                    self.unit = u.Unit(hdr.get('BUNIT', 'count'))
-                    self.primary_header = pyfits.Header()
-                    self.data_header = hdr
-                    self.shape = np.array([hdr['NAXIS2'], hdr['NAXIS1']])
-                    self.data = np.array(f[0].data, dtype=float)
-                    self.var = None
-                    if wcs is None:
-                        try:
-                            self.wcs = WCS(hdr)  # WCS object from data header
-                        except pyfits.VerifyError as e:
-                            # Workaround for
-                            # https://github.com/astropy/astropy/issues/887
-                            self.logger.warning(e, extra=d)
-                            self.wcs = WCS(hdr)
-                    else:
-                        self.wcs = wcs.copy()
-                        self.wcs.set_naxis1(self.shape[1])
-                        self.wcs.set_naxis2(self.shape[0])
-                        if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-                            and (wcs.naxis1 != self.shape[1]
-                                 or wcs.naxis2 != self.shape[0]):
-                            self.logger.warning('world coordinates and data have '
-                                                'not the same dimensions: %s',
-                                                "shape of WCS object is modified", extra=d)
-                else:
-                    if ext is None:
-                        try:
-                            h = f['DATA'].header
-                            d = np.array(f['DATA'].data, dtype=float)
-                        except:
-                            try:
-                                h = f['SCI'].header
-                                d = np.array(f['SCI'].data, dtype=float)
-                            except:
-                                raise IOError('no DATA or SCI extension')
-                    else:
-                        if is_int(ext) or isinstance(ext, str):
-                            n = ext
-                        else:
-                            n = ext[0]
-                        h = f[n].header
-                        d = np.array(f[n].data, dtype=float)
 
-                    if h['NAXIS'] != 2:
-                        raise IOError('Wrong dimension number '
-                                      'in DATA extension')
-                    self.unit = u.Unit(h.get('BUNIT', 'count'))
-                    self.primary_header = hdr
-                    self.data_header = h
-                    self.shape = np.array([h['NAXIS2'], h['NAXIS1']])
-                    self.data = d
-                    if wcs is None:
-                        self.wcs = WCS(h)  # WCS object from data header
-                    else:
-                        self.wcs = wcs.copy()
-                        self.wcs.set_naxis1(self.shape[1])
-                        self.wcs.set_naxis2(self.shape[0])
-                        if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-                            and (wcs.naxis1 != self.shape[1]
-                                 or wcs.naxis2 != self.shape[0]):
-                            self.logger.warning('world coordinates and data have '
-                                                'not the same dimensions: %s',
-                                                "shape of WCS object is modified",
-                                                extra=d)
-                    self.var = None
-                    if not notnoise:
-                        if ext is None:
-                            try:
-                                fstat = f['STAT']
-                            except:
-                                try:
-                                    fstat = f['WHT']
-                                except:
-                                    fstat = None
-                        else:
-                            try:
-                                n = ext[1]
-                                fstat = f[n]
-                            except:
-                                fstat = None
+        if filename is not None and not is_valid_fits_file(filename):
+            from PIL import Image as PILImage
+            im = PILImage.open(filename)
+            data = np.array(im.getdata(), dtype=dtype, copy=False)\
+                .reshape(im.size[1], im.size[0])
+            self.filename = filename
+            filename = None
 
-                        if fstat is None:
-                            self.var = None
-                        else:
-                            if fstat.header['NAXIS'] != 2:
-                                raise IOError('Wrong dimension number '
-                                              'in STAT extension')
-                                if fstat.header['NAXIS1'] != self.shape[1] \
-                                        and fstat.header['NAXIS2'] != self.shape[0]:
-                                    raise IOError('Number of points in STAT '
-                                                  'not equal to DATA')
-                            self.var = np.array(fstat.data, dtype=float)
-
-                    # DQ extension
-                    try:
-                        mask = np.ma.make_mask(f['DQ'].data)
-                        self.data = np.ma.array(self.data, mask=mask)
-                    except:
-                        pass
-                f.close()
-            else:
-                from PIL import Image as PILima
-                im = PILima.open(filename)
-                self.data = np.array(im.getdata(), dtype=float)\
-                    .reshape(im.size[1], im.size[0])
-                self.var = None
-                self.shape = np.array(self.data.shape)
-                self.unit = unit
-                self.primary_header = pyfits.Header()
-                self.data_header = pyfits.Header()
-                if wcs is None:
-                    self.wcs = WCS()
-                    self.wcs.set_naxis1(self.shape[1])
-                    self.wcs.set_naxis2(self.shape[0])
-                else:
-                    self.wcs = wcs.copy()
-                    self.wcs.set_naxis1(self.shape[1])
-                    self.wcs.set_naxis2(self.shape[0])
-                    if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-                        and (wcs.naxis1 != self.shape[1]
-                             or wcs.naxis2 != self.shape[0]):
-                        self.logger.warning('world coordinates and data have '
-                                            'not the same dimensions: %s',
-                                            "shape of WCS object is modified",
-                                            extra=d)
-        else:
-            # possible data unit type
-            self.unit = unit
-            # possible FITS header instance
-            self.data_header = pyfits.Header()
-            self.primary_header = pyfits.Header()
-            # data
-            if is_int(shape):
-                shape = (shape, shape)
-            if data is None:
-                self.data = None
-                self.shape = np.array(shape)
-            else:
-                self.data = np.array(data, dtype=float)
-                try:
-                    self.shape = np.array(data.shape)
-                except:
-                    self.shape = np.array(shape)
-
-            if notnoise or var is None:
-                self.var = None
-            else:
-                self.var = np.array(var, dtype=float)
-            try:
-                if wcs is not None:
-                    self.wcs = wcs.copy()
-                    self.wcs.set_naxis1(self.shape[1])
-                    self.wcs.set_naxis2(self.shape[0])
-                    if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-                        and (wcs.naxis1 != self.shape[1]
-                             or wcs.naxis2 != self.shape[0]):
-                        self.logger.warning("world coordinates and data have not "
-                                            "the same dimensions: %s",
-                                            "shape of WCS object is modified", extra=d)
-            except:
-                self.wcs = None
-                self.logger.warning("wcs not copied", extra=d)
-        # Mask an array where invalid values occur (NaNs or infs).
-        if self.data is not None:
-            self.data = np.ma.masked_invalid(self.data)
-
-    def copy(self):
-        """Returns a new copy of an Image object."""
-        ima = Image()
-        ima.filename = self.filename
-        ima.unit = self.unit
-        ima.primary_header = pyfits.Header(self.primary_header)
-        ima.data_header = pyfits.Header(self.data_header)
-        ima.shape = self.shape.__copy__()
-        try:
-            ima.data = self.data.copy()
-        except:
-            ima.data = None
-        try:
-            ima.var = self.var.__copy__()
-        except:
-            ima.var = None
-        try:
-            ima.wcs = self.wcs.copy()
-        except:
-            ima.wcs = None
-        return ima
-
-    def clone(self, var=False):
-        """Returns a new image of the same shape and coordinates, filled with
-        zeros.
-
-        Parameters
-        ----------
-        var : boolean
-            Presence of the variance extension.
-        """
-        try:
-            wcs = self.wcs.copy()
-        except:
-            wcs = None
-        if var is False:
-            ima = Image(wcs=wcs, data=np.zeros(shape=self.shape),
-                        unit=self.unit)
-        else:
-            ima = Image(wcs=wcs, data=np.zeros(shape=self.shape),
-                        var=np.zeros(shape=self.shape), unit=self.unit)
-        return ima
+        super(Image, self).__init__(
+            filename=filename, ext=ext, notnoise=notnoise, wcs=wcs,
+            unit=unit, data=data, var=var, copy=copy, dtype=dtype,
+            shape=shape, fscale=fscale)
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
         """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
@@ -680,7 +441,6 @@ class Image(object):
             if self.unit is not None:
                 imahdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
             return imahdu
-
 
     def write(self, filename, savemask='dq'):
         """Saves the object in a FITS file.
@@ -893,7 +653,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 typ=2
@@ -903,7 +663,7 @@ class Image(object):
                     typ=3
             except:
                 typ=0
-        
+
         if typ==0:
             try:
                 # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
@@ -924,7 +684,7 @@ class Image(object):
                     or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
                                       'with different sizes')
-                     
+
                 res = self.copy()
                 # data
                 if other.unit == self.unit:
@@ -948,7 +708,7 @@ class Image(object):
                             res.var = self.var + UnitArray(other.var,
                                                            other.unit**2,
                                                            self.unit**2)
-                                    
+
                 return res
             else:
                 # image + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
@@ -982,7 +742,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 typ=2
@@ -992,7 +752,7 @@ class Image(object):
                     typ=3
             except:
                 typ=0
-        
+
         if typ==0:
             try:
                 # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
@@ -1013,7 +773,7 @@ class Image(object):
                 or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
                                           'with different sizes')
-    
+
                 res = self.copy()
                 # data
                 if other.unit == self.unit:
@@ -1052,7 +812,7 @@ class Image(object):
                     res.data = UnitMaskedArray(self.data[np.newaxis, :, :],
                                                self.unit, other.unit) \
                                                - other.data
-                
+
                 # variance
                 if self.var is not None:
                     if other.var is None:
@@ -1073,7 +833,7 @@ class Image(object):
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 typ=2
@@ -1083,7 +843,7 @@ class Image(object):
                     typ=3
             except:
                 typ=0
-        
+
         if typ==0:
             try:
                 res = self.copy()
@@ -1093,7 +853,7 @@ class Image(object):
                 raise IOError('Operation forbidden')
         else:
             return other.__sub__(self)
-            
+
 
     def __mul__(self, other):
         """Operator \*.
@@ -1121,7 +881,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.spectrum:
                 typ=1
@@ -1135,7 +895,7 @@ class Image(object):
                         typ=3
                 except:
                     typ=0
-                
+
         if typ==0:
             try:
                 res = self.copy()
@@ -1210,10 +970,10 @@ class Image(object):
                     # image * cube1 = cube2
                     res = other.__mul__(self)
                     return res
-                
+
     def __rmul__(self, other):
         return self.__mul__(other)
-    
+
 
     def __div__(self, other):
         """Operator /.
@@ -1239,7 +999,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 typ=2
@@ -1249,7 +1009,7 @@ class Image(object):
                     typ=3
             except:
                 typ=0
-                
+
         if typ==0:
             try:
                 res = self.copy()
@@ -1325,7 +1085,7 @@ class Image(object):
     def __rdiv__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 typ=2
@@ -1335,7 +1095,7 @@ class Image(object):
                     typ=3
             except:
                 typ=0
-                
+
         if typ==0:
             try:
                 res = self.copy()
@@ -1371,7 +1131,7 @@ class Image(object):
         if self.var is not None:
             self.var = 3 * self.var / self.data.data ** 4
         self.data = np.ma.sqrt(self.data)
-        self.unit /= np.sqrt(self.unit.scale) 
+        self.unit /= np.sqrt(self.unit.scale)
 
     def sqrt(self):
         """Returns an image containing the positive square-root
@@ -1468,7 +1228,7 @@ class Image(object):
 
     def get_step(self, unit=None):
         """Returns the image steps [dy, dx].
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1502,7 +1262,7 @@ class Image(object):
 
     def get_start(self, unit=None):
         """Returns [y,x] corresponding to pixel (0,0).
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1537,7 +1297,7 @@ class Image(object):
 
     def get_rot(self, unit=u.deg):
         """Returns the angle of rotation.
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1634,7 +1394,7 @@ class Image(object):
                       Degrees by default (use None for coordinates in pixels).
         unit_radius : astropy.units
                       Radius unit.
-                      Arcseconds by default (use None for radius in pixels)            
+                      Arcseconds by default (use None for radius in pixels)
         inside      : boolean
                       If inside is True, pixels inside the described region are masked.
                       If inside is False, pixels outside the described region are masked.
@@ -1703,7 +1463,7 @@ class Image(object):
                       Degrees by default (use None for coordinates in pixels).
         unit_radius : astropy.units
                       Radius unit.
-                      Arcseconds by default (use None for radius in pixels)   
+                      Arcseconds by default (use None for radius in pixels)
         inside      : boolean
                       If inside is True, pixels inside the described region are masked.
         """
@@ -1906,7 +1666,7 @@ class Image(object):
         res = self.copy()
         res._truncate(y_min, y_max, x_min, x_max, mask, unit)
         return res
-    
+
     def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec, minsize=2.0):
         """Extracts a sub-image
 
@@ -1922,7 +1682,7 @@ class Image(object):
                       Degrees by default (use None for coordinates in pixels).
         unit_size   : astropy.units
                       Size and minsize unit.
-                      Arcseconds by default (use None for size in pixels)   
+                      Arcseconds by default (use None for size in pixels)
         minsize     : float
                       The minimum size of the output image.
 
@@ -1943,15 +1703,15 @@ class Image(object):
                 size = size / step0
                 minsize = minsize / step0
             radius = np.array(size) / 2.
-            
+
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
             imax, jmax = np.minimum([imin + int(size+0.5), jmin + int(size+0.5)],
                                     [self.shape[0], self.shape[1]])
-            
+
             data = self.data[imin:imax, jmin:jmax].copy()
-            
+
             if data.shape[0] < minsize or data.shape[1] < minsize:
                 return None
             if self.var is not None:
@@ -1998,7 +1758,7 @@ class Image(object):
                 Default is 3
         pivot : (int, int)
                  rotation center in pixels
-                 if None, rotation will be done around the center of the image. 
+                 if None, rotation will be done around the center of the image.
         """
         if interp == 'linear':
             data = self._interp_data(spline=False)
@@ -2006,36 +1766,36 @@ class Image(object):
             data = self._interp_data(spline=True)
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
-            
+
         mask = np.array(1 - self.data.mask, dtype=bool)
-            
+
         if pivot is None:
-            
+
             center_coord = self.wcs.pix2sky([np.array(self.shape/2. - 0.5)])
-            
+
             mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
             data_rot = ndimage.rotate(data, -theta, reshape=reshape, order=order)
-            
+
             shape = np.array(data_rot.shape)
-        
+
             crpix1 = shape[1]/2. + 0.5
             crpix2 = shape[0]/2. + 0.5
-            
+
         else:
-            
+
             padX = [self.shape[1] - pivot[0], pivot[0]]
             padY = [self.shape[0] - pivot[1], pivot[1]]
-            
+
             data_rot = np.pad(data, [padY, padX], 'constant')
             data_rot = ndimage.rotate(data_rot, -theta, reshape=reshape, order=order)
-            
+
             mask_rot = np.pad(mask, [padY, padX], 'constant')
             mask_rot = ndimage.rotate(mask_rot, -theta, reshape=reshape, order=0)
-            
+
             center_coord = self.wcs.pix2sky([pivot])
-            
+
             shape = np.array(data_rot.shape)
-            
+
             if reshape is False:
                 data_rot = data_rot[padY[0] : -padY[1], padX[0] : -padX[1]]
                 mask_rot = mask_rot[padY[0] : -padY[1], padX[0] : -padX[1]]
@@ -2044,7 +1804,7 @@ class Image(object):
             else:
                 crpix1 = shape[1]/2. + 0.5
                 crpix2 = shape[0]/2. + 0.5
-            
+
         mask_ma = np.ma.make_mask(1 - mask_rot)
         self.data = np.ma.array(data_rot, mask=mask_ma)
 
@@ -2057,14 +1817,14 @@ class Image(object):
             self.wcs.set_crval1(center_coord[0][1])
             self.wcs.set_crval2(center_coord[0][0])
             self.wcs.rotate(-theta)
-              
+
         except:
             self.shape = np.array(data_rot.shape)
             self.wcs = None
-                
+
         if reshape:
             self.resize()
-            
+
 
     def rotate(self, theta, interp='no', reshape=False, order=3, pivot=None, unit=u.deg):
         """ Returns rotated image
@@ -2087,7 +1847,7 @@ class Image(object):
                   Default is 3
         pivot   : (double, double)
                   rotation center
-                  if None, rotation will be done around the center of the image. 
+                  if None, rotation will be done around the center of the image.
         unit    : astropy.units
                   type of the pivot coordinates (degrees by default)
         Returns
@@ -2258,7 +2018,7 @@ class Image(object):
                       Degrees by default (use None for coordinates in pixels).
         unit_radius : astropy.units
                       Radius unit.
-                      Arcseconds by default (use None for radius in pixels)   
+                      Arcseconds by default (use None for radius in pixels)
         dpix       : integer
                     Half size of the window (in pixels) to compute the center of gravity.
         background : float
@@ -2323,7 +2083,7 @@ class Image(object):
         return {'x': ra, 'y': dec, 'p': ic, 'q': jc, 'data': maxv}
 
     def fwhm(self, center=None, radius=0, unit_center=u.deg, unit_radius=u.angstrom):
-        """Computes the fwhm. 
+        """Computes the fwhm.
 
         Parameters
         ----------
@@ -2337,7 +2097,7 @@ class Image(object):
                       Degrees by default (use None for coordinates in pixels).
         unit_radius : astropy.units
                       Radius unit.
-                      Arcseconds by default (use None for radius in pixels)   
+                      Arcseconds by default (use None for radius in pixels)
 
         Returns
         -------
@@ -2382,7 +2142,7 @@ class Image(object):
                       Degrees by default (use None for coordinates in pixels).
         unit_radius : astropy.units
                       Radius unit.
-                      Arcseconds by default (use None for radius in pixels)  
+                      Arcseconds by default (use None for radius in pixels)
         frac        : boolean
                       If frac is True, result is given relative to the total energy of the full image.
         cont        : float
@@ -2447,7 +2207,7 @@ class Image(object):
         radius.
         The enclosed energy ratio (EER) shows how much light is concentrated
         within a certain radius around the image-center.
-        
+
 
         Parameters
         ----------
@@ -2460,7 +2220,7 @@ class Image(object):
         unit_radius : astropy.units
                       Radius units (arcseconds by default)/
         etot        : float
-                      Total energy used to comute the ratio. 
+                      Total energy used to comute the ratio.
                       If etot is not set, it is computed from the full image.
         cont        : float
                       Continuum value.
@@ -2491,12 +2251,12 @@ class Image(object):
         ee = np.empty(nmax)
         for d in range(0, nmax):
             ee[d] = (self.data[i - d:i + d + 1, j - d:j + d + 1] - cont).sum() / etot
-           
+
         radius =  np.arange(0, nmax)
         if unit_radius is not None:
             step = self.get_step(unit=unit_radius)
             radius = radius * step
-            
+
         return radius, ee
 
     def ee_size(self, center=None, unit_center=u.deg, etot=None, frac=0.9, cont=0, unit_size=u.arcsec):
@@ -2512,7 +2272,7 @@ class Image(object):
                  Type of the center coordinates.
                  Degrees by default (use None for coordinates in pixels).
         etot        : float
-                      Total energy used to comute the ratio. 
+                      Total energy used to comute the ratio.
                       If etot is not set, it is computed from the full image.
         frac   : float in ]0,1]
                  Fraction of energy.
@@ -2712,7 +2472,7 @@ class Image(object):
                       Degrees by default (use None for coordinates in pixels).
         unit_fwhm   : astropy.units
                       FWHM unit.
-                      Arcseconds by default (use None for radius in pixels)   
+                      Arcseconds by default (use None for radius in pixels)
         plot        : boolean
                       If True, the gaussian is plotted.
         verbose     : boolean
@@ -3025,12 +2785,12 @@ class Image(object):
         if unit_center is not None:
             # Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
-            
+
             err_center = np.array([err_p_peak, err_q_peak]) * np.abs(self.wcs.get_step(unit=unit_center))
         else:
             center = (p_peak, q_peak)
             err_center = (err_p_peak, err_q_peak)
-            
+
         if unit_fwhm is not None:
             step = self.wcs.get_step(unit=unit_fwhm)
             fwhm = np.array([p_fwhm, q_fwhm]) * np.abs(step)
@@ -3038,11 +2798,11 @@ class Image(object):
         else:
             fwhm = (p_fwhm, q_fwhm)
             err_fwhm = (err_p_fwhm, err_q_fwhm)
-                
+
         gauss = Gauss2D(center, flux, fwhm, cont, rot,
                         peak, err_center, err_flux, err_fwhm,
                         err_cont, err_rot, err_peak)
-        
+
         if verbose:
             gauss.print_param()
         if full_output != 0:
@@ -3052,7 +2812,7 @@ class Image(object):
 
     def moffat_fit(self, pos_min=None, pos_max=None, center=None, fwhm=None,
                    flux=None, n=2.0, circular=False, cont=0, fit_back=True,
-                   rot=0, peak=False, factor=1, weight=True, plot=False, 
+                   rot=0, peak=False, factor=1, weight=True, plot=False,
                    unit_center=u.deg, unit_fwhm=u.arcsec,
                    verbose=True, full_output=0, fit_n=True):
         """Performs moffat fit on image.
@@ -3107,7 +2867,7 @@ class Image(object):
                       Degrees by default (use None for coordinates in pixels).
         unit_fwhm   : astropy.units
                       FWHM unit.
-                      Arcseconds by default (use None for radius in pixels)   
+                      Arcseconds by default (use None for radius in pixels)
         full_output : integer
                       non-zero to return a :class:`mpdaf.obj.Moffat2D`
                       object containing the moffat image
@@ -3384,7 +3144,7 @@ class Image(object):
         p_peak = v[1]
         q_peak = v[2]
         a = np.abs(v[3])
-        if fit_n:   
+        if fit_n:
             n = v[4]
             if circular:
                 e = 1
@@ -3401,7 +3161,7 @@ class Image(object):
                     rot = (v[6] * 180.0 / np.pi) % 180
                     if fit_back:
                         cont = v[7]
-        else:   
+        else:
             if circular:
                 e = 1
                 rot = 0
@@ -3428,7 +3188,7 @@ class Image(object):
             err_p_peak = err[1]
             err_q_peak = err[2]
             err_a = err[3]
-            if fit_n:   
+            if fit_n:
                 err_n = err[4]
                 err_fwhm = err_a * n
                 if circular:
@@ -3457,7 +3217,7 @@ class Image(object):
                         else:
                             err_cont = 0
                     err_flux = err_I * err_n * err_a * err_a * err_e
-            else:   
+            else:
                 err_n = 0
                 err_fwhm = err_a * n
                 if circular:
@@ -3505,18 +3265,18 @@ class Image(object):
             # Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
             err_center = np.array([err_p_peak, err_q_peak]) * np.abs(self.wcs.get_step(unit=unit_center))
-            
+
         if unit_fwhm is not None:
             step0 = np.abs(self.wcs.get_step(unit=unit_fwhm)[0])
             a = a * step0
             err_a = err_a * step0
             fwhm = fwhm * step0
             err_fwhm = err_fwhm * step0
-            
+
         moffat = Moffat2D(center, flux, fwhm, cont, n,
                           rot, I, err_center, err_flux, err_fwhm,
                           err_cont, err_n, err_rot, err_I)
-        
+
         if verbose:
             moffat.print_param()
         if full_output != 0:
@@ -4097,7 +3857,7 @@ class Image(object):
                     Degrees by default (use None for coordinates in pixels).
         unit_step  : astropy.units
                      step unit.
-                      Arcseconds by default (use None for radius in pixels) 
+                      Arcseconds by default (use None for radius in pixels)
         """
         if is_int(newdim):
             newdim = (newdim, newdim)
@@ -4112,27 +3872,27 @@ class Image(object):
         newdim = np.array(newdim)
         newstart = np.array(newstart)
         newstep = np.array(newstep)
-        
+
         if interp == 'linear':
             data = self._interp_data(spline=False)
         elif interp == 'spline':
             data = self._interp_data(spline=True)
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
-            
+
         mask = np.array(1 - self.data.mask, dtype=bool)
-        
+
         oldstep = self.wcs.get_step(unit=unit_step)
         pstep = newstep / oldstep
-        
+
         pixNewstart = self.wcs.sky2pix(newstart, unit=unit_start)[0]
         offset_oldpix = 0.5 + pixNewstart - 0.5*pstep
         #poffset = ((self.wcs.sky2pix(newstart, unit=unit_start)[0]+0.5)) / pstep
         poffset = offset_oldpix / pstep
-             
+
         data = ndimage.affine_transform(data, pstep, poffset,
                                         output_shape=newdim, order=order)
-         
+
         newmask = ndimage.affine_transform(mask, pstep, poffset,
                                            output_shape=newdim, order=0)
         mask = np.ma.make_mask(1 - newmask)
@@ -4397,7 +4157,7 @@ class Image(object):
                 pass
         except:
             raise IOError('Operation forbidden')
-        
+
         ima = other.copy()
         self_rot = self.wcs.get_rot()
         ima_rot = ima.wcs.get_rot()
@@ -4409,11 +4169,11 @@ class Image(object):
             else:
                 theta = -self_rot + ima_rot
                 ima = ima.rotate(theta, reshape=True)
-                
+
         unit=ima.wcs.get_cunit1()
         self_cdelt = self.wcs.get_step(unit=unit)
         ima_cdelt = ima.wcs.get_step()
-        
+
         if (self_cdelt != ima_cdelt).all():
             factor = self_cdelt / ima_cdelt
             try:
@@ -4431,9 +4191,9 @@ class Image(object):
                 ima = ima.resample(newdim, newstart, self_cdelt, flux=True,
                                 unit_step=unit,
                                 unit_start=unit)
-        
+
         # here ima and self have the same step and the same rotation
-        
+
         [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0, 0]], unit=self.wcs.get_cunit1()))
         l1 = int(l1 + 0.5)
         k1 = int(k1 + 0.5)
@@ -4466,16 +4226,16 @@ class Image(object):
         mask = self.data.mask.__copy__()
         self.data[k1:k2, l1:l2] += UnitMaskedArray(ima.data[nk1:nk2, nl1:nl2], ima.unit, self.unit)
         self.data.mask = mask
-        
+
 
 #     def segment(self, shape=(2, 2), minsize=20, minpts=None,
 #                 background=20, interp='no', median=None):
 #         """Segments the image in a number of smaller images.
-# 
+#
 #         Returns a list of images.
-# 
+#
 #         Uses `scipy.ndimage.morphology.generate_binary_structure <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.generate_binary_structure.html>`_, `scipy.ndimage.morphology.grey_dilation <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.grey_dilation.html>`_, `scipy.ndimage.measurements.label <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.label.html>`_, and `scipy.ndimage.measurements.find_objects <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.find_objects.html>`_.
-# 
+#
 #         Parameters
 #         ----------
 #         shape      : (integer,integer)
@@ -4493,7 +4253,7 @@ class Image(object):
 #                     if 'spline', spline interpolation of the masked values.
 #         median     : (integer,integer) or None
 #                     Size of the median filter
-# 
+#
 #         Returns
 #         -------
 #         out : List of Image objects.
@@ -4504,7 +4264,7 @@ class Image(object):
 #             data = self._interp_data(spline=True)
 #         else:
 #             data = np.ma.filled(self.data, np.ma.median(self.data))
-# 
+#
 #         structure = \
 #             ndimage.morphology.generate_binary_structure(shape[0], shape[1])
 #         if median is not None:
@@ -4513,10 +4273,10 @@ class Image(object):
 #         expanded = ndimage.morphology.grey_dilation(data, (minsize, minsize))
 #         ksel = np.where(expanded < background)
 #         expanded[ksel] = 0
-# 
+#
 #         lab = ndimage.measurements.label(expanded, structure)
 #         slices = ndimage.measurements.find_objects(lab[0])
-# 
+#
 #         imalist = []
 #         for i in range(lab[1]):
 #             if minpts is not None:
@@ -4627,7 +4387,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 typ=2
@@ -4647,7 +4407,7 @@ class Image(object):
             else:
                 data = np.ma.filled(self.data, np.ma.median(self.data))
 
-            
+
             self.data = np.ma.array(signal.fftconvolve(data, other,
                                                         mode='same'),
                                     mask=self.data.mask)
@@ -4659,7 +4419,7 @@ class Image(object):
                     or self.shape[1] != other.shape[1]:
                 raise IOError('Operation forbidden for images '
                               'with different sizes')
-                
+
             if interp == 'linear':
                 data = self._interp_data(spline=False)
                 other_data = other._interp_data(spline=False)
@@ -4669,10 +4429,10 @@ class Image(object):
             else:
                 data = np.ma.filled(self.data, np.ma.median(self.data))
                 other_data = other.data.filled(np.ma.median(other.data))
-                
+
             if self.unit != other.unit:
                 other_data = UnitMaskedArray(other_data, other.unit, self.unit)
-            
+
             self.data = np.ma.array(signal.fftconvolve(data,
                                                        other_data, mode='same'),
                                     mask=self.data.mask)
@@ -4818,7 +4578,7 @@ class Image(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.image:
                 typ=2
@@ -4826,7 +4586,7 @@ class Image(object):
             typ=0
 
         if typ==0:
-            
+
             if interp == 'linear':
                 data = self._interp_data(spline=False)
             elif interp == 'spline':
@@ -5425,11 +5185,11 @@ class Image(object):
             self._selector = None
             fig = plt.gcf()
             fig.canvas.stop_event_loop_default()
-            
+
     def rebin_factor(self, factor, margin='center'):
         raise DeprecationWarning('Using rebin_factor method is deprecated: Please use rebin_mean instead')
         return self.rebin_mean(factor, margin)
-    
+
     def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
         raise DeprecationWarning('Using rebin method is deprecated: Please use resample instead')
@@ -5481,7 +5241,7 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
                   Degrees by default (use None for coordinates in pixels).
     unit_fwhm   : astropy.units
                   FWHM unit.
-                  Arcseconds by default (use None for radius in pixels)   
+                  Arcseconds by default (use None for radius in pixels)
 
     Returns
     -------
@@ -5625,7 +5385,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
                   Degrees by default (use None for coordinates in pixels).
     unit_fwhm   : astropy.units
                   FWHM unit.
-                  Arcseconds by default (use None for radius in pixels)   
+                  Arcseconds by default (use None for radius in pixels)
 
     Returns
     -------
@@ -5667,7 +5427,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
     else:
         if unit_center is not None:
             center = wcs.sky2pix(center, unit=unit_center)[0]
-            
+
     if unit_fwhm is not None:
         a = a / np.abs(wcs.get_step(unit=unit_fwhm)[0])
 

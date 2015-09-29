@@ -268,7 +268,7 @@ class DataArray(object):
         self._var = value
 
     def copy(self):
-        """Returns a new copy of the object."""
+        """Returns a copy of the object."""
         obj = self.__class__(
             data=self.data.copy(),
             unit=self.unit,
@@ -282,8 +282,8 @@ class DataArray(object):
         return obj
 
     def clone(self, var=False):
-        """Returns a new cube of the same shape and coordinates, filled with
-        zeros.
+        """Returns a shallow copy with the same shape and coordinates, filled
+        with zeros.
 
         Parameters
         ----------
