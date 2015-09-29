@@ -1094,12 +1094,6 @@ class Spectrum(DataArray):
         else:
             return None
 
-#     def get_np_data(self):
-#         """Return numpy masked array containing the flux multiplied by scaling
-#         factor."""
-#         return self.data * self.fscale
-
-
     def __setitem__(self, key, other):
         """Set the corresponding part of data."""
         if self.data is None:

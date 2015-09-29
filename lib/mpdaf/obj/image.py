@@ -1290,11 +1290,6 @@ class Image(DataArray):
         else:
             return self.wcs.get_rot(unit)
 
-#     def get_np_data(self):
-#         """Returns numpy masked array containing the flux multiplied by scaling
-#         factor."""
-#         return self.data * self.fscale
-
     def __setitem__(self, key, other):
         """Sets the corresponding part of data."""
         # self.data[key] = other
