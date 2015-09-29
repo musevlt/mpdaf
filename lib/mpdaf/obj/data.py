@@ -108,6 +108,7 @@ class DataArray(object):
         self.data_header = pyfits.Header()
         self.primary_header = pyfits.Header()
 
+        # FIXME: Deprecate and remove shape, fscale and notnoise
         if shape is not None:
             warnings.warn('The shape parameter is no more used, it is derived '
                           'from the data instead', DeprecationWarning)
@@ -137,6 +138,9 @@ class DataArray(object):
             elif isinstance(ext, (list, tuple, np.ndarray)):
                 self._data_ext = ext[0]
                 self._var_ext = ext[1]
+            elif isinstance(ext, int):
+                self._data_ext = ext
+                self._var_ext = None
 
             if notnoise:
                 self._var_ext = None
