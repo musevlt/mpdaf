@@ -2019,11 +2019,10 @@ class Cube(DataArray, CubeBase):
                  Python notation: (nz,ny,nx)
         """
         assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
-        self.shape /= np.asarray(factor)
-        self.data = self.data.reshape(self.shape[0], factor[0],
-                                      self.shape[1], factor[1],
-                                      self.shape[2], factor[2])\
-            .sum(1).sum(2).sum(3)
+        shape = self.shape / np.asarray(factor)
+        self.data = self.data.reshape(
+            shape[0], factor[0], shape[1], factor[1], shape[2], factor[2]
+        ).sum(1).sum(2).sum(3)
         self.data /= np.prod(factor)
 
         if self.var is not None:
@@ -2111,14 +2110,13 @@ class Cube(DataArray, CubeBase):
             cub._rebin_mean_(factor)
 
             if flux is False:
-                self.shape = cub.shape
                 self.data = cub.data
                 self.var = cub.var
                 self.wave = cub.wave
                 self.wcs = cub.wcs
                 return None
             else:
-                newshape = cub.shape.copy()
+                newshape = list(cub.shape)
                 wave = cub.wave
                 wcs = cub.wcs
 
@@ -2478,7 +2476,6 @@ class Cube(DataArray, CubeBase):
                             .sum(axis=2).sum(axis=0)\
                             .reshape(cub.shape[1], factor[1]).sum(1) / F2
 
-                self.shape = newshape
                 self.wcs = wcs
                 self.wave = wave
                 self.data = np.ma.array(data, mask=mask)

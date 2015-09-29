@@ -314,9 +314,13 @@ class Image(DataArray):
     wcs            : :class:`mpdaf.obj.WCS`
                     World coordinates.
     """
-    def __init__(self, filename=None, ext=None, notnoise=False, wcs=None,
-                 unit=u.count, data=None, var=None, fscale=1.0, shape=None,
-                 copy=True, dtype=float):
+
+    _ndim = 2
+    _has_wcs = True
+
+    def __init__(self, filename=None, ext=None, wcs=None, unit=u.count,
+                 data=None, var=None, shape=None, copy=True, dtype=float,
+                 **kwargs):
         self.image = True
         self._clicks = None
         self._selector = None
@@ -330,9 +334,8 @@ class Image(DataArray):
             filename = None
 
         super(Image, self).__init__(
-            filename=filename, ext=ext, notnoise=notnoise, wcs=wcs,
-            unit=unit, data=data, var=var, copy=copy, dtype=dtype,
-            shape=shape, fscale=fscale)
+            filename=filename, ext=ext, wcs=wcs, unit=unit, data=data, var=var,
+            copy=copy, dtype=dtype, shape=shape, **kwargs)
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
         """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
@@ -606,28 +609,29 @@ class Image(DataArray):
     def resize(self):
         """Resizes the image to have a minimum number of masked values."""
         if self.data is not None:
-            ksel = np.where(self.data.mask == False)
-            try:
-                item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),
-                        slice(min(ksel[1]), max(ksel[1]) + 1, None))
-                self.data = self.data[item]
+            ksel = np.where(~self.data.mask)
+            item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),
+                    slice(min(ksel[1]), max(ksel[1]) + 1, None))
+
+            self.data = self.data[item]
+            if is_int(item[0]):
+                self.data = self.data[np.newaxis, :]
+            elif is_int(item[1]):
+                self.data = self.data[:, np.newaxis]
+
+            if self.var is not None:
+                self.var = self.var[item]
                 if is_int(item[0]):
-                    self.shape = np.array((1, self.data.shape[0]))
+                    self.var = self.var[np.newaxis, :]
                 elif is_int(item[1]):
-                    self.shape = np.array((self.data.shape[0], 1))
-                else:
-                    self.shape = np.array((self.data.shape[0],
-                                           self.data.shape[1]))
-                if self.var is not None:
-                    self.var = self.var[item]
-                try:
-                    self.wcs = self.wcs[item[0], item[1]]
-                except:
-                    self.wcs = None
-                    d = {'class': 'Image', 'method': 'resize'}
-                    self.logger.warning("wcs not copied", extra=d)
+                    self.var = self.var[:, np.newaxis]
+
+            try:
+                self.wcs = self.wcs[item[0], item[1]]
             except:
-                pass
+                self.wcs = None
+                d = {'class': 'Image', 'method': 'resize'}
+                self.logger.warning("wcs not copied", extra=d)
 
     def __add__(self, other):
         """Operator +.
@@ -1508,7 +1512,6 @@ class Image(DataArray):
                               + ((grid[0] * cospa - grid[1] * sinpa)
                                  / radius[1]) ** 2 > 1)
 
-
     def mask_polygon(self, poly, unit=u.deg, inside=True):
         """Masks values inside/outside a polygonal region.
 
@@ -1541,7 +1544,6 @@ class Image(DataArray):
 
         self.data.mask=np.logical_or(c,self.data.mask) # combine the previous mask with the new one
         return poly
-
 
     def unmask(self):
         """Unmasks the image (just invalid data (nan,inf) are masked)."""
@@ -1614,9 +1616,9 @@ class Image(DataArray):
             jmax = self.shape[1]
 
         self.data = self.data[imin:imax, jmin:jmax]
-        self.shape = np.array((self.data.shape[0], self.data.shape[1]))
         if self.var is not None:
             self.var = self.var[imin:imax, jmin:jmax]
+
         try:
             self.wcs = self.wcs[imin:imax, jmin:jmax]
         except:
@@ -1770,19 +1772,14 @@ class Image(DataArray):
         mask = np.array(1 - self.data.mask, dtype=bool)
 
         if pivot is None:
-
-            center_coord = self.wcs.pix2sky([np.array(self.shape/2. - 0.5)])
-
+            center_coord = self.wcs.pix2sky([np.array(self.shape)/2. - 0.5])
             mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
             data_rot = ndimage.rotate(data, -theta, reshape=reshape, order=order)
 
             shape = np.array(data_rot.shape)
-
             crpix1 = shape[1]/2. + 0.5
             crpix2 = shape[0]/2. + 0.5
-
         else:
-
             padX = [self.shape[1] - pivot[0], pivot[0]]
             padY = [self.shape[0] - pivot[1], pivot[1]]
 
@@ -1793,7 +1790,6 @@ class Image(DataArray):
             mask_rot = ndimage.rotate(mask_rot, -theta, reshape=reshape, order=0)
 
             center_coord = self.wcs.pix2sky([pivot])
-
             shape = np.array(data_rot.shape)
 
             if reshape is False:
@@ -1809,7 +1805,6 @@ class Image(DataArray):
         self.data = np.ma.array(data_rot, mask=mask_ma)
 
         try:
-            self.shape = shape
             self.wcs.set_naxis1(self.shape[1])
             self.wcs.set_naxis2(self.shape[0])
             self.wcs.set_crpix1(crpix1)
@@ -1817,14 +1812,11 @@ class Image(DataArray):
             self.wcs.set_crval1(center_coord[0][1])
             self.wcs.set_crval2(center_coord[0][0])
             self.wcs.rotate(-theta)
-
         except:
-            self.shape = np.array(data_rot.shape)
             self.wcs = None
 
         if reshape:
             self.resize()
-
 
     def rotate(self, theta, interp='no', reshape=False, order=3, pivot=None, unit=u.deg):
         """ Returns rotated image
@@ -1866,9 +1858,9 @@ class Image(DataArray):
         Parameters
         ----------
         axis : None, 0 or 1
-               axis = None returns a float
-               axis=0 or 1 returns a Spectrum object corresponding to a line or a column,
-               other cases return None.
+            axis = None returns a float
+            axis=0 or 1 returns a Spectrum object corresponding to a line or a
+            column, other cases return None.
 
         Returns
         -------
@@ -3297,17 +3289,15 @@ class Image(DataArray):
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
         assert not np.sometrue(np.mod(self.shape[1], factor[1]))
         # new size is an integer multiple of the original size
-        self.shape = np.array((self.shape[0] / factor[0],
-                               self.shape[1] / factor[1]))
-        self.data = self.data.reshape(self.shape[0], factor[0],
-                                      self.shape[1], factor[1]).sum(1).sum(2)\
-            / factor[0] / factor[1]
+        shape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
+        self.data = self.data.reshape(
+            shape[0], factor[0], shape[1], factor[1]).sum(1).sum(2)\
+            / (factor[0] * factor[1])
         if self.var is not None:
-            self.var = self.var.reshape(self.shape[0], factor[0],
-                                        self.shape[1], factor[1])\
-                .sum(1).sum(2) / factor[0] \
-                / factor[1] / factor[0] / factor[1]
-
+            self.var = self.var.reshape(
+                shape[0], factor[0], shape[1], factor[1])\
+                .sum(1).sum(2) / (
+                    factor[0] * factor[1] * factor[0] * factor[1])
         self.wcs = self.wcs.rebin(factor)
 
     def _rebin_mean(self, factor, margin='center'):
@@ -3707,7 +3697,6 @@ class Image(DataArray):
                 wcs.naxis2 = wcs.naxis2 + 1
             else:
                 raise ValueError('margin must be center|origin')
-        self.shape = np.array(newshape)
         self.wcs = wcs
         self.data = np.ma.array(data, mask=mask)
         self.var = var
@@ -3752,13 +3741,12 @@ class Image(DataArray):
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
         assert not np.sometrue(np.mod(self.shape[1], factor[1]))
         # new size is an integer multiple of the original size
-        self.shape = np.array((self.shape[0] / factor[0],
-                               self.shape[1] / factor[1]))
-        Nq, Np = np.meshgrid(xrange(self.shape[1]), xrange(self.shape[0]))
+        shape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
+        Nq, Np = np.meshgrid(xrange(shape[1]), xrange(shape[0]))
         vfunc = np.vectorize(self._med_)
         data = vfunc(Np, Nq, factor[0], factor[1])
-        mask = self.data.mask.reshape(self.shape[0], factor[0],
-                                      self.shape[1], factor[1])\
+        mask = self.data.mask.reshape(shape[0], factor[0],
+                                      shape[1], factor[1])\
             .sum(1).sum(2) / factor[0] / factor[1]
         self.data = np.ma.array(data, mask=mask)
         self.var = None
@@ -3900,7 +3888,6 @@ class Image(DataArray):
         if flux:
             data *= newstep.prod() / oldstep.prod()
 
-        self.shape = newdim
         self.wcs = self.wcs.resample(step=(newstep*unit_step).to(unit_start).value,
                        start=newstart, unit=unit_start)
         self.wcs.naxis1 = newdim[1]
@@ -3909,7 +3896,7 @@ class Image(DataArray):
         self.var = None
 
     def resample(self, newdim, newstart, newstep, flux=False,
-              order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
+                 order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
         """Return resampled image to a new coordinate system.
         Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
 

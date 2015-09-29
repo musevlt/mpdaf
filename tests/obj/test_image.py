@@ -2,18 +2,28 @@
 import nose.tools
 from nose.plugins.attrib import attr
 
+import astropy.units as u
 import numpy as np
 
-from mpdaf.obj import Spectrum
-from mpdaf.obj import Image
-from mpdaf.obj import Cube
-from mpdaf.obj import WCS
-from mpdaf.obj import WaveCoord
-from mpdaf.obj import gauss_image
-from mpdaf.obj import moffat_image
+from mpdaf.obj import (Spectrum, Image, Cube, WCS, WaveCoord, gauss_image,
+                       moffat_image)
 
-import astropy.units as u
-    
+
+def assert_array_equal(arr1, arr2):
+    nose.tools.assert_true(np.array_equal(arr1, arr2))
+
+
+def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
+    if shape is not None:
+        assert_array_equal(ima.shape, shape)
+    if start is not None:
+        assert_array_equal(ima.get_start(), start)
+    if end is not None:
+        assert_array_equal(ima.get_end(), end)
+    if step is not None:
+        assert_array_equal(ima.get_step(), step)
+
+
 @attr(speed='fast')
 def test_copy():
     """Image class: testing copy method."""
@@ -96,16 +106,9 @@ def test_get():
     data = np.ones(shape=(6,5))*2
     image1 = Image(shape=(6,5),data=data,wcs=wcs)
     ima = image1[0:2,1:4]
-    nose.tools.assert_equal(ima.shape[0],2)
-    nose.tools.assert_equal(ima.shape[1],3)
-    nose.tools.assert_equal(ima.get_start()[0],0)
-    nose.tools.assert_equal(ima.get_start()[1],1)
-    nose.tools.assert_equal(ima.get_end()[0],1)
-    nose.tools.assert_equal(ima.get_end()[1],3)
-    nose.tools.assert_equal(ima.get_step()[0],1)
-    nose.tools.assert_equal(ima.get_step()[1],1)
-   
-@attr(speed='fast')  
+    assert_image_equal(ima, shape=(2, 3), start=(0, 1), end=(1, 3), step=(1, 1))
+
+@attr(speed='fast')
 def test_resize():
     """Image class: testing resize method"""
     wcs = WCS(crval=(0,0))
@@ -117,34 +120,24 @@ def test_resize():
     mask[2:4,1:4] = 0
     image1.data = np.ma.MaskedArray(data, mask=mask)
     image1.resize()
-    nose.tools.assert_equal(image1.shape[0],2)
-    nose.tools.assert_equal(image1.shape[1],3)
+    assert_image_equal(image1, shape=(2, 3), start=(2, 1), end=(3, 3))
     nose.tools.assert_equal(image1.sum(),2*3*8)
-    nose.tools.assert_equal(image1.get_start()[0],2)
-    nose.tools.assert_equal(image1.get_start()[1],1)
-    nose.tools.assert_equal(image1.get_end()[0],3)
-    nose.tools.assert_equal(image1.get_end()[1],3)
     nose.tools.assert_equal(image1.get_range()[0][0],image1.get_start()[0])
     nose.tools.assert_equal(image1.get_range()[0][1],image1.get_start()[1])
     nose.tools.assert_equal(image1.get_range()[1][0],image1.get_end()[0])
     nose.tools.assert_equal(image1.get_range()[1][1],image1.get_end()[1])
     nose.tools.assert_equal(image1.get_rot(),0)
-  
-@attr(speed='fast')  
+
+@attr(speed='fast')
 def test_truncate():
     """Image class: testing truncation"""
     wcs = WCS(crval=(0,0))
     data = np.ones(shape=(6,5))*2
     image1 = Image(shape=(6,5), data=data, wcs=wcs)
     image1 = image1.truncate(0,1,1,3, unit=wcs.get_cunit1())
-    nose.tools.assert_equal(image1.shape[0],2)
-    nose.tools.assert_equal(image1.shape[1],3)
-    nose.tools.assert_equal(image1.get_start()[0],0)
-    nose.tools.assert_equal(image1.get_start()[1],1)
-    nose.tools.assert_equal(image1.get_end()[0],1)
-    nose.tools.assert_equal(image1.get_end()[1],3)
- 
-@attr(speed='fast')   
+    assert_image_equal(image1, shape=(2, 3), start=(0, 1), end=(1, 3))
+
+@attr(speed='fast')
 def test_sum():
     """Image class: testing sum"""
     wcs = WCS(crval=(0,0))
@@ -156,8 +149,8 @@ def test_sum():
     nose.tools.assert_equal(sum2.shape,5)
     nose.tools.assert_equal(sum2.get_start(),0)
     nose.tools.assert_equal(sum2.get_end(),4)
- 
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_gauss():
     """Image class: testing Gaussian fit"""
     wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
@@ -173,8 +166,8 @@ def test_gauss():
     nose.tools.assert_almost_equal(gauss2.center[1], 14.5)
     nose.tools.assert_almost_equal(gauss2.flux, 1)
     nose.tools.assert_almost_equal(gauss2.cont, 12.3)
-     
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_moffat():
     """Image class: testing Moffat fit"""
     ima = moffat_image(wcs=WCS(crval=(0,0)),flux=12.3, fwhm=(1.8,1.8), n=1.6, rot = 0., cont=8.24, unit_center=u.pix, unit_fwhm=u.pix)
@@ -185,8 +178,8 @@ def test_moffat():
     nose.tools.assert_almost_equal(moffat.fwhm[0], 1.8)
     nose.tools.assert_almost_equal(moffat.n, 1.6)
     nose.tools.assert_almost_equal(moffat.cont, 8.24)
-     
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_mask():
     """Image class: testing mask functionalities"""
     wcs = WCS()
@@ -209,8 +202,8 @@ def test_mask():
     image1.unmask()
     image1.mask_selection(ksel)
     nose.tools.assert_equal(image1.sum(),2*7)
-     
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_background():
     """Image class: testing background value"""
     wcs = WCS()
@@ -223,8 +216,8 @@ def test_background():
     (background,std) = ima[1647:1732,618:690].background()
     #compare with IRAF results
     nose.tools.assert_true((background-std<1989) & (background+std>1989))
-     
-@attr(speed='fast')   
+
+@attr(speed='fast')
 def test_peak():
     """Image class: testing peak research"""
     wcs = WCS()
@@ -239,7 +232,7 @@ def test_peak():
          unit_radius=None)
     nose.tools.assert_almost_equal(p['p'],793.1,1)
     nose.tools.assert_almost_equal(p['q'],875.9,1)
-     
+
 @attr(speed='fast')
 def test_clone():
     """Image class: testing clone method."""
@@ -254,18 +247,18 @@ def test_clone():
     ima2 = ima.clone()+1000
     nose.tools.assert_equal(ima2.sum(axis=0).data[1000],ima.shape[0]*1000)
     nose.tools.assert_equal(ima2.sum(),ima.shape[0]*ima.shape[1]*1000)
-             
+
 @attr(speed='fast')
 def test_rotate():
     """Image class: testing rotation."""
     ima = Image("data/obj/a370II.fits")
     ima2 = ima.rotate(30)
-     
+
     _theta = -30* np.pi / 180.
     _mrot = np.zeros(shape=(2,2),dtype=np.double)
     _mrot[0] = (np.cos(_theta),np.sin(_theta))
     _mrot[1] = (-np.sin(_theta),np.cos(_theta))
-     
+
     center= (np.array([ima.shape[0],ima.shape[1]])+1)/2. -1
     pixel= np.array([910,1176])
     r = np.dot(pixel - center, _mrot)
@@ -273,20 +266,20 @@ def test_rotate():
     r[1] = r[1] + center[1]
     nose.tools.assert_almost_equal(ima.wcs.pix2sky(pixel)[0][0],ima2.wcs.pix2sky(r)[0][0])
     nose.tools.assert_almost_equal(ima.wcs.pix2sky(pixel)[0][1],ima2.wcs.pix2sky(r)[0][1])
-     
+
 @attr(speed='fast')
 def test_inside():
     """Image class: testing inside method."""
     ima = Image("data/obj/a370II.fits")
     nose.tools.assert_equal(ima.inside((39.951088,-1.4977398),unit=ima.wcs.get_cunit1()),False)
-    
+
 @attr(speed='fast')
 def test_subimage():
     """Image class: testing sub-image extraction."""
     ima = Image("data/obj/a370II.fits")
     subima = ima.subimage(center=(790,875), size=40, unit_center=None, unit_size=None)
     nose.tools.assert_equal(subima.peak()['data'], 3035.0)
-    
+
 @attr(speed='fast')
 def test_ee():
     """Image class: testing ensquared energy."""
@@ -302,7 +295,7 @@ def test_ee():
     nose.tools.assert_equal(eer[1], 1.0)
     size = image1.ee_size(center=(2,2),unit_center=None, unit_size=None,cont=0)
     nose.tools.assert_almost_equal(size[0], 1.775)
-    
+
 @attr(speed='fast')
 def test_rebin_mean():
     """Image class: testing rebin methods."""
@@ -319,7 +312,7 @@ def test_rebin_mean():
     image2 = image1.rebin_median(2)
     nose.tools.assert_equal(image2[0,0], 2)
     nose.tools.assert_equal(image2[1,1], 2)
-    
+
 # TODO test_resample: pb rotation
 
 @attr(speed='fast')
@@ -329,7 +322,7 @@ def test_add():
     subima = ima.subimage(center=(790,875), size=40, unit_center=None, unit_size=None)
     ima.add(subima*4)
     nose.tools.assert_equal(ima[800,885], subima[30,30]*5)
-    
+
 @attr(speed='fast')
 def test_fftconvolve():
     """Image class: testing convolution methods."""
@@ -350,4 +343,3 @@ def test_fftconvolve():
     nose.tools.assert_almost_equal(m.center[0], 8.5)
     nose.tools.assert_almost_equal(m.center[1], 12)
     ima3 = ima.correlate2d(np.ones((40,30)))
-    
