@@ -10,6 +10,7 @@ from functools import partial
 from numpy import ma
 
 from .coords import WCS, WaveCoord
+from ..tools import MpdafWarning, deprecated
 
 # __all__ = ['iter_spe', 'iter_ima', 'Cube', 'CubeDisk']
 
@@ -112,7 +113,7 @@ class DataArray(object):
         # FIXME: Deprecate and remove shape, fscale and notnoise
         if shape is not None:
             warnings.warn('The shape parameter is no more used, it is derived '
-                          'from the data instead', DeprecationWarning)
+                          'from the data instead', MpdafWarning)
 
         if filename is not None:
             if not is_valid_fits_file(filename):
@@ -269,7 +270,14 @@ class DataArray(object):
 
     @var.setter
     def var(self, value):
+        value = np.asarray(value)
+        if not np.array_equal(self.shape, value.shape):
+            raise ValueError('var and data have not the same dimensions.')
         self._var = value
+
+    @deprecated('Variance should now be set with the `.var` attribute')
+    def set_var(self, var):
+        self.var = var
 
     def copy(self):
         """Returns a copy of the object."""

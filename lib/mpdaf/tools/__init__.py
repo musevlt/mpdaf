@@ -1,5 +1,4 @@
-__version__ = '1.1.17'
-__date__ = '2015/06/15'
 
-import euro3D
-import fits
+from . import euro3D, fits
+from .fits import *
+from .util import *
