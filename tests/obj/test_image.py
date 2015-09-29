@@ -4,24 +4,9 @@ from nose.plugins.attrib import attr
 
 import astropy.units as u
 import numpy as np
-
 from mpdaf.obj import (Spectrum, Image, Cube, WCS, WaveCoord, gauss_image,
                        moffat_image)
-
-
-def assert_array_equal(arr1, arr2):
-    nose.tools.assert_true(np.array_equal(arr1, arr2))
-
-
-def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
-    if shape is not None:
-        assert_array_equal(ima.shape, shape)
-    if start is not None:
-        assert_array_equal(ima.get_start(), start)
-    if end is not None:
-        assert_array_equal(ima.get_end(), end)
-    if step is not None:
-        assert_array_equal(ima.get_step(), step)
+from ..utils import assert_image_equal
 
 
 @attr(speed='fast')
