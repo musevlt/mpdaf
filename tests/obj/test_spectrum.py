@@ -4,9 +4,11 @@ import nose.tools
 from nose.plugins.attrib import attr
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+
+from astropy import units as u
 from astropy.io import fits as pyfits
 from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
+from numpy.testing import assert_array_almost_equal
 
 
 @attr(speed='fast')

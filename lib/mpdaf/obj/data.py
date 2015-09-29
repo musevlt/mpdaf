@@ -284,7 +284,6 @@ class DataArray(object):
         obj = self.__class__(
             data=self.data.copy(),
             unit=self.unit,
-            fscale=self.fscale,
             var=None if self.var is None else self.var.copy(),
             wcs=None if self.wcs is None else self.wcs.copy(),
             wave=None if self.wave is None else self.wave.copy()
@@ -306,7 +305,6 @@ class DataArray(object):
         obj = self.__class__(
             data=np.zeros(shape=self.shape),
             unit=self.unit,
-            fscale=self.fscale,
             var=None if var is False else np.zeros(shape=self.shape),
             wcs=None if self.wcs is None else self.wcs.copy(),
             wave=None if self.wave is None else self.wave.copy()
@@ -329,7 +327,7 @@ class DataArray(object):
         noise = ('no noise' if self._var is None and self._var_ext is None
                  else '.var({})'.format(','.join(shape_str)))
         unit = 'no unit' if self.unit is None else self.unit
-        log_info('%s (%s) fscale=%g, %s', data, unit, self.fscale, noise)
+        log_info('%s (%s), %s', data, unit, noise)
 
         if self._has_wcs:
             if self.wcs is None:
@@ -342,3 +340,8 @@ class DataArray(object):
                 log_info('no world coordinates for spectral direction')
             else:
                 self.wave.info()
+
+    # def get_np_data(self):
+    #     """Returns numpy masked array containing the flux multiplied by
+    #     scaling factor."""
+    #     return self.data * self.fscale
