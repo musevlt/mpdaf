@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-from nose.tools import assert_true
-
-
-def assert_array_equal(arr1, arr2):
-    assert_true(np.array_equal(arr1, arr2))
+from numpy.testing import assert_array_equal
 
 
 def assert_image_equal(ima, shape=None, start=None, end=None, step=None):

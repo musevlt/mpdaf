@@ -101,7 +101,7 @@ class DataArray(object):
         self._data_ext = None
         self._var = None
         self._var_ext = None
-        self._shape = shape
+        self._shape = (shape, ) if np.isscalar(shape) else shape
         self.wcs = None
         self.wave = None
         self.dtype = dtype
@@ -167,16 +167,19 @@ class DataArray(object):
                     self.wcs = WCS(hdr)
 
             # Wavelength coordinates
-            if self._has_wave and 'CRPIX3' in hdr and 'CRVAL3' in hdr:
-                # if 'CDELT3' in hdr:
-                #     cdelt = hdr.get('CDELT3')
-                # elif 'CD3_3' in hdr:
-                #     cdelt = hdr.get('CD3_3')
+            wave_ext = 1 if self._ndim == 1 else 3
+            crpix = 'CRPIX{}'.format(wave_ext)
+            crval = 'CRVAL{}'.format(wave_ext)
+            if self._has_wave and crpix in hdr and crval in hdr:
+                # if 'CDELT{}'.format(wave_ext) in hdr:
+                #     cdelt = hdr.get('CDELT{}'.format(wave_ext))
+                # elif 'CD{0}_{0}'.format(wave_ext) in hdr:
+                #     cdelt = hdr.get('CD{0}_{0}'.format(wave_ext))
                 # else:
                 #     cdelt = 1.0
-                # cunit = hdr.get('CUNIT3', '')
-                # ctype = hdr.get('CTYPE3', 'LINEAR')
-                # self.wave = WaveCoord(hdr['CRPIX3'], cdelt, hdr['CRVAL3'],
+                # cunit = hdr.get('CUNIT{}'.format(wave_ext), '')
+                # ctype = hdr.get('CTYPE{}'.format(wave_ext), 'LINEAR')
+                # self.wave = WaveCoord(hdr[crpix], cdelt, hdr[crval],
                 #                       cunit, ctype, self._shape[0])
                 self.wave = WaveCoord(hdr)
 
@@ -273,6 +276,7 @@ class DataArray(object):
         obj = self.__class__(
             data=self.data.copy(),
             unit=self.unit,
+            fscale=self.fscale,
             var=None if self.var is None else self.var.copy(),
             wcs=None if self.wcs is None else self.wcs.copy(),
             wave=None if self.wave is None else self.wave.copy()
@@ -294,7 +298,8 @@ class DataArray(object):
         obj = self.__class__(
             data=np.zeros(shape=self.shape),
             unit=self.unit,
-            var=None if var else np.zeros(shape=self.shape),
+            fscale=self.fscale,
+            var=None if var is False else np.zeros(shape=self.shape),
             wcs=None if self.wcs is None else self.wcs.copy(),
             wave=None if self.wave is None else self.wave.copy()
         )

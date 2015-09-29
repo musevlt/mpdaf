@@ -14,6 +14,7 @@ from scipy.optimize import leastsq
 
 from . import ABmag_filters
 from .coords import WaveCoord
+from .data import DataArray
 from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
 
 
@@ -169,7 +170,7 @@ class Gauss1D(object):
         self.logger.info(msg, extra=d)
 
 
-class Spectrum(object):
+class Spectrum(DataArray):
 
     """Spectrum class manages spectrum, optionally including a variance and a
     bad pixel mask.
@@ -216,209 +217,24 @@ class Spectrum(object):
                      Wavelength coordinates.
     """
 
-    def __init__(self, filename=None, ext=None, notnoise=False, shape=101,
-                 wave=None, unit=u.count, data=None, var=None):
-        """Create a Spectrum object.
+    _ndim = 1
+    _has_wave = True
 
-        Parameters
-        ----------
-        filename : string
-                   Possible FITS filename.
-        ext      : integer or (integer,integer) or string or (string,string)
-                   Number/name of the data extension or numbers/names
-                   of the data and variance extensions.
-        notnoise : boolean
-                   True if the noise Variance spectrum is not read (if it exists).
-                   Use notnoise=True to create spectrum without variance extension.
-        shape    : integer
-                   size of the spectrum. 101 by default.
-        wave     : :class:`mpdaf.obj.WaveCoord`
-                   Wavelength coordinates.
-        unit     : astropy.units
-                   Data unit type.
-        data     : float array
-                   Array containing the pixel values of the spectrum.
-                   None by default.
-        var      : float array
-                   Array containing the variance. None by default.
-        """
-        self.logger = logging.getLogger('mpdaf corelib')
-        self._clicks = None
+    def __init__(self, filename=None, ext=None, unit=u.count, data=None,
+                 var=None, wave=None, shape=None, copy=True, dtype=float,
+                 **kwargs):
+        super(Spectrum, self).__init__(
+            filename=filename, ext=ext, wave=wave, unit=unit, data=data,
+            var=var, copy=copy, dtype=dtype, shape=shape, **kwargs)
         self.spectrum = True
-        # possible FITS filename
-        self.filename = filename
-        if filename is not None:
-            f = pyfits.open(filename)
-            # primary header
-            hdr = f[0].header
-            if len(f) == 1:
-                self.primary_header = pyfits.Header()
-                # if the number of extension is 1,
-                # we just read the data from the primary header
-                # test if spectrum
-                if hdr['NAXIS'] != 1:
-                    raise IOError('Wrong dimension number: not a spectrum')
-                self.unit = u.Unit(hdr.get('BUNIT', 'count'))# * hdr.get('FSCALE', 1.0)
-                self.data_header = hdr
-                self.shape = hdr['NAXIS1']
-                self.data = np.array(f[0].data, dtype=float)
-                self.var = None
-                if wave is None:
-                    if 'CRPIX1' not in hdr or 'CRVAL1' not in hdr:
-                        self.wave = None
-                    else:
-                        self.wave = WaveCoord(hdr)
-                else:
-                    self.wave = wave.copy()
-                    if wave.shape is not None and wave.shape != self.shape:
-                        d = {'class': 'Spectrum', 'method': '__init__'}
-                        self.logger.warning('wavelength coordinates and data '
-                                            'have not the same dimension: %s',
-                                            'shape of WaveCoord object'
-                                            ' is modified', extra=d)
-                    self.wave.shape = self.shape
-            else:
-                self.primary_header = hdr
-                if ext is None:
-                    h = f['DATA'].header
-                    d = np.array(f['DATA'].data, dtype=float)
-                else:
-                    if is_int(ext) or isinstance(ext, str):
-                        n = ext
-                    else:
-                        n = ext[0]
-                    h = f[n].header
-                    d = np.array(f[n].data, dtype=float)
+        self._clicks = None
 
-                if h['NAXIS'] != 1:
-                    raise IOError('Wrong dimension number: not a spectrum')
-                self.unit = u.Unit(h.get('BUNIT', 'count'))
-                self.data_header = h
-                self.shape = h['NAXIS1']
-                self.data = d
-                if wave is None:
-                    if 'CRPIX1' not in h or 'CRVAL1' not in h:
-                        self.wave = None
-                    else:
-                        self.wave = WaveCoord(h)
-                else:
-                    self.wave = wave.copy()
-                    if wave.shape is not None and wave.shape != self.shape:
-                        d = {'class': 'Spectrum', 'method': '__init__'}
-                        self.logger.warning('wavelength coordinates and data '
-                                            'have not the same dimension: %s',
-                                            'shape of WaveCoord object '
-                                            'is modified', extra=d)
-                    self.wave.shape = self.shape
-                # STAT extension
-                self.var = None
-                if not notnoise:
-                    if ext is None:
-                        try:
-                            fstat = f['STAT']
-                        except:
-                            fstat = None
-                    else:
-                        try:
-                            n = ext[1]
-                            fstat = f[n]
-                        except:
-                            fstat = None
-                    if fstat is None:
-                        self.var = None
-                    else:
-                        if fstat.header['NAXIS'] != 1:
-                            raise IOError('Wrong dimension number '
-                                          'in STAT extension')
-                            if fstat.header['NAXIS1'] != self.shape:
-                                raise IOError('Number of points in STAT '
-                                              'not equal to DATA')
-                        self.var = np.array(fstat.data, dtype=float)
-                # DQ extension
-                try:
-                    mask = np.ma.make_mask(f['DQ'].data)
-                    self.data = np.ma.array(self.data, mask=mask)
-                except:
-                    pass
-            f.close()
+    @property
+    def shape(self):
+        if self._shape is not None:
+            return self._shape[0]
         else:
-            # possible data unit type
-            self.unit = unit
-            # possible FITS header instance
-            self.data_header = pyfits.Header()
-            self.primary_header = pyfits.Header()
-            # data
-            if data is None:
-                self.data = None
-                self.shape = shape
-            else:
-                self.data = np.array(data, dtype=float)
-                self.shape = data.shape[0]
-
-            if notnoise or var is None:
-                self.var = None
-            else:
-                self.var = np.array(var, dtype=float)
-            try:
-                if wave is not None:
-                    self.wave = wave.copy()
-                    if wave.shape is not None and wave.shape != self.shape:
-                        d = {'class': 'Spectrum', 'method': '__init__'}
-                        self.logger.warning('wavelength coordinates and data '
-                                            'have not the same dimension: %s',
-                                            'shape of WaveCoord object '
-                                            'is modified', extra=d)
-                    self.wave.shape = self.shape
-            except:
-                self.wave = None
-                d = {'class': 'Spectrum', 'method': '__init__'}
-                self.logger.warning("wavelength solution not copied", extra=d)
-        # Mask an array where invalid values occur (NaNs or infs).
-        if self.data is not None:
-            self.data = np.ma.masked_invalid(self.data)
-
-    def copy(self):
-        """Return a new copy of a Spectrum object."""
-        spe = Spectrum()
-        spe.filename = self.filename
-        spe.unit = self.unit
-        spe.data_header = pyfits.Header(self.data_header)
-        spe.primary_header = pyfits.Header(self.primary_header)
-        spe.shape = self.shape
-        try:
-            spe.data = self.data.copy()
-        except:
-            spe.data = None
-        try:
-            spe.var = self.var.__copy__()
-        except:
-            spe.var = None
-        try:
-            spe.wave = self.wave.copy()
-        except:
-            spe.wave = None
-        return spe
-
-    def clone(self, var=False):
-        """Return a new spectrum of the same shape and coordinates, filled
-        with zeros.
-
-        Parameters
-        ----------
-        var : boolean
-              Presence of the variance extension.
-        """
-        try:
-            wave = self.wave.copy()
-        except:
-            wave = None
-        if var is False:
-            spe = Spectrum(wave=wave, data=np.zeros(shape=self.shape),
-                           unit=self.unit)
-        else:
-            spe = Spectrum(wave=wave, data=np.zeros(shape=self.shape),
-                           var=np.zeros(shape=self.shape), unit=self.unit)
-        return spe
+            return self.data.shape[0]
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
         """ Return astropy.io.fits.ImageHDU corresponding to the DATA extension
@@ -468,10 +284,10 @@ class Spectrum(object):
                         d = {'class': 'Spectrum', 'method': 'write'}
                         self.logger.warning("%s not copied in data header",
                                         card.keyword, extra=d)
-        
+
         if self.unit is not None:
             imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
-        
+
         return imahdu
 
     def get_stat_hdu(self, name='STAT'):
@@ -491,7 +307,7 @@ class Spectrum(object):
             return None
         else:
             var = self.var.astype(np.float32)
-            hdr = self.wave.to_header()                           
+            hdr = self.wave.to_header()
             hdu = pyfits.ImageHDU(name=name, data=var, header=hdr)
             if self.unit is not None:
                 hdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
@@ -558,34 +374,6 @@ class Spectrum(object):
         warnings.simplefilter("default")
 
         self.filename = filename
-
-    def info(self):
-        """Print information."""
-        d = {'class': 'Spectrum', 'method': 'info'}
-        if self.filename != None:
-            msg = 'spectrum of %i elements (%s)' % (self.shape, self.filename)
-        else:
-            msg = 'spectrum of %i elements (no name)' % self.shape
-        self.logger.info(msg, extra=d)
-
-        data = '.data'
-        if self.data is None:
-            data = 'no data'
-        noise = '.var'
-        if self.var is None:
-            noise = 'no noise'
-        if self.unit is None:
-            unit = 'no unit'
-        else:
-            unit = "{}".format(self.unit)
-        msg = '%s (%s) , %s' % (data, unit, noise)
-        self.logger.info(msg, extra=d)
-
-        if self.wave is None:
-            msg = 'No wavelength solution'
-            self.logger.info(msg, extra=d)
-        else:
-            self.wave.info()
 
     def __le__(self, item):
         """Mask data array where greater than a given value (operator <=).
@@ -663,21 +451,17 @@ class Spectrum(object):
     def resize(self):
         """Resize the spectrum to have a minimum number of masked values."""
         if np.ma.count_masked(self.data) != 0:
-            ksel = np.where(self.data.mask == False)
+            ksel = np.where(~self.data.mask)
+            item = slice(ksel[0][0], ksel[0][-1] + 1, None)
+            self.data = self.data[item]
+            if self.var is not None:
+                self.var = self.var[item]
             try:
-                item = slice(ksel[0][0], ksel[0][-1] + 1, None)
-                self.data = self.data[item]
-                self.shape = self.data.shape[0]
-                if self.var is not None:
-                    self.var = self.var[item]
-                try:
-                    self.wave = self.wave[item]
-                except:
-                    self.wave = None
-                    d = {'class': 'Spectrum', 'method': 'resize'}
-                    self.logger.warning("wavelength solution not copied", extra=d)
+                self.wave = self.wave[item]
             except:
-                pass
+                self.wave = None
+                d = {'class': 'Spectrum', 'method': 'resize'}
+                self.logger.warning("wavelength solution not copied", extra=d)
 
     def __add__(self, other):
         """Operator +.
@@ -706,7 +490,7 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.spectrum: # spectrum1 + spectrum2 = spectrum3
                 typ=1
@@ -716,14 +500,14 @@ class Spectrum(object):
                     typ=3
             except:
                 typ=0
-            
+
         if typ>0:
             # coordinates
             if self.wave is not None and other.wave is not None \
             and not self.wave.isEqual(other.wave):
                 raise IOError('Operation forbidden for spectra '
                               'with different world coordinates')
-                        
+
         if typ==1:
             # spectrum1 + spectrum2 = spectrum3
             if other.data is None or self.shape != other.shape:
@@ -753,18 +537,18 @@ class Spectrum(object):
                                                        self.unit**2)
             # return
             return res
-        
+
         if typ==3:
             # spectrum + cube1 = cube2
             res = other.__add__(self)
             return res
-        
+
         if typ==0:
             try:
                 res = self.copy()
                 res.data = self.data + other
                 return res
-            except: 
+            except:
                 raise IOError('Operation forbidden')
 
     def __radd__(self, other):
@@ -797,7 +581,7 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.spectrum: # spectrum1 + spectrum2 = spectrum3
                 typ = 1
@@ -807,11 +591,11 @@ class Spectrum(object):
                     typ = 3
             except:
                 typ = 0
-        
+
         if typ==0:
             try:
                 res = self.copy()
-                res.data = self.data - other 
+                res.data = self.data - other
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -821,7 +605,7 @@ class Spectrum(object):
             and not self.wave.isEqual(other.wave):
                 raise IOError('Operation forbidden for spectra '
                               'with different world coordinates')
-                            
+
             if typ==1:
                 # spectrum1 + spectrum2 = spectrum3
                 if other.data is None or self.shape != other.shape:
@@ -856,7 +640,7 @@ class Spectrum(object):
                 if other.data is None or self.shape != other.shape[0]:
                     raise IOError('Operation forbidden for objects'
                                   ' with different sizes')
-                                
+
                 res = other.copy()
                 # data
                 if other.unit == self.unit:
@@ -879,13 +663,13 @@ class Spectrum(object):
                                                             self.unit**2,
                                                             other.unit**2)
                 return res
-                
-        
+
+
 
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.spectrum: # spectrum1 + spectrum2 = spectrum3
                 typ = 1
@@ -895,7 +679,7 @@ class Spectrum(object):
                     typ = 3
             except:
                 typ = 0
-                
+
         if typ==0:
             try:
                 res = self.copy()
@@ -905,7 +689,7 @@ class Spectrum(object):
                 raise IOError('Operation forbidden')
         else:
             return other.__sub__(self)
-        
+
 
     def __mul__(self, other):
         """ Operator \*.
@@ -936,7 +720,7 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.spectrum:
                 typ = 1
@@ -950,8 +734,8 @@ class Spectrum(object):
                         typ = 3
                 except:
                     typ = 0
-        
-        
+
+
         if typ==0:
             # spectrum1 * number = spectrum2
             # (spectrum2[k]=spectrum1[k]*number)
@@ -973,7 +757,7 @@ class Spectrum(object):
             and not self.wave.isEqual(other.wave):
                 raise IOError('Operation forbidden for spectra '
                               'with different world coordinates')
-                            
+
             res = self.copy()
             # data
             res.data = self.data * other.data
@@ -1029,7 +813,7 @@ class Spectrum(object):
         """
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.spectrum: # spectrum1 + spectrum2 = spectrum3
                 typ = 1
@@ -1039,8 +823,8 @@ class Spectrum(object):
                     typ = 3
             except:
                 typ = 0
-            
-        if typ==0:    
+
+        if typ==0:
             try:
                 # spectrum1 / number =
                 # spectrum2 (spectrum2[k]=spectrum1[k]/number)
@@ -1062,7 +846,7 @@ class Spectrum(object):
                 if other.data is None or self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
-                
+
                 res = self.copy()
                 # data
                 res.data = self.data / other.data
@@ -1086,7 +870,7 @@ class Spectrum(object):
                 # spectrum / cube1 = cube2
                 if other.data is None or self.shape != other.shape[0]:
                     raise IOError('Operation forbidden for objects '
-                                  'with different sizes')     
+                                  'with different sizes')
                 # data
                 res = other.copy()
                 res.data = self.data[:, np.newaxis, np.newaxis] \
@@ -1116,7 +900,7 @@ class Spectrum(object):
     def __rdiv__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
-        
+
         try:
             if other.spectrum: # spectrum1 + spectrum2 = spectrum3
                 typ = 1
@@ -1126,8 +910,8 @@ class Spectrum(object):
                     typ = 3
             except:
                 typ = 0
-            
-        if typ==0:    
+
+        if typ==0:
             try:
                 res = self.copy()
                 res.data = other / self.data
@@ -1161,7 +945,7 @@ class Spectrum(object):
         self.data = np.ma.sqrt(self.data)
         if self.var is not None:
             self.var = 3 * self.var / self.data.data ** 4
-        self.unit /= np.sqrt(self.unit.scale) 
+        self.unit /= np.sqrt(self.unit.scale)
 
     def sqrt(self):
         """Return a spectrum containing the positive
@@ -1244,7 +1028,7 @@ class Spectrum(object):
 
     def get_step(self, unit=None):
         """Return the wavelength step.
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1261,7 +1045,7 @@ class Spectrum(object):
 
     def get_start(self, unit=None):
         """Return the wavelength value of the first pixel.
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1278,7 +1062,7 @@ class Spectrum(object):
 
     def get_end(self, unit=None):
         """Return the wavelength value of the last pixel.
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1295,7 +1079,7 @@ class Spectrum(object):
 
     def get_range(self, unit=None):
         """Return the wavelength range (Lambda_min, Lambda_max).
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1314,7 +1098,7 @@ class Spectrum(object):
 #         """Return numpy masked array containing the flux multiplied by scaling
 #         factor."""
 #         return self.data * self.fscale
-    
+
 
     def __setitem__(self, key, other):
         """Set the corresponding part of data."""
@@ -1335,7 +1119,7 @@ class Spectrum(object):
                         self.data[key] = other.data
                     else:
                         self.data[key] = UnitMaskedArray(other.data, other.unit, self.unit)
-                    
+
             except:
                 raise IOError('Operation forbidden')
 
@@ -1527,13 +1311,11 @@ class Spectrum(object):
         """
         assert not np.sometrue(np.mod(self.shape, factor))
         # new size is an integer multiple of the original size
-        self.shape = self.shape / factor
-        self.data = \
-            np.ma.array(self.data.reshape(self.shape, factor).sum(1) / factor,
-                        mask=self.data.mask.reshape(self.shape, factor).sum(1))
+        sh = self.shape / factor
+        self.data = np.ma.array(self.data.reshape(sh, factor).sum(1) / factor,
+                                mask=self.data.mask.reshape(sh, factor).sum(1))
         if self.var is not None:
-            self.var = self.var.reshape(self.shape, factor).sum(1) \
-                / factor / factor
+            self.var = self.var.reshape(sh, factor).sum(1) / (factor * factor)
         try:
             self.wave.rebin(factor)
         except:
@@ -1590,7 +1372,6 @@ class Spectrum(object):
                     wave.shape = wave.shape + 2
                 except:
                     wave = None
-                self.shape = newshape
                 self.wave = wave
                 self.data = np.ma.masked_invalid(data)
                 self.var = var
@@ -1611,7 +1392,6 @@ class Spectrum(object):
                     wave.shape = wave.shape + 1
                 except:
                     wave = None
-                self.shape = newshape
                 self.wave = wave
                 self.data = np.ma.masked_invalid(data)
                 self.var = var
@@ -1633,7 +1413,6 @@ class Spectrum(object):
                     wave.shape = wave.shape + 1
                 except:
                     wave = None
-                self.shape = newshape
                 self.wave = wave
                 self.data = np.ma.masked_invalid(data)
                 self.var = var
@@ -1679,10 +1458,10 @@ class Spectrum(object):
         """
         assert not np.sometrue(np.mod(self.shape, factor))
         # new size is an integer multiple of the original size
-        self.shape = self.shape / factor
+        shape = self.shape / factor
         self.data = \
-            np.ma.array(np.ma.median(self.data.reshape(self.shape, factor), 1),
-                        mask=self.data.mask.reshape(self.shape, factor).sum(1))
+            np.ma.array(np.ma.median(self.data.reshape(shape, factor), 1),
+                        mask=self.data.mask.reshape(shape, factor).sum(1))
         self.var = None
         try:
             self.wave.rebin(factor)
@@ -1806,7 +1585,6 @@ class Spectrum(object):
                 self.var = None
 
         self.data = np.ma.masked_invalid(self.data)
-        self.shape = newshape
         self.wave = newwave
 
     def resample(self, step, start=None, shape=None,
@@ -1955,7 +1733,7 @@ class Spectrum(object):
             else:
                 l1 = self.wave.pixel(lmin, False, unit)
             i1 = max(0, int(l1))
-            
+
         if lmax is None:
             i2 = self.shape
             lmax = self.wave.coord(i2-0.5, unit=unit)
@@ -1970,10 +1748,10 @@ class Spectrum(object):
         d = self.wave.coord(-0.5+np.arange(i1, i2 + 1), unit=unit)
         d[0] = lmin
         d[-1] = lmax
-        
+
         if unit is None:
             unit = self.wave.unit
-            
+
         if u.angstrom in self.unit.bases and unit is not u.angstrom:
             try:
                 return np.sum(self.data[i1:i2] * ((np.diff(d)*unit).to(u.angstrom).value))* self.unit * u.angstrom
@@ -2118,7 +1896,7 @@ class Spectrum(object):
         out    : 1 or 2
                  1: the magnitude is returned,
                  2: the magnitude, mean flux and mean wavelength are returned.
-        
+
         Returns
         -------
         out : magnitude value (out=1)
@@ -2278,7 +2056,6 @@ class Spectrum(object):
                              'are outside the spectrum range')
 
         res = self.__getitem__(slice(i1, i2, 1))
-        self.shape = res.shape
         self.data = res.data
         self.wave = res.wave
         self.var = res.var
@@ -2972,7 +2749,7 @@ class Spectrum(object):
             wave = self.wave.coord(unit=unit)[imin:imax]
         v = [flux, lpeak, sigma_right, sigma_left]
         self.data[imin:imax] = self.data[imin:imax] + asym_gauss(v, wave)
-            
+
     def line_gauss_fit(self, lpeak, lmin, lmax, flux=None, fwhm=None,
                   cont=None, peak=False, spline=False, weight=True,
                   plot=False, plot_factor=10, unit=u.angstrom):
@@ -4024,11 +3801,11 @@ class Spectrum(object):
             self._clicks = None
             fig = plt.gcf()
             fig.canvas.stop_event_loop_default()
-            
+
     def rebin_factor(self, factor, margin='center'):
         raise DeprecationWarning('Using rebin_factor method is deprecated: Please use rebin_mean instead')
         return self.rebin_mean(factor, margin)
-    
+
     def rebin(self, step, start=None, shape=None,
               spline=False, notnoise=False, unit=u.angstrom):
         raise DeprecationWarning('Using rebin method is deprecated: Please use resample instead')
