@@ -1138,23 +1138,6 @@ class Spectrum(DataArray):
         self.wave = wave.copy()
         self.wave.shape = self.shape
 
-    def set_var(self, var=None):
-        """Set the variance array.
-
-        Parameters
-        ----------
-        var : float array
-              Input variance array.
-              If None, variance is set with zeros.
-        """
-        if var is None:
-            self.var = np.zeros(self.shape)
-        else:
-            if self.shape == np.shape(var)[0]:
-                self.var = var
-            else:
-                raise ValueError('var and data have not the same dimensions.')
-
     def mask(self, lmin=None, lmax=None, inside=True, unit=u.angstrom):
         """Mask the spectrum inside/outside [lmin,lmax].
 

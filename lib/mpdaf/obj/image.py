@@ -1337,24 +1337,6 @@ class Image(DataArray):
             self.logger.warning('world coordinates and data have not '
                                 'the same dimensions', extra=d)
 
-    def set_var(self, var):
-        """Sets the variance array.
-
-        Parameters
-        ----------
-        var : float array
-              Input variance array.
-              If None, variance is set with zeros.
-        """
-        if var is None:
-            self.var = np.zeros((self.shape[0], self.shape[1]))
-        else:
-            if self.shape[0] == np.shape(var)[0] \
-                    and self.shape[1] == np.shape(var)[1]:
-                self.var = var
-            else:
-                raise ValueError('var and data have not the same dimensions.')
-
     def mask(self, center, radius, unit_center=u.deg, unit_radius=u.arcsec, inside=True):
         """Masks values inside/outside the described region.
 

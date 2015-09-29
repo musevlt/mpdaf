@@ -1585,24 +1585,6 @@ class Cube(DataArray):
             self.wave = wave.copy()
             self.wave.shape = self.shape[0]
 
-    def set_var(self, var):
-        """Sets the variance array.
-
-        Parameters
-        ----------
-        var : float array
-              Input variance array. If None, variance is set with zeros.
-        """
-        if var is None:
-            self.var = np.zeros((self.shape[0], self.shape[1], self.shape[2]))
-        else:
-            if self.shape[0] == np.shape(var)[0] \
-                    and self.shape[1] == np.shape(var)[1] \
-                    and self.shape[2] == np.shape(var)[2]:
-                self.var = var
-            else:
-                raise ValueError('var and data have not the same dimensions.')
-
     def sum(self, axis=None, weights=None):
         """Returns the sum over the given axis.
 
