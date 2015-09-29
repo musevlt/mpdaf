@@ -506,33 +506,6 @@ class Image(DataArray):
 
         self.filename = filename
 
-    def info(self):
-        """Prints information."""
-        d = {'class': 'Image', 'method': 'info'}
-        if self.filename is None:
-            msg = '%i X %i image (no name)' % (self.shape[0], self.shape[1])
-        else:
-            msg = '%i X %i image (%s)' % (self.shape[0], self.shape[1],
-                                          self.filename)
-        self.logger.info(msg, extra=d)
-        data = '.data(%i,%i)' % (self.shape[0], self.shape[1])
-        if self.data is None:
-            data = 'no data'
-        noise = '.var(%i,%i)' % (self.shape[0], self.shape[1])
-        if self.var is None:
-            noise = 'no noise'
-        if self.unit is None:
-            unit = 'no unit'
-        else:
-            unit = "{}".format(self.unit)
-        msg = '%s (%s), %s' % (data, unit, noise)
-        self.logger.info(msg, extra=d)
-        if self.wcs is None:
-            msg = 'no world coordinates'
-            self.logger.info(msg, extra=d)
-        else:
-            self.wcs.info()
-
     def __le__(self, item):
         """Masks data array where greater than a given value (operator <=).
 

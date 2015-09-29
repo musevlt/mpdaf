@@ -6,6 +6,7 @@ import warnings
 
 from astropy import units as u
 from astropy.io import fits as pyfits
+from functools import partial
 from numpy import ma
 
 from .coords import WCS, WaveCoord
@@ -300,3 +301,31 @@ class DataArray(object):
         obj.data_header = pyfits.Header(self.data_header)
         obj.primary_header = pyfits.Header(self.primary_header)
         return obj
+
+    def info(self):
+        """Prints information."""
+        d = {'class': self.__class__.__name__, 'method': 'info'}
+        log_info = partial(self.logger.info, extra=d)
+
+        shape_str = [str(x) for x in self.shape]
+        log_info('%s %s (%s)', ' x '.join(shape_str),
+                 self.__class__.__name__, self.filename or 'no name')
+
+        data = ('no data' if self._data is None and self._data_ext is None
+                else '.data({})'.format(','.join(shape_str)))
+        noise = ('no noise' if self._var is None and self._var_ext is None
+                 else '.var({})'.format(','.join(shape_str)))
+        unit = 'no unit' if self.unit is None else self.unit
+        log_info('%s (%s) fscale=%g, %s', data, unit, self.fscale, noise)
+
+        if self._has_wcs:
+            if self.wcs is None:
+                log_info('no world coordinates for spatial direction')
+            else:
+                self.wcs.info()
+
+        if self._has_wave:
+            if self.wave is None:
+                log_info('no world coordinates for spectral direction')
+            else:
+                self.wave.info()

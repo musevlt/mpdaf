@@ -11,7 +11,6 @@ import warnings
 
 import astropy.units as u
 from astropy.io import fits as pyfits
-from functools import partial
 
 from .coords import WCS, WaveCoord
 from .data import DataArray
@@ -70,40 +69,7 @@ class iter_ima(object):
         return self
 
 
-class CubeBase(object):
-
-    """Base class for cubes."""
-
-    def info(self):
-        """Prints information."""
-        d = {'class': self.__class__.__name__, 'method': 'info'}
-        log_info = partial(self.logger.info, extra=d)
-
-        log_info('{1} X {2} X {3} cube ({0})'.format(
-            self.filename or 'no name', *self.shape))
-
-        data = ('no data' if self.data is None
-                else '.data({},{},{})'.format(*self.shape))
-        noise = ('no noise' if self.var is None
-                 else '.var({},{},{})'.format(*self.shape))
-        unit = 'no unit' if self.unit is None else self.unit
-        log_info('%s (%s), %s', data, unit, noise)
-
-        if self.wcs is None:
-            log_info('no world coordinates for spatial direction')
-        else:
-            self.wcs.info()
-
-        if self.wave is None:
-            log_info('no world coordinates for spectral direction')
-        else:
-            self.wave.info()
-
-        if len(self.ima) > 0:
-            log_info('.ima: %s', ', '.join(self.ima.keys()))
-
-
-class Cube(DataArray, CubeBase):
+class Cube(DataArray):
 
     """This class manages Cube objects.
 
@@ -188,6 +154,13 @@ class Cube(DataArray, CubeBase):
         for key, ima in self.ima:
             obj.ima[key] = ima.copy()
         return obj
+
+    def info(self):
+        """Prints information."""
+        super(Cube, self).info()
+        if len(self.ima) > 0:
+            d = {'class': self.__class__.__name__, 'method': 'info'}
+            self.logger.info('.ima: %s', ', '.join(self.ima.keys()), extra=d)
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
         """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
@@ -3190,7 +3163,7 @@ def _process_ima(arglist):
 
 
 
-class CubeDisk(CubeBase):
+class CubeDisk(DataArray):
 
     """Sometimes, MPDAF users may want to open fairly large datacubes (> 4 Gb
     or so). This can be difficult to handle with limited RAM. This class
