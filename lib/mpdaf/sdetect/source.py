@@ -364,7 +364,8 @@ class Source(object):
                 except:
                     ext = i
                 try:
-                    spectra[spe_name] = Spectrum(filename, ext=ext)
+                    spectra[spe_name] = Spectrum(filename=filename, copy=False,
+                                                 hdulist=hdulist, ext=ext)
                 except:
                     raise IOError('Impossible to open extension %s as a spectrum'%extname)
             #images
@@ -376,7 +377,8 @@ class Source(object):
                 except:
                     ext = i
                 try:
-                    images[ima_name] = Image(filename, ext=ext)
+                    images[ima_name] = Image(filename=filename, copy=False,
+                                             hdulist=hdulist, ext=ext)
                 except:
                     raise IOError('Impossible to open extension %s as an image'%extname)
             elif extname[:3] == 'CUB' and extname[-4:]=='DATA':
@@ -387,7 +389,8 @@ class Source(object):
                 except:
                     ext = i
                 try:
-                    cubes[cub_name] = Cube(filename, ext=ext, ima=False)
+                    cubes[cub_name] = Cube(filename=filename, hdulist=hdulist,
+                                           copy=False, ext=ext, ima=False)
                 except:
                     raise IOError('Impossible to open extension %s as a cube'%extname)
             elif extname[:3] == 'TAB':
