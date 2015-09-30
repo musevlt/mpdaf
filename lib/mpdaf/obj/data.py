@@ -270,9 +270,10 @@ class DataArray(object):
 
     @var.setter
     def var(self, value):
-        value = np.asarray(value)
-        if not np.array_equal(self.shape, value.shape):
-            raise ValueError('var and data have not the same dimensions.')
+        if value is not None:
+            value = np.asarray(value)
+            if not np.array_equal(self.shape, value.shape):
+                raise ValueError('var and data have not the same dimensions.')
         self._var = value
 
     @deprecated('Variance should now be set with the `.var` attribute')
