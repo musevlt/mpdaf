@@ -127,12 +127,12 @@ class Cube(DataArray):
     _has_wcs = True
     _has_wave = True
 
-    def __init__(self, filename=None, ext=None, notnoise=False, wcs=None,
-                 wave=None, unit=u.count, data=None, var=None,
-                 shape=None, ima=True, copy=True, dtype=float):
+    def __init__(self, filename=None, ext=None, wcs=None, wave=None,
+                 unit=u.count, data=None, var=None, ima=True, copy=True,
+                 dtype=float, **kwargs):
         super(Cube, self).__init__(
-            filename=filename, ext=ext, notnoise=notnoise, wcs=wcs, wave=wave,
-            unit=unit, data=data, var=var, copy=copy, dtype=dtype, shape=shape)
+            filename=filename, ext=ext, wcs=wcs, wave=wave, unit=unit,
+            data=data, var=var, copy=copy, dtype=dtype, **kwargs)
         self.cube = True
         self.ima = {}
 

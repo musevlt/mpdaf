@@ -92,9 +92,9 @@ class DataArray(object):
     _has_wcs = False
     _has_wave = False
 
-    def __init__(self, filename=None, ext=None, notnoise=False, unit=u.count,
-                 data=None, var=None, shape=None, copy=True, dtype=float,
-                 **kwargs):
+    def __init__(self, filename=None, hdulist=None, ext=None, notnoise=False,
+                 unit=u.count, data=None, var=None, shape=None,
+                 copy=True, dtype=float, **kwargs):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
@@ -119,7 +119,12 @@ class DataArray(object):
             if not is_valid_fits_file(filename):
                 raise IOError('Invalid file: %s' % filename)
 
-            hdulist = pyfits.open(filename)
+            if hdulist is None:
+                hdulist = pyfits.open(filename)
+                close_hdu = True
+            else:
+                close_hdu = False
+
             # primary header
             self.primary_header = hdulist[0].header
 
@@ -184,7 +189,8 @@ class DataArray(object):
                 #                       cunit, ctype, self._shape[0])
                 self.wave = WaveCoord(hdr)
 
-            hdulist.close()
+            if close_hdu:
+                hdulist.close()
         else:
             if data is not None:
                 # set mask=False to force the expansion of the mask array with
