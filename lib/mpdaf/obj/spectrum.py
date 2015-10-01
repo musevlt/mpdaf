@@ -2451,8 +2451,8 @@ class Spectrum(object):
             try:
                 fwhm = spec.fwhm(lpeak, cont0 * self.fscale, spline)
             except:
-                lpeak = l[d.argmin()]
-                fwhm = spec.fwhm(lpeak, cont0 * self.fscale, spline)
+                lpeak2 = l[d.argmin()]
+                fwhm = spec.fwhm(lpeak2, cont0 * self.fscale, spline)
         sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
 
         # initial gaussian integrated flux
