@@ -300,7 +300,7 @@ class Spectrum(object):
                     if 'CRPIX1' not in h or 'CRVAL1' not in h:
                         self.wave = None
                     else:
-                        self.wave = WaveCoord(hdr)
+                        self.wave = WaveCoord(h)
                 else:
                     self.wave = wave.copy()
                     if wave.shape is not None and wave.shape != self.shape:
