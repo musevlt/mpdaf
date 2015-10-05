@@ -186,7 +186,11 @@ class CubeList(object):
             self.cubes[0].primary_header, hdr,
             ('ORIGIN', 'TELESCOP', 'INSTRUME', 'RA', 'DEC', 'EQUINOX',
              'RADECSYS', 'EXPTIME', 'MJD-OBS', 'DATE-OBS', 'PI-COI',
-             'OBSERVER', 'OBJECT', 'ESO INS DROT POSANG', 'ESO INS MODE'))
+             'OBSERVER', 'OBJECT', 'ESO INS DROT POSANG', 'ESO INS MODE',
+             'ESO DET READ CURID', 'ESO INS TEMP11 VAL', 'ESO OBS ID',
+             'ESO OBS NAME', 'ESO OBS START', 'ESO TEL AIRM END',
+             'ESO TEL AIRM START', 'ESO TEL AMBI FWHM END',
+             'ESO TEL AMBI FWHM START'))
 
         if expnb is not None and 'EXPTIME' in hdr:
             hdr['EXPTIME'] = hdr['EXPTIME'] * expnb

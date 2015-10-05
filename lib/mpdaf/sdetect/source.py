@@ -665,14 +665,15 @@ class Source(object):
                 zmin, zmax = errz
             except:
                 raise ValueError,'Wrong type for errz in add_z'
-        if self.z is None and z!=-9999:
-            self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
+        if self.z is None:
+            if z!=-9999:
+                self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
                            rows=[[desc, z, zmin, zmax]],
                            dtype=('S20', 'f6', 'f6', 'f6'),
                            masked=True)
-            self.z['Z'].format = '%.6f'
-            self.z['Z_MIN'].format = '%.6f'
-            self.z['Z_MAX'].format = '%.6f'
+                self.z['Z'].format = '%.6f'
+                self.z['Z_MIN'].format = '%.6f'
+                self.z['Z_MAX'].format = '%.6f'
         else:
             if desc in self.z['Z_DESC']:
                 if z!=-9999:
@@ -685,10 +686,11 @@ class Source(object):
             else:
                 if z!=-9999:
                     self.z.add_row([desc, z, zmin, zmax])
-                
-        self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
-        self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
-        self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
+           
+        if self.z is not None:     
+            self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
+            self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
+            self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
 
     def add_mag(self, band, m, errm):
         """Add a magnitude value to the mag table.
@@ -873,7 +875,7 @@ class Source(object):
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
         
-    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8, margin=10., fband=3.):
+    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
         """Create narrow band images from a redshift value and a catalog of lines.
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
@@ -904,6 +906,11 @@ class Source(object):
                  If None, the size of the white image extension is taken if it exists.
         width  : float
                  Angstrom total width.
+        is_sum       : boolean
+                       if True the sum is computes, otherwise this is the
+                       average.
+        subtract_off : boolean
+                       If True, subtracting off nearby data.
         margin : float
                  This off-band is offseted by margin wrt narrow-band limit.
         fband  : float
@@ -942,9 +949,9 @@ class Source(object):
                     tags = all_tags[useful]
                     for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
                         self.logger.info('Doing MUSE_%s'%tag, extra=d)
-                        self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), subtract_off=True, margin=margin, fband=fband)
+                        self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum, subtract_off=subtract_off, margin=margin, fband=fband)
 
-    def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None, width=8, margin=10., fband=3.):
+    def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None, width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
         """Create narrow band image around an observed wavelength value.
 
         Narrow-band images are saved in self.images['MUSE_*'].
@@ -963,10 +970,16 @@ class Source(object):
                 If None, the size of the white image extension is taken if it exists.
         width : float
                  Angstrom total width
+        is_sum       : boolean
+                       if True the sum is computes, otherwise this is the
+                       average.
+        subtract_off : boolean
+                       If True, subtracting off nearby data.
         margin       : float
                        This off-band is offseted by margin wrt narrow-band limit.
         fband        : float
                        The size of the off-band is fband*narrow-band width.
+        
         """
         d = {'class': 'Source', 'method': 'add_narrow_band_images'}
         self.logger.info('Doing %s'%tag, extra=d)
@@ -980,12 +993,13 @@ class Source(object):
         l1 = lbda-width/2.0
         l2 = lbda+width/2.0
         lmin, lmax= cube.wave.get_range()
-        if l1<lmin or l2>lmax:
-            self.logger.info('Wavelength range outside cube interval - nothing done', extra=d)
-            return
+        if l1<lmin:
+            l1=lmin
+        if l2>lmax:
+            l2=lmax
         
         subcub = cube.subcube((self.dec, self.ra), size)
-        self.images[tag] = subcub.get_image(wave=(l1, l2), subtract_off=True, margin=margin, fband=fband)
+        self.images[tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum, subtract_off=subtract_off, margin=margin, fband=fband)
 
 
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
@@ -1400,7 +1414,7 @@ class SourceList(list):
         list< :class:`mpdaf.sdetect.Source` >
     """
 
-    def write(self, name, path='.', overwrite=True):
+    def write(self, name, path='.', overwrite=True, fmt='default'):
         """ Create the directory and saves all sources files and the catalog file in this folder.
 
         path/name.fits: catalog file
@@ -1439,7 +1453,7 @@ class SourceList(list):
             os.remove(fcat)
             
         from .catalog import Catalog
-        cat = Catalog.from_sources(self)
+        cat = Catalog.from_sources(self, fmt)
         try:
             cat.write(fcat)
             # For FITS tables, the maximum number of fields is 999

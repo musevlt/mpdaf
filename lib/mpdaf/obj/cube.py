@@ -3315,6 +3315,11 @@ class Cube(CubeBase):
         else:
             k1 = int(k1)
         k2 = int(k2)
+        
+        if k1<0:
+            k1=0
+        if k2>(self.shape[0]-1):
+            k2=self.shape[0]-1
 
         msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2)
         self.logger.info(msg, extra=d)
