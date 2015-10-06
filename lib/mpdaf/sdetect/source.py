@@ -310,7 +310,6 @@ class Source(object):
 
         return cls(header, lines, mag, z, spectra, images, cubes, tables)
 
-
     @classmethod
     def from_file(cls, filename):
         """Source constructor from a FITS file.
@@ -392,7 +391,7 @@ class Source(object):
                     raise IOError('Impossible to open extension %s as a table'%extname)
         hdulist.close()
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables)
-    
+
     @classmethod
     def _light_from_file(cls, filename):
         """Source constructor from a FITS file.
@@ -431,7 +430,7 @@ class Source(object):
                     z = Table(hdu.data, masked=True)
                 except:
                     raise IOError('Impossible to open extension %s as a table'%extname)
-            
+
             elif extname[:3] == 'TAB':
                 try:
                     tables[extname[4:]] = Table(hdu.data, masked=True)
@@ -439,7 +438,6 @@ class Source(object):
                     raise IOError('Impossible to open extension %s as a table'%extname)
         hdulist.close()
         return cls(hdr, lines, mag, z, None, None, None, tables)
-
 
     def write(self, filename):
         """Write the source object in a FITS file
@@ -516,14 +514,13 @@ class Source(object):
         """Print information.
         """
         d = {'class': 'Source', 'method': 'info'}
-        for l in repr(self.header).split('\n'):
-            if l.split()[0] != 'SIMPLE' and l.split()[0] != 'BITPIX' and \
-            l.split()[0] != 'NAXIS' and l.split()[0] != 'EXTEND' and \
-            l.split()[0] != 'DATE' and l.split()[0] != 'AUTHOR':
-                self.logger.info(l, extra=d)
+        for card in self.header.cards:
+            if card[0] not in ('SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
+                               'AUTHOR'):
+                self.logger.info(card, extra=d)
         print '\n'
         for key, spe in self.spectra.iteritems():
-            msg = 'spectra[\'%s\']'%key
+            msg = 'spectra[\'%s\']' % key
             if spe.wave.cunit is None:
                 unit = ''
             else:
@@ -591,11 +588,10 @@ class Source(object):
     def __setattr__(self, item, value):
         """Map attributes to values.
         """
-        if item=='header' or item=='logger' or \
-           item=='lines' or item=='mag' or item=='z' or \
-           item=='cubes' or item=='images' or item=='spectra' \
-           or item=='tables':
-            return dict.__setattr__(self, item, value)
+        if item in ('header', 'logger', 'lines', 'mag', 'z', 'cubes', 'images',
+                    'spectra', 'tables'):
+            # return dict.__setattr__(self, item, value)
+            super(Source, self).__setattr__(item, value)
         else:
             self.header[item] = value
 
@@ -686,8 +682,8 @@ class Source(object):
             else:
                 if z!=-9999:
                     self.z.add_row([desc, z, zmin, zmax])
-           
-        if self.z is not None:     
+
+        if self.z is not None:
             self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
             self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
             self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
@@ -756,16 +752,16 @@ class Source(object):
                                                           mask=np.ones(nlines)),
                                        name=col, dtype=typ)
                     self.lines.add_column(col)
-                    
+
             if match is not None:
                 matchkey, matchval = match
-            
+
             if match is not None and matchkey in self.lines.colnames:
                 l = np.argwhere(self.lines[matchkey]==matchval)
                 if len(l) > 0:
                     for col, val in zip(cols, values):
                         self.lines[col][l] = val
-            else:            
+            else:
                 # add new row
                 ncol = len(self.lines.colnames)
                 row = [None]*ncol
@@ -795,9 +791,9 @@ class Source(object):
                 The total size to extract in arcseconds.
                 If size is a float, it corresponds to the size along the delta axis and the image is square.
                 If None, the size of the white image extension is taken if it exists.
-        minsize : float 
+        minsize : float
                 The minimum size of the output image in arcseconds.
-        rotate : bool 
+        rotate : bool
                 if True, the image is rotated to the same PA as the white-light image
         """
         d = {'class': 'Source', 'method': 'add_image'}
@@ -874,7 +870,7 @@ class Source(object):
         """
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
-        
+
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
         """Create narrow band images from a redshift value and a catalog of lines.
 
@@ -925,7 +921,7 @@ class Source(object):
                 except:
                     raise IOError('Size of the image (in arcsec) is required')
                 size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
-                
+
             subcub = cube.subcube((self.dec, self.ra), size)
 
 
@@ -965,7 +961,7 @@ class Source(object):
         lbda  : float
                 Observed wavelength value in angstrom.
         size  : float
-                The total size to extract in arcseconds.    
+                The total size to extract in arcseconds.
                 If size is a float, it corresponds to the size along the delta axis and the image is square.
                 If None, the size of the white image extension is taken if it exists.
         width : float
@@ -979,7 +975,7 @@ class Source(object):
                        This off-band is offseted by margin wrt narrow-band limit.
         fband        : float
                        The size of the off-band is fband*narrow-band width.
-        
+
         """
         d = {'class': 'Source', 'method': 'add_narrow_band_images'}
         self.logger.info('Doing %s'%tag, extra=d)
@@ -989,7 +985,7 @@ class Source(object):
             except:
                 raise IOError('Size of the image (in arcsec) is required')
             size = white_ima.get_step()[0] * 3600 * white_ima.shape[0]
-        
+
         l1 = lbda-width/2.0
         l2 = lbda+width/2.0
         lmin, lmax= cube.wave.get_range()
@@ -997,7 +993,7 @@ class Source(object):
             l1=lmin
         if l2>lmax:
             l2=lmax
-        
+
         subcub = cube.subcube((self.dec, self.ra), size)
         self.images[tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum, subtract_off=subtract_off, margin=margin, fband=fband)
 
@@ -1407,8 +1403,8 @@ class Source(object):
             wavelist = self.lines[lines]
             for lbda in wavelist:
                 ax.axvline(lbda, color='r')
-        return 
-    
+        return
+
 class SourceList(list):
     """
         list< :class:`mpdaf.sdetect.Source` >
@@ -1451,7 +1447,7 @@ class SourceList(list):
         fcat = '%s/%s.fits'%(path, name)
         if overwrite and os.path.isfile(fcat) :
             os.remove(fcat)
-            
+
         from .catalog import Catalog
         cat = Catalog.from_sources(self, fmt)
         try:
