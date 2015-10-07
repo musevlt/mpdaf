@@ -278,7 +278,9 @@ class DataArray(object):
     def var(self, value):
         if value is not None:
             value = np.asarray(value)
-            if not np.array_equal(self.shape, value.shape):
+            # workaround for spectrum
+            shape = (self.shape, ) if np.isscalar(self.shape) else self.shape
+            if not np.array_equal(shape, value.shape):
                 raise ValueError('var and data have not the same dimensions.')
         self._var = value
 
@@ -325,7 +327,8 @@ class DataArray(object):
         d = {'class': self.__class__.__name__, 'method': 'info'}
         log_info = partial(self.logger.info, extra=d)
 
-        shape_str = [str(x) for x in self.shape]
+        shape = (self.shape, ) if np.isscalar(self.shape) else self.shape
+        shape_str = [str(x) for x in shape]
         log_info('%s %s (%s)', ' x '.join(shape_str),
                  self.__class__.__name__, self.filename or 'no name')
 
