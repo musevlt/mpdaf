@@ -137,6 +137,21 @@ def dms2deg(x):
     return deg
 
 
+def wcs_from_header(hdr, naxis=None):
+    try:
+        # WCS object from data header
+        return pywcs.WCS(hdr, naxis=naxis)
+    except ValueError as e:
+        # Workaround for https://github.com/astropy/astropy/issues/4089
+        logger = logging.getLogger('mpdaf corelib')
+        logger.warning('Failed to create WCS object: "%s". Trying to fix the '
+                       'header', e)
+        for key in ('WAT0_001', 'WAT1_001', 'WAT2_001'):
+            if key in hdr:
+                del hdr[key]
+        return pywcs.WCS(hdr, naxis=naxis)
+
+
 class WCS(object):
 
     """WCS class manages world coordinates in spatial direction (pywcs package
@@ -212,7 +227,7 @@ class WCS(object):
         """
         self.logger = logging.getLogger('mpdaf corelib')
         if hdr is not None:
-            self.wcs = pywcs.WCS(hdr, naxis=2)  # WCS object from data header
+            self.wcs = wcs_from_header(hdr, naxis=2)
             try:
                 self.naxis1 = hdr['NAXIS1']
                 self.naxis2 = hdr['NAXIS2']
@@ -293,8 +308,8 @@ class WCS(object):
         d = {'class': 'WCS', 'method': 'info'}
         try:
             dy, dx = self.get_step(unit=u.arcsec)
-            sizex = dx * self.naxis1 #ra
-            sizey = dy * self.naxis2 #dec
+            sizex = dx * self.naxis1  # ra
+            sizey = dy * self.naxis2  # dec
             # center in sexadecimal
             xc = (self.naxis1 - 1) / 2.
             yc = (self.naxis2 - 1) / 2.
@@ -302,22 +317,19 @@ class WCS(object):
             sexa = deg2sexa(pixsky)
             ra = sexa[0][1]
             dec = sexa[0][0]
-            msg = 'center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '\
-                'step in arcsec:(%0.3f,%0.3f) rot:%0.1f deg' % (dec, ra,
-                                                            sizey, sizex,
-                                                            dy, dx,
-                                                            self.get_rot())
+            msg = ('center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '
+                   'step in arcsec:(%0.3f,%0.3f) rot:%0.1f deg') % (
+                       dec, ra, sizey, sizex, dy, dx, self.get_rot())
         except:
-            pixcrd = [[0, 0], [self.naxis2-1, self.naxis1-1]]
+            pixcrd = [[0, 0], [self.naxis2 - 1, self.naxis1 - 1]]
             pixsky = self.pix2sky(pixcrd)
             dy, dx = self.get_step()
-            msg = 'spatial coord (%s): min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '\
-                'step:(%0.1f,%0.1f) rot:%0.1f deg' % ("{}".format(self.get_cunit1()),
-                                                  pixsky[0, 0], pixsky[0, 1],
-                                                  pixsky[1, 0], pixsky[1, 1],
-                                                  dy, dx, self.get_rot())
+            msg = ('spatial coord (%s): min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '
+                   'step:(%0.1f,%0.1f) rot:%0.1f deg') % (
+                       "{}".format(self.get_cunit1()),
+                       pixsky[0, 0], pixsky[0, 1], pixsky[1, 0], pixsky[1, 1],
+                       dy, dx, self.get_rot())
         self.logger.info(msg, extra=d)
-        
 
     def to_header(self):
         """Generate a pyfits header object with the WCS information."""
@@ -326,20 +338,19 @@ class WCS(object):
         if has_cd:
             for c in ['1_1', '1_2', '2_1', '2_2']:
                 try:
-                    val = hdr['PC'+c]
-                    del hdr['PC'+c]
+                    val = hdr['PC' + c]
+                    del hdr['PC' + c]
                 except KeyError:
-                    if c=='1_1' or c == '2_2':
+                    if c == '1_1' or c == '2_2':
                         val = 1.
                     else:
                         val = 0.
-                hdr['CD'+c] = val
+                hdr['CD' + c] = val
         # naxis
-        if self.naxis1!=0 and self.naxis2!=0:
+        if self.naxis1 != 0 and self.naxis2 != 0:
             hdr['NAXIS1'] = self.naxis1
             hdr['NAXIS2'] = self.naxis2
         return hdr
-
 
     def sky2pix(self, x, nearest=False, unit=None):
         """Convert world coordinates (dec,ra) to pixel coordinates.
@@ -365,7 +376,7 @@ class WCS(object):
             x = x.reshape(1, 2)
         elif len(x.shape) != 2 or x.shape[1] != 2:
             raise IOError('invalid input coordinates for sky2pix')
-        
+
         if unit is not None:
             x[:, 1] = ((x[:, 1] * unit).to(self.get_cunit1())).value
             x[:, 0] = ((x[:, 0] * unit).to(self.get_cunit2())).value
@@ -389,7 +400,7 @@ class WCS(object):
                 An (n,2) array of pixel coordinates (python notation).
         unit : astropy.units
                 type of the world coordinates
-                
+
         Returns
         -------
         out : (n,2) array of dec- and ra- world coordinates.
@@ -404,7 +415,7 @@ class WCS(object):
         if unit is not None:
             ra = (ra * self.get_cunit1()).to(unit).value
             dec = (dec * self.get_cunit2()).to(unit).value
-            
+
         return np.array([dec, ra]).T
 
     def isEqual(self, other):
@@ -482,7 +493,7 @@ class WCS(object):
 
     def get_step(self, unit=None):
         """Return [dDec,dRa].
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -498,7 +509,7 @@ class WCS(object):
                 dy = cdelt[1] * np.sqrt(pc[1, 0] ** 2 + pc[1, 1] ** 2)
             except:
                 raise IOError('No standard WCS')
-            
+
         if unit:
             dx = (dx * self.get_cunit1()).to(unit).value
             dy = (dy * self.get_cunit2()).to(unit).value
@@ -506,11 +517,11 @@ class WCS(object):
 
     def get_range(self, unit=None):
         """Return [ [dec_min,ra_min], [dec_max,ra_max] ]
-        
+
         Parameters
         ----------
         unit : astropy.units
-                type of the world coordinates 
+                type of the world coordinates
         """
         pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1],
                   [self.naxis2 - 1, self.naxis1 - 1]]
@@ -519,7 +530,7 @@ class WCS(object):
 
     def get_start(self, unit=None):
         """Return [dec,ra] corresponding to pixel (0,0).
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -531,7 +542,7 @@ class WCS(object):
 
     def get_end(self, unit=None):
         """Return [dec,ra] corresponding to pixel (-1,-1).
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -543,7 +554,7 @@ class WCS(object):
 
     def get_rot(self, unit=u.deg):
         """Return the rotation angle.
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -599,7 +610,7 @@ class WCS(object):
 
     def set_crval1(self, x, unit=None):
         """CRVAL1 setter (value of the reference pixel on the first axis).
-        
+
         Parameters
         ----------
         x    : float
@@ -615,7 +626,7 @@ class WCS(object):
 
     def set_crval2(self, x, unit=None):
         """CRVAL2 setter (value of the reference pixel on the second axis).
-        
+
         Parameters
         ----------
         x    : float
@@ -628,23 +639,23 @@ class WCS(object):
         else:
             self.wcs.wcs.crval[1] = (x * unit).to(self.get_cunit2()).value
         self.wcs.wcs.set()
-        
+
     def set_step(self, step, unit=None):
-        """Update the step in the CD matrix or in the PC matrix 
+        """Update the step in the CD matrix or in the PC matrix
         """
         if unit is not None:
             step[0] = (step[0] * unit).to(self.get_cunit2()).value
             step[1] = (step[1] * unit).to(self.get_cunit1()).value
-            
+
         theta = self.get_rot()
-        if np.abs(theta)>1E-3: 
+        if np.abs(theta) > 1E-3:
             self.rotate(-theta)
         if self.is_deg():  # in decimal degree
             self.wcs.wcs.cd = np.array([[-step[1], 0], [0, step[0]]])
         else:   # in pixel or arcsec
             self.wcs.wcs.cd = np.array([[step[1], 0], [0, step[0]]])
         self.wcs.wcs.set()
-        if np.abs(theta)>1E-3: 
+        if np.abs(theta) > 1E-3:
             self.rotate(theta)
 
     def get_naxis1(self):
@@ -665,7 +676,7 @@ class WCS(object):
 
     def get_crval1(self, unit=None):
         """CRVAL1 getter (value of the reference pixel on the first axis).
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -678,7 +689,7 @@ class WCS(object):
 
     def get_crval2(self, unit=None):
         """CRVAL2 getter (value of the reference pixel on the second axis).
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -688,11 +699,11 @@ class WCS(object):
             return self.wcs.wcs.crval[1]
         else:
             return (self.wcs.wcs.crval[1] * self.get_cunit2()).to(unit).value
-    
+
     def get_cunit1(self):
         """Return the unit of the coordinate along the first axis."""
         return self.wcs.wcs.cunit[0]
-    
+
     def get_cunit2(self):
         """Return the unit of the coordinate along the 2nd axis."""
         return self.wcs.wcs.cunit[1]
@@ -746,7 +757,7 @@ class WCS(object):
             if start is not None:
                 start[0] = (start[0] * unit).to(self.get_cunit2()).value
                 start[1] = (start[1] * unit).to(self.get_cunit1()).value
-            
+
         cdelt = self.get_step()
         if start is None:
             xc = 0
@@ -763,8 +774,8 @@ class WCS(object):
         res.set_crval2(start[0], unit=None)
         res.set_step(step, unit=None)
         res.naxis1 = int(np.ceil((self.naxis1 * cdelt[1] - start[1] + old_start[1]) / step[1]))
-        res.naxis2 = int(np.ceil((self.naxis2 * cdelt[0] - start[0] + old_start[0])/ step[0]))
-        
+        res.naxis2 = int(np.ceil((self.naxis2 * cdelt[0] - start[0] + old_start[0]) / step[0]))
+
         return res
 
     def new_step(self, factor):
@@ -779,8 +790,8 @@ class WCS(object):
                 self.wcs.wcs.set()
             except:
                 raise StandardError("problem in wcs resampling")
-        self.naxis1 = int(np.ceil(self.naxis1/factor[1]))
-        self.naxis2 = int(np.ceil(self.naxis2/factor[0]))
+        self.naxis1 = int(np.ceil(self.naxis1 / factor[1]))
+        self.naxis2 = int(np.ceil(self.naxis2 / factor[0]))
 
     def rebin(self, factor):
         """Rebin to a new coordinate system.
@@ -914,19 +925,18 @@ class WaveCoord(object):
                 Size of spectrum (no mandatory).
         """
         self.logger = logging.getLogger('mpdaf corelib')
-        
+
         if hdr is not None:
             try:
-                n =  hdr['NAXIS']
-                self.shape = hdr['NAXIS%d'%n]
+                n = hdr['NAXIS']
+                self.shape = hdr['NAXIS%d' % n]
             except:
                 n = hdr['WCSAXES']
                 self.shape = None
-            if n==1:
-                self.wcs = pywcs.WCS(hdr).sub([1])
+            if n == 1:
+                self.wcs = wcs_from_header(hdr).sub([1])
             else:
-                self.wcs = pywcs.WCS(hdr).sub([3])
-                #self.wcs = pywcs.WCS(hdr).sub(['spectral'])
+                self.wcs = wcs_from_header(hdr).sub([3])
             if shape is not None:
                 self.shape = shape
         else:
@@ -941,7 +951,9 @@ class WaveCoord(object):
 
     def copy(self):
         """Copie WaveCoord object in a new one and returns it."""
-        out = WaveCoord(cunit=u.nm) #remove the  UnitsWarning: The unit 'Angstrom' has been deprecated in the FITS standard.
+        # remove the  UnitsWarning: The unit 'Angstrom' has been deprecated in
+        # the FITS standard.
+        out = WaveCoord(cunit=u.nm)
         out.wcs = self.wcs.deepcopy()
         out.shape = self.shape
         return out
@@ -956,30 +968,30 @@ class WaveCoord(object):
                 msg = 'wavelength: min:%0.2f step:%0.2f angstrom' % (start, step)
             else:
                 end = self.get_end(unit=u.angstrom)
-                msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f angstrom' % \
-                (start, end, step)
+                msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f angstrom' % (
+                    start, end, step)
         except:
             start = self.get_start()
             step = self.get_step()
             if self.shape is None:
-                msg = 'wavelength: min:%0.2f step:%0.2f %s' % (start, step,
-                                                           "{}".format(self.get_cunit()))
+                msg = 'wavelength: min:%0.2f step:%0.2f %s' % (
+                    start, step, "{}".format(self.get_cunit()))
             else:
                 end = self.get_end()
-                msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % \
-                (start, end, step, "{}".format(self.get_cunit()))
+                msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % (
+                    start, end, step, "{}".format(self.get_cunit()))
         self.logger.info(msg, extra=d)
- 
+
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""
         if not isinstance(other, WaveCoord):
             return False
- 
+
         l1 = self.coord(0)
         l2 = other.coord(0, unit=self.get_cunit())
         return (self.shape == other.shape and
                 np.allclose(l1, l2, atol=1E-2, rtol=0) and
-                np.allclose(self.get_step(),other.get_step(unit=self.get_cunit()),atol=1E-2, rtol=0) and
+                np.allclose(self.get_step(), other.get_step(unit=self.get_cunit()), atol=1E-2, rtol=0) and
                 self.wcs.wcs.ctype[0] == other.wcs.wcs.ctype[0])
 
     def coord(self, pixel=None, unit=None):
@@ -1080,12 +1092,12 @@ class WaveCoord(object):
         -------
         out : WaveCoord
         """
-        
+
         if unit is not None:
             step = (step * unit).to(self.get_cunit()).value
             if start is not None:
                 start = (start * unit).to(self.get_cunit()).value
-            
+
         cdelt = self.get_step()
         if start is None:
             pix0 = self.coord(0)
@@ -1104,10 +1116,10 @@ class WaveCoord(object):
             except:
                 raise IOError('No standard WCS')
         res.wcs.wcs.set()
-        
+
         res.shape = int(np.ceil((self.shape * cdelt - start + old_start) / step))
         return res
-    
+
     def rebin(self, factor):
         """Rebin to a new coordinate system (in place).
 
@@ -1140,7 +1152,7 @@ class WaveCoord(object):
 
     def get_step(self, unit=None):
         """Returns the step in wavelength.
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1155,7 +1167,7 @@ class WaveCoord(object):
             try:
                 cdelt = self.wcs.wcs.get_cdelt()[0]
                 pc = self.wcs.wcs.get_pc()[0, 0]
-                
+
                 if unit is None:
                     return cdelt * pc
                 else:
@@ -1165,7 +1177,7 @@ class WaveCoord(object):
 
     def get_start(self, unit=None):
         """Return the value of the first pixel.
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1175,7 +1187,7 @@ class WaveCoord(object):
 
     def get_end(self, unit=None):
         """Return the value of the last pixel.
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1184,12 +1196,11 @@ class WaveCoord(object):
         if self.shape is None:
             raise IOError("wavelength coordinates without dimension")
         else:
-            return self.coord(self.shape-1, unit)
-            
+            return self.coord(self.shape - 1, unit)
 
     def get_range(self, unit=None):
         """Return the wavelength range [Lambda_min,Lambda_max].
-        
+
         Parameters
         ----------
         unit : astropy.units
@@ -1199,14 +1210,14 @@ class WaveCoord(object):
             raise IOError("wavelength coordinates without dimension")
         else:
             return self.coord([0, self.shape - 1], unit)
-            
+
     def get_crpix(self):
         """CRPIX getter (reference pixel on the wavelength axis)."""
         return self.wcs.wcs.crpix[0]
-            
+
     def get_crval(self, unit=None):
         """CRVAL getter (value of the reference pixel on the wavelength axis).
-        
+
         Parameters:
         x : float
             value of the reference pixel on the wavelength axis
@@ -1216,27 +1227,26 @@ class WaveCoord(object):
         if unit is None:
             return self.wcs.wcs.crval[0]
         else:
-            return (self.wcs.wcs.crval[0]*self.get_cunit()).to(unit).value
+            return (self.wcs.wcs.crval[0] * self.get_cunit()).to(unit).value
 
     def get_cunit(self):
         """Return the unit of wavelength.
         """
         return self.wcs.wcs.cunit[0]
-    
+
     def get_ctype(self):
         """Return the type of wavelength coordinates.
         """
         return self.wcs.wcs.ctype[0]
-    
+
     def to_header(self):
         """Generate a pyfits header object with the WCS information."""
         hdr = self.wcs.to_header()
         hdr['NAXIS'] = 1
         hdr['NAXIS1'] = self.shape
         return hdr
-    
+
     def set_crpix(self, x):
         """CRPIX1 setter (reference pixel on the first axis)."""
         self.wcs.wcs.crpix[0] = x
         self.wcs.wcs.set()
-    
