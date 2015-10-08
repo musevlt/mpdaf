@@ -47,9 +47,6 @@ class DataArray(object):
     ext      : integer or (integer,integer) or string or (string,string)
                 Number/name of the data extension
                 or numbers/names of the data and variance extensions.
-    notnoise : boolean
-                True if the noise Variance cube is not read (if it exists).
-                Use notnoise=True to create cube without variance extension.
     shape    : integer or (integer,integer,integer)
                 Lengths of data in Z, Y and X. Python notation is used
                 (nz,ny,nx). If data is not None, its shape is used instead.
@@ -110,10 +107,14 @@ class DataArray(object):
         self.data_header = pyfits.Header()
         self.primary_header = pyfits.Header()
 
-        # FIXME: Deprecate and remove shape, fscale and notnoise
+        # FIXME: Deprecate and remove shape and notnoise
         if shape is not None:
             warnings.warn('The shape parameter is no more used, it is derived '
                           'from the data instead', MpdafWarning)
+
+        if notnoise is not None:
+            warnings.warn('The notnoise parameter is no more used, the '
+                          'variance wll be read if necessary', MpdafWarning)
 
         if filename is not None:
             if not is_valid_fits_file(filename):
@@ -351,7 +352,6 @@ class DataArray(object):
             else:
                 self.wave.info()
 
-    # def get_np_data(self):
-    #     """Returns numpy masked array containing the flux multiplied by
-    #     scaling factor."""
-    #     return self.data * self.fscale
+    @deprecated('Data should now be set with the `.data` attribute')
+    def get_np_data(self):
+        return self.data

@@ -80,9 +80,6 @@ class Cube(DataArray):
     ext      : integer or (integer,integer) or string or (string,string)
                 Number/name of the data extension
                 or numbers/names of the data and variance extensions.
-    notnoise : boolean
-                True if the noise Variance cube is not read (if it exists).
-                Use notnoise=True to create cube without variance extension.
     shape    : integer or (integer,integer,integer)
                 Lengths of data in Z, Y and X. Python notation is used
                 (nz,ny,nx). If data is not None, its shape is used instead.
@@ -139,13 +136,10 @@ class Cube(DataArray):
         if filename is not None and ima:
             hdulist = pyfits.open(filename)
             for hdu in hdulist:
-                try:
-                    hdr = hdu.header
-                    if hdr['NAXIS'] == 2 and hdr['XTENSION'] == 'IMAGE':
-                        self.ima[hdr.get('EXTNAME')] = Image(
-                            filename, ext=hdr.get('EXTNAME'), notnoise=True)
-                except:
-                    pass
+                hdr = hdu.header
+                if hdr['NAXIS'] == 2 and hdr['XTENSION'] == 'IMAGE':
+                    ext = hdr.get('EXTNAME')
+                    self.ima[ext] = Image(filename, ext=ext)
             hdulist.close()
 
     def copy(self):
@@ -1784,8 +1778,7 @@ class Cube(DataArray):
                     / np.sum(np.sum(~self.data.mask, axis=1), axis=1)**2
             else:
                 var = None
-            res = Spectrum(notnoise=True, shape=data.shape[0],
-                           wave=self.wave, unit=self.unit)
+            res = Spectrum(shape=data.shape[0], wave=self.wave, unit=self.unit)
             res.data = data
             res.var = var
             return res
@@ -1835,8 +1828,7 @@ class Cube(DataArray):
                 var = np.ma.median(np.ma.median(var, axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
-            res = Spectrum(notnoise=True, shape=data.shape[0],
-                           wave=self.wave, unit=self.unit)
+            res = Spectrum(shape=data.shape[0], wave=self.wave, unit=self.unit)
             res.data = data
             res.var = var
             return res
@@ -3151,9 +3143,6 @@ class CubeDisk(DataArray):
     ext      : integer or (integer,integer) or string or (string,string)
                Number/name of the data extension or numbers/names
                of the data and variance extensions.
-    notnoise : bool
-               True if the noise Variance cube is not read (if it exists).
-               Use notnoise=True to create cube without variance extension.
 
     Attributes
     ----------
