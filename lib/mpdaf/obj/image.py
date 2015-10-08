@@ -278,9 +278,6 @@ class Image(DataArray):
     ext      : integer or (integer,integer) or string or (string,string)
             Number/name of the data extension or numbers/names
             of the data and variance extensions.
-    notnoise : boolean
-            True if the noise Variance image is not read (if it exists).
-            Use notnoise=True to create image without variance extension.
     shape    : integer or (integer,integer)
             Lengths of data in Y and X.
             Python notation is used: (ny,nx). (101,101) by default.

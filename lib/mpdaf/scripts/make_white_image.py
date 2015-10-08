@@ -14,8 +14,6 @@ def make_white_image(inputfile, outputfile, verbose=False):
     if verbose:
         cube.info()
 
-    if cube.fscale == 1:
-        cube.fscale = 1.e-20
     im = cube.mean(axis=0)
     im.write(outputfile)
     if verbose:

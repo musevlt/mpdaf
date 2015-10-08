@@ -13,7 +13,6 @@ from scipy import integrate, interpolate, signal, special
 from scipy.optimize import leastsq
 
 from . import ABmag_filters
-from .coords import WaveCoord
 from .data import DataArray
 from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
 
@@ -182,9 +181,6 @@ class Spectrum(DataArray):
     ext      : integer or (integer,integer) or string or (string,string)
                Number/name of the data extension or numbers/names
                of the data and variance extensions.
-    notnoise : boolean
-               True if the noise Variance spectrum is not read (if it exists).
-               Use notnoise=True to create spectrum without variance extension.
     shape    : integer
                size of the spectrum. 101 by default.
     wave     : :class:`mpdaf.obj.WaveCoord`
@@ -664,8 +660,6 @@ class Spectrum(DataArray):
                                                             other.unit**2)
                 return res
 
-
-
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
@@ -689,7 +683,6 @@ class Spectrum(DataArray):
                 raise IOError('Operation forbidden')
         else:
             return other.__sub__(self)
-
 
     def __mul__(self, other):
         """ Operator \*.
@@ -1492,8 +1485,8 @@ class Spectrum(DataArray):
         return res
 
     def _resample(self, step, start=None, shape=None,
-               spline=False, notnoise=False, unit=u.angstrom):
-        """resample spectrum data to different wavelength step size.
+                  spline=False, notnoise=False, unit=u.angstrom):
+        """Resample spectrum data to different wavelength step size.
 
         Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
 
@@ -1565,7 +1558,7 @@ class Spectrum(DataArray):
         self.wave = newwave
 
     def resample(self, step, start=None, shape=None,
-              spline=False, notnoise=False, unit=u.angstrom):
+                 spline=False, notnoise=False, unit=u.angstrom):
         """Return a spectrum with data resample to different wavelength step size.
 
         Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
@@ -2674,7 +2667,6 @@ class Spectrum(DataArray):
 
         return Gauss1D(lpeak, peak, flux_left, fwhm_left, cont0, err_lpeak, err_peak, err_flux/2, err_fwhm_left, chisq, dof), \
                Gauss1D(lpeak, peak, flux_right, fwhm_right, cont0, err_lpeak, err_peak, err_flux/2, err_fwhm_right, chisq, dof)
-
 
     def add_asym_gaussian(self, lpeak, flux, fwhm_right, fwhm_left, cont=0, peak=False, unit=u.angstrom):
         """Adds an asymetric gaussian on spectrum in place.
