@@ -89,9 +89,9 @@ class DataArray(object):
     _has_wcs = False
     _has_wave = False
 
-    def __init__(self, filename=None, hdulist=None, ext=None, notnoise=False,
-                 unit=u.count, data=None, var=None, shape=None,
-                 copy=True, dtype=float, **kwargs):
+    def __init__(self, filename=None, hdulist=None, ext=None, unit=u.count,
+                 data=None, var=None, shape=None, copy=True, dtype=float,
+                 **kwargs):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
@@ -107,12 +107,12 @@ class DataArray(object):
         self.data_header = pyfits.Header()
         self.primary_header = pyfits.Header()
 
-        # FIXME: Deprecate and remove shape and notnoise
+        # FIXME: Remove usage of shape in MPDAF
         if shape is not None:
             warnings.warn('The shape parameter is no more used, it is derived '
                           'from the data instead', MpdafWarning)
 
-        if notnoise is not None:
+        if kwargs.pop('notnoise', None) is not None:
             warnings.warn('The notnoise parameter is no more used, the '
                           'variance wll be read if necessary', MpdafWarning)
 
@@ -148,9 +148,6 @@ class DataArray(object):
                 self._var_ext = ext[1]
             elif isinstance(ext, int):
                 self._data_ext = ext
-                self._var_ext = None
-
-            if notnoise:
                 self._var_ext = None
 
             self.data_header = hdr = hdulist[self._data_ext].header
@@ -200,7 +197,7 @@ class DataArray(object):
                                             copy=copy)
                 self._shape = self._data.shape
 
-            if not notnoise and var is not None:
+            if var is not None:
                 self._var = np.array(var, dtype=dtype, copy=copy)
 
         wcs = kwargs.pop('wcs', None)
