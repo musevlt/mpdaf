@@ -2,8 +2,10 @@
 *.pyc
 *.so
 *.egg-info/
+.coverage
 tags
 build/
+cover/
 dist/
 data/drs/Central_PIXTABLE_REDUCED_11_positioned.fits
 data/drs/REC_Central_PIXTABLE_REDUCED_11_positioned.fits
