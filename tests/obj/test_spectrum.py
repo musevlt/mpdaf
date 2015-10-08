@@ -71,27 +71,19 @@ def test_arithmetricOperator_Spectrum():
     cube1 = Cube(shape=(10,6,5),data=np.ones(shape=(10,6,5)),wave=wave,wcs=wcs)
     cube2 = spectrum1 + cube1
     assert_array_almost_equal(
-        cube2.data * cube2.fscale,
-        spectrum1.data[:, np.newaxis, np.newaxis] * spectrum1.fscale +
-        cube1.data * cube1.fscale)
+        cube2.data, spectrum1.data[:, np.newaxis, np.newaxis] + cube1.data)
 
     cube2 = spectrum1 - cube1
     assert_array_almost_equal(
-        cube2.data * cube2.fscale,
-        spectrum1.data[:, np.newaxis, np.newaxis] * spectrum1.fscale -
-        cube1.data * cube1.fscale)
+        cube2.data, spectrum1.data[:, np.newaxis, np.newaxis] - cube1.data)
 
     cube2 = spectrum1 * cube1
     assert_array_almost_equal(
-        cube2.data * cube2.fscale,
-        spectrum1.data[:, np.newaxis, np.newaxis] * spectrum1.fscale *
-        cube1.data * cube1.fscale)
+        cube2.data, spectrum1.data[:, np.newaxis, np.newaxis] * cube1.data)
 
     cube2 = spectrum1 / cube1
     assert_array_almost_equal(
-        cube2.data * cube2.fscale,
-        spectrum1.data[:, np.newaxis, np.newaxis] * spectrum1.fscale /
-        (cube1.data * cube1.fscale))
+        cube2.data, spectrum1.data[:, np.newaxis, np.newaxis] / cube1.data)
 
     del cube1
     # spectrum * image
