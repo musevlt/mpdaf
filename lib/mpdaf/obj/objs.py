@@ -43,3 +43,8 @@ def UnitArray(array, old_unit, new_unit):
 def UnitMaskedArray(mask_array, old_unit, new_unit):
     return np.ma.array((mask_array.data[:]*old_unit).to(new_unit).value,
                         mask=mask_array.mask)
+    
+def bug_unit(x):
+    x = x.replace('10**(-20)','1e-20')
+    x = x.replace('*', ' ')
+    return x

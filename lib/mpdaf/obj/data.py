@@ -11,6 +11,7 @@ from numpy import ma
 
 from .coords import WCS, WaveCoord
 from ..tools import MpdafWarning, deprecated
+from .objs import bug_unit
 
 # __all__ = ['iter_spe', 'iter_ima', 'Cube', 'CubeDisk']
 
@@ -151,7 +152,8 @@ class DataArray(object):
                 self._var_ext = None
 
             self.data_header = hdr = hdulist[self._data_ext].header
-            self.unit = u.Unit(hdr.get('BUNIT', 'count'))
+            #self.unit = u.Unit(hdr.get('BUNIT', 'count'))
+            self.unit = u.Unit(bug_unit(hdr.get('BUNIT', 'count')))
             self._shape = hdulist[self._data_ext].data.shape
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
             #                        hdr['NAXIS1']])
