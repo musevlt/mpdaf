@@ -477,13 +477,15 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         # Merging single lines of the same object
         single_lines = SourceList()
         flags = np.zeros(nlines)
+        ising=0
         for i in range(nlines):
             if(flags[i] == 0):
+                ising=ising+1
                 lbdas = []
                 fluxes = []
                 err_fluxes = []
                 dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1])[0]
-                s = Source.from_data(ID=i, ra=ra, dec=dec, origin=origin)
+                s = Source.from_data(ID=ising, ra=ra, dec=dec, origin=origin)
                 lbdas.append(S2_ll[i])
                 fluxes.append(S2_fline[i])
                 err_fluxes.append(S2_eline[i])
