@@ -432,6 +432,15 @@ class WCS(object):
                 np.allclose(x1, x2, atol=1E-3, rtol=0) and
                 np.allclose(cdelt1, cdelt2, atol=1E-3, rtol=0) and
                 np.allclose(self.get_rot(), other.get_rot(), atol=1E-3, rtol=0))
+        
+    def sameStep(self, other):
+        """Return True if other and self have the same steps."""
+        if not isinstance(other, WCS):
+            return False
+
+        cdelt1 = self.get_step()
+        cdelt2 = other.get_step(unit=self.get_cunit1())
+        return np.allclose(cdelt1, cdelt2, atol=1E-3, rtol=0)
 
     def __getitem__(self, item):
         """Return the corresponding WCS."""

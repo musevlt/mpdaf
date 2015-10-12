@@ -385,7 +385,7 @@ class Image(DataArray):
                         self.logger.warning("%s not copied in data header",
                                         card.keyword, extra=d)
 
-        if self.unit is not None:
+        if self.unit != u.dimensionless_unscaled:
             imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
 
         return imahdu
@@ -438,7 +438,7 @@ class Image(DataArray):
                                 self.logger.warning("%s not copied in data header",
                                             card.keyword, extra=d)
 
-            if self.unit is not None:
+            if self.unit != u.dimensionless_unscaled:
                 imahdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
             return imahdu
 

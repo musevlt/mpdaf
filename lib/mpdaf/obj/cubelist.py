@@ -10,7 +10,7 @@ from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
 from numpy import ma, allclose, array_equal
 
-from .cube import CubeDisk, Cube
+from .cube import Cube
 from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
@@ -61,7 +61,7 @@ class CubeList(object):
         self.logger = logging.getLogger('mpdaf corelib')
         self.files = files
         self.nfiles = len(files)
-        self.cubes = [CubeDisk(f) for f in self.files]
+        self.cubes = [Cube(f) for f in self.files]
         self._set_defaults()
         self.check_compatibility()
 
@@ -75,7 +75,7 @@ class CubeList(object):
     def __getitem__(self, item):
         """Apply a slice on all the cubes.
 
-        See :meth:`mpdaf.obj.CubeDisk.__getitem__` for details.
+        See :meth:`mpdaf.obj.Cube.__getitem__` for details.
         """
         if not (isinstance(item, tuple) and len(item) == 3):
             raise ValueError('Operation forbidden')
@@ -526,7 +526,7 @@ class CubeMosaic(CubeList):
             grid as the input cubes.
 
         """
-        self.out = CubeDisk(output_wcs)
+        self.out = Cube(output_wcs)
         super(CubeMosaic, self).__init__(files)
 
     def __getitem__(self, item):

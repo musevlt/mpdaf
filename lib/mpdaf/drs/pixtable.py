@@ -1940,7 +1940,7 @@ class PixTable(object):
         wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda),
                          cunit=u.angstrom, shape=n)
 
-        spe = Spectrum(shape=n, data=result, wave=wave, cunit=self.unit_data)
+        spe = Spectrum(shape=n, data=result, wave=wave, unit=self.unit_data)
         add_mpdaf_method_keywords(spe.primary_header,
                                   "drs.pixtable.sky_ref",
                                   ['pixtable', 'mask', 'dlbda', 'nmax',

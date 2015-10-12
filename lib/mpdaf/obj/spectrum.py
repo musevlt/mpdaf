@@ -281,7 +281,7 @@ class Spectrum(DataArray):
                         self.logger.warning("%s not copied in data header",
                                         card.keyword, extra=d)
 
-        if self.unit is not None:
+        if self.unit != u.dimensionless_unscaled:
             imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
 
         return imahdu
@@ -305,7 +305,7 @@ class Spectrum(DataArray):
             var = self.var.astype(np.float32)
             hdr = self.wave.to_header()
             hdu = pyfits.ImageHDU(name=name, data=var, header=hdr)
-            if self.unit is not None:
+            if self.unit != u.dimensionless_unscaled:
                 hdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
             return hdu
 

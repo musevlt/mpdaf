@@ -11,7 +11,7 @@ from numpy import ma
 
 from .coords import WCS, WaveCoord
 from ..tools import MpdafWarning, deprecated
-from .objs import bug_unit
+from .objs import fix_unit
 
 # __all__ = ['iter_spe', 'iter_ima', 'Cube', 'CubeDisk']
 
@@ -90,7 +90,7 @@ class DataArray(object):
     _has_wcs = False
     _has_wave = False
 
-    def __init__(self, filename=None, hdulist=None, ext=None, unit=u.count,
+    def __init__(self, filename=None, hdulist=None, ext=None, unit=u.dimensionless_unscaled,
                  data=None, var=None, shape=None, copy=True, dtype=float,
                  **kwargs):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
@@ -153,7 +153,11 @@ class DataArray(object):
 
             self.data_header = hdr = hdulist[self._data_ext].header
             #self.unit = u.Unit(hdr.get('BUNIT', 'count'))
-            self.unit = u.Unit(bug_unit(hdr.get('BUNIT', 'count')))
+            try:
+                self.unit = u.Unit(fix_unit(hdr.get('BUNIT', 'count')))
+            except:
+                # print error
+                pass
             self._shape = hdulist[self._data_ext].data.shape
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
             #                        hdr['NAXIS1']])
@@ -336,7 +340,7 @@ class DataArray(object):
                 else '.data({})'.format(','.join(shape_str)))
         noise = ('no noise' if self._var is None and self._var_ext is None
                  else '.var({})'.format(','.join(shape_str)))
-        unit = 'no unit' if self.unit is None else self.unit
+        unit = 'no unit' if self.unit==u.dimensionless_unscaled else self.unit
         log_info('%s (%s), %s', data, unit, noise)
 
         if self._has_wcs:

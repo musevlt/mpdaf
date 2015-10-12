@@ -1,6 +1,6 @@
 from mpdaf.drs import PixTable
 from mpdaf.MUSE import Slicer
-from mpdaf.obj import CubeDisk
+from mpdaf.obj import Cube
 from mpdaf.obj import plt_zscale
 
 import astropy.units as u
@@ -44,7 +44,7 @@ class DisplayPixTable(object):
 
     def info(self):
         """Prints information."""
-        cub = CubeDisk(self.cube)
+        cub = Cube(self.cube)
         cub.info()
         print ''
         pix = PixTable(self.pixtable)
@@ -215,7 +215,7 @@ det_vmax  : float
         """
         d = {'class': 'DisplayPixTable', 'method': 'det_display'}
         pix = PixTable(self.pixtable)
-        cub = CubeDisk(self.cube)
+        cub = Cube(self.cube)
         date = cub.primary_header['DATE-OBS'].split('T')[0]
 
         if (pix.wcs and cub.wcs.is_deg()):
@@ -452,7 +452,7 @@ slice_vmax  : float
               for the scaling of the slice images.
               If None, det_vmax is set with the IRAF zscale algorithm.
         """
-        cub = CubeDisk(self.cube)
+        cub = Cube(self.cube)
         pix = PixTable(self.pixtable)
         date = cub.primary_header['DATE-OBS'].split('T')[0]
 

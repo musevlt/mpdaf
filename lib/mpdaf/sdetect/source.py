@@ -40,10 +40,12 @@ emlines = {1215.67: 'LYALPHA1216',
            6731.0: '[SII]6731'}
 
 def vacuum2air(vac):
+    """in angstroms"""
     vac = np.array(vac)
     return vac / (1.0 + 2.735182e-4 + 131.4182/(vac**2) + 2.76249e8/(vac**4))
 
 def air2vacuum(air):
+    """in angstroms"""
     air = np.array(air)
     vactest = air + (air - vacuum2air(air))
     x = np.abs(air - vacuum2air(vactest))
@@ -614,16 +616,15 @@ class Source(object):
         """Add a user comment to the FITS header of the Source object.
         """
         i = 1
-        while 'COMMENT%03d'%i in self.header:
+        while 'COM%03d'%i in self.header:
             i += 1
-        self.header['COMMENT%03d'%i] = (comment, '%s %s'%(author, str(datetime.date.today())))
+        self.header['COM%03d'%i] = (comment, '%s %s'%(author, str(datetime.date.today())))
+        
 
     def remove_comment(self, ncomment):
         """Remove a comment from the FITS header of the Source object.
-
-
         """
-        del self.header['COMMENT%03d'%ncomment]
+        del self.header['COM%03d'%ncomment]
 
     def add_attr(self, key, value, desc=None):
         """Add a new attribute for the current Source object.
@@ -669,8 +670,8 @@ class Source(object):
                 zmin=-9999
                 zmax=-9999
             else:
-                zmin = z - errz
-                zmax = z + errz
+                zmin = z - errz/2
+                zmax = z + errz/2
         else:
             try:
                 zmin, zmax = errz
@@ -801,13 +802,10 @@ class Source(object):
                 self.lines.add_row(row, mask=mask)
 
     def add_image(self, image, name, size=None, minsize=2.0, unit_size=u.arcsec, rotate=False):
-        """ Extract an image centered on the source center
+        """ Extract an small image centered on the source center from the input image
         and append it to the images dictionary
 
         Extracted image saved in self.images['name'].
-
-        The image is assumed to be properly aligned to the MUSE cube.
-        No attempt is made to check for this.
 
         Parameters
         ----------
@@ -832,11 +830,12 @@ class Source(object):
             try:
                 white_ima = self.images['MUSE_WHITE']
             except:
-                raise IOError('Size of the image (in arcsec) is required')
-            if white_ima.wcs.get_cunit() == image.wcs.get_cunit():
+                raise IOError('Size of the image is required')
+            if white_ima.wcs.sameStep(image.wcs):
                 size = white_ima.shape[0]
-                minsize /= white_ima.wcs.get_step(unit=unit_size)[0]
-                unit_size = None
+                if unit_size is not None:
+                    minsize /= image.wcs.get_step(unit=unit_size)[0]
+                    unit_size = None
             else:
                 size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
                 if unit_size is None:
@@ -878,10 +877,10 @@ class Source(object):
 
         Parameters
         ----------
-        cube : :class:`mpdaf.obj.Cube` or :class:`mpdaf.obj.CubeDisk`
+        cube : :class:`mpdaf.obj.Cube`
                 Input cube MPDAF object.
         name  : string
-                Name used to distinguish this image
+                Name used to distinguish this cube
         size        : float
                       The size to extract.
                       It corresponds to the size along the delta axis and the image is square.
@@ -899,8 +898,8 @@ class Source(object):
             try:
                 white_ima = self.images['MUSE_WHITE']
             except:
-                raise IOError('Size of the image (in arcsec) is required')
-            if white_ima.wcs.get_cunit() == cube.wcs.get_cunit():
+                raise IOError('Size of the image is required')
+            if white_ima.wcs.sameStep(cube.wcs):
                 size = white_ima.shape[0]
                 unit_size = None
             else:
@@ -992,8 +991,8 @@ class Source(object):
                 try:
                     white_ima = self.images['MUSE_WHITE']
                 except:
-                    raise IOError('Size of the image (in arcsec) is required')
-                if white_ima.wcs.get_cunit() == cube.wcs.get_cunit():
+                    raise IOError('Size of the image is required')
+                if white_ima.wcs.sameStep(cube.wcs):
                     size = white_ima.shape[0]
                     unit_size = None
                 else:
@@ -1071,7 +1070,7 @@ class Source(object):
                 white_ima = self.images['MUSE_WHITE']
             except:
                 raise IOError('Size of the image (in arcsec) is required')
-            if white_ima.wcs.get_cunit() == cube.wcs.get_cunit():
+            if white_ima.wcs.sameStep(cube.wcs):
                 size = white_ima.shape[0]
                 unit_size = None
             else:

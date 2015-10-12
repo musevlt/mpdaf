@@ -9,7 +9,7 @@ import stat
 import sys
 
 
-from ..obj import Cube, CubeDisk, Image
+from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
 
 __version__ = 2.0
@@ -229,7 +229,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         
         if c is None:
             logger.info("muselet - Opening: " + cubename, extra=d)
-            c = CubeDisk(cubename)
+            c = Cube(cubename)
         
         wlmin = c.wave.get_start(unit=u.angstrom)
         dw = c.wave.get_step(unit=u.angstrom)
