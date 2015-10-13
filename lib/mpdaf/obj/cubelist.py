@@ -664,7 +664,7 @@ class CubeMosaic(CubeList):
                     ('nclip_low', nclip, 'lower clipping parameter'),
                     ('nclip_up', nclip, 'upper clipping parameter'),
                     ('var', var, 'type of variance')]
-        kwargs = dict(expnb=expmap.max(), object_name=object_name,
+        kwargs = dict(expnb=np.nanmedian(expmap), object_name=object_name,
                       keywords=keywords, method='obj.cubemosaic.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
         expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)

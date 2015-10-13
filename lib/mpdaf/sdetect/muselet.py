@@ -7,12 +7,13 @@ import shutil
 import subprocess
 import stat
 import sys
+from glob import glob
 
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
 
-__version__ = 2.0
+__version__ = 2.1
 
 def setup_config_files():
     DIR = os.path.dirname(__file__) + '/muselet_data/'
@@ -36,7 +37,7 @@ def setup_config_files_nb():
             pass
         
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25):
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5,nbcube=True):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
     to detect emission lines in a datacube. It has been developed by Johan Richard
     (johan.richard@univ-lyon1.fr)
@@ -65,7 +66,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                Size of the extracted images in pixels.
     nlines_max : integer
                  Maximum number of lines detected per object.
-             
+    clean  : Float
+             Removing sources at a fraction of the the max_weight level.
+    nbcube : Boolean
+             Flag to produce an output datacube containing all narrow-band images
+
     Returns
     -------
     continuum,single,raw : :class:`mpdaf.sdetect.SourceList`, :class:`mpdaf.sdetect.SourceList`, :class:`mpdaf.sdetect.SourceList`
@@ -101,6 +106,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
     path = os.path.dirname(__file__) + '/muselet_data/'
     c = None
+    fullvar = None
 
     if(step == 1):
         logger.info("muselet - Opening: " + cubename, extra=d)
@@ -143,6 +149,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         except:
             pass
 
+        if(nbcube):
+            outnbcubename='NB_'+os.path.basename(cubename)
+            outnbcube=c.clone()
+            outnbcube.var=None
+
         f2 = open("nb/dosex", 'w')
         for k in range(2, size1 - 3):
             sys.stdout.write("Narrow band:%d/%d" % (k, size1 - 3) + "\r")
@@ -170,11 +181,15 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                          shape=imsum.shape, unit=imsum.unit)
             kstr = "%04d" % k
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
+            if(nbcube):
+                outnbcube.data[k,:,:]=imnb.data[:,:]
             f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
 
         sys.stdout.write("\n")
         sys.stdout.flush()
         f2.close()
+        if(nbcube):
+            outnbcube.write(outnbcubename)
 
     if(step <= 2):
         logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and narrow-band images", extra=d)
@@ -237,6 +252,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         
         ima_size = ima_size * c.wcs.get_step(unit=u.arcsec)[0]
 
+        if fullvar is None:
+            fullvar=Image('inv_variance.fits')
+
+        cleanlimit=clean*np.max(fullvar.data)
+
         tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
         maxidc = 0
@@ -268,56 +288,57 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             for line in t:
                 xline = line['X_IMAGE']
                 yline = line['Y_IMAGE']
-                fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
-                eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
-                flag = 0
-                distmin = -1
-                distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
-                ksel = np.where(distlist < radius ** 2.0)
-                for j in ksel[0]:
-                    if(fline > 5.0 * eline):
-                        if((flag <= 0)or(distlist[j] < distmin)):
-                            idmin = tBGR['NUMBER'][j]
-                            distmin = distlist[j]
-                            magB = tBGR['MAG_APER_B'][j]
-                            magG = tBGR['MAG_APER_G'][j]
-                            magR = tBGR['MAG_APER_R'][j]
-                            emagB = tBGR['MAGERR_APER_B'][j]
-                            emagG = tBGR['MAGERR_APER_G'][j]
-                            emagR = tBGR['MAGERR_APER_R'][j]
-                            xline=tBGR['X_IMAGE'][j]
-                            yline=tBGR['Y_IMAGE'][j]
-                            flag = 1
-                    else:
-                        if(fline < -5 * eline):
-                            idmin = tBGR['NUMBER'][j]
-                            distmin = distlist[j]
-                            flag = -2
+                if(fullvar.data[int(yline-1),int(xline-1)]>cleanlimit):
+                    fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
+                    eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
+                    flag = 0
+                    distmin = -1
+                    distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
+                    ksel = np.where(distlist < radius ** 2.0)
+                    for j in ksel[0]:
+                        if(fline > 5.0 * eline):
+                            if((flag <= 0)or(distlist[j] < distmin)):
+                                idmin = tBGR['NUMBER'][j]
+                                distmin = distlist[j]
+                                magB = tBGR['MAG_APER_B'][j]
+                                magG = tBGR['MAG_APER_G'][j]
+                                magR = tBGR['MAG_APER_R'][j]
+                                emagB = tBGR['MAGERR_APER_B'][j]
+                                emagG = tBGR['MAGERR_APER_G'][j]
+                                emagR = tBGR['MAGERR_APER_R'][j]
+                                xline=tBGR['X_IMAGE'][j]
+                                yline=tBGR['Y_IMAGE'][j]
+                                flag = 1
                         else:
-                            flag = -1
-                if(flag == 1):
-                    C_ll.append(ll)
-                    C_idmin.append(idmin)
-                    C_fline.append(fline)
-                    C_eline.append(eline)
-                    C_xline.append(xline)
-                    C_yline.append(yline)
-                    C_magB.append(magB)
-                    C_magG.append(magG)
-                    C_magR.append(magR)
-                    C_emagB.append(emagB)
-                    C_emagG.append(emagG)
-                    C_emagR.append(emagR)
-                    C_catID.append(i)
-                    if(idmin > maxidc):
-                        maxidc = idmin
-                if (flag == 0) and (ll < 9300.0):
-                    S_ll.append(ll)
-                    S_fline.append(fline)
-                    S_eline.append(eline)
-                    S_xline.append(xline)
-                    S_yline.append(yline)
-                    S_catID.append(i)
+                            if(fline < -5 * eline):
+                                idmin = tBGR['NUMBER'][j]
+                                distmin = distlist[j]
+                                flag = -2
+                            else:
+                                flag = -1
+                    if(flag == 1):
+                        C_ll.append(ll)
+                        C_idmin.append(idmin)
+                        C_fline.append(fline)
+                        C_eline.append(eline)
+                        C_xline.append(xline)
+                        C_yline.append(yline)
+                        C_magB.append(magB)
+                        C_magG.append(magG)
+                        C_magR.append(magR)
+                        C_emagB.append(emagB)
+                        C_emagG.append(emagG)
+                        C_emagR.append(emagR)
+                        C_catID.append(i)
+                        if(idmin > maxidc):
+                            maxidc = idmin
+                    if (flag == 0) and (ll < 9300.0):
+                        S_ll.append(ll)
+                        S_fline.append(fline)
+                        S_eline.append(eline)
+                        S_xline.append(xline)
+                        S_yline.append(yline)
+                        S_catID.append(i)
 
         nC = len(C_ll)
         nS = len(S_ll)
@@ -466,13 +487,16 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         # Merging single lines of the same object
         single_lines = SourceList()
         flags = np.zeros(nlines)
+        ising=0
         for i in range(nlines):
             if(flags[i] == 0):
+                ising=ising+1
                 lbdas = []
                 fluxes = []
                 err_fluxes = []
+
                 dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1], unit=u.deg)[0]
-                s = Source.from_data(ID=i, ra=ra, dec=dec, origin=origin)
+                s = Source.from_data(ID=ising, ra=ra, dec=dec, origin=origin)
                 lbdas.append(S2_ll[i])
                 fluxes.append(S2_fline[i])
                 err_fluxes.append(S2_eline[i])
@@ -530,9 +554,16 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 source.crack_z(eml2, 20)
             source.sort_lines(nlines_max)
                 
-        
-                
-            
+        logger.info("muselet - cleaning narrow-band images", extra=d)
+        if(nbcube):
+            filelist=glob('nb/nb*.fits')
+            for f in filelist:
+                  os.remove(f)
+
+        #sort single line sources by wavelength
+        lsource=lambda s:s.lines[0][0]
+        single_lines.sort(key=lsource)
+
         return continuum_lines, single_lines, raw_catalog
     
 #             t = Catalog.from_sources(continuum_lines)
