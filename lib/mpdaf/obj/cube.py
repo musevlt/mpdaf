@@ -129,9 +129,7 @@ class Cube(DataArray):
         super(Cube, self).__init__(
             filename=filename, ext=ext, wcs=wcs, wave=wave, unit=unit,
             data=data, var=var, copy=copy, dtype=dtype, **kwargs)
-        self.cube = True
         self.ima = {}
-
         if filename is not None and ima:
             hdulist = pyfits.open(filename)
             for hdu in hdulist:
@@ -241,8 +239,8 @@ class Cube(DataArray):
 
         if header is None:
             for card in self.data_header.cards:
-                to_copy = (card.keyword[0:2] not in ('CD', 'PC')
-                           and card.keyword not in imahdu.header)
+                to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
+                           card.keyword not in imahdu.header)
                 if to_copy:
                     try:
                         card.verify('fix')
@@ -1243,21 +1241,16 @@ class Cube(DataArray):
         """
         if isinstance(item, tuple) and len(item) == 3:
             data = self.data[item]
+            var = None
+            if self.var is not None:
+                var = self.var[item]
+
             if is_int(item[0]):
                 if is_int(item[1]) and is_int(item[2]):
                     # return a float
                     return data
                 else:
                     # return an image
-                    if is_int(item[1]):
-                        shape = (1, data.shape[0])
-                    elif is_int(item[2]):
-                        shape = (data.shape[0], 1)
-                    else:
-                        shape = data.shape
-                    var = None
-                    if self.var is not None:
-                        var = self.var[item]
                     try:
                         wcs = self.wcs[item[1], item[2]]
                     except:
@@ -1267,10 +1260,6 @@ class Cube(DataArray):
                     return res
             elif is_int(item[1]) and is_int(item[2]):
                 # return a spectrum
-                shape = data.shape[0]
-                var = None
-                if self.var is not None:
-                    var = self.var[item]
                 try:
                     wave = self.wave[item[0]]
                 except:
@@ -1280,15 +1269,6 @@ class Cube(DataArray):
                 return res
             else:
                 # return a cube
-                if is_int(item[1]):
-                    shape = (data.shape[0], 1, data.shape[1])
-                elif is_int(item[2]):
-                    shape = (data.shape[0], data.shape[1], 1)
-                else:
-                    shape = data.shape
-                var = None
-                if self.var is not None:
-                    var = self.var[item]
                 try:
                     wcs = self.wcs[item[1], item[2]]
                 except:
@@ -1416,7 +1396,7 @@ class Cube(DataArray):
             try:
                 self.data[key] = other
             except:
-                        raise IOError('Operation forbidden')
+                raise IOError('Operation forbidden')
         else:
             if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
@@ -2496,8 +2476,8 @@ class Cube(DataArray):
                     sys.stdout.flush()
                     break
                 output = ("\r Waiting for %i tasks to complete (%i%% done) ..."
-                          % (num_tasks - completed, float(completed)
-                             / float(num_tasks) * 100.0))
+                          % (num_tasks - completed, float(completed) /
+                             float(num_tasks) * 100.0))
                 sys.stdout.write("\r\x1b[K" + output.__str__())
                 sys.stdout.flush()
 
@@ -2516,13 +2496,11 @@ class Cube(DataArray):
                 if init:
                     if self.var is None:
                         result = Cube(wcs=self.wcs.copy(), wave=wave,
-                                      data=np.zeros(shape=cshape),
-                                      unit=unit)
+                                      data=np.zeros(cshape), unit=unit)
                     else:
                         result = Cube(wcs=self.wcs.copy(), wave=wave,
-                                      data=np.zeros(shape=cshape),
-                                      var=np.zeros(shape=cshape),
-                                      unit=unit)
+                                      data=np.zeros(cshape),
+                                      var=np.zeros(cshape), unit=unit)
                     init = False
 
                 result.data_header = pyfits.Header(self.data_header)
@@ -2534,8 +2512,8 @@ class Cube(DataArray):
                     # f returns a number -> iterator returns an image
                     if init:
                         result = Image(wcs=self.wcs.copy(),
-                                       data=np.zeros(shape=(self.shape[1],
-                                                            self.shape[2])),
+                                       data=np.zeros((self.shape[1],
+                                                      self.shape[2])),
                                        unit=self.unit)
                         init = False
                     result[p, q] = out[0]
@@ -2629,13 +2607,11 @@ class Cube(DataArray):
                     cshape = (self.shape[0], data.shape[0], data.shape[1])
                     if self.var is None:
                         result = Cube(wcs=wcs, wave=self.wave.copy(),
-                                      data=np.zeros(shape=cshape),
-                                      unit=unit)
+                                      data=np.zeros(cshape), unit=unit)
                     else:
                         result = Cube(wcs=wcs, wave=self.wave.copy(),
-                                      data=np.zeros(shape=cshape),
-                                      var=np.zeros(shape=cshape),
-                                      unit=unit)
+                                      data=np.zeros(cshape),
+                                      var=np.zeros(cshape), unit=unit)
                     init = False
                 result.data.data[k, :, :] = data
                 result.data.mask[k, :, :] = mask
@@ -2659,7 +2635,7 @@ class Cube(DataArray):
                     # f returns a number -> iterator returns a spectrum
                     if init:
                         result = Spectrum(wave=self.wave.copy(),
-                                          data=np.zeros(shape=self.shape[0]),
+                                          data=np.zeros(self.shape[0]),
                                           unit=self.unit)
                         init = False
                     result[k] = out[0]
@@ -2969,7 +2945,7 @@ def _process_spe(arglist):
             out = getattr(spe, f)(**kargs)
 
         try:
-            if out.spectrum:
+            if isinstance(out, Spectrum):
                 return pos, 'spectrum', [
                     out.wave.to_header(), out.data.data,
                     out.data.mask, out.var, out.unit]
@@ -2987,8 +2963,7 @@ def _process_ima(arglist):
     try:
         k, f, header, data, mask, var, unit, kargs = arglist
         wcs = WCS(header, shape=data.shape)
-        obj = Image(shape=data.shape, wcs=wcs, unit=unit, data=data,
-                    var=var)
+        obj = Image(shape=data.shape, wcs=wcs, unit=unit, data=data, var=var)
         obj.data.mask = mask
 
         if isinstance(f, types.FunctionType):
@@ -2999,21 +2974,16 @@ def _process_ima(arglist):
         del obj
         del wcs
 
-        try:
-            if out.image:
-                # f returns an image -> iterator returns a cube
-                return k, 'image', [
-                    out.wcs.to_header(), out.data.data, out.data.mask,
-                    out.var, out.unit]
-        except:
-            try:
-                if out.spectrum:
-                    return k, 'spectrum', [
-                        out.wave.to_header(), out.data.data,
-                        out.data.mask, out.var, out.unit]
-            except:
-                # f returns dtype -> iterator returns an array of dtype
-                return k, 'other', [out]
+        if isinstance(out, Image):
+            # f returns an image -> iterator returns a cube
+            return k, 'image', [out.wcs.to_header(), out.data.data,
+                                out.data.mask, out.var, out.unit]
+        elif isinstance(out, Spectrum):
+            return k, 'spectrum', [out.wave.to_header(), out.data.data,
+                                   out.data.mask, out.var, out.unit]
+        else:
+            # f returns dtype -> iterator returns an array of dtype
+            return k, 'other', [out]
 
     except Exception as inst:
         raise type(inst), str(inst) + '\n The error occurred '\

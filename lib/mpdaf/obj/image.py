@@ -318,7 +318,6 @@ class Image(DataArray):
     def __init__(self, filename=None, ext=None, wcs=None, unit=u.count,
                  data=None, var=None, shape=None, copy=True, dtype=float,
                  **kwargs):
-        self.image = True
         self._clicks = None
         self._selector = None
 
@@ -363,13 +362,12 @@ class Image(DataArray):
         imahdu = pyfits.ImageHDU(name=name, data=data.astype(np.float32), header=hdr)
 
         for card in self.data_header.cards:
-            to_copy = (card.keyword[0:2] not in ('CD','PC')
-                       and card.keyword not in imahdu.header)
+            to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
+                       card.keyword not in imahdu.header)
             if to_copy:
                 try:
                     card.verify('fix')
-                    imahdu.header[card.keyword] = \
-                            (card.value, card.comment)
+                    imahdu.header[card.keyword] = (card.value, card.comment)
                 except:
                     try:
                         if isinstance(card.value, str):
@@ -1095,8 +1093,7 @@ class Image(DataArray):
                     res.filename = self.filename
                     return res
                 else:
-                    res = Image(shape=data.shape, wcs=wcs,
-                                unit=self.unit)
+                    res = Image(shape=data.shape, wcs=wcs, unit=self.unit)
                     res.data = data
                     res.var = var
                     res.filename = self.filename
@@ -1224,21 +1221,19 @@ class Image(DataArray):
             raise ValueError('empty data array')
         try:
             self.data[key] = other
-        except:
-            try:
-                # other is an image
-                if other.image:
-                    if self.wcs is not None and other.wcs is not None \
-                            and (self.wcs.get_step() != other.wcs.get_step(unit=self.wcs.get_cunit1())).any():
-                        d = {'class': 'Image', 'method': '__setitem__'}
-                        self.logger.warning("images with different steps", extra=d)
-                    if self.unit == other.unit:
-                        self.data[key] = other.data
-                    else:
-                        self.data[key] = UnitMaskedArray(other.data,
-                                                         other.unit,
-                                                         self.unit)
-            except:
+        except :
+            # other is an image
+            if isinstance(other, Image):
+                if self.wcs is not None and other.wcs is not None \
+                        and (self.wcs.get_step() != other.wcs.get_step(unit=self.wcs.get_cunit1())).any():
+                    d = {'class': 'Image', 'method': '__setitem__'}
+                    self.logger.warning("images with different steps", extra=d)
+                if self.unit == other.unit:
+                    self.data[key] = other.data
+                else:
+                    self.data[key] = UnitMaskedArray(other.data, other.unit,
+                                                     self.unit)
+            else:
                 raise IOError('Operation forbidden')
 
     def set_wcs(self, wcs):
@@ -4016,10 +4011,7 @@ class Image(DataArray):
         other : Image
                 Second image to add.
         """
-        try:
-            if other.image:
-                pass
-        except:
+        if not isinstance(other, Image):
             raise IOError('Operation forbidden')
 
         ima = other.copy()
@@ -4053,8 +4045,7 @@ class Image(DataArray):
                 newdim = np.array(0.5 + ima.shape / factor, dtype=np.int)
                 newstart = self.wcs.get_start(unit=unit)
                 ima = ima.resample(newdim, newstart, self_cdelt, flux=True,
-                                unit_step=unit,
-                                unit_start=unit)
+                                   unit_step=unit, unit_start=unit)
 
         # here ima and self have the same step and the same rotation
 
@@ -4088,7 +4079,8 @@ class Image(DataArray):
             nl2 = ima.shape[1]
 
         mask = self.data.mask.__copy__()
-        self.data[k1:k2, l1:l2] += UnitMaskedArray(ima.data[nk1:nk2, nl1:nl2], ima.unit, self.unit)
+        self.data[k1:k2, l1:l2] += UnitMaskedArray(ima.data[nk1:nk2, nl1:nl2],
+                                                   ima.unit, self.unit)
         self.data.mask = mask
 
 

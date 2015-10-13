@@ -222,7 +222,6 @@ class Spectrum(DataArray):
         super(Spectrum, self).__init__(
             filename=filename, ext=ext, wave=wave, unit=unit, data=data,
             var=var, copy=copy, dtype=dtype, shape=shape, **kwargs)
-        self.spectrum = True
         self._clicks = None
 
     @property
@@ -1026,21 +1025,19 @@ class Spectrum(DataArray):
             raise ValueError('empty data array')
         try:
             self.data[key] = other
-        except:
-            try:
-                # other is a spectrum
-                if other.spectrum:
-                    if self.wave is not None and other.wave is not None \
-                            and (self.wave.get_step() != other.wave.get_step(unit=self.wave.get_cunit())):
-                        d = {'class': 'Spectrum', 'method': '__setitem__'}
-                        self.logger.warning("spectra with different steps",
-                                            extra=d)
-                    if self.unit == other.unit:
-                        self.data[key] = other.data
-                    else:
-                        self.data[key] = UnitMaskedArray(other.data, other.unit, self.unit)
-
-            except:
+        except ValueError:
+            if isinstance(other, Spectrum):
+                if self.wave is not None and other.wave is not None \
+                        and (self.wave.get_step() != other.wave.get_step(unit=self.wave.get_cunit())):
+                    d = {'class': 'Spectrum', 'method': '__setitem__'}
+                    self.logger.warning("spectra with different steps",
+                                        extra=d)
+                if self.unit == other.unit:
+                    self.data[key] = other.data
+                else:
+                    self.data[key] = UnitMaskedArray(other.data, other.unit,
+                                                     self.unit)
+            else:
                 raise IOError('Operation forbidden')
 
     def set_wcs(self, wave):
@@ -2875,13 +2872,13 @@ class Spectrum(DataArray):
             raise ValueError('empty data array')
 
         try:
-            if other.spectrum:
+            if isinstance(other, Spectrum):
                 if other.data is None or self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
                     data = other.data.data
-                    if self.unit!=other.unit:
+                    if self.unit != other.unit:
                         data = (data*other.unit).to(self.unit).value
                     self.data = \
                         np.ma.array(signal.convolve(self.data, data, mode='same'),
@@ -2934,7 +2931,7 @@ class Spectrum(DataArray):
             raise ValueError('empty data array')
 
         try:
-            if other.spectrum:
+            if isinstance(other, Spectrum):
                 if other.data is None or self.shape != other.shape:
                     raise IOError('Operation forbidden '
                                   'for spectra with different sizes')
@@ -2992,13 +2989,13 @@ class Spectrum(DataArray):
             raise ValueError('empty data array')
 
         try:
-            if other.spectrum:
+            if isinstance(other, Spectrum):
                 if other.data is None or self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
                     data = other.data.data
-                    if self.unit!=other.unit:
+                    if self.unit != other.unit:
                         data = (data*other.unit).to(self.unit).value
                     self.data = \
                         np.ma.array(signal.correlate(self.data, data, mode='same'),
