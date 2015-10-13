@@ -86,13 +86,13 @@ class DataArray(object):
                      Wavelength coordinates
     """
 
-    _ndim = None
+    _ndim_required = None
     _has_wcs = False
     _has_wave = False
 
-    def __init__(self, filename=None, hdulist=None, ext=None, unit=u.dimensionless_unscaled,
-                 data=None, var=None, shape=None, copy=True, dtype=float,
-                 **kwargs):
+    def __init__(self, filename=None, hdulist=None, ext=None,
+                 unit=u.dimensionless_unscaled, data=None, var=None,
+                 shape=None, copy=True, dtype=float, **kwargs):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
@@ -100,6 +100,7 @@ class DataArray(object):
         self._data_ext = None
         self._var = None
         self._var_ext = None
+        self._ndim = None
         self._shape = (shape, ) if np.isscalar(shape) else shape
         self.wcs = None
         self.wave = None
@@ -152,7 +153,7 @@ class DataArray(object):
                 self._var_ext = None
 
             self.data_header = hdr = hdulist[self._data_ext].header
-            #self.unit = u.Unit(hdr.get('BUNIT', 'count'))
+            # self.unit = u.Unit(hdr.get('BUNIT', 'count'))
             try:
                 self.unit = u.Unit(fix_unit(hdr.get('BUNIT', 'count')))
             except:
@@ -162,10 +163,11 @@ class DataArray(object):
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
             #                        hdr['NAXIS1']])
 
-            self.ndim = hdr['NAXIS']
-            if self._ndim is not None and hdr['NAXIS'] != self._ndim:
+            self._ndim = hdr['NAXIS']
+            if self._ndim_required is not None and \
+                    hdr['NAXIS'] != self._ndim_required:
                 raise IOError('Wrong dimension number, should be %s'
-                              % self._ndim)
+                              % self._ndim_required)
 
             if self._has_wcs:
                 try:
@@ -177,7 +179,7 @@ class DataArray(object):
                     self.wcs = WCS(hdr)
 
             # Wavelength coordinates
-            wave_ext = 1 if self._ndim == 1 else 3
+            wave_ext = 1 if self._ndim_required == 1 else 3
             crpix = 'CRPIX{}'.format(wave_ext)
             crval = 'CRVAL{}'.format(wave_ext)
             if self._has_wave and crpix in hdr and crval in hdr:
@@ -237,11 +239,22 @@ class DataArray(object):
                                     exc_info=True, extra=d)
 
     @property
+    def ndim(self):
+        if self._ndim is not None:
+            return self._ndim
+        elif self.data is not None:
+            return self.data.ndim
+        else:
+            raise AttributeError('No ndim attribute')
+
+    @property
     def shape(self):
         if self._shape is not None:
             return self._shape
-        else:
+        elif self.data is not None:
             return self.data.shape
+        else:
+            raise AttributeError('No shape attribute')
 
     @property
     def data(self):
@@ -340,7 +353,7 @@ class DataArray(object):
                 else '.data({})'.format(','.join(shape_str)))
         noise = ('no noise' if self._var is None and self._var_ext is None
                  else '.var({})'.format(','.join(shape_str)))
-        unit = 'no unit' if self.unit==u.dimensionless_unscaled else self.unit
+        unit = 'no unit' if self.unit == u.dimensionless_unscaled else self.unit
         log_info('%s (%s), %s', data, unit, noise)
 
         if self._has_wcs:

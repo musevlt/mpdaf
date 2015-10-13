@@ -66,8 +66,8 @@ class ImageClicks(object):  # Object used to save click on image plot.
         # prints a cursor positions
         d = {'class': 'ImageClicks', 'method': 'iprint'}
         msg = 'y=%g\tx=%g\tp=%d\tq=%d\tdata=%g' % (self.y[i], self.x[i],
-                                                       self.p[i], self.q[i],
-                                                       self.data[i])
+                                                   self.p[i], self.q[i],
+                                                   self.data[i])
         self.logger.info(msg, extra=d)
 
     def write_fits(self):
@@ -312,7 +312,7 @@ class Image(DataArray):
                     World coordinates.
     """
 
-    _ndim = 2
+    _ndim_required = 2
     _has_wcs = True
 
     def __init__(self, filename=None, ext=None, wcs=None, unit=u.count,
@@ -628,17 +628,7 @@ class Image(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.image:
-                typ=2
-        except:
-            try:
-                if other.cube:
-                    typ=3
-            except:
-                typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
                 res = self.copy()
@@ -649,39 +639,37 @@ class Image(DataArray):
         else:
             # coordinates
             if self.wcs is not None and other.wcs is not None \
-            and not self.wcs.isEqual(other.wcs):
+                    and not self.wcs.isEqual(other.wcs):
                 raise IOError('Operation forbidden for images '
                               'with different world coordinates')
-            if typ==2:
+            if other.ndim == 2:
                 # image1 + image2 = image3 (image3[j,i]=image1[j,i]+image2[j,i])
                 if other.data is None or self.shape[0] != other.shape[0] \
-                    or self.shape[1] != other.shape[1]:
+                        or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
-                                      'with different sizes')
+                                  'with different sizes')
 
                 res = self.copy()
                 # data
                 if other.unit == self.unit:
                     res.data = self.data + other.data
                 else:
-                    res.data = self.data + UnitMaskedArray(other.data,
-                                                     other.unit, self.unit)
+                    res.data = self.data + UnitMaskedArray(
+                        other.data, other.unit, self.unit)
                 # variance
                 if res.var is not None:
                     if self.var is None:
                         if other.unit == self.unit:
                             res.var = other.var
                         else:
-                            res.var = UnitArray(other.var,
-                                                      other.unit**2,
-                                                      self.unit**2)
+                            res.var = UnitArray(other.var, other.unit**2,
+                                                self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res.var = self.var + other.var
                         else:
-                            res.var = self.var + UnitArray(other.var,
-                                                           other.unit**2,
-                                                           self.unit**2)
+                            res.var = self.var + UnitArray(
+                                other.var, other.unit**2, self.unit**2)
 
                 return res
             else:
@@ -717,17 +705,7 @@ class Image(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.image:
-                typ=2
-        except:
-            try:
-                if other.cube:
-                    typ=3
-            except:
-                typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
                 res = self.copy()
@@ -738,15 +716,15 @@ class Image(DataArray):
         else:
             # coordinates
             if self.wcs is not None and other.wcs is not None \
-            and not self.wcs.isEqual(other.wcs):
+                    and not self.wcs.isEqual(other.wcs):
                 raise IOError('Operation forbidden for images '
                               'with different world coordinates')
-            if typ==2:
+            if other.ndim == 2:
                 # image1 - image2 = image3 (image3[j,i]=image1[j,i]-image2[j,i])
                 if other.data is None or self.shape[0] != other.shape[0] \
-                or self.shape[1] != other.shape[1]:
+                        or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
-                                          'with different sizes')
+                                  'with different sizes')
 
                 res = self.copy()
                 # data
@@ -808,17 +786,7 @@ class Image(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.image:
-                typ=2
-        except:
-            try:
-                if other.cube:
-                    typ=3
-            except:
-                typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = other - self.data
@@ -827,7 +795,6 @@ class Image(DataArray):
                 raise IOError('Operation forbidden')
         else:
             return other.__sub__(self)
-
 
     def __mul__(self, other):
         """Operator \*.
@@ -856,21 +823,7 @@ class Image(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ=1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ=3
-                except:
-                    typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data *= other
@@ -880,18 +833,16 @@ class Image(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
-            if typ==1:
+            if other.ndim == 1:
                 # image * spectrum = cube
                 if other.data is None:
-                    raise IOError('Operation forbidden '
-                                                  'for empty data')
+                    raise IOError('Operation forbidden for empty data')
                 from cube import Cube
                 shape = (other.shape, self.shape[0], self.shape[1])
-                res = Cube(shape=shape, wave=other.wave,
-                            wcs=self.wcs)
+                res = Cube(shape=shape, wave=other.wave, wcs=self.wcs)
                 # data
-                res.data = self.data[np.newaxis, :, :] \
-                        * other.data[:, np.newaxis, np.newaxis]
+                res.data = self.data[np.newaxis, :, :] * \
+                    other.data[:, np.newaxis, np.newaxis]
                 # variance
                 if self.var is None and other.var is None:
                     res.var = None
@@ -915,15 +866,15 @@ class Image(DataArray):
                 return res
             else:
                 if self.wcs is not None and other.wcs is not None \
-                and not self.wcs.isEqual(other.wcs):
+                        and not self.wcs.isEqual(other.wcs):
                     raise IOError('Operation forbidden for images '
                                   'with different world coordinates')
-                if typ==2:
+                if other.ndim == 2:
                     # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
                     if other.data is None or self.shape[0] != other.shape[0] \
-                    or self.shape[1] != other.shape[1]:
+                            or self.shape[1] != other.shape[1]:
                         raise IOError('Operation forbidden for images '
-                                          'with different sizes')
+                                      'with different sizes')
                     res = self.copy()
                     # data
                     res.data = self.data * other.data
@@ -947,7 +898,6 @@ class Image(DataArray):
 
     def __rmul__(self, other):
         return self.__mul__(other)
-
 
     def __div__(self, other):
         """Operator /.
@@ -974,17 +924,7 @@ class Image(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.image:
-                typ=2
-        except:
-            try:
-                if other.cube:
-                    typ=3
-            except:
-                typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data /= other
@@ -996,15 +936,15 @@ class Image(DataArray):
         else:
             # coordinates
             if self.wcs is not None and other.wcs is not None \
-            and not self.wcs.isEqual(other.wcs):
+                    and not self.wcs.isEqual(other.wcs):
                 raise IOError('Operation forbidden for images '
                               'with different world coordinates')
-            if typ==2:
+            if other.ndim == 2:
                 # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
                 if other.data is None or self.shape[0] != other.shape[0] \
-                or self.shape[1] != other.shape[1]:
+                        or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden '
-                                        'for images with different sizes')
+                                  'for images with different sizes')
                 res = self.copy()
                 # data
                 res.data = self.data / other.data
@@ -1018,8 +958,8 @@ class Image(DataArray):
                     res.var = self.var * other.data.data * other.data.data \
                         / (other.data.data ** 4)
                 else:
-                    res.var = (other.var * self.data.data * self.data.data
-                               + self.var * other.data.data * other.data.data) \
+                    res.var = (other.var * self.data.data * self.data.data +
+                               self.var * other.data.data * other.data.data) \
                         / (other.data.data ** 4)
                 # unit
                 res.unit = self.unit/other.unit
@@ -1027,7 +967,7 @@ class Image(DataArray):
             else:
                 # image / cube1 = cube2
                 if other.data is None or self.shape[0] != other.shape[1] \
-                or self.shape[1] != other.shape[2]:
+                        or self.shape[1] != other.shape[2]:
                     raise ValueError('Operation forbidden for images '
                                      'with different sizes')
                 from cube import Cube
@@ -1044,14 +984,14 @@ class Image(DataArray):
                             * other.data.data * other.data.data \
                             / (other.data.data ** 4)
                 else:
-                    res.var = \
-                            (other.var * self.data.data[np.newaxis, :, :]
-                             * self.data.data[np.newaxis, :, :]
-                             + self.var[np.newaxis, :, :]
-                             * other.data.data * other.data.data) \
-                            / (other.data.data ** 4)
+                    res.var = (
+                        other.var * self.data.data[np.newaxis, :, :] *
+                        self.data.data[np.newaxis, :, :] +
+                        self.var[np.newaxis, :, :] *
+                        other.data.data * other.data.data
+                    ) / (other.data.data ** 4)
                 # data
-                res.data = self.data[np.newaxis, :, :] / other.data \
+                res.data = self.data[np.newaxis, :, :] / other.data
                 # unit
                 res.unit = self.unit/other.unit
                 return res
@@ -1060,24 +1000,14 @@ class Image(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.image:
-                typ=2
-        except:
-            try:
-                if other.cube:
-                    typ=3
-            except:
-                typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = other / res.data
                 if self.var is not None:
-                    res.var = (self.var * other**2
-                           + other * self.data.data * self.data.data) \
-                           / (self.data.data ** 4)
+                    res.var = (self.var * other**2 +
+                               other * self.data.data * self.data.data
+                               ) / (self.data.data ** 4)
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -4322,13 +4252,7 @@ class Image(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.image:
-                typ=2
-        except:
-            typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             if self.shape[0] != other.shape[0] \
                     or self.shape[1] != other.shape[1]:
                 raise IOError('Operation forbidden for images '
@@ -4341,14 +4265,13 @@ class Image(DataArray):
             else:
                 data = np.ma.filled(self.data, np.ma.median(self.data))
 
-
             self.data = np.ma.array(signal.fftconvolve(data, other,
-                                                        mode='same'),
+                                                       mode='same'),
                                     mask=self.data.mask)
             if self.var is not None:
                 self.var = signal.fftconvolve(self.var, other,
-                                                mode='same')
-        elif typ==2:
+                                              mode='same')
+        elif other.ndim == 2:
             if other.data is None or self.shape[0] != other.shape[0] \
                     or self.shape[1] != other.shape[1]:
                 raise IOError('Operation forbidden for images '
@@ -4367,8 +4290,8 @@ class Image(DataArray):
             if self.unit != other.unit:
                 other_data = UnitMaskedArray(other_data, other.unit, self.unit)
 
-            self.data = np.ma.array(signal.fftconvolve(data,
-                                                       other_data, mode='same'),
+            self.data = np.ma.array(signal.fftconvolve(data, other_data,
+                                                       mode='same'),
                                     mask=self.data.mask)
             if self.var is not None:
                 self.var = signal.fftconvolve(self.var,
@@ -4513,14 +4436,7 @@ class Image(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.image:
-                typ=2
-        except:
-            typ=0
-
-        if typ==0:
-
+        if not isinstance(other, DataArray):
             if interp == 'linear':
                 data = self._interp_data(spline=False)
             elif interp == 'spline':
@@ -4529,12 +4445,14 @@ class Image(DataArray):
                 data = np.ma.filled(self.data, np.ma.median(self.data))
 
             res = self.copy()
-            res.data = np.ma.array(signal.correlate2d(data, other, mode='same', boundary='symm'),
+            res.data = np.ma.array(signal.correlate2d(data, other, mode='same',
+                                                      boundary='symm'),
                                    mask=res.data.mask)
             if res.var is not None:
-                res.var = signal.correlate2d(res.var, other, mode='same', boundary='symm')
+                res.var = signal.correlate2d(res.var, other, mode='same',
+                                             boundary='symm')
             return res
-        elif typ==2:
+        elif other.ndim == 2:
             if interp == 'linear':
                 data = self._interp_data(spline=False)
                 other_data = other._interp_data(spline=False)

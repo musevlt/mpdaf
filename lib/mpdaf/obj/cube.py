@@ -1,7 +1,6 @@
 """cube.py manages Cube objects."""
 
 import datetime
-import logging
 import multiprocessing
 import numpy as np
 import sys
@@ -120,7 +119,7 @@ class Cube(DataArray):
                      dictionary of images
     """
 
-    _ndim = 3
+    _ndim_required = 3
     _has_wcs = True
     _has_wave = True
 
@@ -653,21 +652,7 @@ class Cube(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ=1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ=3
-                except:
-                    typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = self.data + other
@@ -675,20 +660,20 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
-            if typ==1 or typ==3:
+            if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
-                and not self.wave.isEqual(other.wave):
+                        and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spectral direction')
-            if typ==2 or typ==3:
+            if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
-                and not self.wcs.isEqual(other.wcs):
+                        and not self.wcs.isEqual(other.wcs):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spatial directions')
 
-            if typ==1:
+            if other.ndim == 1:
                 # cube1 + spectrum = cube2
                 if other.data is None or other.shape != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
@@ -698,26 +683,27 @@ class Cube(DataArray):
                 if other.unit == self.unit:
                     res.data = self.data + other.data[:, np.newaxis, np.newaxis]
                 else:
-                    res.data = self.data + UnitMaskedArray(other.data[:, np.newaxis, np.newaxis],other.unit,self.unit)
+                    res.data = self.data + UnitMaskedArray(
+                        other.data[:, np.newaxis, np.newaxis],
+                        other.unit, self.unit)
                 # variance
                 if other.var is not None:
                     if self.var is None:
                         if other.unit == self.unit:
                             res.var = np.ones(self.shape) * other.var[:, np.newaxis, np.newaxis]
                         else:
-                            res.var = np.ones(self.shape) \
-                            * UnitArray(other.var[:, np.newaxis, np.newaxis],
-                                              other.unit**2,
-                                              self.unit**2)
+                            res.var = np.ones(self.shape) * \
+                                UnitArray(other.var[:, np.newaxis, np.newaxis],
+                                          other.unit**2, self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res.var = self.var + other.var[:, np.newaxis, np.newaxis]
                         else:
-                            res.var = self.var \
-                            + UnitArray(other.var[:, np.newaxis, np.newaxis],
-                                              other.unit**2, self.unit**2)
+                            res.var = self.var + \
+                                UnitArray(other.var[:, np.newaxis, np.newaxis],
+                                          other.unit**2, self.unit**2)
                 return res
-            elif typ==2:
+            elif other.ndim == 2:
                 # cube1 + image = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
                 if other.data is None or self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
@@ -750,8 +736,8 @@ class Cube(DataArray):
             else:
                 # cube1 + cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]+cube2[k,j,i])
                 if other.data is None or self.shape[0] != other.shape[0] \
-                or self.shape[1] != other.shape[1] \
-                or self.shape[2] != other.shape[2]:
+                        or self.shape[1] != other.shape[1] \
+                        or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
 
@@ -769,19 +755,18 @@ class Cube(DataArray):
                             res.var = other.var
                         else:
                             res.var = UnitArray(other.var, other.unit**2,
-                                                      self.unit**2)
+                                                self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res.var = self.var + other.var
                         else:
                             res.var = self.var + UnitArray(other.var,
-                                                                 other.unit**2,
-                                                                 self.unit**2)
+                                                           other.unit**2,
+                                                           self.unit**2)
                 return res
 
     def __radd__(self, other):
         return self.__add__(other)
-
 
     def __sub__(self, other):
         """Subtracts other.
@@ -806,21 +791,7 @@ class Cube(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ=1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ=3
-                except:
-                    typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = self.data - other
@@ -828,27 +799,27 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
-            if typ==1 or typ==3:
+            if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
-                and not self.wave.isEqual(other.wave):
+                        and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes '
                                   'with different world coordinates '
                                   'in spectral direction')
-            if typ==2 or typ==3:
+            if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
-                and not self.wcs.isEqual(other.wcs):
+                        and not self.wcs.isEqual(other.wcs):
                     raise IOError('Operation forbidden for cubes '
                                   'with different world coordinates '
                                   'in spatial directions')
 
-            if typ==1:
+            if other.ndim == 1:
                 # cube1 - spectrum = cube2
                 if other.data is None or other.shape != self.shape[0]:
                     raise IOError('Operation forbidden '
                                   'for objects with different sizes')
                 res = self.copy()
                 # data
-                if self.unit==other.unit:
+                if self.unit == other.unit:
                     res.data = self.data - other.data[:, np.newaxis, np.newaxis]
                 else:
                     res.data = self.data - UnitMaskedArray(other.data[:, np.newaxis, np.newaxis],
@@ -872,7 +843,7 @@ class Cube(DataArray):
                             + UnitArray(other.var[:, np.newaxis, np.newaxis],
                                               other.unit**2, self.unit**2)
                 return res
-            elif typ==2:
+            elif other.ndim == 2:
                 # cube1 - image = cube2 (cube2[k,j,i]=cube1[k,j,i]-image[j,i])
                 if other.data is None or self.shape[2] != other.shape[1] \
                 or self.shape[1] != other.shape[0]:
@@ -899,13 +870,13 @@ class Cube(DataArray):
                             res.var = self.var + other.var[np.newaxis, :, :]
                         else:
                             res.var = self.var + UnitArray(other.var[np.newaxis, :, :],
-                                                                 other.unit**2, self.unit**2)
+                                                           other.unit**2, self.unit**2)
                 return res
             else:
                 # cube1 - cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]-cube2[k,j,i])
                 if other.data is None or self.shape[0] != other.shape[0] \
-                or self.shape[1] != other.shape[1] \
-                or self.shape[2] != other.shape[2]:
+                        or self.shape[1] != other.shape[1] \
+                        or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
                 res = self.copy()
@@ -914,44 +885,29 @@ class Cube(DataArray):
                     res.data = self.data - other.data
                 else:
                     res.data = self.data - UnitMaskedArray(other.data.data,
-                                                                     other.unit, self.unit)
+                                                           other.unit, self.unit)
                 # variance
                 if other.var is not None:
                     if self.var is None:
                         if other.unit == self.unit:
                             res.var = other.var
                         else:
-                            res.var = UnitArray(other.var,
-                                                      other.unit**2,
-                                                      self.unit**2)
+                            res.var = UnitArray(other.var, other.unit**2,
+                                                self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res.var = self.var + other.var
                         else:
                             res.var = self.var + UnitArray(other.var,
-                                                                 other.unit**2,
-                                                                 self.unit**2)
+                                                           other.unit**2,
+                                                           self.unit**2)
                 return res
 
     def __rsub__(self, other):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ=1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ=3
-                except:
-                    typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = other - self.data
@@ -984,21 +940,7 @@ class Cube(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ=1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ=3
-                except:
-                    typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data *= other
@@ -1008,19 +950,19 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
-            if typ==1 or typ==3:
+            if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
-                and not self.wave.isEqual(other.wave):
+                        and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spectral direction')
-            if typ==2 or typ==3:
+            if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
-                and not self.wcs.isEqual(other.wcs):
+                        and not self.wcs.isEqual(other.wcs):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spatial directions')
-            if typ==1:
+            if other.ndim == 1:
                 # cube1 * spectrum = cube2
                 if other.data is None or other.shape != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
@@ -1039,17 +981,17 @@ class Cube(DataArray):
                             * other.data.data[:, np.newaxis, np.newaxis] \
                             * other.data.data[:, np.newaxis, np.newaxis]
                 else:
-                    res.var = (other.var[:, np.newaxis, np.newaxis]
-                                * self.data.data * self.data.data + self.var
-                                * other.data.data[:, np.newaxis, np.newaxis]
-                                * other.data.data[:, np.newaxis, np.newaxis])
+                    res.var = (other.var[:, np.newaxis, np.newaxis] *
+                               self.data.data * self.data.data + self.var *
+                               other.data.data[:, np.newaxis, np.newaxis] *
+                               other.data.data[:, np.newaxis, np.newaxis])
                 # unit
                 res.unit = self.unit*other.unit
                 return res
-            elif typ==2:
+            elif other.ndim == 2:
                 # cube1 * image = cube2 (cube2[k,j,i]=cube1[k,j,i]*image[j,i])
                 if other.data is None or self.shape[2] != other.shape[1] \
-                or self.shape[1] != other.shape[0]:
+                        or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
                 res = self.copy()
@@ -1065,18 +1007,18 @@ class Cube(DataArray):
                     res.var = self.var * other.data.data[np.newaxis, :, :] \
                             * other.data.data[np.newaxis, :, :]
                 else:
-                    res.var = (other.var[np.newaxis, :, :]
-                                * self.data.data * self.data.data
-                                + self.var * other.data.data[np.newaxis, :, :]
-                                * other.data.data[np.newaxis, :, :])
+                    res.var = (other.var[np.newaxis, :, :] *
+                               self.data.data * self.data.data +
+                               self.var * other.data.data[np.newaxis, :, :] *
+                               other.data.data[np.newaxis, :, :])
                 # unit
                 res.unit = self.unit*other.unit
                 return res
             else:
                 # cube1 * cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]*cube2[k,j,i])
                 if other.data is None or self.shape[0] != other.shape[0] \
-                or self.shape[1] != other.shape[1] \
-                or self.shape[2] != other.shape[2]:
+                        or self.shape[1] != other.shape[1] \
+                        or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
                 res = self.copy()
@@ -1090,15 +1032,14 @@ class Cube(DataArray):
                 elif other.var is None:
                     res.var = self.var * other.data.data * other.data.data
                 else:
-                    res.var = (other.var * self.data.data * self.data.data
-                                   + self.var * other.data.data * other.data.data)
+                    res.var = (other.var * self.data.data * self.data.data +
+                               self.var * other.data.data * other.data.data)
                 # unit
                 res.unit = self.unit * other.unit
                 return res
 
     def __rmul__(self, other):
         return self.__mul__(other)
-
 
     def __div__(self, other):
         """Divides by other.
@@ -1124,21 +1065,7 @@ class Cube(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ=1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ=3
-                except:
-                    typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data /= other
@@ -1148,25 +1075,25 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
-            if typ==1 or typ==3:
+            if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
-                and not self.wave.isEqual(other.wave):
+                        and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spectral direction')
-            if typ==2 or typ==3:
+            if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
-                and not self.wcs.isEqual(other.wcs):
+                        and not self.wcs.isEqual(other.wcs):
                     raise ValueError('Operation forbidden for cubes '
                                      'with different world coordinates'
                                      ' in spatial directions')
-            if typ==1:
+            if other.ndim == 1:
                 # cube1 / spectrum = cube2
                 if other.data is None or other.shape != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 # data
-                res =self.copy()
+                res = self.copy()
                 res.data = self.data / other.data[:, np.newaxis, np.newaxis]
                 # variance
                 if self.var is None and other.var is None:
@@ -1192,10 +1119,10 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit / other.unit
                 return res
-            elif typ==2:
+            elif other.ndim == 2:
                 # cube1 / image = cube2 (cube2[k,j,i]=cube1[k,j,i]/image[j,i])
                 if other.data is None or self.shape[2] != other.shape[1] \
-                or self.shape[1] != other.shape[0]:
+                        or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
                 res = self.copy()
@@ -1213,10 +1140,10 @@ class Cube(DataArray):
                             * other.data.data[np.newaxis, :, :] \
                             / (other.data.data[np.newaxis, :, :] ** 4)
                 else:
-                    res.var = (other.var[np.newaxis, :, :]
-                                * self.data.data * self.data.data + self.var
-                                * other.data.data[np.newaxis, :, :]
-                                * other.data.data[np.newaxis, :, :]) \
+                    res.var = (other.var[np.newaxis, :, :] *
+                               self.data.data * self.data.data + self.var *
+                               other.data.data[np.newaxis, :, :] *
+                               other.data.data[np.newaxis, :, :]) \
                             / (other.data.data[np.newaxis, :, :] ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -1224,8 +1151,8 @@ class Cube(DataArray):
             else:
                 # cube1 / cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]/cube2[k,j,i])
                 if other.data is None or self.shape[0] != other.shape[0] \
-                or self.shape[1] != other.shape[1] \
-                or self.shape[2] != other.shape[2]:
+                        or self.shape[1] != other.shape[1] \
+                        or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
                 res = self.copy()
@@ -1241,8 +1168,8 @@ class Cube(DataArray):
                     res.var = self.var * other.data.data * other.data.data \
                             / (other.data.data ** 4)
                 else:
-                    res.var = (other.var * self.data.data * self.data.data
-                                   + self.var * other.data.data * other.data.data) \
+                    res.var = (other.var * self.data.data * self.data.data +
+                               self.var * other.data.data * other.data.data) \
                             / (other.data.data ** 4)
                 # unit
                 res.unit = self.unit/other.unit
@@ -1252,21 +1179,7 @@ class Cube(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ=1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ=3
-                except:
-                    typ=0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = other / res.data
@@ -1289,7 +1202,6 @@ class Cube(DataArray):
 #         else:
 #             raise ValueError('Operation forbidden')
 #         return res
-
 
     def _sqrt(self):
         """Computes the positive square-root of data extension.
@@ -1500,36 +1412,21 @@ class Cube(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ=1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ=3
-                except:
-                    typ=0
-
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 self.data[key] = other
             except:
                         raise IOError('Operation forbidden')
         else:
-            if typ==1 or typ==3:
+            if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
-                and not self.wave.isEqual(other.wave):
+                        and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spectral direction')
-            if typ==2 or typ==3:
+            if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
-                and not self.wcs.isEqual(other.wcs):
+                        and not self.wcs.isEqual(other.wcs):
                     raise ValueError('Operation forbidden for cubes '
                                      'with different world coordinates'
                                      ' in spatial directions')
@@ -1538,7 +1435,6 @@ class Cube(DataArray):
             else:
                 self.data[key] = UnitMaskedArray(other.data,
                                                  other.unit, self.unit)
-
 
     def set_wcs(self, wcs=None, wave=None):
         """Sets the world coordinates (spatial and/or spectral).
@@ -2886,24 +2782,24 @@ class Cube(DataArray):
             if unit_size is not None:
                 size = size / np.abs(self.wcs.get_step(unit=unit_size)[0])
             radius = size / 2.
-            
+
             size = int(size)
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
             imax, jmax = np.minimum([imin + size, jmin + size],
                                     [self.shape[1], self.shape[2]])
-            
+
             i0, j0 = - np.minimum((center - radius + 0.5).astype(int), [0,0])
-            
+
             data = np.ones((self.shape[0],size,size)) * np.nan
-            
+
             wcs=self.wcs[imin:imax, jmin:jmax]
             wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
             wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
             wcs.set_naxis1(size)
             wcs.set_naxis2(size)
-            
+
             if lbda is None:
                 data[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = self.data[:, imin:imax, jmin:jmax].copy()
                 if self.var is not None:
@@ -2980,11 +2876,11 @@ class Cube(DataArray):
             imax, jmax = np.minimum([imin + size,
                                      jmin + size],
                                     [self.shape[1], self.shape[2]])
-            
+
             i0, j0 = - np.minimum((center - radius + 0.5).astype(int), [0,0])
-            
+
             data = np.ones((self.shape[0], size, size)) * np.nan
-            
+
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1],
                                indexing='ij')
@@ -3001,13 +2897,13 @@ class Cube(DataArray):
                 var[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = self.var[:, imin:imax, jmin:jmax].copy()
             else:
                 var = None
-                
+
             wcs=self.wcs[imin:imax, jmin:jmax]
             wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
             wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
             wcs.set_naxis1(size)
             wcs.set_naxis2(size)
-                
+
             cub = Cube(wcs=self.wcs[imin-i0:imin-i0+size, jmin-j0:jmin-j0+size], wave=self.wave,
                        unit=self.unit, data=data, var=var)
             cub.data.mask = mask
@@ -3138,13 +3034,13 @@ def _process_ima(arglist):
 
 
 # class CubeDisk(DataArray):
-# 
+#
 #     """Sometimes, MPDAF users may want to open fairly large datacubes (> 4 Gb
 #     or so). This can be difficult to handle with limited RAM. This class
 #     provides a way to open datacube fits files with memory mapping. The methods
 #     of the class can extract a spectrum, an image or a smaller datacube from
 #     the larger one.
-# 
+#
 #     Parameters
 #     ----------
 #     filename : string
@@ -3152,7 +3048,7 @@ def _process_ima(arglist):
 #     ext      : integer or (integer,integer) or string or (string,string)
 #                Number/name of the data extension or numbers/names
 #                of the data and variance extensions.
-# 
+#
 #     Attributes
 #     ----------
 #     filename       : string
@@ -3177,10 +3073,10 @@ def _process_ima(arglist):
 #     ima            : dict{string, :class:`mpdaf.obj.Image`}
 #                      dictionary of images
 #     """
-# 
+#
 #     def __init__(self, filename=None, ext=None, notnoise=False, ima=True):
 #         """Creates a CubeDisk object.
-# 
+#
 #         Parameters
 #         ----------
 #         filename : string
@@ -3287,16 +3183,16 @@ def _process_ima(arglist):
 #                             pass
 #             # DQ
 #             f.close()
-# 
+#
 #     def __getitem__(self, item):
 #         """Returns the corresponding object:
-# 
+#
 #         cube[k,p,k] = value
-# 
+#
 #         cube[k,:,:] = spectrum
-# 
+#
 #         cube[:,p,q] = image
-# 
+#
 #         cube[:,:,:] = sub-cube
 #         """
 #         if isinstance(item, tuple) and len(item) == 3:
@@ -3359,10 +3255,10 @@ def _process_ima(arglist):
 #                 return res
 #         else:
 #             raise ValueError('Operation forbidden')
-# 
+#
 #     def truncate(self, coord, mask=True, unit_wave=u.angstrom, unit_wcs=u.deg):
 #         """ Truncates the cube and return a sub-cube.
-# 
+#
 #         Parameters
 #         ----------
 #         coord     : array
@@ -3387,7 +3283,7 @@ def _process_ima(arglist):
 #             pixcrd = skycrd
 #         else:
 #             pixcrd = self.wcs.sky2pix(skycrd, unit=unit_wcs)
-# 
+#
 #         imin = int(np.min(pixcrd[:, 0]))
 #         if imin < 0:
 #             imin = 0
@@ -3396,7 +3292,7 @@ def _process_ima(arglist):
 #             imax = self.shape[1]
 #         if imin >= self.shape[1] or imax <= 0 or imin == imax:
 #             raise ValueError('sub-cube boundaries are outside the cube')
-# 
+#
 #         jmin = int(np.min(pixcrd[:, 1]))
 #         if jmin < 0:
 #             jmin = 0
@@ -3405,23 +3301,23 @@ def _process_ima(arglist):
 #             jmax = self.shape[2]
 #         if jmin >= self.shape[2] or jmax <= 0 or jmin == jmax:
 #             raise ValueError('sub-cube boundaries are outside the cube')
-# 
+#
 #         if unit_wave is None:
 #             kmin = int(lmin+0.5)
 #             kmax= int(lmax+0.5)
 #         else:
 #             kmin = max(0, self.wave.pixel(lmin, nearest=True, unit=unit_wave))
 #             kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1)
-# 
+#
 #         if kmin == kmax:
 #             raise ValueError('Minimum and maximum wavelengths are equal')
-# 
+#
 #         if kmax == kmin + 1:
 #             raise ValueError('Minimum and maximum wavelengths '
 #                              'are outside the spectrum range')
-# 
+#
 #         res = self[kmin:kmax, imin:imax, jmin:jmax]
-# 
+#
 #         if mask:
 #             # mask outside pixels
 #             grid = np.meshgrid(np.arange(0, res.shape[1]),
@@ -3441,9 +3337,9 @@ def _process_ima(arglist):
 #             res.data.mask = np.logical_or(res.data.mask,
 #                                           np.tile(test, [res.shape[0], 1, 1]))
 #             res.resize()
-# 
+#
 #         return res
-# 
+#
 #     def get_white_image(self):
 #         """Performs a sum over the wavelength dimension and returns an
 #         image."""
@@ -3462,7 +3358,7 @@ def _process_ima(arglist):
 #             data += np.sum(f[self.data].data[kmin:kmax], axis=0)
 #             kmin = kmax
 #             kmax += k
-# 
+#
 #         if self.var != -1:
 #             kmin = 0
 #             kmax = k
@@ -3473,8 +3369,8 @@ def _process_ima(arglist):
 #                 kmax += k
 #         else:
 #             var = None
-# 
+#
 #         f.close()
-# 
+#
 #         return Image(shape=data.shape, wcs=self.wcs, unit=self.unit,
 #                      data=data, var=var)

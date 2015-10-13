@@ -60,8 +60,8 @@ class SpectrumClicks(object):
     def iprint(self, i):
         # prints a cursor positions
         d = {'class': 'SpectrumClicks', 'method': 'iprint'}
-        msg = 'xc=%g\tyc=%g\tk=%d\tlbda=%g\tdata=%g' \
-                % (self.xc[i], self.yc[i], self.k[i], self.lbda[i], self.data[i])
+        msg = 'xc=%g\tyc=%g\tk=%d\tlbda=%g\tdata=%g' % (
+            self.xc[i], self.yc[i], self.k[i], self.lbda[i], self.data[i])
         self.logger.info(msg, extra=d)
 
     def write_fits(self):
@@ -72,7 +72,7 @@ class SpectrumClicks(object):
             c3 = pyfits.Column(name='k', format='I', array=self.k)
             c4 = pyfits.Column(name='lbda', format='E', array=self.lbda)
             c5 = pyfits.Column(name='data', format='E', array=self.data)
-            #tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
+            # tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
             coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
             tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
             tbhdu.writeto(self.filename, clobber=True)
@@ -213,7 +213,7 @@ class Spectrum(DataArray):
                      Wavelength coordinates.
     """
 
-    _ndim = 1
+    _ndim_required = 1
     _has_wave = True
 
     def __init__(self, filename=None, ext=None, unit=u.count, data=None,
@@ -487,65 +487,53 @@ class Spectrum(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum: # spectrum1 + spectrum2 = spectrum3
-                typ=1
-        except:
-            try:
-                if other.cube: # spectrum + cube1 = cube2
-                    typ=3
-            except:
-                typ=0
-
-        if typ>0:
-            # coordinates
-            if self.wave is not None and other.wave is not None \
-            and not self.wave.isEqual(other.wave):
-                raise IOError('Operation forbidden for spectra '
-                              'with different world coordinates')
-
-        if typ==1:
-            # spectrum1 + spectrum2 = spectrum3
-            if other.data is None or self.shape != other.shape:
-                raise IOError('Operation forbidden for spectra '
-                              'with different sizes')
-            res = self.copy()
-            # data
-            if other.unit == self.unit:
-                res.data = self.data + other.data
-            else:
-                res.data = self.data + UnitMaskedArray(other.data,
-                                                       other.unit, self.unit)
-            # variance
-            if res.var is not None:
-                if self.var is None:
-                    if other.unit == self.unit:
-                        res.var = other.var
-                    else:
-                        res.var = UnitArray(other.var, other.unit**2,
-                                            self.unit**2)
-                else:
-                    if other.unit == self.unit:
-                        res.var = self.var + other.var
-                    else:
-                        res.var = self.var + UnitArray(other.var,
-                                                       other.unit**2,
-                                                       self.unit**2)
-            # return
-            return res
-
-        if typ==3:
-            # spectrum + cube1 = cube2
-            res = other.__add__(self)
-            return res
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = self.data + other
                 return res
             except:
                 raise IOError('Operation forbidden')
+        else:
+            # coordinates
+            if self.wave is not None and other.wave is not None \
+                    and not self.wave.isEqual(other.wave):
+                raise IOError('Operation forbidden for spectra '
+                              'with different world coordinates')
+
+            if other.ndim == 1:
+                # spectrum1 + spectrum2 = spectrum3
+                if other.data is None or self.shape != other.shape:
+                    raise IOError('Operation forbidden for spectra '
+                                'with different sizes')
+                res = self.copy()
+                # data
+                if other.unit == self.unit:
+                    res.data = self.data + other.data
+                else:
+                    res.data = self.data + UnitMaskedArray(other.data,
+                                                        other.unit, self.unit)
+                # variance
+                if res.var is not None:
+                    if self.var is None:
+                        if other.unit == self.unit:
+                            res.var = other.var
+                        else:
+                            res.var = UnitArray(other.var, other.unit**2,
+                                                self.unit**2)
+                    else:
+                        if other.unit == self.unit:
+                            res.var = self.var + other.var
+                        else:
+                            res.var = self.var + UnitArray(other.var,
+                                                        other.unit**2,
+                                                        self.unit**2)
+                # return
+                return res
+            elif other.ndim == 3:
+                # spectrum + cube1 = cube2
+                res = other.__add__(self)
+                return res
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -578,17 +566,7 @@ class Spectrum(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum: # spectrum1 + spectrum2 = spectrum3
-                typ = 1
-        except:
-            try:
-                if other.cube: # spectrum - cube1 = cube2
-                    typ = 3
-            except:
-                typ = 0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = self.data - other
@@ -598,11 +576,11 @@ class Spectrum(DataArray):
         else:
             # coordinates
             if self.wave is not None and other.wave is not None \
-            and not self.wave.isEqual(other.wave):
+                    and not self.wave.isEqual(other.wave):
                 raise IOError('Operation forbidden for spectra '
                               'with different world coordinates')
 
-            if typ==1:
+            if other.ndim == 1:
                 # spectrum1 + spectrum2 = spectrum3
                 if other.data is None or self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
@@ -664,17 +642,7 @@ class Spectrum(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum: # spectrum1 + spectrum2 = spectrum3
-                typ = 1
-        except:
-            try:
-                if other.cube: # spectrum - cube1 = cube2
-                    typ = 3
-            except:
-                typ = 0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = other - self.data
@@ -714,22 +682,7 @@ class Spectrum(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum:
-                typ = 1
-        except:
-            try:
-                if other.image:
-                    typ=2
-            except:
-                try:
-                    if other.cube:
-                        typ = 3
-                except:
-                    typ = 0
-
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             # spectrum1 * number = spectrum2
             # (spectrum2[k]=spectrum1[k]*number)
             try:
@@ -740,14 +693,14 @@ class Spectrum(DataArray):
                 return res
             except:
                 raise IOError('Operation forbidden')
-        elif typ==1:
+        elif other.ndim == 1:
             # spectrum1 * spectrum2 = spectrum3
             if other.data is None or self.shape != other.shape:
                 raise IOError('Operation forbidden for spectra '
                               'with different sizes')
             # coordinates
             if self.wave is not None and other.wave is not None \
-            and not self.wave.isEqual(other.wave):
+                    and not self.wave.isEqual(other.wave):
                 raise IOError('Operation forbidden for spectra '
                               'with different world coordinates')
 
@@ -762,8 +715,8 @@ class Spectrum(DataArray):
             elif other.var is None:
                 res.var = self.var * other.data.data * other.data.data
             else:
-                res.var = (other.var * self.data.data * self.data.data
-                           + self.var * other.data.data * other.data.data)
+                res.var = (other.var * self.data.data * self.data.data +
+                           self.var * other.data.data * other.data.data)
             # unit
             res.unit = self.unit * other.unit
             # return
@@ -807,17 +760,7 @@ class Spectrum(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum: # spectrum1 + spectrum2 = spectrum3
-                typ = 1
-        except:
-            try:
-                if other.cube: # spectrum - cube1 = cube2
-                    typ = 3
-            except:
-                typ = 0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 # spectrum1 / number =
                 # spectrum2 (spectrum2[k]=spectrum1[k]/number)
@@ -831,10 +774,10 @@ class Spectrum(DataArray):
         else:
             # coordinates
             if self.wave is not None and other.wave is not None \
-            and not self.wave.isEqual(other.wave):
+                    and not self.wave.isEqual(other.wave):
                 raise IOError('Operation forbidden for spectra '
                               'with different world coordinates')
-            if typ==1:
+            if other.ndim == 1:
                 # spectrum1 / spectrum2 = spectrum3
                 if other.data is None or self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
@@ -853,8 +796,8 @@ class Spectrum(DataArray):
                     res.var = self.var * other.data.data * other.data.data \
                         / (other.data.data ** 4)
                 else:
-                    res.var = (other.var * self.data.data * self.data.data
-                               + self.var * other.data.data * other.data.data) \
+                    res.var = (other.var * self.data.data * self.data.data +
+                               self.var * other.data.data * other.data.data) \
                         / (other.data.data ** 4)
                 # unit
                 res.unit = self.unit/other.unit
@@ -881,11 +824,11 @@ class Spectrum(DataArray):
                         * other.data.data * other.data.data / (other.data.data ** 4)
                 else:
                     res.var = \
-                        (other.var
-                         * self.data.data[:, np.newaxis, np.newaxis]
-                         * self.data.data[:, np.newaxis, np.newaxis]
-                         + self.var[:, np.newaxis, np.newaxis]
-                         * other.data.data * other.data.data) / (other.data.data ** 4)
+                        (other.var *
+                         self.data.data[:, np.newaxis, np.newaxis] *
+                         self.data.data[:, np.newaxis, np.newaxis] +
+                         self.var[:, np.newaxis, np.newaxis] *
+                         other.data.data * other.data.data) / (other.data.data ** 4)
                 # unit
                 res.unit = self.unit/other.unit
                 return res
@@ -894,17 +837,7 @@ class Spectrum(DataArray):
         if self.data is None:
             raise ValueError('empty data array')
 
-        try:
-            if other.spectrum: # spectrum1 + spectrum2 = spectrum3
-                typ = 1
-        except:
-            try:
-                if other.cube: # spectrum - cube1 = cube2
-                    typ = 3
-            except:
-                typ = 0
-
-        if typ==0:
+        if not isinstance(other, DataArray):
             try:
                 res = self.copy()
                 res.data = other / self.data
@@ -1008,7 +941,7 @@ class Spectrum(DataArray):
             raise ValueError('Operation forbidden without world coordinates '
                              'along the spectral direction')
         else:
-            if unit == None:
+            if unit is None:
                 pix_min = max(0, int(lmin+0.5))
                 pix_max = min(self.shape, int(lmax+0.5))
             else:
