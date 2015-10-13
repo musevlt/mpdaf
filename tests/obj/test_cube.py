@@ -8,13 +8,7 @@ import numpy as np
 from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
 from numpy.testing import assert_almost_equal, assert_array_equal
 from operator import add, sub, mul, div
-
-
-def generate_cube(scale=2.3, uwave=u.angstrom):
-    wcs = WCS(crval=(0, 0), crpix=1.0, shape=(6, 5))
-    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, shape=10, cunit=uwave)
-    return Cube(data=scale * np.ones(shape=(10, 6, 5)), wave=wave, wcs=wcs,
-                copy=False)
+from ..utils import generate_cube, generate_image, generate_spectrum
 
 
 @attr(speed='fast')
@@ -33,12 +27,8 @@ def test_copy():
 def test_arithmetricOperator_Cube():
     """Cube class: tests arithmetic functions"""
     cube1 = generate_cube(uwave=u.nm)
-    image1 = Image(data=np.ones(shape=(6, 5)), wcs=cube1.wcs, unit=2 * u.ct)
-
-    wave2 = WaveCoord(crpix=2.0, cdelt=30.0, crval=5, shape=10,
-                      cunit=u.angstrom)
-    spectrum1 = Spectrum(data=2.3 * np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-                         wave=wave2)
+    image1 = generate_image(wcs=cube1.wcs, unit=2 * u.ct)
+    spectrum1 = generate_spectrum(scale=2.3, cdelt=30.0, crval=5)
     cube2 = image1 + cube1
 
     for op in (add, sub, mul, div):
@@ -68,14 +58,10 @@ def test_arithmetricOperator_Cube():
 def test_get_Cube():
     """Cube class: tests getters"""
     cube1 = generate_cube()
-    a = cube1[2, :, :]
-    assert_array_equal(a.shape, (6, 5))
-    a = cube1[:, 2, 3]
-    nose.tools.assert_equal(a.shape, 10)
-    a = cube1[1:7, 0:2, 0:3]
-    assert_array_equal(a.shape, (6, 2, 3))
-    a = cube1.get_lambda(1.2, 15.6)
-    assert_array_equal(a.shape, (6, 6, 5))
+    assert_array_equal(cube1[2, :, :].shape, (6, 5))
+    nose.tools.assert_equal(cube1[:, 2, 3].shape, 10)
+    assert_array_equal(cube1[1:7, 0:2, 0:3].shape, (6, 2, 3))
+    assert_array_equal(cube1.get_lambda(1.2, 15.6).shape, (6, 6, 5))
     a = cube1[2:4, 0:2, 1:4]
     assert_array_equal(a.get_start(), (3.5, 0, 1))
     assert_array_equal(a.get_end(), (6.5, 1, 3))
@@ -168,13 +154,10 @@ def test_mask():
 @attr(speed='fast')
 def test_truncate():
     """Cube class: testing truncation"""
-    wave = WaveCoord(crval=1)
-    wcs = WCS(crval=(0, 0))
-    data = np.ones(shape=(10, 6, 5)) * 2
-    cube1 = Cube(data=data, wave=wave, wcs=wcs)
+    cube1 = generate_cube(scale=2, wave=WaveCoord(crval=1))
     coord = [[2, 0, 1], [5, 1, 3]]
-    cube2 = cube1.truncate(coord, unit_wcs=wcs.get_cunit1(),
-                           unit_wave=wave.get_cunit())
+    cube2 = cube1.truncate(coord, unit_wcs=cube1.wcs.get_cunit1(),
+                           unit_wave=cube1.wave.get_cunit())
     assert_array_equal(cube2.shape, (4, 2, 3))
     assert_array_equal(cube2.get_start(), (2, 0, 1))
     assert_array_equal(cube2.get_end(), (5, 1, 3))
@@ -183,12 +166,9 @@ def test_truncate():
 @attr(speed='fast')
 def test_sum():
     """Cube class: testing sum, mean and median methods"""
-    wave = WaveCoord(crval=1)
-    wcs = WCS(crval=(0, 0))
-    data = np.ones(shape=(10, 6, 5))
+    cube1 = generate_cube(scale=1, wave=WaveCoord(crval=1))
     for i in range(10):
-        data[i, :, :] = i * np.ones((6, 5))
-    cube1 = Cube(data=data, wave=wave, wcs=wcs)
+        cube1.data[i, :, :] = i * np.ones((6, 5))
     nose.tools.assert_equal(cube1.sum(), 6 * 5 * 45)
     sum2 = cube1.sum(axis=0)
     nose.tools.assert_equal(sum2.shape[0], 6)
@@ -211,10 +191,7 @@ def test_sum():
 @attr(speed='fast')
 def test_rebin():
     """Cube class: testing rebin methods"""
-    wave = WaveCoord(crval=1)
-    wcs = WCS(crval=(0, 0))
-    data = np.ones(shape=(10, 6, 5))
-    cube1 = Cube(data=data, wave=wave, wcs=wcs)
+    cube1 = generate_cube(scale=1, wave=WaveCoord(crval=1))
     cube2 = cube1.rebin_mean(factor=2)
     nose.tools.assert_equal(cube2[0, 0, 0], 1)
     assert_array_equal(cube2.get_start(), (1.5, 0.5, 0.5))
@@ -250,10 +227,7 @@ def test_get_image():
 @attr(speed='fast')
 def test_subcube():
     """Cube class: testing sub-cube extraction methods"""
-    wave = WaveCoord(crval=1)
-    wcs = WCS(crval=(0, 0))
-    data = np.ones(shape=(10, 6, 5))
-    cube1 = Cube(data=data, wave=wave, wcs=wcs)
+    cube1 = generate_cube(scale=1, wave=WaveCoord(crval=1))
     cube2 = cube1.subcube(center=(2, 2.8), size=2, lbda=(5, 8),
                           unit_center=None, unit_size=None)
     assert_array_equal(cube2.get_start(), (5, 1, 2))
@@ -268,10 +242,7 @@ def test_subcube():
 @attr(speed='fast')
 def test_aperture():
     """Cube class: testing spectrum extraction"""
-    wave = WaveCoord(crval=1)
-    wcs = WCS(crval=(0, 0))
-    data = np.ones(shape=(10, 6, 5))
-    cube1 = Cube(data=data, wave=wave, wcs=wcs)
+    cube1 = generate_cube(scale=1, wave=WaveCoord(crval=1))
     spe = cube1.aperture(center=(2, 2.8), radius=1,
                          unit_center=None, unit_radius=None)
     nose.tools.assert_equal(spe.shape, 10)

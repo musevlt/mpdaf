@@ -265,12 +265,10 @@ class WCS(object):
             # reference pixel
             if crpix is not None:
                 self.wcs.wcs.crpix = np.array([crpix[1], crpix[0]])
+            elif shape is None:
+                self.wcs.wcs.crpix = np.array([1.0, 1.0])
             else:
-                if shape is None:
-                    self.wcs.wcs.crpix = np.array([1.0, 1.0])
-                else:
-                    self.wcs.wcs.crpix = \
-                        (np.array([shape[1], shape[0]]) + 1) / 2.
+                self.wcs.wcs.crpix = (np.array([shape[1], shape[0]]) + 1) / 2.
 
             # value of reference pixel
             self.wcs.wcs.crval = np.array([crval[1], crval[0]])
