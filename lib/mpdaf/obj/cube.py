@@ -1350,9 +1350,7 @@ class Cube(DataArray):
                         wcs = self.wcs[item[1], item[2]]
                     except:
                         wcs = None
-                    res = Image(shape=shape, wcs=wcs, unit=self.unit)
-                    res.data = data
-                    res.var = var
+                    res = Image(wcs=wcs, unit=self.unit, data=data, var=var, copy=False)
                     res.filename = self.filename
                     return res
             elif is_int(item[1]) and is_int(item[2]):
@@ -1365,9 +1363,7 @@ class Cube(DataArray):
                     wave = self.wave[item[0]]
                 except:
                     wave = None
-                res = Spectrum(shape=shape, wave=wave, unit=self.unit)
-                res.data = data
-                res.var = var
+                res = Spectrum(wave=wave, unit=self.unit, data=data, var=var, copy=False)
                 res.filename = self.filename
                 return res
             else:
@@ -1389,11 +1385,9 @@ class Cube(DataArray):
                     wave = self.wave[item[0]]
                 except:
                     wave = None
-                res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit)
+                res = Cube(wcs=wcs, wave=wave, unit=self.unit, data=data, var=var, copy=False)
                 res.data_header = pyfits.Header(self.data_header)
                 res.primary_header = pyfits.Header(self.primary_header)
-                res.data = data
-                res.var = var
                 res.filename = self.filename
                 return res
         else:
@@ -1684,9 +1678,7 @@ class Cube(DataArray):
                     var = var.filled(np.NaN)
                 else:
                     var = None
-            res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit)
-            res.data = data
-            res.var = var
+            res = Image(wcs=self.wcs, unit=self.unit, data=data, var=var, copy=False)
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
@@ -1726,9 +1718,7 @@ class Cube(DataArray):
                 else:
                     var = None
 
-            res = Spectrum(shape=data.shape[0], wave=self.wave, unit=self.unit)
-            res.data = data
-            res.var = var
+            res = Spectrum(wave=self.wave, unit=self.unit, data=data, var=var, copy=False)
             return res
         else:
             return None
@@ -1763,9 +1753,7 @@ class Cube(DataArray):
                 #var = np.ma.mean(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
             else:
                 var = None
-            res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit)
-            res.data = data
-            res.var = var
+            res = Image(wcs=self.wcs, unit=self.unit, data=data, var=var, copy=False)
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
@@ -1778,9 +1766,7 @@ class Cube(DataArray):
                     / np.sum(np.sum(~self.data.mask, axis=1), axis=1)**2
             else:
                 var = None
-            res = Spectrum(shape=data.shape[0], wave=self.wave, unit=self.unit)
-            res.data = data
-            res.var = var
+            res = Spectrum(wave=self.wave, unit=self.unit, data=data, var=var, copy=False)
             return res
         else:
             return None
@@ -1815,9 +1801,7 @@ class Cube(DataArray):
                 var = np.ma.median(var, axis).filled(np.NaN)
             else:
                 var = None
-            res = Image(shape=data.shape, wcs=self.wcs, unit=self.unit)
-            res.data = data
-            res.var = var
+            res = Image(wcs=self.wcs, unit=self.unit, data=data, var=var, copy=False)
             return res
         elif axis == tuple([1, 2]):
             # return a spectrum
@@ -1828,9 +1812,7 @@ class Cube(DataArray):
                 var = np.ma.median(np.ma.median(var, axis=1), axis=1).filled(np.NaN)
             else:
                 var = None
-            res = Spectrum(shape=data.shape[0], wave=self.wave, unit=self.unit)
-            res.data = data
-            res.var = var
+            res = Spectrum(wave=self.wave, unit=self.unit, data=data, var=var, copy=False)
             return res
         else:
             return None
@@ -1918,11 +1900,9 @@ class Cube(DataArray):
         except:
             wave = None
 
-        res = Cube(shape=shape, wcs=wcs, wave=wave, unit=self.unit)
+        res = Cube(wcs=wcs, wave=wave, unit=self.unit, data=data, var=var, copy=False)
         res.data_header = pyfits.Header(self.data_header)
         res.primary_header = pyfits.Header(self.primary_header)
-        res.data = data
-        res.var = var
 
         if mask:
             # mask outside pixels
@@ -2632,8 +2612,8 @@ class Cube(DataArray):
                 # f return a Spectrum -> iterator return a cube
                 header, data, mask, var, unit = out
                 wave = WaveCoord(header, shape=data.shape[0])
-                spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit,
-                               data=data, var=var)
+                spe = Spectrum(wave=wave, unit=unit,
+                               data=data, var=var, copy=False)
                 spe.data.mask = mask
 
                 cshape = (data.shape[0], self.shape[1], self.shape[2])
@@ -2771,8 +2751,8 @@ class Cube(DataArray):
                 # f return a Spectrum -> iterator return a list of spectra
                 header, data, mask, var, unit = out
                 wave = WaveCoord(header, shape=data.shape[0])
-                spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit,
-                               data=data, var=var)
+                spe = Spectrum(wave=wave, unit=unit,
+                               data=data, var=var, copy=False)
                 spe.data.mask = mask
                 if init:
                     result = np.empty(self.shape[0], dtype=type(spe))
@@ -2875,7 +2855,7 @@ class Cube(DataArray):
 
     def subcube(self, center, size, lbda=None, unit_center=u.deg,
                 unit_size=u.arcsec, unit_wave=u.angstrom):
-        """Extracts a sub-cube
+        """Extracts a sub-cube around a position.
 
         Parameters
         ----------
@@ -2906,21 +2886,34 @@ class Cube(DataArray):
             if unit_size is not None:
                 size = size / np.abs(self.wcs.get_step(unit=unit_size)[0])
             radius = size / 2.
-
+            
+            size = int(size)
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + int(size+0.5), jmin + int(size+0.5)],
+            imax, jmax = np.minimum([imin + size, jmin + size],
                                     [self.shape[1], self.shape[2]])
-
+            
+            i0, j0 = - np.minimum((center - radius + 0.5).astype(int), [0,0])
+            
+            data = np.ones((self.shape[0],size,size)) * np.nan
+            
+            wcs=self.wcs[imin:imax, jmin:jmax]
+            wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
+            wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
+            wcs.set_naxis1(size)
+            wcs.set_naxis2(size)
+            
             if lbda is None:
-                data = self.data[:, imin:imax, jmin:jmax].copy()
+                data[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = self.data[:, imin:imax, jmin:jmax].copy()
                 if self.var is not None:
-                    var = self.var[:, imin:imax, jmin:jmax].copy()
+                    var = np.ones((self.shape[0],size,size)) * np.nan
+                    var[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = self.var[:, imin:imax, jmin:jmax].copy()
                 else:
                     var = None
-                cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave,
-                       unit=self.unit, data=data, var=var)
+                cub = Cube(wcs=wcs, wave=self.wave,
+                       unit=self.unit, data=np.ma.masked_invalid(data),
+                       var=var)
                 cub.data_header = pyfits.Header(self.data_header)
                 cub.primary_header = pyfits.Header(self.primary_header)
                 return cub
@@ -2932,14 +2925,16 @@ class Cube(DataArray):
                 else:
                     kmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
                     kmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)+1
-                data = self.data[kmin:kmax, imin:imax, jmin:jmax].copy()
+                data = np.ones((kmax-kmin, size, size))*np.nan
+                data[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = self.data[kmin:kmax, imin:imax, jmin:jmax].copy()
                 if self.var is not None:
-                    var = self.var[kmin:kmax, imin:imax, jmin:jmax].copy()
+                    var = np.ones((kmax-kmin, size, size))*np.nan
+                    var[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = self.var[kmin:kmax, imin:imax, jmin:jmax].copy()
                 else:
                     var = None
-                cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax],
-                           wave=self.wave[kmin:kmax],
-                           unit=self.unit, data=data, var=var)
+                cub = Cube(wcs=wcs, wave=self.wave[kmin:kmax],
+                           unit=self.unit, data=np.ma.masked_invalid(data),
+                           var=var)
                 cub.data_header = pyfits.Header(self.data_header)
                 cub.primary_header = pyfits.Header(self.primary_header)
                 return cub
@@ -2978,30 +2973,44 @@ class Cube(DataArray):
                 radius = radius / np.abs(self.wcs.get_step(unit=unit_radius)[0])
 
             radius2 = radius * radius
+            size = int(2 * radius)
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + int(2 * radius + 0.5),
-                                     jmin + int(2 * radius + 0.5)],
+            imax, jmax = np.minimum([imin + size,
+                                     jmin + size],
                                     [self.shape[1], self.shape[2]])
-
+            
+            i0, j0 = - np.minimum((center - radius + 0.5).astype(int), [0,0])
+            
+            data = np.ones((self.shape[0], size, size)) * np.nan
+            
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1],
                                indexing='ij')
             grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
                                (self.shape[0], imax - imin, jmax - jmin))
 
-            data = self.data[:, imin:imax, jmin:jmax].copy()
-            data.mask[:, :, :] = np.logical_or(
+            data[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = self.data[:, imin:imax, jmin:jmax].copy()
+            mask = np.ones((self.shape[0], size, size), dtype=np.bool)
+            mask[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = np.logical_or(
                 self.data.mask[:, imin:imax, jmin:jmax], grid3d)
 
             if self.var is not None:
-                var = self.var[:, imin:imax, jmin:jmax].copy()
+                var = np.ones((self.shape[0], size, size)) * np.nan
+                var[:,i0:i0 + imax - imin,j0:j0 + jmax - jmin] = self.var[:, imin:imax, jmin:jmax].copy()
             else:
                 var = None
-            cub = Cube(wcs=self.wcs[imin:imax, jmin:jmax], wave=self.wave,
+                
+            wcs=self.wcs[imin:imax, jmin:jmax]
+            wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
+            wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
+            wcs.set_naxis1(size)
+            wcs.set_naxis2(size)
+                
+            cub = Cube(wcs=self.wcs[imin-i0:imin-i0+size, jmin-j0:jmin-j0+size], wave=self.wave,
                        unit=self.unit, data=data, var=var)
-            cub.data.mask = data.mask
+            cub.data.mask = mask
             cub.data_header = pyfits.Header(self.data_header)
             cub.primary_header = pyfits.Header(self.primary_header)
             return cub
