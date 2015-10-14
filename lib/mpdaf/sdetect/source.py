@@ -115,9 +115,10 @@ def crackz(nlines, wl, flux, eml, zguess=None):
           list of lines names)
     """
     errmin = 3.0
+    zstep=0.0002
     if zguess:
         zmin = zguess
-        zmax = zguess+0.001
+        zmax = zguess+zstep
     else:
         zmin = 0.0
         zmax = 7.0
@@ -129,7 +130,7 @@ def crackz(nlines, wl, flux, eml, zguess=None):
         found = 0
         lbdas = np.array(eml.keys())
         lnames = np.array(eml.values())
-        for z in np.arange(zmin, zmax, 0.001):
+        for z in np.arange(zmin, zmax, zstep):
             (error, jfound) = matchlines(nlines, wl, z, eml)
             if(error < errmin):
                 errmin = error
