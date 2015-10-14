@@ -15,6 +15,7 @@ from scipy.optimize import leastsq
 from . import ABmag_filters
 from .data import DataArray
 from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
+from ..tools import deprecated
 
 
 class SpectrumClicks(object):
@@ -3649,9 +3650,9 @@ class Spectrum(DataArray):
                         lmin = self._clicks.lbda[-3]
                         lpeak = self._clicks.lbda[-2]
                         lmax = self._clicks.lbda[-1]
-                        self.gauss2 = self.gauss_asymfit(lmin, lmax,
-                                                    lpeak=lpeak, plot=True,
-                                                    unit=self._unit)
+                        self.gauss2 = self.gauss_asymfit(
+                            lmin, lmax, lpeak=lpeak, plot=True,
+                            unit=self._unit)
                         self.logger.info('left:', extra=d)
                         self.gauss2[0].print_param()
                         self.logger.info('right:', extra=d)
@@ -3684,10 +3685,9 @@ class Spectrum(DataArray):
                         lpeak = self._clicks.lbda[-3]
                         lmax1 = self._clicks.lbda[-2]
                         lmax2 = self._clicks.lbda[-1]
-                        self.gauss2 = self.gauss_asymfit((lmin1, lmin2),
-                                                    (lmax1, lmax2),
-                                                    lpeak=lpeak, plot=True,
-                                                    unit=self._unit)
+                        self.gauss2 = self.gauss_asymfit(
+                            (lmin1, lmin2), (lmax1, lmax2), lpeak=lpeak,
+                            plot=True, unit=self._unit)
                         self.logger.info('left:', extra=d)
                         self.gauss2[0].print_param()
                         self.logger.info('right:', extra=d)
@@ -3701,11 +3701,11 @@ class Spectrum(DataArray):
             fig = plt.gcf()
             fig.canvas.stop_event_loop_default()
 
+    @deprecated('rebin_factor method is deprecated in favor of rebin_mean')
     def rebin_factor(self, factor, margin='center'):
-        raise DeprecationWarning('Using rebin_factor method is deprecated: Please use rebin_mean instead')
         return self.rebin_mean(factor, margin)
 
+    @deprecated('rebin method is deprecated in favor of resample')
     def rebin(self, step, start=None, shape=None,
               spline=False, notnoise=False, unit=u.angstrom):
-        raise DeprecationWarning('Using rebin method is deprecated: Please use resample instead')
         return self.resample(step, start, shape, spline, notnoise, unit)
