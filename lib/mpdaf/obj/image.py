@@ -496,79 +496,6 @@ class Image(DataArray):
 
         self.filename = filename
 
-    def __le__(self, item):
-        """Masks data array where greater than a given value (operator <=).
-
-        Parameters
-        ----------
-        item : float
-            minimum value.
-
-        Returns
-        -------
-        out : Image object.
-        """
-        result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_greater(self.data, item)
-        return result
-
-    def __lt__(self, item):
-        """Masks data array where greater or equal than a given value
-        (operator.
-
-        <).
-
-        Parameters
-        ----------
-        item : float
-            minimum value.
-
-        Returns
-        -------
-        out : Image object.
-        """
-        result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_greater_equal(self.data, item)
-        return result
-
-    def __ge__(self, item):
-        """Masks data array where less than a given value (operator >=).
-
-        Parameters
-        ----------
-        item : float
-            maximum value.
-
-        Returns
-        -------
-        out : Image object.
-        """
-        result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_less(self.data, item)
-        return result
-
-    def __gt__(self, item):
-        """Masks data array where less or equal than a given value (operator.
-
-        >).
-
-        Parameters
-        ----------
-        item : float
-            maximum value.
-
-        Returns
-        -------
-        out : Image object.
-        """
-        result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_less_equal(self.data, item)
-        return result
-
     def resize(self):
         """Resizes the image to have a minimum number of masked values."""
         if self.data is not None:
@@ -1016,36 +943,6 @@ class Image(DataArray):
 #             raise ValueError('Operation forbidden')
 #         return res
 
-    def _sqrt(self):
-        """Computes the positive square-root of data extension.
-        """
-        if self.data is None:
-            raise ValueError('empty data array')
-        if self.var is not None:
-            self.var = 3 * self.var / self.data.data ** 4
-        self.data = np.ma.sqrt(self.data)
-        self.unit /= np.sqrt(self.unit.scale)
-
-    def sqrt(self):
-        """Returns an image containing the positive square-root
-        of data extension.
-        """
-        res = self.copy()
-        res._sqrt()
-        return res
-
-    def _abs(self):
-        """Computes the absolute value of data extension."""
-        if self.data is None:
-            raise ValueError('empty data array')
-        self.data = np.ma.abs(self.data)
-
-    def abs(self):
-        """Returns an image containing the absolute value of data extension."""
-        res = self.copy()
-        res._abs()
-        return res
-
     def __getitem__(self, item):
         """Returns the corresponding value or sub-image.
         """
@@ -1404,36 +1301,6 @@ class Image(DataArray):
 
         self.data.mask=np.logical_or(c,self.data.mask) # combine the previous mask with the new one
         return poly
-
-    def unmask(self):
-        """Unmasks the image (just invalid data (nan,inf) are masked)."""
-        self.data.mask = False
-        self.data = np.ma.masked_invalid(self.data)
-
-    def mask_variance(self, threshold):
-        """Masks pixels with a variance upper than threshold value.
-
-        Parameters
-        ----------
-        threshold : float
-                    Threshold value.
-        """
-        if self.var is None:
-            raise ValueError('Operation forbidden without '
-                             'variance extension.')
-        else:
-            ksel = np.where(self.var > threshold)
-            self.data[ksel] = np.ma.masked
-
-    def mask_selection(self, ksel):
-        """Masks pixels corresponding to a selection.
-
-        Parameters
-        ----------
-        ksel : output of np.where
-               elements depending on a condition.
-        """
-        self.data[ksel] = np.ma.masked
 
     def _truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg):
         """Truncates the image.
@@ -4010,7 +3877,7 @@ class Image(DataArray):
                 theta = -self_rot + ima_rot
                 ima = ima.rotate(theta, reshape=True)
 
-        unit=ima.wcs.get_cunit1()
+        unit = ima.wcs.get_cunit1()
         self_cdelt = self.wcs.get_step(unit=unit)
         ima_cdelt = ima.wcs.get_step()
 
@@ -4033,7 +3900,8 @@ class Image(DataArray):
 
         # here ima and self have the same step and the same rotation
 
-        [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky([[0, 0]], unit=self.wcs.get_cunit1()))
+        [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky(
+            [[0, 0]], unit=self.wcs.get_cunit1()))
         l1 = int(l1 + 0.5)
         k1 = int(k1 + 0.5)
         k2 = k1 + ima.shape[0]

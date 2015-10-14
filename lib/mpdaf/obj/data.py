@@ -301,13 +301,8 @@ class DataArray(object):
 
     def copy(self):
         """Returns a copy of the object."""
-        obj = self.__class__(
-            data=self.data.copy(),
-            unit=self.unit,
-            var=None if self.var is None else self.var.copy(),
-            wcs=None if self.wcs is None else self.wcs.copy(),
-            wave=None if self.wave is None else self.wave.copy()
-        )
+        obj = self.__class__(data=self.data, unit=self.unit, var=self.var,
+                             wcs=self.wcs, wave=self.wave, copy=True)
         obj.filename = self.filename
         obj.data_header = pyfits.Header(self.data_header)
         obj.primary_header = pyfits.Header(self.primary_header)
@@ -347,7 +342,7 @@ class DataArray(object):
                 else '.data({})'.format(','.join(shape_str)))
         noise = ('no noise' if self._var is None and self._var_ext is None
                  else '.var({})'.format(','.join(shape_str)))
-        unit = 'no unit' if self.unit == u.dimensionless_unscaled else self.unit
+        unit = str(self.unit) or 'no unit'
         log_info('%s (%s), %s', data, unit, noise)
 
         if self._has_wcs:
@@ -365,3 +360,124 @@ class DataArray(object):
     @deprecated('Data should now be set with the `.data` attribute')
     def get_np_data(self):
         return self.data
+
+    def __le__(self, item):
+        """Mask data array where greater than a given value (<=).
+
+        Parameters
+        ----------
+        item : float
+            minimum value.
+
+        Returns
+        -------
+        out : New object.
+        """
+        result = self.copy()
+        if self.data is not None:
+            result.data = np.ma.masked_greater(self.data, item)
+        return result
+
+    def __lt__(self, item):
+        """Mask data array where greater or equal than a given value (<).
+
+        Parameters
+        ----------
+        item : float
+               minimum value.
+
+        Returns
+        -------
+        out : New object.
+        """
+        result = self.copy()
+        if self.data is not None:
+            result.data = np.ma.masked_greater_equal(self.data, item)
+        return result
+
+    def __ge__(self, item):
+        """Mask data array where less than a given value (>=).
+
+        Parameters
+        ----------
+        item : float
+            maximum value.
+
+        Returns
+        -------
+        out : New object.
+        """
+        result = self.copy()
+        if self.data is not None:
+            result.data = np.ma.masked_less(self.data, item)
+        return result
+
+    def __gt__(self, item):
+        """Mask data array where less or equal than a given value (>).
+
+        Parameters
+        ----------
+        item : float
+               maximum value.
+
+        Returns
+        -------
+        out : New object.
+        """
+        result = self.copy()
+        if self.data is not None:
+            result.data = np.ma.masked_less_equal(self.data, item)
+        return result
+
+    def _sqrt(self):
+        if self.data is None:
+            raise ValueError('empty data array')
+        if self.var is not None:
+            self.var = 3 * self.var / self.data.data ** 4
+        self.data = np.ma.sqrt(self.data)
+        self.unit /= np.sqrt(self.unit.scale)
+
+    def sqrt(self):
+        """Return a new object with the positive square-root of the data."""
+        res = self.copy()
+        res._sqrt()
+        return res
+
+    def _abs(self):
+        if self.data is None:
+            raise ValueError('empty data array')
+        self.data = np.ma.abs(self.data)
+
+    def abs(self):
+        """Return a new object with the absolute value of the data."""
+        res = self.copy()
+        res._abs()
+        return res
+
+    def unmask(self):
+        """Unmasks the data (just invalid data (nan,inf) are masked)."""
+        self.data.mask = False
+        self.data = np.ma.masked_invalid(self.data)
+
+    def mask_variance(self, threshold):
+        """Masks pixels with a variance upper than threshold value.
+
+        Parameters
+        ----------
+        threshold : float
+                    Threshold value.
+        """
+        if self.var is None:
+            raise ValueError('Operation forbidden without variance extension.')
+        else:
+            self.data[self.var > threshold] = np.ma.masked
+
+    def mask_selection(self, ksel):
+        """Masks pixels corresponding to the selection.
+
+        Parameters
+        ----------
+        ksel : output of np.where
+               elements depending on a condition
+        """
+        self.data[ksel] = np.ma.masked

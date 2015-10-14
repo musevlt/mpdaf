@@ -321,46 +321,6 @@ class Cube(DataArray):
 
         self.filename = filename
 
-    def __le__(self, item):
-        """Masks data array where greater than a given value.
-
-        Returns a cube object containing a masked array
-        """
-        result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_greater(self.data, item)
-        return result
-
-    def __lt__(self, item):
-        """Masks data array where greater or equal than a given value.
-
-        Returns a cube object containing a masked array
-        """
-        result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_greater_equal(self.data, item)
-        return result
-
-    def __ge__(self, item):
-        """Masks data array where less than a given value.
-
-        Returns a Cube object containing a masked array
-        """
-        result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_less(self.data, item)
-        return result
-
-    def __gt__(self, item):
-        """Masks data array where less or equal than a given value.
-
-        Returns a Cube object containing a masked array
-        """
-        result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_less_equal(self.data, item)
-        return result
-
     def resize(self):
         """Resizes the cube to have a minimum number of masked values."""
         if self.data is not None:
@@ -403,11 +363,6 @@ class Cube(DataArray):
                 d = {'class': 'Cube', 'method': 'resize'}
                 self.logger.warning("wavelength solution not copied: "
                                     "wave attribute is None", extra=d)
-
-    def unmask(self):
-        """Unmasks the cube (just invalid data (nan,inf) are masked)."""
-        self.data.mask = False
-        self.data = np.ma.masked_invalid(self.data)
 
     def mask(self, center, radius, lmin=None, lmax=None, inside=True,
              unit_center=u.deg, unit_radius=u.arcsec, unit_wave=u.angstrom):
@@ -597,31 +552,6 @@ class Cube(DataArray):
                                (lmax - lmin, imax - imin, jmax - jmin))
             self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
                 np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax], grid3d)
-
-    def mask_variance(self, threshold):
-        """Masks pixels with a variance upper than threshold value.
-
-        Parameters
-        ----------
-        threshold : float
-                    Threshold value.
-        """
-        if self.var is None:
-            raise ValueError('Operation forbidden'
-                             ' without variance extension.')
-        else:
-            ksel = np.where(self.var > threshold)
-            self.data[ksel] = np.ma.masked
-
-    def mask_selection(self, ksel):
-        """Masks pixels corresponding to the selection.
-
-        Parameters
-        ----------
-        ksel : output of np.where
-               elements depending on a condition
-        """
-        self.data[ksel] = np.ma.masked
 
     def __add__(self, other):
         """Adds other.
@@ -1196,37 +1126,6 @@ class Cube(DataArray):
 #         else:
 #             raise ValueError('Operation forbidden')
 #         return res
-
-    def _sqrt(self):
-        """Computes the positive square-root of data extension.
-        """
-        if self.data is None:
-            raise ValueError('empty data array')
-        if self.var is not None:
-            self.var = 3 * self.var / self.data.data ** 4
-        self.data = np.ma.sqrt(self.data)
-        self.unit /= np.sqrt(self.unit.scale)
-
-    def sqrt(self):
-        """Returns a cube containing the positive square-root
-        of data extension.
-        """
-        res = self.copy()
-        res._sqrt()
-        return res
-
-    def _abs(self):
-        """Computes the absolute value of data extension."""
-        if self.data is None:
-            raise ValueError('empty data array')
-        self.data = np.ma.abs(self.data)
-        self.var = None
-
-    def abs(self):
-        """Returns a cube containing the absolute value of data extension."""
-        res = self.copy()
-        res._abs()
-        return res
 
     def __getitem__(self, item):
         """Returns the corresponding object:
