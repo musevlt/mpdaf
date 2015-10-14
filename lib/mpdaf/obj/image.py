@@ -278,9 +278,6 @@ class Image(DataArray):
     ext      : integer or (integer,integer) or string or (string,string)
             Number/name of the data extension or numbers/names
             of the data and variance extensions.
-    shape    : integer or (integer,integer)
-            Lengths of data in Y and X.
-            Python notation is used: (ny,nx). (101,101) by default.
     wcs      : :class:`mpdaf.obj.WCS`
             World coordinates.
     unit     : string
@@ -303,9 +300,8 @@ class Image(DataArray):
                     Possible FITS data header instance.
     data           : array or masked array)
                     Array containing the pixel values of the image.
-    shape          : array of 2 integers
-                    Lengths of data in Y and X
-                    (python notation: (ny,nx)).
+    shape          : tuple
+                    Lengths of data in Y and X (python notation: (ny,nx)).
     var            : array
                     Array containing the variance.
     wcs            : :class:`mpdaf.obj.WCS`
@@ -316,8 +312,7 @@ class Image(DataArray):
     _has_wcs = True
 
     def __init__(self, filename=None, ext=None, wcs=None, unit=u.count,
-                 data=None, var=None, shape=None, copy=True, dtype=float,
-                 **kwargs):
+                 data=None, var=None, copy=True, dtype=float, **kwargs):
         self._clicks = None
         self._selector = None
 
@@ -331,7 +326,7 @@ class Image(DataArray):
 
         super(Image, self).__init__(
             filename=filename, ext=ext, wcs=wcs, unit=unit, data=data, var=var,
-            copy=copy, dtype=dtype, shape=shape, **kwargs)
+            copy=copy, dtype=dtype, **kwargs)
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
         """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
@@ -434,7 +429,7 @@ class Image(DataArray):
                             except:
                                 d = {'class': 'Cube', 'method': 'write'}
                                 self.logger.warning("%s not copied in data header",
-                                            card.keyword, extra=d)
+                                                    card.keyword, extra=d)
 
             if self.unit != u.dimensionless_unscaled:
                 imahdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
@@ -835,33 +830,31 @@ class Image(DataArray):
                 # image * spectrum = cube
                 if other.data is None:
                     raise IOError('Operation forbidden for empty data')
-                from cube import Cube
-                shape = (other.shape, self.shape[0], self.shape[1])
-                res = Cube(shape=shape, wave=other.wave, wcs=self.wcs)
                 # data
-                res.data = self.data[np.newaxis, :, :] * \
+                data = self.data[np.newaxis, :, :] * \
                     other.data[:, np.newaxis, np.newaxis]
                 # variance
                 if self.var is None and other.var is None:
-                    res.var = None
+                    var = None
                 elif self.var is None:
-                    res.var = np.ones(res.shape) \
-                            * other.var[:, np.newaxis, np.newaxis] \
-                            * self.data.data * self.data.data
+                    var = np.ones(res.shape) \
+                        * other.var[:, np.newaxis, np.newaxis] \
+                        * self.data.data * self.data.data
                 elif other.var is None:
-                    res.var = np.ones(res.shape) \
-                            * self.var[np.newaxis, :, :] \
-                            * other.data.data * other.data.data
+                    var = np.ones(res.shape) \
+                        * self.var[np.newaxis, :, :] \
+                        * other.data.data * other.data.data
                 else:
-                    res.var = np.ones(res.shape) \
-                                * other.var[:, np.newaxis, np.newaxis] \
-                                * self.data.data * self.data.data \
-                                + np.ones(res.shape) \
-                                * self.var[np.newaxis, :, :] \
-                                * other.data.data * other.data.data
-                # unit
-                res.unit = self.unit * other.unit
-                return res
+                    var = np.ones(res.shape) \
+                        * other.var[:, np.newaxis, np.newaxis] \
+                        * self.data.data * self.data.data \
+                        + np.ones(res.shape) \
+                        * self.var[np.newaxis, :, :] \
+                        * other.data.data * other.data.data
+
+                from .cube import Cube
+                return Cube(wave=other.wave, wcs=self.wcs, data=data, var=var,
+                            unit=self.unit * other.unit, copy=False)
             else:
                 if self.wcs is not None and other.wcs is not None \
                         and not self.wcs.isEqual(other.wcs):
@@ -968,31 +961,29 @@ class Image(DataArray):
                         or self.shape[1] != other.shape[2]:
                     raise ValueError('Operation forbidden for images '
                                      'with different sizes')
-                from cube import Cube
-                res = Cube(shape=other.shape, wave=other.wave)
                 # variance
                 if self.var is None and other.var is None:
-                    res.var = None
+                    var = None
                 elif self.var is None:
-                    res.var = other.var * self.data.data[np.newaxis, :, :]\
+                    var = other.var * self.data.data[np.newaxis, :, :]\
                             * self.data.data[np.newaxis, :, :] \
                             / (other.data.data ** 4)
                 elif other.var is None:
-                    res.var = self.var[np.newaxis, :, :] \
+                    var = self.var[np.newaxis, :, :] \
                             * other.data.data * other.data.data \
                             / (other.data.data ** 4)
                 else:
-                    res.var = (
+                    var = (
                         other.var * self.data.data[np.newaxis, :, :] *
                         self.data.data[np.newaxis, :, :] +
                         self.var[np.newaxis, :, :] *
                         other.data.data * other.data.data
                     ) / (other.data.data ** 4)
-                # data
-                res.data = self.data[np.newaxis, :, :] / other.data
-                # unit
-                res.unit = self.unit/other.unit
-                return res
+
+                from .cube import Cube
+                return Cube(wave=other.wave, unit=self.unit / other.unit,
+                            data=self.data[np.newaxis, :, :] / other.data,
+                            var=var, copy=False)
 
     def __rdiv__(self, other):
         if self.data is None:
@@ -1073,29 +1064,26 @@ class Image(DataArray):
                 if is_int(item[0]):
                     from spectrum import Spectrum
                     wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1],
-                                     crval=self.get_start()[1], cunit=self.wcs.get_cunit2(),
+                                     crval=self.get_start()[1],
+                                     cunit=self.wcs.get_cunit2(),
                                      shape=data.shape[0])
-                    res = Spectrum(shape=data.shape[0], wave=wave,
-                                   unit=self.unit, data=data, var=var)
-                    res.data = data
-                    res.var = var
+                    res = Spectrum(wave=wave, unit=self.unit, data=data,
+                                   var=var, copy=False)
                     res.filename = self.filename
                     return res
                 elif is_int(item[1]):
-                    from spectrum import Spectrum
+                    from .spectrum import Spectrum
                     wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0],
-                                     crval=self.get_start()[0], cunit=self.wcs.get_cunit1(),
+                                     crval=self.get_start()[0],
+                                     cunit=self.wcs.get_cunit1(),
                                      shape=data.shape[0])
-                    res = Spectrum(shape=data.shape[0], wave=wave,
-                                   unit=self.unit, data=data, var=var)
-                    res.data = data
-                    res.var = var
+                    res = Spectrum(wave=wave, unit=self.unit, data=data,
+                                   var=var, copy=False)
                     res.filename = self.filename
                     return res
                 else:
-                    res = Image(shape=data.shape, wcs=wcs, unit=self.unit)
-                    res.data = data
-                    res.var = var
+                    res = Image(wcs=wcs, unit=self.unit, data=data, var=var,
+                                copy=False)
                     res.filename = self.filename
                     res.data_header = pyfits.Header(self.data_header)
                     res.primary_header = pyfits.Header(self.primary_header)
@@ -1109,19 +1097,19 @@ class Image(DataArray):
                     var = None
                     if self.var is not None:
                         var = self.var[item]
-                    from spectrum import Spectrum
+                    from .spectrum import Spectrum
                     if self.shape[0] == 1:
                         wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1],
                                          crval=self.get_start()[1],
-                                         cunit=self.wcs.get_cunit2(), shape=data.shape[0])
+                                         cunit=self.wcs.get_cunit2(),
+                                         shape=data.shape[0])
                     else:
                         wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0],
                                          crval=self.get_start()[0],
-                                         cunit=self.wcs.get_cunit1(), shape=data.shape[0])
-                    res = Spectrum(shape=data.shape[0], wave=wave,
-                                   unit=self.unit, data=data, var=var)
-                    res.data = data
-                    res.var = var
+                                         cunit=self.wcs.get_cunit1(),
+                                         shape=data.shape[0])
+                    res = Spectrum(wave=wave, unit=self.unit, data=data,
+                                   var=var, copy=False)
                     res.filename = self.filename
                     return res
             else:
@@ -1755,15 +1743,11 @@ class Image(DataArray):
                 start = self.wcs.get_start()[0]
                 cunit = self.wcs.get_cunit1()
 
-            from spectrum import Spectrum
+            from .spectrum import Spectrum
             wave = WaveCoord(crpix=1.0, cdelt=step, crval=start,
                              cunit=cunit, shape=data.shape[0])
-            res = Spectrum(shape=data.shape[0], wave=wave, unit=self.unit,
-                           data=data, var=var)
-
-            res.data = data
-            res.var = var
-            return res
+            return Spectrum(wave=wave, unit=self.unit, data=data, var=var,
+                            copy=False)
         else:
             return None
 

@@ -182,8 +182,6 @@ class Spectrum(DataArray):
     ext      : integer or (integer,integer) or string or (string,string)
                Number/name of the data extension or numbers/names
                of the data and variance extensions.
-    shape    : integer
-               size of the spectrum. 101 by default.
     wave     : :class:`mpdaf.obj.WaveCoord`
                Wavelength coordinates.
     unit     : string
@@ -206,7 +204,7 @@ class Spectrum(DataArray):
                      Possible FITS data header instance.
     data           : masked array
                      Array containing the pixel values of the spectrum.
-    shape          : integer
+    shape          : tuple
                      Size of spectrum.
     var            : array
                      Array containing the variance.
@@ -218,19 +216,11 @@ class Spectrum(DataArray):
     _has_wave = True
 
     def __init__(self, filename=None, ext=None, unit=u.count, data=None,
-                 var=None, wave=None, shape=None, copy=True, dtype=float,
-                 **kwargs):
+                 var=None, wave=None, copy=True, dtype=float, **kwargs):
         super(Spectrum, self).__init__(
             filename=filename, ext=ext, wave=wave, unit=unit, data=data,
-            var=var, copy=copy, dtype=dtype, shape=shape, **kwargs)
+            var=var, copy=copy, dtype=dtype, **kwargs)
         self._clicks = None
-
-    @property
-    def shape(self):
-        if self._shape is not None:
-            return self._shape[0]
-        else:
-            return self.data.shape[0]
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
         """ Return astropy.io.fits.ImageHDU corresponding to the DATA extension
@@ -505,14 +495,14 @@ class Spectrum(DataArray):
                 # spectrum1 + spectrum2 = spectrum3
                 if other.data is None or self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
-                                'with different sizes')
+                                  'with different sizes')
                 res = self.copy()
                 # data
                 if other.unit == self.unit:
                     res.data = self.data + other.data
                 else:
-                    res.data = self.data + UnitMaskedArray(other.data,
-                                                        other.unit, self.unit)
+                    res.data = self.data + UnitMaskedArray(
+                        other.data, other.unit, self.unit)
                 # variance
                 if res.var is not None:
                     if self.var is None:
@@ -525,9 +515,8 @@ class Spectrum(DataArray):
                         if other.unit == self.unit:
                             res.var = self.var + other.var
                         else:
-                            res.var = self.var + UnitArray(other.var,
-                                                        other.unit**2,
-                                                        self.unit**2)
+                            res.var = self.var + UnitArray(
+                                other.var, other.unit**2, self.unit**2)
                 # return
                 return res
             elif other.ndim == 3:
@@ -611,7 +600,7 @@ class Spectrum(DataArray):
                 return res
             else:
                 # spectrum - cube1 = cube2
-                if other.data is None or self.shape != other.shape[0]:
+                if other.data is None or self.shape[0] != other.shape[0]:
                     raise IOError('Operation forbidden for objects'
                                   ' with different sizes')
 
@@ -804,7 +793,7 @@ class Spectrum(DataArray):
                 return res
             else:
                 # spectrum / cube1 = cube2
-                if other.data is None or self.shape != other.shape[0]:
+                if other.data is None or self.shape[0] != other.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 # data
@@ -901,7 +890,6 @@ class Spectrum(DataArray):
             return self.data[item]
         elif isinstance(item, slice):
             data = self.data[item]
-            shape = data.shape[0]
             var = None
             if self.var is not None:
                 var = self.var[item]
@@ -909,9 +897,7 @@ class Spectrum(DataArray):
                 wave = self.wave[item]
             except:
                 wave = None
-            res = Spectrum(shape=shape, wave=wave, unit=self.unit)
-            res.data = data
-            res.var = var
+            res = Spectrum(data=data, var=var, wave=wave, unit=self.unit)
             res.filename = self.filename
             return res
         else:
@@ -943,10 +929,11 @@ class Spectrum(DataArray):
         else:
             if unit is None:
                 pix_min = max(0, int(lmin+0.5))
-                pix_max = min(self.shape, int(lmax+0.5))
+                pix_max = min(self.shape[0], int(lmax+0.5))
             else:
                 pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
-                pix_max = min(self.shape, self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+                pix_max = min(self.shape[0],
+                              self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
             if (pix_min + 1) == pix_max:
                 return self.data[pix_min]
             else:
@@ -1028,8 +1015,8 @@ class Spectrum(DataArray):
             self.data[key] = other
         except ValueError:
             if isinstance(other, Spectrum):
-                if self.wave is not None and other.wave is not None \
-                        and (self.wave.get_step() != other.wave.get_step(unit=self.wave.get_cunit())):
+                if self.wave is not None and other.wave is not None and (
+                        self.wave.get_step() != other.wave.get_step(unit=self.wave.get_cunit())):
                     d = {'class': 'Spectrum', 'method': '__setitem__'}
                     self.logger.warning("spectra with different steps",
                                         extra=d)
@@ -1084,13 +1071,13 @@ class Spectrum(DataArray):
                 else:
                     pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
             if lmax is None:
-                pix_max = self.shape
+                pix_max = self.shape[0]
             else:
                 if unit is None:
-                    pix_max = min(self.shape, int(lmax+0.5))
+                    pix_max = min(self.shape[0], int(lmax+0.5))
                 else:
-                    pix_max = min(self.shape,
-                              self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+                    pix_max = min(self.shape[0],
+                                  self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
 
             if inside:
                 self.data[pix_min:pix_max] = np.ma.masked
@@ -1210,9 +1197,9 @@ class Spectrum(DataArray):
         factor : integer
                  Factor.
         """
-        assert not np.sometrue(np.mod(self.shape, factor))
+        assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
-        sh = self.shape / factor
+        sh = self.shape[0] / factor
         self.data = np.ma.array(self.data.reshape(sh, factor).sum(1) / factor,
                                 mask=self.data.mask.reshape(sh, factor).sum(1))
         if self.var is not None:
@@ -1240,23 +1227,23 @@ class Spectrum(DataArray):
 
                  'left': one pixel added on the left of the spectrum.
         """
-        if factor <= 1 or factor >= self.shape:
+        if factor <= 1 or factor >= self.shape[0]:
             raise ValueError('factor must be in ]1,shape[')
         # assert not np.sometrue(np.mod( self.shape, factor))
-        if not np.sometrue(np.mod(self.shape, factor)):
+        if not np.sometrue(np.mod(self.shape[0], factor)):
             # new size is an integer multiple of the original size
             self._rebin_mean_(factor)
         else:
-            newshape = self.shape / factor
-            n = self.shape - newshape * factor
+            newshape = self.shape[0] / factor
+            n = self.shape[0] - newshape * factor
             if margin == 'center' and n == 1:
                 margin = 'right'
             if margin == 'center':
                 n_left = n / 2
-                n_right = self.shape - n + n_left
+                n_right = self.shape[0] - n + n_left
                 spe = self[n_left:n_right]
                 spe._rebin_mean_(factor)
-                newshape = spe.shape + 2
+                newshape = spe.shape[0] + 2
                 data = np.ma.empty(newshape)
                 data[1:-1] = spe.data
                 data[0] = self.data[0:n_left].sum() / factor
@@ -1277,17 +1264,17 @@ class Spectrum(DataArray):
                 self.data = np.ma.masked_invalid(data)
                 self.var = var
             elif margin == 'right':
-                spe = self[0:self.shape - n]
+                spe = self[0:self.shape[0] - n]
                 spe._rebin_mean_(factor)
-                newshape = spe.shape + 1
+                newshape = spe.shape[0] + 1
                 data = np.ma.empty(newshape)
                 data[:-1] = spe.data
-                data[-1] = self.data[self.shape - n:].sum() / factor
+                data[-1] = self.data[self.shape[0] - n:].sum() / factor
                 var = None
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[:-1] = spe.var
-                    var[-1] = self.var[self.shape - n:].sum() / factor / factor
+                    var[-1] = self.var[self.shape[0] - n:].sum() / factor / factor
                 try:
                     wave = spe.wave
                     wave.shape = wave.shape + 1
@@ -1357,9 +1344,9 @@ class Spectrum(DataArray):
         factor : integer
                  factor
         """
-        assert not np.sometrue(np.mod(self.shape, factor))
+        assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
-        shape = self.shape / factor
+        shape = self.shape[0] / factor
         self.data = \
             np.ma.array(np.ma.median(self.data.reshape(shape, factor), 1),
                         mask=self.data.mask.reshape(shape, factor).sum(1))
@@ -1391,23 +1378,23 @@ class Spectrum(DataArray):
         -------
         out  :class:`mpdaf.obj.Spectrum`
         """
-        if factor <= 1 or factor >= self.shape:
+        if factor <= 1 or factor >= self.shape[0]:
             raise ValueError('factor must be in ]1,shape[')
         # assert not np.sometrue(np.mod( self.shape, factor ))
-        if not np.sometrue(np.mod(self.shape, factor)):
+        if not np.sometrue(np.mod(self.shape[0], factor)):
             # new size is an integer multiple of the original size
             res = self.copy()
         else:
-            newshape = self.shape / factor
-            n = self.shape - newshape * factor
+            newshape = self.shape[0] / factor
+            n = self.shape[0] - newshape * factor
             if margin == 'center' and n == 1:
                 margin = 'right'
             if margin == 'center':
                 n_left = n / 2
-                n_right = self.shape - n + n_left
+                n_right = self.shape[0] - n + n_left
                 res = self[n_left:n_right]
             elif margin == 'right':
-                res = self[0:self.shape - n]
+                res = self[0:self.shape[0] - n]
             elif margin == 'left':
                 res = self[n:]
             else:
@@ -1548,18 +1535,18 @@ class Spectrum(DataArray):
             else:
                 i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
         if lmax is None:
-            i2 = self.shape
+            i2 = self.shape[0]
         else:
             if unit is None:
-                i2 = min(self.shape, int(lmax+0.5))
+                i2 = min(self.shape[0], int(lmax+0.5))
             else:
-                i2 = min(self.shape, self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+                i2 = min(self.shape[0],
+                         self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
 
         if weight:
             weights = 1.0 / self.var[i1:i2]
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
-            flux = np.ma.average(self.data[i1:i2],
-                              weights=weights)
+            flux = np.ma.average(self.data[i1:i2], weights=weights)
         else:
             flux = self.data[i1:i2].mean()
         return flux
@@ -1592,12 +1579,12 @@ class Spectrum(DataArray):
             else:
                 i1 = max(0, self.wave.pixel(lmin, True, unit))
         if lmax is None:
-            i2 = self.shape
+            i2 = self.shape[0]
         else:
             if unit is None:
                 i2 = int(lmax+0.5)
             else:
-                i2 = min(self.shape, self.wave.pixel(lmax, True, unit) + 1)
+                i2 = min(self.shape[0], self.wave.pixel(lmax, True, unit) + 1)
 
         if weight and self.var is not None:
             weights = 1.0 / self.var[i1:i2]
@@ -1636,15 +1623,15 @@ class Spectrum(DataArray):
             i1 = max(0, int(l1))
 
         if lmax is None:
-            i2 = self.shape
+            i2 = self.shape[0]
             lmax = self.wave.coord(i2-0.5, unit=unit)
         else:
             if unit is None:
                 l2 = lmax
-                lmax = self.wave.coord(min(self.shape-0.5, l2))
+                lmax = self.wave.coord(min(self.shape[0] - 0.5, l2))
             else:
                 l2 = self.wave.pixel(lmax, False, unit)
-            i2 = min(self.shape, int(l2) + 1)
+            i2 = min(self.shape[0], int(l2) + 1)
 
         d = self.wave.coord(-0.5+np.arange(i1, i2 + 1), unit=unit)
         d[0] = lmin
@@ -1655,7 +1642,9 @@ class Spectrum(DataArray):
 
         if u.angstrom in self.unit.bases and unit is not u.angstrom:
             try:
-                return np.sum(self.data[i1:i2] * ((np.diff(d)*unit).to(u.angstrom).value))* self.unit * u.angstrom
+                return np.sum(self.data[i1:i2] *
+                              ((np.diff(d)*unit).to(u.angstrom).value)
+                              ) * self.unit * u.angstrom
             except:
                 return (self.data[i1:i2] * np.diff(d)).sum() * self.unit * unit
         else:
@@ -1684,7 +1673,7 @@ class Spectrum(DataArray):
         out : ndarray, shape.
               Polynomial coefficients ordered from low to high.
         """
-        if self.shape <= deg + 1:
+        if self.shape[0] <= deg + 1:
             raise ValueError('Too few points to perform polynomial fit')
 
         if self.var is None:
@@ -1733,7 +1722,7 @@ class Spectrum(DataArray):
                     d = {'class': 'Spectrum', 'method': 'poly_fit'}
                     msg = 'Number of iteration: '\
                         '%d Std: %10.4e Np: %d Frac: %4.2f' \
-                        % (it + 1, sig, n_p, 100. * n_p / self.shape)
+                        % (it + 1, sig, n_p, 100. * n_p / self.shape[0])
                     self.logger.info(msg, extra=d)
 
         return p
@@ -1805,7 +1794,7 @@ class Spectrum(DataArray):
               mean flux and mean wavelength (out=2).
         """
         i1 = max(0, self.wave.pixel(lbda - dlbda / 2.0, nearest=True, unit=u.angstrom))
-        i2 = min(self.shape, self.wave.pixel(lbda + dlbda / 2.0, nearest=True, unit=u.angstrom))
+        i2 = min(self.shape[0], self.wave.pixel(lbda + dlbda / 2.0, nearest=True, unit=u.angstrom))
         if i1 == i2:
             return 99
         else:
@@ -1906,7 +1895,7 @@ class Spectrum(DataArray):
         imin = self.wave.pixel(lmin, True, u.Angstrom)
         imax = self.wave.pixel(lmax, True, u.Angstrom)
         if imin == imax:
-            if imin == 0 or imin == self.shape:
+            if imin == 0 or imin == self.shape[0]:
                 raise ValueError('Spectrum outside Filter band')
             else:
                 raise ValueError('filter band smaller than spectrum step')
@@ -1942,12 +1931,13 @@ class Spectrum(DataArray):
             else:
                 i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
         if lmax is None:
-            i2 = self.shape
+            i2 = self.shape[0]
         else:
             if unit is None:
-                i2 = min(self.shape, int(lmax+0.5))
+                i2 = min(self.shape[0], int(lmax+0.5))
             else:
-                i2 = min(self.shape, self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+                i2 = min(self.shape[0],
+                         self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
 
         if i1 == i2:
             raise ValueError('Minimum and maximum wavelengths are equal')
@@ -2092,8 +2082,8 @@ class Spectrum(DataArray):
 
         # continuum value
         if cont is None:
-            cont0 = ((fmax - fmin) * lpeak + lmax
-                     * fmin - lmin * fmax) / (lmax - lmin)
+            cont0 = ((fmax - fmin) * lpeak + lmax *
+                     fmin - lmin * fmax) / (lmax - lmin)
         else:
             cont0 = cont
 
@@ -2115,7 +2105,7 @@ class Spectrum(DataArray):
             peak = d[pixel] - cont0
             flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
         elif peak is True:
-            peak = flux  - cont0
+            peak = flux - cont0
             flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
         else:
             pass
@@ -2224,7 +2214,7 @@ class Spectrum(DataArray):
             imin = self.wave.pixel(lmin, True, unit)
             imax = self.wave.pixel(lmax, True, unit)
         if imin == imax:
-            if imin == 0 or imin == self.shape:
+            if imin == 0 or imin == self.shape[0]:
                 raise ValueError('Gaussian outside spectrum wavelength range')
 
         if unit is None:
@@ -2237,9 +2227,9 @@ class Spectrum(DataArray):
             + gauss(v, wave)
 
     def gauss_dfit(self, lmin, lmax, wratio, lpeak_1=None,
-                         flux_1=None, fratio=1., fwhm=None, cont=None,
-                         peak=False, spline=False, weight=True,
-                         plot=False, plot_factor=10, unit=u.angstrom):
+                   flux_1=None, fratio=1., fwhm=None, cont=None,
+                   peak=False, spline=False, weight=True,
+                   plot=False, plot_factor=10, unit=u.angstrom):
         """Truncate the spectrum and fit it as a sum of two gaussian functions.
 
         Returns the two gaussian functions as :class:`mpdaf.obj.Gauss1D` objects.
@@ -2306,7 +2296,7 @@ class Spectrum(DataArray):
             fmax = self.mean(lmax[0], lmax[1], weight=False, unit=unit)
             lmax = lmax[0]
 
-        #spec = self.truncate(lmin, lmax)
+        # spec = self.truncate(lmin, lmax)
         spec = self.get_lambda(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
@@ -2328,7 +2318,8 @@ class Spectrum(DataArray):
 
         # continuum value
         if cont is None:
-            cont0 = ((fmax - fmin) * lpeak_1 + lmax * fmin - lmin * fmax) / (lmax - lmin)
+            cont0 = ((fmax - fmin) * lpeak_1 + lmax *
+                     fmin - lmin * fmax) / (lmax - lmin)
         else:
             cont0 = cont
 
@@ -2354,7 +2345,6 @@ class Spectrum(DataArray):
             flux_1 = peak_1 * np.sqrt(2 * np.pi * (sigma ** 2))
         else:
             pass
-
 
         flux_2 = fratio * flux_1
 
@@ -2640,7 +2630,7 @@ class Spectrum(DataArray):
             imin = self.wave.pixel(lmin, True, unit=unit)
             imax = self.wave.pixel(lmax, True, unit=unit)
         if imin == imax:
-            if imin == 0 or imin == self.shape:
+            if imin == 0 or imin == self.shape[0]:
                 raise ValueError('Gaussian outside spectrum wavelength range')
 
         if unit is None:
@@ -2651,8 +2641,8 @@ class Spectrum(DataArray):
         self.data[imin:imax] = self.data[imin:imax] + asym_gauss(v, wave)
 
     def line_gauss_fit(self, lpeak, lmin, lmax, flux=None, fwhm=None,
-                  cont=None, peak=False, spline=False, weight=True,
-                  plot=False, plot_factor=10, unit=u.angstrom):
+                       cont=None, peak=False, spline=False, weight=True,
+                       plot=False, plot_factor=10, unit=u.angstrom):
         """Perform a Gaussian fit on a line (fixed Gaussian center).
 
         Uses `scipy.optimize.leastsq <http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html>`_ to minimize the sum of squares.
@@ -2832,7 +2822,7 @@ class Spectrum(DataArray):
             kernel_size = kernel_size / self.get_step(unit=unit)
         ks = int(kernel_size / 2) * 2 + 1
 
-        data = np.empty(self.shape + 2 * ks)
+        data = np.empty(self.shape[0] + 2 * ks)
         data[ks:-ks] = self._interp_data(spline)
         data[:ks] = data[ks:2 * ks][::-1]
         data[-ks:] = data[-2 * ks:-ks][::-1]
@@ -3132,17 +3122,16 @@ class Spectrum(DataArray):
         data[:k] = self.data[k:0:-1]
         data[-k:] = self.data[-2:-k - 2:-1]
 
-        res.data = np.ma.array(map(lambda i: (f(lbda[i], step,
-                                                size, **kwargs)
+        res.data = np.ma.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
                                               * data[i:i + size]).sum(),
-                                   range(self.shape)), mask=self.data.mask)
+                                   range(self.shape[0])), mask=self.data.mask)
 
         if self.var is None:
             res.var = None
         else:
             res.var = np.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
                                               * data[i:i + size]).sum(),
-                                   range(self.shape)))
+                                   range(self.shape[0])))
         return res
 
     def peak_detection(self, kernel_size=None, unit=u.angstrom):

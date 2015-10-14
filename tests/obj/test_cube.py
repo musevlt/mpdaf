@@ -59,7 +59,7 @@ def test_get_Cube():
     """Cube class: tests getters"""
     cube1 = generate_cube()
     assert_array_equal(cube1[2, :, :].shape, (6, 5))
-    nose.tools.assert_equal(cube1[:, 2, 3].shape, 10)
+    nose.tools.assert_equal(cube1[:, 2, 3].shape[0], 10)
     assert_array_equal(cube1[1:7, 0:2, 0:3].shape, (6, 2, 3))
     assert_array_equal(cube1.get_lambda(1.2, 15.6).shape, (6, 6, 5))
     a = cube1[2:4, 0:2, 1:4]
@@ -245,5 +245,5 @@ def test_aperture():
     cube1 = generate_cube(scale=1, wave=WaveCoord(crval=1))
     spe = cube1.aperture(center=(2, 2.8), radius=1,
                          unit_center=None, unit_radius=None)
-    nose.tools.assert_equal(spe.shape, 10)
+    nose.tools.assert_equal(spe.shape[0], 10)
     nose.tools.assert_equal(spe.get_start(), 1)

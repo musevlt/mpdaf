@@ -79,9 +79,6 @@ class Cube(DataArray):
     ext      : integer or (integer,integer) or string or (string,string)
                 Number/name of the data extension
                 or numbers/names of the data and variance extensions.
-    shape    : integer or (integer,integer,integer)
-                Lengths of data in Z, Y and X. Python notation is used
-                (nz,ny,nx). If data is not None, its shape is used instead.
     wcs      : :class:`mpdaf.obj.WCS`
                 World coordinates.
     wave     : :class:`mpdaf.obj.WaveCoord`
@@ -106,9 +103,8 @@ class Cube(DataArray):
                      FITS data header instance.
     data           : masked array numpy.ma
                      Array containing the cube pixel values.
-    shape          : array of 3 integers
-                     Lengths of data in Z and Y and X
-                     (python notation (nz,ny,nx)).
+    shape          : tuple
+                     Lengths of data (python notation (nz,ny,nx)).
     var            : float array
                      Array containing the variance.
     wcs            : :class:`mpdaf.obj.WCS`
@@ -673,7 +669,7 @@ class Cube(DataArray):
 
             if other.ndim == 1:
                 # cube1 + spectrum = cube2
-                if other.data is None or other.shape != self.shape[0]:
+                if other.data is None or other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 res = self.copy()
@@ -812,7 +808,7 @@ class Cube(DataArray):
 
             if other.ndim == 1:
                 # cube1 - spectrum = cube2
-                if other.data is None or other.shape != self.shape[0]:
+                if other.data is None or other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden '
                                   'for objects with different sizes')
                 res = self.copy()
@@ -962,7 +958,7 @@ class Cube(DataArray):
                                   'in spatial directions')
             if other.ndim == 1:
                 # cube1 * spectrum = cube2
-                if other.data is None or other.shape != self.shape[0]:
+                if other.data is None or other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 res = self.copy()
@@ -1087,7 +1083,7 @@ class Cube(DataArray):
                                      ' in spatial directions')
             if other.ndim == 1:
                 # cube1 / spectrum = cube2
-                if other.data is None or other.shape != self.shape[0]:
+                if other.data is None or other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 # data
@@ -2914,8 +2910,8 @@ class Cube(DataArray):
         d = {'class': 'Cube', 'method': 'aperture'}
         if radius > 0:
             cub = self.subcube_circle_aperture(center, radius,
-                                        unit_center=unit_center,
-                                        unit_radius=unit_radius)
+                                               unit_center=unit_center,
+                                               unit_radius=unit_radius)
             msg = '%d spaxels summed' % (cub.shape[1] * cub.shape[2])
             spec = cub.sum(axis=(1, 2))
             self.logger.info(msg, extra=d)
@@ -2935,8 +2931,7 @@ def _process_spe(arglist):
         pos, f, header, data, mask, var, \
             unit, kargs = arglist
         wave = WaveCoord(header, shape=data.shape[0])
-        spe = Spectrum(shape=data.shape[0], wave=wave, unit=unit, data=data,
-                       var=var)
+        spe = Spectrum(wave=wave, unit=unit, data=data, var=var)
         spe.data.mask = mask
 
         if isinstance(f, types.FunctionType):
@@ -2963,7 +2958,7 @@ def _process_ima(arglist):
     try:
         k, f, header, data, mask, var, unit, kargs = arglist
         wcs = WCS(header, shape=data.shape)
-        obj = Image(shape=data.shape, wcs=wcs, unit=unit, data=data, var=var)
+        obj = Image(wcs=wcs, unit=unit, data=data, var=var)
         obj.data.mask = mask
 
         if isinstance(f, types.FunctionType):

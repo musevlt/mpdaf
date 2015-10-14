@@ -48,9 +48,6 @@ class DataArray(object):
     ext      : integer or (integer,integer) or string or (string,string)
                 Number/name of the data extension
                 or numbers/names of the data and variance extensions.
-    shape    : integer or (integer,integer,integer)
-                Lengths of data in Z, Y and X. Python notation is used
-                (nz,ny,nx). If data is not None, its shape is used instead.
     wcs      : :class:`mpdaf.obj.WCS`
                 World coordinates.
     wave     : :class:`mpdaf.obj.WaveCoord`
@@ -75,7 +72,7 @@ class DataArray(object):
                      FITS data header instance.
     data           : masked array numpy.ma
                      Array containing the cube pixel values.
-    shape          : array of 3 integers
+    shape          : tuple
                      Lengths of data in Z and Y and X
                      (python notation (nz,ny,nx)).
     var            : float array
@@ -90,9 +87,9 @@ class DataArray(object):
     _has_wcs = False
     _has_wave = False
 
-    def __init__(self, filename=None, hdulist=None, ext=None,
-                 unit=u.dimensionless_unscaled, data=None, var=None,
-                 shape=None, copy=True, dtype=float, **kwargs):
+    def __init__(self, filename=None, hdulist=None, ext=None, data=None,
+                 var=None, unit=u.dimensionless_unscaled, copy=True,
+                 dtype=float, **kwargs):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
         self.logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
@@ -101,7 +98,7 @@ class DataArray(object):
         self._var = None
         self._var_ext = None
         self._ndim = None
-        self._shape = (shape, ) if np.isscalar(shape) else shape
+        # self._shape = (shape, ) if np.isscalar(shape) else shape
         self.wcs = None
         self.wave = None
         self.dtype = dtype
@@ -109,8 +106,7 @@ class DataArray(object):
         self.data_header = pyfits.Header()
         self.primary_header = pyfits.Header()
 
-        # FIXME: Remove usage of shape in MPDAF
-        if shape is not None:
+        if kwargs.pop('shape', None) is not None:
             warnings.warn('The shape parameter is no more used, it is derived '
                           'from the data instead', MpdafWarning)
 
@@ -295,9 +291,7 @@ class DataArray(object):
     def var(self, value):
         if value is not None:
             value = np.asarray(value)
-            # workaround for spectrum
-            shape = (self.shape, ) if np.isscalar(self.shape) else self.shape
-            if not np.array_equal(shape, value.shape):
+            if not np.array_equal(self.shape, value.shape):
                 raise ValueError('var and data have not the same dimensions.')
         self._var = value
 

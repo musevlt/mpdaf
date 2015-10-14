@@ -125,7 +125,7 @@ def test_sum():
     sum1 = image1.sum()
     nose.tools.assert_equal(sum1, 6 * 5 * 2)
     sum2 = image1.sum(axis=0)
-    nose.tools.assert_equal(sum2.shape, 5)
+    nose.tools.assert_equal(sum2.shape[0], 5)
     nose.tools.assert_equal(sum2.get_start(), 0)
     nose.tools.assert_equal(sum2.get_end(), 4)
 
@@ -166,12 +166,12 @@ def test_mask():
     """Image class: testing mask functionalities"""
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(shape=(6, 5), data=data, wcs=wcs)
+    image1 = Image(data=data, wcs=wcs)
     image1.mask((2, 2), (1, 1), inside=False, unit_center=None, unit_radius=None)
     nose.tools.assert_equal(image1.sum(), 2 * 9)
     image1.unmask()
     wcs = WCS(deg=True)
-    image1 = Image(shape=(6, 5), data=data, wcs=wcs)
+    image1 = Image(data=data, wcs=wcs)
     image1.mask(wcs.pix2sky([2, 2]), (3600, 3600), inside=False)
     nose.tools.assert_equal(image1.sum(), 2 * 9)
     image1.unmask()
@@ -191,7 +191,7 @@ def test_background():
     """Image class: testing background value"""
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(shape=(6, 5), data=data, wcs=wcs)
+    image1 = Image(data=data, wcs=wcs)
     (background, std) = image1.background()
     nose.tools.assert_equal(background, 2)
     nose.tools.assert_equal(std, 0)
@@ -206,7 +206,7 @@ def test_peak():
     """Image class: testing peak research"""
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(shape=(6, 5), data=data, wcs=wcs)
+    image1 = Image(data=data, wcs=wcs)
     image1.data[2, 3] = 8
     p = image1.peak()
     nose.tools.assert_equal(p['p'], 2)
@@ -223,7 +223,7 @@ def test_clone():
     """Image class: testing clone method."""
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(shape=(6, 5), data=data, wcs=wcs)
+    image1 = Image(data=data, wcs=wcs)
     ima2 = image1.clone()
     for j in range(6):
         for i in range(5):
@@ -274,7 +274,7 @@ def test_ee():
     """Image class: testing ensquared energy."""
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(shape=(6, 5), data=data, wcs=wcs)
+    image1 = Image(data=data, wcs=wcs)
     image1.mask((2, 2), (1, 1), inside=False, unit_center=None, unit_radius=None)
     nose.tools.assert_equal(image1.ee(), 9 * 2)
     ee = image1.ee(center=(2, 2), unit_center=None, radius=1, unit_radius=None)
@@ -291,7 +291,7 @@ def test_rebin_mean():
     """Image class: testing rebin methods."""
     wcs = WCS(crval=(0, 0))
     data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(shape=(6, 5), data=data, wcs=wcs)
+    image1 = Image(data=data, wcs=wcs)
     image1.mask((2, 2), (1, 1), inside=False, unit_center=None, unit_radius=None)
     image2 = image1.rebin_mean(2)
     nose.tools.assert_equal(image2[0, 0], 0.5)

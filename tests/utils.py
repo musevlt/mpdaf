@@ -28,7 +28,7 @@ def generate_spectrum(scale=2, unit=u.angstrom, shape=10, crpix=2.0, cdelt=3.0,
                              shape=shape, cunit=unit)
     data = np.arange(shape)
     data[0] = 0.5
-    return Spectrum(shape=shape, wave=wave, copy=False, data=data)
+    return Spectrum(wave=wave, copy=False, data=data)
 
 
 def generate_cube(scale=2.3, uwave=u.angstrom, shape=(10, 6, 5), unit=u.ct,

@@ -25,7 +25,7 @@ def test_copy():
 def test_selectionOperator_Spectrum():
     """Spectrum class: testing operators > and < """
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(shape=10, data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
     spectrum2 = spectrum1 > 6
     nose.tools.assert_almost_equal(spectrum2.sum(), 24)
     spectrum2 = spectrum1 >= 6
@@ -41,7 +41,7 @@ def test_selectionOperator_Spectrum():
 def test_arithmetricOperator_Spectrum():
     """Spectrum class: testing arithmetic functions"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(shape=10, data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
     spectrum2 = spectrum1 > 6  # [-,-,-,-,-,-,-,7,8,9]
     # +
     spectrum3 = spectrum1 + spectrum2
@@ -70,8 +70,7 @@ def test_arithmetricOperator_Spectrum():
 
     # with cube
     wcs = WCS()
-    cube1 = Cube(shape=(10, 6, 5), data=np.ones(shape=(10, 6, 5)), wave=wave,
-                 wcs=wcs)
+    cube1 = Cube(data=np.ones(shape=(10, 6, 5)), wave=wave, wcs=wcs)
     cube2 = spectrum1 + cube1
     sp1data = spectrum1.data[:, np.newaxis, np.newaxis]
     assert_array_almost_equal(cube2.data, sp1data + cube1.data)
@@ -87,7 +86,7 @@ def test_arithmetricOperator_Spectrum():
 
     # spectrum * image
     data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(shape=(6, 5), data=data, wcs=wcs)
+    image1 = Image(data=data, wcs=wcs)
     cube2 = spectrum1 * image1
     assert_array_almost_equal(cube2.data,
                               sp1data * image1.data[np.newaxis, :, :])
@@ -97,16 +96,16 @@ def test_arithmetricOperator_Spectrum():
 def test_get_Spectrum():
     """Spectrum class: testing getters"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(shape=10, data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3, wave=wave)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3, wave=wave)
     a = spectrum1[1:7]
-    nose.tools.assert_equal(a.shape, 6)
+    nose.tools.assert_equal(a.shape[0], 6)
     a = spectrum1.get_lambda(1.2, 15.6, unit=u.nm)
-    nose.tools.assert_equal(a.shape, 6)
+    nose.tools.assert_equal(a.shape[0], 6)
 
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.get_cunit()
     spvarcut = spvar.get_lambda(5560, 5590, unit=unit)
-    nose.tools.assert_equal(spvarcut.shape, 48)
+    nose.tools.assert_equal(spvarcut.shape[0], 48)
     nose.tools.assert_almost_equal(spvarcut.get_start(unit=unit), 5560.25, 2)
     nose.tools.assert_almost_equal(spvarcut.get_end(unit=unit), 5589.89, 2)
     nose.tools.assert_almost_equal(spvarcut.get_step(unit=unit), 0.63, 2)
@@ -116,7 +115,7 @@ def test_get_Spectrum():
 def test_spectrum_methods():
     """Spectrum class: testing sum/mean/abs/sqrt methods"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(shape=10, data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
     sum1 = spectrum1.sum()
     nose.tools.assert_almost_equal(sum1, spectrum1.data.sum())
     spectrum2 = spectrum1[1:-2]
@@ -150,7 +149,7 @@ def test_gauss_fit():
     """Spectrum class: testing Gaussian fit"""
     wave = WaveCoord(crpix=1, cdelt=0.3, crval=400, cunit=u.nm)
     data = np.zeros(600)
-    spem = Spectrum(shape=600, data=data * 2.3, wave=wave)
+    spem = Spectrum(data=data * 2.3, wave=wave)
     spem.add_gaussian(5000, 1200, 20, unit=u.angstrom)
     gauss = spem.gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000), lpeak=5000, unit=u.angstrom)
     nose.tools.assert_almost_equal(gauss.lpeak, 5000, 2)
@@ -172,14 +171,15 @@ def test_resize():
     spe.mask(lmax=5000, unit=unit)
     spe.mask(lmin=6500, unit=unit)
     spe.resize()
-    nose.tools.assert_equal(int((6500 - 5000) / spe.get_step(unit=unit)), spe.shape)
+    nose.tools.assert_equal(int((6500 - 5000) / spe.get_step(unit=unit)),
+                            spe.shape[0])
 
 
 @attr(speed='fast')
 def test_resample():
     """Spectrum class: testing resampling function"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(shape=10, data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3, wave=wave)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3, wave=wave)
     flux1 = spectrum1.sum() * spectrum1.wave.get_step()
     spectrum2 = spectrum1.resample(0.3)
     flux2 = spectrum2.sum() * spectrum2.wave.get_step()
@@ -217,8 +217,7 @@ def test_resampling_slow():
 def test_rebin_mean():
     """Spectrum class: testing rebin_mean function"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5)
-    spectrum1 = Spectrum(shape=10,
-                         data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
                          wave=wave)
     unit = spectrum1.wave.get_cunit()
     flux1 = spectrum1.sum() * spectrum1.wave.get_step(unit=unit)
@@ -254,8 +253,7 @@ def test_rebin_mean():
 def test_rebin_median():
     """Spectrum class: testing rebin_median function"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(shape=10,
-                         data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
                          wave=wave)
     spectrum2 = spectrum1.rebin_median(3, margin='right')
     nose.tools.assert_equal(spectrum2[1], 4)
@@ -270,7 +268,7 @@ def test_truncate():
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.get_cunit()
     spe.truncate(4950, 5050, unit=unit)
-    nose.tools.assert_equal(spe.shape, 160)
+    nose.tools.assert_equal(spe.shape[0], 160)
 
 
 @attr(speed='fast')
@@ -350,8 +348,7 @@ def test_mag():
 def test_integrate():
     """Spectrum class: testing integration"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(shape=10,
-                         data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
                          wave=wave, unit=u.Unit('ct/Angstrom'))
     flux = spectrum1.integrate().value
     nose.tools.assert_almost_equal(flux, spectrum1.get_step(unit=u.angstrom) * spectrum1.sum())
