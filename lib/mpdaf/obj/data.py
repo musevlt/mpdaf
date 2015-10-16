@@ -144,7 +144,7 @@ class DataArray(object):
             elif isinstance(ext, (list, tuple, np.ndarray)):
                 self._data_ext = ext[0]
                 self._var_ext = ext[1]
-            elif isinstance(ext, int):
+            elif isinstance(ext, (int, str, unicode)):
                 self._data_ext = ext
                 self._var_ext = None
 
