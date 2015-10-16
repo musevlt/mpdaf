@@ -37,8 +37,6 @@ class CubeList(object):
         Number of files.
     shape  : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
-    fscale : float
-        Flux scaling factor (1 by default).
     wcs    : :class:`mpdaf.obj.WCS`
         World coordinates.
     wave   : :class:`mpdaf.obj.WaveCoord`
@@ -48,7 +46,7 @@ class CubeList(object):
 
     """
 
-    checkers = ('check_dim', 'check_wcs', 'check_fscale')
+    checkers = ('check_dim', 'check_wcs')
 
     def __init__(self, files):
         """Creates a CubeList object.
@@ -61,7 +59,7 @@ class CubeList(object):
         self.logger = logging.getLogger('mpdaf corelib')
         self.files = files
         self.nfiles = len(files)
-        self.cubes = [Cube(f) for f in self.files]
+        self.cubes = [Cube(filename=f) for f in self.files]
         self._set_defaults()
         self.check_compatibility()
 
@@ -69,7 +67,6 @@ class CubeList(object):
         self.shape = self.cubes[0].shape
         self.wcs = self.cubes[0].wcs
         self.wave = self.cubes[0].wave
-        self.fscale = self.cubes[0].fscale
         self.unit = self.cubes[0].unit
 
     def __getitem__(self, item):
@@ -136,31 +133,6 @@ class CubeList(object):
                 return False
         return True
 
-    def check_fscale(self):
-        """Checks if all cubes have same unit and same scale factor."""
-        d = {'class': 'CubeList', 'method': 'check_fscale'}
-        fscale = np.array([cube.fscale for cube in self.cubes])
-        unit = np.array([cube.unit for cube in self.cubes])
-
-        if len(np.unique(fscale)) == 1 and len(np.unique(unit)) == 1:
-            return True
-        else:
-            if len(np.unique(fscale)) > 1:
-                msg = ('All cubes have not same scale factor. Scale from the '
-                       'first cube will be used.')
-                self.logger.warning(msg, extra=d)
-                for i in range(self.nfiles):
-                    msg = 'FSCALE=%s (%s)' % (fscale[i], self.files[i])
-                    self.logger.info(msg, extra=d)
-            if len(np.unique(unit)) > 1:
-                msg = ('All cubes have not same unit. Unit from the first cube'
-                       ' will be used.')
-                self.logger.warning(msg, extra=d)
-                for i in range(self.nfiles):
-                    msg = 'BUNIT=%s (%s)' % (unit[i], self.files[i])
-                    self.logger.info(msg, extra=d)
-            return False
-
     def check_compatibility(self):
         """Checks if all cubes are compatible."""
         for checker in self.checkers:
@@ -176,10 +148,8 @@ class CubeList(object):
         if var is not None and var.ndim != 3:
             var = var.reshape(self.shape)
 
-        c = Cube(shape=self.shape, wcs=self.wcs, wave=self.wave,
+        c = Cube(wcs=self.wcs, wave=self.wave, data=data, var=var, copy=False,
                  unit=self.unit if save_unit else None)
-        c.data = ma.asarray(data)
-        c.var = var
 
         hdr = c.primary_header
         copy_keywords(
@@ -500,8 +470,6 @@ class CubeMosaic(CubeList):
         Number of files.
     shape  : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
-    fscale : float
-        Flux scaling factor (1 by default).
     wcs    : :class:`mpdaf.obj.WCS`
         World coordinates.
     wave   : :class:`mpdaf.obj.WaveCoord`
@@ -511,7 +479,7 @@ class CubeMosaic(CubeList):
 
     """
 
-    checkers = ('check_dim', 'check_wcs', 'check_fscale')
+    checkers = ('check_dim', 'check_wcs')
 
     def __init__(self, files, output_wcs):
         """Creates a CubeMosaic object.
@@ -522,7 +490,7 @@ class CubeMosaic(CubeList):
             List of cubes fits filenames.
         output_wcs : str
             Path to a cube FITS file, this cube is used to define the output
-            cube: shape, WCS, fscale and unit are needed, it must have the XCS
+            cube: shape, WCS and unit are needed, it must have the same WCS
             grid as the input cubes.
 
         """
@@ -545,7 +513,6 @@ class CubeMosaic(CubeList):
         self.shape = self.out.shape
         self.wcs = self.out.wcs
         self.wave = self.out.wave
-        self.fscale = self.out.fscale
         self.unit = self.out.unit
 
     def check_wcs(self):
