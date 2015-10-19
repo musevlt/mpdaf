@@ -368,7 +368,10 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
                 try:
                     errz = obj['Z_ERR']
                 except:
-                    errz = np.nan
+                    try:
+                        errz = (obj['Z_MAX']-obj['Z_MIN']) / 2.0
+                    except:
+                        errz = np.nan
                 source.add_z('CAT', z, errz)
             except:
                 z = -9999

@@ -112,7 +112,7 @@ class UnitTest(Command):
         pass
 
     def run(self):
-        errno = subprocess.call(['nosetests', '-v', '-a speed=fast'])
+        errno = subprocess.call(['nosetests', '-v', '-a speed=fast', '--logging-clear-handlers'])
         raise SystemExit(errno)
 
 # rm old focus directory

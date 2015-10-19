@@ -36,8 +36,22 @@ def setup_config_files_nb():
         except:
             pass
         
+def remove_files():
+    files = ['default.sex', 'default.conv','default.nnw', 'default.param',
+             'emlines', 'emlines_small', 'BGR.cat', 'inv_variance.fits', 'segment.fits',
+             'white.fits', 'whiteb.fits', 'whiteg.fits', 'whiter.fits', 'detect.cat']
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5,nbcube=True):
+    for f in files:
+        try:
+            os.remove(f)
+        except:
+            pass
+    for f in glob('nb/*'):
+        os.remove(f)
+    os.removedirs('nb')
+        
+
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5, nbcube=True, del_sex=False):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
     to detect emission lines in a datacube. It has been developed by Johan Richard
     (johan.richard@univ-lyon1.fr)
@@ -70,6 +84,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
              Removing sources at a fraction of the the max_weight level.
     nbcube : Boolean
              Flag to produce an output datacube containing all narrow-band images
+    del_sex  : boolean
+              If True, configuration files and intermediate files used by sextractor are not removed.
 
     Returns
     -------
@@ -125,19 +141,19 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         
         logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images", extra=d)
         weight_data = np.ma.average(c.data[1:size1 - 1, :, :], weights=1. / mvar[1:size1 - 1, :, :], axis=0)
-        weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), shape=imsum.shape, unit=imsum.unit)
+        weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), unit=imsum.unit)
         weight.write('white.fits', savemask='nan')
 
         fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
-        fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), shape=imsum.shape, unit=1/imsum.unit**2)
+        fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=1/imsum.unit**2)
         fullvar.write('inv_variance.fits', savemask='nan')
 
         bdata = np.ma.average(c.data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)
         gdata = np.ma.average(c.data[nsfilter:2 * nsfilter, :, :], weights=1. / mvar[nsfilter:2 * nsfilter, :, :], axis=0)
         rdata = np.ma.average(c.data[2 * nsfilter:size1 - 1, :, :], weights=1. / mvar[2 * nsfilter:size1 - 1, :, :], axis=0)
-        r = Image(wcs=imsum.wcs, data=np.ma.filled(rdata, np.nan), shape=imsum.shape, unit=imsum.unit)
-        g = Image(wcs=imsum.wcs, data=np.ma.filled(gdata, np.nan), shape=imsum.shape, unit=imsum.unit)
-        b = Image(wcs=imsum.wcs, data=np.ma.filled(bdata, np.nan), shape=imsum.shape, unit=imsum.unit)
+        r = Image(wcs=imsum.wcs, data=np.ma.filled(rdata, np.nan), unit=imsum.unit)
+        g = Image(wcs=imsum.wcs, data=np.ma.filled(gdata, np.nan), unit=imsum.unit)
+        b = Image(wcs=imsum.wcs, data=np.ma.filled(bdata, np.nan), unit=imsum.unit)
         r.write('whiter.fits', savemask='nan')
         g.write('whiteg.fits', savemask='nan')
         b.write('whiteb.fits', savemask='nan')
@@ -178,7 +194,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             sizeright = rightmax - rightmin
             contmean = (sizeleft * contleft + sizeright * contright) / (sizeleft + sizeright)
             imnb = Image(wcs=imsum.wcs, data=np.ma.filled(imslice - contmean, np.nan),
-                         shape=imsum.shape, unit=imsum.unit)
+                         unit=imsum.unit)
             kstr = "%04d" % k
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
             if(nbcube):
@@ -558,11 +574,14 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         if(nbcube):
             filelist=glob('nb/nb*.fits')
             for f in filelist:
-                  os.remove(f)
+                os.remove(f)
 
         #sort single line sources by wavelength
         lsource=lambda s:s.lines[0][0]
         single_lines.sort(key=lsource)
+        
+        if del_sex:
+            remove_files()
 
         return continuum_lines, single_lines, raw_catalog
     

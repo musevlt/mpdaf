@@ -1001,7 +1001,7 @@ class Source(object):
 
             subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
-
+            
             z = self.z['Z'][self.z['Z_DESC']==z_desc]
 
             if z>0:
@@ -1179,26 +1179,37 @@ class Source(object):
                         skysub=True, psf=None):
         """Extract spectra from the MUSE data cube and from a list of narrow-band images
         (to define spectrum extraction apertures).
+        
+        First, this method computes a subcube that has the same size
+        along the spatial axis as MASK_UNION image.
+        
+        The no-weighting spectrum is computed as the sum of the subcube
+        weighted by the MASK_UNION image.
+        It is saved in self.spectra['MUSE_TOT']
+
+        The weighted spectra are computed as the sum of the subcube
+        weighted by the corresponding narrow bands image.
+        They are saved in self.spectra[nb_ima] (for nb_ima in tags_to_try)
+        
+        If psf:
+
+            The potential PSF weighted spectrum is computed as the sum of
+            the subcube weighted by MASK_UNION*psf.
+            It is saved in self.spectra['MUSE_PSF']
 
         If skysub:
-
-            The local sky spectrum is saved in self.spectra['MUSE_SKY']
-
-            The no-weighting spectrum is saved in self.spectra['MUSE_TOT_SKYSUB']
-
-            The weighted spectra are saved in self.spectra['*_SKYSUB'] (for * in tags_to_try)
-
-            The potential PSF weighted spectra is saved in self.spectra['MUSE_PSF_SKYSUB']
-
-        else:
-
-            The no-weighting spectrum is saved in self.spectra['MUSE_TOT']
-
-            The weighted spectra are saved in self.spectra['*'] (for * in tags_to_try)
-
-            The potential PSF weighted spectra is saved in self.spectra['MUSE_PSF']
+        
+            The local sky spectrum is computed as the average of the subcube
+            weighted by the MASK_SKY image.
+            It is saved in self.spectra['MUSE_SKY']
+            
+            The other spectra are computed on the sky-subtracted subcube and
+            they are saved in self.spectra['*_SKYSUB']
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+        The weighted sum conserves the flux by :
+            - Taking into account bad pixels in the addition.
+            - Normalizing with the median value of weighting sum/no-weighting sum
 
         Parameters
         ----------
@@ -1219,22 +1230,24 @@ class Source(object):
 
         if self.images.has_key('MASK_UNION'):
             ima = self.images['MASK_UNION']
-            if ima.wcs.get_cunit() == cube.wcs.get_cunit():
+            
+            if ima.wcs.sameStep(cube.wcs):
                 size = ima.shape[0]
                 unit_size = None
             else:
                 size = ima.wcs.get_step(unit=u.arcsec)[0] * ima.shape[0]
                 unit_size = u.arcsec
+            
             subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
             if ima.wcs.isEqual(subcub.wcs):
                 object_mask = ima.data.data
             else:
-                unit = ima.wcs.get_cunit1()
                 object_mask = ima.resample(newdim=(subcub.shape[1], subcub.shape[2]),
                                         newstart=subcub.wcs.get_start(unit=u.deg),
                                         newstep=subcub.wcs.get_step(unit=u.arcsec),
-                                        order=0).data.data
+                                        order=0, unit_start=u.deg,
+                                        unit_step=u.arcsec).data.data
         else:
             raise IOError('extract_spectra method use the MASK_UNION computed by add_mask method')
 
@@ -1243,11 +1256,11 @@ class Source(object):
                 if self.images['MASK_SKY'].wcs.isEqual(subcub.wcs):
                     sky_mask = self.images['MASK_SKY'].data.data
                 else:
-                    unit = self.images['MASK_SKY'].wcs.get_cunit1()
                     sky_mask = self.images['MASK_SKY'].resample(newdim=(subcub.shape[1], subcub.shape[2]),
                                                              newstart=subcub.wcs.get_start(unit=u.deg),
                                                              newstep=subcub.wcs.get_step(unit=u.arcsec),
-                                                             order=0).data.data
+                                                             order=0, unit_start=u.deg,
+                                                             unit_step=u.arcsec).data.data
             else:
                 raise IOError('extract_spectra method use the MASK_SKY computed by add_mask method')
 
@@ -1368,6 +1381,8 @@ class Source(object):
         if eml is None:
             eml = emlines
         col_lbda, col_flux = cols
+        if self.lines is None:
+            raise IOError('invalid self.lines table')
         if col_lbda not in self.lines.colnames:
             raise IOError('invalid colum name %s'%col_lbda)
         if col_flux not in self.lines.colnames:
@@ -1559,7 +1574,7 @@ class SourceList(list):
         cat = Catalog.from_sources(self, fmt)
         try:
             cat.write(fcat)
-            # For FITS tables, the maximum number of fields is 999
+            raise Warning("For FITS tables, the maximum number of fields is 999")
         except:
             cat.write(fcat.replace('.fits', '.txt'), format='ascii')
 

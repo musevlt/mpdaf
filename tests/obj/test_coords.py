@@ -20,6 +20,8 @@ class TestWCS(object):
         wcs = WCS(h)
         h2 = wcs.to_header()
         wcs2 = WCS(h2)
+        wcs2.naxis1 = wcs.naxis1
+        wcs2.naxis2 = wcs.naxis2
         nose.tools.assert_true(wcs.isEqual(wcs2))
 
     @attr(speed='fast')
@@ -110,6 +112,7 @@ class TestWaveCoord(object):
         wave = WaveCoord(h)
         h2 = wave.to_header()
         wave2 = WaveCoord(h2)
+        wave2.shape = wave.shape
         nose.tools.assert_true(wave.isEqual(wave2))
 
     @attr(speed='fast')

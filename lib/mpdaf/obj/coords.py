@@ -345,9 +345,12 @@ class WCS(object):
                         val = 0.
                 hdr['CD' + c] = val
         # naxis
-        if self.naxis1 != 0 and self.naxis2 != 0:
-            hdr['NAXIS1'] = self.naxis1
-            hdr['NAXIS2'] = self.naxis2
+#         if self.naxis1 != 0 and self.naxis2 != 0:
+# #             hdr.insert()
+# #             hdr.insert('NAXIS', ('NAXIS1', self.naxis1), after=True)
+# #             hdr.insert('NAXIS1', ('NAXIS2', self.naxis2), after=True)
+#             hdr['NAXIS1'] = self.naxis1
+#             hdr['NAXIS2'] = self.naxis2
         return hdr
 
     def sky2pix(self, x, nearest=False, unit=None):
@@ -438,7 +441,7 @@ class WCS(object):
 
         cdelt1 = self.get_step()
         cdelt2 = other.get_step(unit=self.get_cunit1())
-        return np.allclose(cdelt1, cdelt2, atol=1E-3, rtol=0)
+        return np.allclose(cdelt1, cdelt2, atol=1E-7, rtol=0)
 
     def __getitem__(self, item):
         """Return the corresponding WCS."""
@@ -856,10 +859,10 @@ class WCS(object):
     def to_cube_header(self, wave):
         wcs_hdr = self.to_header()
         wcs_hdr['WCSAXES'] = 3
-        wcs_hdr['NAXIS3'] = wave.shape
+        #wcs_hdr['NAXIS3'] = wave.shape
         wcs_hdr['CRVAL3'] = wave.get_crval()
         wcs_hdr['CRPIX3'] = wave.get_crpix()
-        wcs_hdr['CUNIT3'] = wave.get_cunit()
+        wcs_hdr['CUNIT3'] = "%s"%wave.get_cunit()
         wcs_hdr['CTYPE3'] = wave.get_ctype()
 
         if 'CD1_1' in wcs_hdr:
@@ -1249,8 +1252,8 @@ class WaveCoord(object):
     def to_header(self):
         """Generate a pyfits header object with the WCS information."""
         hdr = self.wcs.to_header()
-        hdr['NAXIS'] = 1
-        hdr['NAXIS1'] = self.shape
+#         hdr['NAXIS'] = 1
+#         hdr['NAXIS1'] = self.shape
         return hdr
 
     def set_crpix(self, x):
