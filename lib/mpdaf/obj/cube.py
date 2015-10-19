@@ -2603,7 +2603,7 @@ class Cube(DataArray):
 
         if subtract_off:
             if unit_wave is not None:
-                margin /= self.wave.get_step()
+                margin /= self.wave.get_step(unit=unit_wave)
             dl = (k2 +1 - k1) * fband
             lbdas = np.arange(self.shape[0], dtype=float)
             is_off = np.where(((lbdas < k1 - margin) &
@@ -2655,14 +2655,16 @@ class Cube(DataArray):
             radius = size / 2.
 
             size = int(size)
+            i, j = (center - radius + 0.5).astype(int)
             imin, jmin = np.maximum(np.minimum(
-                (center - radius + 0.5).astype(int),
+                [i, j], [self.shape[1] - 1, self.shape[2] - 1]),
+                                    [0, 0])
+            imax, jmax = np.maximum(np.minimum(
+                [i+size, j+size],
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + size, jmin + size],
-                                    [self.shape[1], self.shape[2]])
-
-            i0, j0 = - np.minimum((center - radius + 0.5).astype(int), [0,0])
-
+            
+            i0, j0 = - np.minimum([i,j], [0,0])
+            
             data = np.ones((self.shape[0],size,size)) * np.nan
 
             wcs=self.wcs[imin:imax, jmin:jmax]
@@ -2741,15 +2743,16 @@ class Cube(DataArray):
 
             radius2 = radius * radius
             size = int(2 * radius)
+            i, j = (center - radius + 0.5).astype(int)
             imin, jmin = np.maximum(np.minimum(
-                (center - radius + 0.5).astype(int),
+                [i, j], [self.shape[1] - 1, self.shape[2] - 1]),
+                                    [0, 0])
+            imax, jmax = np.maximum(np.minimum(
+                [i+size, j+size],
                 [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + size,
-                                     jmin + size],
-                                    [self.shape[1], self.shape[2]])
-
-            i0, j0 = - np.minimum((center - radius + 0.5).astype(int), [0,0])
-
+            
+            i0, j0 = - np.minimum([i,j], [0,0])
+            
             data = np.ones((self.shape[0], size, size)) * np.nan
 
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
