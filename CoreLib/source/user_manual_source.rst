@@ -15,7 +15,7 @@ A Source object O consist of:
 +-----------+---------------------------------------------------------------+
 | Component | Description                                                   |
 +===========+===============================================================+
-| O.header  | FITS header instance                                          |
+| O.header  | pyfits header instance                                        |
 +-----------+---------------------------------------------------------------+
 | O.lines   | astropy table that contains the parameters of spectral lines. |
 +-----------+---------------------------------------------------------------+
@@ -68,13 +68,17 @@ Reference
 
 :func:`mpdaf.sdetect.Source.add_image <mpdaf.sdetect.Source.add_image>` extracts an image centered on the source center and appends it to the images dictionary.
 
+:func:`mpdaf.sdetect.Source.add_cube <mpdaf.sdetect.Source.add_cube>` extracts a cube centered on the source center and appends it to the cubes dictionary.
+
 :func:`mpdaf.sdetect.Source.add_white_image <mpdaf.sdetect.Source.add_white_image>` computes the white images from the MUSE data cube and appends it to the images dictionary.
 
-:func:`mpdaf.sdetect.Source.add_narrow_band_images <mpdaf.sdetect.Source.add_narrow_band_images>` creates narrow band images.
+:func:`mpdaf.sdetect.Source.add_narrow_band_images <mpdaf.sdetect.Source.add_narrow_band_images>` creates narrow band images from a redshift value and a catalog of lines.
+
+:func:`mpdaf.sdetect.Source.add_narrow_band_image_lbdaobs <mpdaf.sdetect.Source.add_narrow_band_image_lbdaobs>` creates a narrow band image around an observed wavelength value.
 
 :func:`mpdaf.sdetect.Source.add_seg_images <mpdaf.sdetect.Source.add_seg_images>` runs SExtractor to create segmentation maps.
 
-:func:`mpdaf.sdetect.Source.add_masks <mpdaf.sdetect.Source.add_masks>` runs SExtractor on all images present in images dictionary to create masked images.
+:func:`mpdaf.sdetect.Source.add_masks <mpdaf.sdetect.Source.add_masks>` runs SExtractor to create masked images.
 
 :func:`mpdaf.sdetect.Source.add_table <mpdaf.sdetect.Source.add_table>` appends an astropy table to the tables dictionary.
 
@@ -120,10 +124,7 @@ For example, we create a source object from spatial coordinates::
  [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software              
  [INFO] CUBE    = 'DATACUBE-HDFS.fits' / MUSE data cube
  
- [INFO] images['MUSE_WHITE']
- [INFO] 25 X 25 image (no name)
- [INFO] .data(25,25) (10**(-20)*erg/s/cm**2/Angstrom) fscale=1, .var(25,25)
- [INFO] center:(02:36:11.9131,10:00:13.5686) size in arcsec:(5.000,5.000) step in arcsec:(0.200,0.200) rot:0.0
+ [INFO] images['MUSE_WHITE'] 25 X 25 .data .var rot=0.0
  
 We can also extract an HST image centered on the source center and append it to the images dictionary::
 

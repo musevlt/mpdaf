@@ -269,7 +269,6 @@ Reference
 
 .. autosummary::
 
-   mpdaf.obj.cube
    mpdaf.obj.Cube
    mpdaf.obj.CubeList
 
