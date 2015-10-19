@@ -21,6 +21,7 @@ emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
            1909.0: 'CIII]1909',
            2326.0: 'CII2326',
+           2801.0: 'MgII2801',
            3726.032: '[OII]3726',
            3728.8149: '[OII]3729',
            3798.6001: 'HTHETA3799',
@@ -93,7 +94,7 @@ def matchlines(nlines, wl, z, eml):
     return(error, jfound)
 
 
-def crackz(nlines, wl, flux, eml):
+def crackz(nlines, wl, flux, eml, zguess=None):
     """Method to estimate the best redshift matching a list of emission lines
 
     Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
@@ -108,6 +109,8 @@ def crackz(nlines, wl, flux, eml):
              Table of line fluxes
     eml    : dict
              Full catalog of lines to test redshift
+    zguess : float
+             Guess redshift to test (only this)
 
     Returns
     -------
@@ -116,23 +119,37 @@ def crackz(nlines, wl, flux, eml):
           list of lines names)
     """
     errmin = 3.0
-    zmin = 0.0
-    zmax = 7.0
+    zstep=0.0002
+    if zguess:
+        zmin = zguess
+        zmax = zguess+zstep
+    else:
+        zmin = 0.0
+        zmax = 7.0
     if(nlines == 0):
         return -9999.0, -9999.0, 0, [], [], []
     if(nlines == 1):
-        return -9999.0, -9999.0, 1, wl, flux, ["Lya/[OII]"]
+        if zguess:
+            (error,jfound)=matchlines(nlines,wl,zguess,eml)
+            if(error<errmin):
+                return zguess, -9999.0, 1, wl, flux, list(lnames[jfound[0]])
+            else:
+                return zguess, -9999.0, 1, [], [], []
+        else:
+            return -9999.0, -9999.0, 1, wl, flux, ["Lya/[OII]"]
     if(nlines > 1):
         found = 0
         lbdas = np.array(eml.keys())
         lnames = np.array(eml.values())
-        for z in np.arange(zmin, zmax, 0.001):
+        for z in np.arange(zmin, zmax, zstep):
             (error, jfound) = matchlines(nlines, wl, z, eml)
             if(error < errmin):
                 errmin = error
                 found = 1
                 zfound = z
                 jfinal = jfound.copy()
+        if((found == 0) and zguess):
+            return zguess, -9999.0, 0, [], [], []
         if(found == 1):
             jfinal = np.array(jfinal).astype(int)
             return zfound, errmin / np.min(lbdas[jfinal]), nlines, \
@@ -149,8 +166,7 @@ def crackz(nlines, wl, flux, eml):
             if(nlines == 2):
                 # keep the brightest
                 ksel = np.argsort(flux)[-1]
-                return -9999.0, -9999.0, 1, [wl[ksel]], [flux[ksel]], \
-                    ["Lya/[OII]"]
+                return crackz(1, wl[ksel], flux[ksel], eml)
 
 
 class Source(object):
@@ -1339,7 +1355,7 @@ class Source(object):
                     self.spectra['MUSE_PSF'] = spec
                 # Insert the PSF weighted flux - here re-normalised?
 
-    def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS','FLUX'), z_desc='EMI'):
+    def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS','FLUX'), z_desc='EMI',zguess=None):
         """Estimate the best redshift matching the list of emission lines
 
         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr).
@@ -1375,6 +1391,8 @@ class Source(object):
                   Two columns of self.lines that will be used to define the emission lines.
         z_desc  : string
                   Estimated redshift will be saved in self.z table under these name.
+        zguess  : float
+                  Guess redshift. Test if this redshift is a match and fills the detected lines
         """
         d = {'class': 'Source', 'method': 'crack_z'}
         nline_max = nlines
@@ -1397,7 +1415,7 @@ class Source(object):
             self.logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
             return
 
-        z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml)
+        z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml, zguess)
         #observed wavelengths
         wl = vacuum2air(wl)
 
