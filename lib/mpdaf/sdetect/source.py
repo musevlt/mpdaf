@@ -542,7 +542,7 @@ class Source(object):
         print '\n'
         for key, spe in self.spectra.iteritems():
             msg = 'spectra[\'%s\']'%key
-            msg += ',%i elements (%0.2f-%0.2f A)'%(spe.shape, spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom))
+            msg += ',%i elements (%0.2f-%0.2f A)'%(spe.shape[0], spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom))
             data = '.data'
             if spe.data is None:
                 data = ''
