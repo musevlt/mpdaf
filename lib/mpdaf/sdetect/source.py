@@ -681,7 +681,7 @@ class Source(object):
             if z!=-9999:
                 self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
                            rows=[[desc, z, zmin, zmax]],
-                           dtype=('S20', 'f6', 'f6', 'f6'),
+                           dtype=('S20', 'f8', 'f8', 'f8'),
                            masked=True)
                 self.z['Z'].format = '%.6f'
                 self.z['Z_MIN'].format = '%.6f'
@@ -719,7 +719,7 @@ class Source(object):
         if self.mag is None:
             self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
                            rows=[[band, m, errm]],
-                           dtype=('S20', 'f6', 'f6'),
+                           dtype=('S20', 'f8', 'f8'),
                            masked=True)
             self.mag['MAG'].format = '%.6f'
             self.mag['MAG_ERR'].format = '%.6f'
