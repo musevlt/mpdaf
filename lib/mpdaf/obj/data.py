@@ -40,47 +40,48 @@ def read_slice_from_fits(filename, item=None, ext='DATA', mask_ext=None,
 class DataArray(object):
 
     """Base class to handle arrays.
-
+    
     Parameters
     ----------
     filename : string
                 Possible FITS file name. None by default.
+    hdulist  : pyfits.hdulist
+               HDU list class. 
     ext      : integer or (integer,integer) or string or (string,string)
                 Number/name of the data extension
                 or numbers/names of the data and variance extensions.
-    wcs      : :class:`mpdaf.obj.WCS`
-                World coordinates.
-    wave     : :class:`mpdaf.obj.WaveCoord`
-                Wavelength coordinates.
-    unit     : string
-                Possible data unit type. None by default.
-    data     : float array
-                Array containing the pixel values of the cube. None by
-                default.
-    var      : float array
-                Array containing the variance. None by default.
+    unit     : astropy.units
+               Physical units of the data values.
+               u.dimensionless_unscaled by default.
+    copy     : boolean
+               If true (default), then the data and variance arrays are copied. 
+    dtype    : numpy.dtype
+               Type of the data (integer, float)
 
     Attributes
     ----------
     filename       : string
                      Possible FITS filename.
-    unit           : string
-                     Possible data unit type
     primary_header : pyfits.Header
                      FITS primary header instance.
-    data_header    : pyfits.Header
-                     FITS data header instance.
-    data           : masked array numpy.ma
-                     Array containing the cube pixel values.
-    shape          : tuple
-                     Lengths of data in Z and Y and X
-                     (python notation (nz,ny,nx)).
-    var            : float array
-                     Array containing the variance.
     wcs            : :class:`mpdaf.obj.WCS`
                      World coordinates.
     wave           : :class:`mpdaf.obj.WaveCoord`
                      Wavelength coordinates
+    ndim           : integer
+                     Number of dimensions.
+    shape          : tuple
+                     Lengths of data (python notation (nz,ny,nx)).                 
+    data           : masked array numpy.ma
+                     Masked array containing the cube pixel values.
+    data_header    : pyfits.Header
+                     FITS data header instance.
+    unit           : astropy.units
+                     Physical units of the data values.
+    dtype          : numpy.dtype
+                     Type of the data (integer, float)
+    var            : float array
+                     Array containing the variance.
     """
 
     _ndim_required = None
@@ -91,7 +92,7 @@ class DataArray(object):
                  var=None, unit=u.dimensionless_unscaled, copy=True,
                  dtype=float, **kwargs):
         d = {'class': self.__class__.__name__, 'method': '__init__'}
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
         self._data = None
         self._data_ext = None
@@ -151,10 +152,14 @@ class DataArray(object):
             self.data_header = hdr = hdulist[self._data_ext].header
             # self.unit = u.Unit(hdr.get('BUNIT', 'count'))
             try:
-                self.unit = u.Unit(fix_unit(hdr.get('BUNIT', 'count')))
+                if 'FSCALE' in hdr:
+                    self.unit = u.Unit(fix_unit('%e %s'%(hdr['FSCALE'],hdr['BUNIT'])))
+                else:
+                    self.unit = u.Unit(fix_unit(hdr['BUNIT']))
             except:
-                # print error
-                pass
+                warnings.warn('The physical unit of the data is not loaded '
+                          'from the FITS header', MpdafWarning)
+                self.unit = u.dimensionless_unscaled
             self._shape = hdulist[self._data_ext].data.shape
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
             #                        hdr['NAXIS1']])
@@ -171,7 +176,7 @@ class DataArray(object):
                 except pyfits.VerifyError as e:
                     # Workaround for
                     # https://github.com/astropy/astropy/issues/887
-                    self.logger.warning(e, extra=d)
+                    self._logger.warning(e, extra=d)
                     self.wcs = WCS(hdr)
 
             # Wavelength coordinates
@@ -211,13 +216,13 @@ class DataArray(object):
                 if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
                     (wcs.naxis1 != self._shape[-1] or
                         wcs.naxis2 != self._shape[-2]):
-                    self.logger.warning(
+                    self._logger.warning(
                         'world coordinates and data have not the same '
                         'dimensions: shape of WCS object is modified', extra=d)
                 self.wcs.naxis1 = self._shape[-1]
                 self.wcs.naxis2 = self._shape[-2]
             except:
-                self.logger.warning('world coordinates not copied',
+                self._logger.warning('world coordinates not copied',
                                     exc_info=True, extra=d)
 
         wave = kwargs.pop('wave', None)
@@ -225,13 +230,13 @@ class DataArray(object):
             try:
                 self.wave = wave.copy()
                 if wave.shape is not None and wave.shape != self._shape[0]:
-                    self.logger.warning(
+                    self._logger.warning(
                         'wavelength coordinates and data have not the same '
                         'dimensions: shape of WaveCoord object is modified',
                         extra=d)
                 self.wave.shape = self._shape[0]
             except:
-                self.logger.warning('wavelength solution not copied',
+                self._logger.warning('wavelength solution not copied',
                                     exc_info=True, extra=d)
 
     @property
@@ -331,7 +336,7 @@ class DataArray(object):
     def info(self):
         """Prints information."""
         d = {'class': self.__class__.__name__, 'method': 'info'}
-        log_info = partial(self.logger.info, extra=d)
+        log_info = partial(self._logger.info, extra=d)
 
         shape = (self.shape, ) if np.isscalar(self.shape) else self.shape
         shape_str = [str(x) for x in shape]
@@ -455,12 +460,12 @@ class DataArray(object):
         return res
 
     def unmask(self):
-        """Unmasks the data (just invalid data (nan,inf) are masked)."""
+        """Unmask the data (just invalid data (nan,inf) are masked)."""
         self.data.mask = False
         self.data = np.ma.masked_invalid(self.data)
 
     def mask_variance(self, threshold):
-        """Masks pixels with a variance upper than threshold value.
+        """Mask pixels with a variance upper than threshold value.
 
         Parameters
         ----------
