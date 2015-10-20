@@ -207,7 +207,7 @@ class DataArray(object):
                 self._var = np.array(var, dtype=dtype, copy=copy)
 
         wcs = kwargs.pop('wcs', None)
-        if wcs is not None and wcs.naxis1!=1 and wcs.naxis2!=1:
+        if wcs is not None and wcs.naxis1 != 1 and wcs.naxis2 != 1:
             try:
                 self.wcs = wcs.copy()
                 if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
@@ -217,14 +217,14 @@ class DataArray(object):
                     self._logger.warning(
                         'world coordinates and data have not the same '
                         'dimensions: shape of WCS object is modified')
-                self.wcs.naxis1 = self._shape[-1]
-                self.wcs.naxis2 = self._shape[-2]
+                    self.wcs.naxis1 = self._shape[-1]
+                    self.wcs.naxis2 = self._shape[-2]
             except:
                 self._logger.warning('world coordinates not copied',
                                      exc_info=True)
 
         wave = kwargs.pop('wave', None)
-        if wave is not None and wave.shape!=1:
+        if wave is not None and wave.shape != 1:
             try:
                 self.wave = wave.copy()
                 if wave.shape is not None and self._shape is not None and \
@@ -232,7 +232,7 @@ class DataArray(object):
                     self._logger.warning(
                         'wavelength coordinates and data have not the same '
                         'dimensions: shape of WaveCoord object is modified')
-                self.wave.shape = self._shape[0]
+                    self.wave.shape = self._shape[0]
             except:
                 self._logger.warning('wavelength solution not copied',
                                      exc_info=True)
@@ -483,7 +483,7 @@ class DataArray(object):
                elements depending on a condition
         """
         self.data[ksel] = np.ma.masked
-        
+
     def __getitem__(self, item):
         """Returns the corresponding object:
         cube[k,p,k] = value
@@ -503,7 +503,7 @@ class DataArray(object):
                 data = ma.masked_invalid(data)
         else:
             data = self._data[item] #data = self.data[item].copy()
-        
+
         if self._var is None:
             if self.filename is not None:
                 if self._var_ext is None:
@@ -519,7 +519,7 @@ class DataArray(object):
                 var = None
         else:
             var = self._var[item] #copy
-        
+
         if self.ndim == 3 and isinstance(item, tuple) and len(item) == 3:
             try:
                 wcs = self.wcs[item[1], item[2]]
@@ -544,7 +544,7 @@ class DataArray(object):
         else:
             wave = None
             wcs = None
-        
+
         if data.shape == ():
             return data
         else:

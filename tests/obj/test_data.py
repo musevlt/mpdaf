@@ -22,6 +22,8 @@ def test_fits_img():
     hdu = fits.open(TESTIMG)
     data = DataArray(filename=TESTIMG)
     nose.tools.assert_equal(data.shape, hdu[0].data.shape)
+    nose.tools.assert_equal(data.ndim, 2)
+    hdu.close()
 
 
 @attr(speed='fast')
@@ -29,6 +31,8 @@ def test_fits_spectrum():
     hdu = fits.open(TESTSPE)
     data = DataArray(filename=TESTSPE)
     nose.tools.assert_equal(data.shape, hdu[1].data.shape)
+    nose.tools.assert_equal(data.ndim, 1)
+    hdu.close()
 
 
 @attr(speed='fast')
