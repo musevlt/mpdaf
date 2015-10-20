@@ -22,13 +22,13 @@ def generate_image(scale=2, shape=(6, 5), unit=u.ct, wcs=None):
     return Image(data=scale * np.ones(shape), wcs=wcs, unit=unit, copy=False)
 
 
-def generate_spectrum(scale=2, unit=u.angstrom, shape=10, crpix=2.0, cdelt=3.0,
-                      crval=0.5, wave=None):
+def generate_spectrum(scale=2, cunit=u.angstrom, shape=10, crpix=2.0, cdelt=3.0,
+                      crval=0.5, wave=None, unit=u.ct):
     wave = wave or WaveCoord(crpix=crpix, cdelt=cdelt, crval=crval,
-                             shape=shape, cunit=unit)
+                             shape=shape, cunit=cunit)
     data = np.arange(shape)
     data[0] = 0.5
-    return Spectrum(wave=wave, copy=False, data=data)
+    return Spectrum(wave=wave, copy=False, data=data, unit=unit)
 
 
 def generate_cube(scale=2.3, uwave=u.angstrom, shape=(10, 6, 5), unit=u.ct,
