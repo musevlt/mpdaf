@@ -13,23 +13,34 @@ Cube object format
 
 A cube object O consist of:
 
-+------------+--------------------------------------------------------------------------------------------------+
-| Component  | Description                                                                                      |
-+============+==================================================================================================+
-| O.wcs      | world coordinate spatial information (:class:`WCS <mpdaf.obj.WCS>` object)                       |
-+------------+--------------------------------------------------------------------------------------------------+
-| O.wave     | world coordinate spectral information  (:class:`WaveCoord <mpdaf.obj.WaveCoord>` object)         |
-+------------+--------------------------------------------------------------------------------------------------+
-| O.data     | masked numpy array with data values                                                              |
-+------------+--------------------------------------------------------------------------------------------------+
-| O.var      | (optionally) masked numpy array with variance values                                             |
-+------------+--------------------------------------------------------------------------------------------------+
-| O.shape    | Array containing the 3 dimensions [nk,np,nq] of the cube: nk channels and np x nq spatial pixels |
-+------------+--------------------------------------------------------------------------------------------------+
-| O.fscale   | Scaling factor for the flux and variance values                                                  |
-+------------+--------------------------------------------------------------------------------------------------+
++------------------+--------------------------------------------------------------------------------------------------+
+| Component        | Description                                                                                      |
++==================+==================================================================================================+
+| O.filename       | Possible FITS filename                                                                           |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.primary_header | FITS primary header instance                                                                     |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.wcs            | World coordinate spatial information (:class:`WCS <mpdaf.obj.WCS>` object)                       |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.wave           | World coordinate spectral information  (:class:`WaveCoord <mpdaf.obj.WaveCoord>` object)         |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.shape          | Array containing the 3 dimensions [nk,np,nq] of the cube: nk channels and np x nq spatial pixels |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.data           | Masked numpy array with data values                                                              |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.data_header    | FITS data header instance                                                                        |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.unit           | Physical units of the data values                                                                |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.dtype          | Type of the data (integer, float)                                                                |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.var            | (optionally) Numpy array with variance values                                                    |
++------------------+--------------------------------------------------------------------------------------------------+
+| O.ima            | Dictionary of images attached to the cube                                                        |
++------------------+--------------------------------------------------------------------------------------------------+
 
-Masked arrays are arrays that may have missing or invalid entries. The `numpy.ma <http://docs.scipy.org/doc/numpy/reference/maskedarray.html>`_ module provides a nearly work-alike replacement for numpy that supports data arrays with masks.
+Masked arrays are arrays that may have missing or invalid entries.
+The `numpy.ma <http://docs.scipy.org/doc/numpy/reference/maskedarray.html>`_ module provides a nearly work-alike replacement for numpy that supports data arrays with masks.
 
 Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis, p and q the spatial axes
 
@@ -43,6 +54,124 @@ q, the vertical position p, and the spectral position k, as follows:
 
 In total, this cube C contains nq pixels in the horizontal direction, 
 np pixels in the vertical direction and nk channels in the spectral direction.
+
+
+Reference
+=========
+
+:func:`mpdaf.obj.Cube <mpdaf.obj.Cube>` is the classic cube constructor.
+
+:func:`mpdaf.obj.Cube.copy <mpdaf.obj.DataArray.copy>` copies Cube object in a new one and returns it.
+
+:func:`mpdaf.obj.Cube.clone <mpdaf.obj.DataArray.clone>` returns a shallow copy with the same shape and coordinates, filled with zeros.
+
+:func:`mpdaf.obj.cube.info <mpdaf.obj.DataArray.info>` prints information.
+
+:func:`mpdaf.obj.Cube.write <mpdaf.obj.Cube.write>` saves the Cube in a FITS file.
+
+
+Indexing
+--------
+
+:func:`Cube[k,p,q] <mpdaf.obj.Cube.__getitem__>` returns the corresponding value.
+
+:func:`Cube[k1:k2,p1:p2,q1:q2] <mpdaf.obj.Cube.__getitem__>` returns the sub-cube.
+
+:func:`Cube[k,:,:] <mpdaf.obj.Cube.__getitem__>` returns an Image.
+
+:func:`Cube[:,p,q] <mpdaf.obj.Cube.__getitem__>` returns a Spectrum.
+
+:func:`Cube[k,p,q] = value <mpdaf.obj.Cube.__setitem__>` sets value in Cube.data[k,p,q]
+
+:func:`Cube[k1:k2,p1:p2,q1:q2] = array <mpdaf.obj.Cube.__setitem__>` sets the corresponding part of Cube.data.
+
+
+Getters and setters
+-------------------
+
+:func:`mpdaf.obj.Cube.get_lambda <mpdaf.obj.Cube.get_lambda>` returns the sub-cube corresponding to a wavelength range.
+
+:func:`mpdaf.obj.Cube.get_step <mpdaf.obj.Cube.get_step>` returns the cube steps.
+
+:func:`mpdaf.obj.Cube.get_range <mpdaf.obj.Cube.get_range>` returns minimum and maximum values of cube coordiantes.
+
+:func:`mpdaf.obj.Cube.get_start <mpdaf.obj.Cube.get_start>` returns coordinates values corresponding to pixel (0,0,0).
+
+:func:`mpdaf.obj.Cube.get_end <mpdaf.obj.Cube.get_end>` returns coordinates values corresponding to pixel (-1,-1,-1).
+
+:func:`mpdaf.obj.Cube.get_rot <mpdaf.obj.Cube.get_rot>` returns the rotation angle.
+
+:func:`mpdaf.obj.Cube.get_data_hdu <mpdaf.obj.Cube.get_data_hdu>` returns astropy.io.fits.ImageHDU corresponding to the DATA extension.
+
+:func:`mpdaf.obj.Cube.get_stat_hdu <mpdaf.obj.Cube.get_stat_hdu>` returns astropy.io.fits.ImageHDU corresponding to the STAT extension.
+
+:func:`mpdaf.obj.Cube.set_wcs <mpdaf.obj.Cube.set_wcs>` sets the world coordinates.
+
+
+Mask
+----
+
+:func:`<= <mpdaf.obj.DataArray.__le__>` masks data array where greater than a given value.                                 
+
+:func:`< <mpdaf.obj.DataArray.__lt__>` masks data array where greater or equal than a given value. 
+
+:func:`>= <mpdaf.obj.DataArray.__ge__>` masks data array where less than a given value.
+
+:func:`> <mpdaf.obj.DataArray.__gt__>` masks data array where less or equal than a given value.
+
+:func:`mpdaf.obj.cube.unmask <mpdaf.obj.DataArray.unmask>` unmasks the cube (just invalid data (nan,inf) are masked) (in place).
+
+:func:`mpdaf.obj.Cube.mask <mpdaf.obj.Cube.mask>` masks values inside/outside the described region (in place).
+
+:func:`mpdaf.obj.Cube.mask_ellipse <mpdaf.obj.Cube.mask_ellipse>` masks values inside/outside the described region. Uses an elliptical shape.
+
+:func:`mpdaf.obj.Cube.mask_variance <mpdaf.obj.DataArray.mask_variance>` masks pixels with a variance upper than threshold value.
+
+:func:`mpdaf.obj.Cube.mask_selection <mpdaf.obj.DataArray.mask_selection>` masks pixels corresponding to a selection.
+
+
+Arithmetic
+----------
+
+:func:`\+ <mpdaf.obj.Cube.__add__>` makes a addition.
+
+:func:`\- <mpdaf.obj.Cube.__sub__>` makes a substraction .
+
+:func:`\* <mpdaf.obj.Cube.__mul__>` makes a multiplication.
+
+:func:`/ <mpdaf.obj.Cube.__div__>` makes a division.
+
+:func:`mpdaf.obj.Cube.sqrt <mpdaf.obj.DataArray.sqrt>` computes the positive square-root of data extension.
+
+:func:`mpdaf.obj.Cube.abs <mpdaf.obj.DataArray.abs>` computes the absolute value of data extension.
+
+:func:`mpdaf.obj.Cube.sum <mpdaf.obj.Cube.sum>` returns the sum over the given axis.
+
+:func:`mpdaf.obj.Cube.mean <mpdaf.obj.Cube.mean>` returns the mean over the given axis.
+
+:func:`mpdaf.obj.Cube.median <mpdaf.obj.Cube.median>` returns the median over the given axis.
+
+
+Transformation
+--------------
+
+:func:`mpdaf.obj.Cube.resize <mpdaf.obj.Cube.resize>` resizes the cube to have a minimum number of masked values (in place).
+
+:func:`mpdaf.obj.Cube.truncate <mpdaf.obj.Cube.truncate>` extracts a sub-cube.
+
+:func:`mpdaf.obj.Cube.get_image <mpdaf.obj.Cube.get_image>` extracts an image around a position from the datacube.
+
+:func:`mpdaf.obj.Cube.subcube <mpdaf.obj.Cube.subcube>` extracts a sub-cube around a position.
+
+:func:`mpdaf.obj.Cube.subcube <mpdaf.obj.Cube.subcube_circle_aperture>` extracts a sub-cube from an circle aperture of fixed radius.
+
+:func:`mpdaf.obj.Cube.rebin_mean <mpdaf.obj.Cube.rebin_mean>` shrinks the size of the cube by factor using mean values.
+
+:func:`mpdaf.obj.Cube.rebin_median <mpdaf.obj.Cube.rebin_median>` shrinks the size of the cube by factor using median values.
+
+:func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
+
+:func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
 
 
 Tutorials
@@ -62,10 +191,10 @@ We read the datacube from disk and display basic information::
  >>> from mpdaf.obj import Cube
  >>> cube = Cube('Central_DATACUBE_FINAL_11to20_2012-05-16.fits')
  >>> cube.info()
- 3601 X 101 X 101 cube (Central_DATACUBE_FINAL_11to20_2012-05-16.fits)
- .data(3601,101,101) (erg/s/cm**2/Angstrom) fscale=1e-20, .var(3601,101,101)
- center:(-30:00:01.35,01:20:00.137) size in arcsec:(20.200,20.200) step in arcsec:(0.200,0.200) rot:0.0
- wavelength: min:4800.00 max:9300.00 step:1.25 Angstrom
+ [INFO] 3601 x 101 x 101 Cube (Central_DATACUBE_FINAL_11to20_2012-05-16.fits)
+ [INFO] .data(3601,101,101) (1e-20 erg / (Angstrom cm2 s)), .var(3601,101,101)
+ [INFO] center:(-30:00:01.3494,01:20:00.1373) size in arcsec:(20.200,20.200) step in arcsec:(0.200,0.200) rot:0.0 deg
+ [INFO] wavelength: min:4800.00 max:9300.00 step:1.25 angstrom
 
 The info directive gives us already some important informations:
 
@@ -133,7 +262,7 @@ Let's see how the spectrum iterator works::
  >>> from mpdaf.obj import iter_spe
  >>> small = obj1[:,0:2,0:3]
  >>> small.shape
- array([3601,    2,    3])
+ (3601, 2, 3)
  >>> for sp in iter_spe(small):
  >>> 	print sp.data.max()
  2.06232500076
@@ -162,7 +291,9 @@ otherwise the continnum spectra co is created but not written into the cont1 dat
 
 But, the better way to compute the continuum datacube is to use the :func:`mpdaf.obj.Cube.loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` that automatically loop on spectrum using multiprocessing::
 
+ >>> from mpdaf.obj import Spectrum
  >>> cont2 = obj1.loop_spe_multiprocessing(f=Spectrum.poly_spec, deg=5)
+ [INFO] loop_spe_multiprocessing (poly_spec): 200 tasks
 
 Let's check the result and display the continuum reconstructed image::
 
@@ -192,10 +323,10 @@ First let's isolate the emission line by truncating the object datacube in wavel
  >>> k1,k2 = sp1.wave.pixel([9000,9200], nearest=True)
  >>> emi1 = obj1[k1+1:k2+1,:,:]
  >>> emi1.info()
- 160 X 10 X 20 cube (no name)
- .data(160,10,20) (erg/s/cm**2/Angstrom) fscale=1e-20, .var(160,10,20)
- center:(-30:00:00.45,01:20:00.438) size in arcsec:(2.000,4.000) step in arcsec:(0.200,0.200) rot:0.0
- wavelength: min:9001.25 max:9200.00 step:1.25 Angstrom
+ [INFO] 160 x 10 x 20 Cube (Central_DATACUBE_FINAL_11to20_2012-05-16.fits)
+ [INFO] .data(160,10,20) (1e-20 erg / (Angstrom cm2 s)), .var(160,10,20)
+ [INFO] center:(-30:00:00.4494,01:20:00.4376) size in arcsec:(2.000,4.000) step in arcsec:(0.200,0.200) rot:0.0 deg
+ [INFO] wavelength: min:9001.25 max:9200.00 step:1.25 angstrom
  >>> sp1 = emi1.sum(axis=(1,2))
  >>> sp1.plot(color='r')
  
@@ -223,11 +354,11 @@ over the wavelength range centered around Halfa and the continuum mean flux at t
  >>> plt.figure()
  >>> k = line1.data.argmax()
  >>> line1[55-10:55+11].plot(color='r')
- >>> fline = line1[55-10:55+11].sum()*line1.get_step()
- >>> cline = cont1[55-10:55+11].mean()
+ >>> fline = (line1[55-10:55+11].sum()*line1.unit) * (line1.get_step()*line1.wave.get_cunit())
+ >>> cline = cont1[55-10:55+11].mean()*cont1.unit
  >>> ew = fline/cline
  >>> print fline, cline, ew
- 2.9053587488e-16 1.94553834915e-17 14.9334437436
+ 8352.08991389 1e-20 erg / (cm2 s) 1932.61993433 1e-20 erg / (Angstrom cm2 s) 4.32164119056 Angstrom
  
 .. figure::  user_manual_cube_images/spec6.png
    :align:   center
@@ -251,11 +382,13 @@ the spectrum iterator.::
  >>>   cont_flux[p,q] = cline
  >>>   ha_flux[p,q] = fline
  >>>   ha_ew[p,q] = ew
- >>> cont_flux.plot(title="continuum mean flux")
- >>> ha_flux.plot(title="Ha line total flux")
+ >>> cont_flux.plot(title="continuum mean flux (%s)"%cont_flux.unit, colorbar='v')
+ >>> ha_flux.unit = sp.unit * sp.wave.get_cunit()
+ >>> ha_flux.plot(title="Ha line total flux (%s)"%ha_flux.unit, colorbar='v')
  >>> import numpy as np
- >>> ha_ew.mask_selection(np.where((ima1.data*ima1.fscale)<0.4*1E-18))
- >>> ha_ew.plot(title="Ha line ew")
+ >>> ha_ew.mask_selection(np.where((ima1.data)<40))
+ >>> ha_ew.unit = ha_flux.unit / cont_flux.unit
+ >>> ha_ew.plot(title="Ha line ew (%s)"%ha_ew.unit, colorbar='v')
  
 .. image::  user_manual_cube_images/recima6.png
    
@@ -279,7 +412,9 @@ First, we use the image iterator::
  
 We can also use the :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method that automatically loops over all images to apply the convolution::
 
+ >>> from mpdaf.obj import Image
  >>> cube2 = cube.loop_ima_multiprocessing(f=Image.gaussian_filter, sigma=3)
+ [INFO] loop_ima_multiprocessing (gaussian_filter): 3601 tasks
  
 We then plot the result::
 
@@ -301,25 +436,25 @@ emission line::
  >>> from mpdaf.obj import Cube
  >>> from mpdaf.obj import iter_spe
  >>> import numpy as np
- >>> cube=Cube('Central_DATACUBE_FINAL_11to20_2012-05-16.fits')
- >>> obj1=cube[:,55-5:55+5,31-10:31+10]
- >>> sp1=obj1.sum(axis=(1,2))
- >>> ltotal=sp1.gauss_fit(9000.0,9200.0).lpeak
+ >>> cube = Cube('Central_DATACUBE_FINAL_11to20_2012-05-16.fits')
+ >>> obj1 = cube[:,55-5:55+5,31-10:31+10]
+ >>> sp1 = obj1.sum(axis=(1,2))
+ >>> ltotal = sp1.gauss_fit(9000.0,9200.0).lpeak
 
 We then create three maps by cloning the continuum image and computing the 
 line fit parameters spectrum by spectrum on the datacube::
 
- >>> im1=obj1.mean(axis=0)
- >>> lfield=im1.clone()
- >>> sfield=im1.clone()
- >>> ffield=im1.clone()
+ >>> im1 = obj1.mean(axis=0)
+ >>> lfield = im1.clone()
+ >>> sfield = im1.clone()
+ >>> ffield = im1.clone()
 
- >>> for sp,pos in iter_spe(obj1,index=True):
- >>>     p,q=pos
- >>>     g=sp.gaussfit(9000.0,9200.0)
- >>>     lfield[p,q]=(g.lpeak-ltotal)*300000/ltotal    # velocity shift from the mean
- >>>     sfield[p,q]=(g.fwhm/2.35)*300000/g.lpeak      # velocity dispersion
- >>>     ffield[p,q]=g.flux                            # line flux
+ >>> for sp,pos in iter_spe(obj1, index=True):
+ >>>     p,q = pos
+ >>>     g = sp.gauss_fit(9000.0,9200.0)
+ >>>     lfield[p,q] = (g.lpeak - ltotal) * 300000 / ltotal    # velocity shift from the mean
+ >>>     sfield[p,q] = (g.fwhm / 2.35) * 300000 / g.lpeak      # velocity dispersion
+ >>>     ffield[p,q] = g.flux                            # line flux
 
 We then plot the resulting velocity field, masking the outliers::
 
@@ -337,7 +472,7 @@ gradient from the simulated datacube Central_DATACUBE_bkg.fits. We start by load
 
  >>> from mpdaf.obj import Cube
  >>> import numpy as np
- >>> cube=Cube('Central_DATACUBE_bkg.fits')
+ >>> cube = Cube('Central_DATACUBE_bkg.fits.gz')
 
 For each image of the cube, we fit a 2nd order polynomial to the background values 
 (selected here by simply applying a flux threshold to mask all bright objects). We 
@@ -346,20 +481,19 @@ numpy recipe np.linalg.lstsq(). for this, we define a function that takes an ima
 and returns the background-subtracted image::
 
  >>> def remove_background_gradient(ima):
- >>>     ksel = np.where(ima.data.data*ima.fscale<2.5e-20)
+ >>>     ksel = np.where(ima.data.data<2.5)
  >>>     pval = ksel[0]
  >>>     qval = ksel[1]
  >>>     zval = ima.data.data[ksel]
- >>>     degree=2
- >>>     Ap=np.vander(pval,degree)
- >>>     Aq=np.vander(qval,degree)
- >>>     A=np.hstack((Ap,Aq))
- >>>     (coeffs,residuals,rank,sing_vals)=np.linalg.lstsq(A,zval)
- >>>     fp=np.poly1d(coeffs[0:degree])
- >>>     fq=np.poly1d(coeffs[degree:2*degree])
+ >>>     degree = 2
+ >>>     Ap = np.vander(pval,degree)
+ >>>     Aq = np.vander(qval,degree)
+ >>>     A = np.hstack((Ap,Aq))
+ >>>     (coeffs,residuals,rank,sing_vals) = np.linalg.lstsq(A,zval)
+ >>>     fp = np.poly1d(coeffs[0:degree])
+ >>>     fq = np.poly1d(coeffs[degree:2*degree])
  >>>     X,Y = np.meshgrid(xrange(ima.shape[0]),xrange(ima.shape[1]))
- >>>     ima2 = ima.clone()
- >>>     ima2.data = (ima.data-np.array(map(lambda q,p: fp(p)+fq(q),Y,X)))*ima.fscale
+ >>>     ima2 = ima-np.array(map(lambda q,p: fp(p)+fq(q),Y,X))
  >>>     return ima2
     
 We can then create the background-subtracted cube:::
@@ -369,155 +503,8 @@ We can then create the background-subtracted cube:::
 Finally, we write the output datacube and compare the results for one of the slices::
 
  >>> cube2.write('Central_DATACUBE_bkgsub.fits.gz')
- >>> cube[1000,:,:].plot(vmin=-1e-20,vmax=4e-20)
- >>> cube2[1000,:,:].plot(vmin=-1e-20,vmax=4e-20)
+ >>> cube[1000,:,:].plot(vmin=-1, vmax=4)
+ >>> cube2[1000,:,:].plot(vmin=-1, vmax=4)
 
 .. image::  user_manual_cube_images/cube1.png
 .. image::  user_manual_cube_images/cube2.png
-
-Reference
-=========
-
-:func:`mpdaf.obj.Cube <mpdaf.obj.Cube>` is the classic cube constructor.
-
-:func:`mpdaf.obj.Cube.copy <mpdaf.obj.Cube.copy>` copies Cube object in a new one and returns it.
-
-:func:`mpdaf.obj.Cube.clone <mpdaf.obj.Cube.clone>` returns a new cube of the same shape and coordinates, filled with zeros.
-
-:func:`mpdaf.obj.cube.CubeBase.info <mpdaf.obj.cube.CubeBase.info>` prints information.
-
-:func:`mpdaf.obj.Cube.write <mpdaf.obj.Cube.write>` saves the Cube in a FITS file.
-
-
-Indexing
---------
-
-:func:`Cube[k,p,q] <mpdaf.obj.Cube.__getitem__>` returns the corresponding value.
-
-:func:`Cube[k1:k2,p1:p2,q1:q2] <mpdaf.obj.Cube.__getitem__>` returns the sub-cube.
-
-:func:`Cube[k,:,:] <mpdaf.obj.Cube.__getitem__>` returns an Image.
-
-:func:`Cube[:,p,q] <mpdaf.obj.Cube.__getitem__>` returns a Spectrum.
-
-:func:`Cube[k,p,q] = value <mpdaf.obj.Cube.__setitem__>` sets value in Cube.data[k,p,q]
-
-:func:`Cube[k1:k2,p1:p2,q1:q2] = array <mpdaf.obj.Cube.__setitem__>` sets the corresponding part of Cube.data.
-
-
-Getters and setters
--------------------
-
-:func:`mpdaf.obj.Cube.get_lambda <mpdaf.obj.Cube.get_lambda>` returns the sub-cube corresponding to a wavelength range.
-
-:func:`mpdaf.obj.Cube.get_step <mpdaf.obj.Cube.get_step>` returns the cube steps.
-
-:func:`mpdaf.obj.Cube.get_range <mpdaf.obj.Cube.get_range>` returns minimum and maximum values of cube coordiantes.
-
-:func:`mpdaf.obj.Cube.get_start <mpdaf.obj.Cube.get_start>` returns coordinates values corresponding to pixel (0,0,0).
-
-:func:`mpdaf.obj.Cube.get_end <mpdaf.obj.Cube.get_end>` returns coordinates values corresponding to pixel (-1,-1,-1).
-
-:func:`mpdaf.obj.Cube.get_rot <mpdaf.obj.Cube.get_rot>` returns the rotation angle.
-
-:func:`mpdaf.obj.Cube.get_np_data <mpdaf.obj.Cube.get_np_data>` returns flux array multiplied by scaling factor.
-
-:func:`mpdaf.obj.Cube.get_data_hdu <mpdaf.obj.Cube.get_data_hdu>` returns astropy.io.fits.ImageHDU corresponding to the DATA extension.
-
-:func:`mpdaf.obj.Cube.get_stat_hdu <mpdaf.obj.Cube.get_stat_hdu>` returns astropy.io.fits.ImageHDU corresponding to the STAT extension.
-
-:func:`mpdaf.obj.Cube.set_wcs <mpdaf.obj.Cube.set_wcs>` sets the world coordinates.
-
-:func:`mpdaf.obj.Cube.set_var <mpdaf.obj.Cube.set_var>` sets the variance array.
-
-
-Mask
-----
-
-:func:`<= <mpdaf.obj.Cube.__le__>` masks data array where greater than a given value.                                 
-
-:func:`< <mpdaf.obj.Cube.__lt__>` masks data array where greater or equal than a given value. 
-
-:func:`>= <mpdaf.obj.Cube.__ge__>` masks data array where less than a given value.
-
-:func:`> <mpdaf.obj.Cube.__gt__>` masks data array where less or equal than a given value.
-
-:func:`mpdaf.obj.Cube.unmask <mpdaf.obj.Cube.unmask>` unmasks the cube (just invalid data (nan,inf) are masked) (in place).
-
-:func:`mpdaf.obj.Cube.mask <mpdaf.obj.Cube.mask>` masks values inside/outside the described region (in place).
-
-:func:`mpdaf.obj.Cube.mask_ellipse <mpdaf.obj.Cube.mask_ellipse>` masks values inside/outside the described region. Uses an elliptical shape.
-
-:func:`mpdaf.obj.Cube.mask_variance <mpdaf.obj.Cube.mask_variance>` masks pixels with a variance upper than threshold value.
-
-:func:`mpdaf.obj.Cube.mask_selection <mpdaf.obj.Cube.mask_selection>` masks pixels corresponding to a selection.
-
-
-Arithmetic
-----------
-
-:func:`\+ <mpdaf.obj.Cube.__add__>` makes a addition.
-
-:func:`\- <mpdaf.obj.Cube.__sub__>` makes a substraction .
-
-:func:`\* <mpdaf.obj.Cube.__mul__>` makes a multiplication.
-
-:func:`/ <mpdaf.obj.Cube.__div__>` makes a division.
-
-:func:`\*\* <mpdaf.obj.Cube.__pow__>`  computes the power exponent of data extensions.
-
-:func:`mpdaf.obj.Cube.sqrt <mpdaf.obj.Cube.sqrt>` computes the positive square-root of data extension.
-
-:func:`mpdaf.obj.Cube.abs <mpdaf.obj.Cube.abs>` computes the absolute value of data extension.
-
-:func:`mpdaf.obj.Cube.sum <mpdaf.obj.Cube.sum>` returns the sum over the given axis.
-
-:func:`mpdaf.obj.Cube.mean <mpdaf.obj.Cube.mean>` returns the mean over the given axis.
-
-:func:`mpdaf.obj.Cube.median <mpdaf.obj.Cube.median>` returns the median over the given axis.
-
-
-Transformation
---------------
-
-:func:`mpdaf.obj.Cube.resize <mpdaf.obj.Cube.resize>` resizes the cube to have a minimum number of masked values (in place).
-
-:func:`mpdaf.obj.Cube.truncate <mpdaf.obj.Cube.truncate>` extracts a sub-cube.
-
-:func:`mpdaf.obj.Cube.aperture <mpdaf.obj.Cube.aperture>` extracts a spectra from an aperture of fixed radius.
-
-:func:`mpdaf.obj.Cube.get_image <mpdaf.obj.Cube.get_image>` extracts an image from the datacube.
-
-:func:`mpdaf.obj.Cube.subcube <mpdaf.obj.Cube.subcube>` extracts a sub-cube.
-
-:func:`mpdaf.obj.Cube.subcube <mpdaf.obj.Cube.subcube_aperture>` extracts a sub-cube from an aperture of fixed radius.
-
-:func:`mpdaf.obj.Cube.rebin_factor <mpdaf.obj.Cube.rebin_factor>` shrinks the size of the cube by factor.
-
-:func:`mpdaf.obj.Cube.rebin_median <mpdaf.obj.Cube.rebin_median>` rebins the cube using median values.
-
-:func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
-
-:func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` loops over all images to apply a function/method.
-
-
-
-Open big cube with memory mapping
----------------------------------
-
-:func:`mpdaf.obj.CubeDisk <mpdaf.obj.CubeDisk>` is the cube constructor that uses memory mapping.
-
-:func:`mpdaf.obj.cube.CubeBase.info <mpdaf.obj.cube.CubeBase.info>` prints information.
-
-:func:`CubeDisk[k,p,q] <mpdaf.obj.CubeDisk.__getitem__>` returns the corresponding value.
-
-:func:`CubeDisk[k1:k2,p1:p2,q1:q2] <mpdaf.obj.CubeDisk.__getitem__>` returns the sub-cube.
-
-:func:`CubeDisk[k,:,:] <mpdaf.obj.CubeDisk.__getitem__>` returns an Image.
-
-:func:`CubeDisk[:,p,q] <mpdaf.obj.CubeDisk.__getitem__>` returns a Spectrum.
-
-:func:`mpdaf.obj.CubeDisk.truncate <mpdaf.obj.CubeDisk.truncate>` extracts a sub-cube.
-
-:func:`mpdaf.obj.CubeDisk.get_white_image <mpdaf.obj.CubeDisk.get_white_image>` performs a sum over the wavelength dimension and returns an image.
-
