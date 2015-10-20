@@ -163,7 +163,7 @@ def crackz(nlines, wl, flux, eml, zguess=None):
             if(nlines == 2):
                 # keep the brightest
                 ksel = np.argsort(flux)[-1]
-                return crackz(1, wl[ksel], flux[ksel], eml)
+                return crackz(1, [wl[ksel]], [flux[ksel]], eml)
 
 
 class Source(object):
