@@ -60,7 +60,7 @@ class Channel(object):
                    The raw FITS file name.
 
         """
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         d = {'class': 'Channel', 'method': '__init__'}
         self.extname = extname
         if filename != None:
@@ -73,7 +73,7 @@ class Channel(object):
                 self.data = np.ndarray(np.shape(data))
                 self.data[:] = data[:]
             except:
-                self.logger.warning("extension %s not loaded"%extname, extra=d)
+                self._logger.warning("extension %s not loaded"%extname, extra=d)
                 self.data = None
             hdulist.close()
         elif data is not None:
@@ -792,7 +792,7 @@ class RawFile(object):
             Operator [extnumber] loads and returns the corresponding channel.
 
         """
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
         self.progress = True
         self.channels = dict()
@@ -817,7 +817,7 @@ class RawFile(object):
                                 self.ny = ny
                             if nx != self.nx and ny != self.ny:
                                 d = {'class': 'RawFile', 'method': '__init__'}
-                                self.logger.warning("image extensions %s not"
+                                self._logger.warning("image extensions %s not"
                                                     " considered "
                                                     "(different sizes)",
                                                     extname, extra=d)
@@ -858,13 +858,13 @@ class RawFile(object):
             msg = self.filename
         else:
             msg = 'NoName'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'Nb extensions:\t%i (loaded:%i %s)' % (self.next,
                                                      len(self.channels),
                                                      self.channels.keys())
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'format:\t(%i,%i)' % (self.nx, self.ny)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
 
     def get_keywords(self, key):
         """Returns the keyword value."""
@@ -1239,7 +1239,7 @@ class RawFile(object):
         num_tasks = len(processlist)
         if self.progress:
             msg = 'reconstruct white image ...'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             import time
             while (True):
                 time.sleep(1)

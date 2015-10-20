@@ -253,7 +253,7 @@ class Source(object):
         else:
             self.tables = tables
         # logger
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
@@ -554,7 +554,7 @@ class Source(object):
         for card in self.header.cards:
             if card[0] not in ('SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                                'AUTHOR'):
-                self.logger.info(card, extra=d)
+                self._logger.info(card, extra=d)
         print '\n'
         for key, spe in self.spectra.iteritems():
             msg = 'spectra[\'%s\']'%key
@@ -566,7 +566,7 @@ class Source(object):
             if spe.var is None:
                 noise = ''
             msg += ' %s %s '%(data, noise)
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
         for key, ima in self.images.iteritems():
             msg = 'images[\'%s\']'%key
             msg += ' %i X %i' %(ima.shape[0], ima.shape[1])
@@ -578,7 +578,7 @@ class Source(object):
                 noise = ''
             msg += ' %s %s '%(data, noise)
             msg += 'rot=%0.1f deg'%ima.wcs.get_rot()
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
         for key, cub in self.cubes.iteritems():
             msg = 'cubes[\'%s\']'%key
             msg += ' %i X %i X %i' %(cub.shape[0], cub.shape[1], cub.shape[2])
@@ -590,24 +590,24 @@ class Source(object):
                 noise = ''
             msg += ' %s %s '%(data, noise)
             msg += 'rot=%0.1f deg'%cub.wcs.get_rot()
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
         for key in self.tables.keys():
-            self.logger.info('tables[\'%s\']'%key, extra=d)
+            self._logger.info('tables[\'%s\']'%key, extra=d)
         print '\n'
         if self.lines is not None:
-            self.logger.info('lines', extra=d)
+            self._logger.info('lines', extra=d)
             for l in self.lines.pformat():
-                self.logger.info(l, extra=d)
+                self._logger.info(l, extra=d)
             print '\n'
         if self.mag is not None:
-            self.logger.info('magnitudes', extra=d)
+            self._logger.info('magnitudes', extra=d)
             for l in self.mag.pformat():
-                self.logger.info(l, extra=d)
+                self._logger.info(l, extra=d)
             print '\n'
         if self.z is not None:
-            self.logger.info('redshifts', extra=d)
+            self._logger.info('redshifts', extra=d)
             for l in self.z.pformat():
-                self.logger.info(l, extra=d)
+                self._logger.info(l, extra=d)
             print '\n'
 
     def __getattr__(self, item):
@@ -621,8 +621,8 @@ class Source(object):
     def __setattr__(self, item, value):
         """Map attributes to values.
         """
-        if item in ('header', 'logger', 'lines', 'mag', 'z', 'cubes', 'images',
-                    'spectra', 'tables'):
+        if item in ('header', 'lines', 'mag', 'z', 'cubes', 'images',
+                    'spectra', 'tables', '_logger'):
             # return dict.__setattr__(self, item, value)
             super(Source, self).__setattr__(item, value)
         else:
@@ -880,7 +880,7 @@ class Source(object):
             subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
                                     unit_center=u.deg, unit_size=unit_size)
         if subima is None:
-            self.logger.warning('Image %s not added. Source outside or at the edges'%(name),
+            self._logger.warning('Image %s not added. Source outside or at the edges'%(name),
                                  extra=d)
             return
         self.images[name] = subima
@@ -1042,7 +1042,7 @@ class Source(object):
                     lambda_ranges[1, :] = (1+z)*all_lines[useful]+width/2.0
                     tags = all_tags[useful]
                     for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
-                        self.logger.info('Doing MUSE_%s'%tag, extra=d)
+                        self._logger.info('Doing MUSE_%s'%tag, extra=d)
                         self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
                                                                     subtract_off=subtract_off, margin=margin,
                                                                     fband=fband, unit_wave=u.angstrom)
@@ -1080,7 +1080,7 @@ class Source(object):
                        The size of the off-band is fband*narrow-band width (in angstrom).
         """
         d = {'class': 'Source', 'method': 'add_narrow_band_images'}
-        self.logger.info('Doing %s'%tag, extra=d)
+        self._logger.info('Doing %s'%tag, extra=d)
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
@@ -1136,7 +1136,7 @@ class Source(object):
             from ..sdetect.sea import segmentation
             segmentation(self, tags, DIR, del_sex)
         else:
-            self.logger.warning('add_seg_images method use the MUSE_WHITE image computed by add_white_image method',
+            self._logger.warning('add_seg_images method use the MUSE_WHITE image computed by add_white_image method',
                                 extra=d)
 
     def add_masks(self, tags=None):
@@ -1170,7 +1170,7 @@ class Source(object):
                     maps[tag] = self.images[tag].data.data
         d = {'class': 'Source', 'method': 'add_masks'}
         if len(maps)==0:
-            self.logger.warning('no segmentation images. Use add_seg_images to create them',
+            self._logger.warning('no segmentation images. Use add_seg_images to create them',
                                 extra=d)
 
         from ..sdetect.sea import mask_creation
@@ -1329,7 +1329,7 @@ class Source(object):
                     msg = 'Incorrect dimensions for the PSF cube (%i,%i,%i) (it must be (%i,%i,%i)) '\
                         %(psf.shape[0], psf.shape[1], psf.shape[2],
                           subcub.shape[0], subcub.shape[1], subcub.shape[2])
-                    self.logger.warning(msg, extra=d)
+                    self._logger.warning(msg, extra=d)
                     white_cube = None
                 else:
                     white_cube = psf
@@ -1344,7 +1344,7 @@ class Source(object):
             else:
                 msg = 'Incorrect dimensions for the PSF vector (%i) (it must be (%i)) '\
                         %(psf.shape[0], subcub.shape[0])
-                self.logger.warning(msg, extra=d)
+                self._logger.warning(msg, extra=d)
                 white_cube = None
             if white_cube is not None:
                 weight = white_cube * np.tile(object_mask,(subcub.shape[0],1,1))
@@ -1412,7 +1412,7 @@ class Source(object):
             flux = np.array(self.lines[col_flux])
             nlines = len(wl)
         except:
-            self.logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
+            self._logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
             return
 
         z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml, zguess)
@@ -1423,7 +1423,7 @@ class Source(object):
             if nlines < nline_max:
                 #redshift
                 self.add_z(z_desc, z, errz)
-                self.logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
+                self._logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
                 #line names
                 if 'LINE' not in self.lines.colnames:
                     nlines = len(self.lines)
@@ -1433,13 +1433,13 @@ class Source(object):
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
                     self.lines['LINE'][self.lines[col_lbda]==w] = name
-                self.logger.info('crack_z: lines', extra=d)
+                self._logger.info('crack_z: lines', extra=d)
                 for l in self.lines.pformat():
-                    self.logger.info(l, extra=d)
+                    self._logger.info(l, extra=d)
             else:
-                self.logger.info('Impossible to estimate the redshift, the number of emission lines is inferior to %d'%nline_max, extra=d)
+                self._logger.info('Impossible to estimate the redshift, the number of emission lines is inferior to %d'%nline_max, extra=d)
         else:
-            self.logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
+            self._logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
 
     def sort_lines(self, nlines_max=25):
         """Sort lines by flux in descending order.

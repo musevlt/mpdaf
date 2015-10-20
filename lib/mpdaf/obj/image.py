@@ -24,7 +24,7 @@ from .objs import is_float, is_int, UnitArray, UnitMaskedArray
 class ImageClicks(object):  # Object used to save click on image plot.
 
     def __init__(self, binding_id, filename=None):
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         self.filename = filename  # Name of the table fits file
         #                           where are saved the clicks values.
         self.binding_id = binding_id  # Connection id.
@@ -68,7 +68,7 @@ class ImageClicks(object):  # Object used to save click on image plot.
         msg = 'y=%g\tx=%g\tp=%d\tq=%d\tdata=%g' % (self.y[i], self.x[i],
                                                    self.p[i], self.q[i],
                                                    self.data[i])
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
 
     def write_fits(self):
         # prints coordinates in fits table.
@@ -84,13 +84,13 @@ class ImageClicks(object):  # Object used to save click on image plot.
             tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
             tbhdu.writeto(self.filename, clobber=True, output_verify='fix')
             msg = 'printing coordinates in fits table %s' % self.filename
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
 
     def clear(self):
         # disconnects and clears
         d = {'class': 'ImageClicks', 'method': 'clear'}
         msg = "disconnecting console coordinate printout..."
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         plt.disconnect(self.binding_id)
         nlines = len(self.id_lines)
         for i in range(nlines):
@@ -135,7 +135,7 @@ class Gauss2D(object):
 
     def __init__(self, center, flux, fwhm, cont, rot, peak, err_center,
                  err_flux, err_fwhm, err_cont, err_rot, err_peak, ima=None):
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         self.center = center
         self.flux = flux
         self.fwhm = fwhm
@@ -163,21 +163,21 @@ class Gauss2D(object):
         msg = 'Gaussian center = (%g,%g) (error:(%g,%g))' \
             % (self.center[0], self.center[1],
                self.err_center[0], self.err_center[1])
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'Gaussian integrated flux = %g (error:%g)' \
             % (self.flux, self.err_flux)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'Gaussian peak value = %g (error:%g)' \
             % (self.peak, self.err_peak)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'Gaussian fwhm = (%g,%g) (error:(%g,%g))' \
             % (self.fwhm[0], self.fwhm[1], self.err_fwhm[0], self.err_fwhm[1])
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'Rotation in degree: %g (error:%g)' % (self.rot, self.err_rot)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'Gaussian continuum = %g (error:%g)' \
             % (self.cont, self.err_cont)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
 
 
 class Moffat2D(object):
@@ -221,7 +221,7 @@ class Moffat2D(object):
     def __init__(self, center, flux, fwhm, cont, n, rot, peak, err_center,
                  err_flux, err_fwhm, err_cont, err_n, err_rot, err_peak,
                  ima=None):
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         self.center = center
         self.flux = flux
         self.fwhm = fwhm
@@ -251,20 +251,20 @@ class Moffat2D(object):
         msg = 'center = (%g,%g) (error:(%g,%g))' \
             % (self.center[0], self.center[1],
                self.err_center[0], self.err_center[1])
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'integrated flux = %g (error:%g)' % (self.flux, self.err_flux)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'peak value = %g (error:%g)' % (self.peak, self.err_peak)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'fwhm = (%g,%g) (error:(%g,%g))' \
             % (self.fwhm[0], self.fwhm[1], self.err_fwhm[0], self.err_fwhm[1])
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'n = %g (error:%g)' % (self.n, self.err_n)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'rotation in degree: %g (error:%g)' % (self.rot, self.err_rot)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'continuum = %g (error:%g)' % (self.cont, self.err_cont)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
 
 
 class Image(DataArray):
@@ -281,7 +281,7 @@ class Image(DataArray):
     wcs      : :class:`mpdaf.obj.WCS`
             World coordinates.
     unit     : string
-            Possible data unit type. None by default.
+            Data unit type. u.dimensionless_unscaled by default.
     data     : float array
             Array containing the pixel values of the image.
             None by default.
@@ -293,7 +293,7 @@ class Image(DataArray):
     filename       : string
                     Possible FITS filename.
     unit           : string
-                    Possible data unit type.
+                    Data unit type.
     primary_header : pyfits.Header
                     Possible FITS primary header instance.
     data_header    : pyfits.Header
@@ -311,7 +311,7 @@ class Image(DataArray):
     _ndim_required = 2
     _has_wcs = True
 
-    def __init__(self, filename=None, ext=None, wcs=None, unit=u.count,
+    def __init__(self, filename=None, ext=None, wcs=None, unit=u.dimensionless_unscaled,
                  data=None, var=None, copy=True, dtype=float, **kwargs):
         self._clicks = None
         self._selector = None
@@ -375,7 +375,7 @@ class Image(DataArray):
                                 (card.value, card.comment)
                     except:
                         d = {'class': 'Image', 'method': 'write'}
-                        self.logger.warning("%s not copied in data header",
+                        self._logger.warning("%s not copied in data header",
                                         card.keyword, extra=d)
 
         if self.unit != u.dimensionless_unscaled:
@@ -428,7 +428,7 @@ class Image(DataArray):
                                     (card.value, card.comment)
                             except:
                                 d = {'class': 'Cube', 'method': 'write'}
-                                self.logger.warning("%s not copied in data header",
+                                self._logger.warning("%s not copied in data header",
                                                     card.keyword, extra=d)
 
             if self.unit != u.dimensionless_unscaled:
@@ -467,7 +467,7 @@ class Image(DataArray):
                                 (card.value, card.comment)
                 except:
                     d = {'class': 'Image', 'method': 'write'}
-                    self.logger.warning("%s not copied in primary header",
+                    self._logger.warning("%s not copied in primary header",
                                             card.keyword, extra=d)
         prihdu.header['date'] = \
             (str(datetime.datetime.now()), 'creation date')
@@ -521,7 +521,7 @@ class Image(DataArray):
             except:
                 self.wcs = None
                 d = {'class': 'Image', 'method': 'resize'}
-                self.logger.warning("wcs not copied", extra=d)
+                self._logger.warning("wcs not copied", extra=d)
 
     def __add__(self, other):
         """Operator +.
@@ -1112,7 +1112,7 @@ class Image(DataArray):
                 if self.wcs is not None and other.wcs is not None \
                         and (self.wcs.get_step() != other.wcs.get_step(unit=self.wcs.get_cunit1())).any():
                     d = {'class': 'Image', 'method': '__setitem__'}
-                    self.logger.warning("images with different steps", extra=d)
+                    self._logger.warning("images with different steps", extra=d)
                 if self.unit == other.unit:
                     self.data[key] = other.data
                 else:
@@ -1136,7 +1136,7 @@ class Image(DataArray):
             and (wcs.naxis1 != self.shape[1]
                  or wcs.naxis2 != self.shape[0]):
             d = {'class': 'Image', 'method': 'set_wcs'}
-            self.logger.warning('world coordinates and data have not '
+            self._logger.warning('world coordinates and data have not '
                                 'the same dimensions', extra=d)
 
     def mask(self, center, radius, unit_center=u.deg, unit_radius=u.arcsec, inside=True):
@@ -4466,15 +4466,15 @@ class Image(DataArray):
         """
         d = {'class': 'Image', 'method': 'ipos'}
         msg = 'To read cursor position, click on the left mouse button'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To remove a cursor position,'\
             ' click on the left mouse button + <d>'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'After quit, clicks are saved '\
             'in self.clicks as dictionary {y,x,p,q,data}.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
 
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
@@ -4497,7 +4497,7 @@ class Image(DataArray):
                         j, i = event.xdata, event.ydata
                         self._clicks.remove(i, j)
                         msg = "new selection:"
-                        self.logger.info(msg, extra=d)
+                        self._logger.info(msg, extra=d)
                         for i in range(len(self._clicks.x)):
                             self._clicks.iprint(i)
                     except:
@@ -4537,9 +4537,9 @@ class Image(DataArray):
         """
         d = {'class': 'Image', 'method': 'idist'}
         msg = 'Use left mouse button to define the line.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_dist,
@@ -4563,12 +4563,12 @@ class Image(DataArray):
                 xc = (x1 + x2) / 2
                 yc = (y1 + y2) / 2
                 msg = 'Center: (%g,%g)\tDistance: %g Unit:%s' % (xc, yc, dist, "{}".format(self._unit))
-                self.logger.info(msg, extra=d)
+                self._logger.info(msg, extra=d)
             except:
                 pass
         else:
             msg = 'idist deactivated.'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4584,9 +4584,9 @@ class Image(DataArray):
         """
         d = {'class': 'Image', 'method': 'istat'}
         msg = 'Use left mouse button to define the box.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_stat,
@@ -4616,12 +4616,12 @@ class Image(DataArray):
                 peak = d.max()
                 msg = 'mean=%g\tmedian=%g\tstd=%g\tsum=%g\tpeak=%g\tnpts=%d' \
                     % (mean, median, std, vsum, peak, npts)
-                self.logger.info(msg, extra=d)
+                self._logger.info(msg, extra=d)
             except:
                 pass
         else:
             msg = 'istat deactivated.'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4634,9 +4634,9 @@ class Image(DataArray):
         """
         d = {'class': 'Image', 'method': 'ipeak'}
         msg = 'Use left mouse button to define the box.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_peak,
@@ -4662,12 +4662,12 @@ class Image(DataArray):
                 peak = self.peak(center, radius, unit_center=None, unit_radius=None)
                 msg = 'peak: y=%g\tx=%g\tp=%d\tq=%d\tdata=%g' \
                     % (peak['y'], peak['x'], peak['p'], peak['q'], peak['data'])
-                self.logger.info(msg, extra=d)
+                self._logger.info(msg, extra=d)
             except:
                 pass
         else:
             msg = 'ipeak deactivated.'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4680,9 +4680,9 @@ class Image(DataArray):
         """
         d = {'class': 'Image', 'method': 'ifwhm'}
         msg = 'Use left mouse button to define the box.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_fwhm,
@@ -4707,12 +4707,12 @@ class Image(DataArray):
                 radius = (np.abs(i2 - i1) / 2, np.abs(j2 - j1) / 2)
                 fwhm = self.fwhm(center, radius, unit_center=None, unit_radius=None)
                 msg = 'fwhm_y=%g\tfwhm_x=%g [pixels]' % (fwhm[0], fwhm[1])
-                self.logger.info(msg, extra=d)
+                self._logger.info(msg, extra=d)
             except:
                 pass
         else:
             msg = 'ifwhm deactivated.'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4725,9 +4725,9 @@ class Image(DataArray):
         """
         d = {'class': 'Image', 'method': 'iee'}
         msg = 'Use left mouse button to define the box.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_ee,
@@ -4752,12 +4752,12 @@ class Image(DataArray):
                 radius = (np.abs(i2 - i1) / 2, np.abs(j2 - j1) / 2)
                 ee = self.ee(center, radius, unit_center=None, unit_radius=None)
                 msg = 'ee=%g' % ee
-                self.logger.info(msg, extra=d)
+                self._logger.info(msg, extra=d)
             except:
                 pass
         else:
             msg = 'iee deactivated.'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4800,11 +4800,11 @@ class Image(DataArray):
         """
         d = {'class': 'Image', 'method': 'igauss_fit'}
         msg = 'Use left mouse button to define the box.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'The parameters of the last gaussian are saved in self.gauss.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = \
@@ -4831,7 +4831,7 @@ class Image(DataArray):
                 pass
         else:
             msg = 'igauss_fit deactivated.'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4844,12 +4844,12 @@ class Image(DataArray):
         """
         d = {'class': 'Image', 'method': 'imoffat_fit'}
         msg = 'Use left mouse button to define the box.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         msg = 'The parameters of the last moffat fit are '\
             'saved in self.moffat.'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = \
@@ -4876,7 +4876,7 @@ class Image(DataArray):
                 pass
         else:
             msg = 'imoffat_fit deactivated.'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()

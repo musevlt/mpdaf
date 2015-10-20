@@ -40,7 +40,7 @@ class DisplayPixTable(object):
 
         self.pixtable = pixtable
         self.cube = cube
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
 
     def info(self):
         """Prints information."""
@@ -93,7 +93,7 @@ det_vmax  : float
 
         # number of ifus in the aperture
         msg = 'extract sub-pixel table ...'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
 
         subpix = pix.extract(lbda=lbda, sky=sky, exp=exp)
         if subpix is None:
@@ -115,7 +115,7 @@ det_vmax  : float
         list_vmax = []
         for ifu in list_ifu:
             msg = 'plot detector image of the CHAN%02d ...' % ifu
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             subsubpix = subpix.extract(ifu=ifu)
             detima = subsubpix.reconstruct_det_image(ystart=ystart,
                                                      ystop=ystop)
@@ -155,7 +155,7 @@ det_vmax  : float
 
         # plot corresponding white image and spectrum
         msg = 'plot corresponding white image ...'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if (nplots % 2 == 0):
             colspan_ima = nplots / 2
         else:
@@ -174,7 +174,7 @@ det_vmax  : float
         im = ima.plot(colorbar='h', scale=sky_scale, cmap=sky_cmap)
         im.get_axes().set_axis_off()
         msg = 'plot corresponding spectrum ...'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         plt.subplot2grid((5, nplots), (0, colspan_ima),
                          rowspan=2, colspan=int(nplots / 2))
         spe.plot()
@@ -276,7 +276,7 @@ det_vmax  : float
             exposures = np.unique(col_exp)
             for exp in exposures:
                 msg = 'exposure %02d' % exp
-                self.logger.info(msg, extra=d)
+                self._logger.info(msg, extra=d)
                 self._det_display(date, pix, ima, spe, ifu_limits, l, exp,
                                   sky, lbda, sky_scale, sky_cmap, det_scale,
                                   det_cmap, det_vmin, det_vmax)
@@ -299,7 +299,7 @@ Parameters
         d = {'class': 'DisplayPixTable', 'method': '_slice_display'}
         # number of ifus
         msg = 'extract sub-pixel table ...'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         subpix = pix.extract(lbda=lbda, sky=sky, exp=exp)
         if subpix is None:
             raise ValueError('Pixel table extraction is not valid')
@@ -333,7 +333,7 @@ Parameters
         distance = np.array(distance)
 
         msg = 'plot corresponding white image ...'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if (nplots % 2 == 0):
             colspan_ima = nplots / 2
         else:
@@ -367,7 +367,7 @@ Parameters
 
         # plot corresponding spectrum
         msg = 'plot corresponding spectrum ...'
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         plt.subplot2grid((9, nplots), (0, colspan_ima),
                          rowspan=3, colspan=nplots - colspan_ima)
         spe.plot()
@@ -379,7 +379,7 @@ Parameters
         list_sliceima = []
         for ifu, sli in zip(distance[:, 1], distance[:, 2]):
             msg = 'plot slice image ifu=%02d slice=%02d ...' % (ifu, sli)
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             pixslice = subpix.extract(ifu=ifu, sl=sli)
             sli = Slicer.ccd2sky(sli)
             sliceima = pixslice.reconstruct_det_image(ystart=ystart, ystop=ystop)

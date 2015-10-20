@@ -23,7 +23,7 @@ class Catalog(Table):
     def __init__(self, data=None, masked=None, names=None,
                  dtype=None, meta=None, copy=True, rows=None):
         Table.__init__(self, data, masked, names, dtype, meta, copy, rows)
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         if self.colnames.count('ra') != 0:
             self.rename_column('ra', 'RA')
         if self.colnames.count('dec') != 0:
@@ -365,10 +365,10 @@ class Catalog(Table):
         id1, id2, d2d, d3d = search_around_sky(coord1, coord2, radius * u.arcsec)
         id1_notin_2 = np.in1d(range(len(self)), id1, invert=True)
         id2_notin_1 = np.in1d(range(len(cat2)), id2, invert=True)
-        self.logger.info('Cat1 Nelt %d Match %d Not Matched %d'\
+        self._logger.info('Cat1 Nelt %d Match %d Not Matched %d'\
                          % (len(self), len(id1), len(self[id1_notin_2])),\
                          extra=d)
-        self.logger.info('Cat2 Nelt %d Match %d Not Matched %d'\
+        self._logger.info('Cat2 Nelt %d Match %d Not Matched %d'\
                          % (len(cat2), len(id2), len(cat2[id2_notin_1])), \
                          extra=d)
         match = hstack([self[id1], cat2[id2]])

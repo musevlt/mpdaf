@@ -394,7 +394,7 @@ class PixTable(object):
         Methods get_xpos, get_ypos, get_lambda, get_data, get_dq
         ,get_stat and get_origin must be used to get columns data.
         """
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         self.filename = filename
         self.wcs = wcs
         self.wave = wave
@@ -546,25 +546,25 @@ class PixTable(object):
         """Print information."""
         d = {'class': 'PixTable', 'method': 'info'}
         msg = "%i merged IFUs went into this pixel table" % self.nifu
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if self.skysub:
             msg = "This pixel table was sky-subtracted"
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
         if self.fluxcal:
             msg = "This pixel table was flux-calibrated"
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
         msg = '%s (%s)' % (
             self.primary_header["HIERARCH ESO DRS MUSE PIXTABLE WCS"],
             self.primary_header.comments["HIERARCH ESO DRS MUSE PIXTABLE WCS"])
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         try:
             msg = self.hdulist.info()
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
         except:
             msg = 'No\tName\tType\tDim'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             msg = '0\tPRIMARY\tcard\t()'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
             # print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
 
     def write(self, filename, save_as_ima=True):
@@ -996,7 +996,7 @@ class PixTable(object):
         assert max(stacks) < 5
         sl = sorted([Slicer.sky2ccd(i) for st in stacks
                      for i in range(1 + 12*(st - 1), 12*st - 1)])
-        self.logger.debug('Extract stack %s -> slices %s', stacks, sl, extra=d)
+        self._logger.debug('Extract stack %s -> slices %s', stacks, sl, extra=d)
         return self.select_slices(sl, origin=origin)
 
     def select_slices(self, slices, origin=None):
@@ -1610,7 +1610,7 @@ class PixTable(object):
             d = {'class': 'PixTable', 'method': 'get_slices'}
             msg = '%d slices found, structure returned in \
                    slices dictionary ' % len(slicelist)
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
 
         return slices
 
@@ -1851,13 +1851,13 @@ class PixTable(object):
                 ksel = np.where((xpos_sky > x0) & (xpos_sky < x1) &
                                 (ypos_sky > y0) & (ypos_sky < y1))
                 if verbose:
-                    self.logger.info(msg, i, nlabel, x0, x1, y0, y1,
+                    self._logger.info(msg, i, nlabel, x0, x1, y0, y1,
                                      len(ksel[0]), extra=d)
                 if len(ksel[0]) != 0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True, unit=u.deg)
                     mask[ksel] |= (data[pix[:, 0], pix[:, 1]] != 0)
             except Exception:
-                self.logger.warning('masking object %i failed', i, extra=d)
+                self._logger.warning('masking object %i failed', i, extra=d)
 
         return PixTableMask(maskfile=maskfile, maskcol=mask,
                             pixtable=self.filename)
@@ -2057,7 +2057,7 @@ class PixTable(object):
             quad=np.ravel(np.resize(np.arange(1, 5), (24*48, 4))),
             npts=npts, corr=corr)
 
-        self.logger.info('pixtable %s updated',
+        self._logger.info('pixtable %s updated',
                          os.path.basename(self.filename), extra=d)
 
         # close libray
@@ -2173,7 +2173,7 @@ class PixTable(object):
             quad=np.ravel(np.resize(np.arange(1, 5), (24*48, 4))),
             npts=npts, corr=corr)
 
-        self.logger.info('pixtable %s updated',
+        self._logger.info('pixtable %s updated',
                          os.path.basename(self.filename), extra=d)
 
         # close libray

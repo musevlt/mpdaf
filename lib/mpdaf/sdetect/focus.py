@@ -52,7 +52,7 @@ class FOCUS(object):
         expmap : string
                  Exposures map FITS file name.
         """
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         self.cube = Cube(cube)
         self.expmap = expmap
 
@@ -76,7 +76,7 @@ class FOCUS(object):
         exposures = Cube(self.expmap).data.data
  
         # Weighted cube
-        self.logger.info('FOCUS - Compute weighted cube', extra=d)
+        self._logger.info('FOCUS - Compute weighted cube', extra=d)
         if self.cube.var is not None:
             cube_w = cube / np.sqrt(self.cube.var)
         else:
@@ -85,8 +85,8 @@ class FOCUS(object):
  
         # Compute the p-values with student cumulative distribution function with exposures-1 degrees of freedom
         msg = 'FOCUS - Computing the p-values using student cumulative distribution function with expmap-1 degrees of freedom'
-        self.logger.info(msg, extra=d)
-        self.logger.info('FOCUS - Please note that it takes some time ...', extra=d)
+        self._logger.info(msg, extra=d)
+        self._logger.info('FOCUS - Please note that it takes some time ...', extra=d)
  
         ksel = np.where(exposures < 2)  # seg fault if not ...
         exposures[ksel] = 2
@@ -125,7 +125,7 @@ class FOCUS(object):
         cube = self.cube.data.data
  
         # Weighted cube
-        self.logger.info('FOCUS - Computing weighted cube', extra=d)
+        self._logger.info('FOCUS - Computing weighted cube', extra=d)
         if self.cube.var is not None:
             cube_w = cube / np.sqrt(self.cube.var)
         else:
@@ -139,14 +139,14 @@ class FOCUS(object):
         Ny = self.cube.shape[1]
  
         # Filter to remove deviant pixels
-        self.logger.info('FOCUS - Filtering to remove deviant pixels', extra=d)
+        self._logger.info('FOCUS - Filtering to remove deviant pixels', extra=d)
         cartemin = np.amin(cube_w, axis=0)
         cartemax = np.amax(cube_w, axis=0)
  
         # p_values
         pval_t = p_values.data.data
  
-        self.logger.info('FOCUS - Detecting where p-values<%g' % p0, extra=d)
+        self._logger.info('FOCUS - Detecting where p-values<%g' % p0, extra=d)
         # Find the minimum of the p-values
         pval_inf_t = np.amin(pval_t, axis=0)
         lambda_cube = np.argmax(cube_w, axis=0)
@@ -158,7 +158,7 @@ class FOCUS(object):
         detect = np.zeros((Ny, Nx))
         detect[filtre] = wavelength[filtre]
  
-        self.logger.info('FOCUS - Finding the 8 connected components', extra=d)
+        self._logger.info('FOCUS - Finding the 8 connected components', extra=d)
         # Count the objects detected
         # Find the 8 connected components in binary image
         structure = ndimage.morphology.generate_binary_structure(2, 8)
@@ -195,7 +195,7 @@ class FOCUS(object):
                 extras['expmap'] = (expmap, 'Exposures map')
                 sources.append(Source.from_data(ID=n, ra=ra, dec=dec, origin=origin, 
                                             lines=lines, extras=extras))
-        self.logger.info('FOCUS - %d objects detected' % n, extra=d)
+        self._logger.info('FOCUS - %d objects detected' % n, extra=d)
  
         # resulted image
         imaobj = Image(wcs=self.cube.wcs, data=Obj, unit=u.angstrom)
