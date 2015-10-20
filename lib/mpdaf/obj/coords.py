@@ -138,6 +138,10 @@ def dms2deg(x):
 
 
 def wcs_from_header(hdr, naxis=None):
+    if 'CD1_1' in hdr and 'CDELT3' in hdr and 'CD3_3' not in hdr:
+        hdr['CD3_3'] = hdr['CDELT3']
+    if 'PC1_1' in hdr and 'CDELT3' in hdr and 'PC3_3' not in hdr:
+        hdr['PC3_3'] = 1
     try:
         # WCS object from data header
         return pywcs.WCS(hdr, naxis=naxis)
@@ -225,7 +229,7 @@ class WCS(object):
         shape : integer or (integer,integer)
                 Dimensions. No mandatory.
         """
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
         if hdr is not None:
             self.wcs = wcs_from_header(hdr, naxis=2)
             try:
@@ -327,7 +331,7 @@ class WCS(object):
                        "{}".format(self.get_cunit1()),
                        pixsky[0, 0], pixsky[0, 1], pixsky[1, 0], pixsky[1, 1],
                        dy, dx, self.get_rot())
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
 
     def to_header(self):
         """Generate a pyfits header object with the WCS information."""
@@ -600,6 +604,56 @@ class WCS(object):
             except:
                 raise IOError('No standard WCS')
 
+    def get_naxis1(self):
+        """NAXIS1 getter (first dimension of an image)."""
+        return self.naxis1
+
+    def get_naxis2(self):
+        """NAXIS2 getter (second dimension of an image)."""
+        return self.naxis2
+
+    def get_crpix1(self):
+        """CRPIX1 getter (reference pixel on the first axis)."""
+        return self.wcs.wcs.crpix[0]
+
+    def get_crpix2(self):
+        """CRPIX2 getter (reference pixel on the second axis)."""
+        return self.wcs.wcs.crpix[1]
+
+    def get_crval1(self, unit=None):
+        """CRVAL1 getter (value of the reference pixel on the first axis).
+
+        Parameters
+        ----------
+        unit : astropy.units
+                type of the world coordinates
+        """
+        if unit is None:
+            return self.wcs.wcs.crval[0]
+        else:
+            return (self.wcs.wcs.crval[0] * self.get_cunit1()).to(unit).value
+
+    def get_crval2(self, unit=None):
+        """CRVAL2 getter (value of the reference pixel on the second axis).
+
+        Parameters
+        ----------
+        unit : astropy.units
+                type of the world coordinates
+        """
+        if unit is None:
+            return self.wcs.wcs.crval[1]
+        else:
+            return (self.wcs.wcs.crval[1] * self.get_cunit2()).to(unit).value
+
+    def get_cunit1(self):
+        """Return the unit of the coordinate along the first axis."""
+        return self.wcs.wcs.cunit[0]
+
+    def get_cunit2(self):
+        """Return the unit of the coordinate along the 2nd axis."""
+        return self.wcs.wcs.cunit[1]
+    
     def set_naxis1(self, n):
         """NAXIS1 setter (first dimension of an image)."""
         self.naxis1 = n
@@ -667,56 +721,6 @@ class WCS(object):
         self.wcs.wcs.set()
         if np.abs(theta) > 1E-3:
             self.rotate(theta)
-
-    def get_naxis1(self):
-        """NAXIS1 getter (first dimension of an image)."""
-        return self.naxis1
-
-    def get_naxis2(self):
-        """NAXIS2 getter (second dimension of an image)."""
-        return self.naxis2
-
-    def get_crpix1(self):
-        """CRPIX1 getter (reference pixel on the first axis)."""
-        return self.wcs.wcs.crpix[0]
-
-    def get_crpix2(self):
-        """CRPIX2 getter (reference pixel on the second axis)."""
-        return self.wcs.wcs.crpix[1]
-
-    def get_crval1(self, unit=None):
-        """CRVAL1 getter (value of the reference pixel on the first axis).
-
-        Parameters
-        ----------
-        unit : astropy.units
-                type of the world coordinates
-        """
-        if unit is None:
-            return self.wcs.wcs.crval[0]
-        else:
-            return (self.wcs.wcs.crval[0] * self.get_cunit1()).to(unit).value
-
-    def get_crval2(self, unit=None):
-        """CRVAL2 getter (value of the reference pixel on the second axis).
-
-        Parameters
-        ----------
-        unit : astropy.units
-                type of the world coordinates
-        """
-        if unit is None:
-            return self.wcs.wcs.crval[1]
-        else:
-            return (self.wcs.wcs.crval[1] * self.get_cunit2()).to(unit).value
-
-    def get_cunit1(self):
-        """Return the unit of the coordinate along the first axis."""
-        return self.wcs.wcs.cunit[0]
-
-    def get_cunit2(self):
-        """Return the unit of the coordinate along the 2nd axis."""
-        return self.wcs.wcs.cunit[1]
 
     def rotate(self, theta):
         """Rotate WCS coordinates to new orientation given by theta.
@@ -788,21 +792,6 @@ class WCS(object):
 
         return res
 
-    def new_step(self, factor):
-        try:
-            self.wcs.wcs.cd[0, :] *= factor[1]
-            self.wcs.wcs.cd[1, :] *= factor[0]
-            self.wcs.wcs.set()
-        except:
-            try:
-                self.wcs.wcs.cdelt[0] *= factor[1]
-                self.wcs.wcs.cdelt[1] *= factor[0]
-                self.wcs.wcs.set()
-            except:
-                raise StandardError("problem in wcs resampling")
-        self.naxis1 = int(np.ceil(self.naxis1 / factor[1]))
-        self.naxis2 = int(np.ceil(self.naxis2 / factor[0]))
-
     def rebin(self, factor):
         """Rebin to a new coordinate system.
 
@@ -857,6 +846,7 @@ class WCS(object):
             return True
 
     def to_cube_header(self, wave):
+        """Generate a pyfits header object with the WCS information and the wavelength information."""
         wcs_hdr = self.to_header()
         wcs_hdr['WCSAXES'] = 3
         #wcs_hdr['NAXIS3'] = wave.shape
@@ -934,7 +924,7 @@ class WaveCoord(object):
         shape : integer or None
                 Size of spectrum (no mandatory).
         """
-        self.logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger('mpdaf corelib')
 
         if hdr is not None:
             try:
@@ -990,7 +980,7 @@ class WaveCoord(object):
                 end = self.get_end()
                 msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % (
                     start, end, step, "{}".format(self.get_cunit()))
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""
