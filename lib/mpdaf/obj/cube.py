@@ -83,34 +83,44 @@ class Cube(DataArray):
                 World coordinates.
     wave     : :class:`mpdaf.obj.WaveCoord`
                 Wavelength coordinates.
-    unit     : string
-                Possible data unit type. None by default.
+    unit     : astropy.units
+               Physical units of the data values.
+               u.dimensionless_unscaled by default.
     data     : float array
                 Array containing the pixel values of the cube. None by
                 default.
     var      : float array
                 Array containing the variance. None by default.
+    ima      : boolean
+               If true (default), image extension of the FITS file are loaded
+               in the .ima dictionary.
+    copy     : boolean
+               If true (default), then the data and variance arrays are copied. 
+    dtype    : numpy.dtype
+               Type of the data (integer, float)
 
     Attributes
     ----------
     filename       : string
                      Possible FITS filename.
-    unit           : string
-                     Possible data unit type
     primary_header : pyfits.Header
                      FITS primary header instance.
-    data_header    : pyfits.Header
-                     FITS data header instance.
-    data           : masked array numpy.ma
-                     Array containing the cube pixel values.
-    shape          : tuple
-                     Lengths of data (python notation (nz,ny,nx)).
-    var            : float array
-                     Array containing the variance.
     wcs            : :class:`mpdaf.obj.WCS`
                      World coordinates.
     wave           : :class:`mpdaf.obj.WaveCoord`
                      Wavelength coordinates
+    shape          : tuple
+                     Lengths of data (python notation (nz,ny,nx)).                 
+    data           : masked array numpy.ma
+                     Masked array containing the cube pixel values.
+    data_header    : pyfits.Header
+                     FITS data header instance.
+    unit           : astropy.units
+                     Physical units of the data values.
+    dtype          : numpy.dtype
+                     Type of the data (integer, float)
+    var            : float array
+                     Array containing the variance.
     ima            : dict{string,:class:`mpdaf.obj.Image`}
                      dictionary of images
     """
@@ -120,7 +130,7 @@ class Cube(DataArray):
     _has_wave = True
 
     def __init__(self, filename=None, ext=None, wcs=None, wave=None,
-                 unit=u.count, data=None, var=None, ima=True, copy=True,
+                 unit=u.dimensionless_unscaled, data=None, var=None, ima=True, copy=True,
                  dtype=float, **kwargs):
         super(Cube, self).__init__(
             filename=filename, ext=ext, wcs=wcs, wave=wave, unit=unit,
@@ -147,7 +157,7 @@ class Cube(DataArray):
         super(Cube, self).info()
         if len(self.ima) > 0:
             d = {'class': self.__class__.__name__, 'method': 'info'}
-            self.logger.info('.ima: %s', ', '.join(self.ima.keys()), extra=d)
+            self._logger.info('.ima: %s', ', '.join(self.ima.keys()), extra=d)
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
         """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
@@ -198,7 +208,7 @@ class Cube(DataArray):
                                 (card.value, card.comment)
                     except:
                         d = {'class': 'Cube', 'method': 'write'}
-                        self.logger.warning("%s not copied in data header",
+                        self._logger.warning("%s not copied in data header",
                                             card.keyword, extra=d)
 
         if self.unit != u.dimensionless_unscaled:
@@ -252,7 +262,7 @@ class Cube(DataArray):
                                 imahdu.header['hierarch %s' % card.keyword] = \
                                     (card.value, card.comment)
                         except:
-                            self.logger.warning("%s not copied in data header",
+                            self._logger.warning("%s not copied in data header",
                                                 card.keyword, extra=d)
 
         if self.unit != u.dimensionless_unscaled:
@@ -291,7 +301,7 @@ class Cube(DataArray):
                             (card.value, card.comment)
                 except:
                     d = {'class': 'Cube', 'method': 'write'}
-                    self.logger.warning("%s not copied in primary header",
+                    self._logger.warning("%s not copied in primary header",
                                         card.keyword, extra=d)
 
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
@@ -353,7 +363,7 @@ class Cube(DataArray):
             except:
                 self.wcs = None
                 d = {'class': 'Cube', 'method': 'resize'}
-                self.logger.warning("wcs not copied: wcs attribute is None",
+                self._logger.warning("wcs not copied: wcs attribute is None",
                                     extra=d)
 
             try:
@@ -361,7 +371,7 @@ class Cube(DataArray):
             except:
                 self.wave = None
                 d = {'class': 'Cube', 'method': 'resize'}
-                self.logger.warning("wavelength solution not copied: "
+                self._logger.warning("wavelength solution not copied: "
                                     "wave attribute is None", extra=d)
 
     def mask(self, center, radius, lmin=None, lmax=None, inside=True,
@@ -1329,12 +1339,12 @@ class Cube(DataArray):
                 and (wcs.naxis1 != self.shape[2]
                      or wcs.naxis2 != self.shape[1]):
                 d = {'class': 'Cube', 'method': 'set_wcs'}
-                self.logger.warning('world coordinates and data have not the '
+                self._logger.warning('world coordinates and data have not the '
                                     'same dimensions', extra=d)
         if wave is not None:
             if wave.shape is not None and wave.shape != self.shape[0]:
                 d = {'class': 'Cube', 'method': 'set_wcs'}
-                self.logger.warning('wavelength coordinates and data have not '
+                self._logger.warning('wavelength coordinates and data have not '
                                     'the same dimensions', extra=d)
             self.wave = wave.copy()
             self.wave.shape = self.shape[0]
@@ -2360,7 +2370,7 @@ class Cube(DataArray):
 
         if verbose:
             msg = "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
 
             while (True):
                 time.sleep(5)
@@ -2470,7 +2480,7 @@ class Cube(DataArray):
 
         if verbose:
             msg = "loop_ima_multiprocessing (%s): %i tasks" % (f, num_tasks)
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
 
             while (True):
                 time.sleep(5)
@@ -2595,7 +2605,7 @@ class Cube(DataArray):
             k2=self.shape[0]-1
 
         msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2+1)
-        self.logger.info(msg, extra=d)
+        self._logger.info(msg, extra=d)
         if is_sum:
             ima = self[k1:k2 + 1, :, :].sum(axis=0)
         else:
@@ -2816,7 +2826,7 @@ class Cube(DataArray):
                                                unit_radius=unit_radius)
             msg = '%d spaxels summed' % (cub.shape[1] * cub.shape[2])
             spec = cub.sum(axis=(1, 2))
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
         else:
             if unit_center is not None:
                 center = self.wcs.sky2pix(center, unit=unit_center)[0]
@@ -2824,7 +2834,7 @@ class Cube(DataArray):
                 center = np.array(center)
             spec = self[:, int(center[0] + 0.5), int(center[1] + 0.5)]
             msg = 'returning spectrum at nearest spaxel'
-            self.logger.info(msg, extra=d)
+            self._logger.info(msg, extra=d)
         return spec
 
 
@@ -2955,7 +2965,7 @@ def _process_ima(arglist):
 #                    True if the noise Variance cube is not read (if it exists).
 #                    Use notnoise=True to create cube without variance extension.
 #         """
-#         self.logger = logging.getLogger('mpdaf corelib')
+#         self._logger = logging.getLogger('mpdaf corelib')
 #         self.filename = filename
 #         self.ima = {}
 #         if filename is not None:
@@ -2981,7 +2991,7 @@ def _process_ima(arglist):
 #                     self.wcs = WCS(hdr)
 #                 except:
 #                     d = {'class': 'CubeDisk', 'method': '__init__'}
-#                     self.logger.warning("wcs not copied", extra=d)
+#                     self._logger.warning("wcs not copied", extra=d)
 #                     self.wcs = None
 #                 # Wavelength coordinates
 #                 if 'CRPIX3' not in hdr or 'CRVAL3' not in hdr:
@@ -3011,7 +3021,7 @@ def _process_ima(arglist):
 #                     self.wcs = WCS(h)  # WCS object from data header
 #                 except:
 #                     d = {'class': 'CubeDisk', 'method': '__init__'}
-#                     self.logger.warning("wcs not copied", extra=d)
+#                     self._logger.warning("wcs not copied", extra=d)
 #                     self.wcs = None
 #                 # Wavelength coordinates
 #                 if 'CRPIX3' not in h or 'CRVAL3' not in h:
