@@ -20,9 +20,8 @@ class Catalog(Table):
 
     """
 
-    def __init__(self, data=None, masked=None, names=None,
-                 dtype=None, meta=None, copy=True, rows=None):
-        Table.__init__(self, data, masked, names, dtype, meta, copy, rows)
+    def __init__(self, *args, **kwargs):
+        super(Catalog, self).__init__(*args, **kwargs)
         self.logger = logging.getLogger('mpdaf corelib')
         if self.colnames.count('ra') != 0:
             self.rename_column('ra', 'RA')
