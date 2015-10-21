@@ -306,7 +306,7 @@ class Catalog(Table):
         for f in files:
             try:
                 slist.append(Source._light_from_file(f))
-                filenames.append(os.path.basename(f)
+                filenames.append(os.path.basename(f))
             except:
                 logger.warning('source %s not loaded'%f)
             sys.stdout.write("\r\x1b[K %i%%"%(100*len(filenames)/n))
