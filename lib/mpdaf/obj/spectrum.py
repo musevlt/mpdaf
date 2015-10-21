@@ -3058,10 +3058,15 @@ class Spectrum(DataArray):
         if lmin is not None or lmax is not None:
             res = self.copy()
             res.truncate(lmin, lmax, unit)
+            x = res.wave.coord(unit=unit)
         else:
             res = self
-
-        x = res.wave.coord(unit=unit)
+            try:
+                x = res.wave.coord(unit=unit)
+            except u.UnitConversionError:
+                unit = res.wave.get_cunit()
+                x = res.wave.coord(unit=unit)
+                
         f = res.data
         if res.var is None:
             noise = False
