@@ -391,7 +391,15 @@ class CubeList(object):
         else:
             nclip_low, nclip_up = nclip
 
+        if var == 'propagate':
+            var_mean = 0
+        elif var == 'stat_mean':
+            var_mean = 1
+        else:
+            var_mean = 2
+
         info = self._logger.info
+
         info("Merging cube using sigma clipped mean", extra=d)
         info("nmax = %d", nmax, extra=d)
         info("nclip_low = %f", nclip_low, extra=d)
@@ -400,7 +408,7 @@ class CubeList(object):
         if nl is not None:
             self.shape[0] = nl
 
-        data = [fitsio.FITS(f)[1] for f in self.files]
+        data = [fitsio.FITS(f)['DATA'] for f in self.files]
         cube = np.ma.empty(self.shape, dtype=np.float64)
         expmap = np.zeros(self.shape, dtype=np.int32)
         rejmap = np.zeros(self.shape, dtype=np.int32)
@@ -410,16 +418,25 @@ class CubeList(object):
         nl = self.shape[0]
         fshape = (self.shape[1], self.shape[2], self.nfiles)
         arr = np.empty(fshape, dtype=float)
+        starr = np.empty(fshape, dtype=float)
+
+        if var_mean == 0:
+            stat = [fitsio.FITS(f)['STAT'] for f in self.files]
 
         info('Looping on the %d planes of the cube', nl, extra=d)
-        for l in xrange(nl):
+        # for l in xrange(nl):
+        for l in xrange(310, 312):
             if l % 100 == 0:
                 info('%d/%d', l, nl, extra=d)
             for i, f in enumerate(data):
                 arr[:, :, i] = f[l, :, :][0]
+            if var_mean == 0:
+                for i, f in enumerate(stat):
+                    starr[:, :, i] = f[l, :, :][0]
 
-            sigma_clip(arr, cube, vardata, expmap, rejmap, valid_pix,
-                       select_pix, l, nmax, nclip_low, nclip_up, nstop)
+            sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
+                       select_pix, l, nmax, nclip_low, nclip_up, nstop,
+                       var_mean)
 
         arr = None
         data = None

@@ -20,9 +20,8 @@ class Catalog(Table):
 
     """
 
-    def __init__(self, data=None, masked=None, names=None,
-                 dtype=None, meta=None, copy=True, rows=None):
-        Table.__init__(self, data, masked, names, dtype, meta, copy, rows)
+    def __init__(self, *args, **kwargs):
+        super(Catalog, self).__init__(*args, **kwargs)
         self._logger = logging.getLogger('mpdaf corelib')
         if self.colnames.count('ra') != 0:
             self.rename_column('ra', 'RA')
@@ -315,8 +314,11 @@ class Catalog(Table):
         logger.info('Building catalog from path %s'%path ,extra=d)
         
         for f in files:
-            slist.append(Source._light_from_file(f))
-            filenames.append(os.path.basename(f))
+            try:
+                slist.append(Source._light_from_file(f))
+                filenames.append(os.path.basename(f))
+            except:
+                logger.warning('source %s not loaded'%f)
             sys.stdout.write("\r\x1b[K %i%%"%(100*len(filenames)/n))
             sys.stdout.flush()
             
