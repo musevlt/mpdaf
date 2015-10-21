@@ -150,16 +150,23 @@ class DataArray(object):
                 self._var_ext = None
 
             self.data_header = hdr = hdulist[self._data_ext].header
-            # self.unit = u.Unit(hdr.get('BUNIT', 'count'))
+            
+            self.unit = u.dimensionless_unscaled
             try:
-                if 'FSCALE' in hdr:
-                    self.unit = u.Unit(fix_unit('%e %s'%(hdr['FSCALE'],hdr['BUNIT'])))
-                else:
-                    self.unit = u.Unit(fix_unit(hdr['BUNIT']))
-            except:
-                warnings.warn('The physical unit of the data is not loaded '
-                          'from the FITS header', MpdafWarning)
-                self.unit = u.dimensionless_unscaled
+                self.unit = u.Unit(fix_unit(hdr['BUNIT']))
+            except KeyError:
+                self._logger.warning('The physical unit of the data is not loaded '
+                                     'from the FITS header.\n'
+                                     'No BUNIT in the DATA.',
+                                     extra=d)
+            except Exception as e:
+                self._logger.warning('The physical unit of the data is not loaded '
+                                     'from the FITS header.\n %s',e,
+                                     extra=d)
+                
+            if 'FSCALE' in hdr:
+                    self.unit *= u.Unit(hdr['FSCALE'])
+                    
             self._shape = hdulist[self._data_ext].data.shape
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
             #                        hdr['NAXIS1']])
