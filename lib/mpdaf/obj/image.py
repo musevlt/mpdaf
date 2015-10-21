@@ -287,25 +287,31 @@ class Image(DataArray):
             None by default.
     var      : float array
             Array containing the variance. None by default.
+    copy     : boolean
+               If true (default), then the data and variance arrays are copied. 
+    dtype    : numpy.dtype
+               Type of the data (integer, float)
 
     Attributes
     ----------
     filename       : string
-                    Possible FITS filename.
-    unit           : string
-                    Data unit type.
+                     Possible FITS filename.
     primary_header : pyfits.Header
-                    Possible FITS primary header instance.
-    data_header    : pyfits.Header
-                    Possible FITS data header instance.
-    data           : array or masked array)
-                    Array containing the pixel values of the image.
-    shape          : tuple
-                    Lengths of data in Y and X (python notation: (ny,nx)).
-    var            : array
-                    Array containing the variance.
+                     FITS primary header instance.
     wcs            : :class:`mpdaf.obj.WCS`
-                    World coordinates.
+                     World coordinates.
+    shape          : tuple
+                     Lengths of data (python notation (nz,ny,nx)).                 
+    data           : masked array numpy.ma
+                     Masked array containing the cube pixel values.
+    data_header    : pyfits.Header
+                     FITS data header instance.
+    unit           : astropy.units
+                     Physical units of the data values.
+    dtype          : numpy.dtype
+                     Type of the data (integer, float)
+    var            : float array
+                     Array containing the variance.
     """
 
     _ndim_required = 2
@@ -1397,7 +1403,7 @@ class Image(DataArray):
         return res
 
     def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec, minsize=2.0):
-        """Extracts a sub-image
+        """Extracts a sub-image around a given position.
 
         Parameters
         ----------
@@ -1787,13 +1793,13 @@ class Image(DataArray):
         [[dec, ra]] = self.wcs.pix2sky([[ic, jc]])
         maxv = self.data[int(round(ic)), int(round(jc))]
         if plot:
-            plt.plot(jc, ic, 'r+')
+            self._ax.plot(jc, ic, 'r+')
             try:
                 _str = 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' % \
                     (center[0], center[1], radius[0], radius[1], dpix, jc, ic)
             except:
                 _str = 'dpix %i peak: %g %g' % (dpix, ic, jc)
-            plt.title(_str)
+            self._ax.title(_str)
 
         return {'x': ra, 'y': dec, 'p': ic, 'q': jc, 'data': maxv}
 
@@ -2139,7 +2145,7 @@ class Image(DataArray):
     def gauss_fit(self, pos_min=None, pos_max=None, center=None, flux=None,
                   fwhm=None, circular=False, cont=0, fit_back=True, rot=0,
                   peak=False, factor=1, weight=True, plot=False, unit_center=u.deg,
-                  unit_fwhm=u.arcsec, verbose=True, full_output=0):
+                  unit_fwhm=u.arcsec, maxiter=100, verbose=True, full_output=0):
         """Performs Gaussian fit on image.
 
         Parameters
@@ -2188,6 +2194,8 @@ class Image(DataArray):
         unit_fwhm   : astropy.units
                       FWHM unit.
                       Arcseconds by default (use None for radius in pixels)
+        maxiter : int
+                      The maximum number of iterations during the sum of square minimization. 
         plot        : boolean
                       If True, the gaussian is plotted.
         verbose     : boolean
@@ -2201,6 +2209,7 @@ class Image(DataArray):
         -------
         out : :class:`mpdaf.obj.Gauss2D`
         """
+        d = {'class': 'Image', 'method': 'gauss_fit'}
         if unit_center is None:
             if pos_min is None:
                 pmin = 0
@@ -2383,13 +2392,16 @@ class Image(DataArray):
             v, covar, info, mesg, success = \
                 leastsq(e_gauss_fit, v0[:],
                         args=(pixcrd[:, 0], pixcrd[:, 1], data, wght),
-                        maxfev=100, full_output=1)
+                        maxfev=maxiter, full_output=1)
         else:
             e_gauss_fit = lambda v, p, q, data, w : \
                 w * (gaussfit(v, p, q) - data)
             v, covar, info, mesg, success = \
                 leastsq(e_gauss_fit, v0[:], args=(p, q, data, wght),
-                        maxfev=100, full_output=1)
+                        maxfev=maxiter, full_output=1)
+                
+        if success != 1:
+            self._logger.info(mesg, extra=d)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
@@ -2406,13 +2418,14 @@ class Image(DataArray):
         v[3] += int(qmin)
 
         # plot
+        #ne fonctionne pas si colorbar
         if plot:
             pp = np.arange(pmin, pmax, float(pmax - pmin) / 100)
             qq = np.arange(qmin, qmax, float(qmax - qmin) / 100)
             ff = np.empty((np.shape(pp)[0], np.shape(qq)[0]))
             for i in range(np.shape(pp)[0]):
                 ff[i, :] = gaussfit(v, pp[i], qq[:])
-            plt.contour(qq, pp, ff, 5)
+            self._ax.contour(qq, pp, ff, 5)
 
         # Gauss2D object in pixels
         flux = v[0]
@@ -2529,7 +2542,7 @@ class Image(DataArray):
                    flux=None, n=2.0, circular=False, cont=0, fit_back=True,
                    rot=0, peak=False, factor=1, weight=True, plot=False,
                    unit_center=u.deg, unit_fwhm=u.arcsec,
-                   verbose=True, full_output=0, fit_n=True):
+                   verbose=True, full_output=0, fit_n=True, maxiter=100):
         """Performs moffat fit on image.
 
         Parameters
@@ -2589,11 +2602,14 @@ class Image(DataArray):
         fit_n       : boolean
                       False: n value is fixed,
                       True: n value is a fit parameter.
+        maxiter : int
+                  The maximum number of iterations during the sum of square minimization. 
 
         Returns
         -------
         out : :class:`mpdaf.obj.Moffat2D`
         """
+        d = {'class': 'Image', 'method': 'moffat_fit'}
         if unit_center is None:
             if pos_min is None:
                 pmin = 0
@@ -2807,28 +2823,31 @@ class Image(DataArray):
             v, covar, info, mesg, success = \
                 leastsq(e_moffat_fit, v0[:], args=(pixcrd[:, 0], pixcrd[:, 1],
                                                    data, wght),
-                        maxfev=100, full_output=1)
+                        maxfev=maxiter, full_output=1)
             while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
                     or np.abs(v[3] - v0[3]) > 0.1:
                 v0 = v
                 v, covar, info, mesg, success = \
                     leastsq(e_moffat_fit, v0[:],
                             args=(pixcrd[:, 0], pixcrd[:, 1],
-                                  data, wght), maxfev=100, full_output=1)
+                                  data, wght), maxfev=maxiter, full_output=1)
         else:
             e_moffat_fit = lambda v, p, q, data, w: \
                 w * (moffatfit(v, p, q) - data)
             v, covar, info, mesg, success = \
                 leastsq(e_moffat_fit, v0[:],
                         args=(p, q, data, wght),
-                        maxfev=100, full_output=1)
+                        maxfev=maxiter, full_output=1)
             while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
                     or np.abs(v[3] - v0[3]) > 0.1:
                 v0 = v
                 v, covar, info, mesg, success = \
                     leastsq(e_moffat_fit, v0[:],
                             args=(p, q, data, wght),
-                            maxfev=100, full_output=1)
+                            maxfev=maxiter, full_output=1)
+                    
+        if success != 1:
+            self._logger.info(mesg, extra=d)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
@@ -2852,7 +2871,7 @@ class Image(DataArray):
             ff = np.empty((np.shape(pp)[0], np.shape(qq)[0]))
             for i in range(np.shape(pp)[0]):
                 ff[i, :] = moffatfit(v, pp[i], qq[:])
-            plt.contour(qq, pp, ff, 5)
+            self._ax.contour(qq, pp, ff, 5)
 
         # Gauss2D object in pixels
         I = v[0]
@@ -3936,75 +3955,79 @@ class Image(DataArray):
         self.data.mask = mask
 
 
-#     def segment(self, shape=(2, 2), minsize=20, minpts=None,
-#                 background=20, interp='no', median=None):
-#         """Segments the image in a number of smaller images.
-#
-#         Returns a list of images.
-#
-#         Uses `scipy.ndimage.morphology.generate_binary_structure <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.generate_binary_structure.html>`_, `scipy.ndimage.morphology.grey_dilation <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.grey_dilation.html>`_, `scipy.ndimage.measurements.label <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.label.html>`_, and `scipy.ndimage.measurements.find_objects <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.find_objects.html>`_.
-#
-#         Parameters
-#         ----------
-#         shape      : (integer,integer)
-#                     Shape used for connectivity.
-#         minsize    : integer
-#                     Minimmum size of the images.
-#         minpts     : integer
-#                     Minimmum number of points in the object.
-#         background : float
-#                     Under this value,
-#                     flux is considered as background.
-#         interp     : 'no' | 'linear' | 'spline'
-#                     if 'no', data median value replaced masked values.
-#                     if 'linear', linear interpolation of the masked values.
-#                     if 'spline', spline interpolation of the masked values.
-#         median     : (integer,integer) or None
-#                     Size of the median filter
-#
-#         Returns
-#         -------
-#         out : List of Image objects.
-#         """
-#         if interp == 'linear':
-#             data = self._interp_data(spline=False)
-#         elif interp == 'spline':
-#             data = self._interp_data(spline=True)
-#         else:
-#             data = np.ma.filled(self.data, np.ma.median(self.data))
-#
-#         structure = \
-#             ndimage.morphology.generate_binary_structure(shape[0], shape[1])
-#         if median is not None:
-#             data = np.ma.array(ndimage.median_filter(data, median),
-#                                mask=self.data.mask)
-#         expanded = ndimage.morphology.grey_dilation(data, (minsize, minsize))
-#         ksel = np.where(expanded < background)
-#         expanded[ksel] = 0
-#
-#         lab = ndimage.measurements.label(expanded, structure)
-#         slices = ndimage.measurements.find_objects(lab[0])
-#
-#         imalist = []
-#         for i in range(lab[1]):
-#             if minpts is not None:
-#                 if (data[slices[i]].ravel() > background)\
-#                         .sum() < minpts:
-#                     continue
-#             [[starty, startx]] = \
-#                 self.wcs.pix2sky(self.wcs.pix2sky([[slices[i][0].start,
-#                                                     slices[i][1].start]]))
-#             wcs = WCS(crpix=(1.0, 1.0), crval=(starty, startx),
-#                       cdelt=self.wcs.get_step(), deg=self.wcs.is_deg(),
-#                       rot=self.wcs.get_rot())
-#             if self.var is not None:
-#                 res = Image(data=self.data[slices[i]], wcs=wcs,
-#                             unit=self.unit, var=self.var[slices[i]])
-#             else:
-#                 res = Image(data=self.data[slices[i]], wcs=wcs,
-#                             unit=self.unit)
-#             imalist.append(res)
-#         return imalist
+    def segment(self, shape=(2, 2), minsize=20, minpts=None,
+                background=20, interp='no', median=None):
+        """Segments the image in a number of smaller images.
+
+        Returns a list of images.
+
+        Uses `scipy.ndimage.morphology.generate_binary_structure <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.generate_binary_structure.html>`_, `scipy.ndimage.morphology.grey_dilation <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.grey_dilation.html>`_, `scipy.ndimage.measurements.label <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.label.html>`_, and `scipy.ndimage.measurements.find_objects <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.find_objects.html>`_.
+
+        Parameters
+        ----------
+        shape      : (integer,integer)
+                    Shape used for connectivity.
+        minsize    : integer
+                    Minimmum size of the images.
+        minpts     : integer
+                    Minimmum number of points in the object.
+        background : float
+                    Under this value,
+                    flux is considered as background.
+        interp     : 'no' | 'linear' | 'spline'
+                    if 'no', data median value replaced masked values.
+                    if 'linear', linear interpolation of the masked values.
+                    if 'spline', spline interpolation of the masked values.
+        median     : (integer,integer) or None
+                    Size of the median filter
+
+        Returns
+        -------
+        out : List of Image objects.
+        """
+        if interp == 'linear':
+            data = self._interp_data(spline=False)
+        elif interp == 'spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = np.ma.filled(self.data, np.ma.median(self.data))
+
+        structure = \
+            ndimage.morphology.generate_binary_structure(shape[0], shape[1])
+        if median is not None:
+            data = np.ma.array(ndimage.median_filter(data, median),
+                               mask=self.data.mask)
+        expanded = ndimage.morphology.grey_dilation(data, (minsize, minsize))
+        ksel = np.where(expanded < background)
+        expanded[ksel] = 0
+
+        lab = ndimage.measurements.label(expanded, structure)
+        slices = ndimage.measurements.find_objects(lab[0])
+
+        imalist = []
+        for i in range(lab[1]):
+            if minpts is not None:
+                if (data[slices[i]].ravel() > background)\
+                        .sum() < minpts:
+                    continue
+            [[starty, startx]] = \
+                self.wcs.pix2sky(self.wcs.pix2sky([[slices[i][0].start,
+                                                    slices[i][1].start]]))
+            wcs = self.wcs.copy()
+            wcs.set_crpix1(1.0)
+            wcs.set_crpix2(1.0)
+            wcs.set_crval1(startx)
+            wcs.set_crval2(starty)
+            wcs.naxis1 = self.data[slices[i]].shape[1]
+            wcs.naxis2 = self.data[slices[i]].shape[0]
+            if self.var is not None:
+                res = Image(data=self.data[slices[i]], wcs=wcs,
+                            unit=self.unit, var=self.var[slices[i]])
+            else:
+                res = Image(data=self.data[slices[i]], wcs=wcs,
+                            unit=self.unit)
+            imalist.append(res)
+        return imalist
 
     def add_gaussian_noise(self, sigma, interp='no'):
         """Adds Gaussian noise to image in place.
@@ -4418,7 +4441,7 @@ class Image(DataArray):
                 cax2 = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(cax, cax=cax2)
 
-            self._ax = cax
+            self._ax = ax
 
         if show_xlabel:
             ax.set_xlabel(xlabel)
@@ -5037,7 +5060,7 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
 
 def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
                  center=None, flux=1., fwhm=(1., 1.), peak=False, n=2,
-                 rot=0., cont=0, unit_center=u.deg, unit_fwhm=u.angstrom):
+                 rot=0., cont=0, unit_center=u.deg, unit_fwhm=u.arcsec):
     """Creates a new image from a 2D Moffat function.
 
     Parameters
@@ -5112,6 +5135,9 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
     fwhm = np.array(fwhm)
     a = fwhm[0] / (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
     e = fwhm[0] / fwhm[1]
+    
+    if unit_fwhm is not None:
+        a = a / np.abs(wcs.get_step(unit=unit_fwhm)[0])
 
     if peak:
         I = flux
@@ -5123,9 +5149,6 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
     else:
         if unit_center is not None:
             center = wcs.sky2pix(center, unit=unit_center)[0]
-
-    if unit_fwhm is not None:
-        a = a / np.abs(wcs.get_step(unit=unit_fwhm)[0])
 
     data = np.empty(shape=shape, dtype=float)
 
