@@ -2365,6 +2365,7 @@ class Cube(DataArray):
                                 sp.unit, kargs])
         num_tasks = len(processlist)
 
+        
         processresult = pool.imap_unordered(_process_spe, processlist)
         pool.close()
 
@@ -2851,13 +2852,11 @@ def _process_spe(arglist):
         else:
             out = getattr(spe, f)(**kargs)
 
-        try:
-            if isinstance(out, Spectrum):
-                return pos, 'spectrum', [
-                    out.wave.to_header(), out.data.data,
-                    out.data.mask, out.var, out.unit]
-        except:
-            # f returns dtype -> iterator returns an array of dtype
+        if isinstance(out, Spectrum):
+            return pos, 'spectrum', [
+                out.wave.to_header(), out.data.data,
+                out.data.mask, out.var, out.unit]
+        else:
             return pos, 'other', [out]
 
     except Exception as inst:
