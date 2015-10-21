@@ -16,19 +16,27 @@ Image object format
 
 An Image object O consists of:
 
-+------------+----------------------------------------------------------------------------------+
-| Component  | Description                                                                      |
-+============+==================================================================================+
-| O.wcs      | 2D world coordinate system information (:class:`WCS <mpdaf.obj.WCS>` object)     |
-+------------+----------------------------------------------------------------------------------+
-| O.data     | masked numpy 2D array with data values                                           |
-+------------+----------------------------------------------------------------------------------+
-| O.var      | (optionally) masked numpy 2D array with variance values                          |
-+------------+----------------------------------------------------------------------------------+
-| O.shape    | Array containing the 2 dimensions [np,nq] of the image                           |
-+------------+----------------------------------------------------------------------------------+
-| O.fscale   | Scaling factor for the flux and variance values                                  |
-+------------+----------------------------------------------------------------------------------+
++------------------+----------------------------------------------------------------------------+
+| Component        | Description                                                                |
++==================+============================================================================+
+| O.filename       | Possible FITS filename                                                     |
++------------------+----------------------------------------------------------------------------+
+| O.primary_header | FITS primary header instance                                               |
++------------------+----------------------------------------------------------------------------+
+| O.wcs            | World coordinate spatial information (:class:`WCS <mpdaf.obj.WCS>` object) |
++------------------+----------------------------------------------------------------------------+
+| O.shape          | Array containing the 2 dimensions [np,nq] of the image                     |
++------------------+----------------------------------------------------------------------------+
+| O.data           | Masked numpy array with data values                                        |
++------------------+----------------------------------------------------------------------------+
+| O.data_header    | FITS data header instance                                                  |
++------------------+----------------------------------------------------------------------------+
+| O.unit           | Physical units of the data values                                          |
++------------------+----------------------------------------------------------------------------+
+| O.dtype          | Type of the data (integer, float)                                          |
++------------------+----------------------------------------------------------------------------+
+| O.var            | (optionally) Numpy array with variance values                              |
++------------------+----------------------------------------------------------------------------+
 
 
 The format of each numpy array follows the indexing used by Python to 
@@ -42,184 +50,17 @@ q and the vertical position p, as follows:
 In total, this image im contains nq pixels in the horizontal direction and 
 np pixels in the vertical direction. 
 
-Tutorial
-========
-
-We can load the tutorial files with the command::
-
- > git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
-
-Preliminary imports for all tutorials::
-
-  >>> import numpy as np
-  >>> from mpdaf.obj import Image
-  >>> from mpdaf.obj.coords import WCS
-
-Tutorial 1: Image Creation, i/o and display, masking.
------------------------------------------------------
-
-An Image object can be created:
-
-- either from one or two 2D numpy arrays containing the flux and variance values (optionally, the data array can be a numpy masked array to deal with bad pixel values)::
-
-  >>> MyData=np.ones([1000,1000]) #numpy data array
-  >>> MyVariance=np.ones([1000,1000]) #numpy variance array
-  >>> ima=Image(data=MyData) #image filled with MyData
-  >>> ima=Image(data=MyData,var=MyVariance) #image filled with MyData and MyVariance
-
-- or from a FITS file (in which case the flux and variance values are read from specific extensions), using the following commands::
-
-  >>> ima=Image('image_variance.fits',ext=1) #data array is read from the file (extension number 1)
-  >>> ima=Image('image_variance.fits',ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
-
-If the FITS file contains a single extension (image fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
-
-
-The :class:`WCS <mpdaf.obj.WCS>` object can be copied from another image or taken from the FITS header::
-
-  >>> wcs1=ima1.wcs #WCS copied from Image object ima1
-  >>> wcs2=WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) #Spatial WCS created from a reference position in degrees, a pixel size and a rotation angle
-  >>> ima2=Image(data=MyData,wcs=wcs2) #wcs created from known object
-
-
-Any Image object can be written as an output FITS file (containing 1 or 2 extensions)::
-
-  >>> ima2.write('ima2.fits')
-
-Display an image with lower / upper scale values::
-
-  >>> ima=Image('image.fits.gz')
-  >>> ima.plot(vmin=1950,vmax=2400)
-
-.. figure:: user_manual_image_images/Image_full.png
-  :align: center
-
-Masking a specific region::
-
-  >>> ima.mask([800.,900.],200.,pix=True,inside=False)
-
-Zoom on an image section::
-
-  >>> ima[600:1000,800:1200].plot(vmin=1950,vmax=2400)
-
-.. figure:: user_manual_image_images/Image_zoom.png
-  :align: center
-
-
-Tutorial 2: Image Geometrical manipulation
-------------------------------------------
-
-In this tutorial we start from an image and performs some geometric transformations onto it::
-
-  >>> im1=Image('image.fits.gz')
-
-We rotate the image by 40 degrees and rebin it onto a 0.2"/pixel scale (conserving flux)::
-
-  >>> im2=im1.rotate(40) #this rotation uses an interpolation of the pixels
-  >>> im3=im2.rebin(newdim=(1000,1000),newstart=None,newstep=(0.4/3600.0,0.4/3600.0),flux=True)
-
-The new image would look like this::
-
-  >>> im3.plot(vmin=525,vmax=700)
-
-.. figure:: user_manual_image_images/Image_rebin.png
-  :align: center
-
-Then, we load an external image of the same field (observed with a different instrument), aligned to the previous image in WCS coordinates. We combine both datasets to produce a higher S/N image::
-
-  >>> imhst=Image('image_variance.fits.gz')
-  >>> im1[700:900,850:1050].plot(vmin=1950,vmax=2500) #original image
-  >>> im1.add(imhst)
-  >>> im1[700:900,850:1050].plot(vmin=1950,vmax=2500) #combined image
-
-.. figure:: user_manual_image_images/before-after.png
-  :align: center
-
-(Left) original image (Right) combination of ground-based and high-resolution image
-  
-
-Tutorial 3: Object analysis: image segmentation, peak measurement, profile fitting
-----------------------------------------------------------------------------------
-
-In this tutorial, we will analyse the 2D images of specific objects detected in the image.
-We start by segmenting the original image into several cutout images::
-
-  >>> im=Image('image.fits.gz')
-  >>> seg=im.segment(minsize=10,background=2100)
-
-We plot one of the sub-images to analyse the corresponding source::
-
-  >>> source=seg[8]
-  >>> source.plot()
-
-.. figure:: user_manual_image_images/Image_source8.png
-  :align: center
-
-We find the location of the peak interactively::
-
-  >>> source.ipeak()
-  peak: y=-1.51549	x=39.9916	p=15	q=10	data=3201
-
-We perform a 2D Gaussian fitting of the source, and plot the isocontours::
-
-  >>> gfit=source.gauss_fit((-1.5164061,-1.5147602),(39.99103,39.992135),plot=True)
-
-.. figure:: user_manual_image_images/Image_source8_gaussfit.png
-  :align: center
-
-The best fit parameters can be printed on the console::
-
-  >>> gfit.print_param()
-  Gaussian center = (-1.51552,39.9916) (error:(2.74688e-06,2.9471e-06))
-  Gaussian integrated flux = 0.000214634 (error:2.82398e-06)
-  Gaussian peak value = 899.569 (error:-11.8372)
-  Gaussian fwhm = (0.00032779,0.000642396) (error:(4.31341e-06,8.45197e-06))
-  Rotation in degree: 138.438 (error:0.736162)
-  Gaussian continuum = 1976
-
-Alternatively, we perform a 2D MOFFAT fitting of the same source::
-
-  >>> mfit=source.moffat_fit((-1.5164061,-1.5147602),(39.99103,39.992135),plot=True)
-
-The best fit parameters can be printed on the console::
-
-  >>> mfit.print_param()
-  center = (-1.51551,39.9916) (error:(1.18781e-06,1.26687e-06))
-  I = 1188.76 (error:11.5034)
-  a = 0.000138862 (error:3.23339e-06)
-  q = -1.87421 (error:0.0201084)
-  n = -1.28939 (error:0.0262553)
-  rotation in degree: 48.3282 (error:0.457651)
-  continuum = 1976
-
-We can then subtract each modelled image from the original source and plot 
-the residuals::
-
-   >>> from mpdaf.obj import gauss_image
-   >>> from mpdaf.obj import moffat_image
-   >>> gfitim=gauss_image(wcs=source.wcs,gauss=gfit)
-   >>> mfitim=moffat_image(wcs=source.wcs,moffat=mfit)
-   >>> gresiduals=source-gfitim
-   >>> mresiduals=source-mfitim
-   >>> mresiduals.plot()
-   >>> gresiduals.plot()
-
-.. figure:: user_manual_image_images/residuals.png 
-  :align: center
-
-  Residuals from 2D Moffat (left) and Gaussian (right) profile fittings.
-
 
 Reference
 =========
 
-:func:`mpdaf.obj.Image.copy <mpdaf.obj.Image.copy>` returns a new copy of an Image object.
+:func:`mpdaf.obj.Image.copy <mpdaf.obj.DataArray.copy>` returns a new copy of an Image object.
 
-:func:`mpdaf.obj.Image.clone <mpdaf.obj.Image.clone>` returns a new image of the same shape and coordinates, filled with zeros.
+:func:`mpdaf.obj.Image.clone <mpdaf.obj.DataArray.clone>` returns a new image of the same shape and coordinates, filled with zeros.
 
 :func:`mpdaf.obj.Image.write <mpdaf.obj.Image.write>` saves Image object in a FITS file.
 
-:func:`mpdaf.obj.Image.info <mpdaf.obj.Image.info>` prints information.
+:func:`mpdaf.obj.Image.info <mpdaf.obj.DataArray.info>` prints information.
 
 :func:`mpdaf.obj.Image.inside <mpdaf.obj.Image.inside>` returns True if coord is inside image.
 
@@ -255,27 +96,23 @@ Getters and setters
 
 :func:`mpdaf.obj.Image.get_rot <mpdaf.obj.Image.get_rot>` returns the angle of rotation.
 
-:func:`mpdaf.obj.Image.get_np_data <mpdaf.obj.Image.get_np_data>` returns flux array multiplied by scaling factor.
-
 :func:`mpdaf.obj.Image.get_data_hdu <mpdaf.obj.Image.get_data_hdu>` returns astropy.io.fits.ImageHDU corresponding to the DATA extension.
 
 :func:`mpdaf.obj.Image.get_stat_hdu <mpdaf.obj.Image.get_stat_hdu>` returns astropy.io.fits.ImageHDU corresponding to the STAT extension.
 
 :func:`mpdaf.obj.Image.set_wcs <mpdaf.obj.Image.set_wcs>` sets the world coordinates.
 
-:func:`mpdaf.obj.Image.set_var <mpdaf.obj.Image.set_var>` sets the variance array.
-
 
 Mask
 ----
 
-:func:`<= <mpdaf.obj.Image.__le__>` masks data array where greater than a given value.                                 
+:func:`<= <mpdaf.obj.DataArray.__le__>` masks data array where greater than a given value.                                 
 
-:func:`< <mpdaf.obj.Image.__lt__>` masks data array where greater or equal than a given value. 
+:func:`< <mpdaf.obj.DataArray.__lt__>` masks data array where greater or equal than a given value. 
 
-:func:`>= <mpdaf.obj.Image.__ge__>` masks data array where less than a given value.
+:func:`>= <mpdaf.obj.DataArray.__ge__>` masks data array where less than a given value.
 
-:func:`> <mpdaf.obj.Image.__gt__>` masks data array where less or equal than a given value.
+:func:`> <mpdaf.obj.DataArray.__gt__>` masks data array where less or equal than a given value.
 
 :func:`mpdaf.obj.Image.mask <mpdaf.obj.Image.mask>` masks values inside/outside the described region (in place).
 
@@ -283,11 +120,11 @@ Mask
 
 :func:`mpdaf.obj.Image.mask_polygon <mpdaf.obj.Image.mask_polygon>` masks values inside/outside a polygonal region.
 
-:func:`mpdaf.obj.Image.unmask <mpdaf.obj.Image.unmask>` unmasks the image (just invalid data (nan,inf) are masked) (in place).
+:func:`mpdaf.obj.Image.unmask <mpdaf.obj.DataArray.unmask>` unmasks the image (just invalid data (nan,inf) are masked) (in place).
 
-:func:`mpdaf.obj.Image.mask_variance <mpdaf.obj.Image.mask_variance>` masks pixels with a variance upper than threshold value.
+:func:`mpdaf.obj.Image.mask_variance <mpdaf.obj.DataArray.mask_variance>` masks pixels with a variance upper than threshold value.
 
-:func:`mpdaf.obj.Image.mask_selection <mpdaf.obj.Image.mask_selection>` masks pixels corresponding to a selection.
+:func:`mpdaf.obj.Image.mask_selection <mpdaf.obj.DataArray.mask_selection>` masks pixels corresponding to a selection.
 
 
 Arithmetic
@@ -301,11 +138,9 @@ Arithmetic
 
 :func:`/ <mpdaf.obj.Image.__div__>` makes a division.
 
-:func:`\*\* <mpdaf.obj.Image.__pow__>`  computes the power exponent of data extensions.
+:func:`mpdaf.obj.Image.sqrt <mpdaf.obj.DataArray.sqrt>` computes the positive square-root of data extension.
 
-:func:`mpdaf.obj.Image.sqrt <mpdaf.obj.Image.sqrt>` computes the positive square-root of data extension.
-
-:func:`mpdaf.obj.Image.abs <mpdaf.obj.Image.abs>` computes the absolute value of data extension.
+:func:`mpdaf.obj.Image.abs <mpdaf.obj.DataArray.abs>` computes the absolute value of data extension.
 
 :func:`mpdaf.obj.Image.sum <mpdaf.obj.Image.sum>` returns the sum over the given axis.
 
@@ -319,17 +154,19 @@ Transformation
 
 :func:`mpdaf.obj.Image.truncate <mpdaf.obj.Image.truncate>` truncates the image.
 
+:func:`mpdaf.obj.Image.subimage <mpdaf.obj.Image.subimage>` extracts a sub-image around a given position.
+
 :func:`mpdaf.obj.Image.rotate_wcs <mpdaf.obj.Image.rotate_wcs>` rotates WCS coordinates to new orientation given by theta (in place).
 
 :func:`mpdaf.obj.Image.rotate <mpdaf.obj.Image.rotate>` rotates the image using spline interpolation.
 
 :func:`mpdaf.obj.Image.norm <mpdaf.obj.Image.norm>` normalizes total flux to value (default 1) (in place).
 
-:func:`mpdaf.obj.Image.rebin_factor <mpdaf.obj.Image.rebin_factor>` shrinks the size of the image by factor (mean values are used).
+:func:`mpdaf.obj.Image.rebin_mean <mpdaf.obj.Image.rebin_mean>` shrinks the size of the image by factor (mean values are used).
 
 :func:`mpdaf.obj.Image.rebin_median <mpdaf.obj.Image.rebin_median>` shrinks the size of the image by factor (median values are used).
 
-:func:`mpdaf.obj.Image.rebin <mpdaf.obj.Image.rebin>` rebins the image to a new coordinate system.
+:func:`mpdaf.obj.Image.resample <mpdaf.obj.Image.resample>` resamples the image to a new coordinate system.
 
 :func:`mpdaf.obj.Image.segment <mpdaf.obj.Image.segment>` segments the image in a number of smaller images.
 
@@ -351,7 +188,7 @@ Transformation
 
 :func:`mpdaf.obj.Image.ee <mpdaf.obj.Image.ee>` computes ensquared energy.
 
-:func:`mpdaf.obj.Image.ee_curve <mpdaf.obj.Image.ee_curve>` returns Spectrum object containing enclosed energy as function of radius.
+:func:`mpdaf.obj.Image.eer_curve <mpdaf.obj.Image.eer_curve>` returns enclosed energy as function of radius.
 
 :func:`mpdaf.obj.Image.ee_size <mpdaf.obj.Image.ee_size>` computes the size of the square centered on (y,x) containing the fraction of the energy.
 
@@ -417,3 +254,184 @@ Functions to create a new image
 :func:`mpdaf.obj.composite_image <mpdaf.obj.composite_image>` builds composite image from a list of image and colors.
 
 :func:`mpdaf.obj.mask_image <mpdaf.obj.mask_image>` creates a new image from a table of sky apertures.
+
+
+Tutorial
+========
+
+We can load the tutorial files with the command::
+
+ > git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+
+Preliminary imports for all tutorials::
+
+  >>> import numpy as np
+  >>> from mpdaf.obj import Image, WCS
+
+Tutorial 1: Image Creation, i/o and display, masking.
+-----------------------------------------------------
+
+An Image object can be created:
+
+- either from one or two 2D numpy arrays containing the flux and variance values (optionally, the data array can be a numpy masked array to deal with bad pixel values)::
+
+  >>> MyData=np.ones([1000,1000]) #numpy data array
+  >>> MyVariance=np.ones([1000,1000]) #numpy variance array
+  >>> ima=Image(data=MyData) #image filled with MyData
+  >>> ima=Image(data=MyData, var=MyVariance) #image filled with MyData and MyVariance
+
+- or from a FITS file (in which case the flux and variance values are read from specific extensions), using the following commands::
+
+  >>> ima=Image('image_variance.fits.gz', ext=1) #data array is read from the file (extension number 1)
+  >>> ima.info()
+  [INFO] 1542 x 1572 Image (image_variance.fits.gz)
+  [INFO] .data(1542,1572) (no unit), no noise
+  [INFO] center:(-01:34:07.7683,02:39:52.7865) size in arcsec:(154.440,157.349) step in arcsec:(0.100,0.100) rot:85.6 deg
+  >>> ima=Image('image_variance.fits.gz', ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
+  >>> ima.info()
+  [INFO] 1542 x 1572 Image (image_variance.fits.gz)
+  [INFO] .data(1542,1572) (no unit), .var(1542,1572)
+  [INFO] center:(-01:34:07.7683,02:39:52.7865) size in arcsec:(154.440,157.349) step in arcsec:(0.100,0.100) rot:85.6 deg
+
+If the FITS file contains a single extension (image fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
+
+
+The :class:`WCS <mpdaf.obj.WCS>` object can be copied from another image or taken from the FITS header::
+
+  >>> wcs1=ima1.wcs #WCS copied from Image object ima1
+  >>> wcs2 = WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) #Spatial WCS created from a reference position in degrees, a pixel size and a rotation angle
+  >>> ima2 = Image(data=MyData,wcs=wcs2) #wcs created from known object
+
+
+Any Image object can be written as an output FITS file (containing 1 or 2 extensions)::
+
+  >>> ima2.write('ima2.fits')
+
+Display an image with lower / upper scale values::
+
+  >>> ima=Image('image.fits.gz')
+  >>> ima.plot(vmin=1950, vmax=2400, colorbar='v')
+
+.. figure:: user_manual_image_images/Image_full.png
+  :align: center
+
+Masking a specific region::
+
+  >>> ima.mask(center=[800.,900.], radius=200., unit_center=None, unit_radius=None, inside=False)
+
+Zoom on an image section::
+
+  >>> ima[600:1000,800:1200].plot(vmin=1950,vmax=2400, colorbar='v')
+
+.. figure:: user_manual_image_images/Image_zoom.png
+  :align: center
+
+
+Tutorial 2: Image Geometrical manipulation
+------------------------------------------
+
+In this tutorial we start from an image and performs some geometric transformations onto it::
+
+  >>> im1 = Image('image.fits.gz')
+
+We rotate the image by 40 degrees and rebin it onto a 0.4"/pixel scale (conserving flux)::
+
+  >>> im2 = im1.rotate(40) #this rotation uses an interpolation of the pixels
+  >>> import astropy.units as u
+  >>> im3 = im2.resample(newdim=(1000,1000), newstart=None, newstep=(0.4,0.4), unit_step=u.arcsec, flux=True)
+
+The new image would look like this::
+
+  >>> im3.plot(vmin=1950*4, vmax=2400*4, colorbar='v')
+
+.. figure:: user_manual_image_images/Image_rebin.png
+  :align: center
+
+Then, we load an external image of the same field (observed with a different instrument), aligned to the previous image in WCS coordinates. We combine both datasets to produce a higher S/N image::
+
+  >>> imhst=Image('image_variance.fits.gz')
+  >>> im1[700:900,850:1050].plot(vmin=1950, vmax=2500) #original image
+  >>> im1.add(imhst)
+  >>> im1[700:900,850:1050].plot(vmin=1950, vmax=2500) #combined image
+
+.. figure:: user_manual_image_images/before-after.png
+  :align: center
+
+(Left) original image (Right) combination of ground-based and high-resolution image
+  
+
+Tutorial 3: Object analysis: image segmentation, peak measurement, profile fitting
+----------------------------------------------------------------------------------
+
+In this tutorial, we will analyse the 2D images of specific objects detected in the image.
+We start by segmenting the original image into several cutout images::
+
+  >>> im=Image('image.fits.gz')
+  >>> seg=im.segment(minsize=10,background=2100)
+
+We plot one of the sub-images to analyse the corresponding source::
+
+  >>> source=seg[8]
+  >>> source.plot(colorbar='v')
+
+.. figure:: user_manual_image_images/Image_source8.png
+  :align: center
+
+We find the location of the peak interactively::
+
+  >>> source.ipeak()
+  [INFO] Use left mouse button to define the box.
+  [INFO] To quit the interactive mode, click on the right mouse button.
+  [INFO] peak: y=-1.51735 x=39.9904       p=15    q=10    data=3201
+  
+We perform a 2D Gaussian fitting of the source, and plot the isocontours::
+
+  >>> gfit=source.gauss_fit(plot=True)                                                                                                             
+  [INFO] Number of calls to function has reached maxfev = 100.                                                                                         
+  [INFO] Gaussian center = (-1.51732,39.9905) (error:(nan,nan))                                                                                        
+  [INFO] Gaussian integrated flux = 51417 (error:nan)
+  [INFO] Gaussian peak value = 940.345 (error:nan)
+  [INFO] Gaussian fwhm = (1.96274,1.03988) (error:(nan,nan))
+  [INFO] Rotation in degree: 162.394 (error:nan)
+  [INFO] Gaussian continuum = 2022.43 (error:nan)
+  >>> gfit=source.gauss_fit(maxiter=150, plot=True)
+  [INFO] Gaussian center = (-1.51732,39.9905) (error:(2.40808e-06,1.46504e-06))
+  [INFO] Gaussian integrated flux = 51445.8 (error:687.259)
+  [INFO] Gaussian peak value = 940.004 (error:-8.98435)
+  [INFO] Gaussian fwhm = (1.96416,1.04009) (error:(0.0225041,0.0119187))
+  [INFO] Rotation in degree: 162.395 (error:1.41177)
+  [INFO] Gaussian continuum = 2022.39 (error:1.86548)
+
+
+.. figure:: user_manual_image_images/Image_source8_gaussfit.png
+  :align: center
+
+Alternatively, we perform a 2D MOFFAT fitting of the same source::
+
+  >>> mfit=source.moffat_fit(plot=True)
+  [INFO] center = (-1.51733,39.9905) (error:(1.46706e-06,8.95714e-07))
+  [INFO] integrated flux = 253370 (error:0.000110584)
+  [INFO] peak value = 1217.37 (error:15.1703)
+  [INFO] fwhm = (0.833963,0.444835) (error:(0.0197328,0.987865))
+  [INFO] n = 1.13844 (error:0.0514963)
+  [INFO] rotation in degree: 72.3726 (error:0.453644)
+  [INFO] continuum = 1964.35 (error:4.31709)
+
+We can then subtract each modelled image from the original source and plot 
+the residuals::
+
+   >>> from mpdaf.obj import gauss_image
+   >>> from mpdaf.obj import moffat_image
+   >>> gfitim=gauss_image(wcs=source.wcs,gauss=gfit)
+   >>> mfitim=moffat_image(wcs=source.wcs,moffat=mfit)
+   >>> gresiduals=source-gfitim
+   >>> mresiduals=source-mfitim
+   >>> mresiduals.plot(colorbar='v')
+   >>> gresiduals.plot(colorbar='v')
+
+.. image:: user_manual_image_images/mresiduals.png 
+
+.. image:: user_manual_image_images/gresiduals.png 
+
+Residuals from 2D Moffat (left) and Gaussian (right) profile fittings.
+ 
