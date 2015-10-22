@@ -537,7 +537,7 @@ class CubeMosaic(CubeList):
         d = {'class': 'CubeMosaic', 'method': 'check_wcs'}
         wcs = self.wcs
         cdelt1 = wcs.get_step()
-        cunit = wcs.get_cunit1()
+        cunit = wcs.unit()
         rot = wcs.get_rot()
 
         for f, cube in zip(self.files, self.cubes):

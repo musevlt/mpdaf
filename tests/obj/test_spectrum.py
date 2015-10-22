@@ -103,7 +103,7 @@ def test_get_Spectrum():
     nose.tools.assert_equal(a.shape[0], 6)
 
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    unit = spvar.wave.get_cunit()
+    unit = spvar.wave.unit
     spvarcut = spvar.get_lambda(5560, 5590, unit=unit)
     nose.tools.assert_equal(spvarcut.shape[0], 48)
     nose.tools.assert_almost_equal(spvarcut.get_start(unit=unit), 5560.25, 2)
@@ -167,7 +167,7 @@ def test_resize():
     """Spectrum class: testing resize method"""
     sig = pyfits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
-    unit = spe.wave.get_cunit()
+    unit = spe.wave.unit
     spe.mask(lmax=5000, unit=unit)
     spe.mask(lmin=6500, unit=unit)
     spe.resize()
@@ -193,20 +193,20 @@ def test_resampling_slow():
     sig = f[0].data
     f.close()
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
-    unit = spe.wave.get_cunit()
+    unit = spe.wave.unit
     flux1 = spe.sum(weight=False) * spe.wave.get_step(unit=unit)
     spe2 = spe.resample(0.3, unit=unit)
     flux2 = spe2.sum(weight=False) * spe2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2, 1)
 
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
-    unit = spnovar.wave.get_cunit()
+    unit = spnovar.wave.unit
     flux1 = spnovar.sum() * spnovar.wave.get_step(unit=unit)
     spnovar2 = spnovar.resample(4, unit=unit)
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2, 0)
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    unit = spvar.wave.get_cunit()
+    unit = spvar.wave.unit
     flux1 = spvar.sum(weight=False) * spvar.wave.get_step(unit=unit)
     spvar2 = spvar.resample(4, unit=unit)
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
@@ -219,7 +219,7 @@ def test_rebin_mean():
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
                          wave=wave)
-    unit = spectrum1.wave.get_cunit()
+    unit = spectrum1.wave.unit
     flux1 = spectrum1.sum() * spectrum1.wave.get_step(unit=unit)
     spectrum2 = spectrum1.rebin_mean(3)
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
@@ -229,20 +229,20 @@ def test_rebin_mean():
     sig = f[0].data
     f.close()
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
-    unit = spe.wave.get_cunit()
+    unit = spe.wave.unit
     flux1 = spe.sum() * spe.wave.get_step(unit=unit)
     spe2 = spe.rebin_mean(3)
     flux2 = spe2.sum() * spe2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
-    unit = spnovar.wave.get_cunit()
+    unit = spnovar.wave.unit
     flux1 = spnovar.sum() * spnovar.wave.get_step(unit=unit)
     spnovar2 = spnovar.rebin_mean(4)
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    unit = spvar.wave.get_cunit()
+    unit = spvar.wave.unit
     flux1 = spvar.sum(weight=False) * spvar.wave.get_step(unit=unit)
     spvar2 = spvar.rebin_mean(4)
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
@@ -266,7 +266,7 @@ def test_truncate():
     sig = f[0].data
     f.close()
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
-    unit = spe.wave.get_cunit()
+    unit = spe.wave.unit
     spe.truncate(4950, 5050, unit=unit)
     nose.tools.assert_equal(spe.shape[0], 160)
 
@@ -275,9 +275,9 @@ def test_truncate():
 def test_interpolation():
     """Spectrum class: testing interpolations"""
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
-    uspnovar = spnovar.wave.get_cunit()
+    uspnovar = spnovar.wave.unit
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    uspvar = spvar.wave.get_cunit()
+    uspvar = spvar.wave.unit
     spvar.mask(5575, 5585, unit=uspvar)
     spvar.mask(6296, 6312, unit=uspvar)
     spvar.mask(6351, 6375, unit=uspvar)

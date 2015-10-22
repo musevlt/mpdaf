@@ -968,7 +968,7 @@ class Image(DataArray):
                     from spectrum import Spectrum
                     wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1],
                                      crval=self.get_start()[1],
-                                     cunit=self.wcs.get_cunit2(),
+                                     cunit=self.wcs.unit,
                                      shape=data.shape[0])
                     res = Spectrum(wave=wave, unit=self.unit, data=data,
                                    var=var, copy=False)
@@ -978,7 +978,7 @@ class Image(DataArray):
                     from .spectrum import Spectrum
                     wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0],
                                      crval=self.get_start()[0],
-                                     cunit=self.wcs.get_cunit1(),
+                                     cunit=self.wcs.unit,
                                      shape=data.shape[0])
                     res = Spectrum(wave=wave, unit=self.unit, data=data,
                                    var=var, copy=False)
@@ -1004,12 +1004,12 @@ class Image(DataArray):
                     if self.shape[0] == 1:
                         wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[1],
                                          crval=self.get_start()[1],
-                                         cunit=self.wcs.get_cunit2(),
+                                         cunit=self.wcs.unit,
                                          shape=data.shape[0])
                     else:
                         wave = WaveCoord(crpix=1.0, cdelt=self.get_step()[0],
                                          crval=self.get_start()[0],
-                                         cunit=self.wcs.get_cunit1(),
+                                         cunit=self.wcs.unit,
                                          shape=data.shape[0])
                     res = Spectrum(wave=wave, unit=self.unit, data=data,
                                    var=var, copy=False)
@@ -1116,7 +1116,7 @@ class Image(DataArray):
             # other is an image
             if isinstance(other, Image):
                 if self.wcs is not None and other.wcs is not None \
-                        and (self.wcs.get_step() != other.wcs.get_step(unit=self.wcs.get_cunit1())).any():
+                        and (self.wcs.get_step() != other.wcs.get_step(unit=self.wcs.unit)).any():
                     d = {'class': 'Image', 'method': '__setitem__'}
                     self._logger.warning("images with different steps", extra=d)
                 if self.unit == other.unit:
@@ -1610,11 +1610,11 @@ class Image(DataArray):
             if axis == 0:
                 step = self.wcs.get_step()[1]
                 start = self.wcs.get_start()[1]
-                cunit = self.wcs.get_cunit2()
+                cunit = self.wcs.unit
             else:
                 step = self.wcs.get_step()[0]
                 start = self.wcs.get_start()[0]
-                cunit = self.wcs.get_cunit1()
+                cunit = self.wcs.unit
 
             from .spectrum import Spectrum
             wave = WaveCoord(crpix=1.0, cdelt=step, crval=start,
@@ -3896,7 +3896,7 @@ class Image(DataArray):
                 theta = -self_rot + ima_rot
                 ima = ima.rotate(theta, reshape=True)
 
-        unit = ima.wcs.get_cunit1()
+        unit = ima.wcs.unit
         self_cdelt = self.wcs.get_step(unit=unit)
         ima_cdelt = ima.wcs.get_step()
 
@@ -3920,7 +3920,7 @@ class Image(DataArray):
         # here ima and self have the same step and the same rotation
 
         [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky(
-            [[0, 0]], unit=self.wcs.get_cunit1()))
+            [[0, 0]], unit=self.wcs.unit))
         l1 = int(l1 + 0.5)
         k1 = int(k1 + 0.5)
         k2 = k1 + ima.shape[0]

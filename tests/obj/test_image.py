@@ -114,7 +114,7 @@ def test_resize():
 def test_truncate():
     """Image class: testing truncation"""
     image1 = generate_image()
-    image1 = image1.truncate(0, 1, 1, 3, unit=image1.wcs.get_cunit1())
+    image1 = image1.truncate(0, 1, 1, 3, unit=image1.wcs.unit)
     assert_image_equal(image1, shape=(2, 3), start=(0, 1), end=(1, 3))
 
 
@@ -258,7 +258,7 @@ def test_rotate():
 def test_inside():
     """Image class: testing inside method."""
     ima = Image("data/obj/a370II.fits")
-    nose.tools.assert_equal(ima.inside((39.951088, -1.4977398), unit=ima.wcs.get_cunit1()), False)
+    nose.tools.assert_equal(ima.inside((39.951088, -1.4977398), unit=ima.wcs.unit), False)
 
 
 @attr(speed='fast')

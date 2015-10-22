@@ -182,7 +182,7 @@ class WCS(object):
             Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
     deg   : bool
             If True, world coordinates are in decimal degrees
-            (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
+            (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg').
             If False (by default), world coordinates are linear
             (CTYPE1=CTYPE2='LINEAR').
     rot   : float
@@ -328,7 +328,7 @@ class WCS(object):
             dy, dx = self.get_step()
             msg = ('spatial coord (%s): min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '
                    'step:(%0.1f,%0.1f) rot:%0.1f deg') % (
-                       "{}".format(self.get_cunit1()),
+                       self.unit,
                        pixsky[0, 0], pixsky[0, 1], pixsky[1, 0], pixsky[1, 1],
                        dy, dx, self.get_rot())
         self._logger.info(msg, extra=d)
@@ -383,8 +383,8 @@ class WCS(object):
             raise IOError('invalid input coordinates for sky2pix')
 
         if unit is not None:
-            x[:, 1] = ((x[:, 1] * unit).to(self.get_cunit1())).value
-            x[:, 0] = ((x[:, 0] * unit).to(self.get_cunit2())).value
+            x[:, 1] = (x[:, 1] * unit).to(self.unit).value
+            x[:, 0] = (x[:, 0] * unit).to(self.unit).value
 
         ax, ay = self.wcs.wcs_world2pix(x[:, 1], x[:, 0], 0)
         res = np.array([ay, ax]).T
@@ -418,8 +418,8 @@ class WCS(object):
 
         ra, dec = self.wcs.wcs_pix2world(x[:, 1], x[:, 0], 0)
         if unit is not None:
-            ra = (ra * self.get_cunit1()).to(unit).value
-            dec = (dec * self.get_cunit2()).to(unit).value
+            ra = (ra * self.unit).to(unit).value
+            dec = (dec * self.unit).to(unit).value
 
         return np.array([dec, ra]).T
 
@@ -429,9 +429,9 @@ class WCS(object):
             return False
 
         cdelt1 = self.get_step()
-        cdelt2 = other.get_step(unit=self.get_cunit1())
+        cdelt2 = other.get_step(unit=self.unit)
         x1 = self.pix2sky([0, 0])[0]
-        x2 = other.pix2sky([0, 0], unit=self.get_cunit1())[0]
+        x2 = other.pix2sky([0, 0], unit=self.unit)[0]
         return (self.naxis1 == other.naxis1 and
                 self.naxis2 == other.naxis2 and
                 np.allclose(x1, x2, atol=1E-3, rtol=0) and
@@ -444,7 +444,7 @@ class WCS(object):
             return False
 
         cdelt1 = self.get_step()
-        cdelt2 = other.get_step(unit=self.get_cunit1())
+        cdelt2 = other.get_step(unit=self.unit)
         return np.allclose(cdelt1, cdelt2, atol=1E-7, rtol=0)
 
     def __getitem__(self, item):
@@ -525,8 +525,8 @@ class WCS(object):
                 raise IOError('No standard WCS')
 
         if unit:
-            dx = (dx * self.get_cunit1()).to(unit).value
-            dy = (dy * self.get_cunit2()).to(unit).value
+            dx = (dx * self.unit).to(unit).value
+            dy = (dy * self.unit).to(unit).value
         return np.array([dy, dx])
 
     def get_range(self, unit=None):
@@ -631,7 +631,7 @@ class WCS(object):
         if unit is None:
             return self.wcs.wcs.crval[0]
         else:
-            return (self.wcs.wcs.crval[0] * self.get_cunit1()).to(unit).value
+            return (self.wcs.wcs.crval[0] * self.unit).to(unit).value
 
     def get_crval2(self, unit=None):
         """CRVAL2 getter (value of the reference pixel on the second axis).
@@ -644,15 +644,14 @@ class WCS(object):
         if unit is None:
             return self.wcs.wcs.crval[1]
         else:
-            return (self.wcs.wcs.crval[1] * self.get_cunit2()).to(unit).value
-
-    def get_cunit1(self):
-        """Return the unit of the coordinate along the first axis."""
+            return (self.wcs.wcs.crval[1] * self.unit).to(unit).value
+    
+    @property
+    def unit(self):
+        d = {'class': 'WCS', 'method': 'unit'}
+        if self.wcs.wcs.cunit[0] != self.wcs.wcs.cunit[1]:
+            self._logger.warning('different units on x- and y-axes', extra=d)
         return self.wcs.wcs.cunit[0]
-
-    def get_cunit2(self):
-        """Return the unit of the coordinate along the 2nd axis."""
-        return self.wcs.wcs.cunit[1]
     
     def set_naxis1(self, n):
         """NAXIS1 setter (first dimension of an image)."""
@@ -685,7 +684,7 @@ class WCS(object):
         if unit is None:
             self.wcs.wcs.crval[0] = x
         else:
-            self.wcs.wcs.crval[0] = (x * unit).to(self.get_cunit1()).value
+            self.wcs.wcs.crval[0] = (x * unit).to(self.unit).value
         self.wcs.wcs.set()
 
     def set_crval2(self, x, unit=None):
@@ -701,15 +700,15 @@ class WCS(object):
         if unit is None:
             self.wcs.wcs.crval[1] = x
         else:
-            self.wcs.wcs.crval[1] = (x * unit).to(self.get_cunit2()).value
+            self.wcs.wcs.crval[1] = (x * unit).to(self.unit).value
         self.wcs.wcs.set()
 
     def set_step(self, step, unit=None):
         """Update the step in the CD matrix or in the PC matrix
         """
         if unit is not None:
-            step[0] = (step[0] * unit).to(self.get_cunit2()).value
-            step[1] = (step[1] * unit).to(self.get_cunit1()).value
+            step[0] = (step[0] * unit).to(self.unit).value
+            step[1] = (step[1] * unit).to(self.unit).value
 
         theta = self.get_rot()
         if np.abs(theta) > 1E-3:
@@ -766,11 +765,11 @@ class WCS(object):
         out : WCS
         """
         if unit is not None:
-            step[0] = (step[0] * unit).to(self.get_cunit2()).value
-            step[1] = (step[1] * unit).to(self.get_cunit1()).value
+            step[0] = (step[0] * unit).to(self.unit).value
+            step[1] = (step[1] * unit).to(self.unit).value
             if start is not None:
-                start[0] = (start[0] * unit).to(self.get_cunit2()).value
-                start[1] = (start[1] * unit).to(self.get_cunit1()).value
+                start[0] = (start[0] * unit).to(self.unit).value
+                start[1] = (start[1] * unit).to(self.unit).value
 
         cdelt = self.get_step()
         if start is None:
@@ -852,7 +851,7 @@ class WCS(object):
         #wcs_hdr['NAXIS3'] = wave.shape
         wcs_hdr['CRVAL3'] = wave.get_crval()
         wcs_hdr['CRPIX3'] = wave.get_crpix()
-        wcs_hdr['CUNIT3'] = "%s"%wave.get_cunit()
+        wcs_hdr['CUNIT3'] = "%s"%wave.unit
         wcs_hdr['CTYPE3'] = wave.get_ctype()
 
         if 'CD1_1' in wcs_hdr:
@@ -975,11 +974,11 @@ class WaveCoord(object):
             step = self.get_step()
             if self.shape is None:
                 msg = 'wavelength: min:%0.2f step:%0.2f %s' % (
-                    start, step, "{}".format(self.get_cunit()))
+                    start, step, self.unit)
             else:
                 end = self.get_end()
                 msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % (
-                    start, end, step, "{}".format(self.get_cunit()))
+                    start, end, step, self.unit)
         self._logger.info(msg, extra=d)
 
     def isEqual(self, other):
@@ -988,10 +987,10 @@ class WaveCoord(object):
             return False
 
         l1 = self.coord(0)
-        l2 = other.coord(0, unit=self.get_cunit())
+        l2 = other.coord(0, unit=self.unit)
         return (self.shape == other.shape and
                 np.allclose(l1, l2, atol=1E-2, rtol=0) and
-                np.allclose(self.get_step(), other.get_step(unit=self.get_cunit()), atol=1E-2, rtol=0) and
+                np.allclose(self.get_step(), other.get_step(unit=self.unit), atol=1E-2, rtol=0) and
                 self.wcs.wcs.ctype[0] == other.wcs.wcs.ctype[0])
 
     def coord(self, pixel=None, unit=None):
@@ -1020,7 +1019,7 @@ class WaveCoord(object):
             pixelarr = np.asarray(pixel)
         res = self.wcs.wcs_pix2world(pixelarr, 0)[0]
         if unit is not None:
-            res = (res * self.get_cunit()).to(unit).value
+            res = (res * self.unit).to(unit).value
         return res[0] if isinstance(pixel, (int, float)) else res
 
     def pixel(self, lbda, nearest=False, unit=None):
@@ -1045,7 +1044,7 @@ class WaveCoord(object):
 
         lbdarr = np.asarray([lbda] if isinstance(lbda, (int, float)) else lbda)
         if unit is not None:
-            lbdarr = (lbdarr * unit).to(self.get_cunit()).value
+            lbdarr = (lbdarr * unit).to(self.unit).value
         pix = self.wcs.wcs_world2pix(lbdarr, 0)[0]
         if nearest:
             pix = (pix + 0.5).astype(int)
@@ -1094,9 +1093,9 @@ class WaveCoord(object):
         """
 
         if unit is not None:
-            step = (step * unit).to(self.get_cunit()).value
+            step = (step * unit).to(self.unit).value
             if start is not None:
-                start = (start * unit).to(self.get_cunit()).value
+                start = (start * unit).to(self.unit).value
 
         cdelt = self.get_step()
         if start is None:
@@ -1162,7 +1161,7 @@ class WaveCoord(object):
             if unit is None:
                 return self.wcs.wcs.cd[0][0]
             else:
-                return (self.wcs.wcs.cd[0][0] * self.get_cunit()).to(unit).value
+                return (self.wcs.wcs.cd[0][0] * self.unit).to(unit).value
         except:
             try:
                 cdelt = self.wcs.wcs.get_cdelt()[0]
@@ -1171,7 +1170,7 @@ class WaveCoord(object):
                 if unit is None:
                     return cdelt * pc
                 else:
-                    return (cdelt * pc * self.get_cunit()).to(unit).value
+                    return (cdelt * pc * self.unit).to(unit).value
             except:
                 raise IOError('No standard WCS')
 
@@ -1227,11 +1226,10 @@ class WaveCoord(object):
         if unit is None:
             return self.wcs.wcs.crval[0]
         else:
-            return (self.wcs.wcs.crval[0] * self.get_cunit()).to(unit).value
-
-    def get_cunit(self):
-        """Return the unit of wavelength.
-        """
+            return (self.wcs.wcs.crval[0] * self.unit).to(unit).value
+    
+    @property
+    def unit(self):
         return self.wcs.wcs.cunit[0]
 
     def get_ctype(self):

@@ -912,7 +912,7 @@ class Spectrum(DataArray):
         except ValueError:
             if isinstance(other, Spectrum):
                 if self.wave is not None and other.wave is not None and (
-                        self.wave.get_step() != other.wave.get_step(unit=self.wave.get_cunit())):
+                        self.wave.get_step() != other.wave.get_step(unit=self.wave.unit)):
                     d = {'class': 'Spectrum', 'method': '__setitem__'}
                     self._logger.warning("spectra with different steps",
                                         extra=d)
@@ -3064,7 +3064,7 @@ class Spectrum(DataArray):
             try:
                 x = res.wave.coord(unit=unit)
             except u.UnitConversionError:
-                unit = res.wave.get_cunit()
+                unit = res.wave.unit
                 x = res.wave.coord(unit=unit)
                 
         f = res.data

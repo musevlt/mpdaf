@@ -156,8 +156,8 @@ def test_truncate():
     """Cube class: testing truncation"""
     cube1 = generate_cube(scale=2, wave=WaveCoord(crval=1))
     coord = [[2, 0, 1], [5, 1, 3]]
-    cube2 = cube1.truncate(coord, unit_wcs=cube1.wcs.get_cunit1(),
-                           unit_wave=cube1.wave.get_cunit())
+    cube2 = cube1.truncate(coord, unit_wcs=cube1.wcs.unit,
+                           unit_wave=cube1.wave.unit)
     assert_array_equal(cube2.shape, (4, 2, 3))
     assert_array_equal(cube2.get_start(), (2, 0, 1))
     assert_array_equal(cube2.get_end(), (5, 1, 3))
