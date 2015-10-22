@@ -16,6 +16,7 @@ cdef extern from "numpy/npy_math.h" nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 def sigma_clip(double[:,:,:] data, double[:,:,:] stat, double[:,:,:] cube,
                double[:,:,:] var, int[:,:,:] expmap, int[:,:,:] rejmap,
                int[:] valid_pix, int[:] select_pix, int l, int nmax,
@@ -29,9 +30,7 @@ def sigma_clip(double[:,:,:] data, double[:,:,:] stat, double[:,:,:] cube,
     cdef int[:] ind = np.empty([nfiles], dtype=np.int32)
     cdef unsigned int[:] files_id = np.empty([nfiles], dtype=np.uint32)
     cdef double[:] wdata = np.empty([nfiles], dtype=DTYPE)
-    cdef double[:] wstat
-    if vartype == 0:
-        wstat = np.empty([nfiles], dtype=DTYPE)
+    cdef double[:] wstat = np.empty([nfiles], dtype=DTYPE)
 
     # cdef int[:] valid_pix = np.zeros([nfiles], dtype=np.int32)
     # cdef int[:] select_pix = np.zeros([nfiles], dtype=np.int32)
@@ -67,11 +66,13 @@ def sigma_clip(double[:,:,:] data, double[:,:,:] stat, double[:,:,:] cube,
                 rejmap[l, y, x] = n - nuse
                 if nuse > 0:
                     if vartype == 0:
-                        var[l, y, x] = mpdaf_sum(&wstat[0], nuse, &ind[0]) / nuse / nuse;
+                        var[l, y, x] = mpdaf_sum(&wstat[0], nuse, &ind[0]) / (<double>nuse * <double>nuse)
                     elif nuse > 1:
                         var[l, y, x] = res[1] * res[1]
                         if vartype == 1:
                             var[l, y, x] /= (nuse - 1)
+                    else:
+                        var[l, y, x] = NAN
                 # print cube[l, y, x], var[l, y, x]
                 for i in range(nuse):
                     select_pix[files_id[ind[i]]] += 1

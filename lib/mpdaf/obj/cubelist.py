@@ -438,7 +438,7 @@ class CubeList(object):
             self.shape[0] = nl
 
         data = [fitsio.FITS(f)['DATA'] for f in self.files]
-        cube = np.ma.empty(self.shape, dtype=np.float64)
+        cube = np.empty(self.shape, dtype=np.float64)
         expmap = np.zeros(self.shape, dtype=np.int32)
         rejmap = np.zeros(self.shape, dtype=np.int32)
         vardata = np.empty(self.shape, dtype=np.float64)
@@ -453,8 +453,7 @@ class CubeList(object):
             stat = [fitsio.FITS(f)['STAT'] for f in self.files]
 
         info('Looping on the %d planes of the cube', nl, extra=d)
-        # for l in xrange(nl):
-        for l in xrange(310, 312):
+        for l in xrange(nl):
             if l % 100 == 0:
                 info('%d/%d', l, nl, extra=d)
             for i, f in enumerate(data):
@@ -640,7 +639,7 @@ class CubeMosaic(CubeList):
                             for cube in self.cubes], dtype=int) + 1
         shapes = np.array([cube.shape[1:] for cube in self.cubes])
 
-        cube = np.ma.empty(self.shape, dtype=np.float64)
+        cube = np.empty(self.shape, dtype=np.float64)
         vardata = np.empty(self.shape, dtype=np.float64)
         expmap = np.empty(self.shape, dtype=np.int32)
         rejmap = np.empty(self.shape, dtype=np.int32)
