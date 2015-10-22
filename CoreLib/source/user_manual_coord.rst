@@ -89,10 +89,6 @@ References
 :func:`mpdaf.obj.WCS.get_crval1` - CRVAL1 getter.
 
 :func:`mpdaf.obj.WCS.get_crval2` - CRVAL2 getter.
-
-:func:`mpdaf.obj.WCS.get_cunit1` returns the unit of the coordinate along the first axis.
-
-:func:`mpdaf.obj.WCS.get_cunit2` returns the unit of the coordinate along the 2nd axis.
     
 :func:`mpdaf.obj.WCS.set_naxis1` - NAXIS1 setter.
 
@@ -153,8 +149,6 @@ References
 :func:`mpdaf.obj.WaveCoord.get_crpix` - CRPIX getter.
 
 :func:`mpdaf.obj.WaveCoord.get_crval` - CRVAL getter.
-
-:func:`mpdaf.obj.WaveCoord.get_cunit` returns the unit of wavelength.
 
 :func:`mpdaf.obj.WaveCoord.get_ctype` returns the type of wavelength coordinates.
 

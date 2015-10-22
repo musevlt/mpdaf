@@ -354,7 +354,7 @@ over the wavelength range centered around Halfa and the continuum mean flux at t
  >>> plt.figure()
  >>> k = line1.data.argmax()
  >>> line1[55-10:55+11].plot(color='r')
- >>> fline = (line1[55-10:55+11].sum()*line1.unit) * (line1.get_step()*line1.wave.get_cunit())
+ >>> fline = (line1[55-10:55+11].sum()*line1.unit) * (line1.get_step()*line1.wave.unit)
  >>> cline = cont1[55-10:55+11].mean()*cont1.unit
  >>> ew = fline/cline
  >>> print fline, cline, ew
@@ -383,7 +383,7 @@ the spectrum iterator.::
  >>>   ha_flux[p,q] = fline
  >>>   ha_ew[p,q] = ew
  >>> cont_flux.plot(title="continuum mean flux (%s)"%cont_flux.unit, colorbar='v')
- >>> ha_flux.unit = sp.unit * sp.wave.get_cunit()
+ >>> ha_flux.unit = sp.unit * sp.wave.unit
  >>> ha_flux.plot(title="Ha line total flux (%s)"%ha_flux.unit, colorbar='v')
  >>> import numpy as np
  >>> ha_ew.mask_selection(np.where((ima1.data)<40))
