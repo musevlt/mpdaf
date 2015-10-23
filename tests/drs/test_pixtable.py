@@ -59,11 +59,11 @@ class TestBasicPixTable(unittest.TestCase):
             fits.ImageHDU(name='stat', data=self.stat.reshape(shape)),
             fits.ImageHDU(name='origin', data=self.origin.reshape(shape)),
         ])
-        hdu[1].header['BUNIT'] = "{}".format(self.pix.wcs)
-        hdu[2].header['BUNIT'] = "{}".format(self.pix.wcs)
-        hdu[3].header['BUNIT'] = "{}".format(self.pix.wave)
-        hdu[4].header['BUNIT'] = "{}".format(self.pix.unit_data)
-        hdu[6].header['BUNIT'] = "{}".format(self.pix.unit_data**2)
+        hdu[1].header['BUNIT'] = self.pix.wcs.to_string('fits')
+        hdu[2].header['BUNIT'] = self.pix.wcs.to_string('fits')
+        hdu[3].header['BUNIT'] = self.pix.wave.to_string('fits')
+        hdu[4].header['BUNIT'] = self.pix.unit_data.to_string('fits')
+        hdu[6].header['BUNIT'] = (self.pix.unit_data**2).to_string('fits')
         hdu.writeto(self.file)
         self.file.seek(0)
         self.pix2 = PixTable(self.file)

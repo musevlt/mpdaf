@@ -310,24 +310,25 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
                 ImageHDU(name='weight',
                          data=np.float32(weight.reshape((nrows, 1)))))
         hdu = pyfits.HDUList(hdulist)
-        hdu[1].header['BUNIT'] = "{}".format(wcs)
-        hdu[2].header['BUNIT'] = "{}".format(wcs)
-        hdu[3].header['BUNIT'] = "{}".format(wave)
-        hdu[4].header['BUNIT'] = "{}".format(unit_data)
-        hdu[6].header['BUNIT'] = "{}".format(unit_data**2)
+        hdu[1].header['BUNIT'] = wcs.to_string('fits')
+        hdu[2].header['BUNIT'] = wcs.to_string('fits')
+        hdu[3].header['BUNIT'] = wave.to_string('fits')
+        hdu[4].header['BUNIT'] = unit_data.to_string('fits')
+        hdu[6].header['BUNIT'] = (unit_data**2).to_string('fits')
 
     else:
         cols = [
-            Column(name='xpos', format='1E', unit="{}".format(wcs),
+            Column(name='xpos', format='1E', unit=wcs.to_string('fits'),
                    array=np.float32(xpos)),
-            Column(name='ypos', format='1E', unit="{}".format(wcs),
+            Column(name='ypos', format='1E', unit=wcs.to_string('fits'),
                    array=np.float32(ypos)),
-            Column(name='lambda', format='1E', unit="{}".format(wave),
+            Column(name='lambda', format='1E', unit=wave.to_string('fits'),
                    array=lbda),
-            Column(name='data', format='1E', unit="{}".format(unit_data),
+            Column(name='data', format='1E', unit=unit_data.to_string('fits'),
                    array=np.float32(data)),
             Column(name='dq', format='1J', array=np.int32(dq)),
-            Column(name='stat', format='1E', unit="{}".format(unit_data**2),
+            Column(name='stat', format='1E',
+                   unit=(unit_data**2).to_string('fits'),
                    array=np.float32(stat)),
             Column(name='origin', format='1J', array=np.int32(origin)),
         ]

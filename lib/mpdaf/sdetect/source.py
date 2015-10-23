@@ -467,8 +467,8 @@ class Source(object):
                     raise IOError('%s: Extension %d without EXTNAME'%(os.path.basename(filename), i))
             except Exception as e:
                 logger = logging.getLogger(__name__)
-                logger.warning(e)  
-            
+                logger.warning(e)
+
         hdulist.close()
         return cls(hdr, lines, mag, z, None, None, None, tables)
 
@@ -494,9 +494,14 @@ class Source(object):
             for colname in self.lines.colnames:
                 col = self.lines[colname]
                 try:
-                    cols.append(pyfits.Column(name=col.name, format=col.dtype.char, unit="{}".format(col.unit), array=np.array(col)))
+                    cols.append(pyfits.Column(
+                        name=col.name, format=col.dtype.char,
+                        unit=col.unit.to_string('fits'), array=np.array(col)))
                 except:
-                    cols.append(pyfits.Column(name=col.name, format='A20', unit="{}".format(col.unit), array=np.array(col)))
+                    cols.append(pyfits.Column(
+                        name=col.name, format='A20',
+                        unit=col.unit.to_string('fits'),
+                        array=np.array(col)))
 
             coldefs = pyfits.ColDefs(cols)
             tbhdu = pyfits.BinTableHDU.from_columns(name='LINES', columns=coldefs)
@@ -1539,7 +1544,7 @@ class Source(object):
             for lbda in wavelist:
                 ax.axvline(lbda, color='r')
         return
-        
+
     def masked_invalid(self):
         """Mask where invalid values occur (NaNs or infs or -9999 or '').
         """
@@ -1558,7 +1563,7 @@ class Source(object):
                     tab[col] = np.ma.masked_equal(tab[col], -9999)
                 except:
                     pass
-                
+
 
 class SourceList(list):
     """

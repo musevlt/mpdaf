@@ -268,7 +268,8 @@ class Spectrum(DataArray):
                                              card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
+            imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
+                                      'data unit type')
 
         return imahdu
 
@@ -292,7 +293,8 @@ class Spectrum(DataArray):
             hdr = self.wave.to_header()
             hdu = pyfits.ImageHDU(name=name, data=var, header=hdr)
             if self.unit != u.dimensionless_unscaled:
-                hdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
+                hdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
+                                       'data unit type')
             return hdu
 
     def write(self, filename, savemask='dq'):
@@ -3086,7 +3088,7 @@ class Spectrum(DataArray):
         if title is not None:
             ax.set_title(title)
         if unit is not None:
-            ax.set_xlabel(r'$\lambda$ (%s)' % "{}".format(unit))
+            ax.set_xlabel(r'$\lambda$ (%s)' % unit)
         if res.unit is not None:
             ax.set_ylabel(res.unit)
         self._fig = plt.get_current_fig_manager()

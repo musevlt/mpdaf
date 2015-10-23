@@ -210,7 +210,8 @@ class Cube(DataArray):
                                              card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
+            imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
+                                      'data unit type')
 
         return imahdu
 
@@ -262,7 +263,8 @@ class Cube(DataArray):
                                                  card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
+            imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
+                                      'data unit type')
 
         return imahdu
 
