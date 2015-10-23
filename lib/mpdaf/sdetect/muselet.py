@@ -254,7 +254,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         if fullvar is None:
             fullvar=Image('inv_variance.fits')
 
-        cleanlimit=clean*np.max(fullvar.data)
+        cleanlimit=clean*np.median(fullvar.data)
 
         tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
