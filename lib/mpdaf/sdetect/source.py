@@ -125,6 +125,7 @@ def crackz(nlines, wl, flux, eml, zguess=None):
         zmax = 7.0
     if(nlines == 0):
         return -9999.0, -9999.0, 0, [], [], []
+    lnames = np.array(eml.values())
     if(nlines == 1):
         if zguess:
             (error,jfound)=matchlines(nlines,wl,zguess,eml)
@@ -137,7 +138,6 @@ def crackz(nlines, wl, flux, eml, zguess=None):
     if(nlines > 1):
         found = 0
         lbdas = np.array(eml.keys())
-        lnames = np.array(eml.values())
         for z in np.arange(zmin, zmax, zstep):
             (error, jfound) = matchlines(nlines, wl, z, eml)
             if(error < errmin):
@@ -223,12 +223,6 @@ class Source(object):
         self.mag = mag
         # Table Z
         self.z = z
-        if self.z is not None and 'Z' in self.z.colnames:
-            self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
-        if self.z is not None and 'Z_MIN' in self.z.colnames:
-            self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
-        if self.z is not None and 'Z_MAX' in self.z.colnames:
-            self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
         # Dictionary SPECTRA
         if spectra is None:
             self.spectra = {}
@@ -251,6 +245,8 @@ class Source(object):
             self.tables = tables
         # logger
         self.logger = logging.getLogger('mpdaf corelib')
+        # mask invalid
+        self.masked_invalid()
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
@@ -1325,7 +1321,7 @@ class Source(object):
                 #line names
                 if 'LINE' not in self.lines.colnames:
                     nlines = len(self.lines)
-                    col = MaskedColumn(np.ma.masked_array(np.empty(nlines),
+                    col = MaskedColumn(np.ma.masked_array(np.array(['']*nlines),
                                                           mask=np.ones(nlines)),
                                        name='LINE', dtype='S20')
                     self.lines.add_column(col)
@@ -1442,6 +1438,26 @@ class Source(object):
             for lbda in wavelist:
                 ax.axvline(lbda, color='r')
         return
+        
+    def masked_invalid(self):
+        """Mask where invalid values occur (NaNs or infs or -9999 or '').
+        """
+        for tab in [self.lines, self.mag, self.z]:
+            if tab is not None:
+                for col in tab.colnames:
+                    try:
+                        tab[col] = np.ma.masked_invalid(tab[col])
+                        tab[col] = np.ma.masked_equal(tab[col], -9999)
+                    except:
+                        pass
+        for tab in self.tables.values():
+            for col in tab.colnames:
+                try:
+                    tab[col] = np.ma.masked_invalid(tab[col])
+                    tab[col] = np.ma.masked_equal(tab[col], -9999)
+                except:
+                    pass
+                
 
 class SourceList(list):
     """
