@@ -159,7 +159,7 @@ class Cube(DataArray):
             self._logger.info('.ima: %s', ', '.join(self.ima.keys()))
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
-        """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
+        """Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
 
         Parameters
         ----------
@@ -216,7 +216,7 @@ class Cube(DataArray):
         return imahdu
 
     def get_stat_hdu(self, name='STAT', header=None):
-        """ Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
+        """Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
 
         Parameters
         ----------

@@ -5,9 +5,12 @@ from nose.plugins.attrib import attr
 import astropy.units as u
 import numpy as np
 
+from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
 from numpy.testing import assert_almost_equal, assert_array_equal
 from operator import add, sub, mul, div
+from tempfile import NamedTemporaryFile
+
 from ..utils import generate_cube, generate_image, generate_spectrum
 
 
@@ -247,3 +250,33 @@ def test_aperture():
                          unit_center=None, unit_radius=None)
     nose.tools.assert_equal(spe.shape[0], 10)
     nose.tools.assert_equal(spe.get_start(), 1)
+
+
+@attr(speed='fast')
+def test_write():
+    """Cube class: testing write"""
+    unit = u.Unit('10**(-20)*erg/s/cm**2/Angstrom')
+    cube = generate_cube(scale=1, wave=WaveCoord(crval=1, cunit=u.angstrom),
+                         unit=unit)
+    fobj = NamedTemporaryFile()
+    cube.write(fobj.name)
+
+    hdu = fits.open(fobj)
+    # print repr(hdu[0].header)
+    # print '========='
+    # print repr(hdu[1].header)
+    assert_array_equal(hdu[1].data.shape, cube.shape)
+
+    hdr = hdu[0].header
+    nose.tools.assert_equal(hdr['AUTHOR'], 'MPDAF')
+
+    hdr = hdu[1].header
+    nose.tools.assert_equal(hdr['EXTNAME'], 'DATA')
+    nose.tools.assert_equal(hdr['NAXIS'], 3)
+    nose.tools.assert_equal(u.Unit(hdr['BUNIT']), unit)
+    nose.tools.assert_equal(u.Unit(hdr['CUNIT3']), u.angstrom)
+    nose.tools.assert_equal(hdr['NAXIS1'], cube.shape[2])
+    nose.tools.assert_equal(hdr['NAXIS2'], cube.shape[1])
+    nose.tools.assert_equal(hdr['NAXIS3'], cube.shape[0])
+    for key in ('CRPIX1', 'CRPIX2', 'CDELT1', 'CDELT2'):
+        nose.tools.assert_equal(hdr[key], 1.0)
