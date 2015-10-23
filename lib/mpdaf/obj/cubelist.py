@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import os
 
+from astropy import units as u
 from astropy.table import Table
 from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
@@ -135,7 +136,7 @@ class CubeList(object):
             getattr(self, checker)()
 
     def save_combined_cube(self, data, var=None, method='', keywords=None,
-                           expnb=None, object_name=None, save_unit=True):
+                           expnb=None, object_name=None, unit=None):
         self._logger.info('Creating combined cube object')
 
         if data.ndim != 3:
@@ -144,7 +145,7 @@ class CubeList(object):
             var = var.reshape(self.shape)
 
         c = Cube(wcs=self.wcs, wave=self.wave, data=data, var=var, copy=False,
-                 unit=self.unit if save_unit else None)
+                 dtype=data.dtype, unit=unit or self.unit, mask=np.ma.nomask)
 
         hdr = c.primary_header
         copy_keywords(
@@ -222,7 +223,8 @@ class CubeList(object):
                          names=['FILENAME', 'NPIX_NAN'])
 
         kwargs = dict(expnb=expmap.max(), method='obj.cubelist.median')
-        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
+        expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
+                                         **kwargs)
         cube = self.save_combined_cube(data, **kwargs)
         return cube, expmap, stat_pix
 
@@ -327,7 +329,8 @@ class CubeList(object):
                     ('var', var, 'type of variance')]
         kwargs = dict(expnb=expmap.max(), keywords=keywords,
                       method='obj.cubelist.merging')
-        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
+        expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
+                                         **kwargs)
         cube = self.save_combined_cube(data, var=vardata, **kwargs)
         return cube, expmap, statpix
 
@@ -359,7 +362,8 @@ class CubeList(object):
                          names=['FILENAME', 'NPIX_NAN'])
 
         kwargs = dict(expnb=expmap.max(), method='obj.cubelist.pymedian')
-        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
+        expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
+                                         **kwargs)
         cube = self.save_combined_cube(cube, **kwargs)
         return cube, expmap, stat_pix
 
@@ -451,8 +455,10 @@ class CubeList(object):
         kwargs = dict(expnb=expmap.max(), object_name=object_name,
                       keywords=keywords, method='obj.cubelist.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
-        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
-        rejmap = self.save_combined_cube(rejmap, save_unit=False, **kwargs)
+        expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
+                                         **kwargs)
+        rejmap = self.save_combined_cube(rejmap, unit=u.dimensionless_unscaled,
+                                         **kwargs)
         return cube, expmap, stat_pix, rejmap
 
 
@@ -659,6 +665,8 @@ class CubeMosaic(CubeList):
         kwargs = dict(expnb=np.nanmedian(expmap), object_name=object_name,
                       keywords=keywords, method='obj.cubemosaic.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
-        expmap = self.save_combined_cube(expmap, save_unit=False, **kwargs)
-        rejmap = self.save_combined_cube(rejmap, save_unit=False, **kwargs)
+        expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
+                                         **kwargs)
+        rejmap = self.save_combined_cube(rejmap, unit=u.dimensionless_unscaled,
+                                         **kwargs)
         return cube, expmap, stat_pix, rejmap
