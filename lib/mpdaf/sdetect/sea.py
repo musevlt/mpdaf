@@ -50,8 +50,7 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
     Determine which image has a detection close to the centre. We start with the centre for
     all. If all have a value zero there we continue.
     """ 
-    logger = logging.getLogger('mpdaf corelib')
-    d = {'class': 'SEA', 'method': 'findCentralDetection'}
+    logger = logging.getLogger(__name__)
     min_distances = {}
     min_values = {}
     global_min = 1e30
@@ -61,7 +60,7 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
 #     count = 0
     bad = {}
     for key, im in images.items():
-        logger.info('Doing %s'%key, extra=d)
+        logger.info('Doing %s'%key)
 #         if (count == 0):
 #             nx, ny = im.shape
 #             ixc = nx/2
@@ -112,13 +111,13 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
         # get another simple segmentation map.
         for key in images:
             if bad[key] == 1:
-                logger.info('Image %s has no objects'%key, extra=d)
+                logger.info('Image %s has no objects'%key)
                 this_map = np.zeros(ref_map.shape)
             else:
                 # Has at least one object - let us see.
                 if np.abs(min_distances[key] - global_min) <= tolerance:
                     # Create simple map
-                    logger.info('Image %s has one useful objects'%key, extra=d)
+                    logger.info('Image %s has one useful objects'%key)
                     this_map = np.where(images[key] == min_values[key], 1, 0)
                     n_useful = n_useful + 1
                     isUseful[key] = True
@@ -337,8 +336,7 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
     -------
     out : :class:`mpdaf.sdetect.SourceList` if path is None
     """
-    logger = logging.getLogger('mpdaf corelib')
-    d = {'class': '', 'method': 'SEA'}
+    logger = logging.getLogger(__name__)
     
     if images is None:
         images = {}
@@ -356,7 +354,7 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
       
     for obj in cat:
         
-        logger.info('%d/%d Doing Source %d'%(n, ntot, obj['ID']), extra=d)
+        logger.info('%d/%d Doing Source %d'%(n, ntot, obj['ID']))
           
         cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']], unit=u.deg)[0]
         if cen[0] >= 0 and cen[0] <= cube.wcs.naxis1 and \

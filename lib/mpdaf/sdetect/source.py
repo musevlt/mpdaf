@@ -253,7 +253,7 @@ class Source(object):
         else:
             self.tables = tables
         # logger
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
@@ -550,11 +550,10 @@ class Source(object):
     def info(self):
         """Print information.
         """
-        d = {'class': 'Source', 'method': 'info'}
         for card in self.header.cards:
             if card[0] not in ('SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                                'AUTHOR'):
-                self._logger.info(card, extra=d)
+                self._logger.info(card)
         print '\n'
         for key, spe in self.spectra.iteritems():
             msg = 'spectra[\'%s\']'%key
@@ -566,7 +565,7 @@ class Source(object):
             if spe.var is None:
                 noise = ''
             msg += ' %s %s '%(data, noise)
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
         for key, ima in self.images.iteritems():
             msg = 'images[\'%s\']'%key
             msg += ' %i X %i' %(ima.shape[0], ima.shape[1])
@@ -578,7 +577,7 @@ class Source(object):
                 noise = ''
             msg += ' %s %s '%(data, noise)
             msg += 'rot=%0.1f deg'%ima.wcs.get_rot()
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
         for key, cub in self.cubes.iteritems():
             msg = 'cubes[\'%s\']'%key
             msg += ' %i X %i X %i' %(cub.shape[0], cub.shape[1], cub.shape[2])
@@ -590,24 +589,24 @@ class Source(object):
                 noise = ''
             msg += ' %s %s '%(data, noise)
             msg += 'rot=%0.1f deg'%cub.wcs.get_rot()
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
         for key in self.tables.keys():
-            self._logger.info('tables[\'%s\']'%key, extra=d)
+            self._logger.info('tables[\'%s\']'%key)
         print '\n'
         if self.lines is not None:
-            self._logger.info('lines', extra=d)
+            self._logger.info('lines')
             for l in self.lines.pformat():
-                self._logger.info(l, extra=d)
+                self._logger.info(l)
             print '\n'
         if self.mag is not None:
-            self._logger.info('magnitudes', extra=d)
+            self._logger.info('magnitudes')
             for l in self.mag.pformat():
-                self._logger.info(l, extra=d)
+                self._logger.info(l)
             print '\n'
         if self.z is not None:
-            self._logger.info('redshifts', extra=d)
+            self._logger.info('redshifts')
             for l in self.z.pformat():
-                self._logger.info(l, extra=d)
+                self._logger.info(l)
             print '\n'
 
     def __getattr__(self, item):
@@ -635,7 +634,7 @@ class Source(object):
         while 'COM%03d'%i in self.header:
             i += 1
         self.header['COM%03d'%i] = (comment, '%s %s'%(author, str(datetime.date.today())))
-        
+
 
     def remove_comment(self, ncomment):
         """Remove a comment from the FITS header of the Source object.
@@ -841,7 +840,6 @@ class Source(object):
         rotate : bool
                 if True, the image is rotated to the same PA as the white-light image
         """
-        d = {'class': 'Source', 'method': 'add_image'}
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
@@ -880,8 +878,7 @@ class Source(object):
             subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
                                     unit_center=u.deg, unit_size=unit_size)
         if subima is None:
-            self._logger.warning('Image %s not added. Source outside or at the edges'%(name),
-                                 extra=d)
+            self._logger.warning('Image %s not added. Source outside or at the edges'%(name))
             return
         self.images[name] = subima
 
@@ -1002,7 +999,6 @@ class Source(object):
                  The size of the off-band is fband x narrow-band width (in angstrom).
         """
         if self.z is not None:
-            d = {'class': 'Source', 'method': 'add_narrow_band_images'}
             if size is None:
                 try:
                     white_ima = self.images['MUSE_WHITE']
@@ -1017,7 +1013,7 @@ class Source(object):
 
             subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
-            
+
             z = self.z['Z'][self.z['Z_DESC']==z_desc]
 
             if z>0:
@@ -1042,7 +1038,7 @@ class Source(object):
                     lambda_ranges[1, :] = (1+z)*all_lines[useful]+width/2.0
                     tags = all_tags[useful]
                     for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
-                        self._logger.info('Doing MUSE_%s'%tag, extra=d)
+                        self._logger.info('Doing MUSE_%s'%tag)
                         self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
                                                                     subtract_off=subtract_off, margin=margin,
                                                                     fband=fband, unit_wave=u.angstrom)
@@ -1079,8 +1075,7 @@ class Source(object):
         fband        : float
                        The size of the off-band is fband*narrow-band width (in angstrom).
         """
-        d = {'class': 'Source', 'method': 'add_narrow_band_images'}
-        self._logger.info('Doing %s'%tag, extra=d)
+        self._logger.info('Doing %s'%tag)
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
@@ -1128,7 +1123,6 @@ class Source(object):
         del_sex  : boolean
                    If False, configuration files of sextractor are not removed.
         """
-        d = {'class': 'Source', 'method': 'add_masks'}
         if 'MUSE_WHITE' in self.images:
             if tags is None:
                 tags = [tag for tag in self.images.keys() if tag[0:4]!='SEG_' and 'MASK' not in tag]
@@ -1136,8 +1130,7 @@ class Source(object):
             from ..sdetect.sea import segmentation
             segmentation(self, tags, DIR, del_sex)
         else:
-            self._logger.warning('add_seg_images method use the MUSE_WHITE image computed by add_white_image method',
-                                extra=d)
+            self._logger.warning('add_seg_images method use the MUSE_WHITE image computed by add_white_image method')
 
     def add_masks(self, tags=None):
         """Use the list of segmentation maps to compute the union mask
@@ -1168,10 +1161,8 @@ class Source(object):
                     maps[tag[4:]] = self.images[tag].data.data
                 else:
                     maps[tag] = self.images[tag].data.data
-        d = {'class': 'Source', 'method': 'add_masks'}
         if len(maps)==0:
-            self._logger.warning('no segmentation images. Use add_seg_images to create them',
-                                extra=d)
+            self._logger.warning('no segmentation images. Use add_seg_images to create them')
 
         from ..sdetect.sea import mask_creation
         mask_creation(self, maps)
@@ -1195,10 +1186,10 @@ class Source(object):
                         skysub=True, psf=None):
         """Extract spectra from the MUSE data cube and from a list of narrow-band images
         (to define spectrum extraction apertures).
-        
+
         First, this method computes a subcube that has the same size
         along the spatial axis as MASK_UNION image.
-        
+
         The no-weighting spectrum is computed as the sum of the subcube
         weighted by the MASK_UNION image.
         It is saved in self.spectra['MUSE_TOT']
@@ -1206,7 +1197,7 @@ class Source(object):
         The weighted spectra are computed as the sum of the subcube
         weighted by the corresponding narrow bands image.
         They are saved in self.spectra[nb_ima] (for nb_ima in tags_to_try)
-        
+
         If psf:
 
             The potential PSF weighted spectrum is computed as the sum of
@@ -1214,11 +1205,11 @@ class Source(object):
             It is saved in self.spectra['MUSE_PSF']
 
         If skysub:
-        
+
             The local sky spectrum is computed as the average of the subcube
             weighted by the MASK_SKY image.
             It is saved in self.spectra['MUSE_SKY']
-            
+
             The other spectra are computed on the sky-subtracted subcube and
             they are saved in self.spectra['*_SKYSUB']
 
@@ -1242,18 +1233,17 @@ class Source(object):
                       wavelength (in arcsec) or a cube with the PSF to use.
                       psf=None by default (no PSF-weighted extraction).
         """
-        d = {'class': 'Source', 'method': 'add_masks'}
 
         if self.images.has_key('MASK_UNION'):
             ima = self.images['MASK_UNION']
-            
+
             if ima.wcs.sameStep(cube.wcs):
                 size = ima.shape[0]
                 unit_size = None
             else:
                 size = ima.wcs.get_step(unit=u.arcsec)[0] * ima.shape[0]
                 unit_size = u.arcsec
-            
+
             subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
             if ima.wcs.isEqual(subcub.wcs):
@@ -1329,7 +1319,7 @@ class Source(object):
                     msg = 'Incorrect dimensions for the PSF cube (%i,%i,%i) (it must be (%i,%i,%i)) '\
                         %(psf.shape[0], psf.shape[1], psf.shape[2],
                           subcub.shape[0], subcub.shape[1], subcub.shape[2])
-                    self._logger.warning(msg, extra=d)
+                    self._logger.warning(msg)
                     white_cube = None
                 else:
                     white_cube = psf
@@ -1344,7 +1334,7 @@ class Source(object):
             else:
                 msg = 'Incorrect dimensions for the PSF vector (%i) (it must be (%i)) '\
                         %(psf.shape[0], subcub.shape[0])
-                self._logger.warning(msg, extra=d)
+                self._logger.warning(msg)
                 white_cube = None
             if white_cube is not None:
                 weight = white_cube * np.tile(object_mask,(subcub.shape[0],1,1))
@@ -1394,7 +1384,6 @@ class Source(object):
         zguess  : float
                   Guess redshift. Test if this redshift is a match and fills the detected lines
         """
-        d = {'class': 'Source', 'method': 'crack_z'}
         nline_max = nlines
         if eml is None:
             eml = emlines
@@ -1412,7 +1401,7 @@ class Source(object):
             flux = np.array(self.lines[col_flux])
             nlines = len(wl)
         except:
-            self._logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
+            self._logger.info('Impossible to estimate the redshift, no emission lines')
             return
 
         z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml, zguess)
@@ -1423,7 +1412,7 @@ class Source(object):
             if nlines < nline_max:
                 #redshift
                 self.add_z(z_desc, z, errz)
-                self._logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz), extra=d)
+                self._logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz))
                 #line names
                 if 'LINE' not in self.lines.colnames:
                     nlines = len(self.lines)
@@ -1433,13 +1422,13 @@ class Source(object):
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
                     self.lines['LINE'][self.lines[col_lbda]==w] = name
-                self._logger.info('crack_z: lines', extra=d)
+                self._logger.info('crack_z: lines')
                 for l in self.lines.pformat():
-                    self._logger.info(l, extra=d)
+                    self._logger.info(l)
             else:
-                self._logger.info('Impossible to estimate the redshift, the number of emission lines is inferior to %d'%nline_max, extra=d)
+                self._logger.info('Impossible to estimate the redshift, the number of emission lines is inferior to %d'%nline_max)
         else:
-            self._logger.info('Impossible to estimate the redshift, no emission lines', extra=d)
+            self._logger.info('Impossible to estimate the redshift, no emission lines')
 
     def sort_lines(self, nlines_max=25):
         """Sort lines by flux in descending order.

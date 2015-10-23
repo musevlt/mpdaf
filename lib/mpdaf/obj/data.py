@@ -40,13 +40,13 @@ def read_slice_from_fits(filename, item=None, ext='DATA', mask_ext=None,
 class DataArray(object):
 
     """Base class to handle arrays.
-    
+
     Parameters
     ----------
     filename : string
                 Possible FITS file name. None by default.
     hdulist  : pyfits.hdulist
-               HDU list class. 
+               HDU list class.
     ext      : integer or (integer,integer) or string or (string,string)
                 Number/name of the data extension
                 or numbers/names of the data and variance extensions.
@@ -54,7 +54,7 @@ class DataArray(object):
                Physical units of the data values.
                u.dimensionless_unscaled by default.
     copy     : boolean
-               If true (default), then the data and variance arrays are copied. 
+               If true (default), then the data and variance arrays are copied.
     dtype    : numpy.dtype
                Type of the data (integer, float)
 
@@ -71,7 +71,7 @@ class DataArray(object):
     ndim           : integer
                      Number of dimensions.
     shape          : tuple
-                     Lengths of data (python notation (nz,ny,nx)).                 
+                     Lengths of data (python notation (nz,ny,nx)).
     data           : masked array numpy.ma
                      Masked array containing the cube pixel values.
     data_header    : pyfits.Header
@@ -91,8 +91,7 @@ class DataArray(object):
     def __init__(self, filename=None, hdulist=None, ext=None, data=None,
                  var=None, unit=u.dimensionless_unscaled, copy=True,
                  dtype=float, **kwargs):
-        d = {'class': self.__class__.__name__, 'method': '__init__'}
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         self.filename = filename
         self._data = None
         self._data_ext = None
@@ -150,23 +149,21 @@ class DataArray(object):
                 self._var_ext = None
 
             self.data_header = hdr = hdulist[self._data_ext].header
-            
+
             self.unit = u.dimensionless_unscaled
             try:
                 self.unit = u.Unit(fix_unit(hdr['BUNIT']))
             except KeyError:
-                self._logger.warning('The physical unit of the data is not loaded '
-                                     'from the FITS header.\n'
-                                     'No BUNIT in the DATA.',
-                                     extra=d)
+                self._logger.warning('The physical unit of the data is not '
+                                     'loaded from the FITS header.\n'
+                                     'No BUNIT in the DATA.')
             except Exception as e:
-                self._logger.warning('The physical unit of the data is not loaded '
-                                     'from the FITS header.\n %s',e,
-                                     extra=d)
-                
+                self._logger.warning('The physical unit of the data is not '
+                                     'loaded from the FITS header.\n %s', e)
+
             if 'FSCALE' in hdr:
                     self.unit *= u.Unit(hdr['FSCALE'])
-                    
+
             self._shape = hdulist[self._data_ext].data.shape
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
             #                        hdr['NAXIS1']])
@@ -183,7 +180,7 @@ class DataArray(object):
                 except pyfits.VerifyError as e:
                     # Workaround for
                     # https://github.com/astropy/astropy/issues/887
-                    self._logger.warning(e, extra=d)
+                    self._logger.warning(e)
                     self.wcs = WCS(hdr)
 
             # Wavelength coordinates
@@ -225,12 +222,12 @@ class DataArray(object):
                         wcs.naxis2 != self._shape[-2]):
                     self._logger.warning(
                         'world coordinates and data have not the same '
-                        'dimensions: shape of WCS object is modified', extra=d)
+                        'dimensions: shape of WCS object is modified')
                 self.wcs.naxis1 = self._shape[-1]
                 self.wcs.naxis2 = self._shape[-2]
             except:
                 self._logger.warning('world coordinates not copied',
-                                    exc_info=True, extra=d)
+                                     exc_info=True)
 
         wave = kwargs.pop('wave', None)
         if wave is not None:
@@ -239,12 +236,11 @@ class DataArray(object):
                 if wave.shape is not None and wave.shape != self._shape[0]:
                     self._logger.warning(
                         'wavelength coordinates and data have not the same '
-                        'dimensions: shape of WaveCoord object is modified',
-                        extra=d)
+                        'dimensions: shape of WaveCoord object is modified')
                 self.wave.shape = self._shape[0]
             except:
                 self._logger.warning('wavelength solution not copied',
-                                    exc_info=True, extra=d)
+                                     exc_info=True)
 
     @property
     def ndim(self):
@@ -342,8 +338,7 @@ class DataArray(object):
 
     def info(self):
         """Prints information."""
-        d = {'class': self.__class__.__name__, 'method': 'info'}
-        log_info = partial(self._logger.info, extra=d)
+        log_info = partial(self._logger.info)
 
         shape = (self.shape, ) if np.isscalar(self.shape) else self.shape
         shape_str = [str(x) for x in shape]

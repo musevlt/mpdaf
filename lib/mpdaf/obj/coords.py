@@ -147,7 +147,7 @@ def wcs_from_header(hdr, naxis=None):
         return pywcs.WCS(hdr, naxis=naxis)
     except ValueError as e:
         # Workaround for https://github.com/astropy/astropy/issues/4089
-        logger = logging.getLogger('mpdaf corelib')
+        logger = logging.getLogger(__name__)
         logger.warning('Failed to create WCS object: "%s". Trying to fix the '
                        'header', e)
         for key in ('WAT0_001', 'WAT1_001', 'WAT2_001'):
@@ -229,7 +229,7 @@ class WCS(object):
         shape : integer or (integer,integer)
                 Dimensions. No mandatory.
         """
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         if hdr is not None:
             self.wcs = wcs_from_header(hdr, naxis=2)
             try:
@@ -307,7 +307,6 @@ class WCS(object):
 
     def info(self):
         """Print information."""
-        d = {'class': 'WCS', 'method': 'info'}
         try:
             dy, dx = self.get_step(unit=u.arcsec)
             sizex = dx * self.naxis1  # ra
@@ -331,7 +330,7 @@ class WCS(object):
                        self.unit,
                        pixsky[0, 0], pixsky[0, 1], pixsky[1, 0], pixsky[1, 1],
                        dy, dx, self.get_rot())
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
     def to_header(self):
         """Generate a pyfits header object with the WCS information."""
@@ -648,9 +647,8 @@ class WCS(object):
     
     @property
     def unit(self):
-        d = {'class': 'WCS', 'method': 'unit'}
         if self.wcs.wcs.cunit[0] != self.wcs.wcs.cunit[1]:
-            self._logger.warning('different units on x- and y-axes', extra=d)
+            self._logger.warning('different units on x- and y-axes')
         return self.wcs.wcs.cunit[0]
     
     def set_naxis1(self, n):
@@ -923,7 +921,7 @@ class WaveCoord(object):
         shape : integer or None
                 Size of spectrum (no mandatory).
         """
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
 
         if hdr is not None:
             try:
@@ -959,7 +957,6 @@ class WaveCoord(object):
 
     def info(self):
         """Print information."""
-        d = {'class': 'WaveCoord', 'method': 'info'}
         try:
             start = self.get_start(unit=u.angstrom)
             step = self.get_step(unit=u.angstrom)
@@ -979,7 +976,7 @@ class WaveCoord(object):
                 end = self.get_end()
                 msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % (
                     start, end, step, self.unit)
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""

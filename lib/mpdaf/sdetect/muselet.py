@@ -94,21 +94,20 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
     single                : List of detected sources that contains emission lines not associated with continuum detection
     raw                   : List of detected sources  before the merging procedure.
     """
-    logger = logging.getLogger('mpdaf corelib')
-    d = {'class': '', 'method': 'muselet'}
+    logger = logging.getLogger(__name__)
 
     if(step != 1 and step != 2 and step != 3):
-        logger.error("muselet - ERROR: step must be 1, 2 or 3", extra=d)
-        logger.error("muselet - STEP 1: creates images from cube", extra=d)
-        logger.error("muselet - STEP 2: runs SExtractor", extra=d)
-        logger.error("muselet - STEP 3: merge catalogs and measure redshifts", extra=d)
+        logger.error("muselet - ERROR: step must be 1, 2 or 3")
+        logger.error("muselet - STEP 1: creates images from cube")
+        logger.error("muselet - STEP 2: runs SExtractor")
+        logger.error("muselet - STEP 3: merge catalogs and measure redshifts")
         return
     if len(fw) != 5:
-        logger.error("muselet - len(fw) != 5", extra=d)
+        logger.error("muselet - len(fw) != 5")
     try:
         fw = np.array(fw, dtype=np.float)
     except:
-        logger.error('muselet - fw is not an array of float', extra=d)
+        logger.error('muselet - fw is not an array of float')
 
     try:
         subprocess.check_call(['sex'])
@@ -125,7 +124,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
     fullvar = None
 
     if(step == 1):
-        logger.info("muselet - Opening: " + cubename, extra=d)
+        logger.info("muselet - Opening: " + cubename)
         c = Cube(cubename)
         
         mvar = np.ma.masked_invalid(c.var)
@@ -139,7 +138,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
         nsfilter = int(size1 / 3.0)
         
-        logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images", extra=d)
+        logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images")
         weight_data = np.ma.average(c.data[1:size1 - 1, :, :], weights=1. / mvar[1:size1 - 1, :, :], axis=0)
         weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), unit=imsum.unit)
         weight.write('white.fits', savemask='nan')
@@ -208,7 +207,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             outnbcube.write(outnbcubename)
 
     if(step <= 2):
-        logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and narrow-band images", extra=d)
+        logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and narrow-band images")
         # tests here if the files default.sex, default.conv, default.nnw and default.param exist.
         # Otherwise copy them
         setup_config_files()
@@ -239,7 +238,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         try:
             os.chdir("nb")
         except:
-            logger.error("muselet - ERROR: missing nb directory", extra=d)
+            logger.error("muselet - ERROR: missing nb directory")
             return
         
         # tests here if the files default.sex, default.conv, default.nnw and default.param exist. 
@@ -256,10 +255,10 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 #             p = subprocess.Popen(line, shell=True).wait()
 
     if(step <= 3):
-        logger.info("muselet - STEP 3: merge SExtractor catalogs and measure redshifts", extra=d)
+        logger.info("muselet - STEP 3: merge SExtractor catalogs and measure redshifts")
         
         if c is None:
-            logger.info("muselet - Opening: " + cubename, extra=d)
+            logger.info("muselet - Opening: " + cubename)
             c = Cube(cubename)
         
         wlmin = c.wave.get_start(unit=u.angstrom)
@@ -441,9 +440,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 continuum_lines.append(s)
                 
         if len(continuum_lines)>0:
-            logger.info("muselet - %d continuum lines detected"%len(continuum_lines), extra=d)
+            logger.info("muselet - %d continuum lines detected"%len(continuum_lines))
         else:
-            logger.info("muselet - no continuum lines detected", extra=d)
+            logger.info("muselet - no continuum lines detected")
 
         # 
         singflags = np.ones(nS)
@@ -543,9 +542,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 flags[i] = 1
          
         if len(single_lines)>0:
-            logger.info("muselet - %d single lines detected"%len(single_lines), extra=d)
+            logger.info("muselet - %d single lines detected"%len(single_lines))
         else:
-            logger.info("muselet - no single lines detected", extra=d)
+            logger.info("muselet - no single lines detected")
 
         # redshift of continuum objects
 
@@ -556,7 +555,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         eml = dict(np.loadtxt("emlines", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')}))
         eml2 = dict(np.loadtxt("emlines_small", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')}))
 
-        logger.info("muselet - estimating the best redshift", extra=d)
+        logger.info("muselet - estimating the best redshift")
         for source in continuum_lines:
             if(len(source.lines) > 3):
                 source.crack_z(eml)
@@ -570,7 +569,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 source.crack_z(eml2, 20)
             source.sort_lines(nlines_max)
                 
-        logger.info("muselet - cleaning narrow-band images", extra=d)
+        logger.info("muselet - cleaning narrow-band images")
         if(nbcube):
             filelist=glob('nb/nb*.fits')
             for f in filelist:

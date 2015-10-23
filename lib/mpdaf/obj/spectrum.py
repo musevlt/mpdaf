@@ -32,7 +32,7 @@ class SpectrumClicks(object):
         # (world coordinates)
         self.data = []  # Corresponding spectrum data value.
         self.id_lines = []  # Plot id (cross for cursor positions).
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
 
     def remove(self, xc):
         # removes a cursor position
@@ -60,10 +60,9 @@ class SpectrumClicks(object):
 
     def iprint(self, i):
         # prints a cursor positions
-        d = {'class': 'SpectrumClicks', 'method': 'iprint'}
         msg = 'xc=%g\tyc=%g\tk=%d\tlbda=%g\tdata=%g' % (
             self.xc[i], self.yc[i], self.k[i], self.lbda[i], self.data[i])
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
     def write_fits(self):
         # prints coordinates in fits table.
@@ -79,14 +78,12 @@ class SpectrumClicks(object):
             tbhdu.writeto(self.filename, clobber=True)
 
             msg = 'printing coordinates in fits table %s' % self.filename
-            d = {'class': 'SpectrumClicks', 'method': 'write_fits'}
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
 
     def clear(self):
         # disconnects and clears
         msg = "disconnecting console coordinate printout..."
-        d = {'class': 'SpectrumClicks', 'method': 'clear'}
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
         plt.disconnect(self.binding_id)
         nlines = len(self.id_lines)
@@ -138,7 +135,7 @@ class Gauss1D(object):
         self.err_lpeak = err_lpeak
         self.err_peak = err_peak
         self.err_flux = err_flux
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         self.chisq = chisq
         self.dof = dof
 
@@ -150,24 +147,23 @@ class Gauss1D(object):
 
     def print_param(self):
         """Print Gaussian parameters."""
-        d = {'class': 'Gauss1D', 'method': 'print_param'}
 
         msg = 'Gaussian center = %g (error:%g)' % (self.lpeak, self.err_lpeak)
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
         msg = 'Gaussian integrated flux = %g (error:%g)' % \
             (self.flux, self.err_flux)
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
         msg = 'Gaussian peak value = %g (error:%g)' % \
             (self.peak, self.err_peak)
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
         msg = 'Gaussian fwhm = %g (error:%g)' % (self.fwhm, self.err_fwhm)
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
         msg = 'Gaussian continuum = %g' % self.cont
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
 
 class Spectrum(DataArray):
@@ -267,9 +263,8 @@ class Spectrum(DataArray):
                             imahdu.header['hierarch %s' % card.keyword] = \
                                 (card.value, card.comment)
                     except:
-                        d = {'class': 'Spectrum', 'method': 'write'}
                         self._logger.warning("%s not copied in data header",
-                                        card.keyword, extra=d)
+                                        card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
             imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
@@ -332,9 +327,8 @@ class Spectrum(DataArray):
                         prihdu.header['hierarch %s' % card.keyword] = \
                                 (card.value, card.comment)
                 except:
-                    d = {'class': 'Spectrum', 'method': 'write'}
                     self._logger.warning("%s not copied in primary header",
-                                            card.keyword, extra=d)
+                                            card.keyword)
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
@@ -373,8 +367,7 @@ class Spectrum(DataArray):
                 self.wave = self.wave[item]
             except:
                 self.wave = None
-                d = {'class': 'Spectrum', 'method': 'resize'}
-                self._logger.warning("wavelength solution not copied", extra=d)
+                self._logger.warning("wavelength solution not copied")
 
     def __add__(self, other):
         """Operator +.
@@ -913,9 +906,7 @@ class Spectrum(DataArray):
             if isinstance(other, Spectrum):
                 if self.wave is not None and other.wave is not None and (
                         self.wave.get_step() != other.wave.get_step(unit=self.wave.unit)):
-                    d = {'class': 'Spectrum', 'method': '__setitem__'}
-                    self._logger.warning("spectra with different steps",
-                                        extra=d)
+                    self._logger.warning("spectra with different steps")
                 if self.unit == other.unit:
                     self.data[key] = other.data
                 else:
@@ -933,9 +924,8 @@ class Spectrum(DataArray):
                Wavelength coordinates.
         """
         if wave.shape is not None and wave.shape != self.shape:
-            d = {'class': 'Spectrum', 'method': 'set_wcs'}
             self._logger.warning('wavelength coordinates and data have '
-                                'not the same dimensions', extra=d)
+                                'not the same dimensions')
         self.wave = wave.copy()
         self.wave.shape = self.shape
 
@@ -1585,11 +1575,10 @@ class Spectrum(DataArray):
                 n_p = len(ind[0])
 
                 if verbose:
-                    d = {'class': 'Spectrum', 'method': 'poly_fit'}
                     msg = 'Number of iteration: '\
                         '%d Std: %10.4e Np: %d Frac: %4.2f' \
                         % (it + 1, sig, n_p, 100. * n_p / self.shape[0])
-                    self._logger.info(msg, extra=d)
+                    self._logger.info(msg)
 
         return p
 
@@ -3066,7 +3055,7 @@ class Spectrum(DataArray):
             except u.UnitConversionError:
                 unit = res.wave.unit
                 x = res.wave.coord(unit=unit)
-                
+
         f = res.data
         if res.var is None:
             noise = False
@@ -3173,17 +3162,16 @@ class Spectrum(DataArray):
             are saved as a fits table with columns labeled
             'XC'|'YC'|'I'|'X'|'DATA'
         """
-        d = {'class': 'Spectrum', 'method': 'ipos'}
         msg = 'To read cursor position, click on the left mouse button'
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         msg = 'To remove a cursor position, '\
             'click on the left mouse button + <d>'
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         msg = 'After quit, clicks are saved in self.clicks '\
             'as dictionary {xc,yc,k,lbda,data}.'
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
@@ -3198,7 +3186,6 @@ class Spectrum(DataArray):
     def _on_click(self, event):
         """print xc,yc,k,lbda and data corresponding to the cursor
         position."""
-        d = {'class': 'Spectrum', 'method': '_on_click'}
         if event.key == 'd':
             if event.button == 1:
                 if event.inaxes is not None:
@@ -3206,7 +3193,7 @@ class Spectrum(DataArray):
                         xc, yc = event.xdata, event.ydata
                         self._clicks.remove(xc)
                         msg = "new selection:"
-                        self._logger.info(msg, extra=d)
+                        self._logger.info(msg)
                         for i in range(len(self._clicks.xc)):
                             self._clicks.iprint(i)
                     except:
@@ -3243,11 +3230,10 @@ class Spectrum(DataArray):
 
         To quit the interactive mode, click on the right mouse button.
         """
-        d = {'class': 'Spectrum', 'method': 'idist'}
         msg = 'Use 2 mouse clicks to get center and distance.'
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         if self._clicks is None:
             binding_id = plt.connect('button_press_event',
                                      self._on_click_dist)
@@ -3275,8 +3261,7 @@ class Spectrum(DataArray):
                         dx = np.abs(self._clicks.xc[-1] - self._clicks.xc[-2])
                         xc = (self._clicks.xc[-1] + self._clicks.xc[-2]) / 2
                         msg = 'Center: %f Distance: %f' % (xc, dx)
-                        d = {'class': 'Spectrum', 'method': '_on_click_dist'}
-                        self._logger.info(msg, extra=d)
+                        self._logger.info(msg)
                 except:
                     pass
         else:
@@ -3308,17 +3293,16 @@ class Spectrum(DataArray):
             the two last clicks select a range of maximum wavelengths
             - see :func:`mpdaf.obj.Spectrum.gauss_fit`.
         """
-        d = {'class': 'Spectrum', 'method': 'igauss_fit'}
         if nclicks == 3:
             msg = 'Use 3 mouse clicks to get minimim, '\
                 'peak and maximum wavelengths.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'To quit the interactive mode, '\
                 'click on the right mouse button.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'The parameters of the last '\
                 'gaussian are saved in self.gauss.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             if self._clicks is None:
                 binding_id = plt.connect('button_press_event',
                                          self._on_3clicks_gauss_fit)
@@ -3330,18 +3314,18 @@ class Spectrum(DataArray):
         else:
             msg = 'Use the 2 first mouse clicks to get the wavelength '\
                 'range to compute the gaussian left value.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'Use the next click to get the peak wavelength.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'Use the 2 last mouse clicks to get the wavelength range '\
                 'to compute the gaussian rigth value.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'To quit the interactive mode, '\
                 'click on the right mouse button.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'The parameters of the last gaussian '\
                 'are saved in self.gauss.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             if self._clicks is None:
                 binding_id = plt.connect('button_press_event',
                                          self._on_5clicks_gauss_fit)
@@ -3450,17 +3434,16 @@ class Spectrum(DataArray):
             the two last clicks select a range of maximum wavelengths
             - see :func:`mpdaf.obj.Spectrum.gauss_symfit`.
         """
-        d = {'class': 'Spectrum', 'method': 'igauss_asymfit'}
         if nclicks == 3:
             msg = 'Use 3 mouse clicks to get minimim, '\
                 'peak and maximum wavelengths.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'To quit the interactive mode, '\
                 'click on the right mouse button.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'The parameters of the '\
                 'gaussian functions are saved in self.gauss2.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             if self._clicks is None:
                 binding_id = plt.connect('button_press_event',
                                          self._on_3clicks_gauss_asymfit)
@@ -3472,18 +3455,18 @@ class Spectrum(DataArray):
         else:
             msg = 'Use the 2 first mouse clicks to get the wavelength '\
                 'range to compute the gaussian left value.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'Use the next click to get the peak wavelength.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'Use the 2 last mouse clicks to get the wavelength range '\
                 'to compute the gaussian rigth value.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'To quit the interactive mode, '\
                 'click on the right mouse button.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = 'The parameters of the resulted gaussian functions'\
                 'are saved in self.gauss2.'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             if self._clicks is None:
                 binding_id = plt.connect('button_press_event',
                                          self._on_5clicks_gauss_asymfit)
@@ -3495,7 +3478,6 @@ class Spectrum(DataArray):
 
     def _on_3clicks_gauss_asymfit(self, event):
         """Performs asymetrical gaussian fit on spectrum (interactive mode)."""
-        d = {'class': 'Spectrum', 'method': '_on_3clicks_gauss_asymfit'}
         if event.button == 1:
             if event.inaxes is not None:
                 try:
@@ -3513,9 +3495,9 @@ class Spectrum(DataArray):
                         self.gauss2 = self.gauss_asymfit(
                             lmin, lmax, lpeak=lpeak, plot=True,
                             unit=self._unit)
-                        self._logger.info('left:', extra=d)
+                        self._logger.info('left:')
                         self.gauss2[0].print_param()
-                        self._logger.info('right:', extra=d)
+                        self._logger.info('right:')
                         self.gauss2[1].print_param()
                         self._clicks.id_lines.append(len(plt.gca().lines) - 1)
                 except:
@@ -3528,7 +3510,6 @@ class Spectrum(DataArray):
 
     def _on_5clicks_gauss_asymfit(self, event):
         """Performs asymetrical gaussian fit on spectrum (interactive mode)."""
-        d = {'class': 'Spectrum', 'method': '_on_3clicks_gauss_asymfit'}
         if event.button == 1:
             if event.inaxes is not None:
                 try:
@@ -3548,9 +3529,9 @@ class Spectrum(DataArray):
                         self.gauss2 = self.gauss_asymfit(
                             (lmin1, lmin2), (lmax1, lmax2), lpeak=lpeak,
                             plot=True, unit=self._unit)
-                        self._logger.info('left:', extra=d)
+                        self._logger.info('left:')
                         self.gauss2[0].print_param()
-                        self._logger.info('right:', extra=d)
+                        self._logger.info('right:')
                         self.gauss2[1].print_param()
                         self._clicks.id_lines.append(len(plt.gca().lines) - 1)
                 except:

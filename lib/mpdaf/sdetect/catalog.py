@@ -22,7 +22,7 @@ class Catalog(Table):
 
     def __init__(self, *args, **kwargs):
         super(Catalog, self).__init__(*args, **kwargs)
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         if self.colnames.count('ra') != 0:
             self.rename_column('ra', 'RA')
         if self.colnames.count('dec') != 0:
@@ -39,7 +39,7 @@ class Catalog(Table):
         ----------
         sources : list< :class:`mpdaf.sdetect.Source` >
         """
-        invalid = {type(1): -9999, np.int_: -9999, 
+        invalid = {type(1): -9999, np.int_: -9999,
                    type(1.0): np.nan, np.float_: np.nan,
                    type('1'): '', np.str_: '',
                    type(False): -9999, np.bool_: -9999}
@@ -74,7 +74,7 @@ class Catalog(Table):
         index = names_hdr.index('CUBE')
         names_hdr.insert(5, names_hdr.pop(index))
         dtype_hdr.insert(5, dtype_hdr.pop(index))
-        
+
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
         if len(lmag) != 0:
@@ -84,7 +84,7 @@ class Catalog(Table):
             names_mag.sort()
         else:
             names_mag = []
- 
+
         # redshifts
         lz = [len(source.z) for source in sources if source.z is not None]
         if len(lz) != 0:
@@ -108,7 +108,7 @@ class Catalog(Table):
             names_z.sort()
         else:
             names_z = []
- 
+
         # lines
         llines = [len(source.lines) for source in sources if source.lines is not None]
         if len(llines) == 0:
@@ -123,15 +123,15 @@ class Catalog(Table):
                     if source.lines is not None and 'LINE' in source.lines.colnames:
                         colnames = source.lines.colnames
                         colnames.remove('LINE')
-                        
+
                         for col in colnames:
                             d[col] = source.lines.dtype[col]
                             unit[col] = source.lines[col].unit
-                        
+
                         for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
                             if not mask:
                                 names_lines += ['%s_%s'%(line,col) for col in colnames]
-                                
+
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
                 dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
@@ -239,7 +239,7 @@ class Catalog(Table):
                                     row += [invalid[typ.type]]
                     else:
                         pass
-                        
+
             # final row
             data_rows.append(row)
 
@@ -257,15 +257,15 @@ class Catalog(Table):
 
         # create Table
         names = names_hdr + names_mag + names_z + names_lines
-        
+
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
         t['ID'].format = '%d'
         t['RA'].format = '%.7f'
-        t['RA'].unit = u.deg 
+        t['RA'].unit = u.deg
         t['DEC'].format = '%.7f'
-        t['DEC'].unit = u.deg 
+        t['DEC'].unit = u.deg
         for names in names_z:
             t[names].format = '%.6f'
         for names, unit in zip(names_lines, units_lines):
@@ -274,7 +274,7 @@ class Catalog(Table):
                 t[names].format = '%0.2f'
             if names[:4] == 'FLUX':
                 t[names].format = '%0.4f'
-                
+
         # mask nan
         for col in t.colnames:
             try:
@@ -286,9 +286,9 @@ class Catalog(Table):
                 t[col] = np.ma.masked_equal(t[col], '')
             except:
                 pass
-            
+
         return t
-    
+
     @classmethod
     def from_path(cls, path, fmt='default'):
         """Create a Catalog object from the path of a directory containing source files
@@ -298,21 +298,20 @@ class Catalog(Table):
         path : string
                Directory containing Source files
         """
-        logger = logging.getLogger('mpdaf corelib')
-        d = {'class': 'Catalog', 'method': 'from_path'}
-        
+        logger = logging.getLogger(__name__)
+
         if not os.path.exists(path):
             raise IOError("Invalid path: {0}".format(path))
-        
+
         from .source import Source
 
         slist = []
         filenames = []
         files = glob.glob(path+'/*.fits')
         n = len(files)
-        
-        logger.info('Building catalog from path %s'%path ,extra=d)
-        
+
+        logger.info('Building catalog from path %s'%path)
+
         for f in files:
             try:
                 slist.append(Source._light_from_file(f))
@@ -321,16 +320,16 @@ class Catalog(Table):
                 logger.warning('source %s not loaded'%f)
             sys.stdout.write("\r\x1b[K %i%%"%(100*len(filenames)/n))
             sys.stdout.flush()
-            
+
         #output = ""
         sys.stdout.write("\r\x1b[K ")
         sys.stdout.flush()
 
         t = cls.from_sources(slist, fmt)
         t['FILENAME'] = filenames
-        
+
         return t
-    
+
     def masked_invalid(self):
         for col in self.colnames:
             try:
@@ -361,18 +360,15 @@ class Catalog(Table):
 
                                    3- sub-table of non matched elements of the catalog cat2
         """
-        d = {'class': 'Catalog', 'method': 'match'}
         coord1 = SkyCoord(zip(self['RA'],self['DEC']), unit=(u.degree,u.degree))
         coord2 = SkyCoord(zip(cat2['RA'],cat2['DEC']), unit=(u.degree,u.degree))
         id1, id2, d2d, d3d = search_around_sky(coord1, coord2, radius * u.arcsec)
         id1_notin_2 = np.in1d(range(len(self)), id1, invert=True)
         id2_notin_1 = np.in1d(range(len(cat2)), id2, invert=True)
         self._logger.info('Cat1 Nelt %d Match %d Not Matched %d'\
-                         % (len(self), len(id1), len(self[id1_notin_2])),\
-                         extra=d)
+                         % (len(self), len(id1), len(self[id1_notin_2])))
         self._logger.info('Cat2 Nelt %d Match %d Not Matched %d'\
-                         % (len(cat2), len(id2), len(cat2[id2_notin_1])), \
-                         extra=d)
+                         % (len(cat2), len(id2), len(cat2[id2_notin_1])))
         match = hstack([self[id1], cat2[id2]])
         nomatch = self[id1_notin_2]
         nomatch2 = cat2[id2_notin_1]

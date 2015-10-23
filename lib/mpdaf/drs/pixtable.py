@@ -268,7 +268,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
     save_as_ima : bool
                   If True, pixtable is saved as multi-extension FITS
     """
-    logger = logging.getLogger('mpdaf corelib')
+    logger = logging.getLogger(__name__)
     pyfits.conf.extension_name_case_sensitive = True
 
     prihdu = pyfits.PrimaryHDU()
@@ -288,9 +288,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
                     prihdu.header['hierarch %s' % card.keyword] = \
                         (card.value, card.comment)
             except:
-                d = {'class': 'pixtable', 'method': 'write'}
-                logger.warning("%s keyword not written", card.keyword,
-                               extra=d)
+                logger.warning("%s keyword not written", card.keyword)
                 pass
     prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
     prihdu.header['author'] = ('MPDAF', 'origin of the file')
@@ -317,7 +315,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
         hdu[3].header['BUNIT'] = "{}".format(wave)
         hdu[4].header['BUNIT'] = "{}".format(unit_data)
         hdu[6].header['BUNIT'] = "{}".format(unit_data**2)
-        
+
     else:
         cols = [
             Column(name='xpos', format='1E', unit="{}".format(wcs), array=np.float32(xpos)),
@@ -394,7 +392,7 @@ class PixTable(object):
         Methods get_xpos, get_ypos, get_lambda, get_data, get_dq
         ,get_stat and get_origin must be used to get columns data.
         """
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         self.filename = filename
         self.wcs = wcs
         self.wave = wave
@@ -544,27 +542,26 @@ class PixTable(object):
 
     def info(self):
         """Print information."""
-        d = {'class': 'PixTable', 'method': 'info'}
         msg = "%i merged IFUs went into this pixel table" % self.nifu
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         if self.skysub:
             msg = "This pixel table was sky-subtracted"
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
         if self.fluxcal:
             msg = "This pixel table was flux-calibrated"
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
         msg = '%s (%s)' % (
             self.primary_header["HIERARCH ESO DRS MUSE PIXTABLE WCS"],
             self.primary_header.comments["HIERARCH ESO DRS MUSE PIXTABLE WCS"])
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         try:
             msg = self.hdulist.info()
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
         except:
             msg = 'No\tName\tType\tDim'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             msg = '0\tPRIMARY\tcard\t()'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             # print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
 
     def write(self, filename, save_as_ima=True):
@@ -991,12 +988,11 @@ class PixTable(object):
               mask
         """
         from ..MUSE import Slicer
-        d = {'class': 'PixTable', 'method': 'select_stacks'}
         assert min(stacks) > 0
         assert max(stacks) < 5
         sl = sorted([Slicer.sky2ccd(i) for st in stacks
                      for i in range(1 + 12*(st - 1), 12*st - 1)])
-        self._logger.debug('Extract stack %s -> slices %s', stacks, sl, extra=d)
+        self._logger.debug('Extract stack %s -> slices %s', stacks, sl)
         return self.select_slices(sl, origin=origin)
 
     def select_slices(self, slices, origin=None):
@@ -1326,7 +1322,6 @@ class PixTable(object):
         -------
         out : PixTable
         """
-        d = {'class': 'PixTable', 'method': 'extract'}
         if self.nrows == 0:
             return None
 
@@ -1607,10 +1602,9 @@ class PixTable(object):
                   'xpix': xpix, 'ypix': ypix}
 
         if verbose:
-            d = {'class': 'PixTable', 'method': 'get_slices'}
             msg = '%d slices found, structure returned in \
                    slices dictionary ' % len(slicelist)
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
 
         return slices
 
@@ -1643,7 +1637,7 @@ class PixTable(object):
 
 #     def reconstruct_sky_image(self, lbda=None, step=None):
 #         """Reconstructs the image on the sky from the pixtable.
-# 
+#
 #         Parameters
 #         ----------
 #         lbda : (float,float)
@@ -1655,14 +1649,14 @@ class PixTable(object):
 #                are world coordinates on the sky ).
 #                If None, the value corresponding to the keyword
 #                "HIERARCH ESO INS PIXSCALE" is used.
-# 
+#
 #         Returns
 #         -------
 #         out : :class:`mpdaf.obj.Image`
 #         """
 #         # TODO replace by DRS
 #         # step in arcsec
-# 
+#
 #         if step is None:
 #             step = self.get_keywords('HIERARCH ESO OCS IPS PIXSCALE')
 #             if step <= 0:
@@ -1671,7 +1665,7 @@ class PixTable(object):
 #             ystep = step
 #         else:
 #             ystep, xstep = step
-# 
+#
 #         col_dq = self.get_dq()
 #         if lbda is None:
 #             ksel = np.where((col_dq == 0))
@@ -1684,16 +1678,16 @@ class PixTable(object):
 #                             (col_lambda < l2))
 #             del col_lambda
 #         del col_dq
-# 
+#
 #         x = self.get_xpos(ksel) # deg ???
 #         y = self.get_ypos(ksel)
 #         data = self.get_data(ksel)
-# 
+#
 #         xmin = np.min(x)
 #         xmax = np.max(x)
 #         ymin = np.min(y)
 #         ymax = np.max(y)
-# 
+#
 #         if self.wcs == u.deg:  # arcsec to deg
 #             xstep /= (-3600. * np.cos((ymin + ymax) * np.pi / 180. / 2.))
 #             ystep /= 3600.
@@ -1702,21 +1696,21 @@ class PixTable(object):
 #             ystep /= (3600. * 180. / np.pi)
 #         else:  # pix
 #             pass
-# 
+#
 #         nx = 1 + int((xmin - xmax) / xstep)
 #         grid_x = np.arange(nx) * xstep + xmax
 #         ny = 1 + int((ymax - ymin) / ystep)
 #         grid_y = np.arange(ny) * ystep + ymin
 #         shape = (ny, nx)
-# 
+#
 #         points = np.empty((len(ksel[0]), 2), dtype=float)
 #         points[:, 0] = y
 #         points[:, 1] = x
-# 
+#
 #         new_data = interpolate.griddata(points, data,
 #                                         np.meshgrid(grid_y, grid_x),
 #                                         method='linear').T
-# 
+#
 #         wcs = WCS(crpix=(1.0, 1.0), crval=(ymin, xmax),
 #                   cdelt=(ystep, xstep), shape=shape)
 #         ima = Image(data=new_data, wcs=wcs, unit=self.data_unit)
@@ -1819,7 +1813,6 @@ class PixTable(object):
         -------
         out : :class:`mpdaf.drs.PixTableMask`
         """
-        d = {'class': 'PixTable', 'method': 'mask_column'}
 
         mask = np.zeros(self.nrows, dtype=bool)
         if maskfile is None:
@@ -1830,7 +1823,7 @@ class PixTable(object):
         ypos_sky = pos[:, 0]
 
         ima_mask = Image(maskfile)
-        
+
         data = ima_mask.data.data
         label = ndimage.measurements.label(data)[0]
         ulabel = np.unique(label)
@@ -1852,12 +1845,12 @@ class PixTable(object):
                                 (ypos_sky > y0) & (ypos_sky < y1))
                 if verbose:
                     self._logger.info(msg, i, nlabel, x0, x1, y0, y1,
-                                     len(ksel[0]), extra=d)
+                                     len(ksel[0]))
                 if len(ksel[0]) != 0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True, unit=u.deg)
                     mask[ksel] |= (data[pix[:, 0], pix[:, 1]] != 0)
             except Exception:
-                self._logger.warning('masking object %i failed', i, extra=d)
+                self._logger.warning('masking object %i failed', i)
 
         return PixTableMask(maskfile=maskfile, maskcol=mask,
                             pixtable=self.filename)
@@ -1974,7 +1967,6 @@ class PixTable(object):
         -------
         out : :class:`mpdaf.drs.PixTableAutoCalib`
         """
-        d = {'class': 'PixTable', 'method': 'subtract_slice_median'}
 
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
@@ -2058,7 +2050,7 @@ class PixTable(object):
             npts=npts, corr=corr)
 
         self._logger.info('pixtable %s updated',
-                         os.path.basename(self.filename), extra=d)
+                         os.path.basename(self.filename))
 
         # close libray
         # import _ctypes
@@ -2089,7 +2081,6 @@ class PixTable(object):
         -------
         out : :class:`mpdaf.drs.PixTableAutoCalib`
         """
-        d = {'class': 'PixTable', 'method': 'divide_slice_median'}
 
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
@@ -2174,7 +2165,7 @@ class PixTable(object):
             npts=npts, corr=corr)
 
         self._logger.info('pixtable %s updated',
-                         os.path.basename(self.filename), extra=d)
+                         os.path.basename(self.filename))
 
         # close libray
         # import _ctypes

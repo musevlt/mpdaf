@@ -56,7 +56,7 @@ class CubeList(object):
         files : list of strings
                 List of cubes fits filenames
         """
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         self.files = files
         self.nfiles = len(files)
         self.cubes = [Cube(filename=f) for f in self.files]
@@ -81,17 +81,16 @@ class CubeList(object):
 
     def info(self, verbose=False):
         """Prints information."""
-        d = {'class': 'CubeList', 'method': 'info'}
         rows = [(os.path.basename(c.filename),
                  'x'.join(str(s) for s in c.shape),
                  str(c.wcs.wcs.wcs.crpix), str(c.wcs.wcs.wcs.crval))
                 for c in self.cubes]
         t = Table(rows=rows, names=('filename', 'shape', 'crpix', 'crval'))
         for line in t.pformat():
-            self._logger.info(line, extra=d)
+            self._logger.info(line)
 
         if verbose:
-            self._logger.info('Detailed information per file:', extra=d)
+            self._logger.info('Detailed information per file:')
             for cube in self.cubes:
                 cube.info()
 
@@ -100,35 +99,32 @@ class CubeList(object):
         shapes = np.array([cube.shape for cube in self.cubes])
 
         if not np.all(shapes == self.shape):
-            d = {'class': 'CubeList', 'method': 'check_dim'}
-            self._logger.warning('all cubes have not same dimensions', extra=d)
+            self._logger.warning('all cubes have not same dimensions')
             for i in range(self.nfiles):
                 self._logger.warning('%i X %i X %i cube (%s)', shapes[i, 0],
-                                    shapes[i, 1], shapes[i, 2], self.files[i],
-                                    extra=d)
+                                    shapes[i, 1], shapes[i, 2], self.files[i])
             return False
         else:
             return True
 
     def check_wcs(self):
         """Checks if all cubes have same world coordinates."""
-        d = {'class': 'CubeList', 'method': 'check_wcs'}
         for f, cube in zip(self.files, self.cubes):
             if not cube.wcs.isEqual(self.wcs) or \
                     not cube.wave.isEqual(self.wave):
                 if not cube.wcs.isEqual(self.wcs):
                     msg = 'all cubes have not same spatial coordinates'
-                    self._logger.warning(msg, extra=d)
-                    self._logger.info(self.files[0], extra=d)
+                    self._logger.warning(msg)
+                    self._logger.info(self.files[0])
                     self.wcs.info()
-                    self._logger.info(f, extra=d)
+                    self._logger.info(f)
                     cube.wcs.info()
                 if not cube.wave.isEqual(self.wave):
                     msg = 'all cubes have not same spectral coordinates'
-                    self._logger.warning(msg, extra=d)
-                    self._logger.info(self.files[0], extra=d)
+                    self._logger.warning(msg)
+                    self._logger.info(self.files[0])
                     self.wave.info()
-                    self._logger.info(f, extra=d)
+                    self._logger.info(f)
                     cube.wave.info()
                 return False
         return True
@@ -140,8 +136,7 @@ class CubeList(object):
 
     def save_combined_cube(self, data, var=None, method='', keywords=None,
                            expnb=None, object_name=None, save_unit=True):
-        d = {'class': 'CubeList', 'method': 'merging'}
-        self._logger.info('Creating combined cube object', extra=d)
+        self._logger.info('Creating combined cube object')
 
         if data.ndim != 3:
             data = data.reshape(self.shape)
@@ -319,8 +314,7 @@ class CubeList(object):
         # no valid pixels
         rej = (valid_pix - select_pix) / valid_pix.astype(float) * 100.0
         rej = " ".join("{:.2f}%".format(p) for p in rej)
-        d = {'class': 'CubeList', 'method': 'merging'}
-        self._logger.info("%% of rejected pixels per files: %s", rej, extra=d)
+        self._logger.info("%% of rejected pixels per files: %s", rej)
         no_valid_pix = npixels - valid_pix
         rejected_pix = valid_pix - select_pix
         statpix = Table([self.files, no_valid_pix, rejected_pix],
@@ -338,7 +332,6 @@ class CubeList(object):
         return cube, expmap, statpix
 
     def pymedian(self):
-        d = {'class': 'CubeList', 'method': 'median'}
         try:
             import fitsio
         except ImportError:
@@ -352,7 +345,7 @@ class CubeList(object):
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
         nl = self.shape[0]
 
-        self._logger.info('Looping on the %d planes of the cube', nl, extra=d)
+        self._logger.info('Looping on the %d planes of the cube', nl)
         for l in ProgressBar(xrange(nl)):
             arr = np.array([c[l, :, :][0] for c in data])
             cube[l, :, :] = np.nanmedian(arr, axis=0)
@@ -372,18 +365,17 @@ class CubeList(object):
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                   object_name=None):
-        d = {'class': 'CubeList', 'method': 'merging'}
         try:
             import fitsio
         except ImportError:
-            self._logger.error('fitsio is required !', extra=d)
+            self._logger.error('fitsio is required !')
             raise
 
         try:
             from ..merging import sigma_clip
         except:
             self._logger.error('The `merging` module must have been compiled to'
-                              'use this method', extra=d)
+                              'use this method')
             raise
 
         if is_int(nclip) or is_float(nclip):
@@ -400,10 +392,10 @@ class CubeList(object):
 
         info = self._logger.info
 
-        info("Merging cube using sigma clipped mean", extra=d)
-        info("nmax = %d", nmax, extra=d)
-        info("nclip_low = %f", nclip_low, extra=d)
-        info("nclip_high = %f", nclip_up, extra=d)
+        info("Merging cube using sigma clipped mean")
+        info("nmax = %d", nmax)
+        info("nclip_low = %f", nclip_low)
+        info("nclip_high = %f", nclip_up)
 
         if nl is not None:
             self.shape[0] = nl
@@ -423,11 +415,11 @@ class CubeList(object):
         if var_mean == 0:
             stat = [fitsio.FITS(f)['STAT'] for f in self.files]
 
-        info('Looping on the %d planes of the cube', nl, extra=d)
+        info('Looping on the %d planes of the cube', nl)
         # for l in xrange(nl):
         for l in xrange(310, 312):
             if l % 100 == 0:
-                info('%d/%d', l, nl, extra=d)
+                info('%d/%d', l, nl)
             for i, f in enumerate(data):
                 arr[:, :, i] = f[l, :, :][0]
             if var_mean == 0:
@@ -447,7 +439,7 @@ class CubeList(object):
         rejected_pix = valid_pix - select_pix
         rej = rejected_pix / valid_pix.astype(float) * 100.0
         rej = " ".join("{:.2f}".format(p) for p in rej)
-        info("%% of rejected pixels per files: %s", rej, extra=d)
+        info("%% of rejected pixels per files: %s", rej)
 
         stat_pix = Table([self.files, no_valid_pix, rejected_pix],
                          names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
@@ -519,12 +511,10 @@ class CubeMosaic(CubeList):
 
     def info(self, verbose=False):
         super(CubeMosaic, self).info(verbose=verbose)
-        d = {'class': 'CubeMosaic', 'method': 'info'}
-        self._logger.info('Output WCS:', extra=d)
-        self._logger.info('- shape: %s', 'x'.join(str(s) for s in self.shape),
-                         extra=d)
-        self._logger.info('- crpix: %s', self.wcs.wcs.wcs.crpix, extra=d)
-        self._logger.info('- crval: %s', self.wcs.wcs.wcs.crval, extra=d)
+        self._logger.info('Output WCS:')
+        self._logger.info('- shape: %s', 'x'.join(str(s) for s in self.shape))
+        self._logger.info('- crpix: %s', self.wcs.wcs.wcs.crpix)
+        self._logger.info('- crval: %s', self.wcs.wcs.wcs.crval)
 
     def _set_defaults(self):
         self.shape = self.out.shape
@@ -534,7 +524,6 @@ class CubeMosaic(CubeList):
 
     def check_wcs(self):
         """Checks if all cubes use the same projection."""
-        d = {'class': 'CubeMosaic', 'method': 'check_wcs'}
         wcs = self.wcs
         cdelt1 = wcs.get_step()
         cunit = wcs.unit
@@ -549,21 +538,21 @@ class CubeMosaic(CubeList):
                      allclose(rot, cw.get_rot())]
             if not all(valid):
                 msg = 'all cubes have not same spatial coordinates'
-                self._logger.warning(msg, extra=d)
-                self._logger.info(valid, extra=d)
-                self._logger.info(self.files[0], extra=d)
+                self._logger.warning(msg)
+                self._logger.info(valid)
+                self._logger.info(self.files[0])
                 self.wcs.info()
-                self._logger.info(f, extra=d)
+                self._logger.info(f)
                 cube.wcs.info()
                 return False
 
         for f, cube in zip(self.files, self.cubes):
             if not cube.wave.isEqual(self.wave):
                 msg = 'all cubes have not same spectral coordinates'
-                self._logger.warning(msg, extra=d)
-                self._logger.info(self.files[0], extra=d)
+                self._logger.warning(msg)
+                self._logger.info(self.files[0])
                 self.wave.info()
-                self._logger.info(f, extra=d)
+                self._logger.info(f)
                 cube.wave.info()
                 return False
         return True
@@ -576,18 +565,17 @@ class CubeMosaic(CubeList):
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                   object_name=None):
-        d = {'class': 'CubeMosaic', 'method': 'merging'}
         try:
             import fitsio
         except ImportError:
-            self._logger.error('fitsio is required !', extra=d)
+            self._logger.error('fitsio is required !')
             raise
 
         try:
             from ..merging import sigma_clip
         except:
             self._logger.error('The `merging` module must have been compiled to'
-                              'use this method', extra=d)
+                              'use this method')
             raise
 
         if is_int(nclip) or is_float(nclip):
@@ -596,10 +584,10 @@ class CubeMosaic(CubeList):
             nclip_low, nclip_up = nclip
 
         info = self._logger.info
-        info("Merging cube using sigma clipped mean", extra=d)
-        info("nmax = %d", nmax, extra=d)
-        info("nclip_low = %f", nclip_low, extra=d)
-        info("nclip_high = %f", nclip_up, extra=d)
+        info("Merging cube using sigma clipped mean")
+        info("nmax = %d", nmax)
+        info("nclip_low = %f", nclip_low)
+        info("nclip_high = %f", nclip_up)
 
         if nl is not None:
             self.shape[0] = nl
@@ -619,7 +607,7 @@ class CubeMosaic(CubeList):
         fshape = (self.shape[1], self.shape[2], self.nfiles)
         arr = np.empty(fshape, dtype=float)
 
-        info('Looping on the %d planes of the cube', nl, extra=d)
+        info('Looping on the %d planes of the cube', nl)
         for l in xrange(nl):
             if l % 100 == 0:
                 info('%d/%d', l, nl)
@@ -640,7 +628,7 @@ class CubeMosaic(CubeList):
         rejected_pix = valid_pix - select_pix
         rej = rejected_pix / valid_pix.astype(float) * 100.0
         rej = " ".join("{:.2f}".format(p) for p in rej)
-        info("%% of rejected pixels per files: %s", rej, extra=d)
+        info("%% of rejected pixels per files: %s", rej)
         stat_pix = Table([self.files, no_valid_pix, rejected_pix],
                          names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
 

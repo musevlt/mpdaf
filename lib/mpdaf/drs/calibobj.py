@@ -69,7 +69,7 @@ filename : string
            Methods get_data, get_dq and get_stat must be used
            to get array extensions.
         """
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         self.filename = filename
         self.data = None
         self.dq = None
@@ -153,10 +153,9 @@ filename : string
 
     def info(self):
         """Prints information."""
-        d = {'class': 'CalibFile', 'method': 'info'}
         if self.filename is not None:
             hdulist = pyfits.open(self.filename, memmap=1)
-            self._logger.info(hdulist.info(), extra=d)
+            self._logger.info(hdulist.info())
             hdulist.close()
         else:
             msg = 'No\tName\tType\tDim\n'
@@ -164,7 +163,7 @@ filename : string
             msg += "1\tDATA\timage\t(%i,%i)\n" % (self.nx, self.ny)
             msg += "2\tDQ\timage\t(%i,%i)\n" % (self.nx, self.ny)
             msg += "3\tSTAT\timage\t(%i,%i)\n" % (self.nx, self.ny)
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
 
     def get_data(self):
         """Opens the FITS file with memory mapping, loads the data array and
@@ -536,7 +535,7 @@ dirname : string
           The repository name.
           This repository must contain files labeled <type>_<ifu id>.fits
         """
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         self.dirname = dirname
         self.progress = True
         self.type = typ
@@ -559,13 +558,12 @@ dirname : string
 
     def info(self):
         """Prints information."""
-        d = {'class': 'CalibDir', 'method': 'info'}
         msg = '%i %s files' % (len(self.files), self.type)
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
         for ifu, fileobj in self.files.items():
             msg = 'ifu %i' % ifu
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             fileobj.info()
 
     def _check(self, other):

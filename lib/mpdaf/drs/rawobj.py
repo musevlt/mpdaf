@@ -60,8 +60,7 @@ class Channel(object):
                    The raw FITS file name.
 
         """
-        self._logger = logging.getLogger('mpdaf corelib')
-        d = {'class': 'Channel', 'method': '__init__'}
+        self._logger = logging.getLogger(__name__)
         self.extname = extname
         if filename != None:
             hdulist = pyfits.open(filename)
@@ -73,7 +72,7 @@ class Channel(object):
                 self.data = np.ndarray(np.shape(data))
                 self.data[:] = data[:]
             except:
-                self._logger.warning("extension %s not loaded"%extname, extra=d)
+                self._logger.warning("extension %s not loaded"%extname)
                 self.data = None
             hdulist.close()
         elif data is not None:
@@ -792,7 +791,7 @@ class RawFile(object):
             Operator [extnumber] loads and returns the corresponding channel.
 
         """
-        self._logger = logging.getLogger('mpdaf corelib')
+        self._logger = logging.getLogger(__name__)
         self.filename = filename
         self.progress = True
         self.channels = dict()
@@ -816,11 +815,10 @@ class RawFile(object):
                                 self.nx = nx
                                 self.ny = ny
                             if nx != self.nx and ny != self.ny:
-                                d = {'class': 'RawFile', 'method': '__init__'}
                                 self._logger.warning("image extensions %s not"
                                                     " considered "
                                                     "(different sizes)",
-                                                    extname, extra=d)
+                                                    extname)
                             else:
                                 self.channels[extname] = None
                         n = n + 1
@@ -853,18 +851,17 @@ class RawFile(object):
 
     def info(self):
         """Prints information."""
-        d = {'class': 'RawFile', 'method': 'info'}
         if self.filename != None:
             msg = self.filename
         else:
             msg = 'NoName'
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         msg = 'Nb extensions:\t%i (loaded:%i %s)' % (self.next,
                                                      len(self.channels),
                                                      self.channels.keys())
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
         msg = 'format:\t(%i,%i)' % (self.nx, self.ny)
-        self._logger.info(msg, extra=d)
+        self._logger.info(msg)
 
     def get_keywords(self, key):
         """Returns the keyword value."""
@@ -1219,7 +1216,6 @@ class RawFile(object):
         :rtype: :class:`mpdaf.obj.Image`
 
         """
-        d = {'class': 'RawFile', 'method': 'reconstruct_white_image'}
         if mask is None:
             path = os.path.dirname(__file__)
             mask = path + '/mumdatMask_1x1/PAE_July2013.fits.gz'
@@ -1239,7 +1235,7 @@ class RawFile(object):
         num_tasks = len(processlist)
         if self.progress:
             msg = 'reconstruct white image ...'
-            self._logger.info(msg, extra=d)
+            self._logger.info(msg)
             import time
             while (True):
                 time.sleep(1)
