@@ -85,7 +85,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
     nbcube : Boolean
              Flag to produce an output datacube containing all narrow-band images
     del_sex  : boolean
-              If True, configuration files and intermediate files used by sextractor are not removed.
+              If True, configuration files and intermediate files used by sextractor are removed.
 
     Returns
     -------
