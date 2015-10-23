@@ -44,24 +44,31 @@ class DataArray(object):
     Parameters
     ----------
     filename : string
-                Possible FITS file name. None by default.
+               FITS file name, default to ``None``.
     hdulist  : pyfits.hdulist
-               HDU list class.
+               HDU list class, used instead of ``fits.open(filename)`` if not
+               None, to avoid opening the FITS file.
     ext      : integer or (integer,integer) or string or (string,string)
-                Number/name of the data extension
-                or numbers/names of the data and variance extensions.
+               Number/name of the data extension or numbers/names of the data
+               and variance extensions.
     unit     : astropy.units
-               Physical units of the data values.
-               u.dimensionless_unscaled by default.
+               Physical units of the data values, default to
+               ``u.dimensionless_unscaled``.
     copy     : boolean
                If true (default), then the data and variance arrays are copied.
+               Passed to ``np.ma.MaskedArray``.
     dtype    : numpy.dtype
-               Type of the data (integer, float)
+               Type of the data, default to ``float``.
+               Passed to ``np.ma.MaskedArray``.
+    data     : numpy.ndarray or list
+               Data array, passed to ``np.ma.MaskedArray``.
+    var      : numpy.ndarray or list
+               Variance array, passed to ``np.array``.
 
     Attributes
     ----------
     filename       : string
-                     Possible FITS filename.
+                     FITS filename.
     primary_header : pyfits.Header
                      FITS primary header instance.
     wcs            : :class:`mpdaf.obj.WCS`
@@ -72,15 +79,15 @@ class DataArray(object):
                      Number of dimensions.
     shape          : tuple
                      Lengths of data (python notation (nz,ny,nx)).
-    data           : masked array numpy.ma
+    data           : np.ma.MaskedArray
                      Masked array containing the cube pixel values.
     data_header    : pyfits.Header
                      FITS data header instance.
-    unit           : astropy.units
+    unit           : astropy.units.Unit
                      Physical units of the data values.
     dtype          : numpy.dtype
                      Type of the data (integer, float)
-    var            : float array
+    var            : numpy.ndarray
                      Array containing the variance.
     """
 
@@ -89,8 +96,8 @@ class DataArray(object):
     _has_wave = False
 
     def __init__(self, filename=None, hdulist=None, ext=None, data=None,
-                 var=None, unit=u.dimensionless_unscaled, copy=True,
-                 dtype=float, **kwargs):
+                 var=None, mask=False, unit=u.dimensionless_unscaled,
+                 copy=True, dtype=float, **kwargs):
         self._logger = logging.getLogger(__name__)
         self.filename = filename
         self._data = None
@@ -98,7 +105,6 @@ class DataArray(object):
         self._var = None
         self._var_ext = None
         self._ndim = None
-        # self._shape = (shape, ) if np.isscalar(shape) else shape
         self.wcs = None
         self.wave = None
         self.dtype = dtype
@@ -150,7 +156,6 @@ class DataArray(object):
 
             self.data_header = hdr = hdulist[self._data_ext].header
 
-            self.unit = u.dimensionless_unscaled
             try:
                 self.unit = u.Unit(fix_unit(hdr['BUNIT']))
             except KeyError:
@@ -206,7 +211,7 @@ class DataArray(object):
             if data is not None:
                 # set mask=False to force the expansion of the mask array with
                 # the same dimension as the data
-                self._data = ma.MaskedArray(data, mask=False, dtype=dtype,
+                self._data = ma.MaskedArray(data, mask=mask, dtype=dtype,
                                             copy=copy)
                 self._shape = self._data.shape
 
