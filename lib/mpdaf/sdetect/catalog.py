@@ -37,14 +37,14 @@ class Catalog(Table):
         The new catalog will contain all data stored in the primary headers
         and in the tables extensions of the sources:
         
-        * a column by header fits
-        * two columns by magnitude band:
+        * a column per header fits
+        * two columns per magnitude band:
           [BAND] [BAND]_ERR
-        * two or three columns by redshfit: 
+        * two or three columns per redshfit: 
            Z_[Z_DESC], Z_[Z_DESC]_ERR or
            Z_[Z_DESC], Z_[Z_DESC]_MIN and Z_[Z_DESC]_MAX
-        * several columns for each line information
-        These columns depend of the format.
+        * several columns per line.
+        The lines columns depend of the format.
         By default the columns names are created around unique LINE name
         [LINE]_[lines_colname].
         But it is possible to use a working format.
