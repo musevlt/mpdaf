@@ -430,6 +430,7 @@ class CubeList(object):
 
         info = self.logger.info
         info("Merging cube using sigma clipped mean", extra=d)
+        info("variance = %s", var, extra=d)
         info("nmax = %d", nmax, extra=d)
         info("nclip_low = %f", nclip_low, extra=d)
         info("nclip_high = %f", nclip_up, extra=d)
@@ -625,8 +626,16 @@ class CubeMosaic(CubeList):
         else:
             nclip_low, nclip_up = nclip
 
+        if var == 'propagate':
+            var_mean = 0
+        elif var == 'stat_mean':
+            var_mean = 1
+        else:
+            var_mean = 2
+
         info = self.logger.info
         info("Merging cube using sigma clipped mean", extra=d)
+        info("variance = %s", var, extra=d)
         info("nmax = %d", nmax, extra=d)
         info("nclip_low = %f", nclip_low, extra=d)
         info("nclip_high = %f", nclip_up, extra=d)
@@ -648,6 +657,10 @@ class CubeMosaic(CubeList):
         nl = self.shape[0]
         fshape = (self.shape[1], self.shape[2], self.nfiles)
         arr = np.empty(fshape, dtype=float)
+        starr = np.empty(fshape, dtype=float)
+
+        if var_mean == 0:
+            stat = [fitsio.FITS(f)['STAT'] for f in self.files]
 
         info('Looping on the %d planes of the cube', nl, extra=d)
         for l in xrange(nl):
@@ -657,11 +670,20 @@ class CubeMosaic(CubeList):
             for i, f in enumerate(data):
                 x, y = offsets[i]
                 arr[x:x+shapes[i][0], y:y+shapes[i][1], i] = f[l, :, :][0]
+            if var_mean == 0:
+                starr.fill(np.nan)
+                for i, f in enumerate(stat):
+                    x, y = offsets[i]
+                    nx, ny = shapes[i]
+                    starr[x:x+nx, y:y+ny, i] = f[l, :, :][0]
 
-            sigma_clip(arr, cube, vardata, expmap, rejmap, valid_pix,
-                       select_pix, l, nmax, nclip_low, nclip_up, nstop)
+            sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
+                       select_pix, l, nmax, nclip_low, nclip_up, nstop,
+                       var_mean)
 
         arr = None
+        starr = None
+        stat = None
         data = None
 
         # no valid pixels
