@@ -34,10 +34,31 @@ class Catalog(Table):
     @classmethod
     def from_sources(cls, sources, fmt='default'):
         """Construct a catalog from a list of source objects.
+        The new catalog will contain all data stored in the primary headers
+        and in the tables extensions of the sources:
+        
+        * a column by header fits
+        * two columns by magnitude band:
+          [BAND] [BAND]_ERR
+        * two or three columns by redshfit: 
+           Z_[Z_DESC], Z_[Z_DESC]_ERR or
+           Z_[Z_DESC], Z_[Z_DESC]_MIN and Z_[Z_DESC]_MAX
+        * several columns for each line information
+        These columns depend of the format.
+        By default the columns names are created around unique LINE name
+        [LINE]_[lines_colname].
+        But it is possible to use a working format.
+        [lines_colname]_xxx
+        where xxx is the number of lines present in each source.
+        
 
         Parameters
         ----------
         sources : list< :class:`mpdaf.sdetect.Source` >
+                  List of :class:`mpdaf.sdetect.Source` objects
+        fmt : string 'working'|'default'
+              Format of the catalog
+              The format differs for the LINES table.
         """
         invalid = {type(1): -9999, np.int_: -9999,
                    type(1.0): np.nan, np.float_: np.nan,
@@ -274,19 +295,6 @@ class Catalog(Table):
                 t[names].format = '%0.2f'
             if names[:4] == 'FLUX':
                 t[names].format = '%0.4f'
-
-        # mask nan
-        for col in t.colnames:
-            try:
-                t[col] = np.ma.masked_invalid(t[col])
-#                 t[col] = np.ma.masked_equal(t[col], None)
-#                 t[col] = np.ma.masked_equal(t[col], 'None')
-                t[col] = np.ma.masked_equal(t[col], -9999)
-                t[col] = np.ma.masked_equal(t[col], np.nan)
-                t[col] = np.ma.masked_equal(t[col], '')
-            except:
-                pass
-
         return t
 
     @classmethod
@@ -331,12 +339,12 @@ class Catalog(Table):
         return t
 
     def masked_invalid(self):
+        """Mask where invalid values occur (NaNs or infs or -9999 or '').
+        """
         for col in self.colnames:
             try:
                 self[col] = np.ma.masked_invalid(self[col])
                 self[col] = np.ma.masked_equal(self[col], -9999)
-                self[col] = np.ma.masked_equal(self[col], np.nan)
-                self[col] = np.ma.masked_equal(self[col], '')
             except:
                 pass
 

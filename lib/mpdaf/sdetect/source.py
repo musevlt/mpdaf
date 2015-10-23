@@ -128,6 +128,7 @@ def crackz(nlines, wl, flux, eml, zguess=None):
         zmax = 7.0
     if(nlines == 0):
         return -9999.0, -9999.0, 0, [], [], []
+    lnames = np.array(eml.values())
     if(nlines == 1):
         if zguess:
             (error,jfound)=matchlines(nlines,wl,zguess,eml)
@@ -140,7 +141,6 @@ def crackz(nlines, wl, flux, eml, zguess=None):
     if(nlines > 1):
         found = 0
         lbdas = np.array(eml.keys())
-        lnames = np.array(eml.values())
         for z in np.arange(zmin, zmax, zstep):
             (error, jfound) = matchlines(nlines, wl, z, eml)
             if(error < errmin):
@@ -226,12 +226,6 @@ class Source(object):
         self.mag = mag
         # Table Z
         self.z = z
-        if self.z is not None and 'Z' in self.z.colnames:
-            self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
-        if self.z is not None and 'Z_MIN' in self.z.colnames:
-            self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
-        if self.z is not None and 'Z_MAX' in self.z.colnames:
-            self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
         # Dictionary SPECTRA
         if spectra is None:
             self.spectra = {}
@@ -254,6 +248,8 @@ class Source(object):
             self.tables = tables
         # logger
         self._logger = logging.getLogger(__name__)
+        # mask invalid
+        self.masked_invalid()
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
@@ -348,74 +344,76 @@ class Source(object):
         cubes = {}
         tables= {}
         for i in range(1, len(hdulist)):
-            hdu = hdulist[i]
-            extname = hdu.header['EXTNAME']
-            #lines
-            if extname == 'LINES':
-                try:
-                    lines = Table(hdu.data, masked=True)
-                except:
-                    raise IOError('Impossible to open extension %s as a table'%extname)
-                for i,colname in enumerate(lines.colnames):
-                    try:
-                        lines[colname].unit = hdu.header['TUNIT%d'%(i+1)]
-                    except:
-                        pass
-            # mag
-            elif extname == 'MAG':
-                try:
-                    mag = Table(hdu.data, masked=True)
-                except:
-                    raise IOError('Impossible to open extension %s as a table'%extname)
-            # Z
-            elif extname == 'Z':
-                try:
-                    z = Table(hdu.data, masked=True)
-                except:
-                    raise IOError('Impossible to open extension %s as a table'%extname)
-            # spectra
-            elif extname[:3] == 'SPE' and extname[-4:]=='DATA':
-                spe_name = extname[4:-5]
-                try:
-                    ext_var = hdulist.index_of('SPE_'+spe_name+'_STAT')
-                    ext = (i, ext_var)
-                except:
-                    ext = i
-                try:
-                    spectra[spe_name] = Spectrum(filename=filename, copy=False,
-                                                 hdulist=hdulist, ext=ext)
-                except:
-                    raise IOError('Impossible to open extension %s as a spectrum'%extname)
-            #images
-            elif extname[:3] == 'IMA' and extname[-4:]=='DATA':
-                ima_name = extname[4:-5]
-                try:
-                    ext_var = hdulist.index_of('IMA_'+ima_name+'_STAT')
-                    ext = (i, ext_var)
-                except:
-                    ext = i
-                try:
-                    images[ima_name] = Image(filename=filename, copy=False,
-                                             hdulist=hdulist, ext=ext)
-                except:
-                    raise IOError('Impossible to open extension %s as an image'%extname)
-            elif extname[:3] == 'CUB' and extname[-4:]=='DATA':
-                cub_name = extname[4:-5]
-                try:
-                    ext_var = hdulist.index_of('CUB_'+cub_name+'_STAT')
-                    ext = (i, ext_var)
-                except:
-                    ext = i
-                try:
-                    cubes[cub_name] = Cube(filename=filename, hdulist=hdulist,
-                                           copy=False, ext=ext, ima=False)
-                except:
-                    raise IOError('Impossible to open extension %s as a cube'%extname)
-            elif extname[:3] == 'TAB':
-                try:
-                    tables[extname[4:]] = Table(hdu.data, masked=True)
-                except:
-                    raise IOError('Impossible to open extension %s as a table'%extname)
+            try:
+                hdu = hdulist[i]
+                if 'EXTNAME' in hdu.header:
+                    extname = hdu.header['EXTNAME']
+                    #lines
+                    if extname == 'LINES':
+                        try:
+                            lines = Table(hdu.data, masked=True)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                    # mag
+                    elif extname == 'MAG':
+                        try:
+                            mag = Table(hdu.data, masked=True)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                    # Z
+                    elif extname == 'Z':
+                        try:
+                            z = Table(hdu.data, masked=True)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                    # spectra
+                    elif extname[:3] == 'SPE' and extname[-4:]=='DATA':
+                        spe_name = extname[4:-5]
+                        stat_ext = 'SPE_'+spe_name+'_STAT'
+                        if stat_ext in hdulist:
+                            ext_var = hdulist.index_of(stat_ext)
+                            ext = (i, ext_var)
+                        else:
+                            ext = i
+                        try:
+                            spectra[spe_name] = Spectrum(filename, ext=ext)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a spectrum\n%s'%(os.path.basename(filename),extname,e))
+                    #images
+                    elif extname[:3] == 'IMA' and extname[-4:]=='DATA':
+                        ima_name = extname[4:-5]
+                        stat_ext = 'IMA_'+ima_name+'_STAT'
+                        if stat_ext in hdulist:
+                            ext_var = hdulist.index_of(stat_ext)
+                            ext = (i, ext_var)
+                        else:
+                            ext = i
+                        try:
+                            images[ima_name] = Image(filename, ext=ext)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as an image\n%s'%(os.path.basename(filename),extname,e))
+                    elif extname[:3] == 'CUB' and extname[-4:]=='DATA':
+                        cub_name = extname[4:-5]
+                        stat_ext = 'CUB_'+cub_name+'_STAT'
+                        if stat_ext in hdulist:
+                            ext_var = hdulist.index_of(stat_ext)
+                            ext = (i, ext_var)
+                        else:
+                            ext = i
+                        try:
+                            cubes[cub_name] = Cube(filename, ext=ext, ima=False)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a cube\n%s'%(os.path.basename(filename),extname,e))
+                    elif extname[:3] == 'TAB':
+                        try:
+                            tables[extname[4:]] = Table(hdu.data, masked=True)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                else:
+                    raise IOError('%s: Extension %d without EXTNAME'%(os.path.basename(filename), i))
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(e)
         hdulist.close()
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables)
 
@@ -437,32 +435,40 @@ class Source(object):
 
         tables= {}
         for i in range(1, len(hdulist)):
-            hdu = hdulist[i]
-            extname = hdu.header['EXTNAME']
-            #lines
-            if extname == 'LINES':
-                try:
-                    lines = Table(hdu.data, masked=True)
-                except:
-                    raise IOError('Impossible to open extension %s as a table'%extname)
-            # mag
-            elif extname == 'MAG':
-                try:
-                    mag = Table(hdu.data, masked=True)
-                except:
-                    raise IOError('Impossible to open extension %s as a table'%extname)
-            # Z
-            elif extname == 'Z':
-                try:
-                    z = Table(hdu.data, masked=True)
-                except:
-                    raise IOError('Impossible to open extension %s as a table'%extname)
-
-            elif extname[:3] == 'TAB':
-                try:
-                    tables[extname[4:]] = Table(hdu.data, masked=True)
-                except:
-                    raise IOError('Impossible to open extension %s as a table'%extname)
+            try:
+                hdu = hdulist[i]
+                if 'EXTNAME' in hdu.header:
+                    extname = hdu.header['EXTNAME']
+                    #lines
+                    if extname == 'LINES':
+                        try:
+                            lines = Table(hdu.data, masked=True)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                    # mag
+                    elif extname == 'MAG':
+                        try:
+                            mag = Table(hdu.data, masked=True)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                    # Z
+                    elif extname == 'Z':
+                        try:
+                            z = Table(hdu.data, masked=True)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                    # tables
+                    elif extname[:3] == 'TAB':
+                        try:
+                            tables[extname[4:]] = Table(hdu.data, masked=True)
+                        except Exception as e:
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                else:
+                    raise IOError('%s: Extension %d without EXTNAME'%(os.path.basename(filename), i))
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(e)  
+            
         hdulist.close()
         return cls(hdr, lines, mag, z, None, None, None, tables)
 
@@ -1416,7 +1422,7 @@ class Source(object):
                 #line names
                 if 'LINE' not in self.lines.colnames:
                     nlines = len(self.lines)
-                    col = MaskedColumn(np.ma.masked_array(np.empty(nlines),
+                    col = MaskedColumn(np.ma.masked_array(np.array(['']*nlines),
                                                           mask=np.ones(nlines)),
                                        name='LINE', dtype='S20')
                     self.lines.add_column(col)
@@ -1533,6 +1539,26 @@ class Source(object):
             for lbda in wavelist:
                 ax.axvline(lbda, color='r')
         return
+        
+    def masked_invalid(self):
+        """Mask where invalid values occur (NaNs or infs or -9999 or '').
+        """
+        for tab in [self.lines, self.mag, self.z]:
+            if tab is not None:
+                for col in tab.colnames:
+                    try:
+                        tab[col] = np.ma.masked_invalid(tab[col])
+                        tab[col] = np.ma.masked_equal(tab[col], -9999)
+                    except:
+                        pass
+        for tab in self.tables.values():
+            for col in tab.colnames:
+                try:
+                    tab[col] = np.ma.masked_invalid(tab[col])
+                    tab[col] = np.ma.masked_equal(tab[col], -9999)
+                except:
+                    pass
+                
 
 class SourceList(list):
     """
