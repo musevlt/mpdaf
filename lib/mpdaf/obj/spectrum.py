@@ -211,8 +211,9 @@ class Spectrum(DataArray):
     _ndim_required = 1
     _has_wave = True
 
-    def __init__(self, filename=None, ext=None, unit=u.dimensionless_unscaled, data=None,
-                 var=None, wave=None, copy=True, dtype=float, **kwargs):
+    def __init__(self, filename=None, ext=None, unit=u.dimensionless_unscaled,
+                 data=None, var=None, wave=None, copy=True, dtype=float,
+                 **kwargs):
         super(Spectrum, self).__init__(
             filename=filename, ext=ext, wave=wave, unit=unit, data=data,
             var=var, copy=copy, dtype=dtype, **kwargs)
@@ -245,13 +246,13 @@ class Spectrum(DataArray):
         imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
 
         for card in self.data_header.cards:
-            to_copy = (card.keyword[0:2] not in ('CD','PC')
-                       and card.keyword not in imahdu.header)
+            to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
+                       card.keyword not in imahdu.header)
             if to_copy:
                 try:
                     card.verify('fix')
                     imahdu.header[card.keyword] = \
-                            (card.value, card.comment)
+                        (card.value, card.comment)
                 except:
                     try:
                         if isinstance(card.value, str):
@@ -264,7 +265,7 @@ class Spectrum(DataArray):
                                 (card.value, card.comment)
                     except:
                         self._logger.warning("%s not copied in data header",
-                                        card.keyword)
+                                             card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
             imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
@@ -322,13 +323,13 @@ class Spectrum(DataArray):
                         n = 80 - len(card.keyword) - 14
                         s = card.value[0:n]
                         prihdu.header['hierarch %s' % card.keyword] = \
-                                (s, card.comment)
+                            (s, card.comment)
                     else:
                         prihdu.header['hierarch %s' % card.keyword] = \
-                                (card.value, card.comment)
+                            (card.value, card.comment)
                 except:
                     self._logger.warning("%s not copied in primary header",
-                                            card.keyword)
+                                         card.keyword)
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
@@ -345,7 +346,8 @@ class Spectrum(DataArray):
         # create spectrum DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
             hdr = self.wave.to_header()
-            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask), header=hdr)
+            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask),
+                                    header=hdr)
             hdulist.append(dqhdu)
 
         # save to disk
@@ -530,7 +532,7 @@ class Spectrum(DataArray):
                     res.data = self.data[:, np.newaxis, np.newaxis] - other.data
                 else:
                     res.data = self.data[:, np.newaxis, np.newaxis] \
-                             - UnitMaskedArray(other.data,self.unit,other.unit)
+                        - UnitMaskedArray(other.data, self.unit, other.unit)
                 # variance
                 if self.var is not None:
                     if other.var is None:
@@ -709,7 +711,7 @@ class Spectrum(DataArray):
                                self.var * other.data.data * other.data.data) \
                         / (other.data.data ** 4)
                 # unit
-                res.unit = self.unit/other.unit
+                res.unit = self.unit / other.unit
                 return res
             else:
                 # spectrum / cube1 = cube2
@@ -739,7 +741,7 @@ class Spectrum(DataArray):
                          self.var[:, np.newaxis, np.newaxis] *
                          other.data.data * other.data.data) / (other.data.data ** 4)
                 # unit
-                res.unit = self.unit/other.unit
+                res.unit = self.unit / other.unit
                 return res
 
     def __rdiv__(self, other):
@@ -817,8 +819,8 @@ class Spectrum(DataArray):
                              'along the spectral direction')
         else:
             if unit is None:
-                pix_min = max(0, int(lmin+0.5))
-                pix_max = min(self.shape[0], int(lmax+0.5))
+                pix_min = max(0, int(lmin + 0.5))
+                pix_max = min(self.shape[0], int(lmax + 0.5))
             else:
                 pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
                 pix_max = min(self.shape[0],
@@ -925,7 +927,7 @@ class Spectrum(DataArray):
         """
         if wave.shape is not None and wave.shape != self.shape:
             self._logger.warning('wavelength coordinates and data have '
-                                'not the same dimensions')
+                                 'not the same dimensions')
         self.wave = wave.copy()
         self.wave.shape = self.shape
 
@@ -953,14 +955,14 @@ class Spectrum(DataArray):
                 pix_min = 0
             else:
                 if unit is None:
-                    pix_min = max(0, int(lmin+0.5))
+                    pix_min = max(0, int(lmin + 0.5))
                 else:
                     pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
             if lmax is None:
                 pix_max = self.shape[0]
             else:
                 if unit is None:
-                    pix_max = min(self.shape[0], int(lmax+0.5))
+                    pix_max = min(self.shape[0], int(lmax + 0.5))
                 else:
                     pix_max = min(self.shape[0],
                                   self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
@@ -1112,7 +1114,7 @@ class Spectrum(DataArray):
                     var[-1] = self.var[n_right:].sum() / factor / factor
                 try:
                     wave = spe.wave
-                    wave.set_crpix(wave.get_crpix()+1)
+                    wave.set_crpix(wave.get_crpix() + 1)
                     wave.shape = wave.shape + 2
                 except:
                     wave = None
@@ -1153,7 +1155,7 @@ class Spectrum(DataArray):
                     var[1:] = spe.var
                 try:
                     wave = spe.wave
-                    wave.set_crpix(wave.get_crpix()+1)
+                    wave.set_crpix(wave.get_crpix() + 1)
                     wave.shape = wave.shape + 1
                 except:
                     wave = None
@@ -1304,7 +1306,7 @@ class Spectrum(DataArray):
             data = self._interp_data(spline)
             f = lambda x: data[self.wave.pixel(x, unit=unit, nearest=True)]
             self.data = np.empty(newshape, dtype=np.float)
-            pix = np.arange(newshape+1, dtype=np.float)
+            pix = np.arange(newshape + 1, dtype=np.float)
             x = (pix - newwave.get_crpix() + 1) * newwave.get_step(unit) \
                 + newwave.get_crval(unit) - 0.5 * newwave.get_step(unit)
 
@@ -1387,14 +1389,14 @@ class Spectrum(DataArray):
             i1 = 0
         else:
             if unit is None:
-                i1 = max(0, int(lmin+0.5))
+                i1 = max(0, int(lmin + 0.5))
             else:
                 i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
         if lmax is None:
             i2 = self.shape[0]
         else:
             if unit is None:
-                i2 = min(self.shape[0], int(lmax+0.5))
+                i2 = min(self.shape[0], int(lmax + 0.5))
             else:
                 i2 = min(self.shape[0],
                          self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
@@ -1431,14 +1433,14 @@ class Spectrum(DataArray):
             i1 = 0
         else:
             if unit is None:
-                i1 = int(lmin+0.5)
+                i1 = int(lmin + 0.5)
             else:
                 i1 = max(0, self.wave.pixel(lmin, True, unit))
         if lmax is None:
             i2 = self.shape[0]
         else:
             if unit is None:
-                i2 = int(lmax+0.5)
+                i2 = int(lmax + 0.5)
             else:
                 i2 = min(self.shape[0], self.wave.pixel(lmax, True, unit) + 1)
 
@@ -1480,7 +1482,7 @@ class Spectrum(DataArray):
 
         if lmax is None:
             i2 = self.shape[0]
-            lmax = self.wave.coord(i2-0.5, unit=unit)
+            lmax = self.wave.coord(i2 - 0.5, unit=unit)
         else:
             if unit is None:
                 l2 = lmax
@@ -1489,7 +1491,7 @@ class Spectrum(DataArray):
                 l2 = self.wave.pixel(lmax, False, unit)
             i2 = min(self.shape[0], int(l2) + 1)
 
-        d = self.wave.coord(-0.5+np.arange(i1, i2 + 1), unit=unit)
+        d = self.wave.coord(-0.5 + np.arange(i1, i2 + 1), unit=unit)
         d[0] = lmin
         d[-1] = lmax
 
@@ -1499,7 +1501,7 @@ class Spectrum(DataArray):
         if u.angstrom in self.unit.bases and unit is not u.angstrom:
             try:
                 return np.sum(self.data[i1:i2] *
-                              ((np.diff(d)*unit).to(u.angstrom).value)
+                              ((np.diff(d) * unit).to(u.angstrom).value)
                               ) * self.unit * u.angstrom
             except:
                 return (self.data[i1:i2] * np.diff(d)).sum() * self.unit * unit
@@ -1654,7 +1656,7 @@ class Spectrum(DataArray):
             return 99
         else:
             vflux = self.data[i1:i2 + 1].mean()
-            vflux2 = (vflux*self.unit).to(u.Unit('erg.s-1.cm-2.A-1')).value
+            vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.A-1')).value
             mag = flux2mag(vflux2, lbda)
             if out == 1:
                 return mag
@@ -1758,7 +1760,7 @@ class Spectrum(DataArray):
             * self.wave.get_step(u.angstrom) + self.wave.get_crval(u.angstrom)
         w = interpolate.splev(lb, tck, der=0)
         vflux = np.ma.average(self.data[imin:imax], weights=w)
-        vflux2 = (vflux*self.unit).to(u.Unit('erg.s-1.cm-2.A-1')).value
+        vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.A-1')).value
         mag = flux2mag(vflux2, l0)
         if out == 1:
             return mag
@@ -1782,14 +1784,14 @@ class Spectrum(DataArray):
             i1 = 0
         else:
             if unit is None:
-                i1 = max(0, int(lmin+0.5))
+                i1 = max(0, int(lmin + 0.5))
             else:
                 i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
         if lmax is None:
             i2 = self.shape[0]
         else:
             if unit is None:
-                i2 = min(self.shape[0], int(lmax+0.5))
+                i2 = min(self.shape[0], int(lmax + 0.5))
             else:
                 i2 = min(self.shape[0],
                          self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
@@ -1954,7 +1956,7 @@ class Spectrum(DataArray):
         # initial gaussian integrated flux
         if flux is None:
             if unit is None:
-                pixel = int(lpeak+0.5)
+                pixel = int(lpeak + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak, nearest=True, unit=unit)
             peak = d[pixel] - cont0
@@ -1995,8 +1997,8 @@ class Spectrum(DataArray):
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
         if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i]))
-                            * np.sqrt(np.abs(chisq / dof))
+            err = np.array([np.sqrt(np.abs(covar[i, i])) *
+                            np.sqrt(np.abs(chisq / dof))
                             for i in range(len(v))])
         else:
             err = None
@@ -2018,9 +2020,9 @@ class Spectrum(DataArray):
             err_lpeak = err[1]
             err_sigma = err[2]
             err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
-            err_peak = np.abs(1. / np.sqrt(2 * np.pi)
-                              * (err_flux * sigma - flux * err_sigma)
-                              / sigma / sigma)
+            err_peak = np.abs(1. / np.sqrt(2 * np.pi) *
+                              (err_flux * sigma - flux * err_sigma) /
+                              sigma / sigma)
         else:
             err_flux = np.NAN
             err_lpeak = np.NAN
@@ -2031,7 +2033,8 @@ class Spectrum(DataArray):
         return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
                        err_peak, err_flux, err_fwhm, chisq, dof)
 
-    def add_gaussian(self, lpeak, flux, fwhm, cont=0, peak=False, unit=u.angstrom):
+    def add_gaussian(self, lpeak, flux, fwhm, cont=0, peak=False,
+                     unit=u.angstrom):
         """Add a gaussian on spectrum in place.
 
         Parameters
@@ -2063,8 +2066,8 @@ class Spectrum(DataArray):
         lmin = lpeak - 5 * sigma
         lmax = lpeak + 5 * sigma
         if unit is None:
-            imin = int(lmin+0.5)
-            imax = int(lmax+0.5)
+            imin = int(lmin + 0.5)
+            imax = int(lmax + 0.5)
         else:
             imin = self.wave.pixel(lmin, True, unit)
             imax = self.wave.pixel(lmax, True, unit)
@@ -2190,7 +2193,7 @@ class Spectrum(DataArray):
         # initial gaussian integrated flux
         if flux_1 is None:
             if unit is None:
-                pixel = int(lpeak_1+0.5)
+                pixel = int(lpeak_1 + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak_1, nearest=True, unit=unit)
             peak_1 = d[pixel] - cont0
@@ -2265,16 +2268,17 @@ class Spectrum(DataArray):
             err_peak_2 = np.NAN
 
         return Gauss1D(lpeak_1, peak_1, flux_1, fwhm, cont0, err_lpeak_1, err_peak_1, err_flux_1, err_fwhm, chisq, dof), \
-               Gauss1D(lpeak_2, peak_2, flux_2, fwhm, cont0, err_lpeak_2, err_peak_2, err_flux_2, err_fwhm, chisq, dof)
+            Gauss1D(lpeak_2, peak_2, flux_2, fwhm, cont0, err_lpeak_2, err_peak_2, err_flux_2, err_fwhm, chisq, dof)
 
     def gauss_asymfit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None,
                       cont=None, peak=False, spline=False, weight=True,
                       plot=False, plot_factor=10, unit=u.angstrom):
-        """Truncate the spectrum and fit it with an asymetric gaussian function.
-        Returns the two gaussian functions (right and left) as :class:`mpdaf.obj.Gauss1D` objects.
+        """Truncate the spectrum and fit it with an asymetric gaussian function
 
-        # From Johan Richard and Vera Patricio
-        # Modified by Jeremy Blaizot
+        Returns the two gaussian functions (right and left) as
+        :class:`mpdaf.obj.Gauss1D` objects.
+
+        From Johan Richard and Vera Patricio, modified by Jeremy Blaizot.
 
         Parameters
         ----------
@@ -2370,7 +2374,7 @@ class Spectrum(DataArray):
         # initial gaussian integrated flux
         if flux is None:
             if unit is None:
-                pixel = int(lpeak+0.5)
+                pixel = int(lpeak + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak, nearest=True, unit=unit)
             peak = d[pixel] - cont0
@@ -2441,8 +2445,8 @@ class Spectrum(DataArray):
             err_fwhm_left = np.NAN
             err_peak = np.NAN
 
-        return Gauss1D(lpeak, peak, flux_left, fwhm_left, cont0, err_lpeak, err_peak, err_flux/2, err_fwhm_left, chisq, dof), \
-               Gauss1D(lpeak, peak, flux_right, fwhm_right, cont0, err_lpeak, err_peak, err_flux/2, err_fwhm_right, chisq, dof)
+        return Gauss1D(lpeak, peak, flux_left, fwhm_left, cont0, err_lpeak, err_peak, err_flux / 2, err_fwhm_left, chisq, dof), \
+            Gauss1D(lpeak, peak, flux_right, fwhm_right, cont0, err_lpeak, err_peak, err_flux / 2, err_fwhm_right, chisq, dof)
 
     def add_asym_gaussian(self, lpeak, flux, fwhm_right, fwhm_left, cont=0, peak=False, unit=u.angstrom):
         """Adds an asymetric gaussian on spectrum in place.
@@ -2479,8 +2483,8 @@ class Spectrum(DataArray):
         lmin = lpeak - 5 * sigma_left
         lmax = lpeak + 5 * sigma_right
         if unit is None:
-            imin = int(lmin+0.5)
-            imax = int(lmax+0.5)
+            imin = int(lmin + 0.5)
+            imax = int(lmax + 0.5)
         else:
             imin = self.wave.pixel(lmin, True, unit=unit)
             imax = self.wave.pixel(lmax, True, unit=unit)
@@ -2570,8 +2574,8 @@ class Spectrum(DataArray):
 
         # continuum value
         if cont is None:
-            cont0 = ((fmax - fmin) * lpeak + lmax
-                     * fmin - lmin * fmax) / (lmax - lmin)
+            cont0 = ((fmax - fmin) * lpeak + lmax * fmin -
+                     lmin * fmax) / (lmax - lmin)
         else:
             cont0 = cont
 
@@ -2625,8 +2629,8 @@ class Spectrum(DataArray):
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
         if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i]))
-                            * np.sqrt(np.abs(chisq / dof))
+            err = np.array([np.sqrt(np.abs(covar[i, i])) *
+                            np.sqrt(np.abs(chisq / dof))
                             for i in range(len(v))])
         else:
             err = None
@@ -2647,9 +2651,9 @@ class Spectrum(DataArray):
             err_lpeak = 0
             err_sigma = err[1]
             err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
-            err_peak = np.abs(1. / np.sqrt(2 * np.pi)
-                              * (err_flux * sigma - flux * err_sigma)
-                              / sigma / sigma)
+            err_peak = np.abs(1. / np.sqrt(2 * np.pi) *
+                              (err_flux * sigma - flux * err_sigma) /
+                              sigma / sigma)
         else:
             err_flux = np.NAN
             err_lpeak = np.NAN
@@ -2725,7 +2729,7 @@ class Spectrum(DataArray):
                 else:
                     data = other.data.data
                     if self.unit != other.unit:
-                        data = (data*other.unit).to(self.unit).value
+                        data = (data * other.unit).to(self.unit).value
                     self.data = \
                         np.ma.array(signal.convolve(self.data, data, mode='same'),
                                     mask=self.data.mask)
@@ -2783,8 +2787,8 @@ class Spectrum(DataArray):
                                   'for spectra with different sizes')
                 else:
                     data = other.data.data
-                    if self.unit!=other.unit:
-                        data = (data*other.unit).to(self.unit).value
+                    if self.unit != other.unit:
+                        data = (data * other.unit).to(self.unit).value
                     self.data = \
                         np.ma.array(signal.fftconvolve(self.data, data, mode='same'),
                                     mask=self.data.mask)
@@ -2842,7 +2846,7 @@ class Spectrum(DataArray):
                 else:
                     data = other.data.data
                     if self.unit != other.unit:
-                        data = (data*other.unit).to(self.unit).value
+                        data = (data * other.unit).to(self.unit).value
                     self.data = \
                         np.ma.array(signal.correlate(self.data, data, mode='same'),
                                     mask=self.data.mask)
@@ -3082,7 +3086,7 @@ class Spectrum(DataArray):
         if title is not None:
             ax.set_title(title)
         if unit is not None:
-            ax.set_xlabel(r'$\lambda$ (%s)' %"{}".format(unit))
+            ax.set_xlabel(r'$\lambda$ (%s)' % "{}".format(unit))
         if res.unit is not None:
             ax.set_ylabel(res.unit)
         self._fig = plt.get_current_fig_manager()

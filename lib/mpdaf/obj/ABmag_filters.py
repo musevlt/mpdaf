@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import interpolate
 
+
 def mag_RJohnson():
     lbda = 6940.
     lmin = 5200.

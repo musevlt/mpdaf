@@ -171,10 +171,10 @@ class LogNorm(Normalize):
         elif vmin == vmax:
             result.fill(0)
         else:
-            if clip:
-                mask = np.ma.getmask(result)
-                val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
-                                  mask=mask)
+            # if clip:
+            #     mask = np.ma.getmask(result)
+            #     val = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
+            #                       mask=mask)
             midpoint = 0.05
             result = np.ma.log10((result / midpoint) + 1.) \
                 / np.ma.log10((1. / midpoint) + 1.)
@@ -185,28 +185,25 @@ class LogNorm(Normalize):
     def inverse(self, value):
         if not self.scaled():
             raise ValueError("Not invertible until scaled")
-        vmin, vmax = self.vmin, self.vmax
+        # vmin, vmax = self.vmin, self.vmax
 
         if cbook.iterable(value):
             val = np.ma.asarray(value)
         else:
             val = value
         midpoint = 0.05
-        val = midpoint \
-            * (np.ma.power(10., (val * np.ma.log10(1. / midpoint + 1.))) - 1.)
-
+        val = midpoint * (
+            np.ma.power(10., (val * np.ma.log10(1. / midpoint + 1.))) - 1.)
         return val
 
     def autoscale(self, A):
-        '''
-        Set *vmin*, *vmax* to min, max of *A*.
-        '''
+        """Set *vmin*, *vmax* to min, max of *A*."""
         A = np.ma.masked_less_equal(A, 0, copy=False)
         self.vmin = np.ma.min(A)
         self.vmax = np.ma.max(A)
 
     def autoscale_None(self, A):
-        ' autoscale only None-valued vmin or vmax'
+        """autoscale only None-valued vmin or vmax"""
         if self.vmin is not None and self.vmax is not None:
             return
         A = np.ma.masked_less_equal(A, 0, copy=False)

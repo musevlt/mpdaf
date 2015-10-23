@@ -318,9 +318,12 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
 
     else:
         cols = [
-            Column(name='xpos', format='1E', unit="{}".format(wcs), array=np.float32(xpos)),
-            Column(name='ypos', format='1E', unit="{}".format(wcs), array=np.float32(ypos)),
-            Column(name='lambda', format='1E', unit="{}".format(wave), array=lbda),
+            Column(name='xpos', format='1E', unit="{}".format(wcs),
+                   array=np.float32(xpos)),
+            Column(name='ypos', format='1E', unit="{}".format(wcs),
+                   array=np.float32(ypos)),
+            Column(name='lambda', format='1E', unit="{}".format(wave),
+                   array=lbda),
             Column(name='data', format='1E', unit="{}".format(unit_data),
                    array=np.float32(data)),
             Column(name='dq', format='1J', array=np.int32(dq)),
@@ -492,8 +495,8 @@ class PixTable(object):
             try:
                 # center in degrees
                 cunit = u.Unit(self.get_keywords("CUNIT1"))
-                self.xc = (self.primary_header['RA']*cunit).to(u.deg).value
-                self.yc = (self.primary_header['DEC']*cunit).to(u.deg).value
+                self.xc = (self.primary_header['RA'] * cunit).to(u.deg).value
+                self.yc = (self.primary_header['DEC'] * cunit).to(u.deg).value
             except:
                 try:
                     # center in pixels
@@ -501,7 +504,6 @@ class PixTable(object):
                     self.yc = self.primary_header['DEC']
                 except:
                     pass
-
 
     def copy(self):
         """Copy PixTable object in a new one and returns it."""
@@ -754,7 +756,7 @@ class PixTable(object):
                unit of the lambda column in input.
         """
         if unit is not None:
-            lbda = (lbda  * unit).to(self.wave).value
+            lbda = (lbda * unit).to(self.wave).value
         self.set_column('lambda', lbda, ksel=ksel)
         self.primary_header['HIERARCH ESO DRS MUSE '
                             'PIXTABLE LIMITS LAMBDA LOW']\
@@ -937,7 +939,7 @@ class PixTable(object):
         getk = self.get_keywords
         try:
             nexp = getk("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
-            exp = np.empty(shape=(self.nrows))
+            exp = np.empty(shape=self.nrows)
             for i in range(1, nexp + 1):
                 first = getk("HIERARCH ESO DRS MUSE PIXTABLE EXP%i FIRST" % i)
                 last = getk("HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i)
@@ -991,7 +993,7 @@ class PixTable(object):
         assert min(stacks) > 0
         assert max(stacks) < 5
         sl = sorted([Slicer.sky2ccd(i) for st in stacks
-                     for i in range(1 + 12*(st - 1), 12*st - 1)])
+                     for i in range(1 + 12 * (st - 1), 12 * st - 1)])
         self._logger.debug('Extract stack %s -> slices %s', stacks, sl)
         return self.select_slices(sl, origin=origin)
 
@@ -1758,7 +1760,7 @@ class PixTable(object):
         image[ypix - ystart, xpix - xstart] = col_data
 
         wcs = WCS(crval=(ystart, xstart))
-        return Image(shape=(image.shape), data=image, wcs=wcs, unit=self.unit_data)
+        return Image(data=image, wcs=wcs, unit=self.unit_data, copy=False)
 
     def reconstruct_det_waveimage(self):
         """Reconstructs an image of wavelength values on the detector from the
@@ -1795,7 +1797,7 @@ class PixTable(object):
 
         wcs = WCS(crval=(ystart, xstart))
 
-        return Image(shape=(image.shape), data=image, wcs=wcs, unit=self.wave)
+        return Image(data=image, wcs=wcs, unit=self.wave, copy=False)
 
     def mask_column(self, maskfile=None, verbose=True):
         """Computes the mask column corresponding to a mask file.
@@ -1845,7 +1847,7 @@ class PixTable(object):
                                 (ypos_sky > y0) & (ypos_sky < y1))
                 if verbose:
                     self._logger.info(msg, i, nlabel, x0, x1, y0, y1,
-                                     len(ksel[0]))
+                                      len(ksel[0]))
                 if len(ksel[0]) != 0:
                     pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True, unit=u.deg)
                     mask[ksel] |= (data[pix[:, 0], pix[:, 1]] != 0)
@@ -1933,7 +1935,7 @@ class PixTable(object):
         wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda),
                          cunit=u.angstrom, shape=n)
 
-        spe = Spectrum(shape=n, data=result, wave=wave, unit=self.unit_data)
+        spe = Spectrum(data=result, wave=wave, unit=self.unit_data, copy=False)
         add_mpdaf_method_keywords(spe.primary_header,
                                   "drs.pixtable.sky_ref",
                                   ['pixtable', 'mask', 'dlbda', 'nmax',
@@ -1997,7 +1999,7 @@ class PixTable(object):
         libCmethods.mpdaf_slice_median.argtypes = \
             [array_1d_double, array_1d_double, array_1d_double, array_1d_int,
              array_1d_int, array_1d_int, array_1d_double, array_1d_double,
-             ctypes.c_int, array_1d_int, array_1d_double,array_1d_double,
+             ctypes.c_int, array_1d_int, array_1d_double, array_1d_double,
              ctypes.c_int, array_1d_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
@@ -2007,7 +2009,7 @@ class PixTable(object):
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
         mask = maskcol.astype(np.int32)
-        skyref_flux = (skyref.data.data.astype(np.float64)*skyref.unit).to(self.unit_data).value
+        skyref_flux = (skyref.data.data.astype(np.float64) * skyref.unit).to(self.unit_data).value
         skyref_lbda = skyref.wave.coord(unit=self.wave)
         skyref_n = skyref.shape
         xpix = xpix.astype(np.int32)
@@ -2015,7 +2017,7 @@ class PixTable(object):
 
         result = np.empty_like(data, dtype=np.float64)
         stat_result = np.empty_like(data, dtype=np.float64)
-        corr = np.ones(24 * 48 * 4, dtype=np.float64) #zeros
+        corr = np.ones(24 * 48 * 4, dtype=np.float64)  # zeros
         npts = np.zeros(24 * 48 * 4, dtype=np.int32)
 
         libCmethods.mpdaf_slice_median(
@@ -2043,14 +2045,15 @@ class PixTable(object):
             method='drs.pixtable.subtract_slice_median',
             maskfile=maskfile, skyref=skyref_file,
             pixtable=os.path.basename(self.filename),
-            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48*4, 24)),
+            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * 4, 24)),
                                      0, 1)),
-            sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int), (4, 24, 48))),
-            quad=np.ravel(np.resize(np.arange(1, 5), (24*48, 4))),
+            sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int),
+                                   (4, 24, 48))),
+            quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, 4))),
             npts=npts, corr=corr)
 
         self._logger.info('pixtable %s updated',
-                         os.path.basename(self.filename))
+                          os.path.basename(self.filename))
 
         # close libray
         # import _ctypes
@@ -2111,7 +2114,7 @@ class PixTable(object):
         libCmethods.mpdaf_slice_median.argtypes = \
             [array_1d_double, array_1d_double, array_1d_double, array_1d_int,
              array_1d_int, array_1d_int, array_1d_double, array_1d_double,
-             ctypes.c_int, array_1d_int, array_1d_double,array_1d_double,
+             ctypes.c_int, array_1d_int, array_1d_double, array_1d_double,
              ctypes.c_int, array_1d_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
@@ -2121,7 +2124,7 @@ class PixTable(object):
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
         mask = maskcol.astype(np.int32)
-        skyref_flux = (skyref.data.data.astype(np.float64)*skyref.unit).to(self.unit_data).value
+        skyref_flux = (skyref.data.data.astype(np.float64) * skyref.unit).to(self.unit_data).value
         skyref_lbda = skyref.wave.coord(unit=self.wave)
         skyref_n = skyref.shape
         xpix = xpix.astype(np.int32)
@@ -2129,12 +2132,13 @@ class PixTable(object):
 
         result = np.empty_like(data, dtype=np.float64)
         result_stat = np.empty_like(data, dtype=np.float64)
-        corr = np.ones(24 * 48 * 4, dtype=np.float64) #zeros
+        corr = np.ones(24 * 48 * 4, dtype=np.float64)  # zeros
         npts = np.zeros(24 * 48 * 4, dtype=np.int32)
 
         libCmethods.mpdaf_slice_median(
             result, result_stat, corr, npts, ifu, sli, data, lbda,
-            data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n, xpix, ypix, 0)
+            data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n,
+            xpix, ypix, 0)
 
         # set pixtable data
         self.set_data(result)
@@ -2158,14 +2162,15 @@ class PixTable(object):
             method='drs.pixtable.divide_slice_median',
             maskfile=maskfile, skyref=skyref_file,
             pixtable=os.path.basename(self.filename),
-            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48*4, 24)),
+            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * 4, 24)),
                                      0, 1)),
-            sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int), (4, 24, 48))),
-            quad=np.ravel(np.resize(np.arange(1, 5), (24*48, 4))),
+            sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int),
+                                   (4, 24, 48))),
+            quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, 4))),
             npts=npts, corr=corr)
 
         self._logger.info('pixtable %s updated',
-                         os.path.basename(self.filename))
+                          os.path.basename(self.filename))
 
         # close libray
         # import _ctypes

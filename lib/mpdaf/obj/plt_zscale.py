@@ -1,7 +1,7 @@
 import math
 import numpy
 
-#PyRAF - stsci_python
+# PyRAF - stsci_python
 
 MAX_REJECT = 0.5
 MIN_NPIXELS = 5

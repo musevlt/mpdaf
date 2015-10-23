@@ -162,7 +162,7 @@ class DataArray(object):
                                      'loaded from the FITS header.\n %s', e)
 
             if 'FSCALE' in hdr:
-                    self.unit *= u.Unit(hdr['FSCALE'])
+                self.unit *= u.Unit(hdr['FSCALE'])
 
             self._shape = hdulist[self._data_ext].data.shape
             # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],

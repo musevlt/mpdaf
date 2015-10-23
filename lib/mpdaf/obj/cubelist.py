@@ -8,7 +8,7 @@ import os
 from astropy.table import Table
 from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
-from numpy import ma, allclose, array_equal
+from numpy import allclose, array_equal
 
 from .cube import Cube
 from .objs import is_float, is_int
@@ -102,7 +102,7 @@ class CubeList(object):
             self._logger.warning('all cubes have not same dimensions')
             for i in range(self.nfiles):
                 self._logger.warning('%i X %i X %i cube (%s)', shapes[i, 0],
-                                    shapes[i, 1], shapes[i, 2], self.files[i])
+                                     shapes[i, 1], shapes[i, 2], self.files[i])
             return False
         else:
             return True
@@ -286,7 +286,7 @@ class CubeList(object):
                                               flags='CONTIGUOUS')
 
         # returned arrays
-        npixels = self.shape[0]*self.shape[1]*self.shape[2]
+        npixels = self.shape[0] * self.shape[1] * self.shape[2]
         data = np.empty(npixels, dtype=np.float64)
         vardata = np.empty(npixels, dtype=np.float64)
         expmap = np.empty(npixels, dtype=np.int32)
@@ -374,8 +374,8 @@ class CubeList(object):
         try:
             from ..merging import sigma_clip
         except:
-            self._logger.error('The `merging` module must have been compiled to'
-                              'use this method')
+            self._logger.error('The `merging` module must have been compiled '
+                               'to use this method')
             raise
 
         if is_int(nclip) or is_float(nclip):
@@ -416,7 +416,7 @@ class CubeList(object):
             stat = [fitsio.FITS(f)['STAT'] for f in self.files]
 
         info('Looping on the %d planes of the cube', nl)
-        
+
         for l in xrange(nl):
             if l % 100 == 0:
                 info('%d/%d', l, nl)
@@ -574,8 +574,8 @@ class CubeMosaic(CubeList):
         try:
             from ..merging import sigma_clip
         except:
-            self._logger.error('The `merging` module must have been compiled to'
-                              'use this method')
+            self._logger.error('The `merging` module must have been compiled '
+                               'to use this method')
             raise
 
         if is_int(nclip) or is_float(nclip):
@@ -625,7 +625,7 @@ class CubeMosaic(CubeList):
             arr.fill(np.nan)
             for i, f in enumerate(data):
                 x, y = offsets[i]
-                arr[x:x+shapes[i][0], y:y+shapes[i][1], i] = f[l, :, :][0]
+                arr[x:x + shapes[i][0], y:y + shapes[i][1], i] = f[l, :, :][0]
             if var_mean == 0:
                 starr.fill(np.nan)
                 for i, f in enumerate(stat):

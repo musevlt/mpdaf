@@ -62,7 +62,7 @@ class Channel(object):
         """
         self._logger = logging.getLogger(__name__)
         self.extname = extname
-        if filename != None:
+        if filename is not None:
             hdulist = pyfits.open(filename)
             self.header = hdulist[extname].header
             self.nx = hdulist[extname].header["NAXIS1"]
@@ -72,7 +72,7 @@ class Channel(object):
                 self.data = np.ndarray(np.shape(data))
                 self.data[:] = data[:]
             except:
-                self._logger.warning("extension %s not loaded"%extname)
+                self._logger.warning("extension %s not loaded" % extname)
                 self.data = None
             hdulist.close()
         elif data is not None:
@@ -798,7 +798,7 @@ class RawFile(object):
         self.nx = 0
         self.ny = 0
         self.next = 0
-        if filename != None:
+        if filename is not None:
             try:
                 hdulist = pyfits.open(self.filename, memmap=1)
                 self.primary_header = hdulist[0].header
@@ -816,9 +816,9 @@ class RawFile(object):
                                 self.ny = ny
                             if nx != self.nx and ny != self.ny:
                                 self._logger.warning("image extensions %s not"
-                                                    " considered "
-                                                    "(different sizes)",
-                                                    extname)
+                                                     " considered "
+                                                     "(different sizes)",
+                                                     extname)
                             else:
                                 self.channels[extname] = None
                         n = n + 1
@@ -837,13 +837,13 @@ class RawFile(object):
     def copy(self):
         """Returns a copy of the RawFile object."""
         result = RawFile(self.filename)
-        if result.filename == None:
+        if result.filename is None:
             result.primary_header = pyfits.Header(self.primary_header)
             result.nx = self.nx
             result.ny = self.ny
             result.next = self.next
             for name, chan in self.channels.items():
-                if chan != None:
+                if chan is not None:
                     result.channels[name] = chan.copy()
                 else:
                     result.channels[name] = None
@@ -851,7 +851,7 @@ class RawFile(object):
 
     def info(self):
         """Prints information."""
-        if self.filename != None:
+        if self.filename is not None:
             msg = self.filename
         else:
             msg = 'NoName'
@@ -884,7 +884,7 @@ class RawFile(object):
         out : :class:`mpdaf.drs.Channel`
 
         """
-        if self.channels[extname] != None:
+        if self.channels[extname] is not None:
             return self.channels[extname]
         else:
             chan = Channel(extname, self.filename)
@@ -1244,8 +1244,8 @@ class RawFile(object):
                     output = ""
                     sys.stdout.write("\r\x1b[K" + output.__str__())
                     break
-                output = "\r (%i%% done)" % (float(completed)
-                                             / float(num_tasks) * 100.0)
+                output = "\r (%i%% done)" % (float(completed) /
+                                             float(num_tasks) * 100.0)
                 sys.stdout.write("\r\x1b[K" + output.__str__())
                 sys.stdout.flush()
 

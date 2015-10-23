@@ -10,9 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-
-
-
 class DisplayPixTable(object):
 
     """DisplayPixTable class.
@@ -264,12 +261,12 @@ det_vmax  : float
                 radius = size / np.abs(step[0].to(u.deg).value) / 3600.0
             except:
                 radius = size / np.abs(step[0].value)
-                
+
             ima.mask(center=center, radius=radius, pix=True, inside=False)
         l = ima.shape[1]
 
         try:
-            nexp = pix.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
+            # nexp = pix.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
             col_exp = pix.get_exp()
             exposures = np.unique(col_exp)
             for exp in exposures:
@@ -287,13 +284,7 @@ det_vmax  : float
                        ima_center_p, ima_center_q, dp_slice, dq_slice,
                        exp, sky, lbda, sky_scale, sky_cmap, slice_scale,
                        slice_cmap, slice_vmin, slice_vmax):
-        """display in slice mode.
-
-Parameters
-----------
-
-
-        """
+        """display in slice mode."""
         # number of ifus
         msg = 'extract sub-pixel table ...'
         self._logger.info(msg)
@@ -534,19 +525,19 @@ slice_vmax  : float
 
         if shape == 'C':
             center = ima.wcs.sky2pix((y, x), unit=self.pixtable.wcs)[0]
-            
+
             step = ima.wcs.get_step(unit=self.pixtable.wcs)
             try:
                 radius = size / np.abs(step[0].to(u.deg).value) / 3600.
             except:
                 radius = size / np.abs(step[0].value)
-            
+
             ima.mask(center=center, radius=radius, pix=True, inside=False)
         ima_center_p = ima.shape[0] / 2.0
         ima_center_q = ima.shape[1] / 2.0
 
         try:
-            nexp = pix.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
+            # nexp = pix.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE COMBINED")
             col_exp = pix.get_exp()
             exposures = np.unique(col_exp)
             for exp in exposures:

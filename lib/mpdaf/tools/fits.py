@@ -22,11 +22,14 @@ def add_mpdaf_method_keywords(header, method, params, values, comments):
     while 'MPDAF METH%d ID' % i in header:
         i += 1
     import mpdaf
-    header['HIERARCH MPDAF METH%d VERSION' % i] = (mpdaf.__version__, 'MPDAF version')
-    header['HIERARCH MPDAF METH%d ID' % i] = (method, 'MPDAF method identifier')
+    header['HIERARCH MPDAF METH%d VERSION' % i] = (mpdaf.__version__,
+                                                   'MPDAF version')
+    header['HIERARCH MPDAF METH%d ID' % i] = (method,
+                                              'MPDAF method identifier')
     n = len(params)
     for p in range(n):
-        header['HIERARCH MPDAF METH%d PARAM%d NAME' % (i, p + 1)] = (params[p], comments[p])
+        header['HIERARCH MPDAF METH%d PARAM%d NAME' % (i, p + 1)] = (
+            params[p], comments[p])
         keyword = 'HIERARCH MPDAF METH%d PARAM%d VALUE' % (i, p + 1)
         if isinstance(values[p], str):
             n = 80 - len(keyword) - 14

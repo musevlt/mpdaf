@@ -316,7 +316,7 @@ filename : string
         return result
 
     def __iadd__(self, other):
-        if self.data == None:
+        if self.data is None:
             return self.__add__(other)
         else:
             if isinstance(other, CalibFile):
@@ -393,7 +393,7 @@ filename : string
         return result
 
     def __isub__(self, other):
-        if self.data == None:
+        if self.data is None:
             return self.__sub__(other)
         else:
             if isinstance(other, CalibFile):
@@ -455,7 +455,7 @@ filename : string
             return result
 
     def __imul__(self, other):
-        if self.data == None:
+        if self.data is None:
             return self.__mul__(other)
         else:
             if isinstance(other, CalibFile):
@@ -551,7 +551,7 @@ dirname : string
     def copy(self):
         """Returns a new copy of a CalibDir object."""
         result = CalibDir(self.type, self.dirname)
-        if self.dirname == None:
+        if self.dirname is None:
             for ifu, fileobj in self.files.items():
                 self.files[ifu] = fileobj.copy()
         return result
@@ -699,7 +699,7 @@ dirname : string
 
     def write(self, dirname):
         """Writes files in self.dirname."""
-        if self.dirname == None:
+        if self.dirname is None:
             for ifu, fileobj in self.files.items():
                 filename = "%s/%s_%02d.fits" % (dirname, self.type, ifu)
                 fileobj.write(filename)
@@ -753,8 +753,8 @@ def _add_calib_files(arglist):
     filedq2 = arglist[9]
     filestat2 = arglist[10]
     progress = arglist[11]
-    if filename1 == None:
-        if filedata1 == None or filestat1 == None or filedq1 == None:
+    if filename1 is None:
+        if filedata1 is None or filestat1 is None or filedq1 is None:
             raise IOError('format error: empty extension')
         else:
             data1 = np.memmap(filedata1, dtype="float32", shape=(ny, nx))
@@ -766,8 +766,8 @@ def _add_calib_files(arglist):
         stat1 = hdulist["STAT"].data
         dq1 = hdulist["DQ"].data
         hdulist.close()
-    if filename2 == None:
-        if filedata2 == None or filestat2 == None or filedq2 == None:
+    if filename2 is None:
+        if filedata2 is None or filestat2 is None or filedq2 is None:
             raise IOError('format error: empty extension')
         else:
             data2 = np.memmap(filedata2, dtype="float32", shape=(ny, nx))
@@ -800,8 +800,8 @@ def _add_calib(arglist):
     filedata1 = arglist[4]
     other = arglist[7]
     progress = arglist[8]
-    if filename1 == None:
-        if filedata1 == None:
+    if filename1 is None:
+        if filedata1 is None:
             raise IOError('format error: empty extension')
         else:
             data1 = np.memmap(filedata1, dtype="float32", shape=(ny, nx))
@@ -831,8 +831,8 @@ def _sub_calib_files(arglist):
     filedq2 = arglist[9]
     filestat2 = arglist[10]
     progress = arglist[11]
-    if filename1 == None:
-        if filedata1 == None or filestat1 == None or filedq1 == None:
+    if filename1 is None:
+        if filedata1 is None or filestat1 is None or filedq1 is None:
             raise IOError('format error: empty extension')
         else:
             data1 = np.memmap(filedata1, dtype="float32", shape=(ny, nx))
@@ -844,8 +844,8 @@ def _sub_calib_files(arglist):
         stat1 = hdulist["STAT"].data
         dq1 = hdulist["DQ"].data
         hdulist.close()
-    if filename2 == None:
-        if filedata2 == None or filestat2 == None or filedq2 == None:
+    if filename2 is None:
+        if filedata2 is None or filestat2 is None or filedq2 is None:
             raise IOError('format error: empty extension')
         else:
             data2 = np.memmap(filedata2, dtype="float32", shape=(ny, nx))
@@ -878,8 +878,8 @@ def _sub_calib(arglist):
     filedata1 = arglist[4]
     other = arglist[7]
     progress = arglist[8]
-    if filename1 == None:
-        if filedata1 == None:
+    if filename1 is None:
+        if filedata1 is None:
             raise IOError('format error: empty extension')
         else:
             data1 = np.memmap(filedata1, dtype="float32", shape=(ny, nx))
@@ -905,8 +905,8 @@ def _mul_calib(arglist):
     filestat1 = arglist[6]
     other = arglist[7]
     progress = arglist[8]
-    if filename1 == None:
-        if filedata1 == None or filestat1 == None:
+    if filename1 is None:
+        if filedata1 is None or filestat1 is None:
             raise IOError('format error: empty extension')
         else:
             data1 = np.memmap(filedata1, dtype="float32", shape=(ny, nx))

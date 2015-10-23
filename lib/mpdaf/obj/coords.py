@@ -436,7 +436,7 @@ class WCS(object):
                 np.allclose(x1, x2, atol=1E-3, rtol=0) and
                 np.allclose(cdelt1, cdelt2, atol=1E-3, rtol=0) and
                 np.allclose(self.get_rot(), other.get_rot(), atol=1E-3, rtol=0))
-        
+
     def sameStep(self, other):
         """Return True if other and self have the same steps."""
         if not isinstance(other, WCS):
@@ -644,13 +644,13 @@ class WCS(object):
             return self.wcs.wcs.crval[1]
         else:
             return (self.wcs.wcs.crval[1] * self.unit).to(unit).value
-    
+
     @property
     def unit(self):
         if self.wcs.wcs.cunit[0] != self.wcs.wcs.cunit[1]:
             self._logger.warning('different units on x- and y-axes')
         return self.wcs.wcs.cunit[0]
-    
+
     def set_naxis1(self, n):
         """NAXIS1 setter (first dimension of an image)."""
         self.naxis1 = n
@@ -784,9 +784,10 @@ class WCS(object):
         res.set_crval1(start[1], unit=None)
         res.set_crval2(start[0], unit=None)
         res.set_step(step, unit=None)
-        res.naxis1 = int(np.ceil((self.naxis1 * cdelt[1] - start[1] + old_start[1]) / step[1]))
-        res.naxis2 = int(np.ceil((self.naxis2 * cdelt[0] - start[0] + old_start[0]) / step[0]))
-
+        res.naxis1 = int(np.ceil((self.naxis1 * cdelt[1] - start[1] +
+                                  old_start[1]) / step[1]))
+        res.naxis2 = int(np.ceil((self.naxis2 * cdelt[0] - start[0] +
+                                  old_start[0]) / step[0]))
         return res
 
     def rebin(self, factor):
@@ -822,10 +823,10 @@ class WCS(object):
         cdelt = res.get_step()
 
         crpix = res.wcs.wcs.crpix
-        crpix[0] = (crpix[0] * old_cdelt[1] - old_cdelt[1] / 2.0
-                    + cdelt[1] / 2.0) / cdelt[1]
-        crpix[1] = (crpix[1] * old_cdelt[0] - old_cdelt[0] / 2.0
-                    + cdelt[0] / 2.0) / cdelt[0]
+        crpix[0] = (crpix[0] * old_cdelt[1] - old_cdelt[1] / 2.0 +
+                    cdelt[1] / 2.0) / cdelt[1]
+        crpix[1] = (crpix[1] * old_cdelt[0] - old_cdelt[0] / 2.0 +
+                    cdelt[0] / 2.0) / cdelt[0]
         res.wcs.wcs.crpix = crpix
         res.naxis1 = res.naxis1 / factor[1]
         res.naxis2 = res.naxis2 / factor[0]
@@ -843,13 +844,15 @@ class WCS(object):
             return True
 
     def to_cube_header(self, wave):
-        """Generate a pyfits header object with the WCS information and the wavelength information."""
+        """Generate a pyfits header object with the WCS information and the
+        wavelength information.
+        """
         wcs_hdr = self.to_header()
         wcs_hdr['WCSAXES'] = 3
-        #wcs_hdr['NAXIS3'] = wave.shape
+        # wcs_hdr['NAXIS3'] = wave.shape
         wcs_hdr['CRVAL3'] = wave.get_crval()
         wcs_hdr['CRPIX3'] = wave.get_crpix()
-        wcs_hdr['CUNIT3'] = "%s"%wave.unit
+        wcs_hdr['CUNIT3'] = "%s" % wave.unit
         wcs_hdr['CTYPE3'] = wave.get_ctype()
 
         if 'CD1_1' in wcs_hdr:
@@ -871,9 +874,9 @@ class WaveCoord(object):
     Parameters
     ----------
     hdr   : pyfits.CardList
-               A FITS header.
-               If hdr is not equal to None, WaveCoord object is created from data header
-               and other parameters are not used.
+            A FITS header.
+            If hdr is not equal to None, WaveCoord object is created from
+            data header and other parameters are not used.
     crpix : float
             Reference pixel coordinates. 1.0 by default.
 
@@ -904,8 +907,8 @@ class WaveCoord(object):
         ----------
         hdr   : pyfits.CardList
                A FITS header.
-               If hdr is not equal to None, WaveCoord object is created from data header
-               and other parameters except shape are not used.
+               If hdr is not equal to None, WaveCoord object is created from
+               data header and other parameters except shape are not used.
         crpix : float
                 Reference pixel coordinates. 1.0 by default. Note that for
                 crpix definition, the first pixel in the spectrum has pixel
@@ -987,7 +990,8 @@ class WaveCoord(object):
         l2 = other.coord(0, unit=self.unit)
         return (self.shape == other.shape and
                 np.allclose(l1, l2, atol=1E-2, rtol=0) and
-                np.allclose(self.get_step(), other.get_step(unit=self.unit), atol=1E-2, rtol=0) and
+                np.allclose(self.get_step(), other.get_step(unit=self.unit),
+                            atol=1E-2, rtol=0) and
                 self.wcs.wcs.ctype[0] == other.wcs.wcs.ctype[0])
 
     def coord(self, pixel=None, unit=None):
@@ -1112,7 +1116,6 @@ class WaveCoord(object):
             except:
                 raise IOError('No standard WCS')
         res.wcs.wcs.set()
-
         res.shape = int(np.ceil((self.shape * cdelt - start + old_start) / step))
         return res
 
@@ -1224,7 +1227,7 @@ class WaveCoord(object):
             return self.wcs.wcs.crval[0]
         else:
             return (self.wcs.wcs.crval[0] * self.unit).to(unit).value
-    
+
     @property
     def unit(self):
         return self.wcs.wcs.cunit[0]

@@ -64,9 +64,8 @@ class ImageClicks(object):  # Object used to save click on image plot.
 
     def iprint(self, i):
         # prints a cursor positions
-        msg = 'y=%g\tx=%g\tp=%d\tq=%d\tdata=%g' % (self.y[i], self.x[i],
-                                                   self.p[i], self.q[i],
-                                                   self.data[i])
+        msg = 'y=%g\tx=%g\tp=%d\tq=%d\tdata=%g' % (
+            self.y[i], self.x[i], self.p[i], self.q[i], self.data[i])
         self._logger.info(msg)
 
     def write_fits(self):
@@ -283,7 +282,7 @@ class Image(DataArray):
     var      : float array
             Array containing the variance. None by default.
     copy     : boolean
-               If true (default), then the data and variance arrays are copied. 
+               If true (default), then the data and variance arrays are copied.
     dtype    : numpy.dtype
                Type of the data (integer, float)
 
@@ -296,7 +295,7 @@ class Image(DataArray):
     wcs            : :class:`mpdaf.obj.WCS`
                      World coordinates.
     shape          : tuple
-                     Lengths of data (python notation (nz,ny,nx)).                 
+                     Lengths of data (python notation (nz,ny,nx)).
     data           : masked array numpy.ma
                      Masked array containing the cube pixel values.
     data_header    : pyfits.Header
@@ -312,8 +311,9 @@ class Image(DataArray):
     _ndim_required = 2
     _has_wcs = True
 
-    def __init__(self, filename=None, ext=None, wcs=None, unit=u.dimensionless_unscaled,
-                 data=None, var=None, copy=True, dtype=float, **kwargs):
+    def __init__(self, filename=None, ext=None, wcs=None, data=None, var=None,
+                 unit=u.dimensionless_unscaled, copy=True, dtype=float,
+                 **kwargs):
         self._clicks = None
         self._selector = None
 
@@ -355,7 +355,8 @@ class Image(DataArray):
         else:
             data = self.data.data
 
-        imahdu = pyfits.ImageHDU(name=name, data=data.astype(np.float32), header=hdr)
+        imahdu = pyfits.ImageHDU(name=name, data=data.astype(np.float32),
+                                 header=hdr)
 
         for card in self.data_header.cards:
             to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
@@ -376,7 +377,7 @@ class Image(DataArray):
                                 (card.value, card.comment)
                     except:
                         self._logger.warning("%s not copied in data header",
-                                        card.keyword)
+                                             card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
             imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
@@ -410,8 +411,8 @@ class Image(DataArray):
 
             if header is None:
                 for card in self.data_header.cards:
-                    to_copy = (card.keyword[0:2] not in ('CD','PC')
-                       and card.keyword not in imahdu.header)
+                    to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
+                               card.keyword not in imahdu.header)
                     if to_copy:
                         try:
                             card.verify('fix')
@@ -422,13 +423,13 @@ class Image(DataArray):
                                     n = 80 - len(card.keyword) - 14
                                     s = card.value[0:n]
                                     imahdu.header['hierarch %s' % card.keyword] = \
-                                    (s, card.comment)
+                                        (s, card.comment)
                                 else:
                                     imahdu.header['hierarch %s' % card.keyword] = \
-                                    (card.value, card.comment)
+                                        (card.value, card.comment)
                             except:
                                 self._logger.warning("%s not copied in data header",
-                                                    card.keyword)
+                                                     card.keyword)
 
             if self.unit != u.dimensionless_unscaled:
                 imahdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
@@ -460,18 +461,17 @@ class Image(DataArray):
                         n = 80 - len(card.keyword) - 14
                         s = card.value[0: n]
                         prihdu.header['hierarch %s' % card.keyword] = \
-                                (s, card.comment)
+                            (s, card.comment)
                     else:
                         prihdu.header['hierarch %s' % card.keyword] = \
-                                (card.value, card.comment)
+                            (card.value, card.comment)
                 except:
                     self._logger.warning("%s not copied in primary header",
-                                            card.keyword)
+                                         card.keyword)
         prihdu.header['date'] = \
             (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         hdulist = [prihdu]
-
 
         # create DATA extension
         data_hdu = self.get_data_hdu('DATA', savemask)
@@ -670,17 +670,17 @@ class Image(DataArray):
             else:
                 # image - cube1 = cube2
                 if other.data is None or self.shape[0] != other.shape[1] \
-                or self.shape[1] != other.shape[2]:
+                        or self.shape[1] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
-                                              'with different sizes')
+                                  'with different sizes')
                 res = other.copy()
-                #data
+                # data
                 if other.unit == self.unit:
                     res.data = self.data[np.newaxis, :, :] - other.data
                 else:
                     res.data = UnitMaskedArray(self.data[np.newaxis, :, :],
                                                self.unit, other.unit) \
-                                               - other.data
+                        - other.data
 
                 # variance
                 if self.var is not None:
@@ -877,7 +877,7 @@ class Image(DataArray):
                                self.var * other.data.data * other.data.data) \
                         / (other.data.data ** 4)
                 # unit
-                res.unit = self.unit/other.unit
+                res.unit = self.unit / other.unit
                 return res
             else:
                 # image / cube1 = cube2
@@ -890,12 +890,12 @@ class Image(DataArray):
                     var = None
                 elif self.var is None:
                     var = other.var * self.data.data[np.newaxis, :, :]\
-                            * self.data.data[np.newaxis, :, :] \
-                            / (other.data.data ** 4)
+                        * self.data.data[np.newaxis, :, :] \
+                        / (other.data.data ** 4)
                 elif other.var is None:
                     var = self.var[np.newaxis, :, :] \
-                            * other.data.data * other.data.data \
-                            / (other.data.data ** 4)
+                        * other.data.data * other.data.data \
+                        / (other.data.data ** 4)
                 else:
                     var = (
                         other.var * self.data.data[np.newaxis, :, :] *
@@ -1103,7 +1103,7 @@ class Image(DataArray):
             raise ValueError('empty data array')
         try:
             self.data[key] = other
-        except :
+        except:
             # other is an image
             if isinstance(other, Image):
                 if self.wcs is not None and other.wcs is not None \
@@ -1128,13 +1128,14 @@ class Image(DataArray):
         self.wcs = wcs.copy()
         self.wcs.set_naxis1(self.shape[1])
         self.wcs.set_naxis2(self.shape[0])
-        if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-            and (wcs.naxis1 != self.shape[1]
-                 or wcs.naxis2 != self.shape[0]):
+        if wcs.naxis1 != 0 and wcs.naxis2 != 0 and (
+                wcs.naxis1 != self.shape[1] or
+                wcs.naxis2 != self.shape[0]):
             self._logger.warning('world coordinates and data have not '
-                                'the same dimensions')
+                                 'the same dimensions')
 
-    def mask(self, center, radius, unit_center=u.deg, unit_radius=u.arcsec, inside=True):
+    def mask(self, center, radius, unit_center=u.deg, unit_radius=u.arcsec,
+             inside=True):
         """Masks values inside/outside the described region.
 
         Parameters
@@ -1201,7 +1202,8 @@ class Image(DataArray):
             self.data.mask[imin:imax, 0:jmin] = 1
             self.data.mask[imin:imax:, jmax:] = 1
 
-    def mask_ellipse(self, center, radius, posangle, unit_center=u.deg, unit_radius=u.arcsec, inside=True):
+    def mask_ellipse(self, center, radius, posangle, unit_center=u.deg,
+                     unit_radius=u.arcsec, inside=True):
         """Masks values inside/outside the described region. Uses an elliptical
         shape.
 
@@ -1211,9 +1213,12 @@ class Image(DataArray):
                       Center (y,x) of the explored region.
         radius      : (float,float)
                       Radius defined the explored region.
-                      radius is (float,float), it defines an elliptical region with semi-major and semi-minor axes.
+                      radius is (float,float), it defines an elliptical region
+                      with semi-major and semi-minor axes.
         posangle    : float
-                      Position angle of the first axis. It is defined in degrees against the horizontal (q) axis of the image, counted counterclockwise.
+                      Position angle of the first axis. It is defined in
+                      degrees against the horizontal (q) axis of the image,
+                      counted counterclockwise.
         unit_center : astropy.units
                       type of the center coordinates.
                       Degrees by default (use None for coordinates in pixels).
@@ -1270,7 +1275,8 @@ class Image(DataArray):
         Parameters
         ----------
         poly   : (float, float)
-                 array of (float,float) containing a set of (p,q) or (dec,ra) values for the polygon vertices
+                 array of (float,float) containing a set of (p,q) or (dec,ra)
+                 values for the polygon vertices
         pix    : astropy.units
                  Type of the polygon coordinates (by default in degrees).
                  Use unit=None to have polygon coordinates in pixels.
@@ -1278,23 +1284,23 @@ class Image(DataArray):
                  If inside is True, pixels inside the described region are masked.
         """
 
-        if unit is not None: # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
-            poly=np.array([[self.wcs.sky2pix((val[0],val[1]), unit=unit)[0][0],
-                            self.wcs.sky2pix((val[0],val[1]), unit=unit)[0][1]] for val in poly])
+        if unit is not None:  # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
+            poly = np.array([[self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][0],
+                              self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][1]] for val in poly])
 
-        P,Q=np.meshgrid(range(self.shape[0]),range(self.shape[1]))
-        b=np.dstack([P.ravel(),Q.ravel()])
+        P, Q = np.meshgrid(range(self.shape[0]), range(self.shape[1]))
+        b = np.dstack([P.ravel(), Q.ravel()])
 
-        polymask=Path(poly)  # use the matplotlib method to create a path wich is the polygon we want to use
-        c=polymask.contains_points(b[0]) # go through all pixels in the image to see if there are in the polygon, ouput is a boolean table
+        polymask = Path(poly)  # use the matplotlib method to create a path wich is the polygon we want to use
+        c = polymask.contains_points(b[0])  # go through all pixels in the image to see if there are in the polygon, ouput is a boolean table
 
-        if not inside : # invert the boolean table to ''mask'' the outside part of the polygon, if it's False I mask the inside part
-            c=~np.array(c)
+        if not inside:  # invert the boolean table to ''mask'' the outside part of the polygon, if it's False I mask the inside part
+            c = ~np.array(c)
 
-        c=c.reshape(self.shape[1],self.shape[0]) # convert the boolean table into a matrix
-        c=c.T
+        c = c.reshape(self.shape[1], self.shape[0])  # convert the boolean table into a matrix
+        c = c.T
 
-        self.data.mask=np.logical_or(c,self.data.mask) # combine the previous mask with the new one
+        self.data.mask = np.logical_or(c, self.data.mask)  # combine the previous mask with the new one
         return poly
 
     def _truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg):
@@ -1324,16 +1330,16 @@ class Image(DataArray):
         else:
             pixcrd = self.wcs.sky2pix(skycrd, unit=unit)
 
-        imin = int(np.min(pixcrd[:, 0])+0.5)
+        imin = int(np.min(pixcrd[:, 0]) + 0.5)
         if imin < 0:
             imin = 0
-        imax = int(np.max(pixcrd[:, 0])+0.5) + 1
+        imax = int(np.max(pixcrd[:, 0]) + 0.5) + 1
         if imax > self.shape[0]:
             imax = self.shape[0]
-        jmin = int(np.min(pixcrd[:, 1])+0.5)
+        jmin = int(np.min(pixcrd[:, 1]) + 0.5)
         if jmin < 0:
             jmin = 0
-        jmax = int(np.max(pixcrd[:, 1])+0.5) + 1
+        jmax = int(np.max(pixcrd[:, 1]) + 0.5) + 1
         if jmax > self.shape[1]:
             jmax = self.shape[1]
 
@@ -1351,7 +1357,8 @@ class Image(DataArray):
             grid = np.meshgrid(np.arange(0, self.shape[0]),
                                np.arange(0, self.shape[1]), indexing='ij')
             shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]), np.ravel(grid[1]))])
+            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]),
+                                                      np.ravel(grid[1]))])
             if unit is None:
                 skycrd = pixcrd
             else:
@@ -1391,7 +1398,8 @@ class Image(DataArray):
         res._truncate(y_min, y_max, x_min, x_max, mask, unit)
         return res
 
-    def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec, minsize=2.0):
+    def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec,
+                 minsize=2.0):
         """Extracts a sub-image around a given position.
 
         Parameters
@@ -1400,7 +1408,8 @@ class Image(DataArray):
                       Center (dec, ra) of the aperture.
         size        : float
                       The size to extract.
-                      It corresponds to the size along the delta axis and the image is square.
+                      It corresponds to the size along the delta axis and the
+                      image is square.
         unit_center : astropy.units
                       type of the center coordinates.
                       Degrees by default (use None for coordinates in pixels).
@@ -1414,14 +1423,14 @@ class Image(DataArray):
         -------
         out : :class:`mpdaf.obj.Image`
         """
-        if size > 0 :
+        if size > 0:
             if not self.inside(center, unit_center):
                 return None
 
             if unit_center is not None:
                 center = self.wcs.sky2pix(center, unit=unit_center)[0]
             else:
-                center=np.array(center)
+                center = np.array(center)
             if unit_size is not None:
                 step0 = np.abs(self.wcs.get_step(unit=unit_size)[0])
                 size = size / step0
@@ -1431,7 +1440,7 @@ class Image(DataArray):
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + int(size+0.5), jmin + int(size+0.5)],
+            imax, jmax = np.minimum([imin + int(size + 0.5), jmin + int(size + 0.5)],
                                     [self.shape[0], self.shape[1]])
 
             data = self.data[imin:imax, jmin:jmax].copy()
@@ -1443,7 +1452,7 @@ class Image(DataArray):
             else:
                 var = None
             ima = Image(wcs=self.wcs[imin:imax, jmin:jmax],
-                       unit=self.unit, data=data, var=var)
+                        unit=self.unit, data=data, var=var)
             ima.data_header = pyfits.Header(self.data_header)
             ima.primary_header = pyfits.Header(self.primary_header)
             return ima
@@ -1494,13 +1503,13 @@ class Image(DataArray):
         mask = np.array(1 - self.data.mask, dtype=bool)
 
         if pivot is None:
-            center_coord = self.wcs.pix2sky([np.array(self.shape)/2. - 0.5])
+            center_coord = self.wcs.pix2sky([np.array(self.shape) / 2. - 0.5])
             mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
             data_rot = ndimage.rotate(data, -theta, reshape=reshape, order=order)
 
             shape = np.array(data_rot.shape)
-            crpix1 = shape[1]/2. + 0.5
-            crpix2 = shape[0]/2. + 0.5
+            crpix1 = shape[1] / 2. + 0.5
+            crpix2 = shape[0] / 2. + 0.5
         else:
             padX = [self.shape[1] - pivot[0], pivot[0]]
             padY = [self.shape[0] - pivot[1], pivot[1]]
@@ -1515,13 +1524,13 @@ class Image(DataArray):
             shape = np.array(data_rot.shape)
 
             if reshape is False:
-                data_rot = data_rot[padY[0] : -padY[1], padX[0] : -padX[1]]
-                mask_rot = mask_rot[padY[0] : -padY[1], padX[0] : -padX[1]]
-                crpix1 = shape[1]/2. + 0.5 - padX[0]
-                crpix2 = shape[0]/2. + 0.5 - padY[0]
+                data_rot = data_rot[padY[0]: -padY[1], padX[0]: -padX[1]]
+                mask_rot = mask_rot[padY[0]: -padY[1], padX[0]: -padX[1]]
+                crpix1 = shape[1] / 2. + 0.5 - padX[0]
+                crpix2 = shape[0] / 2. + 0.5 - padY[0]
             else:
-                crpix1 = shape[1]/2. + 0.5
-                crpix2 = shape[0]/2. + 0.5
+                crpix1 = shape[1] / 2. + 0.5
+                crpix2 = shape[0] / 2. + 0.5
 
         mask_ma = np.ma.make_mask(1 - mask_rot)
         self.data = np.ma.array(data_rot, mask=mask_ma)
@@ -1540,7 +1549,8 @@ class Image(DataArray):
         if reshape:
             self.resize()
 
-    def rotate(self, theta, interp='no', reshape=False, order=3, pivot=None, unit=u.deg):
+    def rotate(self, theta, interp='no', reshape=False, order=3, pivot=None,
+               unit=u.deg):
         """ Returns rotated image
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
@@ -1835,7 +1845,8 @@ class Image(DataArray):
 
         return sigma * 2. * np.sqrt(2. * np.log(2.0))
 
-    def ee(self, center=None, radius=0, unit_center=u.deg, unit_radius=u.angstrom, frac=False, cont=0):
+    def ee(self, center=None, radius=0, unit_center=u.deg,
+           unit_radius=u.angstrom, frac=False, cont=0):
         """Computes ensquared/encircled energy.
 
         Parameters
@@ -1912,7 +1923,8 @@ class Image(DataArray):
                 else:
                     return (ima.data - cont).sum()
 
-    def eer_curve(self, center=None, unit_center=u.deg, unit_radius=u.arcsec, etot=None, cont=0):
+    def eer_curve(self, center=None, unit_center=u.deg, unit_radius=u.arcsec,
+                  etot=None, cont=0):
         """Returns Spectrum object containing enclosed energy as function of
         radius.
         The enclosed energy ratio (EER) shows how much light is concentrated
@@ -1962,14 +1974,15 @@ class Image(DataArray):
         for d in range(0, nmax):
             ee[d] = (self.data[i - d:i + d + 1, j - d:j + d + 1] - cont).sum() / etot
 
-        radius =  np.arange(0, nmax)
+        radius = np.arange(0, nmax)
         if unit_radius is not None:
             step = self.get_step(unit=unit_radius)
             radius = radius * step
 
         return radius, ee
 
-    def ee_size(self, center=None, unit_center=u.deg, etot=None, frac=0.9, cont=0, unit_size=u.arcsec):
+    def ee_size(self, center=None, unit_center=u.deg, etot=None, frac=0.9,
+                cont=0, unit_size=u.arcsec):
         """Computes the size of the square centered on (y,x) containing the
         fraction of the energy.
 
@@ -2007,7 +2020,8 @@ class Image(DataArray):
                 i = center[0]
                 j = center[1]
             else:
-                pixcrd = self.wcs.sky2pix([[center[0], center[1]]], unit=unit_center)
+                pixcrd = self.wcs.sky2pix([[center[0], center[1]]],
+                                          unit=unit_center)
                 i = int(pixcrd[0][0] + 0.5)
                 j = int(pixcrd[0][1] + 0.5)
         nmax = min(self.shape[0] - i, self.shape[1] - j, i, j)
@@ -2016,11 +2030,11 @@ class Image(DataArray):
 
         if nmax <= 1:
             if unit_size is None:
-                return np.array([1,1])
+                return np.array([1, 1])
             else:
                 return self.get_step(unit_size)
         for d in range(1, nmax):
-            ee2 = (self.data[i - d:i + d + 1, j - d:j + d + 1]- cont).sum() / etot
+            ee2 = (self.data[i - d:i + d + 1, j - d:j + d + 1] - cont).sum() / etot
             if ee2 > frac:
                 break
         d -= 1
@@ -2028,10 +2042,10 @@ class Image(DataArray):
         d += (frac - ee1) / (ee2 - ee1)  # interpolate
         d *= 2
         if unit_size is None:
-            return np.array([d,d])
+            return np.array([d, d])
         else:
             step = self.get_step(unit_size)
-            return np.array([d*step[0],d*step[1]])
+            return np.array([d * step[0], d * step[1]])
 
     def _interp(self, grid, spline=False):
         """returns the interpolated values corresponding to the grid points.
@@ -2119,11 +2133,11 @@ class Image(DataArray):
         p = np.argmax((Q * np.abs(self.data)).sum(axis=1) / total)
         q = np.argmax((P * np.abs(self.data)).sum(axis=0) / total)
         col = self.data[int(p), :]
-        width_q = np.sqrt(np.abs((np.arange(col.size) - p) * col).sum()
-                          / np.abs(col).sum())
+        width_q = np.sqrt(np.abs((np.arange(col.size) - p) * col).sum() /
+                          np.abs(col).sum())
         row = self.data[:, int(q)]
-        width_p = np.sqrt(np.abs((np.arange(row.size) - q) * row).sum()
-                          / np.abs(row).sum())
+        width_p = np.sqrt(np.abs((np.arange(row.size) - q) * row).sum() /
+                          np.abs(row).sum())
         mom = np.array([width_p, width_q])
         if unit is not None:
             dy, dx = self.wcs.get_step(unit=unit)
@@ -2184,7 +2198,7 @@ class Image(DataArray):
                       FWHM unit.
                       Arcseconds by default (use None for radius in pixels)
         maxiter : int
-                      The maximum number of iterations during the sum of square minimization. 
+                      The maximum number of iterations during the sum of square minimization.
         plot        : boolean
                       If True, the gaussian is plotted.
         verbose     : boolean
@@ -2387,7 +2401,7 @@ class Image(DataArray):
             v, covar, info, mesg, success = \
                 leastsq(e_gauss_fit, v0[:], args=(p, q, data, wght),
                         maxfev=maxiter, full_output=1)
-                
+
         if success != 1:
             self._logger.info(mesg)
 
@@ -2406,7 +2420,7 @@ class Image(DataArray):
         v[3] += int(qmin)
 
         # plot
-        #ne fonctionne pas si colorbar
+        # ne fonctionne pas si colorbar
         if plot:
             pp = np.arange(pmin, pmax, float(pmax - pmin) / 100)
             qq = np.arange(qmin, qmax, float(qmax - qmin) / 100)
@@ -2591,7 +2605,7 @@ class Image(DataArray):
                       False: n value is fixed,
                       True: n value is a fit parameter.
         maxiter : int
-                  The maximum number of iterations during the sum of square minimization. 
+                  The maximum number of iterations during the sum of square minimization.
 
         Returns
         -------
@@ -2666,7 +2680,6 @@ class Image(DataArray):
                 center[0] -= pmin
                 center[1] -= qmin
 
-
         # initial width value
         if fwhm is None:
             width = ima.moments(unit=None)
@@ -2694,28 +2707,28 @@ class Image(DataArray):
                 # 2d moffat function
                 if fit_n:
                     moffatfit = lambda v, p, q: \
-                    cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                   + ((q - v[2]) / v[3]) ** 2) ** (-v[4])
+                        cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
+                                       + ((q - v[2]) / v[3]) ** 2) ** (-v[4])
                     # inital guesses
                     v0 = [I, center[0], center[1], a, n]
                 else:
                     moffatfit = lambda v, p, q: \
-                    cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                   + ((q - v[2]) / v[3]) ** 2) ** (-n)
+                        cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
+                                       + ((q - v[2]) / v[3]) ** 2) ** (-n)
                     # inital guesses
                     v0 = [I, center[0], center[1], a]
             else:
                 # 2d moffat function
                 if fit_n:
                     moffatfit = lambda v, p, q: \
-                    v[5] + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                   + ((q - v[2]) / v[3]) ** 2) ** (-v[4])
+                        v[5] + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
+                                       + ((q - v[2]) / v[3]) ** 2) ** (-v[4])
                     # inital guesses
                     v0 = [I, center[0], center[1], a, n, cont]
                 else:
                     moffatfit = lambda v, p, q: \
-                    v[4] + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                   + ((q - v[2]) / v[3]) ** 2) ** (-n)
+                        v[4] + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
+                                       + ((q - v[2]) / v[3]) ** 2) ** (-n)
                     # inital guesses
                     v0 = [I, center[0], center[1], a, cont]
         else:
@@ -2724,15 +2737,15 @@ class Image(DataArray):
                     if fit_n:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: \
-                        cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                       + ((q - v[2]) / v[3] / v[5]) ** 2) ** (-v[4])
+                            cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
+                                           + ((q - v[2]) / v[3] / v[5]) ** 2) ** (-v[4])
                         # inital guesses
                         v0 = [I, center[0], center[1], a, n, e]
                     else:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: \
-                        cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                       + ((q - v[2]) / v[3] / v[4]) ** 2) ** (-n)
+                            cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
+                                           + ((q - v[2]) / v[3] / v[4]) ** 2) ** (-n)
                         # inital guesses
                         v0 = [I, center[0], center[1], a, e]
                 else:
@@ -2741,19 +2754,19 @@ class Image(DataArray):
                     if fit_n:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: cont + v[0] \
-                        * (1 + (((p - v[1]) * np.cos(v[6]) - (q - v[2])
-                                 * np.sin(v[6])) / v[3]) ** 2
-                           + (((p - v[1]) * np.sin(v[6]) + (q - v[2])
-                               * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
+                            * (1 + (((p - v[1]) * np.cos(v[6]) - (q - v[2])
+                                     * np.sin(v[6])) / v[3]) ** 2
+                               + (((p - v[1]) * np.sin(v[6]) + (q - v[2])
+                                   * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
                         # inital guesses
                         v0 = [I, center[0], center[1], a, n, e, rot]
                     else:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: cont + v[0] \
-                        * (1 + (((p - v[1]) * np.cos(v[5]) - (q - v[2])
-                                 * np.sin(v[5])) / v[3]) ** 2
-                           + (((p - v[1]) * np.sin(v[5]) + (q - v[2])
-                               * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
+                            * (1 + (((p - v[1]) * np.cos(v[5]) - (q - v[2])
+                                     * np.sin(v[5])) / v[3]) ** 2
+                               + (((p - v[1]) * np.sin(v[5]) + (q - v[2])
+                                   * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
                         # inital guesses
                         v0 = [I, center[0], center[1], a, e, rot]
             else:
@@ -2761,15 +2774,15 @@ class Image(DataArray):
                     if fit_n:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: v[6] + v[0] \
-                        * (1 + ((p - v[1]) / v[3]) ** 2
-                           + ((q - v[2]) / v[3] / v[5]) ** 2) ** (-v[4])
+                            * (1 + ((p - v[1]) / v[3]) ** 2
+                               + ((q - v[2]) / v[3] / v[5]) ** 2) ** (-v[4])
                         # inital guesses
                         v0 = [I, center[0], center[1], a, n, e, cont]
                     else:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: v[5] + v[0] \
-                        * (1 + ((p - v[1]) / v[3]) ** 2
-                           + ((q - v[2]) / v[3] / v[4]) ** 2) ** (-n)
+                            * (1 + ((p - v[1]) / v[3]) ** 2
+                               + ((q - v[2]) / v[3] / v[4]) ** 2) ** (-n)
                         # inital guesses
                         v0 = [I, center[0], center[1], a, e, cont]
                 else:
@@ -2778,19 +2791,19 @@ class Image(DataArray):
                     if fit_n:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: v[7] + v[0] \
-                        * (1 + (((p - v[1]) * np.cos(v[6])
-                                 - (q - v[2]) * np.sin(v[6])) / v[3]) ** 2
-                           + (((p - v[1]) * np.sin(v[6])
-                               + (q - v[2]) * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
+                            * (1 + (((p - v[1]) * np.cos(v[6])
+                                     - (q - v[2]) * np.sin(v[6])) / v[3]) ** 2
+                               + (((p - v[1]) * np.sin(v[6])
+                                   + (q - v[2]) * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
                         # inital guesses
                         v0 = [I, center[0], center[1], a, n, e, rot, cont]
                     else:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: v[6] + v[0] \
-                        * (1 + (((p - v[1]) * np.cos(v[5])
-                                 - (q - v[2]) * np.sin(v[5])) / v[3]) ** 2
-                           + (((p - v[1]) * np.sin(v[5])
-                               + (q - v[2]) * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
+                            * (1 + (((p - v[1]) * np.cos(v[5])
+                                     - (q - v[2]) * np.sin(v[5])) / v[3]) ** 2
+                               + (((p - v[1]) * np.sin(v[5])
+                                   + (q - v[2]) * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
                         # inital guesses
                         v0 = [I, center[0], center[1], a, e, rot, cont]
 
@@ -2832,7 +2845,7 @@ class Image(DataArray):
                     leastsq(e_moffat_fit, v0[:],
                             args=(p, q, data, wght),
                             maxfev=maxiter, full_output=1)
-                    
+
         if success != 1:
             self._logger.info(mesg)
 
@@ -3547,7 +3560,7 @@ class Image(DataArray):
         return res
 
     def _resample(self, newdim, newstart, newstep, flux=False, order=3,
-               interp='no', unit_start=u.deg, unit_step=u.arcsec):
+                  interp='no', unit_start=u.deg, unit_step=u.arcsec):
         """resamples the image to a new coordinate system.
         Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
 
@@ -3603,7 +3616,7 @@ class Image(DataArray):
         pstep = newstep / oldstep
 
         pixNewstart = self.wcs.sky2pix(newstart, unit=unit_start)[0]
-        offset_oldpix = 0.5 + pixNewstart - 0.5*pstep
+        offset_oldpix = 0.5 + pixNewstart - 0.5 * pstep
         #poffset = ((self.wcs.sky2pix(newstart, unit=unit_start)[0]+0.5)) / pstep
         poffset = offset_oldpix / pstep
 
@@ -3617,8 +3630,8 @@ class Image(DataArray):
         if flux:
             data *= newstep.prod() / oldstep.prod()
 
-        self.wcs = self.wcs.resample(step=(newstep*unit_step).to(unit_start).value,
-                       start=newstart, unit=unit_start)
+        self.wcs = self.wcs.resample(step=(newstep * unit_step).to(unit_start).value,
+                                     start=newstart, unit=unit_start)
         self.wcs.naxis1 = newdim[1]
         self.wcs.naxis2 = newdim[0]
         self.data = np.ma.array(data, mask=mask)
@@ -3659,7 +3672,7 @@ class Image(DataArray):
         out : Image
         """
         res = self.copy()
-        #pb rotation
+        # pb rotation
         res._resample(newdim, newstart, newstep, flux, order, interp, unit_start, unit_step)
         return res
 
@@ -3940,7 +3953,6 @@ class Image(DataArray):
         self.data[k1:k2, l1:l2] += UnitMaskedArray(ima.data[nk1:nk2, nl1:nl2],
                                                    ima.unit, self.unit)
         self.data.mask = mask
-
 
     def segment(self, shape=(2, 2), minsize=20, minpts=None,
                 background=20, interp='no', median=None):
@@ -4409,10 +4421,10 @@ class Image(DataArray):
                 img_array = plt.get_cmap('jet')(norm(f))
                 img_array[:, :, 3] = 1 - normalpha(wght) / 2
                 cax = ax.imshow(img_array, interpolation='nearest',
-                                 origin='lower', norm=norm, **kwargs)
+                                origin='lower', norm=norm, **kwargs)
             else:
                 cax = ax.imshow(f, interpolation='nearest', origin='lower',
-                                 norm=norm, **kwargs)
+                                norm=norm, **kwargs)
 
             # create colorbar
             divider = make_axes_locatable(ax)
@@ -4442,16 +4454,16 @@ class Image(DataArray):
         return cax
 
     def _format_coord(self, x, y):
-        col = int(x+0.5)
-        row = int(y+0.5)
-        if col>=0 and col<self.shape[0] and row>=0 and row<self.shape[1]:
+        col = int(x + 0.5)
+        row = int(y + 0.5)
+        if col >= 0 and col < self.shape[0] and row >= 0 and row < self.shape[1]:
             pixsky = self.wcs.pix2sky([col, row], unit=self._unit)
             yc = pixsky[0][0]
             xc = pixsky[0][1]
             val = self.data.data[col, row]
             return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, col, row, val)
         else:
-            return 'x=%1.4f, y=%1.4f'%(x, y)
+            return 'x=%1.4f, y=%1.4f' % (x, y)
 
     def ipos(self, filename='None'):
         """Prints cursor position in interactive mode (p and q define the
@@ -4884,7 +4896,7 @@ class Image(DataArray):
               order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
         raise DeprecationWarning('Using rebin method is deprecated: Please use resample instead')
         return self.resample(newdim, newstart, newstep, flux,
-              order, interp, unit_start, unit_step)
+                             order, interp, unit_start, unit_step)
 
 
 def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
@@ -5106,7 +5118,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
     fwhm = np.array(fwhm)
     a = fwhm[0] / (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
     e = fwhm[0] / fwhm[1]
-    
+
     if unit_fwhm is not None:
         a = a / np.abs(wcs.get_step(unit=unit_fwhm)[0])
 
@@ -5185,7 +5197,7 @@ def make_image(x, y, z, steps, deg=True, limits=None,
     -------
     out : obj.Image object (`Image class`_)
     """
-    if limits == None:
+    if limits is None:
         x1 = x.min()
         x2 = x.max()
         y1 = y.min()
