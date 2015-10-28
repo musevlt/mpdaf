@@ -36,7 +36,7 @@ def setup_config_files_nb():
             pass
         
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5,nbcube=True):
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5,nbcube=True,expmapcube=None):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
     to detect emission lines in a datacube. It has been developed by Johan Richard
     (johan.richard@univ-lyon1.fr)
@@ -69,6 +69,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
              Removing sources at a fraction of the the max_weight level.
     nbcube : Boolean
              Flag to produce an output datacube containing all narrow-band images
+    expmapcube : string
+             Name of the associated exposure map cube (to be used as a weight map for SExtractor)
 
     Returns
     -------
@@ -127,9 +129,15 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), shape=imsum.shape, fscale=imsum.fscale)
         weight.write('white.fits', savemask='nan')
 
-        fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
-        fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), shape=imsum.shape, fscale=imsum.fscale ** 2.0)
-        fullvar.write('inv_variance.fits', savemask='nan')
+        if not expmapcube:
+            fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
+            fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), shape=imsum.shape, fscale=imsum.fscale ** 2.0)
+            fullvar.write('inv_variance.fits', savemask='nan')
+        else:
+            logger.info("muselet - Opening exposure map cube: " + expmapcube, extra=d)
+            expmap=Cube(expmapcube)
+            fullvar=expmap.mean(axis=0)
+            fullvar.write('inv_variance.fits', savemask='nan')
 
         bdata = np.ma.average(c.data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)
         gdata = np.ma.average(c.data[nsfilter:2 * nsfilter, :, :], weights=1. / mvar[nsfilter:2 * nsfilter, :, :], axis=0)
@@ -181,7 +189,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
             if(nbcube):
                 outnbcube.data[k,:,:]=imnb.data[:,:]
-            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
+            if(expmapcube):
+                expmap[k,:,:].write('nb/exp' + kstr + '.fits', savemask='nan')
+                f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' + kstr + '.fits\n')
+            else:
+                f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
 
         sys.stdout.write("\n")
         sys.stdout.flush()
