@@ -36,7 +36,7 @@ def setup_config_files_nb():
             pass
         
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5,nbcube=True,expmapcube=None):
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5,nbcube=True,expmapcube=None,skyclean=[(5573.5,5578.8),(6297.0,6300.5)]):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
     to detect emission lines in a datacube. It has been developed by Johan Richard
     (johan.richard@univ-lyon1.fr)
@@ -71,6 +71,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
              Flag to produce an output datacube containing all narrow-band images
     expmapcube : string
              Name of the associated exposure map cube (to be used as a weight map for SExtractor)
+    skyclean : array of float tuples
+             List of wavelength ranges to exclude from the raw detections
 
     Returns
     -------
@@ -268,6 +270,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
         cleanlimit=clean*np.median(fullvar.data)
 
+        logger.info("muselet - cleaning below inverse variance "+str(cleanlimit))
+
         tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
         maxidc = 0
@@ -294,20 +298,26 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         S_catID = []
         for i in range(3, nslices - 14):
             ll = wlmin + dw * i
-            slicename = "nb/nb%04d.cat" % i
-            t = Table.read(slicename, format='ascii.sextractor')
-            for line in t:
-                xline = line['X_IMAGE']
-                yline = line['Y_IMAGE']
-                if(fullvar.data[int(yline-1),int(xline-1)]>cleanlimit):
-                    fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
-                    eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
-                    flag = 0
-                    distmin = -1
-                    distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
-                    ksel = np.where(distlist < radius ** 2.0)
-                    for j in ksel[0]:
-                        if(fline > 5.0 * eline):
+            flagsky=0
+            if len(skyclean)>0:
+               for (skylmin,skylmax) in skyclean:
+                   if(ll>skylmin and ll<skylmax):
+                        flagsky=1
+            if(flagsky==0):
+               slicename = "nb/nb%04d.cat" % i
+               t = Table.read(slicename, format='ascii.sextractor')
+               for line in t:
+                  xline = line['X_IMAGE']
+                  yline = line['Y_IMAGE']
+                  if(fullvar.data[int(yline-1),int(xline-1)]>cleanlimit):
+                      fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
+                      eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
+                      flag = 0
+                      distmin = -1
+                      distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
+                      ksel = np.where(distlist < radius ** 2.0)
+                      for j in ksel[0]:
+                         if(fline > 5.0 * eline):
                             if((flag <= 0)or(distlist[j] < distmin)):
                                 idmin = tBGR['NUMBER'][j]
                                 distmin = distlist[j]
@@ -320,14 +330,14 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                                 xline=tBGR['X_IMAGE'][j]
                                 yline=tBGR['Y_IMAGE'][j]
                                 flag = 1
-                        else:
+                         else:
                             if(fline < -5 * eline):
                                 idmin = tBGR['NUMBER'][j]
                                 distmin = distlist[j]
                                 flag = -2
                             else:
                                 flag = -1
-                    if(flag == 1):
+                      if(flag == 1):
                         C_ll.append(ll)
                         C_idmin.append(idmin)
                         C_fline.append(fline)
@@ -343,7 +353,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                         C_catID.append(i)
                         if(idmin > maxidc):
                             maxidc = idmin
-                    if (flag == 0) and (ll < 9300.0):
+                      if (flag == 0) and (ll < 9300.0):
                         S_ll.append(ll)
                         S_fline.append(fline)
                         S_eline.append(eline)
