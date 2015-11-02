@@ -159,7 +159,7 @@ class Cube(DataArray):
             self._logger.info('.ima: %s', ', '.join(self.ima.keys()))
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
-        """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
+        """Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
 
         Parameters
         ----------
@@ -210,12 +210,13 @@ class Cube(DataArray):
                                              card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
+            imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
+                                      'data unit type')
 
         return imahdu
 
     def get_stat_hdu(self, name='STAT', header=None):
-        """ Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
+        """Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
 
         Parameters
         ----------
@@ -262,7 +263,8 @@ class Cube(DataArray):
                                                  card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
+            imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
+                                      'data unit type')
 
         return imahdu
 
@@ -1654,7 +1656,8 @@ class Cube(DataArray):
             kmax = int(lmax + 0.5)
         else:
             kmin = max(0, self.wave.pixel(lmin, nearest=True, unit=unit_wave))
-            kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1)
+            kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True,
+                                                      unit=unit_wave) + 1)
 
         if kmin == kmax:
             raise ValueError('Minimum and maximum wavelengths are equal')
@@ -1664,7 +1667,6 @@ class Cube(DataArray):
                              ' the spectrum range')
 
         data = self.data[kmin:kmax, imin:imax, jmin:jmax]
-        shape = data.shape
 
         if self.var is not None:
             var = self.var[kmin:kmax, imin:imax, jmin:jmax]

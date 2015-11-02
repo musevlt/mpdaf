@@ -347,13 +347,6 @@ class WCS(object):
                     else:
                         val = 0.
                 hdr['CD' + c] = val
-        # naxis
-#         if self.naxis1 != 0 and self.naxis2 != 0:
-# #             hdr.insert()
-# #             hdr.insert('NAXIS', ('NAXIS1', self.naxis1), after=True)
-# #             hdr.insert('NAXIS1', ('NAXIS2', self.naxis2), after=True)
-#             hdr['NAXIS1'] = self.naxis1
-#             hdr['NAXIS2'] = self.naxis2
         return hdr
 
     def sky2pix(self, x, nearest=False, unit=None):
@@ -849,10 +842,9 @@ class WCS(object):
         """
         wcs_hdr = self.to_header()
         wcs_hdr['WCSAXES'] = 3
-        # wcs_hdr['NAXIS3'] = wave.shape
         wcs_hdr['CRVAL3'] = wave.get_crval()
         wcs_hdr['CRPIX3'] = wave.get_crpix()
-        wcs_hdr['CUNIT3'] = "%s" % wave.unit
+        wcs_hdr['CUNIT3'] = wave.unit.to_string('fits')
         wcs_hdr['CTYPE3'] = wave.get_ctype()
 
         if 'CD1_1' in wcs_hdr:
@@ -925,6 +917,7 @@ class WaveCoord(object):
                 Size of spectrum (no mandatory).
         """
         self._logger = logging.getLogger(__name__)
+        self.shape = shape
 
         if hdr is not None:
             try:
@@ -933,10 +926,7 @@ class WaveCoord(object):
             except:
                 n = hdr['WCSAXES']
                 self.shape = None
-            if n == 1:
-                self.wcs = wcs_from_header(hdr).sub([1])
-            else:
-                self.wcs = wcs_from_header(hdr).sub([3])
+            self.wcs = wcs_from_header(hdr).sub([1 if n == 1 else 3])
             if shape is not None:
                 self.shape = shape
         else:
@@ -947,7 +937,6 @@ class WaveCoord(object):
             self.wcs.wcs.ctype[0] = ctype
             self.wcs.wcs.crval[0] = crval
             self.wcs.wcs.set()
-            self.shape = shape
 
     def copy(self):
         """Copie WaveCoord object in a new one and returns it."""
@@ -961,25 +950,25 @@ class WaveCoord(object):
     def info(self):
         """Print information."""
         try:
-            start = self.get_start(unit=u.angstrom)
-            step = self.get_step(unit=u.angstrom)
-            if self.shape is None:
-                msg = 'wavelength: min:%0.2f step:%0.2f angstrom' % (start, step)
-            else:
-                end = self.get_end(unit=u.angstrom)
-                msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f angstrom' % (
-                    start, end, step)
+            unit = u.angstrom
+            start = self.get_start(unit=unit)
+            step = self.get_step(unit=unit)
+            if self.shape is not None:
+                end = self.get_end(unit=unit)
         except:
+            unit = self.unit
             start = self.get_start()
             step = self.get_step()
-            if self.shape is None:
-                msg = 'wavelength: min:%0.2f step:%0.2f %s' % (
-                    start, step, self.unit)
-            else:
+            if self.shape is not None:
                 end = self.get_end()
-                msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % (
-                    start, end, step, self.unit)
-        self._logger.info(msg)
+
+        if self.shape is None:
+            msg = 'wavelength: min:%0.2f step:%0.2f %s'
+            kw = (start, step, unit)
+        else:
+            msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s'
+            kw = (start, end, step, unit)
+        self._logger.info(msg, **kw)
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""
@@ -1240,8 +1229,6 @@ class WaveCoord(object):
     def to_header(self):
         """Generate a pyfits header object with the WCS information."""
         hdr = self.wcs.to_header()
-#         hdr['NAXIS'] = 1
-#         hdr['NAXIS1'] = self.shape
         return hdr
 
     def set_crpix(self, x):

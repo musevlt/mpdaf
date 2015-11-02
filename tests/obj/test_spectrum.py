@@ -6,9 +6,12 @@ from nose.plugins.attrib import attr
 import numpy as np
 
 from astropy import units as u
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
+from tempfile import NamedTemporaryFile
+
+from ..utils import generate_spectrum
 
 
 @attr(speed='fast')
@@ -24,8 +27,7 @@ def test_copy():
 @attr(speed='fast')
 def test_selectionOperator_Spectrum():
     """Spectrum class: testing operators > and < """
-    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
+    spectrum1 = generate_spectrum(cunit=u.nm)
     spectrum2 = spectrum1 > 6
     nose.tools.assert_almost_equal(spectrum2.sum(), 24)
     spectrum2 = spectrum1 >= 6
@@ -41,7 +43,8 @@ def test_selectionOperator_Spectrum():
 def test_arithmetricOperator_Spectrum():
     """Spectrum class: testing arithmetic functions"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+                         wave=wave)
     spectrum2 = spectrum1 > 6  # [-,-,-,-,-,-,-,7,8,9]
     # +
     spectrum3 = spectrum1 + spectrum2
@@ -96,7 +99,8 @@ def test_arithmetricOperator_Spectrum():
 def test_get_Spectrum():
     """Spectrum class: testing getters"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3, wave=wave)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
+                         wave=wave)
     a = spectrum1[1:7]
     nose.tools.assert_equal(a.shape[0], 6)
     a = spectrum1.get_lambda(1.2, 15.6, unit=u.nm)
@@ -114,15 +118,18 @@ def test_get_Spectrum():
 @attr(speed='fast')
 def test_spectrum_methods():
     """Spectrum class: testing sum/mean/abs/sqrt methods"""
-    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]), wave=wave)
+    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm, shape=10)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+                         wave=wave)
     sum1 = spectrum1.sum()
     nose.tools.assert_almost_equal(sum1, spectrum1.data.sum())
     spectrum2 = spectrum1[1:-2]
-    sum1 = spectrum1.sum(lmin=spectrum1.wave[1], lmax=spectrum1.wave[-3], unit=u.nm)
+    sum1 = spectrum1.sum(lmin=spectrum1.wave[1], lmax=spectrum1.wave[-3],
+                         unit=u.nm)
     sum2 = spectrum2.sum()
     nose.tools.assert_almost_equal(sum1, sum2)
-    mean1 = spectrum1.mean(lmin=spectrum1.wave[1], lmax=spectrum1.wave[-3], unit=u.nm)
+    mean1 = spectrum1.mean(lmin=spectrum1.wave[1], lmax=spectrum1.wave[-3],
+                           unit=u.nm)
     mean2 = spectrum2.mean()
     nose.tools.assert_almost_equal(mean1, mean2)
 
@@ -147,16 +154,18 @@ def test_spectrum_methods():
 @attr(speed='fast')
 def test_gauss_fit():
     """Spectrum class: testing Gaussian fit"""
-    wave = WaveCoord(crpix=1, cdelt=0.3, crval=400, cunit=u.nm)
+    wave = WaveCoord(crpix=1, cdelt=0.3, crval=400, cunit=u.nm, shape=10)
     data = np.zeros(600)
     spem = Spectrum(data=data * 2.3, wave=wave)
     spem.add_gaussian(5000, 1200, 20, unit=u.angstrom)
-    gauss = spem.gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000), lpeak=5000, unit=u.angstrom)
+    gauss = spem.gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000), lpeak=5000,
+                           unit=u.angstrom)
     nose.tools.assert_almost_equal(gauss.lpeak, 5000, 2)
     nose.tools.assert_almost_equal(gauss.flux, 1200, 2)
     nose.tools.assert_almost_equal(gauss.fwhm, 20, 2)
     nose.tools.assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
-    gauss = spem.line_gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000), lpeak=5000, unit=u.angstrom)
+    gauss = spem.line_gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000),
+                                lpeak=5000, unit=u.angstrom)
     nose.tools.assert_almost_equal(gauss.flux, 1200, 2)
     nose.tools.assert_almost_equal(gauss.fwhm, 20, 2)
     nose.tools.assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
@@ -165,7 +174,7 @@ def test_gauss_fit():
 @attr(speed='fast')
 def test_resize():
     """Spectrum class: testing resize method"""
-    sig = pyfits.getdata("data/obj/g9-124Tsigspec.fits")
+    sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
     spe.mask(lmax=5000, unit=unit)
@@ -178,8 +187,9 @@ def test_resize():
 @attr(speed='fast')
 def test_resample():
     """Spectrum class: testing resampling function"""
-    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3, wave=wave)
+    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm, shape=10)
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
+                         wave=wave)
     flux1 = spectrum1.sum() * spectrum1.wave.get_step()
     spectrum2 = spectrum1.resample(0.3)
     flux2 = spectrum2.sum() * spectrum2.wave.get_step()
@@ -189,9 +199,7 @@ def test_resample():
 @attr(speed='slow')
 def test_resampling_slow():
     """Spectrum class: heavy test of resampling function"""
-    f = pyfits.open("data/obj/g9-124Tsigspec.fits")
-    sig = f[0].data
-    f.close()
+    sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
     flux1 = spe.sum(weight=False) * spe.wave.get_step(unit=unit)
@@ -216,7 +224,7 @@ def test_resampling_slow():
 @attr(speed='fast')
 def test_rebin_mean():
     """Spectrum class: testing rebin_mean function"""
-    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5)
+    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, shape=10)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
                          wave=wave)
     unit = spectrum1.wave.unit
@@ -225,9 +233,7 @@ def test_rebin_mean():
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 
-    f = pyfits.open("data/obj/g9-124Tsigspec.fits")
-    sig = f[0].data
-    f.close()
+    sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
     flux1 = spe.sum() * spe.wave.get_step(unit=unit)
@@ -262,9 +268,7 @@ def test_rebin_median():
 @attr(speed='fast')
 def test_truncate():
     """Spectrum class: testing truncate function"""
-    f = pyfits.open("data/obj/g9-124Tsigspec.fits")
-    sig = f[0].data
-    f.close()
+    sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
     spe.truncate(4950, 5050, unit=unit)
@@ -292,10 +296,14 @@ def test_interpolation():
     spvarcut2 = spnovar.get_lambda(5550, 5590, unit=uspnovar)
     spvarcut3 = spm1.get_lambda(5550, 5590, unit=uspvar)
     spvarcut4 = spm2.get_lambda(5550, 5590, unit=uspvar)
-    nose.tools.assert_almost_equal(spvar.mean(5550, 5590, unit=uspvar), spvarcut1.mean())
-    nose.tools.assert_almost_equal(spnovar.mean(5550, 5590, unit=uspnovar), spvarcut2.mean())
-    nose.tools.assert_almost_equal(spm1.mean(5550, 5590, unit=uspvar), spvarcut3.mean())
-    nose.tools.assert_almost_equal(spm2.mean(5550, 5590, unit=uspvar), spvarcut4.mean())
+    nose.tools.assert_almost_equal(spvar.mean(5550, 5590, unit=uspvar),
+                                   spvarcut1.mean())
+    nose.tools.assert_almost_equal(spnovar.mean(5550, 5590, unit=uspnovar),
+                                   spvarcut2.mean())
+    nose.tools.assert_almost_equal(spm1.mean(5550, 5590, unit=uspvar),
+                                   spvarcut3.mean())
+    nose.tools.assert_almost_equal(spm2.mean(5550, 5590, unit=uspvar),
+                                   spvarcut4.mean())
 
 
 @attr(speed='fast')
@@ -356,3 +364,32 @@ def test_integrate():
     nose.tools.assert_almost_equal(flux, spectrum1.get_step(unit=u.angstrom) * spectrum1.sum())
     flux = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm).value
     nose.tools.assert_almost_equal(flux, 75)
+
+
+@attr(speed='fast')
+def test_write():
+    """Spectrum class: testing write."""
+    sp = Spectrum(data=np.arange(10), wave=WaveCoord(cunit=u.nm))
+    fobj = NamedTemporaryFile()
+    sp.write(fobj.name)
+
+    hdu = fits.open(fobj)
+    # print repr(hdu[0].header)
+    # print '========='
+    # print repr(hdu[1].header)
+    assert_array_equal(hdu[1].data.shape, sp.shape)
+
+    hdr = hdu[1].header
+    nose.tools.assert_equal(hdr['EXTNAME'], 'DATA')
+    nose.tools.assert_equal(hdr['NAXIS'], 1)
+    nose.tools.assert_equal(u.Unit(hdr['CUNIT1']), u.nm)
+    nose.tools.assert_equal(hdr['NAXIS1'], sp.shape[0])
+
+    # Same with Angstrom
+    sp = Spectrum(data=np.arange(10), wave=WaveCoord(cunit=u.angstrom))
+    fobj = NamedTemporaryFile()
+    sp.write(fobj.name)
+
+    hdu = fits.open(fobj)
+    hdr = hdu[1].header
+    nose.tools.assert_equal(u.Unit(hdr['CUNIT1']), u.angstrom)

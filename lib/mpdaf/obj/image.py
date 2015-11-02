@@ -380,7 +380,8 @@ class Image(DataArray):
                                              card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = ("{}".format(self.unit), 'data unit type')
+            imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
+                                      'data unit type')
 
         return imahdu
 
@@ -432,7 +433,8 @@ class Image(DataArray):
                                                      card.keyword)
 
             if self.unit != u.dimensionless_unscaled:
-                imahdu.header['BUNIT'] = ("{}".format(self.unit**2), 'data unit type')
+                imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
+                                          'data unit type')
             return imahdu
 
     def write(self, filename, savemask='dq'):
@@ -4580,8 +4582,8 @@ class Image(DataArray):
                 dist = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
                 xc = (x1 + x2) / 2
                 yc = (y1 + y2) / 2
-                msg = 'Center: (%g,%g)\tDistance: %g Unit:%s' % (xc, yc, dist, "{}".format(self._unit))
-                self._logger.info(msg)
+                self._logger.info('Center: (%g,%g)\tDistance: %g Unit:%s', xc,
+                                  yc, dist, self._unit)
             except:
                 pass
         else:

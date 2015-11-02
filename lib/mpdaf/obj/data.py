@@ -6,7 +6,6 @@ import warnings
 
 from astropy import units as u
 from astropy.io import fits as pyfits
-from functools import partial
 from numpy import ma
 
 from .coords import WCS, WaveCoord
@@ -105,6 +104,7 @@ class DataArray(object):
         self._var = None
         self._var_ext = None
         self._ndim = None
+        self._shape = None
         self.wcs = None
         self.wave = None
         self.dtype = dtype
@@ -170,9 +170,6 @@ class DataArray(object):
                 self.unit *= u.Unit(hdr['FSCALE'])
 
             self._shape = hdulist[self._data_ext].data.shape
-            # self.shape = np.array([hdr['NAXIS3'], hdr['NAXIS2'],
-            #                        hdr['NAXIS1']])
-
             self._ndim = hdr['NAXIS']
             if self._ndim_required is not None and \
                     hdr['NAXIS'] != self._ndim_required:
@@ -193,16 +190,6 @@ class DataArray(object):
             crpix = 'CRPIX{}'.format(wave_ext)
             crval = 'CRVAL{}'.format(wave_ext)
             if self._has_wave and crpix in hdr and crval in hdr:
-                # if 'CDELT{}'.format(wave_ext) in hdr:
-                #     cdelt = hdr.get('CDELT{}'.format(wave_ext))
-                # elif 'CD{0}_{0}'.format(wave_ext) in hdr:
-                #     cdelt = hdr.get('CD{0}_{0}'.format(wave_ext))
-                # else:
-                #     cdelt = 1.0
-                # cunit = hdr.get('CUNIT{}'.format(wave_ext), '')
-                # ctype = hdr.get('CTYPE{}'.format(wave_ext), 'LINEAR')
-                # self.wave = WaveCoord(hdr[crpix], cdelt, hdr[crval],
-                #                       cunit, ctype, self._shape[0])
                 self.wave = WaveCoord(hdr)
 
             if close_hdu:
@@ -222,14 +209,15 @@ class DataArray(object):
         if wcs is not None:
             try:
                 self.wcs = wcs.copy()
-                if wcs.naxis1 != 0 and wcs.naxis2 != 0 and \
-                    (wcs.naxis1 != self._shape[-1] or
-                        wcs.naxis2 != self._shape[-2]):
+                if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
+                        self._shape is not None and
+                        (wcs.naxis1 != self._shape[-1] or
+                         wcs.naxis2 != self._shape[-2])):
                     self._logger.warning(
                         'world coordinates and data have not the same '
                         'dimensions: shape of WCS object is modified')
-                self.wcs.naxis1 = self._shape[-1]
-                self.wcs.naxis2 = self._shape[-2]
+                    self.wcs.naxis1 = self._shape[-1]
+                    self.wcs.naxis2 = self._shape[-2]
             except:
                 self._logger.warning('world coordinates not copied',
                                      exc_info=True)
@@ -238,11 +226,12 @@ class DataArray(object):
         if wave is not None:
             try:
                 self.wave = wave.copy()
-                if wave.shape is not None and wave.shape != self._shape[0]:
+                if wave.shape is not None and self._shape is not None and \
+                        wave.shape != self._shape[0]:
                     self._logger.warning(
                         'wavelength coordinates and data have not the same '
                         'dimensions: shape of WaveCoord object is modified')
-                self.wave.shape = self._shape[0]
+                    self.wave.shape = self._shape[0]
             except:
                 self._logger.warning('wavelength solution not copied',
                                      exc_info=True)
@@ -253,8 +242,6 @@ class DataArray(object):
             return self._ndim
         elif self.data is not None:
             return self.data.ndim
-        else:
-            raise AttributeError('No ndim attribute')
 
     @property
     def shape(self):
@@ -262,8 +249,6 @@ class DataArray(object):
             return self._shape
         elif self.data is not None:
             return self.data.shape
-        else:
-            raise AttributeError('No shape attribute')
 
     @property
     def data(self):
@@ -285,6 +270,7 @@ class DataArray(object):
     def data(self, value):
         self._data = ma.MaskedArray(value)
         self._shape = self._data.shape
+        self._ndim = self._data.ndim
 
     @property
     def var(self):
@@ -343,29 +329,28 @@ class DataArray(object):
 
     def info(self):
         """Prints information."""
-        log_info = partial(self._logger.info)
-
-        shape = (self.shape, ) if np.isscalar(self.shape) else self.shape
-        shape_str = [str(x) for x in shape]
-        log_info('%s %s (%s)', ' x '.join(shape_str),
-                 self.__class__.__name__, self.filename or 'no name')
+        log = self._logger.info
+        shape_str = (' x '.join(str(x) for x in self.shape)
+                     if self.shape is not None else 'no shape')
+        log('%s %s (%s)', shape_str, self.__class__.__name__,
+            self.filename or 'no name')
 
         data = ('no data' if self._data is None and self._data_ext is None
                 else '.data({})'.format(','.join(shape_str)))
         noise = ('no noise' if self._var is None and self._var_ext is None
                  else '.var({})'.format(','.join(shape_str)))
         unit = str(self.unit) or 'no unit'
-        log_info('%s (%s), %s', data, unit, noise)
+        log('%s (%s), %s', data, unit, noise)
 
         if self._has_wcs:
             if self.wcs is None:
-                log_info('no world coordinates for spatial direction')
+                log('no world coordinates for spatial direction')
             else:
                 self.wcs.info()
 
         if self._has_wave:
             if self.wave is None:
-                log_info('no world coordinates for spectral direction')
+                log('no world coordinates for spectral direction')
             else:
                 self.wave.info()
 
