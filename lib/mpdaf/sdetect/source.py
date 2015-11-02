@@ -310,13 +310,13 @@ class Source(object):
         """
         header = pyfits.Header()
         header['ID'] = (ID, 'object ID')
-        header['RA'] = (np.float32(ra), 'RA in degrees')
-        header['DEC'] = (np.float32(dec), 'DEC in degrees')
+        header['RA'] = (ra, 'RA in degrees')
+        header['DEC'] = (dec, 'DEC in degrees')
         header['ORIGIN'] = (origin[0], 'detection software')
         header['ORIGIN_V'] = (origin[1], 'version of the detection software')
         header['CUBE'] = (os.path.basename(origin[2]), 'MUSE data cube')
         if proba is not None:
-            header['DPROBA'] = (np.float32(proba), 'Detection probability')
+            header['DPROBA'] = (proba, 'Detection probability')
         if confi is not None:
             header['CONFI'] = (confi, 'Confidence index')
         if extras is not None:
@@ -560,10 +560,16 @@ class Source(object):
             if card[0] not in ('SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                                'AUTHOR'):
                 self._logger.info(card)
-        print '\n'
+        if len(self.spectra) != 0 or \
+           len(self.images) !=0 or \
+           len(self.cubes) != 0 or \
+           len(self.tables) != 0:
+            print ''
         for key, spe in self.spectra.iteritems():
             msg = 'spectra[\'%s\']'%key
-            msg += ',%i elements (%0.2f-%0.2f A)'%(spe.shape[0], spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom))
+            msg += ',%i elements (%0.2f-%0.2f A)'%(spe.shape[0],
+                                                   spe.get_start(unit=u.angstrom),
+                                                   spe.get_end(unit=u.angstrom))
             data = '.data'
             if spe.data is None:
                 data = ''
@@ -598,22 +604,21 @@ class Source(object):
             self._logger.info(msg)
         for key in self.tables.keys():
             self._logger.info('tables[\'%s\']'%key)
-        print '\n'
         if self.lines is not None:
+            print ''
             self._logger.info('lines')
             for l in self.lines.pformat():
                 self._logger.info(l)
-            print '\n'
         if self.mag is not None:
+            print ''
             self._logger.info('magnitudes')
             for l in self.mag.pformat():
                 self._logger.info(l)
-            print '\n'
         if self.z is not None:
+            print ''
             self._logger.info('redshifts')
             for l in self.z.pformat():
                 self._logger.info(l)
-            print '\n'
 
     def __getattr__(self, item):
         """Map values to attributes.
