@@ -1656,7 +1656,8 @@ class Cube(DataArray):
             kmax = int(lmax + 0.5)
         else:
             kmin = max(0, self.wave.pixel(lmin, nearest=True, unit=unit_wave))
-            kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1)
+            kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True,
+                                                      unit=unit_wave) + 1)
 
         if kmin == kmax:
             raise ValueError('Minimum and maximum wavelengths are equal')
@@ -1666,7 +1667,6 @@ class Cube(DataArray):
                              ' the spectrum range')
 
         data = self.data[kmin:kmax, imin:imax, jmin:jmax]
-        shape = data.shape
 
         if self.var is not None:
             var = self.var[kmin:kmax, imin:imax, jmin:jmax]

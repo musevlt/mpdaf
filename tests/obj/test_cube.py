@@ -206,9 +206,10 @@ def test_rebin():
 @attr(speed='fast')
 def test_get_image():
     """Cube class: testing get_image method"""
-    wave = WaveCoord(crpix=1, cdelt=0.3, crval=200, cunit=u.nm)
+    shape = (2000, 6, 5)
+    wave = WaveCoord(crpix=1, cdelt=0.3, crval=200, cunit=u.nm, shape=shape[0])
     wcs = WCS(crval=(0, 0))
-    data = np.ones(shape=(2000, 6, 5)) * 2
+    data = np.ones(shape=shape) * 2
     cube1 = Cube(data=data, wave=wave, wcs=wcs)
     cube1[:, 2, 2].add_gaussian(5000, 1200, 20, unit=u.angstrom)
     ima = cube1.get_image(wave=(4800, 5200), is_sum=False, subtract_off=True)

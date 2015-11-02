@@ -917,6 +917,7 @@ class WaveCoord(object):
                 Size of spectrum (no mandatory).
         """
         self._logger = logging.getLogger(__name__)
+        self.shape = shape
 
         if hdr is not None:
             try:
@@ -925,10 +926,7 @@ class WaveCoord(object):
             except:
                 n = hdr['WCSAXES']
                 self.shape = None
-            if n == 1:
-                self.wcs = wcs_from_header(hdr).sub([1])
-            else:
-                self.wcs = wcs_from_header(hdr).sub([3])
+            self.wcs = wcs_from_header(hdr).sub([1 if n == 1 else 3])
             if shape is not None:
                 self.shape = shape
         else:
@@ -939,7 +937,6 @@ class WaveCoord(object):
             self.wcs.wcs.ctype[0] = ctype
             self.wcs.wcs.crval[0] = crval
             self.wcs.wcs.set()
-            self.shape = shape
 
     def copy(self):
         """Copie WaveCoord object in a new one and returns it."""
@@ -953,25 +950,25 @@ class WaveCoord(object):
     def info(self):
         """Print information."""
         try:
-            start = self.get_start(unit=u.angstrom)
-            step = self.get_step(unit=u.angstrom)
-            if self.shape is None:
-                msg = 'wavelength: min:%0.2f step:%0.2f angstrom' % (start, step)
-            else:
-                end = self.get_end(unit=u.angstrom)
-                msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f angstrom' % (
-                    start, end, step)
+            unit = u.angstrom
+            start = self.get_start(unit=unit)
+            step = self.get_step(unit=unit)
+            if self.shape is not None:
+                end = self.get_end(unit=unit)
         except:
+            unit = self.unit
             start = self.get_start()
             step = self.get_step()
-            if self.shape is None:
-                msg = 'wavelength: min:%0.2f step:%0.2f %s' % (
-                    start, step, self.unit)
-            else:
+            if self.shape is not None:
                 end = self.get_end()
-                msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % (
-                    start, end, step, self.unit)
-        self._logger.info(msg)
+
+        if self.shape is None:
+            msg = 'wavelength: min:%0.2f step:%0.2f %s'
+            kw = (start, step, unit)
+        else:
+            msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s'
+            kw = (start, end, step, unit)
+        self._logger.info(msg, **kw)
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""
