@@ -215,7 +215,8 @@ setup(
     maintainer_email='laure.piqueras@univ-lyon1.fr',
     platforms='any',
     cmdclass=cmdclass,
-    scripts=['lib/mpdaf/scripts/make_white_image.py'],
+    scripts=['lib/mpdaf/scripts/make_white_image.py',
+             'lib/mpdaf/scripts/topcat_show_ds9'],
     ext_package='mpdaf',
     ext_modules=ext_modules,
 )

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+if [ $# != 3 ]
+  then
+    echo "No arguments supplied"
+    echo "topcat_show_ds9 needs three arguments"
+    echo "The two first arguments are ra and dec coordinates in degrees."
+    echo "The last is the wavelength in angstrom"
+    exit 1
+fi
+
+xpaset -p ds9 pan to $1 $2 fk5
+xpaset -p ds9 crosshair $1 $2 fk5
+xpaset -p ds9 cube $3 wcs
+xpaset -p ds9 match frames wcs
+
+
