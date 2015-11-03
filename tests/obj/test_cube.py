@@ -13,6 +13,7 @@ from tempfile import NamedTemporaryFile
 
 from ..utils import generate_cube, generate_image, generate_spectrum
 
+
 @attr(speed='fast')
 def test_copy():
     """Cube class: testing copy method."""

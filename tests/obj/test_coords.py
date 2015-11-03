@@ -118,28 +118,30 @@ class TestWaveCoord(object):
     @attr(speed='fast')
     def test_copy(self):
         """WaveCoord class: testing copy"""
-        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm, shape=10)
+        wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         wave2 = wave.copy()
         nose.tools.assert_true(wave.isEqual(wave2))
 
     @attr(speed='fast')
     def test_coord_transform(self):
         """WaveCoord class: testing coordinates transformations"""
-        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm, shape=10)
+        wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         pixel = wave.pixel(wave.coord(5, unit=u.nm), nearest=True, unit=u.nm)
         nose.tools.assert_equal(pixel, 5)
 
         wave2 = np.arange(10)
-        pixel = wave.pixel(wave.coord(wave2, unit=u.nm), nearest=True, unit=u.nm)
+        pixel = wave.pixel(wave.coord(wave2, unit=u.nm), nearest=True,
+                           unit=u.nm)
         np.testing.assert_array_equal(pixel, wave2)
 
         pix = np.arange(wave.shape, dtype=np.float)
-        np.testing.assert_allclose(wave.pixel(wave.coord(unit=u.nm), unit=u.nm), pix)
+        np.testing.assert_allclose(wave.pixel(wave.coord(unit=u.nm),
+                                              unit=u.nm), pix)
 
     @attr(speed='fast')
     def test_get(self):
         """WaveCoord class: testing getters"""
-        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm, shape=10)
+        wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         nose.tools.assert_equal(wave.get_step(unit=u.nm), 1.0)
         nose.tools.assert_equal(wave.get_start(unit=u.nm), 0.0)
         nose.tools.assert_equal(wave.get_end(unit=u.nm), 9.0)
@@ -147,7 +149,7 @@ class TestWaveCoord(object):
     @attr(speed='fast')
     def test_rebin(self):
         """WCS class: testing rebin method"""
-        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm, shape=10)
+        wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         wave.rebin(factor=2)
         nose.tools.assert_equal(wave.get_step(unit=u.nm), 2.0)
         nose.tools.assert_equal(wave.get_start(unit=u.nm), 0.5)
@@ -157,11 +159,35 @@ class TestWaveCoord(object):
     @attr(speed='fast')
     def test_resample(self):
         """WCS class: testing resampling method"""
-        wave = WaveCoord(hdr=None, crval=0, cunit=u.nm, shape=10)
+        wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         wave2 = wave.resample(step=2.5, start=20, unit=u.angstrom)
         nose.tools.assert_equal(wave2.get_step(unit=u.nm), 0.25)
         nose.tools.assert_equal(wave2.get_start(unit=u.nm), 2.0)
         nose.tools.assert_equal(wave2.shape, 32)
+
+    @attr(speed='fast')
+    def test_muse_header(self):
+        """WCS class: testing MUSE header specifities."""
+        d = dict(crval=4750., crpix=1., ctype='AWAV', cdelt=1.25,
+                 cunit=u.angstrom, shape=3681)
+        wave = WaveCoord(**d)
+        start = d['crval']
+        end = d['crval'] + d['cdelt']*(d['shape']-1)
+        nose.tools.assert_equal(wave.get_step(), d['cdelt'])
+        nose.tools.assert_equal(wave.get_crval(), start)
+        nose.tools.assert_equal(wave.get_start(), start)
+        nose.tools.assert_equal(wave.get_end(), end)
+        assert_array_equal(wave.get_range(), [start, end])
+        nose.tools.assert_equal(wave.get_crpix(), d['crpix'])
+        nose.tools.assert_equal(wave.get_ctype(), d['ctype'])
+
+        def to_nm(val):
+            return (val*u.angstrom).to(u.nm).value
+        nose.tools.assert_equal(wave.get_step(u.nm), to_nm(d['cdelt']))
+        nose.tools.assert_equal(wave.get_crval(u.nm), to_nm(start))
+        nose.tools.assert_equal(wave.get_start(u.nm), to_nm(start))
+        nose.tools.assert_equal(wave.get_end(u.nm), to_nm(end))
+        assert_array_equal(wave.get_range(u.nm), [to_nm(start), to_nm(end)])
 
 
 class TestCoord(object):

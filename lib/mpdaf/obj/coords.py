@@ -1,6 +1,7 @@
 """coords.py Manages coordinates."""
 
 from astropy.coordinates import Angle
+from astropy.io import fits
 import astropy.units as u
 import astropy.wcs as pywcs
 import logging
@@ -163,7 +164,7 @@ class WCS(object):
 
     Parameters
     ----------
-    hdr   : pyfits.CardList
+    hdr   : astropy.fits.CardList
             A FITS header.
             If hdr is not equal to None, WCS object is created from data header
             and other parameters are not used.
@@ -202,18 +203,18 @@ class WCS(object):
 
         Parameters
         ----------
-        hdr   : pyfits.CardList
+        hdr   : astropy.fits.CardList
                 A FITS header.
                 If hdr is not equal to None, WCS object is created from data
                 header and other parameters are not used.
         crpix : float or (float,float)
                 Reference pixel coordinates.
 
-                If crpix is None and shape is None crpix = 1.0 and
+                - If crpix is None and shape is None, crpix = 1.0 and
                 the reference point is the first pixel of the image.
-
-                If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
-                and the reference point is the center of the image.
+                - If crpix is None and shape is not None,
+                crpix = (shape + 1.0)/2.0 and the reference point is the center
+                of the image.
         crval : float or (float,float)
                 Coordinates of the reference pixel (ref_dec,ref_ra).
                 (0.0,0.0) by default.
@@ -333,7 +334,7 @@ class WCS(object):
         self._logger.info(msg)
 
     def to_header(self):
-        """Generate a pyfits header object with the WCS information."""
+        """Generate a astropy.fits header object with the WCS information."""
         has_cd = self.wcs.wcs.has_cd()
         hdr = self.wcs.to_header()
         if has_cd:
@@ -428,7 +429,8 @@ class WCS(object):
                 self.naxis2 == other.naxis2 and
                 np.allclose(x1, x2, atol=1E-3, rtol=0) and
                 np.allclose(cdelt1, cdelt2, atol=1E-3, rtol=0) and
-                np.allclose(self.get_rot(), other.get_rot(), atol=1E-3, rtol=0))
+                np.allclose(self.get_rot(), other.get_rot(), atol=1E-3,
+                            rtol=0))
 
     def sameStep(self, other):
         """Return True if other and self have the same steps."""
@@ -837,26 +839,12 @@ class WCS(object):
             return True
 
     def to_cube_header(self, wave):
-        """Generate a pyfits header object with the WCS information and the
-        wavelength information.
+        """Generate a astropy.fits header object with the WCS information and
+        the wavelength information.
         """
-        wcs_hdr = self.to_header()
-        wcs_hdr['WCSAXES'] = 3
-        wcs_hdr['CRVAL3'] = wave.get_crval()
-        wcs_hdr['CRPIX3'] = wave.get_crpix()
-        wcs_hdr['CUNIT3'] = wave.unit.to_string('fits')
-        wcs_hdr['CTYPE3'] = wave.get_ctype()
-
-        if 'CD1_1' in wcs_hdr:
-            wcs_hdr['CD3_3'] = wave.get_step()
-            wcs_hdr['CD1_3'] = 0.
-            wcs_hdr['CD2_3'] = 0.
-            wcs_hdr['CD3_1'] = 0.
-            wcs_hdr['CD3_2'] = 0.
-        else:
-            wcs_hdr['CDELT3'] = wave.get_step()
-
-        return wcs_hdr
+        hdr = self.to_header()
+        hdr.update(wave.to_header(naxis=3, use_cd='CD1_1' in hdr))
+        return hdr
 
 
 class WaveCoord(object):
@@ -865,21 +853,20 @@ class WaveCoord(object):
 
     Parameters
     ----------
-    hdr   : pyfits.CardList
-            A FITS header.
-            If hdr is not equal to None, WaveCoord object is created from
-            data header and other parameters are not used.
+    hdr   : astropy.fits.CardList
+            A FITS header. If hdr is not None, WaveCoord object is created from
+            this header and other parameters are not used.
     crpix : float
-            Reference pixel coordinates. 1.0 by default.
-
-            Note that for crpix definition, the first pixel in the spectrum
-            has pixel coordinates.
+            Reference pixel coordinates. 1.0 by default. Note that for crpix
+            definition, the first pixel in the spectrum has pixel coordinates.
     cdelt : float
             Step in wavelength (1.0 by default).
     crval : float
             Coordinates of the reference pixel (0.0 by default).
-    cunit : string
+    cunit : u.unit
             Wavelength unit (Angstrom by default).
+    ctype : string
+            Type of the coordinates.
     shape : integer or None
             Size of spectrum (no mandatory).
 
@@ -887,53 +874,36 @@ class WaveCoord(object):
     ----------
     shape : integer
             Size of spectrum.
-    wcs   : pywcs.WCS
+    wcs   : astropy.wcs.WCS
             Wavelength coordinates.
     """
 
     def __init__(self, hdr=None, crpix=1.0, cdelt=1.0, crval=1.0,
                  cunit=u.angstrom, ctype='LINEAR', shape=None):
-        """Create a WaveCoord object.
-
-        Parameters
-        ----------
-        hdr   : pyfits.CardList
-               A FITS header.
-               If hdr is not equal to None, WaveCoord object is created from
-               data header and other parameters except shape are not used.
-        crpix : float
-                Reference pixel coordinates. 1.0 by default. Note that for
-                crpix definition, the first pixel in the spectrum has pixel
-                coordinates.
-        cdelt : float
-                Step in wavelength (1.0 by default).
-        crval : float
-                Coordinates of the reference pixel (0.0 by default).
-        cunit : u.unit
-                Wavelength unit (Angstrom by default).
-        ctype : string
-                Type of the coordinates.
-        shape : integer or None
-                Size of spectrum (no mandatory).
-        """
         self._logger = logging.getLogger(__name__)
         self.shape = shape
+        self.unit = cunit
 
         if hdr is not None:
+            hdr = hdr.copy()
             try:
                 n = hdr['NAXIS']
                 self.shape = hdr['NAXIS%d' % n]
             except:
                 n = hdr['WCSAXES']
-                self.shape = None
-            self.wcs = wcs_from_header(hdr).sub([1 if n == 1 else 3])
+
+            axis = 1 if n == 1 else 3
+            # Get the unit and remove it from the header so that wcslib does
+            # not convert the values.
+            self.unit = u.Unit(hdr.pop('CUNIT%d' % axis))
+            self.wcs = wcs_from_header(hdr).sub([axis])
             if shape is not None:
                 self.shape = shape
         else:
+            self.unit = u.Unit(cunit)
             self.wcs = pywcs.WCS(naxis=1)
             self.wcs.wcs.crpix[0] = crpix
             self.wcs.wcs.cdelt[0] = cdelt
-            self.wcs.wcs.cunit[0] = cunit
             self.wcs.wcs.ctype[0] = ctype
             self.wcs.wcs.crval[0] = crval
             self.wcs.wcs.set()
@@ -942,40 +912,31 @@ class WaveCoord(object):
         """Copie WaveCoord object in a new one and returns it."""
         # remove the  UnitsWarning: The unit 'Angstrom' has been deprecated in
         # the FITS standard.
-        out = WaveCoord(cunit=u.nm)
+        out = WaveCoord(shape=self.shape, cunit=self.unit)
         out.wcs = self.wcs.deepcopy()
-        out.shape = self.shape
         return out
 
-    def info(self):
+    def info(self, unit=None):
         """Print information."""
-        try:
-            unit = u.angstrom
-            start = self.get_start(unit=unit)
-            step = self.get_step(unit=unit)
-            if self.shape is not None:
-                end = self.get_end(unit=unit)
-        except:
-            unit = self.unit
-            start = self.get_start()
-            step = self.get_step()
-            if self.shape is not None:
-                end = self.get_end()
+        unit = unit or self.unit
+        start = self.get_start(unit=unit)
+        step = self.get_step(unit=unit)
 
         if self.shape is None:
             msg = 'wavelength: min:%0.2f step:%0.2f %s'
             kw = (start, step, unit)
         else:
             msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s'
+            end = self.get_end(unit=unit)
             kw = (start, end, step, unit)
-        self._logger.info(msg, **kw)
+        self._logger.info(msg, *kw)
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""
         if not isinstance(other, WaveCoord):
             return False
 
-        l1 = self.coord(0)
+        l1 = self.coord(0, unit=self.unit)
         l2 = other.coord(0, unit=self.unit)
         return (self.shape == other.shape and
                 np.allclose(l1, l2, atol=1E-2, rtol=0) and
@@ -1060,7 +1021,7 @@ class WaveCoord(object):
                 raise ValueError('Spectrum with dim < 2')
             cdelt = newlbda[1] - newlbda[0]
             return WaveCoord(crpix=1.0, cdelt=cdelt, crval=newlbda[0],
-                             cunit=self.wcs.wcs.cunit[0], shape=dim,
+                             cunit=self.unit, shape=dim,
                              ctype=self.wcs.wcs.ctype[0])
         else:
             raise ValueError('Operation forbidden')
@@ -1105,7 +1066,8 @@ class WaveCoord(object):
             except:
                 raise IOError('No standard WCS')
         res.wcs.wcs.set()
-        res.shape = int(np.ceil((self.shape * cdelt - start + old_start) / step))
+        res.shape = int(np.ceil((self.shape * cdelt - start + old_start) /
+                                step))
         return res
 
     def rebin(self, factor):
@@ -1146,22 +1108,16 @@ class WaveCoord(object):
         unit : astropy.units
                type of the wavelength coordinates
         """
-        try:
-            if unit is None:
-                return self.wcs.wcs.cd[0][0]
-            else:
-                return (self.wcs.wcs.cd[0][0] * self.unit).to(unit).value
-        except:
-            try:
-                cdelt = self.wcs.wcs.get_cdelt()[0]
-                pc = self.wcs.wcs.get_pc()[0, 0]
+        if self.wcs.wcs.has_cd():
+            step = self.wcs.wcs.cd[0][0]
+        else:
+            cdelt = self.wcs.wcs.get_cdelt()[0]
+            pc = self.wcs.wcs.get_pc()[0, 0]
+            step = (cdelt * pc)
 
-                if unit is None:
-                    return cdelt * pc
-                else:
-                    return (cdelt * pc * self.unit).to(unit).value
-            except:
-                raise IOError('No standard WCS')
+        if unit is not None:
+            step = (step * self.unit).to(unit).value
+        return step
 
     def get_start(self, unit=None):
         """Return the value of the first pixel.
@@ -1203,6 +1159,11 @@ class WaveCoord(object):
         """CRPIX getter (reference pixel on the wavelength axis)."""
         return self.wcs.wcs.crpix[0]
 
+    def set_crpix(self, x):
+        """CRPIX1 setter (reference pixel on the first axis)."""
+        self.wcs.wcs.crpix[0] = x
+        self.wcs.wcs.set()
+
     def get_crval(self, unit=None):
         """CRVAL getter (value of the reference pixel on the wavelength axis).
 
@@ -1217,21 +1178,32 @@ class WaveCoord(object):
         else:
             return (self.wcs.wcs.crval[0] * self.unit).to(unit).value
 
-    @property
-    def unit(self):
-        return self.wcs.wcs.cunit[0]
-
     def get_ctype(self):
-        """Return the type of wavelength coordinates.
-        """
+        """Return the type of wavelength coordinates."""
         return self.wcs.wcs.ctype[0]
 
-    def to_header(self):
-        """Generate a pyfits header object with the WCS information."""
-        hdr = self.wcs.to_header()
-        return hdr
+    def to_header(self, naxis=1, use_cd=False):
+        """Generate a astropy.fits header object with the WCS information."""
+        hdr = fits.Header()
+        hdr['WCSAXES'] = (naxis, 'Number of coordinate axes')
+        hdr['CRVAL%d' % naxis] = (self.get_crval(),
+                                  'Coordinate value at reference point')
+        hdr['CRPIX%d' % naxis] = (self.get_crpix(),
+                                  'Pixel coordinate of reference point')
+        hdr['CUNIT%d' % naxis] = (self.unit.to_string('fits'),
+                                  'Units of coordinate increment and value')
+        hdr['CTYPE%d' % naxis] = (self.get_ctype(),
+                                  'Coordinate type code')
 
-    def set_crpix(self, x):
-        """CRPIX1 setter (reference pixel on the first axis)."""
-        self.wcs.wcs.crpix[0] = x
-        self.wcs.wcs.set()
+        if use_cd and naxis == 3:
+            hdr['CD3_3'] = self.get_step()
+            hdr['CD1_3'] = 0.
+            hdr['CD2_3'] = 0.
+            hdr['CD3_1'] = 0.
+            hdr['CD3_2'] = 0.
+        else:
+            hdr['CDELT%d' % naxis] = (self.get_step(),
+                                      'Coordinate increment at reference '
+                                      'point')
+
+        return hdr

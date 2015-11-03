@@ -2077,8 +2077,8 @@ class Spectrum(DataArray):
             imin = int(lmin + 0.5)
             imax = int(lmax + 0.5)
         else:
-            imin = self.wave.pixel(lmin, True, unit)
-            imax = self.wave.pixel(lmax, True, unit)
+            imin = self.wave.pixel(lmin, nearest=True, unit=unit)
+            imax = self.wave.pixel(lmax, nearest=True, unit=unit)
         if imin == imax:
             if imin == 0 or imin == self.shape[0]:
                 raise ValueError('Gaussian outside spectrum wavelength range')

@@ -323,12 +323,13 @@ def test_poly_fit():
 @attr(speed='fast')
 def test_filter():
     """Spectrum class: testing filters"""
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    spvar.wave.wcs.wcs.cunit[0] = u.angstrom
-    nose.tools.assert_almost_equal(spvar.abmag_band(5000.0, 1000.0), -22.837, 2)
-    nose.tools.assert_almost_equal(spvar.abmag_filter([4000, 5000, 6000], [0.1, 1.0, 0.3]), -23.077, 2)
-    nose.tools.assert_almost_equal(spvar.abmag_filter_name('U'), 99)
-    nose.tools.assert_almost_equal(spvar.abmag_filter_name('B'), -22.278, 2)
+    sp = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
+    sp.wave.unit = u.angstrom
+    nose.tools.assert_almost_equal(sp.abmag_band(5000.0, 1000.0), -22.837, 2)
+    nose.tools.assert_almost_equal(
+        sp.abmag_filter([4000, 5000, 6000], [0.1, 1.0, 0.3]), -23.077, 2)
+    nose.tools.assert_almost_equal(sp.abmag_filter_name('U'), 99)
+    nose.tools.assert_almost_equal(sp.abmag_filter_name('B'), -22.278, 2)
 
 
 @attr(speed='fast')
