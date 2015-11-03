@@ -144,7 +144,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         weight.write('white.fits', savemask='nan')
 
         fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
-        fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=1/imsum.unit**2)
+        fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=u.Unit(1)/(imsum.unit**2))
         fullvar.write('inv_variance.fits', savemask='nan')
 
         bdata = np.ma.average(c.data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)

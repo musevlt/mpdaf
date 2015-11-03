@@ -14,7 +14,7 @@ from astropy.io import fits as pyfits
 from .coords import WCS, WaveCoord
 from .data import DataArray
 from .image import Image
-from .objs import is_float, is_int, UnitArray, UnitMaskedArray
+from .objs import is_float, is_int, UnitArray, UnitMaskedArray, fix_unit_write
 from .spectrum import Spectrum
 
 __all__ = ['iter_spe', 'iter_ima', 'Cube']
@@ -210,8 +210,11 @@ class Cube(DataArray):
                                              card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
+            try:
+                imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
                                       'data unit type')
+            except u.format.fits.UnitScaleError:
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)), 'data unit type')
 
         return imahdu
 
@@ -263,8 +266,11 @@ class Cube(DataArray):
                                                  card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
+            try:
+                imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
                                       'data unit type')
+            except u.format.fits.UnitScaleError:
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)), 'data unit type')
 
         return imahdu
 

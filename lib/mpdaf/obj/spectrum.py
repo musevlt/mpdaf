@@ -14,7 +14,7 @@ from scipy.optimize import leastsq
 
 from . import ABmag_filters
 from .data import DataArray
-from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
+from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray, fix_unit_write
 from ..tools import deprecated
 
 
@@ -268,8 +268,11 @@ class Spectrum(DataArray):
                                              card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
+            try:
+                imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
                                       'data unit type')
+            except u.format.fits.UnitScaleError:
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)), 'data unit type')
 
         return imahdu
 
@@ -293,8 +296,11 @@ class Spectrum(DataArray):
             hdr = self.wave.to_header()
             hdu = pyfits.ImageHDU(name=name, data=var, header=hdr)
             if self.unit != u.dimensionless_unscaled:
-                hdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
+                try:
+                    hdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
                                        'data unit type')
+                except u.format.fits.UnitScaleError:
+                    imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)), 'data unit type')
             return hdu
 
     def write(self, filename, savemask='dq'):

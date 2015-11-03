@@ -18,7 +18,7 @@ from scipy.optimize import leastsq
 from . import plt_norm, plt_zscale
 from .coords import WCS, WaveCoord
 from .data import DataArray, is_valid_fits_file
-from .objs import is_float, is_int, UnitArray, UnitMaskedArray
+from .objs import is_float, is_int, UnitArray, UnitMaskedArray, fix_unit_write
 
 
 class ImageClicks(object):  # Object used to save click on image plot.
@@ -380,8 +380,11 @@ class Image(DataArray):
                                              card.keyword)
 
         if self.unit != u.dimensionless_unscaled:
-            imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
+            try:
+                imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
                                       'data unit type')
+            except u.format.fits.UnitScaleError:
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)), 'data unit type')
 
         return imahdu
 
@@ -433,8 +436,11 @@ class Image(DataArray):
                                                      card.keyword)
 
             if self.unit != u.dimensionless_unscaled:
-                imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
+                try:
+                    imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
                                           'data unit type')
+                except u.format.fits.UnitScaleError:
+                    imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)), 'data unit type')
             return imahdu
 
     def write(self, filename, savemask='dq'):

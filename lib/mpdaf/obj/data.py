@@ -10,7 +10,7 @@ from numpy import ma
 
 from .coords import WCS, WaveCoord
 from ..tools import MpdafWarning, deprecated
-from .objs import fix_unit
+from .objs import fix_unit_read
 
 # __all__ = ['iter_spe', 'iter_ima', 'Cube', 'CubeDisk']
 
@@ -157,7 +157,7 @@ class DataArray(object):
             self.data_header = hdr = hdulist[self._data_ext].header
 
             try:
-                self.unit = u.Unit(fix_unit(hdr['BUNIT']))
+                self.unit = u.Unit(fix_unit_read(hdr['BUNIT']))
             except KeyError:
                 self._logger.warning('The physical unit of the data is not '
                                      'loaded from the FITS header.\n'
@@ -432,7 +432,7 @@ class DataArray(object):
         if self.var is not None:
             self.var = 3 * self.var / self.data.data ** 4
         self.data = np.ma.sqrt(self.data)
-        self.unit /= np.sqrt(self.unit.scale)
+        self.unit /= u.Unit(np.sqrt(self.unit.scale))
 
     def sqrt(self):
         """Return a new object with the positive square-root of the data."""

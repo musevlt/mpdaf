@@ -13,7 +13,6 @@ from tempfile import NamedTemporaryFile
 
 from ..utils import generate_cube, generate_image, generate_spectrum
 
-
 @attr(speed='fast')
 def test_copy():
     """Cube class: testing copy method."""
@@ -256,7 +255,7 @@ def test_aperture():
 @attr(speed='fast')
 def test_write():
     """Cube class: testing write"""
-    unit = u.Unit('10**(-20)*erg/s/cm**2/Angstrom')
+    unit = u.Unit('1e-20 erg/s/cm2/Angstrom')
     cube = generate_cube(scale=1, wave=WaveCoord(crval=1, cunit=u.angstrom),
                          unit=unit)
     fobj = NamedTemporaryFile()
