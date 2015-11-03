@@ -96,7 +96,8 @@ class DataArray(object):
 
     def __init__(self, filename=None, hdulist=None, ext=None, data=None,
                  var=None, mask=False, unit=u.dimensionless_unscaled,
-                 copy=True, dtype=float, **kwargs):
+                 copy=True, dtype=float, primary_header=None, data_header=None,
+                 **kwargs):
         self._logger = logging.getLogger(__name__)
         self.filename = filename
         self._data = None
@@ -109,8 +110,8 @@ class DataArray(object):
         self.wave = None
         self.dtype = dtype
         self.unit = unit
-        self.data_header = pyfits.Header()
-        self.primary_header = pyfits.Header()
+        self.data_header = data_header or pyfits.Header()
+        self.primary_header = primary_header or pyfits.Header()
 
         if kwargs.pop('shape', None) is not None:
             warnings.warn('The shape parameter is no more used, it is derived '
@@ -120,7 +121,7 @@ class DataArray(object):
             warnings.warn('The notnoise parameter is no more used, the '
                           'variance wll be read if necessary', MpdafWarning)
 
-        if filename is not None:
+        if filename is not None and data is None:
             if not is_valid_fits_file(filename):
                 raise IOError('Invalid file: %s' % filename)
 
@@ -300,32 +301,36 @@ class DataArray(object):
 
     def copy(self):
         """Returns a copy of the object."""
-        obj = self.__class__(data=self.data, unit=self.unit, var=self.var,
-                             wcs=self.wcs, wave=self.wave, copy=True)
-        obj.filename = self.filename
-        obj.data_header = pyfits.Header(self.data_header)
-        obj.primary_header = pyfits.Header(self.primary_header)
-        return obj
+        return self.__class__(
+            filename=self.filename, data=self.data, unit=self.unit,
+            var=self.var, wcs=self.wcs, wave=self.wave, copy=True,
+            data_header=pyfits.Header(self.data_header),
+            primary_header=pyfits.Header(self.primary_header))
 
-    def clone(self, var=False):
-        """Returns a shallow copy with the same shape and coordinates, filled
-        with zeros.
+    def clone(self, var=None, data_init=None, var_init=None):
+        """Returns a shallow copy with the same header and coordinates.
 
         Parameters
         ----------
-        var : bool
-        Presence of the variance extension.
+        data_init : function
+            Function used to create the data array (takes the shape as
+            parameter). For example ``np.zeros`` or ``np.empty``. Default to
+            ``None`` which means that the ``data`` attribute is ``None``.
+        var_init : function
+            Function used to create the data array, same as ``data_init``.
+
         """
-        obj = self.__class__(
-            data=np.zeros(shape=self.shape),
+        if var is not None:
+            warnings.warn('The var parameter is no more used.', MpdafWarning)
+
+        return self.__class__(
             unit=self.unit,
-            var=None if var is False else np.zeros(shape=self.shape),
+            data=None if data_init is None else data_init(self.shape),
+            var=None if var_init is None else var_init(self.shape),
             wcs=None if self.wcs is None else self.wcs.copy(),
-            wave=None if self.wave is None else self.wave.copy()
-        )
-        obj.data_header = pyfits.Header(self.data_header)
-        obj.primary_header = pyfits.Header(self.primary_header)
-        return obj
+            wave=None if self.wave is None else self.wave.copy(),
+            data_header=pyfits.Header(self.data_header),
+            primary_header=pyfits.Header(self.primary_header))
 
     def info(self):
         """Prints information."""

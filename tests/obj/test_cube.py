@@ -51,9 +51,7 @@ def test_arithmetricOperator_Cube():
                             op(cube1.data.data*cube1.unit, im1).value)
 
     cube2 = cube1 / 25.3
-    cube3 = cube1.clone()
-    cube3[:] = cube2
-    assert_almost_equal(cube3.data, cube1.data / 25.3)
+    assert_almost_equal(cube2.data, cube1.data / 25.3)
 
 
 @attr(speed='fast')
@@ -82,14 +80,6 @@ def test_iterator():
         spe[:] = spe + p + q
     z, y, x = [np.arange(sh) for sh in cube1.shape]
     assert_array_equal(cube1.data.data, np.add.reduce(np.meshgrid(y, z, x)))
-
-
-@attr(speed='fast')
-def test_clone():
-    """Cube class: tests clone method."""
-    cube1 = generate_cube()
-    cube2 = cube1.clone()
-    assert_array_equal(cube2.data, np.zeros(cube1.shape))
 
 
 @attr(speed='fast')

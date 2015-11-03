@@ -78,9 +78,9 @@ def test_arithmetricOperator():
                 nose.tools.assert_almost_equal(cube2[k, j, i], spectrum1[k] * image1[j, i])
     #
     image2 = (image1 * -2).abs() + (image1 + 4).sqrt() - 2
-    image3 = image1.clone()
-    image3[:] = image2
-    nose.tools.assert_almost_equal(image3[3, 3], np.abs(image1[3, 3] * -2) + np.sqrt(image1[3, 3] + 4) - 2)
+    nose.tools.assert_almost_equal(image2[3, 3],
+                                   np.abs(image1[3, 3] * -2) +
+                                   np.sqrt(image1[3, 3] + 4) - 2)
 
 
 @attr(speed='fast')
@@ -216,22 +216,6 @@ def test_peak():
                  unit_radius=None)
     nose.tools.assert_almost_equal(p['p'], 793.1, 1)
     nose.tools.assert_almost_equal(p['q'], 875.9, 1)
-
-
-@attr(speed='fast')
-def test_clone():
-    """Image class: testing clone method."""
-    wcs = WCS()
-    data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(data=data, wcs=wcs)
-    ima2 = image1.clone()
-    for j in range(6):
-        for i in range(5):
-            nose.tools.assert_almost_equal(ima2[j, i], 0)
-    ima = Image("data/obj/a370II.fits")
-    ima2 = ima.clone() + 1000
-    nose.tools.assert_equal(ima2.sum(axis=0).data[1000], ima.shape[0] * 1000)
-    nose.tools.assert_equal(ima2.sum(), ima.shape[0] * ima.shape[1] * 1000)
 
 
 @attr(speed='fast')

@@ -332,14 +332,6 @@ def test_filter():
 
 
 @attr(speed='fast')
-def test_clone():
-    """Spectrum class: testing clone method."""
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    spe = spvar.clone()
-    nose.tools.assert_almost_equal(spe.mean(), 0)
-
-
-@attr(speed='fast')
 def test_mag():
     """Spectrum class: testing magnitude computations."""
     Vega = Spectrum('data/obj/Vega.fits')

@@ -1569,8 +1569,8 @@ class Spectrum(DataArray):
             sig = np.std(err)
             n_p = len(d)
             for it in range(maxiter):
-                ind = np.where((err >= nsig[0] * sig)
-                               & (np.abs(err) <= nsig[1] * sig))
+                ind = np.where((err >= nsig[0] * sig) &
+                               (np.abs(err) <= nsig[1] * sig))
                 if len(ind[0]) == n_p:
                     break
                 if len(ind[0]) <= deg + 1:
