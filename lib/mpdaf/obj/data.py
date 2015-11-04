@@ -207,7 +207,7 @@ class DataArray(object):
                 self._var = np.array(var, dtype=dtype, copy=copy)
 
         wcs = kwargs.pop('wcs', None)
-        if wcs is not None:
+        if wcs is not None and wcs.naxis1!=1 and wcs.naxis2!=1:
             try:
                 self.wcs = wcs.copy()
                 if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
@@ -217,14 +217,14 @@ class DataArray(object):
                     self._logger.warning(
                         'world coordinates and data have not the same '
                         'dimensions: shape of WCS object is modified')
-                    self.wcs.naxis1 = self._shape[-1]
-                    self.wcs.naxis2 = self._shape[-2]
+                self.wcs.naxis1 = self._shape[-1]
+                self.wcs.naxis2 = self._shape[-2]
             except:
                 self._logger.warning('world coordinates not copied',
                                      exc_info=True)
 
         wave = kwargs.pop('wave', None)
-        if wave is not None:
+        if wave is not None and wave.shape!=1:
             try:
                 self.wave = wave.copy()
                 if wave.shape is not None and self._shape is not None and \
@@ -232,7 +232,7 @@ class DataArray(object):
                     self._logger.warning(
                         'wavelength coordinates and data have not the same '
                         'dimensions: shape of WaveCoord object is modified')
-                    self.wave.shape = self._shape[0]
+                self.wave.shape = self._shape[0]
             except:
                 self._logger.warning('wavelength solution not copied',
                                      exc_info=True)
@@ -341,9 +341,9 @@ class DataArray(object):
             self.filename or 'no name')
 
         data = ('no data' if self._data is None and self._data_ext is None
-                else '.data({})'.format(','.join(shape_str)))
+                else '.data({})'.format(shape_str))
         noise = ('no noise' if self._var is None and self._var_ext is None
-                 else '.var({})'.format(','.join(shape_str)))
+                 else '.var({})'.format(shape_str))
         unit = str(self.unit) or 'no unit'
         log('%s (%s), %s', data, unit, noise)
 
@@ -483,3 +483,73 @@ class DataArray(object):
                elements depending on a condition
         """
         self.data[ksel] = np.ma.masked
+        
+    def __getitem__(self, item):
+        """Returns the corresponding object:
+        cube[k,p,k] = value
+        cube[k,:,:] = spectrum
+        cube[:,p,q] = image
+        cube[:,:,:] = sub-cube
+        """
+        if self._data is None and self.filename is not None:
+            data = read_slice_from_fits(self.filename, item=item,
+                                        ext=self._data_ext, mask_ext='DQ',
+                                        dtype=self.dtype)
+
+            # Mask an array where invalid values occur (NaNs or infs).
+            if ma.is_masked(data):
+                data.mask |= ~(np.isfinite(data.data))
+            else:
+                data = ma.masked_invalid(data)
+        else:
+            data = self._data[item] #data = self.data[item].copy()
+        
+        if self._var is None:
+            if self.filename is not None:
+                if self._var_ext is None:
+                    var = None
+                else:
+                    var = read_slice_from_fits(self.filename, item=item,
+                                               ext=self._var_ext, dtype=self.dtype)
+                    if var.ndim != self.data.ndim:
+                        raise IOError('Wrong dimension number in STAT extension')
+                    if not np.array_equal(var.shape, data.shape):
+                        raise IOError('Number of points in STAT not equal to DATA')
+            else:
+                var = None
+        else:
+            var = self._var[item] #copy
+        
+        if self.ndim == 3 and isinstance(item, tuple) and len(item) == 3:
+            try:
+                wcs = self.wcs[item[1], item[2]]
+            except:
+                wcs = None
+            try:
+                wave = self.wave[item[0]]
+            except:
+                wave = None
+        elif self.ndim == 2 and isinstance(item, tuple) and len(item) == 2:
+            try:
+                wcs = self.wcs[item]
+            except:
+                wcs = None
+            wave = None
+        elif self.ndim == 1 and isinstance(item, slice):
+            try:
+                wave = self.wave[item]
+            except:
+                wave = None
+            wcs = None
+        else:
+            wave = None
+            wcs = None
+        
+        if data.shape == ():
+            return data
+        else:
+            obj = self.__class__(data=data, unit=self.unit, var=var,
+                                 wcs=wcs, wave=wave) #copy
+            obj.data_header = pyfits.Header(self.data_header)
+            obj.primary_header = pyfits.Header(self.primary_header)
+            return obj

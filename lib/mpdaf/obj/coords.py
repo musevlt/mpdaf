@@ -923,13 +923,11 @@ class WaveCoord(object):
         step = self.get_step(unit=unit)
 
         if self.shape is None:
-            msg = 'wavelength: min:%0.2f step:%0.2f %s'
-            kw = (start, step, unit)
+            msg = 'wavelength: min:%0.2f step:%0.2f %s'%(start, step, unit)
         else:
-            msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s'
             end = self.get_end(unit=unit)
-            kw = (start, end, step, unit)
-        self._logger.info(msg, *kw)
+            msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s'%(start, end, step, unit)
+        self._logger.info(msg)
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""
@@ -1007,15 +1005,43 @@ class WaveCoord(object):
     def __getitem__(self, item):
         """Return the coordinate corresponding to pixel if item is an integer
         Return the corresponding WaveCoord object if item is a slice."""
-        if self.shape is None:
-            raise ValueError('wavelength coordinates without dimension')
-        else:
-            lbda = self.coord()
 
-        if isinstance(item, int):
-            return lbda[item]
+        if item is None:
+            return self
+        elif isinstance(item, int):
+            if item>=0:
+                lbda = self.coord(pixel=item)
+            else:
+                if self.shape is None:
+                    raise ValueError('wavelength coordinates without dimension')
+                else:
+                    lbda = self.coord(pixel=self.shape+item)
+            return WaveCoord(crpix=1.0, cdelt=0, crval=lbda,
+                             cunit=self.unit, shape=1,
+                             ctype=self.wcs.wcs.ctype[0])
         elif isinstance(item, slice):
-            newlbda = lbda[item]
+            if item.start is None:
+                start = 0
+            elif item.start>=0:
+                start = item.start
+            else:
+                if self.shape is None:
+                    raise ValueError('wavelength coordinates without dimension')
+                else:
+                    start = self.shape + item.start
+            if item.stop is None:
+                if self.shape is None:
+                    raise ValueError('wavelength coordinates without dimension')
+                else:
+                    stop = self.shape
+            elif item.stop>=0:
+                stop = item.stop
+            else:
+                if self.shape is None:
+                    raise ValueError('wavelength coordinates without dimension')
+                else:
+                    stop = self.shape + item.stop
+            newlbda = self.coord(pixel=np.arange(start, stop, item.step))
             dim = newlbda.shape[0]
             if dim < 2:
                 raise ValueError('Spectrum with dim < 2')

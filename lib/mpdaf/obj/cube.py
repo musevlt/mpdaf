@@ -1143,54 +1143,22 @@ class Cube(DataArray):
         cube[:,p,q] = image
         cube[:,:,:] = sub-cube
         """
-        if isinstance(item, tuple) and len(item) == 3:
-            data = self.data[item]
-            var = None
-            if self.var is not None:
-                var = self.var[item]
-
-            if is_int(item[0]):
-                if is_int(item[1]) and is_int(item[2]):
-                    # return a float
-                    return data
-                else:
-                    # return an image
-                    try:
-                        wcs = self.wcs[item[1], item[2]]
-                    except:
-                        wcs = None
-                    res = Image(wcs=wcs, unit=self.unit, data=data, var=var,
-                                copy=False)
-                    res.filename = self.filename
-                    return res
-            elif is_int(item[1]) and is_int(item[2]):
-                # return a spectrum
-                try:
-                    wave = self.wave[item[0]]
-                except:
-                    wave = None
-                res = Spectrum(wave=wave, unit=self.unit, data=data, var=var,
-                               copy=False)
-                res.filename = self.filename
-                return res
-            else:
-                # return a cube
-                try:
-                    wcs = self.wcs[item[1], item[2]]
-                except:
-                    wcs = None
-                try:
-                    wave = self.wave[item[0]]
-                except:
-                    wave = None
-                res = Cube(wcs=wcs, wave=wave, unit=self.unit, data=data,
-                           var=var, copy=False)
-                res.data_header = pyfits.Header(self.data_header)
-                res.primary_header = pyfits.Header(self.primary_header)
-                res.filename = self.filename
-                return res
+        obj = super(Cube, self).__getitem__(item)
+        if isinstance(obj, DataArray):
+            if obj.ndim == 1:
+                return Spectrum(data=obj.data, unit=obj.unit, var=obj.var,
+                                 wave=obj.wave, dtype=obj.dtype, copy=False)
+            elif obj.ndim == 2:
+                return Image(data=obj.data, unit=obj.unit, var=obj.var,
+                             wcs=obj.wcs, dtype=obj.dtype, copy=False)
+            elif obj.ndim ==3:
+                return Cube(data=obj.data, unit=obj.unit,
+                                     var=obj.var, wave=obj.wave,
+                                     wcs=obj.wcs, dtype=obj.dtype,
+                                     copy=False)
         else:
-            raise ValueError('Operation forbidden')
+            return obj
+        
 
     def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
         """Returns the sub-cube corresponding to a wavelength range.

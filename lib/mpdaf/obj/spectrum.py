@@ -782,26 +782,6 @@ class Spectrum(DataArray):
 #             raise ValueError('Operation forbidden')
 #         return res
 
-    def __getitem__(self, item):
-        """ Return the corresponding value or sub-spectrum.
-        """
-        if is_int(item):
-            return self.data[item]
-        elif isinstance(item, slice):
-            data = self.data[item]
-            var = None
-            if self.var is not None:
-                var = self.var[item]
-            try:
-                wave = self.wave[item]
-            except:
-                wave = None
-            res = Spectrum(data=data, var=var, wave=wave, unit=self.unit)
-            res.filename = self.filename
-            return res
-        else:
-            raise ValueError('Operation forbidden')
-
     def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
         """ Return the flux value corresponding to a wavelength,
         or return the sub-spectrum corresponding to a wavelength range.

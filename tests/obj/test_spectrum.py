@@ -124,11 +124,11 @@ def test_spectrum_methods():
     sum1 = spectrum1.sum()
     nose.tools.assert_almost_equal(sum1, spectrum1.data.sum())
     spectrum2 = spectrum1[1:-2]
-    sum1 = spectrum1.sum(lmin=spectrum1.wave[1], lmax=spectrum1.wave[-3],
+    sum1 = spectrum1.sum(lmin=spectrum1.wave.coord(1), lmax=spectrum1.wave.coord(10-3),
                          unit=u.nm)
     sum2 = spectrum2.sum()
     nose.tools.assert_almost_equal(sum1, sum2)
-    mean1 = spectrum1.mean(lmin=spectrum1.wave[1], lmax=spectrum1.wave[-3],
+    mean1 = spectrum1.mean(lmin=spectrum1.wave.coord(1), lmax=spectrum1.wave.coord(10-3),
                            unit=u.nm)
     mean2 = spectrum2.mean()
     nose.tools.assert_almost_equal(mean1, mean2)
