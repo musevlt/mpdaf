@@ -51,7 +51,7 @@ def remove_files():
     os.removedirs('nb')
         
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5, nbcube=True, del_sex=False):
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5, nbcube=True, expmapcube=None,skyclean=[(5573.5,5578.8),(6297.0,6300.5)], del_sex=False):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
     to detect emission lines in a datacube. It has been developed by Johan Richard
     (johan.richard@univ-lyon1.fr)
@@ -84,6 +84,10 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
              Removing sources at a fraction of the the max_weight level.
     nbcube : Boolean
              Flag to produce an output datacube containing all narrow-band images
+    expmapcube : string
+             Name of the associated exposure map cube (to be used as a weight map for SExtractor)
+    skyclean : array of float tuples
+             List of wavelength ranges to exclude from the raw detections
     del_sex  : boolean
               If True, configuration files and intermediate files used by sextractor are removed.
 
@@ -143,9 +147,15 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), unit=imsum.unit)
         weight.write('white.fits', savemask='nan')
 
-        fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
-        fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=u.Unit(1)/(imsum.unit**2))
-        fullvar.write('inv_variance.fits', savemask='nan')
+        if not expmapcube:
+            fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
+            fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=u.Unit(1)/(imsum.unit**2))
+            fullvar.write('inv_variance.fits', savemask='nan')
+        else:
+            logger.info("muselet - Opening exposure map cube: " + expmapcube)
+            expmap = Cube(expmapcube)
+            fullvar = expmap.mean(axis=0)
+            fullvar.write('inv_variance.fits', savemask='nan')
 
         bdata = np.ma.average(c.data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)
         gdata = np.ma.average(c.data[nsfilter:2 * nsfilter, :, :], weights=1. / mvar[nsfilter:2 * nsfilter, :, :], axis=0)
@@ -198,7 +208,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
             if(nbcube):
                 outnbcube.data[k,:,:]=imnb.data[:,:]
-            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
+            if(expmapcube):
+                expmap[k,:,:].write('nb/exp' + kstr + '.fits', savemask='nan')
+                f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' + kstr + '.fits\n')
+            else:
+                f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
 
         sys.stdout.write("\n")
         sys.stdout.flush()
@@ -270,7 +284,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         if fullvar is None:
             fullvar=Image('inv_variance.fits')
 
-        cleanlimit=clean*np.max(fullvar.data)
+        cleanlimit=clean*np.median(fullvar.data)
+
+        logger.info("muselet - cleaning below inverse variance "+str(cleanlimit))
 
         tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
@@ -298,20 +314,26 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         S_catID = []
         for i in range(3, nslices - 14):
             ll = wlmin + dw * i
-            slicename = "nb/nb%04d.cat" % i
-            t = Table.read(slicename, format='ascii.sextractor')
-            for line in t:
-                xline = line['X_IMAGE']
-                yline = line['Y_IMAGE']
-                if(fullvar.data[int(yline-1),int(xline-1)]>cleanlimit):
-                    fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
-                    eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
-                    flag = 0
-                    distmin = -1
-                    distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
-                    ksel = np.where(distlist < radius ** 2.0)
-                    for j in ksel[0]:
-                        if(fline > 5.0 * eline):
+            flagsky=0
+            if len(skyclean)>0:
+               for (skylmin,skylmax) in skyclean:
+                   if(ll>skylmin and ll<skylmax):
+                        flagsky=1
+            if(flagsky==0):
+               slicename = "nb/nb%04d.cat" % i
+               t = Table.read(slicename, format='ascii.sextractor')
+               for line in t:
+                  xline = line['X_IMAGE']
+                  yline = line['Y_IMAGE']
+                  if(fullvar.data[int(yline-1),int(xline-1)]>cleanlimit):
+                      fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
+                      eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
+                      flag = 0
+                      distmin = -1
+                      distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
+                      ksel = np.where(distlist < radius ** 2.0)
+                      for j in ksel[0]:
+                         if(fline > 5.0 * eline):
                             if((flag <= 0)or(distlist[j] < distmin)):
                                 idmin = tBGR['NUMBER'][j]
                                 distmin = distlist[j]
@@ -324,14 +346,14 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                                 xline=tBGR['X_IMAGE'][j]
                                 yline=tBGR['Y_IMAGE'][j]
                                 flag = 1
-                        else:
+                         else:
                             if(fline < -5 * eline):
                                 idmin = tBGR['NUMBER'][j]
                                 distmin = distlist[j]
                                 flag = -2
                             else:
                                 flag = -1
-                    if(flag == 1):
+                      if(flag == 1):
                         C_ll.append(ll)
                         C_idmin.append(idmin)
                         C_fline.append(fline)
@@ -347,7 +369,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                         C_catID.append(i)
                         if(idmin > maxidc):
                             maxidc = idmin
-                    if (flag == 0) and (ll < 9300.0):
+                      if (flag == 0) and (ll < 9300.0):
                         S_ll.append(ll)
                         S_fline.append(fline)
                         S_eline.append(eline)
