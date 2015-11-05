@@ -69,18 +69,24 @@ def test_get_Cube():
 
 
 @attr(speed='fast')
-def test_iterator():
-    """Cube class: tests iterators"""
+def test_iter_ima():
+    """Cube class: tests Image iterator"""
     cube1 = generate_cube()
     for ima, k in iter_ima(cube1, True):
-        ima[:, :] = k * np.ones(shape=(6, 5))
+        cube1[k, :, :] = k * np.ones(shape=(6, 5))
     c = np.arange(cube1.shape[0])[:, np.newaxis, np.newaxis]
     assert_array_equal(*np.broadcast_arrays(cube1.data.data, c))
 
+
+@attr(speed='fast')
+def test_iter_spe():
+    """Cube class: tests Spectrum iterator"""
+    cube1 = generate_cube(scale=0.)
     for (spe, (p, q)) in iter_spe(cube1, True):
-        spe[:] = spe + p + q
-    z, y, x = [np.arange(sh) for sh in cube1.shape]
-    assert_array_equal(cube1.data.data, np.add.reduce(np.meshgrid(y, z, x)))
+        cube1[:, p, q] = spe + p + q
+
+    y, x = np.mgrid[:cube1.shape[1], :cube1.shape[2]]
+    assert_array_equal(*np.broadcast_arrays(cube1.data.data, y + x))
 
 
 @attr(speed='fast')
