@@ -502,7 +502,7 @@ class DataArray(object):
             else:
                 data = ma.masked_invalid(data)
         else:
-            data = self._data[item] #data = self.data[item].copy()
+            data = self._data[item]  # data = self.data[item].copy()
 
         if self._var is None:
             if self.filename is not None:
@@ -518,7 +518,7 @@ class DataArray(object):
             else:
                 var = None
         else:
-            var = self._var[item] #copy
+            var = self._var[item]  # copy
 
         if self.ndim == 3 and isinstance(item, tuple) and len(item) == 3:
             try:
@@ -549,7 +549,7 @@ class DataArray(object):
             return data
         else:
             obj = self.__class__(data=data, unit=self.unit, var=var,
-                                 wcs=wcs, wave=wave) #copy
+                                 wcs=wcs, wave=wave)  # copy
             obj.data_header = pyfits.Header(self.data_header)
             obj.primary_header = pyfits.Header(self.primary_header)
             return obj

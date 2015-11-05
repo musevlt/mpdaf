@@ -637,7 +637,7 @@ class CubeMosaic(CubeList):
                 for i, f in enumerate(stat):
                     x, y = offsets[i]
                     nx, ny = shapes[i]
-                    starr[x:x+nx, y:y+ny, i] = f[l, :, :][0]
+                    starr[x:x + nx, y:y + ny, i] = f[l, :, :][0]
 
             sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
                        select_pix, l, nmax, nclip_low, nclip_up, nstop,

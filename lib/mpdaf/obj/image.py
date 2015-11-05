@@ -382,7 +382,7 @@ class Image(DataArray):
         if self.unit != u.dimensionless_unscaled:
             try:
                 imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
-                                      'data unit type')
+                                          'data unit type')
             except u.format.fits.UnitScaleError:
                 imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)), 'data unit type')
 
@@ -438,7 +438,7 @@ class Image(DataArray):
             if self.unit != u.dimensionless_unscaled:
                 try:
                     imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
-                                          'data unit type')
+                                              'data unit type')
                 except u.format.fits.UnitScaleError:
                     imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)), 'data unit type')
             return imahdu

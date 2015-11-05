@@ -923,10 +923,10 @@ class WaveCoord(object):
         step = self.get_step(unit=unit)
 
         if self.shape is None:
-            msg = 'wavelength: min:%0.2f step:%0.2f %s'%(start, step, unit)
+            msg = 'wavelength: min:%0.2f step:%0.2f %s' % (start, step, unit)
         else:
             end = self.get_end(unit=unit)
-            msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s'%(start, end, step, unit)
+            msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % (start, end, step, unit)
         self._logger.info(msg)
 
     def isEqual(self, other):
@@ -1009,20 +1009,20 @@ class WaveCoord(object):
         if item is None:
             return self
         elif isinstance(item, int):
-            if item>=0:
+            if item >= 0:
                 lbda = self.coord(pixel=item)
             else:
                 if self.shape is None:
                     raise ValueError('wavelength coordinates without dimension')
                 else:
-                    lbda = self.coord(pixel=self.shape+item)
+                    lbda = self.coord(pixel=self.shape + item)
             return WaveCoord(crpix=1.0, cdelt=0, crval=lbda,
                              cunit=self.unit, shape=1,
                              ctype=self.wcs.wcs.ctype[0])
         elif isinstance(item, slice):
             if item.start is None:
                 start = 0
-            elif item.start>=0:
+            elif item.start >= 0:
                 start = item.start
             else:
                 if self.shape is None:
@@ -1034,7 +1034,7 @@ class WaveCoord(object):
                     raise ValueError('wavelength coordinates without dimension')
                 else:
                     stop = self.shape
-            elif item.stop>=0:
+            elif item.stop >= 0:
                 stop = item.stop
             else:
                 if self.shape is None:

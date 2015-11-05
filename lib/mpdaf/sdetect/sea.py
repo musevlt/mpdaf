@@ -33,8 +33,8 @@ def setup_config_files(DIR=None):
         files = os.listdir(DIR)
     for f in files:
         if not os.path.isfile(f):
-            shutil.copy(DIR+'/'+f, './'+f)
-        
+            shutil.copy(DIR + '/' + f, './' + f)
+
 
 def remove_config_files(DIR=None):
     if DIR is None:
@@ -43,47 +43,47 @@ def remove_config_files(DIR=None):
         files = os.listdir(DIR)
     for f in files:
         os.remove(f)
-     
-   
+
+
 def findCentralDetection(images, iyc, ixc, tolerance=1):
     """
     Determine which image has a detection close to the centre. We start with the centre for
     all. If all have a value zero there we continue.
-    """ 
+    """
     logger = logging.getLogger(__name__)
     min_distances = {}
     min_values = {}
     global_min = 1e30
     global_ix_min = -1
 #     global_iy_min = -1
-    
+
 #     count = 0
     bad = {}
     for key, im in images.items():
-        logger.info('Doing %s'%key)
+        logger.info('Doing %s' % key)
 #         if (count == 0):
 #             nx, ny = im.shape
 #             ixc = nx/2
-#             iyc = ny/2 
-        
+#             iyc = ny/2
+
         # Find the parts of the segmentation map where there is an object.
         ix, iy = np.where(im > 0)
         # Find the one closest to the centre.
-        
+
         if (len(ix) > 0):
             # At least one object detected!
-            dist = np.abs(ix-ixc)+ np.abs(iy-iyc)
+            dist = np.abs(ix - ixc) + np.abs(iy - iyc)
             min_dist = np.min(dist)
             i_min = np.argmin(dist)
             ix_min = ix[i_min]
             iy_min = iy[i_min]
             val_min = im[ix_min, iy_min]
-        
+
             # Record the essential information
             min_distances[key] = min_dist
             min_values[key] = val_min
             bad[key] = 0
-            
+
             if (min_dist < global_min):
                 global_min = min_dist
                 global_ix_min = ix_min
@@ -94,9 +94,9 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
             bad[key] = 1
             min_distances[key] = -1e30
             min_values[key] = -1
-            
+
 #         count = count+1
-        
+
     # We have now looped through. Time to take stock. First let us check that there
     # was at least one detection.
     n_useful = 0
@@ -106,36 +106,36 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
         # Ok, we are good. We have now at least one good segmentation map.
         # So we can make one simple one here.
         ref_map = np.where(images[global_im_index_min] == global_value, 1, 0)
-        
-        # Then check the others as well and if they do have a map at this position 
+
+        # Then check the others as well and if they do have a map at this position
         # get another simple segmentation map.
         for key in images:
             if bad[key] == 1:
-                logger.info('Image %s has no objects'%key)
+                logger.info('Image %s has no objects' % key)
                 this_map = np.zeros(ref_map.shape)
             else:
                 # Has at least one object - let us see.
                 if np.abs(min_distances[key] - global_min) <= tolerance:
                     # Create simple map
-                    logger.info('Image %s has one useful objects'%key)
+                    logger.info('Image %s has one useful objects' % key)
                     this_map = np.where(images[key] == min_values[key], 1, 0)
                     n_useful = n_useful + 1
                     isUseful[key] = True
                 else:
                     # Ok, this is too far away, I do not want to use this.
                     this_map = np.zeros(ref_map.shape)
-                    
+
             segmentation_maps[key] = this_map
-            
+
     else:
         # No objects found. Let us create a list of empty images.
         keys = images.keys()
         segmentation_maps = {key: np.zeros(images[keys[0]].shape) for key in keys}
         isUseful = {key: 0 for key in keys}
         n_useful = 0
-    
+
     result = {'N_useful': n_useful, 'seg': segmentation_maps, 'isUseful': isUseful}
-    
+
     return result
 
 
@@ -147,13 +147,14 @@ def union(seg):
     for im in seg.values():
         if first:
             mask = im
-            first = False  
+            first = False
         else:
             mask += im
-        
+
         mask = np.where(mask > 0, 1, 0)
-        
+
     return mask
+
 
 def intersection(seg):
     """
@@ -161,13 +162,13 @@ def intersection(seg):
     """
     first = True
     for im in seg.values():
-        if (np.max(im) > 0): 
+        if (np.max(im) > 0):
             if first:
                 mask = im
                 first = False
             else:
                 mask *= im
-                
+
     return mask
 
 
@@ -180,16 +181,17 @@ detected in any segmentation map as our sky image.
     first = True
     for im in images.values():
         if first:
-            # Define the sky mask to have ones everywhere. 
-            # For every segmentation map i will set the regions 
+            # Define the sky mask to have ones everywhere.
+            # For every segmentation map i will set the regions
             # where an object is detected to zero.
             skymask = np.ones(im.shape, dtype=np.int)
             first = False
-            
+
         isObj = np.where(im > 0)
         skymask[isObj] = 0
 
     return skymask
+
 
 def segmentation(source, tags, DIR, remove):
     # suppose that MUSE_WHITE image exists
@@ -202,45 +204,45 @@ def segmentation(source, tags, DIR, remove):
             cmd_sex = 'sextractor'
         except OSError:
             raise OSError('SExtractor not found')
-        
+
     dim = source.images['MUSE_WHITE'].shape
-    start = source.images['MUSE_WHITE'].wcs.pix2sky([0,0], unit=u.deg)[0]
+    start = source.images['MUSE_WHITE'].wcs.pix2sky([0, 0], unit=u.deg)[0]
     step = source.images['MUSE_WHITE'].get_step(unit=u.arcsec)
     rot = source.images['MUSE_WHITE'].get_rot()
     wcs = source.images['MUSE_WHITE'].wcs
-    
+
     maps = {}
     setup_config_files(DIR)
     # size in arcsec
     for tag in tags:
         ima = source.images[tag]
-        tag2 = tag.replace('[','').replace(']','')
-        
-        fname = '%04d-%s.fits'%(source.id, tag2)
-        start_ima = ima.wcs.pix2sky([0,0], unit=u.deg)[0]
+        tag2 = tag.replace('[', '').replace(']', '')
+
+        fname = '%04d-%s.fits' % (source.id, tag2)
+        start_ima = ima.wcs.pix2sky([0, 0], unit=u.deg)[0]
         step_ima = ima.get_step(unit=u.arcsec)
         rot_ima = ima.get_rot()
         prihdu = pyfits.PrimaryHDU()
         hdulist = [prihdu]
-        if ima.shape[0]==dim[0] and  ima.shape[1]==dim[1] and \
-            start_ima[0]==start[0] and start_ima[1]==start[1] and \
-            step_ima[0]==step[0] and step_ima[1]==step[1] and \
-            rot_ima==rot:
+        if ima.shape[0] == dim[0] and  ima.shape[1] == dim[1] and \
+                start_ima[0] == start[0] and start_ima[1] == start[1] and \
+                step_ima[0] == step[0] and step_ima[1] == step[1] and \
+                rot_ima == rot:
             data_hdu = ima.get_data_hdu(name='DATA', savemask='nan')
-        elif rot_ima==rot:
+        elif rot_ima == rot:
             ima2 = ima.resample(dim, start, step, flux=True)
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         else:
-            ima2 = ima.rotate(rot-rot_ima, interp='no', reshape=True)
+            ima2 = ima.rotate(rot - rot_ima, interp='no', reshape=True)
             ima2 = ima2.resample(dim, start, step, flux=True)
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         hdulist.append(data_hdu)
         hdu = pyfits.HDUList(hdulist)
         hdu.writeto(fname, clobber=True, output_verify='fix')
-            
+
         catalogFile = 'cat-' + fname
-        segFile = 'seg-'+ fname
-            
+        segFile = 'seg-' + fname
+
         command = [cmd_sex, "-CHECKIMAGE_NAME", segFile, '-CATALOG_NAME',
                    catalogFile, fname]
         subprocess.call(command)
@@ -258,23 +260,24 @@ def segmentation(source, tags, DIR, remove):
         os.remove(catalogFile)
     if remove:
         remove_config_files(DIR)
-           
+
     # Save segmentation maps
     if len(maps) > 0:
         for tag, data in maps.iteritems():
             ima = Image(wcs=wcs, data=data, unit=None)
-            source.images['SEG_'+tag] = ima
-       
-def mask_creation(source, maps): 
+            source.images['SEG_' + tag] = ima
+
+
+def mask_creation(source, maps):
     wcs = source.images['MUSE_WHITE'].wcs
     yc, xc = wcs.sky2pix((source.DEC, source.RA), unit=u.deg)[0]
-    
+
     r = findCentralDetection(maps, yc, xc, tolerance=3)
-        
+
     object_mask = union(r['seg'])
     small_mask = intersection(r['seg'])
     sky_mask = findSkyMask(maps)
-        
+
     ima = Image(wcs=wcs, data=object_mask, unit=None)
     source.images['MASK_UNION'] = ima
     ima = Image(wcs=wcs, data=sky_mask, unit=None)
@@ -286,7 +289,7 @@ def mask_creation(source, maps):
 def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
         fband=3., DIR=None, psf=None, path=None):
     """
-      
+
     Parameters
     ----------
     cat : astropy.Table
@@ -298,9 +301,9 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
     images : :class:`dict`
           Dictionary containing one or more external images of the field
           which you want to extract stamps.
-  
+
           Keys gives the filter ('HST_F814' for example)
-                
+
           Values are :class:`mpdaf.obj.Image` object
     size : float
            The total size to extract images in arcseconds.
@@ -331,35 +334,35 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
     path : path where the source file will be saved.
            This option should be used to avoid memory problem
            (source are saved as we go along) 
-            
+
     Returns
     -------
     out : :class:`mpdaf.sdetect.SourceList` if path is None
     """
     logger = logging.getLogger(__name__)
-    
+
     if images is None:
         images = {}
-          
+
     # create source objects
     sources = []
     origin = ('sea', __version__, os.path.basename(cube.filename))
-    
+
     ntot = len(cat)
     n = 1
-    
+
     write = True
     if path is None:
-        write=False
-      
+        write = False
+
     for obj in cat:
-        
-        logger.info('%d/%d Doing Source %d'%(n, ntot, obj['ID']))
-          
+
+        logger.info('%d/%d Doing Source %d' % (n, ntot, obj['ID']))
+
         cen = cube.wcs.sky2pix([obj['DEC'], obj['RA']], unit=u.deg)[0]
         if cen[0] >= 0 and cen[0] <= cube.wcs.naxis1 and \
-        cen[1] >= 0 and cen[1] <= cube.wcs.naxis2:
-          
+                cen[1] >= 0 and cen[1] <= cube.wcs.naxis2:
+
             source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
             try:
                 z = obj['Z']
@@ -367,46 +370,44 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
                     errz = obj['Z_ERR']
                 except:
                     try:
-                        errz = (obj['Z_MAX']-obj['Z_MIN']) / 2.0
+                        errz = (obj['Z_MAX'] - obj['Z_MIN']) / 2.0
                     except:
                         errz = np.nan
                 source.add_z('CAT', z, errz)
             except:
                 z = -9999
-            
-              
+
             # create white image
             source.add_white_image(cube, size, unit_size=u.arcsec)
-              
+
             # create narrow band images
             source.add_narrow_band_images(cube=cube, z_desc='CAT', eml=eml,
                                           size=None, unit_size=u.arcsec,
                                           width=width, margin=margin,
                                           fband=fband, is_sum=False)
-              
+
             # extract images stamps
             for tag, ima in images.iteritems():
-                source.add_image(ima, 'HST_'+tag)
-                      
+                source.add_image(ima, 'HST_' + tag)
+
             # segmentation maps
             source.add_seg_images(DIR=DIR)
             source.add_masks()
-                  
+
             # extract spectra
             source.extract_spectra(cube, skysub=True, psf=psf)
             source.extract_spectra(cube, skysub=False, psf=psf)
-            
+
             if write:
                 if not os.path.exists(path):
                     os.makedirs(path)
                 name = os.path.basename(path)
-                source.write('%s/%s-%04d.fits'%(path, name, source.ID))
+                source.write('%s/%s-%04d.fits' % (path, name, source.ID))
             else:
                 sources.append(source)
-                
+
         n += 1
-          
+
     # return list of sources
     if not write:
         return SourceList(sources)
-    

@@ -36,7 +36,7 @@ class Catalog(Table):
         """Construct a catalog from a list of source objects.
         The new catalog will contain all data stored in the primary headers
         and in the tables extensions of the sources:
-        
+
         * a column per header fits
         * two columns per magnitude band:
           [BAND] [BAND]_ERR
@@ -50,7 +50,7 @@ class Catalog(Table):
         But it is possible to use a working format.
         [lines_colname]_xxx
         where xxx is the number of lines present in each source.
-        
+
 
         Parameters
         ----------
@@ -151,7 +151,7 @@ class Catalog(Table):
 
                         for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
                             if not mask:
-                                names_lines += ['%s_%s'%(line,col) for col in colnames]
+                                names_lines += ['%s_%s' % (line, col) for col in colnames]
 
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
@@ -180,16 +180,15 @@ class Catalog(Table):
             else:
                 raise IOError('Catalog creation: invalid format. It must be dafault or working.')
 
-
         data_rows = []
         for source in sources:
             # header
             h = source.header
             keys = h.keys()
             row = []
-            for key,typ in zip(names_hdr, dtype_hdr):
-                if typ==type('1'):
-                    row += ['%s'%h[key] if key in keys else invalid[typ]]
+            for key, typ in zip(names_hdr, dtype_hdr):
+                if typ == type('1'):
+                    row += ['%s' % h[key] if key in keys else invalid[typ]]
                 else:
                     row += [h[key] if key in keys else invalid[typ]]
 
@@ -231,7 +230,7 @@ class Catalog(Table):
                         row += [invalid[typ.type]]
                     #row += [None for key in names_lines]
                 else:
-                    if fmt=='default':
+                    if fmt == 'default':
                         for name, typ in zip(names_lines, dtype_lines):
                             colname = '_'.join(name.split('_')[1:])
                             line = name.split('_')[0]
@@ -241,10 +240,10 @@ class Catalog(Table):
                                 row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
                             else:
                                 row += [invalid[typ.type]]
-                    elif fmt=='working':
+                    elif fmt == 'working':
                         keys = source.lines.colnames
                         if lmax == 1:
-                            row += [source.lines[key][0] if key in keys else invalid[typ.type] for key,typ in zip(names_lines, dtype_lines)]
+                            row += [source.lines[key][0] if key in keys else invalid[typ.type] for key, typ in zip(names_lines, dtype_lines)]
                         else:
                             try:
                                 subtab1 = source.lines[source.lines['LINE'] != ""]
@@ -315,18 +314,18 @@ class Catalog(Table):
 
         slist = []
         filenames = []
-        files = glob.glob(path+'/*.fits')
+        files = glob.glob(path + '/*.fits')
         n = len(files)
 
-        logger.info('Building catalog from path %s'%path)
+        logger.info('Building catalog from path %s' % path)
 
         for f in files:
             try:
                 slist.append(Source._light_from_file(f))
                 filenames.append(os.path.basename(f))
             except:
-                logger.warning('source %s not loaded'%f)
-            sys.stdout.write("\r\x1b[K %i%%"%(100*len(filenames)/n))
+                logger.warning('source %s not loaded' % f)
+            sys.stdout.write("\r\x1b[K %i%%" % (100 * len(filenames) / n))
             sys.stdout.flush()
 
         #output = ""
@@ -368,15 +367,15 @@ class Catalog(Table):
 
                                    3- sub-table of non matched elements of the catalog cat2
         """
-        coord1 = SkyCoord(zip(self['RA'],self['DEC']), unit=(u.degree,u.degree))
-        coord2 = SkyCoord(zip(cat2['RA'],cat2['DEC']), unit=(u.degree,u.degree))
+        coord1 = SkyCoord(zip(self['RA'], self['DEC']), unit=(u.degree, u.degree))
+        coord2 = SkyCoord(zip(cat2['RA'], cat2['DEC']), unit=(u.degree, u.degree))
         id1, id2, d2d, d3d = search_around_sky(coord1, coord2, radius * u.arcsec)
         id1_notin_2 = np.in1d(range(len(self)), id1, invert=True)
         id2_notin_1 = np.in1d(range(len(cat2)), id2, invert=True)
-        self._logger.info('Cat1 Nelt %d Match %d Not Matched %d'\
-                         % (len(self), len(id1), len(self[id1_notin_2])))
-        self._logger.info('Cat2 Nelt %d Match %d Not Matched %d'\
-                         % (len(cat2), len(id2), len(cat2[id2_notin_1])))
+        self._logger.info('Cat1 Nelt %d Match %d Not Matched %d'
+                          % (len(self), len(id1), len(self[id1_notin_2])))
+        self._logger.info('Cat2 Nelt %d Match %d Not Matched %d'
+                          % (len(cat2), len(id2), len(cat2[id2_notin_1])))
         match = hstack([self[id1], cat2[id2]])
         nomatch = self[id1_notin_2]
         nomatch2 = cat2[id2_notin_1]

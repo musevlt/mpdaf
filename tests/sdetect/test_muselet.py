@@ -4,8 +4,9 @@ from nose.plugins.attrib import attr
 
 from mpdaf.sdetect import muselet
 
+
 class TestMuselet():
-        
+
     @attr(speed='slow')
     def test_muselet(self):
         """test MUSELET"""

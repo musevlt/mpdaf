@@ -40,10 +40,12 @@ emlines = {1215.67: 'LYALPHA1216',
            6716.0: '[SII]6716',
            6731.0: '[SII]6731'}
 
+
 def vacuum2air(vac):
     """in angstroms"""
     vac = np.array(vac)
-    return vac / (1.0 + 2.735182e-4 + 131.4182/(vac**2) + 2.76249e8/(vac**4))
+    return vac / (1.0 + 2.735182e-4 + 131.4182 / (vac**2) + 2.76249e8 / (vac**4))
+
 
 def air2vacuum(air):
     """in angstroms"""
@@ -52,7 +54,7 @@ def air2vacuum(air):
     x = np.abs(air - vacuum2air(vactest))
     for i in range(10):
         vactest = vactest + x
-        x = np.abs(air-vacuum2air(vactest))
+        x = np.abs(air - vacuum2air(vactest))
     return vactest
 
 
@@ -119,10 +121,10 @@ def crackz(nlines, wl, flux, eml, zguess=None):
           list of lines names)
     """
     errmin = 3.0
-    zstep=0.0002
+    zstep = 0.0002
     if zguess:
         zmin = zguess
-        zmax = zguess+zstep
+        zmax = zguess + zstep
     else:
         zmin = 0.0
         zmax = 7.0
@@ -131,8 +133,8 @@ def crackz(nlines, wl, flux, eml, zguess=None):
     lnames = np.array(eml.values())
     if(nlines == 1):
         if zguess:
-            (error,jfound)=matchlines(nlines,wl,zguess,eml)
-            if(error<errmin):
+            (error, jfound) = matchlines(nlines, wl, zguess, eml)
+            if(error < errmin):
                 return zguess, -9999.0, 1, wl, flux, list(lnames[jfound[0]])
             else:
                 return zguess, -9999.0, 1, [], [], []
@@ -253,8 +255,8 @@ class Source(object):
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
-                 lines=None, mag=None, z=None,
-                 spectra=None, images=None, cubes=None, tables=None):
+                  lines=None, mag=None, z=None,
+                  spectra=None, images=None, cubes=None, tables=None):
         """
         Source constructor from a list of data.
 
@@ -342,34 +344,34 @@ class Source(object):
         spectra = {}
         images = {}
         cubes = {}
-        tables= {}
+        tables = {}
         for i in range(1, len(hdulist)):
             try:
                 hdu = hdulist[i]
                 if 'EXTNAME' in hdu.header:
                     extname = hdu.header['EXTNAME']
-                    #lines
+                    # lines
                     if extname == 'LINES':
                         try:
                             lines = Table(hdu.data, masked=True)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
                     # mag
                     elif extname == 'MAG':
                         try:
                             mag = Table(hdu.data, masked=True)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
                     # Z
                     elif extname == 'Z':
                         try:
                             z = Table(hdu.data, masked=True)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
                     # spectra
-                    elif extname[:3] == 'SPE' and extname[-4:]=='DATA':
+                    elif extname[:3] == 'SPE' and extname[-4:] == 'DATA':
                         spe_name = extname[4:-5]
-                        stat_ext = 'SPE_'+spe_name+'_STAT'
+                        stat_ext = 'SPE_' + spe_name + '_STAT'
                         if stat_ext in hdulist:
                             ext_var = hdulist.index_of(stat_ext)
                             ext = (i, ext_var)
@@ -378,11 +380,11 @@ class Source(object):
                         try:
                             spectra[spe_name] = Spectrum(filename, ext=ext)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a spectrum\n%s'%(os.path.basename(filename),extname,e))
-                    #images
-                    elif extname[:3] == 'IMA' and extname[-4:]=='DATA':
+                            raise IOError('%s: Impossible to open extension %s as a spectrum\n%s' % (os.path.basename(filename), extname, e))
+                    # images
+                    elif extname[:3] == 'IMA' and extname[-4:] == 'DATA':
                         ima_name = extname[4:-5]
-                        stat_ext = 'IMA_'+ima_name+'_STAT'
+                        stat_ext = 'IMA_' + ima_name + '_STAT'
                         if stat_ext in hdulist:
                             ext_var = hdulist.index_of(stat_ext)
                             ext = (i, ext_var)
@@ -391,10 +393,10 @@ class Source(object):
                         try:
                             images[ima_name] = Image(filename, ext=ext)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as an image\n%s'%(os.path.basename(filename),extname,e))
-                    elif extname[:3] == 'CUB' and extname[-4:]=='DATA':
+                            raise IOError('%s: Impossible to open extension %s as an image\n%s' % (os.path.basename(filename), extname, e))
+                    elif extname[:3] == 'CUB' and extname[-4:] == 'DATA':
                         cub_name = extname[4:-5]
-                        stat_ext = 'CUB_'+cub_name+'_STAT'
+                        stat_ext = 'CUB_' + cub_name + '_STAT'
                         if stat_ext in hdulist:
                             ext_var = hdulist.index_of(stat_ext)
                             ext = (i, ext_var)
@@ -403,14 +405,14 @@ class Source(object):
                         try:
                             cubes[cub_name] = Cube(filename, ext=ext, ima=False)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a cube\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a cube\n%s' % (os.path.basename(filename), extname, e))
                     elif extname[:3] == 'TAB':
                         try:
                             tables[extname[4:]] = Table(hdu.data, masked=True)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
                 else:
-                    raise IOError('%s: Extension %d without EXTNAME'%(os.path.basename(filename), i))
+                    raise IOError('%s: Extension %d without EXTNAME' % (os.path.basename(filename), i))
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
@@ -433,38 +435,38 @@ class Source(object):
         mag = None
         z = None
 
-        tables= {}
+        tables = {}
         for i in range(1, len(hdulist)):
             try:
                 hdu = hdulist[i]
                 if 'EXTNAME' in hdu.header:
                     extname = hdu.header['EXTNAME']
-                    #lines
+                    # lines
                     if extname == 'LINES':
                         try:
                             lines = Table(hdu.data, masked=True)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
                     # mag
                     elif extname == 'MAG':
                         try:
                             mag = Table(hdu.data, masked=True)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
                     # Z
                     elif extname == 'Z':
                         try:
                             z = Table(hdu.data, masked=True)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
                     # tables
                     elif extname[:3] == 'TAB':
                         try:
                             tables[extname[4:]] = Table(hdu.data, masked=True)
                         except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s'%(os.path.basename(filename),extname,e))
+                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
                 else:
-                    raise IOError('%s: Extension %d without EXTNAME'%(os.path.basename(filename), i))
+                    raise IOError('%s: Extension %d without EXTNAME' % (os.path.basename(filename), i))
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
@@ -518,39 +520,39 @@ class Source(object):
             tbhdu = pyfits.BinTableHDU(name='Z', data=np.array(self.z))
             hdulist.append(tbhdu)
 
-        #spectra
+        # spectra
         for key, spe in self.spectra.iteritems():
-            ext_name = 'SPE_%s_DATA'%key
+            ext_name = 'SPE_%s_DATA' % key
             data_hdu = spe.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
-            ext_name = 'SPE_%s_STAT'%key
+            ext_name = 'SPE_%s_STAT' % key
             stat_hdu = spe.get_stat_hdu(name=ext_name)
             if stat_hdu is not None:
                 hdulist.append(stat_hdu)
 
-        #images
+        # images
         for key, ima in self.images.iteritems():
-            ext_name = 'IMA_%s_DATA'%key
+            ext_name = 'IMA_%s_DATA' % key
             data_hdu = ima.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
-            ext_name = 'IMA_%s_STAT'%key
+            ext_name = 'IMA_%s_STAT' % key
             stat_hdu = ima.get_stat_hdu(name=ext_name)
             if stat_hdu is not None:
                 hdulist.append(stat_hdu)
 
-        #cubes
+        # cubes
         for key, cub in self.cubes.iteritems():
-            ext_name = 'CUB_%s_DATA'%key
+            ext_name = 'CUB_%s_DATA' % key
             data_hdu = cub.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
-            ext_name = 'CUB_%s_STAT'%key
+            ext_name = 'CUB_%s_STAT' % key
             stat_hdu = cub.get_stat_hdu(name=ext_name)
             if stat_hdu is not None:
                 hdulist.append(stat_hdu)
 
         # tables
         for key, tab in self.tables.iteritems():
-            tbhdu = pyfits.BinTableHDU(name='TAB_%s'%key, data=np.array(tab))
+            tbhdu = pyfits.BinTableHDU(name='TAB_%s' % key, data=np.array(tab))
             hdulist.append(tbhdu)
 
         # save to disk
@@ -566,49 +568,49 @@ class Source(object):
                                'AUTHOR'):
                 self._logger.info(card)
         if len(self.spectra) != 0 or \
-           len(self.images) !=0 or \
+           len(self.images) != 0 or \
            len(self.cubes) != 0 or \
            len(self.tables) != 0:
             print ''
         for key, spe in self.spectra.iteritems():
-            msg = 'spectra[\'%s\']'%key
-            msg += ',%i elements (%0.2f-%0.2f A)'%(spe.shape[0],
-                                                   spe.get_start(unit=u.angstrom),
-                                                   spe.get_end(unit=u.angstrom))
+            msg = 'spectra[\'%s\']' % key
+            msg += ',%i elements (%0.2f-%0.2f A)' % (spe.shape[0],
+                                                     spe.get_start(unit=u.angstrom),
+                                                     spe.get_end(unit=u.angstrom))
             data = '.data'
             if spe.data is None:
                 data = ''
             noise = '.var'
             if spe.var is None:
                 noise = ''
-            msg += ' %s %s '%(data, noise)
+            msg += ' %s %s ' % (data, noise)
             self._logger.info(msg)
         for key, ima in self.images.iteritems():
-            msg = 'images[\'%s\']'%key
-            msg += ' %i X %i' %(ima.shape[0], ima.shape[1])
+            msg = 'images[\'%s\']' % key
+            msg += ' %i X %i' % (ima.shape[0], ima.shape[1])
             data = '.data'
             if ima.data is None:
                 data = ''
             noise = '.var'
             if ima.var is None:
                 noise = ''
-            msg += ' %s %s '%(data, noise)
-            msg += 'rot=%0.1f deg'%ima.wcs.get_rot()
+            msg += ' %s %s ' % (data, noise)
+            msg += 'rot=%0.1f deg' % ima.wcs.get_rot()
             self._logger.info(msg)
         for key, cub in self.cubes.iteritems():
-            msg = 'cubes[\'%s\']'%key
-            msg += ' %i X %i X %i' %(cub.shape[0], cub.shape[1], cub.shape[2])
+            msg = 'cubes[\'%s\']' % key
+            msg += ' %i X %i X %i' % (cub.shape[0], cub.shape[1], cub.shape[2])
             data = '.data'
             if cub.data is None:
                 data = ''
             noise = '.var'
             if cub.var is None:
                 noise = ''
-            msg += ' %s %s '%(data, noise)
-            msg += 'rot=%0.1f deg'%cub.wcs.get_rot()
+            msg += ' %s %s ' % (data, noise)
+            msg += 'rot=%0.1f deg' % cub.wcs.get_rot()
             self._logger.info(msg)
         for key in self.tables.keys():
-            self._logger.info('tables[\'%s\']'%key)
+            self._logger.info('tables[\'%s\']' % key)
         if self.lines is not None:
             print ''
             self._logger.info('lines')
@@ -647,15 +649,14 @@ class Source(object):
         """Add a user comment to the FITS header of the Source object.
         """
         i = 1
-        while 'COM%03d'%i in self.header:
+        while 'COM%03d' % i in self.header:
             i += 1
-        self.header['COM%03d'%i] = (comment, '%s %s'%(author, str(datetime.date.today())))
-
+        self.header['COM%03d' % i] = (comment, '%s %s' % (author, str(datetime.date.today())))
 
     def remove_comment(self, ncomment):
         """Remove a comment from the FITS header of the Source object.
         """
-        del self.header['COM%03d'%ncomment]
+        del self.header['COM%03d' % ncomment]
 
     def add_attr(self, key, value, desc=None):
         """Add a new attribute for the current Source object.
@@ -697,37 +698,37 @@ class Source(object):
                Redshift error (deltaz) or redshift interval (zmin,zmax).
         """
         if is_float(errz) or is_int(errz):
-            if errz==-9999:
-                zmin=-9999
-                zmax=-9999
+            if errz == -9999:
+                zmin = -9999
+                zmax = -9999
             else:
-                zmin = z - errz/2
-                zmax = z + errz/2
+                zmin = z - errz / 2
+                zmax = z + errz / 2
         else:
             try:
                 zmin, zmax = errz
             except:
-                raise ValueError,'Wrong type for errz in add_z'
+                raise ValueError, 'Wrong type for errz in add_z'
         if self.z is None:
-            if z!=-9999:
+            if z != -9999:
                 self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
-                           rows=[[desc, z, zmin, zmax]],
-                           dtype=('S20', 'f8', 'f8', 'f8'),
-                           masked=True)
+                               rows=[[desc, z, zmin, zmax]],
+                               dtype=('S20', 'f8', 'f8', 'f8'),
+                               masked=True)
                 self.z['Z'].format = '%.6f'
                 self.z['Z_MIN'].format = '%.6f'
                 self.z['Z_MAX'].format = '%.6f'
         else:
             if desc in self.z['Z_DESC']:
-                if z!=-9999:
-                    self.z['Z'][self.z['Z_DESC']==desc] = z
-                    self.z['Z_MIN'][self.z['Z_DESC']==desc] = zmin
-                    self.z['Z_MAX'][self.z['Z_DESC']==desc] = zmax
+                if z != -9999:
+                    self.z['Z'][self.z['Z_DESC'] == desc] = z
+                    self.z['Z_MIN'][self.z['Z_DESC'] == desc] = zmin
+                    self.z['Z_MAX'][self.z['Z_DESC'] == desc] = zmax
                 else:
-                    index = np.where((self.z['Z_DESC']==desc))[0][0]
+                    index = np.where((self.z['Z_DESC'] == desc))[0][0]
                     self.z.remove_row(index)
             else:
-                if z!=-9999:
+                if z != -9999:
                     self.z.add_row([desc, z, zmin, zmax])
 
         if self.z is not None:
@@ -749,15 +750,15 @@ class Source(object):
         """
         if self.mag is None:
             self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
-                           rows=[[band, m, errm]],
-                           dtype=('S20', 'f8', 'f8'),
-                           masked=True)
+                             rows=[[band, m, errm]],
+                             dtype=('S20', 'f8', 'f8'),
+                             masked=True)
             self.mag['MAG'].format = '%.6f'
             self.mag['MAG_ERR'].format = '%.6f'
         else:
             if band in self.mag['BAND']:
-                self.mag['MAG'][self.mag['BAND']==band] = m
-                self.mag['MAG_ERR'][self.mag['BAND']==band] = errm
+                self.mag['MAG'][self.mag['BAND'] == band] = m
+                self.mag['MAG_ERR'][self.mag['BAND'] == band] = errm
             else:
                 self.mag.add_row([band, m, errm])
 
@@ -792,9 +793,9 @@ class Source(object):
         else:
             # add new columns
             if units is None:
-                units = [None]*len(cols)
+                units = [None] * len(cols)
             for col, val, unit in zip(cols, values, units):
-                if  col not in self.lines.colnames:
+                if col not in self.lines.colnames:
                     nlines = len(self.lines)
                     if is_int(val):
                         typ = '<i4'
@@ -811,24 +812,24 @@ class Source(object):
                 matchkey, matchval = match
 
             if match is not None and matchkey in self.lines.colnames:
-                l = np.argwhere(self.lines[matchkey]==matchval)
+                l = np.argwhere(self.lines[matchkey] == matchval)
                 if len(l) > 0:
                     for col, val, unit in zip(cols, values, units):
-                        if unit is None or unit==self.lines[col].unit:
+                        if unit is None or unit == self.lines[col].unit:
                             self.lines[col][l] = val
                         else:
-                            self.lines[col][l] = (val*unit).to(self.lines[col].unit).value
+                            self.lines[col][l] = (val * unit).to(self.lines[col].unit).value
             else:
                 # add new row
                 ncol = len(self.lines.colnames)
-                row = [None]*ncol
-                mask=np.ones(ncol)
+                row = [None] * ncol
+                mask = np.ones(ncol)
                 for col, val, unit in zip(cols, values, units):
                     i = self.lines.colnames.index(col)
-                    if unit is None or unit==self.lines[col].unit:
+                    if unit is None or unit == self.lines[col].unit:
                         row[i] = val
                     else:
-                        row[i] = (val*unit).to(self.lines[col].unit).value
+                        row[i] = (val * unit).to(self.lines[col].unit).value
                     mask[i] = 0
                 self.lines.add_row(row, mask=mask)
 
@@ -872,7 +873,7 @@ class Source(object):
                     minsize *= image.wcs.get_step(unit=u.arcsec)[0]
                 else:
                     if unit_size != u.arcsec:
-                        minsize = (minsize*unit_size).to(u.arcsec).value
+                        minsize = (minsize * unit_size).to(u.arcsec).value
                 unit_size = u.arcsec
         if rotate:
             try:
@@ -881,10 +882,10 @@ class Source(object):
                 raise IOError('MUSE_WHITE image is required to get the PA')
             pa_white = white_ima.get_rot()
             pa = image.get_rot()
-            if np.abs(pa_white-pa) > 1.e-3:
-                subima = image.subimage((self.dec, self.ra), size*1.5, minsize=minsize,
+            if np.abs(pa_white - pa) > 1.e-3:
+                subima = image.subimage((self.dec, self.ra), size * 1.5, minsize=minsize,
                                         unit_center=u.deg, unit_size=unit_size)
-                subima = subima.rotate(pa-pa_white)
+                subima = subima.rotate(pa - pa_white)
                 subima = subima.subimage((self.dec, self.ra), size, minsize=minsize,
                                          unit_center=u.deg, unit_size=unit_size)
             else:
@@ -894,7 +895,7 @@ class Source(object):
             subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
                                     unit_center=u.deg, unit_size=unit_size)
         if subima is None:
-            self._logger.warning('Image %s not added. Source outside or at the edges'%(name))
+            self._logger.warning('Image %s not added. Source outside or at the edges' % (name))
             return
         self.images[name] = subima
 
@@ -938,7 +939,6 @@ class Source(object):
         subcub = cube.subcube(center=(self.dec, self.ra), size=size, lbda=lbda,
                               unit_center=u.deg, unit_size=unit_size, unit_wave=unit_wave)
         self.cubes[name] = subcub
-
 
     def add_white_image(self, cube, size=5, unit_size=u.arcsec):
         """ Compute the white images from the MUSE data cube
@@ -1028,11 +1028,11 @@ class Source(object):
                     unit_size = u.arcsec
 
             subcub = cube.subcube(center=(self.dec, self.ra), size=size,
-                              unit_center=u.deg, unit_size=unit_size)
+                                  unit_center=u.deg, unit_size=unit_size)
 
-            z = self.z['Z'][self.z['Z_DESC']==z_desc]
+            z = self.z['Z'][self.z['Z_DESC'] == z_desc]
 
-            if z>0:
+            if z > 0:
 
                 if eml is None:
                     all_lines = np.array([1216, 1909, 3727, 4861, 5007,
@@ -1045,20 +1045,19 @@ class Source(object):
                     all_lines = np.array(eml.keys())
                     all_tags = np.array(eml.values())
 
-                minl, maxl = subcub.wave.get_range(unit=u.angstrom) / (1+z)
-                useful = np.where((all_lines>minl) &  (all_lines<maxl))
+                minl, maxl = subcub.wave.get_range(unit=u.angstrom) / (1 + z)
+                useful = np.where((all_lines > minl) & (all_lines < maxl))
                 nlines = len(useful[0])
-                if nlines>0:
+                if nlines > 0:
                     lambda_ranges = np.empty((2, nlines))
-                    lambda_ranges[0, :] = (1+z)*all_lines[useful]-width/2.0
-                    lambda_ranges[1, :] = (1+z)*all_lines[useful]+width/2.0
+                    lambda_ranges[0, :] = (1 + z) * all_lines[useful] - width / 2.0
+                    lambda_ranges[1, :] = (1 + z) * all_lines[useful] + width / 2.0
                     tags = all_tags[useful]
                     for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
-                        self._logger.info('Doing MUSE_%s'%tag)
-                        self.images['MUSE_'+tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
-                                                                    subtract_off=subtract_off, margin=margin,
-                                                                    fband=fband, unit_wave=u.angstrom)
-
+                        self._logger.info('Doing MUSE_%s' % tag)
+                        self.images['MUSE_' + tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
+                                                                      subtract_off=subtract_off, margin=margin,
+                                                                      fband=fband, unit_wave=u.angstrom)
 
     def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None, unit_size=u.arcsec, width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
         """Create narrow band image around an observed wavelength value.
@@ -1091,7 +1090,7 @@ class Source(object):
         fband        : float
                        The size of the off-band is fband*narrow-band width (in angstrom).
         """
-        self._logger.info('Doing %s'%tag)
+        self._logger.info('Doing %s' % tag)
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
@@ -1104,21 +1103,20 @@ class Source(object):
                 size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
                 unit_size = u.arcsec
 
-        l1 = lbda-width/2.0
-        l2 = lbda+width/2.0
+        l1 = lbda - width / 2.0
+        l2 = lbda + width / 2.0
 
-        lmin, lmax= cube.wave.get_range(unit=u.angstrom)
-        if l1<lmin:
-            l1=lmin
-        if l2>lmax:
-            l2=lmax
+        lmin, lmax = cube.wave.get_range(unit=u.angstrom)
+        if l1 < lmin:
+            l1 = lmin
+        if l2 > lmax:
+            l2 = lmax
 
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
         self.images[tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
                                             subtract_off=subtract_off, margin=margin,
                                             fband=fband, unit_wave=u.angstrom)
-
 
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
         """Run SExtractor on all images listed in tags
@@ -1141,7 +1139,7 @@ class Source(object):
         """
         if 'MUSE_WHITE' in self.images:
             if tags is None:
-                tags = [tag for tag in self.images.keys() if tag[0:4]!='SEG_' and 'MASK' not in tag]
+                tags = [tag for tag in self.images.keys() if tag[0:4] != 'SEG_' and 'MASK' not in tag]
 
             from ..sdetect.sea import segmentation
             segmentation(self, tags, DIR, del_sex)
@@ -1169,15 +1167,15 @@ class Source(object):
         maps = {}
         if tags is None:
             for tag, ima in self.images.iteritems():
-                if tag[0:4]=='SEG_':
+                if tag[0:4] == 'SEG_':
                     maps[tag[4:]] = ima.data.data
         else:
             for tag in tags:
-                if tag[0:4]=='SEG_':
+                if tag[0:4] == 'SEG_':
                     maps[tag[4:]] = self.images[tag].data.data
                 else:
                     maps[tag] = self.images[tag].data.data
-        if len(maps)==0:
+        if len(maps) == 0:
             self._logger.warning('no segmentation images. Use add_seg_images to create them')
 
         from ..sdetect.sea import mask_creation
@@ -1195,10 +1193,8 @@ class Source(object):
         """
         self.tables[name] = tab
 
-
-
     def extract_spectra(self, cube,
-                        tags_to_try = ['MUSE_WHITE', 'MUSE_LYALPHA1216', 'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
+                        tags_to_try=['MUSE_WHITE', 'MUSE_LYALPHA1216', 'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
                         skysub=True, psf=None):
         """Extract spectra from the MUSE data cube and from a list of narrow-band images
         (to define spectrum extraction apertures).
@@ -1261,15 +1257,15 @@ class Source(object):
                 unit_size = u.arcsec
 
             subcub = cube.subcube(center=(self.dec, self.ra), size=size,
-                              unit_center=u.deg, unit_size=unit_size)
+                                  unit_center=u.deg, unit_size=unit_size)
             if ima.wcs.isEqual(subcub.wcs):
                 object_mask = ima.data.data
             else:
                 object_mask = ima.resample(newdim=(subcub.shape[1], subcub.shape[2]),
-                                        newstart=subcub.wcs.get_start(unit=u.deg),
-                                        newstep=subcub.wcs.get_step(unit=u.arcsec),
-                                        order=0, unit_start=u.deg,
-                                        unit_step=u.arcsec).data.data
+                                           newstart=subcub.wcs.get_start(unit=u.deg),
+                                           newstep=subcub.wcs.get_step(unit=u.arcsec),
+                                           order=0, unit_start=u.deg,
+                                           unit_step=u.arcsec).data.data
         else:
             raise IOError('extract_spectra method use the MASK_UNION computed by add_mask method')
 
@@ -1279,22 +1275,22 @@ class Source(object):
                     sky_mask = self.images['MASK_SKY'].data.data
                 else:
                     sky_mask = self.images['MASK_SKY'].resample(newdim=(subcub.shape[1], subcub.shape[2]),
-                                                             newstart=subcub.wcs.get_start(unit=u.deg),
-                                                             newstep=subcub.wcs.get_step(unit=u.arcsec),
-                                                             order=0, unit_start=u.deg,
-                                                             unit_step=u.arcsec).data.data
+                                                                newstart=subcub.wcs.get_start(unit=u.deg),
+                                                                newstep=subcub.wcs.get_step(unit=u.arcsec),
+                                                                order=0, unit_start=u.deg,
+                                                                unit_step=u.arcsec).data.data
             else:
                 raise IOError('extract_spectra method use the MASK_SKY computed by add_mask method')
 
             # Get the sky spectrum to subtract
-            sky = subcub.sum(axis=(1,2), weights=sky_mask)
+            sky = subcub.sum(axis=(1, 2), weights=sky_mask)
             old_mask = subcub.data.mask.copy()
-            subcub.data.mask[np.where(np.tile(sky_mask,(subcub.shape[0],1,1))==0)] = True
-            sky = subcub.mean(axis=(1,2))
+            subcub.data.mask[np.where(np.tile(sky_mask, (subcub.shape[0], 1, 1)) == 0)] = True
+            sky = subcub.mean(axis=(1, 2))
             self.spectra['MUSE_SKY'] = sky
             subcub.data.mask = old_mask
 
-            #substract sky
+            # substract sky
             subcub = subcub - sky
 
         # extract spectra
@@ -1302,7 +1298,7 @@ class Source(object):
         nb_tags = list(set(tags_to_try) & set(self.images.keys()))
 
         # No weighting
-        spec = subcub.sum(axis=(1,2), weights=object_mask)
+        spec = subcub.sum(axis=(1, 2), weights=object_mask)
         if skysub:
             self.spectra['MUSE_TOT_SKYSUB'] = spec
         else:
@@ -1312,56 +1308,56 @@ class Source(object):
         # the object mask and ensure that the weight map within the
         # object mask is >=0.
         # Weighted extractions
-        ksel = np.where(object_mask!=0)
+        ksel = np.where(object_mask != 0)
         for tag in nb_tags:
             if self.images[tag].wcs.isEqual(subcub.wcs):
                 weight = self.images[tag].data * object_mask
                 weight[ksel] = weight[ksel] - np.min(weight[ksel])
                 weight = weight.filled(0)
-                spec = subcub.sum(axis=(1,2), weights=weight)
+                spec = subcub.sum(axis=(1, 2), weights=weight)
                 if skysub:
-                    self.spectra[tag+'_SKYSUB'] = spec
+                    self.spectra[tag + '_SKYSUB'] = spec
                 else:
                     self.spectra[tag] = spec
 
         # PSF
         if psf is not None:
-            if len(psf.shape)==3:
-                #PSF cube. The user is responsible for getting the
-                #dimensions right
+            if len(psf.shape) == 3:
+                # PSF cube. The user is responsible for getting the
+                # dimensions right
                 if psf.shape[0] != subcub.shape[0] or \
                    psf.shape[1] != subcub.shape[1] or \
                    psf.shape[2] != subcub.shape[2]:
                     msg = 'Incorrect dimensions for the PSF cube (%i,%i,%i) (it must be (%i,%i,%i)) '\
-                        %(psf.shape[0], psf.shape[1], psf.shape[2],
-                          subcub.shape[0], subcub.shape[1], subcub.shape[2])
+                        % (psf.shape[0], psf.shape[1], psf.shape[2],
+                           subcub.shape[0], subcub.shape[1], subcub.shape[2])
                     self._logger.warning(msg)
                     white_cube = None
                 else:
                     white_cube = psf
-            elif len(psf.shape)==1 and psf.shape[0]==subcub.shape[0]:
+            elif len(psf.shape) == 1 and psf.shape[0] == subcub.shape[0]:
                 # a Gaussian expected.
                 white_cube = np.zeros_like(subcub.data.data)
                 for l in range(subcub.shape[0]):
                     gauss_ima = gauss_image(shape=(subcub.shape[1], subcub.shape[2]),
                                             wcs=subcub.wcs, fwhm=(psf[l], psf[l]),
                                             peak=False, unit_fwhm=u.arcsec)
-                    white_cube[l,:,:] = gauss_ima.data.data
+                    white_cube[l, :, :] = gauss_ima.data.data
             else:
                 msg = 'Incorrect dimensions for the PSF vector (%i) (it must be (%i)) '\
-                        %(psf.shape[0], subcub.shape[0])
+                    % (psf.shape[0], subcub.shape[0])
                 self._logger.warning(msg)
                 white_cube = None
             if white_cube is not None:
-                weight = white_cube * np.tile(object_mask,(subcub.shape[0],1,1))
-                spec = subcub.sum(axis=(1,2), weights=weight)
+                weight = white_cube * np.tile(object_mask, (subcub.shape[0], 1, 1))
+                spec = subcub.sum(axis=(1, 2), weights=weight)
                 if skysub:
                     self.spectra['MUSE_PSF_SKYSUB'] = spec
                 else:
                     self.spectra['MUSE_PSF'] = spec
                 # Insert the PSF weighted flux - here re-normalised?
 
-    def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS','FLUX'), z_desc='EMI',zguess=None):
+    def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS', 'FLUX'), z_desc='EMI', zguess=None):
         """Estimate the best redshift matching the list of emission lines
 
         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr).
@@ -1407,12 +1403,12 @@ class Source(object):
         if self.lines is None:
             raise IOError('invalid self.lines table')
         if col_lbda not in self.lines.colnames:
-            raise IOError('invalid colum name %s'%col_lbda)
+            raise IOError('invalid colum name %s' % col_lbda)
         if col_flux not in self.lines.colnames:
-            raise IOError('invalid colum name %s'%col_flux)
+            raise IOError('invalid colum name %s' % col_flux)
 
         try:
-            #vacuum wavelengths
+            # vacuum wavelengths
             wl = air2vacuum(np.array(self.lines[col_lbda]))
             flux = np.array(self.lines[col_flux])
             nlines = len(wl)
@@ -1421,28 +1417,28 @@ class Source(object):
             return
 
         z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml, zguess)
-        #observed wavelengths
+        # observed wavelengths
         wl = vacuum2air(wl)
 
         if nlines > 0:
             if nlines < nline_max:
-                #redshift
+                # redshift
                 self.add_z(z_desc, z, errz)
-                self._logger.info('crack_z: z=%0.6f err_z=%0.6f'%(z, errz))
-                #line names
+                self._logger.info('crack_z: z=%0.6f err_z=%0.6f' % (z, errz))
+                # line names
                 if 'LINE' not in self.lines.colnames:
                     nlines = len(self.lines)
-                    col = MaskedColumn(np.ma.masked_array(np.array(['']*nlines),
+                    col = MaskedColumn(np.ma.masked_array(np.array([''] * nlines),
                                                           mask=np.ones(nlines)),
                                        name='LINE', dtype='S20')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
-                    self.lines['LINE'][self.lines[col_lbda]==w] = name
+                    self.lines['LINE'][self.lines[col_lbda] == w] = name
                 self._logger.info('crack_z: lines')
                 for l in self.lines.pformat():
                     self._logger.info(l)
             else:
-                self._logger.info('Impossible to estimate the redshift, the number of emission lines is inferior to %d'%nline_max)
+                self._logger.info('Impossible to estimate the redshift, the number of emission lines is inferior to %d' % nline_max)
         else:
             self._logger.info('Impossible to estimate the redshift, no emission lines')
 
@@ -1455,16 +1451,16 @@ class Source(object):
                      Maximum number of stored lines
         """
         if self.lines is not None:
-            subtab1 = self.lines[self.lines['LINE']!=""]
+            subtab1 = self.lines[self.lines['LINE'] != ""]
             subtab1.sort('FLUX')
             subtab1.reverse()
             n1 = len(subtab1)
-            subtab2 = self.lines[self.lines['LINE']==""]
+            subtab2 = self.lines[self.lines['LINE'] == ""]
             subtab2.sort('FLUX')
             subtab2.reverse()
             n2 = len(subtab2)
-            if (n1+n2)>25:
-                n2 = max(nlines_max-n1,0)
+            if (n1 + n2) > 25:
+                n2 = max(nlines_max - n1, 0)
             self.lines = vstack([subtab1, subtab2[0:n2]])
 
     def show_ima(self, ax, name, showcenter=None,
@@ -1488,7 +1484,7 @@ class Source(object):
                      kwargs can be used to set additional plotting properties.
         """
         if name not in self.images.keys():
-            raise ValueError,'Image %s not found'%(name)
+            raise ValueError, 'Image %s not found' % (name)
         zima = self.images[name]
         if cuts == None:
             vmin = None
@@ -1496,13 +1492,13 @@ class Source(object):
         else:
             vmin, vmax = cuts
         if 'title' not in kwargs:
-            kwargs['title'] = '%s'%(name)
+            kwargs['title'] = '%s' % (name)
         zima.plot(vmin=vmin, vmax=vmax, cmap=cmap, ax=ax, **kwargs)
         if showcenter is not None:
             rad, col = showcenter
             pix = zima.wcs.sky2pix((self.DEC, self.RA))[0]
-            rpix = rad/zima.wcs.get_step(unit=u.arcsec)[0]
-            ell = Ellipse((pix[1],pix[0]), 2*rpix, 2*rpix, 0, fill=False)
+            rpix = rad / zima.wcs.get_step(unit=u.arcsec)[0]
+            ell = Ellipse((pix[1], pix[0]), 2 * rpix, 2 * rpix, 0, fill=False)
             ax.add_artist(ell)
             ell.set_clip_box(ax.bbox)
             ell.set_alpha(1)
@@ -1607,10 +1603,10 @@ class SourceList(list):
                 os.makedirs(path2)
 
         for source in self:
-            source.write('%s/%s-%04d.fits'%(path2, name, source.ID))
+            source.write('%s/%s-%04d.fits' % (path2, name, source.ID))
 
-        fcat = '%s/%s.fits'%(path, name)
-        if overwrite and os.path.isfile(fcat) :
+        fcat = '%s/%s.fits' % (path, name)
+        if overwrite and os.path.isfile(fcat):
             os.remove(fcat)
 
         from .catalog import Catalog
@@ -1634,10 +1630,7 @@ class SourceList(list):
             raise IOError("Invalid path: {0}".format(path))
 
         slist = cls()
-        for f in glob.glob(path+'/*.fits'):
+        for f in glob.glob(path + '/*.fits'):
             slist.append(Source.from_file(f))
 
         return slist
-
-
-

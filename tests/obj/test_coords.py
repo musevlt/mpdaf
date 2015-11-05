@@ -172,7 +172,7 @@ class TestWaveCoord(object):
                  cunit=u.angstrom, shape=3681)
         wave = WaveCoord(**d)
         start = d['crval']
-        end = d['crval'] + d['cdelt']*(d['shape']-1)
+        end = d['crval'] + d['cdelt'] * (d['shape'] - 1)
         nose.tools.assert_equal(wave.get_step(), d['cdelt'])
         nose.tools.assert_equal(wave.get_crval(), start)
         nose.tools.assert_equal(wave.get_start(), start)
@@ -182,7 +182,7 @@ class TestWaveCoord(object):
         nose.tools.assert_equal(wave.get_ctype(), d['ctype'])
 
         def to_nm(val):
-            return (val*u.angstrom).to(u.nm).value
+            return (val * u.angstrom).to(u.nm).value
         nose.tools.assert_equal(wave.get_step(u.nm), to_nm(d['cdelt']))
         nose.tools.assert_equal(wave.get_crval(u.nm), to_nm(start))
         nose.tools.assert_equal(wave.get_start(u.nm), to_nm(start))

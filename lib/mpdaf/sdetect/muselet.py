@@ -15,29 +15,31 @@ from ..sdetect import Source, SourceList
 
 __version__ = 2.1
 
+
 def setup_config_files():
     DIR = os.path.dirname(__file__) + '/muselet_data/'
-    files = ['default.sex', 'default.conv', 'default.nnw','default.param']
+    files = ['default.sex', 'default.conv', 'default.nnw', 'default.param']
     for f in files:
         try:
             if not os.path.isfile(f):
-                shutil.copy(DIR+f, './'+f)
+                shutil.copy(DIR + f, './' + f)
         except:
             pass
 
-        
+
 def setup_config_files_nb():
     DIR = os.path.dirname(__file__) + '/muselet_data/'
-    files = ['nb_default.sex', 'nb_default.conv','nb_default.nnw', 'nb_default.param']
+    files = ['nb_default.sex', 'nb_default.conv', 'nb_default.nnw', 'nb_default.param']
     for f in files:
         try:
             if not os.path.isfile(f[3:]):
-                shutil.copy(DIR+f, './'+f[3:])
+                shutil.copy(DIR + f, './' + f[3:])
         except:
             pass
-        
+
+
 def remove_files():
-    files = ['default.sex', 'default.conv','default.nnw', 'default.param',
+    files = ['default.sex', 'default.conv', 'default.nnw', 'default.param',
              'emlines', 'emlines_small', 'BGR.cat', 'inv_variance.fits', 'segment.fits',
              'white.fits', 'whiteb.fits', 'whiteg.fits', 'whiter.fits', 'detect.cat']
 
@@ -49,13 +51,13 @@ def remove_files():
     for f in glob('nb/*'):
         os.remove(f)
     os.removedirs('nb')
-        
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25,clean=0.5, nbcube=True, expmapcube=None,skyclean=[(5573.5,5578.8),(6297.0,6300.5)], del_sex=False):
+
+def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25, clean=0.5, nbcube=True, expmapcube=None, skyclean=[(5573.5, 5578.8), (6297.0, 6300.5)], del_sex=False):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
     to detect emission lines in a datacube. It has been developed by Johan Richard
     (johan.richard@univ-lyon1.fr)
-    
+
     Parameters
     ----------
     cubename : string
@@ -130,18 +132,18 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
     if(step == 1):
         logger.info("muselet - Opening: " + cubename)
         c = Cube(cubename)
-        
+
         mvar = np.ma.masked_invalid(c.var)
-        
+
         imsum = c[0, :, :]
         size1 = c.shape[0]
         size2 = c.shape[1]
         size3 = c.shape[2]
 
-        mcentralvar=np.ma.masked_invalid(c[2: size1 - 3, :, :].var)
+        mcentralvar = np.ma.masked_invalid(c[2: size1 - 3, :, :].var)
 
         nsfilter = int(size1 / 3.0)
-        
+
         logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images")
         weight_data = np.ma.average(c.data[1:size1 - 1, :, :], weights=1. / mvar[1:size1 - 1, :, :], axis=0)
         weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), unit=imsum.unit)
@@ -149,7 +151,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
         if not expmapcube:
             fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
-            fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=u.Unit(1)/(imsum.unit**2))
+            fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=u.Unit(1) / (imsum.unit**2))
             fullvar.write('inv_variance.fits', savemask='nan')
         else:
             logger.info("muselet - Opening exposure map cube: " + expmapcube)
@@ -175,9 +177,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             pass
 
         if(nbcube):
-            outnbcubename='NB_'+os.path.basename(cubename)
-            outnbcube=c.clone()
-            outnbcube.var=None
+            outnbcubename = 'NB_' + os.path.basename(cubename)
+            outnbcube = c.clone()
+            outnbcube.var = None
 
         f2 = open("nb/dosex", 'w')
         for k in range(2, size1 - 3):
@@ -207,9 +209,9 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             kstr = "%04d" % k
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
             if(nbcube):
-                outnbcube.data[k,:,:]=imnb.data[:,:]
+                outnbcube.data[k, :, :] = imnb.data[:, :]
             if(expmapcube):
-                expmap[k,:,:].write('nb/exp' + kstr + '.fits', savemask='nan')
+                expmap[k, :, :].write('nb/exp' + kstr + '.fits', savemask='nan')
                 f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' + kstr + '.fits\n')
             else:
                 f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
@@ -254,39 +256,39 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         except:
             logger.error("muselet - ERROR: missing nb directory")
             return
-        
-        # tests here if the files default.sex, default.conv, default.nnw and default.param exist. 
-        #Otherwise copy them
+
+        # tests here if the files default.sex, default.conv, default.nnw and default.param exist.
+        # Otherwise copy them
         setup_config_files_nb()
         shutil.copy('../inv_variance.fits', 'inv_variance.fits')
         st = os.stat('dosex')
         os.chmod('dosex', st.st_mode | stat.S_IEXEC)
         subprocess.Popen('./dosex', shell=True).wait()
         os.chdir("..")
-        
+
 #         file = open('dosex', 'r')
 #         for line in file:
 #             p = subprocess.Popen(line, shell=True).wait()
 
     if(step <= 3):
         logger.info("muselet - STEP 3: merge SExtractor catalogs and measure redshifts")
-        
+
         if c is None:
             logger.info("muselet - Opening: " + cubename)
             c = Cube(cubename)
-        
+
         wlmin = c.wave.get_start(unit=u.angstrom)
         dw = c.wave.get_step(unit=u.angstrom)
         nslices = c.shape[0]
-        
+
         ima_size = ima_size * c.wcs.get_step(unit=u.arcsec)[0]
 
         if fullvar is None:
-            fullvar=Image('inv_variance.fits')
+            fullvar = Image('inv_variance.fits')
 
-        cleanlimit=clean*np.median(fullvar.data)
+        cleanlimit = clean * np.median(fullvar.data)
 
-        logger.info("muselet - cleaning below inverse variance "+str(cleanlimit))
+        logger.info("muselet - cleaning below inverse variance " + str(cleanlimit))
 
         tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
@@ -314,72 +316,71 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         S_catID = []
         for i in range(3, nslices - 14):
             ll = wlmin + dw * i
-            flagsky=0
-            if len(skyclean)>0:
-               for (skylmin,skylmax) in skyclean:
-                   if(ll>skylmin and ll<skylmax):
-                        flagsky=1
-            if(flagsky==0):
-               slicename = "nb/nb%04d.cat" % i
-               t = Table.read(slicename, format='ascii.sextractor')
-               for line in t:
-                  xline = line['X_IMAGE']
-                  yline = line['Y_IMAGE']
-                  if(fullvar.data[int(yline-1),int(xline-1)]>cleanlimit):
-                      fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
-                      eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
-                      flag = 0
-                      distmin = -1
-                      distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
-                      ksel = np.where(distlist < radius ** 2.0)
-                      for j in ksel[0]:
-                         if(fline > 5.0 * eline):
-                            if((flag <= 0)or(distlist[j] < distmin)):
-                                idmin = tBGR['NUMBER'][j]
-                                distmin = distlist[j]
-                                magB = tBGR['MAG_APER_B'][j]
-                                magG = tBGR['MAG_APER_G'][j]
-                                magR = tBGR['MAG_APER_R'][j]
-                                emagB = tBGR['MAGERR_APER_B'][j]
-                                emagG = tBGR['MAGERR_APER_G'][j]
-                                emagR = tBGR['MAGERR_APER_R'][j]
-                                xline=tBGR['X_IMAGE'][j]
-                                yline=tBGR['Y_IMAGE'][j]
-                                flag = 1
-                         else:
-                            if(fline < -5 * eline):
-                                idmin = tBGR['NUMBER'][j]
-                                distmin = distlist[j]
-                                flag = -2
+            flagsky = 0
+            if len(skyclean) > 0:
+                for (skylmin, skylmax) in skyclean:
+                    if(ll > skylmin and ll < skylmax):
+                        flagsky = 1
+            if(flagsky == 0):
+                slicename = "nb/nb%04d.cat" % i
+                t = Table.read(slicename, format='ascii.sextractor')
+                for line in t:
+                    xline = line['X_IMAGE']
+                    yline = line['Y_IMAGE']
+                    if(fullvar.data[int(yline - 1), int(xline - 1)] > cleanlimit):
+                        fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
+                        eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
+                        flag = 0
+                        distmin = -1
+                        distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
+                        ksel = np.where(distlist < radius ** 2.0)
+                        for j in ksel[0]:
+                            if(fline > 5.0 * eline):
+                                if((flag <= 0)or(distlist[j] < distmin)):
+                                    idmin = tBGR['NUMBER'][j]
+                                    distmin = distlist[j]
+                                    magB = tBGR['MAG_APER_B'][j]
+                                    magG = tBGR['MAG_APER_G'][j]
+                                    magR = tBGR['MAG_APER_R'][j]
+                                    emagB = tBGR['MAGERR_APER_B'][j]
+                                    emagG = tBGR['MAGERR_APER_G'][j]
+                                    emagR = tBGR['MAGERR_APER_R'][j]
+                                    xline = tBGR['X_IMAGE'][j]
+                                    yline = tBGR['Y_IMAGE'][j]
+                                    flag = 1
                             else:
-                                flag = -1
-                      if(flag == 1):
-                        C_ll.append(ll)
-                        C_idmin.append(idmin)
-                        C_fline.append(fline)
-                        C_eline.append(eline)
-                        C_xline.append(xline)
-                        C_yline.append(yline)
-                        C_magB.append(magB)
-                        C_magG.append(magG)
-                        C_magR.append(magR)
-                        C_emagB.append(emagB)
-                        C_emagG.append(emagG)
-                        C_emagR.append(emagR)
-                        C_catID.append(i)
-                        if(idmin > maxidc):
-                            maxidc = idmin
-                      if (flag == 0) and (ll < 9300.0):
-                        S_ll.append(ll)
-                        S_fline.append(fline)
-                        S_eline.append(eline)
-                        S_xline.append(xline)
-                        S_yline.append(yline)
-                        S_catID.append(i)
+                                if(fline < -5 * eline):
+                                    idmin = tBGR['NUMBER'][j]
+                                    distmin = distlist[j]
+                                    flag = -2
+                                else:
+                                    flag = -1
+                        if(flag == 1):
+                            C_ll.append(ll)
+                            C_idmin.append(idmin)
+                            C_fline.append(fline)
+                            C_eline.append(eline)
+                            C_xline.append(xline)
+                            C_yline.append(yline)
+                            C_magB.append(magB)
+                            C_magG.append(magG)
+                            C_magR.append(magR)
+                            C_emagB.append(emagB)
+                            C_emagG.append(emagG)
+                            C_emagR.append(emagR)
+                            C_catID.append(i)
+                            if(idmin > maxidc):
+                                maxidc = idmin
+                        if (flag == 0) and (ll < 9300.0):
+                            S_ll.append(ll)
+                            S_fline.append(fline)
+                            S_eline.append(eline)
+                            S_xline.append(xline)
+                            S_yline.append(yline)
+                            S_catID.append(i)
 
         nC = len(C_ll)
         nS = len(S_ll)
-
 
         flags = np.ones(nC)
         for i in range(nC):
@@ -391,40 +392,37 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                     fl = 1
             if(fl == 0):  # identification of single line emissions
                 flags[i] = 2
-                
 
-        
         # Sources list
         continuum_lines = SourceList()
-        origin=('muselet', __version__, cubename)
+        origin = ('muselet', __version__, cubename)
 
-
-        #write all continuum lines here:
-        raw_catalog=SourceList()
-        idraw=0
+        # write all continuum lines here:
+        raw_catalog = SourceList()
+        idraw = 0
         for i in range(nC):
-            if (flags[i] == 1): 
-                idraw=idraw+1
-                dec, ra = c.wcs.pix2sky([C_yline[i]-1, C_xline[i]-1], unit=u.deg)[0]
+            if (flags[i] == 1):
+                idraw = idraw + 1
+                dec, ra = c.wcs.pix2sky([C_yline[i] - 1, C_xline[i] - 1], unit=u.deg)[0]
                 s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
                 s.add_mag('MUSEB', C_magB[i], C_emagB[i])
                 s.add_mag('MUSEG', C_magG[i], C_emagG[i])
                 s.add_mag('MUSER', C_magR[i], C_emagR[i])
-                lbdas=[C_ll[i]]
-                fluxes=[C_fline[i]]
-                err_fluxes=[C_eline[i]]
-                ima = Image('nb/nb%04d.fits'%C_catID[i])
-                s.add_image(ima, 'NB%04d'%int(C_ll[i]), ima_size)
-                lines = Table([lbdas, [dw]*len(lbdas), fluxes, err_fluxes],
-                              names=['LBDA_OBS', 'LBDA_OBS_ERR', 
+                lbdas = [C_ll[i]]
+                fluxes = [C_fline[i]]
+                err_fluxes = [C_eline[i]]
+                ima = Image('nb/nb%04d.fits' % C_catID[i])
+                s.add_image(ima, 'NB%04d' % int(C_ll[i]), ima_size)
+                lines = Table([lbdas, [dw] * len(lbdas), fluxes, err_fluxes],
+                              names=['LBDA_OBS', 'LBDA_OBS_ERR',
                                      'FLUX', 'FLUX_ERR'],
-                              dtype=['<f8', '<f8','<f8', '<f8'])
+                              dtype=['<f8', '<f8', '<f8', '<f8'])
                 lines['LBDA_OBS'].format = '.2f'
                 lines['LBDA_OBS'].unit = u.angstrom
                 lines['LBDA_OBS_ERR'].format = '.2f'
                 lines['LBDA_OBS_ERR'].unit = u.angstrom
                 lines['FLUX'].format = '.4f'
-                #lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+                # lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 lines['FLUX_ERR'].format = '.4f'
                 s.lines = lines
                 raw_catalog.append(s)
@@ -436,7 +434,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             for i in range(nC):
                 if (C_idmin[i] == r) and (flags[i] == 1):
                     if len(lbdas) == 0:
-                        dec, ra = c.wcs.pix2sky([C_yline[i]-1, C_xline[i]-1], unit=u.deg)[0]
+                        dec, ra = c.wcs.pix2sky([C_yline[i] - 1, C_xline[i] - 1], unit=u.deg)[0]
                         s = Source.from_data(ID=r, ra=ra, dec=dec, origin=origin)
                         s.add_mag('MUSEB', C_magB[i], C_emagB[i])
                         s.add_mag('MUSEG', C_magG[i], C_emagG[i])
@@ -444,29 +442,29 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                     lbdas.append(C_ll[i])
                     fluxes.append(C_fline[i])
                     err_fluxes.append(C_eline[i])
-                    ima = Image('nb/nb%04d.fits'%C_catID[i])
-                    s.add_image(ima, 'NB%04d'%int(C_ll[i]), ima_size)
+                    ima = Image('nb/nb%04d.fits' % C_catID[i])
+                    s.add_image(ima, 'NB%04d' % int(C_ll[i]), ima_size)
             if len(lbdas) > 0:
-                lines = Table([lbdas, [dw]*len(lbdas), fluxes, err_fluxes],
-                              names=['LBDA_OBS', 'LBDA_OBS_ERR', 
+                lines = Table([lbdas, [dw] * len(lbdas), fluxes, err_fluxes],
+                              names=['LBDA_OBS', 'LBDA_OBS_ERR',
                                      'FLUX', 'FLUX_ERR'],
-                              dtype=['<f8', '<f8','<f8', '<f8'])
+                              dtype=['<f8', '<f8', '<f8', '<f8'])
                 lines['LBDA_OBS'].format = '.2f'
                 lines['LBDA_OBS'].unit = u.angstrom
                 lines['LBDA_OBS_ERR'].format = '.2f'
                 lines['LBDA_OBS_ERR'].unit = u.angstrom
                 lines['FLUX'].format = '.4f'
-                #lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                # lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 lines['FLUX_ERR'].format = '.4f'
                 s.lines = lines
                 continuum_lines.append(s)
-                
-        if len(continuum_lines)>0:
-            logger.info("muselet - %d continuum lines detected"%len(continuum_lines))
+
+        if len(continuum_lines) > 0:
+            logger.info("muselet - %d continuum lines detected" % len(continuum_lines))
         else:
             logger.info("muselet - no continuum lines detected")
 
-        # 
+        #
         singflags = np.ones(nS)
         S2_ll = []
         S2_fline = []
@@ -474,7 +472,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         S2_xline = []
         S2_yline = []
         S2_catID = []
- 
+
         for i in range(nS):
             fl = 0
             xref = S_xline[i]
@@ -495,61 +493,61 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 S2_yline.append(S_yline[i])
                 S2_catID.append(S_catID[i])
 
-        #output single lines catalogs here:S2_ll,S2_fline,S2_eline,S2_xline,S2_yline,S2_catID
+        # output single lines catalogs here:S2_ll,S2_fline,S2_eline,S2_xline,S2_yline,S2_catID
         nlines = len(S2_ll)
         for i in range(nlines):
-                idraw=idraw+1
-                dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1], unit=u.deg)[0]
-                s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
-                lbdas=[S2_ll[i]]
-                fluxes=[S2_fline[i]]
-                err_fluxes=[S2_eline[i]]
-                ima = Image('nb/nb%04d.fits'%S2_catID[i])
-                s.add_image(ima, 'NB%04d'%int(S2_ll[i]), ima_size)
-                lines = Table([lbdas, [dw]*len(lbdas), fluxes, err_fluxes],
-                              names=['LBDA_OBS', 'LBDA_OBS_ERR', 
-                                     'FLUX', 'FLUX_ERR'],
-                              dtype=['<f8', '<f8', '<f8', '<f8'])
-                lines['LBDA_OBS'].format = '.2f'
-                lines['LBDA_OBS'].unit = u.angstrom
-                lines['LBDA_OBS_ERR'].format = '.2f'
-                lines['LBDA_OBS_ERR'].unit = u.angstrom
-                lines['FLUX'].format = '.4f'
-                #lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                lines['FLUX_ERR'].format = '.4f'
-                s.lines = lines
-                raw_catalog.append(s)
- 
+            idraw = idraw + 1
+            dec, ra = c.wcs.pix2sky([S2_yline[i] - 1, S2_xline[i] - 1], unit=u.deg)[0]
+            s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
+            lbdas = [S2_ll[i]]
+            fluxes = [S2_fline[i]]
+            err_fluxes = [S2_eline[i]]
+            ima = Image('nb/nb%04d.fits' % S2_catID[i])
+            s.add_image(ima, 'NB%04d' % int(S2_ll[i]), ima_size)
+            lines = Table([lbdas, [dw] * len(lbdas), fluxes, err_fluxes],
+                          names=['LBDA_OBS', 'LBDA_OBS_ERR',
+                                 'FLUX', 'FLUX_ERR'],
+                          dtype=['<f8', '<f8', '<f8', '<f8'])
+            lines['LBDA_OBS'].format = '.2f'
+            lines['LBDA_OBS'].unit = u.angstrom
+            lines['LBDA_OBS_ERR'].format = '.2f'
+            lines['LBDA_OBS_ERR'].unit = u.angstrom
+            lines['FLUX'].format = '.4f'
+            # lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            lines['FLUX_ERR'].format = '.4f'
+            s.lines = lines
+            raw_catalog.append(s)
+
         # List of single lines
         # Merging single lines of the same object
         single_lines = SourceList()
         flags = np.zeros(nlines)
-        ising=0
+        ising = 0
         for i in range(nlines):
             if(flags[i] == 0):
-                ising=ising+1
+                ising = ising + 1
                 lbdas = []
                 fluxes = []
                 err_fluxes = []
 
-                dec, ra = c.wcs.pix2sky([S2_yline[i]-1, S2_xline[i]-1], unit=u.deg)[0]
+                dec, ra = c.wcs.pix2sky([S2_yline[i] - 1, S2_xline[i] - 1], unit=u.deg)[0]
                 s = Source.from_data(ID=ising, ra=ra, dec=dec, origin=origin)
                 lbdas.append(S2_ll[i])
                 fluxes.append(S2_fline[i])
                 err_fluxes.append(S2_eline[i])
-                ima = Image('nb/nb%04d.fits'%S2_catID[i])
-                s.add_image(ima, 'NB%04d'%int(S2_ll[i]), ima_size)
+                ima = Image('nb/nb%04d.fits' % S2_catID[i])
+                s.add_image(ima, 'NB%04d' % int(S2_ll[i]), ima_size)
                 ksel = np.where(((S2_xline[i] - S2_xline) ** 2.0 + (S2_yline[i] - S2_yline) ** 2.0 < radius ** 2.0) & (flags == 0))
                 for j in ksel[0]:
                     if(j != i):
                         lbdas.append(S2_ll[j])
                         fluxes.append(S2_fline[j])
                         err_fluxes.append(S2_eline[j])
-                        ima = Image('nb/nb%04d.fits'%S2_catID[j])
-                        s.add_image(ima, 'NB%04d'%int(S2_ll[j]), ima_size)
+                        ima = Image('nb/nb%04d.fits' % S2_catID[j])
+                        s.add_image(ima, 'NB%04d' % int(S2_ll[j]), ima_size)
                         flags[j] = 1
-                lines = Table([lbdas, [dw]*len(lbdas), fluxes, err_fluxes],
-                              names=['LBDA_OBS', 'LBDA_OBS_ERR', 
+                lines = Table([lbdas, [dw] * len(lbdas), fluxes, err_fluxes],
+                              names=['LBDA_OBS', 'LBDA_OBS_ERR',
                                      'FLUX', 'FLUX_ERR'],
                               dtype=['<f8', '<f8', '<f8', '<f8'])
                 lines['LBDA_OBS'].format = '.2f'
@@ -557,14 +555,14 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 lines['LBDA_OBS_ERR'].format = '.2f'
                 lines['LBDA_OBS_ERR'].unit = u.angstrom
                 lines['FLUX'].format = '.4f'
-                #lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                # lines['FLUX'].unit = !!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 lines['FLUX_ERR'].format = '.4f'
                 s.lines = lines
                 single_lines.append(s)
                 flags[i] = 1
-         
-        if len(single_lines)>0:
-            logger.info("muselet - %d single lines detected"%len(single_lines))
+
+        if len(single_lines) > 0:
+            logger.info("muselet - %d single lines detected" % len(single_lines))
         else:
             logger.info("muselet - no single lines detected")
 
@@ -590,22 +588,22 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             else:
                 source.crack_z(eml2, 20)
             source.sort_lines(nlines_max)
-                
+
         logger.info("muselet - cleaning narrow-band images")
         if(nbcube):
-            filelist=glob('nb/nb*.fits')
+            filelist = glob('nb/nb*.fits')
             for f in filelist:
                 os.remove(f)
 
-        #sort single line sources by wavelength
-        lsource=lambda s:s.lines[0][0]
+        # sort single line sources by wavelength
+        lsource = lambda s: s.lines[0][0]
         single_lines.sort(key=lsource)
-        
+
         if del_sex:
             remove_files()
 
         return continuum_lines, single_lines, raw_catalog
-    
+
 #             t = Catalog.from_sources(continuum_lines)
 #             t.write('continuum_lines_z2.cat', format='ascii')
 #             t = Catalog.from_sources(single_lines)
