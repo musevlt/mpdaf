@@ -212,9 +212,10 @@ class Cube(DataArray):
         if self.unit != u.dimensionless_unscaled:
             try:
                 imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
-                                      'data unit type')
+                                          'data unit type')
             except u.format.fits.UnitScaleError:
-                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)), 'data unit type')
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)),
+                                          'data unit type')
 
         return imahdu
 
@@ -268,9 +269,10 @@ class Cube(DataArray):
         if self.unit != u.dimensionless_unscaled:
             try:
                 imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
-                                      'data unit type')
+                                          'data unit type')
             except u.format.fits.UnitScaleError:
-                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)), 'data unit type')
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)),
+                                          'data unit type')
 
         return imahdu
 
@@ -394,14 +396,14 @@ class Cube(DataArray):
                  If inside is True, pixels inside the described region are masked.
                  If inside is False, pixels outside the described region are masked.
         unit_wave : astropy.units
-                    Type of the wavelengths coordinates (Angstrom by default)
-                    If None, inputs are in pixels
+                 Type of the wavelengths coordinates (Angstrom by default)
+                 If None, inputs are in pixels
         unit_center : astropy.units
-                      Type of the coordinates of the center (degrees by default)
-                      If None, inputs are in pixels
+                 Type of the coordinates of the center (degrees by default)
+                 If None, inputs are in pixels
         unit_radius : astropy.units
-                      Radius unit (arcseconds by default)
-                      If None, inputs are in pixels
+                 Radius unit (arcseconds by default)
+                 If None, inputs are in pixels
         """
         center = np.array(center)
 
@@ -417,7 +419,7 @@ class Cube(DataArray):
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
         if unit_radius is not None:
-            radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+            radius /= np.abs(self.wcs.get_step(unit=unit_radius))
             radius2 = radius[0] * radius[1]
         if lmin is None:
             lmin = 0
@@ -497,21 +499,21 @@ class Cube(DataArray):
         inside : boolean
                  If inside is True, pixels inside the described region are masked.
         unit_wave : astropy.units
-                    Type of the wavelengths coordinates (Angstrom by default)
-                    If None, inputs are in pixels
+                 Type of the wavelengths coordinates (Angstrom by default)
+                 If None, inputs are in pixels
         unit_center : astropy.units
-                      Type of the coordinates of the center (degrees by default)
-                      If None, inputs are in pixels
+                 Type of the coordinates of the center (degrees by default)
+                 If None, inputs are in pixels
         unit_radius : astropy.units
-                      Radius unit (arcseconds by default)
-                      If None, inputs are in pixels
+                 Radius unit (arcseconds by default)
+                 If None, inputs are in pixels
         """
         center = np.array(center)
         radius = np.array(radius)
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
         if unit_radius is not None:
-            radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+            radius /= np.abs(self.wcs.get_step(unit=unit_radius))
         if lmin is None:
             lmin = 0
         else:
@@ -1147,18 +1149,16 @@ class Cube(DataArray):
         if isinstance(obj, DataArray):
             if obj.ndim == 1:
                 return Spectrum(data=obj.data, unit=obj.unit, var=obj.var,
-                                 wave=obj.wave, dtype=obj.dtype, copy=False)
+                                wave=obj.wave, dtype=obj.dtype, copy=False)
             elif obj.ndim == 2:
                 return Image(data=obj.data, unit=obj.unit, var=obj.var,
                              wcs=obj.wcs, dtype=obj.dtype, copy=False)
-            elif obj.ndim ==3:
-                return Cube(data=obj.data, unit=obj.unit,
-                                     var=obj.var, wave=obj.wave,
-                                     wcs=obj.wcs, dtype=obj.dtype,
-                                     copy=False)
+            elif obj.ndim == 3:
+                return Cube(data=obj.data, unit=obj.unit, var=obj.var,
+                            wave=obj.wave, wcs=obj.wcs, dtype=obj.dtype,
+                            copy=False)
         else:
             return obj
-        
 
     def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
         """Returns the sub-cube corresponding to a wavelength range.
@@ -2693,7 +2693,7 @@ class Cube(DataArray):
             return None
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
-                                unit_radius=u.angstrom):
+                                unit_radius=u.arcsec):
         """Extracts a sub-cube from an circle aperture of fixed radius.
         Pixels outside the circle are masked.
 
@@ -2707,7 +2707,7 @@ class Cube(DataArray):
         unit_center : astropy.units
                       Type of the center coordinates (degrees by default)
                       If None, inputs are in pixels
-        unit_radius : astropy.uunits
+        unit_radius : astropy.units
                       unit of the radius value (arcseconds by default)
                       If None, inputs are in pixels
 
@@ -2721,7 +2721,7 @@ class Cube(DataArray):
             else:
                 center = np.array(center)
             if unit_radius is not None:
-                radius = radius / np.abs(self.wcs.get_step(unit=unit_radius)[0])
+                radius /= np.abs(self.wcs.get_step(unit=unit_radius)[0])
 
             radius2 = radius * radius
             size = int(2 * radius)
@@ -2770,7 +2770,7 @@ class Cube(DataArray):
             return None
 
     def aperture(self, center, radius, unit_center=u.deg,
-                 unit_radius=u.angstrom):
+                 unit_radius=u.arcsec):
         """Extracts a spectrum from an circle aperture of fixed radius.
 
         Parameters
@@ -2783,7 +2783,7 @@ class Cube(DataArray):
         unit_center : astropy.units
                       Type of the center coordinates (degrees by default)
                       If None, inputs are in pixels
-        unit_radius : astropu_units
+        unit_radius : astropy.units
                       unit of the radius value (arcseconds by default)
                       If None, inputs are in pixels
 
@@ -2795,24 +2795,21 @@ class Cube(DataArray):
             cub = self.subcube_circle_aperture(center, radius,
                                                unit_center=unit_center,
                                                unit_radius=unit_radius)
-            msg = '%d spaxels summed' % (cub.shape[1] * cub.shape[2])
             spec = cub.sum(axis=(1, 2))
-            self._logger.info(msg)
+            self._logger.info('%d spaxels summed', cub.shape[1] * cub.shape[2])
         else:
             if unit_center is not None:
                 center = self.wcs.sky2pix(center, unit=unit_center)[0]
             else:
                 center = np.array(center)
             spec = self[:, int(center[0] + 0.5), int(center[1] + 0.5)]
-            msg = 'returning spectrum at nearest spaxel'
-            self._logger.info(msg)
+            self._logger.info('returning spectrum at nearest spaxel')
         return spec
 
 
 def _process_spe(arglist):
     try:
-        pos, f, header, data, mask, var, \
-            unit, kargs = arglist
+        pos, f, header, data, mask, var, unit, kargs = arglist
         wave = WaveCoord(header, shape=data.shape[0])
         spe = Spectrum(wave=wave, unit=unit, data=data, var=var)
         spe.data.mask = mask
