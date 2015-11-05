@@ -43,51 +43,52 @@ class DataArray(object):
     Parameters
     ----------
     filename : string
-               FITS file name, default to ``None``.
-    hdulist  : pyfits.hdulist
-               HDU list class, used instead of ``fits.open(filename)`` if not
-               None, to avoid opening the FITS file.
-    ext      : integer or (integer,integer) or string or (string,string)
-               Number/name of the data extension or numbers/names of the data
-               and variance extensions.
-    unit     : astropy.units
-               Physical units of the data values, default to
-               ``u.dimensionless_unscaled``.
-    copy     : boolean
-               If true (default), then the data and variance arrays are copied.
-               Passed to ``np.ma.MaskedArray``.
-    dtype    : numpy.dtype
-               Type of the data, default to ``float``.
-               Passed to ``np.ma.MaskedArray``.
-    data     : numpy.ndarray or list
-               Data array, passed to ``np.ma.MaskedArray``.
-    var      : numpy.ndarray or list
-               Variance array, passed to ``np.array``.
+        FITS file name, default to ``None``.
+    hdulist : pyfits.hdulist
+        HDU list class, used instead of ``fits.open(filename)`` if not None,
+        to avoid opening the FITS file.
+    ext : integer or (integer,integer) or string or (string,string)
+        Number/name of the data extension or numbers/names of the data and
+        variance extensions.
+    unit : astropy.units
+        Physical units of the data values, default to
+        ``u.dimensionless_unscaled``.
+    copy : boolean
+        If true (default), then the data and variance arrays are copied.
+        Passed to ``np.ma.MaskedArray``.
+    dtype : numpy.dtype
+        Type of the data, default to ``float``.
+        Passed to ``np.ma.MaskedArray``.
+    data : numpy.ndarray or list
+        Data array, passed to ``np.ma.MaskedArray``.
+    var : numpy.ndarray or list
+        Variance array, passed to ``np.array``.
 
     Attributes
     ----------
-    filename       : string
-                     FITS filename.
+    filename : string
+        FITS filename.
     primary_header : pyfits.Header
-                     FITS primary header instance.
-    wcs            : :class:`mpdaf.obj.WCS`
-                     World coordinates.
-    wave           : :class:`mpdaf.obj.WaveCoord`
-                     Wavelength coordinates
-    ndim           : integer
-                     Number of dimensions.
-    shape          : tuple
-                     Lengths of data (python notation (nz,ny,nx)).
-    data           : np.ma.MaskedArray
-                     Masked array containing the cube pixel values.
-    data_header    : pyfits.Header
-                     FITS data header instance.
-    unit           : astropy.units.Unit
-                     Physical units of the data values.
-    dtype          : numpy.dtype
-                     Type of the data (integer, float)
-    var            : numpy.ndarray
-                     Array containing the variance.
+        FITS primary header instance.
+    wcs : :class:`mpdaf.obj.WCS`
+        World coordinates.
+    wave : :class:`mpdaf.obj.WaveCoord`
+        Wavelength coordinates
+    ndim : integer
+        Number of dimensions.
+    shape : tuple
+        Lengths of data (python notation (nz,ny,nx)).
+    data : np.ma.MaskedArray
+        Masked array containing the cube pixel values.
+    data_header : pyfits.Header
+        FITS data header instance.
+    unit : astropy.units.Unit
+        Physical units of the data values.
+    dtype : numpy.dtype
+        Type of the data (integer, float)
+    var : numpy.ndarray
+        Array containing the variance.
+
     """
 
     _ndim_required = None
@@ -300,7 +301,7 @@ class DataArray(object):
         self.var = var
 
     def copy(self):
-        """Returns a copy of the object."""
+        """Return a copy of the object."""
         return self.__class__(
             filename=self.filename, data=self.data, unit=self.unit,
             var=self.var, wcs=self.wcs, wave=self.wave, copy=True,
@@ -308,7 +309,7 @@ class DataArray(object):
             primary_header=pyfits.Header(self.primary_header))
 
     def clone(self, var=None, data_init=None, var_init=None):
-        """Returns a shallow copy with the same header and coordinates.
+        """Return a shallow copy with the same header and coordinates.
 
         Parameters
         ----------
@@ -333,7 +334,7 @@ class DataArray(object):
             primary_header=pyfits.Header(self.primary_header))
 
     def info(self):
-        """Prints information."""
+        """Print information."""
         log = self._logger.info
         shape_str = (' x '.join(str(x) for x in self.shape)
                      if self.shape is not None else 'no shape')
@@ -374,6 +375,7 @@ class DataArray(object):
         Returns
         -------
         out : New object.
+
         """
         result = self.copy()
         if self.data is not None:
@@ -386,11 +388,12 @@ class DataArray(object):
         Parameters
         ----------
         item : float
-               minimum value.
+            minimum value.
 
         Returns
         -------
         out : New object.
+
         """
         result = self.copy()
         if self.data is not None:
@@ -408,6 +411,7 @@ class DataArray(object):
         Returns
         -------
         out : New object.
+
         """
         result = self.copy()
         if self.data is not None:
@@ -425,6 +429,7 @@ class DataArray(object):
         Returns
         -------
         out : New object.
+
         """
         result = self.copy()
         if self.data is not None:
@@ -467,7 +472,8 @@ class DataArray(object):
         Parameters
         ----------
         threshold : float
-                    Threshold value.
+            Threshold value.
+
         """
         if self.var is None:
             raise ValueError('Operation forbidden without variance extension.')
@@ -475,21 +481,24 @@ class DataArray(object):
             self.data[self.var > threshold] = np.ma.masked
 
     def mask_selection(self, ksel):
-        """Masks pixels corresponding to the selection.
+        """Mask pixels corresponding to the selection.
 
         Parameters
         ----------
         ksel : output of np.where
-               elements depending on a condition
+            elements depending on a condition
+
         """
         self.data[ksel] = np.ma.masked
 
     def __getitem__(self, item):
-        """Returns the corresponding object:
+        """Return a sliced object.
+
         cube[k,p,k] = value
         cube[k,:,:] = spectrum
         cube[:,p,q] = image
         cube[:,:,:] = sub-cube
+
         """
         if self._data is None and self.filename is not None:
             data = read_slice_from_fits(self.filename, item=item,
@@ -509,12 +518,15 @@ class DataArray(object):
                 if self._var_ext is None:
                     var = None
                 else:
-                    var = read_slice_from_fits(self.filename, item=item,
-                                               ext=self._var_ext, dtype=self.dtype)
+                    var = read_slice_from_fits(
+                        self.filename, item=item, ext=self._var_ext,
+                        dtype=self.dtype)
                     if var.ndim != self.data.ndim:
-                        raise IOError('Wrong dimension number in STAT extension')
+                        raise IOError('Wrong dimension number in STAT '
+                                      'extension')
                     if not np.array_equal(var.shape, data.shape):
-                        raise IOError('Number of points in STAT not equal to DATA')
+                        raise IOError('Number of points in STAT not equal to '
+                                      'DATA')
             else:
                 var = None
         else:

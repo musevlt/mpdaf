@@ -21,6 +21,7 @@ def deg2sexa(x):
     Returns
     -------
     out : (n,2) array of dec- and ra- coordinates in sexagesimal (string)
+
     """
     x = np.array(x)
     if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
@@ -49,6 +50,7 @@ def sexa2deg(x):
     Returns
     -------
     out : (n,2) array of dec- and ra- coordinates in degrees.
+
     """
     x = np.array(x)
     if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
@@ -78,6 +80,7 @@ def deg2hms(x):
     Returns
     -------
     out : string
+
     """
     ac = Angle(x, unit='degree')
     hms = ac.to_string(unit='hour', sep=':', pad=True)
@@ -96,6 +99,7 @@ def hms2deg(x):
     Returns
     -------
     out : float
+
     """
     ac = Angle(x, unit='hour')
     deg = float(ac.to_string(unit='degree', decimal=True))
@@ -114,6 +118,7 @@ def deg2dms(x):
     Returns
     -------
     out : string
+
     """
     ac = Angle(x, unit='degree')
     dms = ac.to_string(unit='degree', sep=':', pad=True)
@@ -132,6 +137,7 @@ def dms2deg(x):
     Returns
     -------
     out : float
+
     """
     ac = Angle(x, unit='degree')
     deg = float(ac.to_string(unit='degree', decimal=True))
@@ -164,72 +170,39 @@ class WCS(object):
 
     Parameters
     ----------
-    hdr   : astropy.fits.CardList
-            A FITS header.
-            If hdr is not equal to None, WCS object is created from data header
-            and other parameters are not used.
+    hdr : astropy.fits.CardList
+        A FITS header. If hdr is not equal to None, WCS object is created from
+        data header and other parameters are not used.
     crpix : float or (float,float)
-            Reference pixel coordinates.
-
-            If crpix is None and shape is None crpix = 1.0 and
-            the reference point is the first pixel of the image.
-
-            If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
-            and the reference point is the center of the image.
+        Reference pixel coordinates.
+        If crpix is None and shape is None crpix = 1.0 and
+        the reference point is the first pixel of the image.
+        If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
+        and the reference point is the center of the image.
     crval : float or (float,float)
-            Coordinates of the reference pixel (ref_dec,ref_ra).
-            (0.0,0.0) by default.
+        Coordinates of the reference pixel (ref_dec,ref_ra).
+        (0.0,0.0) by default.
     cdelt : float or (float,float)
-            Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
-    deg   : bool
-            If True, world coordinates are in decimal degrees
-            (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg').
-            If False (by default), world coordinates are linear
-            (CTYPE1=CTYPE2='LINEAR').
-    rot   : float
-            Rotation angle in degree.
+        Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
+    deg : bool
+        If True, world coordinates are in decimal degrees
+        (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg').
+        If False (by default), world coordinates are linear
+        (CTYPE1=CTYPE2='LINEAR').
+    rot : float
+        Rotation angle in degree.
     shape : integer or (integer,integer)
-            Dimensions. No mandatory.
+        Dimensions. No mandatory.
 
     Attributes
     ----------
     wcs : pywcs.WCS
-          World coordinates.
+        World coordinates.
+
     """
 
     def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0),
                  cdelt=(1.0, 1.0), deg=False, rot=0, shape=None):
-        """Create a WCS object.
-
-        Parameters
-        ----------
-        hdr   : astropy.fits.CardList
-                A FITS header.
-                If hdr is not equal to None, WCS object is created from data
-                header and other parameters are not used.
-        crpix : float or (float,float)
-                Reference pixel coordinates.
-
-                - If crpix is None and shape is None, crpix = 1.0 and
-                the reference point is the first pixel of the image.
-                - If crpix is None and shape is not None,
-                crpix = (shape + 1.0)/2.0 and the reference point is the center
-                of the image.
-        crval : float or (float,float)
-                Coordinates of the reference pixel (ref_dec,ref_ra).
-                (0.0,0.0) by default.
-        cdelt : float or (float,float)
-                Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
-        deg   : bool
-                If True, world coordinates are in decimal degrees
-                (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg').
-                If False (by default), world coordinates are linear
-                (CTYPE1=CTYPE2='LINEAR', CUNIT1=CUNIT2='pixel').
-        rot   : float
-                Rotation angle in degree.
-        shape : integer or (integer,integer)
-                Dimensions. No mandatory.
-        """
         self._logger = logging.getLogger(__name__)
         if hdr is not None:
             self.wcs = wcs_from_header(hdr, naxis=2)
@@ -247,7 +220,7 @@ class WCS(object):
             # http://mail.scipy.org/pipermail/astropy/2011-April/001242.html
         else:
             def check_attrs(val, types=(int, float)):
-                """check attribute dimensions"""
+                """check attribute dimensions."""
                 if isinstance(val, types):
                     return (val, val)
                 elif len(val) > 2:
@@ -357,13 +330,13 @@ class WCS(object):
 
         Parameters
         ----------
-        x       : array
-                An (n,2) array of dec- and ra- world coordinates.
+        x : array
+            An (n,2) array of dec- and ra- world coordinates.
         nearest : bool
-                If nearest is True returns the nearest integer pixel
-                in place of the decimal pixel.
+            If nearest is True returns the nearest integer pixel
+            in place of the decimal pixel.
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
 
         Returns
         -------
@@ -394,14 +367,15 @@ class WCS(object):
 
         Parameters
         ----------
-        x     : array
-                An (n,2) array of pixel coordinates (python notation).
+        x : array
+            An (n,2) array of pixel coordinates (python notation).
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
 
         Returns
         -------
         out : (n,2) array of dec- and ra- world coordinates.
+
         """
         x = np.asarray(x, dtype=np.float64)
         if x.shape == (2,):
@@ -505,7 +479,8 @@ class WCS(object):
         Parameters
         ----------
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
+
         """
         try:
             dy, dx = np.sqrt(np.sum(self.wcs.wcs.cd ** 2, axis=1))[::-1]
@@ -529,7 +504,8 @@ class WCS(object):
         Parameters
         ----------
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
+
         """
         pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1],
                   [self.naxis2 - 1, self.naxis1 - 1]]
@@ -542,7 +518,8 @@ class WCS(object):
         Parameters
         ----------
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
+
         """
         pixcrd = [[0, 0]]
         pixsky = self.pix2sky(pixcrd, unit=unit)
@@ -554,7 +531,8 @@ class WCS(object):
         Parameters
         ----------
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
+
         """
         pixcrd = [[self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd, unit=unit)
@@ -566,8 +544,8 @@ class WCS(object):
         Parameters
         ----------
         unit : astropy.units
-               type of the angle coordinate
-               degree by default
+            type of the angle coordinate, degree by default
+
         """
         try:
             theta = np.arctan2(self.wcs.wcs.cd[1, 0], self.wcs.wcs.cd[1, 1])
@@ -582,7 +560,7 @@ class WCS(object):
         return (theta * u.rad).to(unit).value
 
     def get_cd(self):
-        """Returns the CD matrix."""
+        """Return the CD matrix."""
         try:
             return self.wcs.wcs.cd
         except:
@@ -620,7 +598,8 @@ class WCS(object):
         Parameters
         ----------
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
+
         """
         if unit is None:
             return self.wcs.wcs.crval[0]
@@ -633,7 +612,8 @@ class WCS(object):
         Parameters
         ----------
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
+
         """
         if unit is None:
             return self.wcs.wcs.crval[1]
@@ -669,10 +649,11 @@ class WCS(object):
 
         Parameters
         ----------
-        x    : float
-               Value of the reference pixel on the first axis
+        x : float
+            Value of the reference pixel on the first axis
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
+
         """
         if unit is None:
             self.wcs.wcs.crval[0] = x
@@ -685,10 +666,10 @@ class WCS(object):
 
         Parameters
         ----------
-        x    : float
-               Value of the reference pixel on the second axis
+        x : float
+            Value of the reference pixel on the second axis
         unit : astropy.units
-                type of the world coordinates
+            type of the world coordinates
         """
         if unit is None:
             self.wcs.wcs.crval[1] = x
@@ -697,8 +678,7 @@ class WCS(object):
         self.wcs.wcs.set()
 
     def set_step(self, step, unit=None):
-        """Update the step in the CD matrix or in the PC matrix
-        """
+        """Update the step in the CD matrix or in the PC matrix."""
         if unit is not None:
             step[0] = (step[0] * unit).to(self.unit).value
             step[1] = (step[1] * unit).to(self.unit).value
@@ -720,7 +700,7 @@ class WCS(object):
         Parameters
         ----------
         theta : float
-                Rotation in degree.
+            Rotation in degree.
         """
         # rotation matrix of -theta
         _theta = np.deg2rad(theta)
@@ -746,16 +726,17 @@ class WCS(object):
         Parameters
         ----------
         start : float or (float, float)
-                New positions (dec,ra) for the pixel (0,0).
-                If None, old position is used.
-        step  : float or (float, float)
-                New step (ddec,dra).
+            New positions (dec,ra) for the pixel (0,0).
+            If None, old position is used.
+        step : float or (float, float)
+            New step (ddec,dra).
         unit : astropy.units
-               type of the world coordinates for the start and step parameters.
+            type of the world coordinates for the start and step parameters.
 
         Returns
         -------
         out : WCS
+
         """
         if unit is not None:
             step[0] = (step[0] * unit).to(self.unit).value
@@ -791,7 +772,7 @@ class WCS(object):
         Parameters
         ----------
         factor : (integer,integer)
-                Factor in y and x.
+            Factor in y and x.
 
         Returns
         -------
@@ -840,8 +821,7 @@ class WCS(object):
 
     def to_cube_header(self, wave):
         """Generate a astropy.fits header object with the WCS information and
-        the wavelength information.
-        """
+        the wavelength information."""
         hdr = self.to_header()
         hdr.update(wave.to_header(naxis=3, use_cd='CD1_1' in hdr))
         return hdr
@@ -853,29 +833,30 @@ class WaveCoord(object):
 
     Parameters
     ----------
-    hdr   : astropy.fits.CardList
-            A FITS header. If hdr is not None, WaveCoord object is created from
-            this header and other parameters are not used.
+    hdr : astropy.fits.CardList
+        A FITS header. If hdr is not None, WaveCoord object is created from
+        this header and other parameters are not used.
     crpix : float
-            Reference pixel coordinates. 1.0 by default. Note that for crpix
-            definition, the first pixel in the spectrum has pixel coordinates.
+        Reference pixel coordinates. 1.0 by default. Note that for crpix
+        definition, the first pixel in the spectrum has pixel coordinates.
     cdelt : float
-            Step in wavelength (1.0 by default).
+        Step in wavelength (1.0 by default).
     crval : float
-            Coordinates of the reference pixel (0.0 by default).
+        Coordinates of the reference pixel (0.0 by default).
     cunit : u.unit
-            Wavelength unit (Angstrom by default).
+        Wavelength unit (Angstrom by default).
     ctype : string
-            Type of the coordinates.
+        Type of the coordinates.
     shape : integer or None
-            Size of spectrum (no mandatory).
+        Size of spectrum (no mandatory).
 
     Attributes
     ----------
     shape : integer
-            Size of spectrum.
-    wcs   : astropy.wcs.WCS
-            Wavelength coordinates.
+        Size of spectrum.
+    wcs : astropy.wcs.WCS
+        Wavelength coordinates.
+
     """
 
     def __init__(self, hdr=None, crpix=1.0, cdelt=1.0, crval=1.0,
@@ -949,13 +930,14 @@ class WaveCoord(object):
         Parameters
         ----------
         pixel : integer, array or None.
-                pixel value.
+            pixel value.
         unit : astropy.units
-               type of the wavelength coordinates
+            type of the wavelength coordinates
 
         Returns
         -------
         out : float or array of float
+
         """
         if pixel is None and self.shape is None:
             raise IOError("wavelength coordinates without dimension")
@@ -972,23 +954,24 @@ class WaveCoord(object):
         return res[0] if isinstance(pixel, (int, float)) else res
 
     def pixel(self, lbda, nearest=False, unit=None):
-        """ Return the decimal pixel corresponding to the wavelength lbda.
+        """Return the decimal pixel corresponding to the wavelength lbda.
 
         If nearest=True; returns the nearest integer pixel.
 
         Parameters
         ----------
-        lbda    : float or array
-                wavelength value.
+        lbda : float or array
+            wavelength value.
         nearest : bool
-                If nearest is True returns the nearest integer pixel
-                in place of the decimal pixel.
+            If nearest is True returns the nearest integer pixel
+            in place of the decimal pixel.
         unit : astropy.units
-               type of the wavelength coordinates
+            type of the wavelength coordinates
 
         Returns
         -------
         out : float or integer
+
         """
 
         lbdarr = np.asarray([lbda] if isinstance(lbda, (int, float)) else lbda)
@@ -1058,17 +1041,17 @@ class WaveCoord(object):
         Parameters
         ----------
         start : float
-                New wavelength for the pixel 0.
-        step  : float
-                New step.
+            New wavelength for the pixel 0.
+        step : float
+            New step.
         unit : astropy.units
-               type of the wavelength coordinates
+            type of the wavelength coordinates
 
         Returns
         -------
         out : WaveCoord
-        """
 
+        """
         if unit is not None:
             step = (step * unit).to(self.unit).value
             if start is not None:
@@ -1102,11 +1085,12 @@ class WaveCoord(object):
         Parameters
         ----------
         factor : integer
-                Factor.
+            Factor.
 
         Returns
         -------
         out : WaveCoord
+
         """
         old_cdelt = self.get_step()
 
@@ -1127,12 +1111,13 @@ class WaveCoord(object):
         self.wcs.wcs.set()
 
     def get_step(self, unit=None):
-        """Returns the step in wavelength.
+        """Return the step in wavelength.
 
         Parameters
         ----------
         unit : astropy.units
-               type of the wavelength coordinates
+            type of the wavelength coordinates
+
         """
         if self.wcs.wcs.has_cd():
             step = self.wcs.wcs.cd[0][0]
@@ -1151,7 +1136,8 @@ class WaveCoord(object):
         Parameters
         ----------
         unit : astropy.units
-               type of the wavelength coordinates
+            type of the wavelength coordinates
+
         """
         return self.coord(0, unit)
 
@@ -1161,7 +1147,8 @@ class WaveCoord(object):
         Parameters
         ----------
         unit : astropy.units
-               type of the wavelength coordinates
+            type of the wavelength coordinates
+
         """
         if self.shape is None:
             raise IOError("wavelength coordinates without dimension")
@@ -1174,7 +1161,8 @@ class WaveCoord(object):
         Parameters
         ----------
         unit : astropy.units
-               type of the wavelength coordinates
+            type of the wavelength coordinates
+
         """
         if self.shape is None:
             raise IOError("wavelength coordinates without dimension")
@@ -1197,7 +1185,8 @@ class WaveCoord(object):
         x : float
             value of the reference pixel on the wavelength axis
         unit : astropy.units
-               type of the wavelength coordinates
+            type of the wavelength coordinates
+
         """
         if unit is None:
             return self.wcs.wcs.crval[0]

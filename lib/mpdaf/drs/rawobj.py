@@ -46,11 +46,10 @@ class Channel(object):
     mask    : array of booleans
               Arrays that contents TRUE for overscanned pixels,
               FALSE for the others
-
     """
 
     def __init__(self, extname=None, filename=None, data=None):
-        """Creates a Channel object.
+        """Create a Channel object.
 
         Parameters
         ----------
@@ -58,7 +57,6 @@ class Channel(object):
                    The extension name.
         filename : string
                    The raw FITS file name.
-
         """
         self._logger = logging.getLogger(__name__)
         self.extname = extname
@@ -90,7 +88,7 @@ class Channel(object):
         self.mask = self._init_mask()
 
     def _init_mask(self):
-        """Creates mask that invalidates over scanned pixels."""
+        """Create mask that invalidates over scanned pixels."""
         m = np.ones((self.ny, self.nx), dtype=int)
         try:
             nx_data = self.header["NAXIS1"]  # length of data in X
@@ -144,7 +142,7 @@ class Channel(object):
         return mask
 
     def copy(self):
-        """Returns a copy of the Channel object."""
+        """Return a copy of the Channel object."""
         result = Channel(self.extname)
         result.header = pyfits.Header(self.header)
         try:
@@ -255,7 +253,7 @@ class Channel(object):
 
     @_decorator
     def __add__(self, other):
-        """Adds either a number or a Channel object."""
+        """Add either a number or a Channel object."""
         if isinstance(self, np.ma.core.MaskedArray):
             return np.ma.MaskedArray.__add__(self, other)
         else:
@@ -270,7 +268,7 @@ class Channel(object):
 
     @_decorator
     def __pow__(self, other):
-        """Computes the power exponent."""
+        """Compute the power exponent."""
         if isinstance(self, np.ma.core.MaskedArray):
             return np.ma.MaskedArray.__pow__(self, other)
         else:
@@ -284,7 +282,7 @@ class Channel(object):
             return np.ndarray.__pow__(self, other)
 
     def sqrt(self):
-        """Computes the positive square-root.
+        """Compute the positive square-root.
         """
         result = Channel(self.extname)
         result.header = self.header
@@ -297,13 +295,12 @@ class Channel(object):
         return result
 
     def trimmed(self):
-        """Returns a Channel object containing only reference to the valid
+        """Return a Channel object containing only reference to the valid
         pixels.
 
         Returns
         -------
         out : :class:`mpdaf.drs.Channel`
-
         """
         result = Channel(self.extname)
         result.header = self.header
@@ -314,13 +311,12 @@ class Channel(object):
         return result
 
     def overscan(self):
-        """Returns a Channel object containing only reference to the
-        overscanned pixels.
+        """Return a Channel object containing only reference to the overscanned
+        pixels.
 
         Returns
         -------
         out : :class:`mpdaf.drs.Channel`
-
         """
         result = Channel(self.extname)
         result.header = self.header
@@ -333,7 +329,7 @@ class Channel(object):
         return result
 
     def get_image(self, det_out=None, bias=False):
-        """Returns an Image object.
+        """Return an Image object.
 
         Parameters
         ----------
@@ -347,7 +343,6 @@ class Channel(object):
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
-
         """
         wcs = obj.WCS(self.header)
         ima = obj.Image(wcs=wcs, data=self.data.__copy__())
@@ -440,7 +435,6 @@ class Channel(object):
         Returns
         -------
         out : float
-
         """
         ima = self.get_image_just_overscan(det_out)
         ksel = np.where(ima.data.mask == False)
@@ -448,7 +442,7 @@ class Channel(object):
 
     def get_trimmed_image(self, det_out=None, bias_substract=False,
                           bias=False):
-        """Returns an Image object without over scanned pixels.
+        """Return an Image object without over scanned pixels.
 
         Parameters
         ----------
@@ -465,7 +459,6 @@ class Channel(object):
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
-
         """
         # Physical active pixels in X
         nx_data2 = self.header["ESO DET CHIP NX"]
@@ -593,7 +586,7 @@ class Channel(object):
         return ima
 
     def get_image_mask_overscan(self, det_out=None):
-        """Returns an Image object in which overscanned pixels are masked.
+        """Return an Image object in which overscanned pixels are masked.
 
         Parameters
         ----------
@@ -604,7 +597,6 @@ class Channel(object):
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
-
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
@@ -650,7 +642,7 @@ class Channel(object):
         return ima
 
     def get_image_just_overscan(self, det_out=None):
-        """Returns an Image object in which only overscanned pixels are not
+        """Return an Image object in which only overscanned pixels are not
         masked.
 
         Parameters
@@ -662,7 +654,6 @@ class Channel(object):
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
-
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
@@ -774,11 +765,10 @@ class RawFile(object):
     progress       : boolean
                      If True, progress of multiprocessing tasks
                      are displayed. True by default.
-
     """
 
     def __init__(self, filename=None):
-        """Creates a RawFile object.
+        """Create a RawFile object.
 
         Parameters
         ----------
@@ -789,7 +779,6 @@ class RawFile(object):
             Just the primary header and the list of extension name are loaded.
             Method get_channel(extname) returns the corresponding channel
             Operator [extnumber] loads and returns the corresponding channel.
-
         """
         self._logger = logging.getLogger(__name__)
         self.filename = filename
@@ -835,7 +824,7 @@ class RawFile(object):
             self.primary_header = pyfits.Header()
 
     def copy(self):
-        """Returns a copy of the RawFile object."""
+        """Return a copy of the RawFile object."""
         result = RawFile(self.filename)
         if result.filename is None:
             result.primary_header = pyfits.Header(self.primary_header)
@@ -850,7 +839,7 @@ class RawFile(object):
         return result
 
     def info(self):
-        """Prints information."""
+        """Print information."""
         if self.filename is not None:
             msg = self.filename
         else:
@@ -864,15 +853,15 @@ class RawFile(object):
         self._logger.info(msg)
 
     def get_keywords(self, key):
-        """Returns the keyword value."""
+        """Return the keyword value."""
         return self.primary_header[key]
 
     def get_channels_extname_list(self):
-        """Returns the list of existing channels names."""
+        """Return the list of existing channels names."""
         return self.channels.keys()
 
     def get_channel(self, extname):
-        """Returns a Channel object.
+        """Return a Channel object.
 
         Parameters
         ----------
@@ -882,7 +871,6 @@ class RawFile(object):
         Returns
         -------
         out : :class:`mpdaf.drs.Channel`
-
         """
         if self.channels[extname] is not None:
             return self.channels[extname]
@@ -891,11 +879,11 @@ class RawFile(object):
             return chan
 
     def __len__(self):
-        """Returns the number of extensions."""
+        """Return the number of extensions."""
         return self.next
 
     def __getitem__(self, key):
-        """Loads the Channel object if relevant and returns it.
+        """Load the Channel object if relevant and returns it.
 
         Parameters
         ----------
@@ -905,7 +893,6 @@ class RawFile(object):
         Returns
         -------
         out : :class:`mpdaf.drs.Channel`
-
         """
         extname = "CHAN%02d" % key
         if self.channels[extname] == None:
@@ -913,7 +900,7 @@ class RawFile(object):
         return self.channels[extname]
 
     def __setitem__(self, key, value):
-        """Sets the corresponding channel.
+        """Set the corresponding channel.
 
         Parameters
         ----------
@@ -921,7 +908,6 @@ class RawFile(object):
             The extension number.
         value : `mpdaf.drs.Channel` or array
             Channel object or image
-
         """
         extname = "CHAN%02d" % key
         if isinstance(value, Channel):
@@ -964,14 +950,14 @@ class RawFile(object):
         return self._mp_operator(other, 'Channel.__isub__')
 
     def __add__(self, other):
-        """Adds either a number or a RawFits object."""
+        """Add either a number or a RawFits object."""
         return self._mp_operator(other, 'Channel.__add__')
 
     def __iadd__(self, other):
         return self._mp_operator(other, 'Channel.__iadd__')
 
     def __pow__(self, other):
-        """Computes the power exponent of each channel."""
+        """Compute the power exponent of each channel."""
         return self._mp_operator(other, 'Channel.__pow__')
 
     def __ipow__(self, other):
@@ -1021,12 +1007,11 @@ class RawFile(object):
         return result
 
     def trimmed(self):
-        """Returns a RawFile object containing only valid pixels.
+        """Return a RawFile object containing only valid pixels.
 
         Returns
         -------
         :class:`mpdaf.drs.RawFile`
-
         """
         cpu_count = multiprocessing.cpu_count()
         result = RawFile()
@@ -1048,12 +1033,11 @@ class RawFile(object):
         return result
 
     def overscan(self):
-        """Returns a RawFile object containing only overscanned pixels.
+        """Return a RawFile object containing only overscanned pixels.
 
         Returns
         -------
         :class:`mpdaf.drs.RawFile`
-
         """
         cpu_count = multiprocessing.cpu_count()
         result = RawFile()
@@ -1075,11 +1059,10 @@ class RawFile(object):
         return result
 
     def write(self, filename):
-        """Saves the object in a FITS file.
+        """Save the object in a FITS file.
 
         :param filename: The FITS filename.
         :type filename: string
-
         """
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -1135,7 +1118,7 @@ class RawFile(object):
 
     def plot(self, title=None, channels="all", area=None, scale='linear',
              vmin=None, vmax=None, zscale=False, colorbar=None, **kargs):
-        """Plots the raw images.
+        """Plot the raw images.
 
         :param title: Figure title (None by default).
         :type title: string
@@ -1160,7 +1143,6 @@ class RawFile(object):
         :type colorbar: bool
         :param kargs: kargs can be used to set additional Artist properties.
         :type kargs: matplotlib.artist.Artist
-
         """
         fig = plt.figure()
         fig.subplots_adjust(wspace=0.02, hspace=0.01)
@@ -1214,7 +1196,6 @@ class RawFile(object):
         :type verbose: boolean
 
         :rtype: :class:`mpdaf.obj.Image`
-
         """
         if mask is None:
             path = os.path.dirname(__file__)
@@ -1368,7 +1349,6 @@ class RawFile(object):
         :param mask: mumdatMask_1x1.fits filename used for this reconstruction
             (if None, the last file stored in mpdaf is used).
         :type mask: string
-
         """
         if mask is None:
             path = os.path.dirname(__file__)

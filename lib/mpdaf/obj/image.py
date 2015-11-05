@@ -101,32 +101,33 @@ class Gauss2D(object):
 
     Attributes
     ----------
-    center     : (float,float)
-                Gaussian center (y,x).
-    flux       : float
-                Gaussian integrated flux.
-    fwhm       : (float,float)
-                Gaussian fwhm (fhwm_y,fwhm_x).
-    cont       : float
-                Continuum value.
-    rot        : float
-                Rotation in degrees.
-    peak       : float
-                Gaussian peak value.
+    center : (float,float)
+        Gaussian center (y,x).
+    flux : float
+        Gaussian integrated flux.
+    fwhm : (float,float)
+        Gaussian fwhm (fhwm_y,fwhm_x).
+    cont : float
+        Continuum value.
+    rot : float
+        Rotation in degrees.
+    peak : float
+        Gaussian peak value.
     err_center : (float,float)
-                Estimated error on Gaussian center.
-    err_flux   : float
-                Estimated error on Gaussian integrated flux.
-    err_fwhm   : (float,float)
-                Estimated error on Gaussian fwhm.
-    err_cont   : float
-                Estimated error on continuum value.
-    err_rot    : float
-                Estimated error on rotation.
-    err_peak   : float
-                Estimated error on Gaussian peak value.
-    ima        : :class:`mpdaf.obj.Image`)
-                Gaussian image
+        Estimated error on Gaussian center.
+    err_flux : float
+        Estimated error on Gaussian integrated flux.
+    err_fwhm : (float,float)
+        Estimated error on Gaussian fwhm.
+    err_cont : float
+        Estimated error on continuum value.
+    err_rot : float
+        Estimated error on rotation.
+    err_peak : float
+        Estimated error on Gaussian peak value.
+    ima : :class:`mpdaf.obj.Image`)
+        Gaussian image
+
     """
 
     def __init__(self, center, flux, fwhm, cont, rot, peak, err_center,
@@ -147,14 +148,14 @@ class Gauss2D(object):
         self.ima = ima
 
     def copy(self):
-        """Copies Gauss2D object in a new one and returns it."""
+        """Copy Gauss2D object in a new one and returns it."""
         return Gauss2D(self.center, self.flux, self.fwhm, self.cont,
                        self.rot, self.peak, self.err_center, self.err_flux,
                        self.err_fwhm, self.err_cont, self.err_rot,
                        self.err_peak)
 
     def print_param(self):
-        """Prints Gaussian parameters."""
+        """Print Gaussian parameters."""
         msg = 'Gaussian center = (%g,%g) (error:(%g,%g))' \
             % (self.center[0], self.center[1],
                self.err_center[0], self.err_center[1])
@@ -181,36 +182,36 @@ class Moffat2D(object):
 
     Attributes
     ----------
-    center     : (float,float)
-                peak center (y,x).
-    flux       : float
-                integrated flux.
-    fwhm       : (float,float)
-                fwhm (fhwm_y,fwhm_x).
-    cont       : float
-                Continuum value.
-    n          : integer
-                Atmospheric scattering coefficient.
-    rot        : float
-                Rotation in degrees.
-    peak       : float
-                intensity peak value.
+    center : (float,float)
+        peak center (y,x).
+    flux : float
+        integrated flux.
+    fwhm : (float,float)
+        fwhm (fhwm_y,fwhm_x).
+    cont : float
+        Continuum value.
+    n : integer
+        Atmospheric scattering coefficient.
+    rot : float
+        Rotation in degrees.
+    peak : float
+        intensity peak value.
     err_center : (float,float)
-                Estimated error on center.
-    err_flux   : float
-                Estimated error on integrated flux.
-    err_fwhm   : (float,float)
-                Estimated error on fwhm.
-    err_cont   : float
-                Estimated error on continuum value.
-    err_n      : float
-                Estimated error on n coefficient.
-    err_rot    : float
-                Estimated error on rotation.
-    err_peak   : float
-                Estimated error on peak value.
-    ima        : (:class:`mpdaf.obj.Image`)
-                Moffat image
+        Estimated error on center.
+    err_flux : float
+        Estimated error on integrated flux.
+    err_fwhm : (float,float)
+        Estimated error on fwhm.
+    err_cont : float
+        Estimated error on continuum value.
+    err_n : float
+        Estimated error on n coefficient.
+    err_rot : float
+        Estimated error on rotation.
+    err_peak : float
+        Estimated error on peak value.
+    ima : (:class:`mpdaf.obj.Image`)
+        Moffat image
     """
 
     def __init__(self, center, flux, fwhm, cont, n, rot, peak, err_center,
@@ -234,14 +235,14 @@ class Moffat2D(object):
         self.ima = ima
 
     def copy(self):
-        """Returns a copy of a Moffat2D object."""
+        """Return a copy of a Moffat2D object."""
         return Moffat2D(self.center, self.flux, self.fwhm, self.cont,
                         self.n, self.rot, self.peak, self.err_center,
                         self.err_flux, self.err_fwhm, self.err_cont,
                         self.err_n, self.err_rot, self.err_peak)
 
     def print_param(self):
-        """Prints Moffat parameters."""
+        """Print Moffat parameters."""
         msg = 'center = (%g,%g) (error:(%g,%g))' \
             % (self.center[0], self.center[1],
                self.err_center[0], self.err_center[1])
@@ -263,49 +264,49 @@ class Moffat2D(object):
 
 class Image(DataArray):
 
-    """Manages image, optionally including a variance and a bad pixel mask.
+    """Manage image, optionally including a variance and a bad pixel mask.
 
     Parameters
     ----------
     filename : string
-            Possible filename (.fits, .png or .bmp).
-    ext      : integer or (integer,integer) or string or (string,string)
-            Number/name of the data extension or numbers/names
-            of the data and variance extensions.
-    wcs      : :class:`mpdaf.obj.WCS`
-            World coordinates.
-    unit     : string
-            Data unit type. u.dimensionless_unscaled by default.
-    data     : float array
-            Array containing the pixel values of the image.
-            None by default.
-    var      : float array
-            Array containing the variance. None by default.
-    copy     : boolean
-               If true (default), then the data and variance arrays are copied.
-    dtype    : numpy.dtype
-               Type of the data (integer, float)
+        Possible filename (.fits, .png or .bmp).
+    ext : integer or (integer,integer) or string or (string,string)
+        Number/name of the data extension or numbers/names
+        of the data and variance extensions.
+    wcs : :class:`mpdaf.obj.WCS`
+        World coordinates.
+    unit : string
+        Data unit type. u.dimensionless_unscaled by default.
+    data : float array
+        Array containing the pixel values of the image.  None by default.
+    var : float array
+        Array containing the variance. None by default.
+    copy : boolean
+        If true (default), then the data and variance arrays are copied.
+    dtype : numpy.dtype
+        Type of the data (integer, float)
 
     Attributes
     ----------
-    filename       : string
-                     Possible FITS filename.
+    filename : string
+        Possible FITS filename.
     primary_header : pyfits.Header
-                     FITS primary header instance.
-    wcs            : :class:`mpdaf.obj.WCS`
-                     World coordinates.
-    shape          : tuple
-                     Lengths of data (python notation (nz,ny,nx)).
-    data           : masked array numpy.ma
-                     Masked array containing the cube pixel values.
-    data_header    : pyfits.Header
-                     FITS data header instance.
-    unit           : astropy.units
-                     Physical units of the data values.
-    dtype          : numpy.dtype
-                     Type of the data (integer, float)
-    var            : float array
-                     Array containing the variance.
+        FITS primary header instance.
+    wcs : :class:`mpdaf.obj.WCS`
+        World coordinates.
+    shape : tuple
+        Lengths of data (python notation (nz,ny,nx)).
+    data : masked array numpy.ma
+        Masked array containing the cube pixel values.
+    data_header : pyfits.Header
+        FITS data header instance.
+    unit : astropy.units
+        Physical units of the data values.
+    dtype : numpy.dtype
+        Type of the data (integer, float)
+    var : float array
+        Array containing the variance.
+
     """
 
     _ndim_required = 2
@@ -330,21 +331,21 @@ class Image(DataArray):
             copy=copy, dtype=dtype, **kwargs)
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
-        """ Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
+        """Return astropy.io.fits.ImageHDU corresponding to the DATA extension.
 
         Parameters
         ----------
-        name     : string
-                   Extension name.
-                   DATA by default
+        name : string
+            Extension name.  DATA by default
         savemask : string
-                   If 'dq', the mask array is saved in DQ extension.
-                   If 'nan', masked data are replaced by nan in DATA extension.
-                   If 'none', masked array is not saved.
+            If 'dq', the mask array is saved in DQ extension.
+            If 'nan', masked data are replaced by nan in DATA extension.
+            If 'none', masked array is not saved.
 
         Returns
         -------
         out : astropy.io.fits.ImageHDU
+
         """
         # world coordinates
         hdr = self.wcs.to_header()
@@ -389,17 +390,17 @@ class Image(DataArray):
         return imahdu
 
     def get_stat_hdu(self, name='STAT', header=None):
-        """ Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
+        """Return astropy.io.fits.ImageHDU corresponding to the STAT extension.
 
         Parameters
         ----------
-        name     : string
-                   Extension name.
-                   STAT by default
+        name : string
+            Extension name.  STAT by default
 
         Returns
         -------
         out : astropy.io.fits.ImageHDU
+
         """
         if self.var is None:
             return None
@@ -444,16 +445,17 @@ class Image(DataArray):
             return imahdu
 
     def write(self, filename, savemask='dq'):
-        """Saves the object in a FITS file.
+        """Save the object in a FITS file.
 
         Parameters
         ----------
         filename : string
-                   The FITS filename.
+            The FITS filename.
         savemask : string
-                   If 'dq', the mask array is saved in DQ extension.
-                   If 'nan', masked data are replaced by nan in DATA extension.
-                   If 'none', masked array is not saved.
+            If 'dq', the mask array is saved in DQ extension.
+            If 'nan', masked data are replaced by nan in DATA extension.
+            If 'none', masked array is not saved.
+
         """
         warnings.simplefilter("ignore")
 
@@ -936,7 +938,7 @@ class Image(DataArray):
             return other.__div__(self)
 
     def get_step(self, unit=None):
-        """Returns the image steps [dy, dx].
+        """Return the image steps [dy, dx].
 
         Parameters
         ----------
@@ -953,7 +955,7 @@ class Image(DataArray):
             return self.wcs.get_step(unit)
 
     def get_range(self, unit=None):
-        """Returns [ [y_min,x_min], [y_max,x_max] ]
+        """Return [ [y_min,x_min], [y_max,x_max] ].
 
         Parameters
         ----------
@@ -970,7 +972,7 @@ class Image(DataArray):
             return self.wcs.get_range(unit)
 
     def get_start(self, unit=None):
-        """Returns [y,x] corresponding to pixel (0,0).
+        """Return [y,x] corresponding to pixel (0,0).
 
         Parameters
         ----------
@@ -987,7 +989,7 @@ class Image(DataArray):
             return self.wcs.get_start(unit)
 
     def get_end(self, unit=None):
-        """Returns [y,x] corresponding to pixel (-1,-1).
+        """Return [y,x] corresponding to pixel (-1,-1).
 
         Parameters
         ----------
@@ -1005,7 +1007,7 @@ class Image(DataArray):
             return self.wcs.get_end(unit)
 
     def get_rot(self, unit=u.deg):
-        """Returns the angle of rotation.
+        """Return the angle of rotation.
 
         Parameters
         ----------
@@ -1023,7 +1025,7 @@ class Image(DataArray):
             return self.wcs.get_rot(unit)
 
     def __setitem__(self, key, other):
-        """Sets the corresponding part of data."""
+        """Set the corresponding part of data."""
         # self.data[key] = other
         if self.data is None:
             raise ValueError('empty data array')
@@ -1044,7 +1046,7 @@ class Image(DataArray):
                 raise IOError('Operation forbidden')
 
     def set_wcs(self, wcs):
-        """Sets the world coordinates.
+        """Set the world coordinates.
 
         Parameters
         ----------
@@ -1062,13 +1064,13 @@ class Image(DataArray):
 
     def mask(self, center, radius, unit_center=u.deg, unit_radius=u.arcsec,
              inside=True):
-        """Masks values inside/outside the described region.
+        """Mask values inside/outside the described region.
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center (y,x) of the explored region.
-        radius      : float or (float,float)
+        radius : float or (float,float)
                       Radius defined the explored region.
                       If radius is float, it defined a circular region.
                       If radius is (float,float), it defined a rectangular region.
@@ -1078,7 +1080,7 @@ class Image(DataArray):
         unit_radius : astropy.units
                       Radius unit.
                       Arcseconds by default (use None for radius in pixels)
-        inside      : boolean
+        inside : boolean
                       If inside is True, pixels inside the described region are masked.
                       If inside is False, pixels outside the described region are masked.
         """
@@ -1130,18 +1132,18 @@ class Image(DataArray):
 
     def mask_ellipse(self, center, radius, posangle, unit_center=u.deg,
                      unit_radius=u.arcsec, inside=True):
-        """Masks values inside/outside the described region. Uses an elliptical
+        """Mask values inside/outside the described region. Uses an elliptical
         shape.
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center (y,x) of the explored region.
-        radius      : (float,float)
+        radius : (float,float)
                       Radius defined the explored region.
                       radius is (float,float), it defines an elliptical region
                       with semi-major and semi-minor axes.
-        posangle    : float
+        posangle : float
                       Position angle of the first axis. It is defined in
                       degrees against the horizontal (q) axis of the image,
                       counted counterclockwise.
@@ -1151,7 +1153,7 @@ class Image(DataArray):
         unit_radius : astropy.units
                       Radius unit.
                       Arcseconds by default (use None for radius in pixels)
-        inside      : boolean
+        inside : boolean
                       If inside is True, pixels inside the described region are masked.
         """
         center = np.array(center)
@@ -1196,14 +1198,14 @@ class Image(DataArray):
                                  / radius[1]) ** 2 > 1)
 
     def mask_polygon(self, poly, unit=u.deg, inside=True):
-        """Masks values inside/outside a polygonal region.
+        """Mask values inside/outside a polygonal region.
 
         Parameters
         ----------
-        poly   : (float, float)
+        poly : (float, float)
                  array of (float,float) containing a set of (p,q) or (dec,ra)
                  values for the polygon vertices
-        pix    : astropy.units
+        pix : astropy.units
                  Type of the polygon coordinates (by default in degrees).
                  Use unit=None to have polygon coordinates in pixels.
         inside : boolean
@@ -1230,7 +1232,7 @@ class Image(DataArray):
         return poly
 
     def _truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg):
-        """Truncates the image.
+        """Truncate the image.
 
         Parameters
         ----------
@@ -1242,10 +1244,10 @@ class Image(DataArray):
                 Minimum value of x.
         x_max : float
                 Maximum value of x.
-        mask  : boolean
+        mask : boolean
                 if True, pixels outside [dec_min,dec_max]
                 and [ra_min,ra_max] are masked.
-        unit  : astropy.units
+        unit : astropy.units
                 Type of the coordinates x and y (degrees by default)
                 If None, inputs are in pixels
         """
@@ -1298,7 +1300,7 @@ class Image(DataArray):
             self.resize()
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg):
-        """Returns truncated image.
+        """Return truncated image.
 
         Parameters
         ----------
@@ -1310,10 +1312,10 @@ class Image(DataArray):
                 Minimum value of x.
         x_max : float
                 Maximum value of x.
-        mask  : boolean
+        mask : boolean
                 if True, pixels outside [dec_min,dec_max]
                 and [ra_min,ra_max] are masked.
-        unit  : astropy.units
+        unit : astropy.units
                 Type of the coordinates x and y (degrees by default)
 
         Returns
@@ -1326,23 +1328,23 @@ class Image(DataArray):
 
     def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec,
                  minsize=2.0):
-        """Extracts a sub-image around a given position.
+        """Extract a sub-image around a given position.
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center (dec, ra) of the aperture.
-        size        : float
+        size : float
                       The size to extract.
                       It corresponds to the size along the delta axis and the
                       image is square.
         unit_center : astropy.units
                       type of the center coordinates.
                       Degrees by default (use None for coordinates in pixels).
-        unit_size   : astropy.units
+        unit_size : astropy.units
                       Size and minsize unit.
                       Arcseconds by default (use None for size in pixels)
-        minsize     : float
+        minsize : float
                       The minimum size of the output image.
 
         Returns
@@ -1386,8 +1388,7 @@ class Image(DataArray):
             return None
 
     def rotate_wcs(self, theta):
-        """Rotates WCS coordinates to new orientation given by theta (in
-        place).
+        """Rotate WCS coordinates to new orientation given by theta (in place).
 
         Parameters
         ----------
@@ -1397,14 +1398,14 @@ class Image(DataArray):
         self.wcs.rotate(theta)
 
     def _rotate(self, theta, interp='no', reshape=False, order=3, pivot=None):
-        """ Rotates the image using spline interpolation
+        """Rotate the image using spline interpolation
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
         Parameters
         ----------
-        theta   : float
+        theta : float
                 Rotation in degrees.
-        interp  : 'no' | 'linear' | 'spline'
+        interp : 'no' | 'linear' | 'spline'
                 if 'no', data median value replaced masked values.
                 if 'linear', linear interpolation of the masked values.
                 if 'spline', spline interpolation of the masked values.
@@ -1477,14 +1478,14 @@ class Image(DataArray):
 
     def rotate(self, theta, interp='no', reshape=False, order=3, pivot=None,
                unit=u.deg):
-        """ Returns rotated image
+        """Return rotated image
         (uses `scipy.ndimage.rotate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.rotate.html>`_)
 
         Parameters
         ----------
-        theta   : float
+        theta : float
                   Rotation in degrees.
-        interp  : 'no' | 'linear' | 'spline'
+        interp : 'no' | 'linear' | 'spline'
                   if 'no', data median value replaced masked values.
                   if 'linear', linear interpolation of the masked values.
                   if 'spline', spline interpolation of the masked values.
@@ -1492,13 +1493,13 @@ class Image(DataArray):
                   if reshape is true, the output image is adapted
                   so that the input image is contained completely in the output.
                   Default is False.
-        order   : int in the range 0-5.
+        order : int in the range 0-5.
                   The order of the spline interpolation that is used by the rotation
                   Default is 3
-        pivot   : (double, double)
+        pivot : (double, double)
                   rotation center
                   if None, rotation will be done around the center of the image.
-        unit    : astropy.units
+        unit : astropy.units
                   type of the pivot coordinates (degrees by default)
         Returns
         -------
@@ -1511,7 +1512,7 @@ class Image(DataArray):
         return res
 
     def sum(self, axis=None):
-        """Returns the sum over the given axis.
+        """Return the sum over the given axis.
 
         Parameters
         ----------
@@ -1550,11 +1551,11 @@ class Image(DataArray):
             return None
 
     def norm(self, typ='flux', value=1.0):
-        """Normalizes in place total flux to value (default 1).
+        """Normalize in place total flux to value (default 1).
 
         Parameters
         ----------
-        type  : 'flux' | 'sum' | 'max'
+        type : 'flux' | 'sum' | 'max'
                 If 'flux',the flux is normalized and
                 the pixel area is taken into account.
 
@@ -1579,7 +1580,7 @@ class Image(DataArray):
             self.var *= (norm * norm)
 
     def background(self, niter=3, sigma=3.0):
-        """Computes the image background with sigma-clipping.
+        """Compute the image background with sigma-clipping.
 
         Returns the background value and its standard deviation.
 
@@ -1608,13 +1609,13 @@ class Image(DataArray):
         return struct
 
     def peak_detection(self, nstruct, niter, threshold=None):
-        """Returns a list of peak locations.
+        """Return a list of peak locations.
 
         Parameters
         ----------
-        nstruct   : integer
+        nstruct : integer
                     Size of the structuring element used for the erosion.
-        niter     : integer
+        niter : integer
                     number of iterations used for the erosion and the dilatation.
         threshold : float
                     threshold value.
@@ -1649,15 +1650,15 @@ class Image(DataArray):
     def peak(self, center=None, radius=0, unit_center=u.deg,
              unit_radius=u.angstrom, dpix=2,
              background=None, plot=False):
-        """Finds image peak location.
+        """Find image peak location.
         Used `scipy.ndimage.measurements.maximum_position <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.maximum_position.html>`_ and `scipy.ndimage.measurements.center_of_mass <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.measurements.center_of_mass.html>`_.
 
         Parameters
         ----------
-        center     : (float,float)
+        center : (float,float)
                     Center (y,x) of the explored region.
                     If center is None, the full image is explored.
-        radius     : float or (float,float)
+        radius : float or (float,float)
                     Radius defined the explored region.
         unit_center : astropy.units
                       type of the center coordinates.
@@ -1665,11 +1666,11 @@ class Image(DataArray):
         unit_radius : astropy.units
                       Radius unit.
                       Arcseconds by default (use None for radius in pixels)
-        dpix       : integer
+        dpix : integer
                     Half size of the window (in pixels) to compute the center of gravity.
         background : float
                     background value. If None, it is computed.
-        plot       : boolean
+        plot : boolean
                     If True, the peak center is overplotted on the image.
 
         Returns
@@ -1729,14 +1730,14 @@ class Image(DataArray):
         return {'x': ra, 'y': dec, 'p': ic, 'q': jc, 'data': maxv}
 
     def fwhm(self, center=None, radius=0, unit_center=u.deg, unit_radius=u.angstrom):
-        """Computes the fwhm.
+        """Compute the fwhm.
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center of the explored region.
                       If center is None, the full image is explored.
-        radius      : float or (float,float)
+        radius : float or (float,float)
                       Radius defined the explored region.
         unit_center : astropy.units
                       type of the center coordinates.
@@ -1773,14 +1774,14 @@ class Image(DataArray):
 
     def ee(self, center=None, radius=0, unit_center=u.deg,
            unit_radius=u.angstrom, frac=False, cont=0):
-        """Computes ensquared/encircled energy.
+        """Compute ensquared/encircled energy.
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center of the explored region.
                       If center is None, the full image is explored.
-        radius      : float or (float,float)
+        radius : float or (float,float)
                       Radius defined the explored region.
                       If radius is float, it defined a circular region (encircled energy).
                       If radius is (float,float), it defined a rectangular region (ensquared energy).
@@ -1790,9 +1791,9 @@ class Image(DataArray):
         unit_radius : astropy.units
                       Radius unit.
                       Arcseconds by default (use None for radius in pixels)
-        frac        : boolean
+        frac : boolean
                       If frac is True, result is given relative to the total energy of the full image.
-        cont        : float
+        cont : float
                       Continuum value.
 
         Returns
@@ -1851,15 +1852,15 @@ class Image(DataArray):
 
     def eer_curve(self, center=None, unit_center=u.deg, unit_radius=u.arcsec,
                   etot=None, cont=0):
-        """Returns Spectrum object containing enclosed energy as function of
-        radius.
+        """Return containing enclosed energy as function of radius.
+
         The enclosed energy ratio (EER) shows how much light is concentrated
         within a certain radius around the image-center.
 
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center of the explored region.
                       If center is None, center of the image is used.
         unit_center : astropy.units
@@ -1867,10 +1868,10 @@ class Image(DataArray):
                       Degrees by default (use None for coordinates in pixels).
         unit_radius : astropy.units
                       Radius units (arcseconds by default)/
-        etot        : float
+        etot : float
                       Total energy used to comute the ratio.
                       If etot is not set, it is computed from the full image.
-        cont        : float
+        cont : float
                       Continuum value.
 
         Returns
@@ -1909,7 +1910,7 @@ class Image(DataArray):
 
     def ee_size(self, center=None, unit_center=u.deg, etot=None, frac=0.9,
                 cont=0, unit_size=u.arcsec):
-        """Computes the size of the square centered on (y,x) containing the
+        """Compute the size of the square centered on (y,x) containing the
         fraction of the energy.
 
         Parameters
@@ -1917,15 +1918,15 @@ class Image(DataArray):
         center : (float,float)
                  Center (y,x) of the explored region.
                  If center is None, center of the image is used.
-        unit   : astropy.units
+        unit : astropy.units
                  Type of the center coordinates.
                  Degrees by default (use None for coordinates in pixels).
-        etot        : float
+        etot : float
                       Total energy used to comute the ratio.
                       If etot is not set, it is computed from the full image.
-        frac   : float in ]0,1]
+        frac : float in ]0,1]
                  Fraction of energy.
-        cont   : float
+        cont : float
                  continuum value
         unit_center : astropy.units
                       Type of the center coordinates.
@@ -1974,7 +1975,7 @@ class Image(DataArray):
             return np.array([d * step[0], d * step[1]])
 
     def _interp(self, grid, spline=False):
-        """returns the interpolated values corresponding to the grid points.
+        """Return the interpolated values corresponding to the grid points.
 
         Parameters
         ----------
@@ -2025,7 +2026,7 @@ class Image(DataArray):
             return res
 
     def _interp_data(self, spline=False):
-        """returns data array with interpolated values for masked pixels.
+        """Return data array with interpolated values for masked pixels.
 
         Parameters
         ----------
@@ -2042,7 +2043,7 @@ class Image(DataArray):
             return data
 
     def moments(self, unit=u.arcsec):
-        """Returns [width_y, width_x] first moments of the 2D gaussian.
+        """Return [width_y, width_x] first moments of the 2D gaussian.
 
         Parameters
         ----------
@@ -2075,59 +2076,59 @@ class Image(DataArray):
                   fwhm=None, circular=False, cont=0, fit_back=True, rot=0,
                   peak=False, factor=1, weight=True, plot=False, unit_center=u.deg,
                   unit_fwhm=u.arcsec, maxiter=100, verbose=True, full_output=0):
-        """Performs Gaussian fit on image.
+        """Perform Gaussian fit on image.
 
         Parameters
         ----------
-        pos_min     : (float,float)
+        pos_min : (float,float)
                       Minimum y and x values.
                       Their unit is given by the unit_center parameter (degrees by default).
-        pos_max     : (float,float)
+        pos_max : (float,float)
                       Maximum y and x values.
                       Their unit is given by the unit_center parameter (degrees by default).
-        center      : (float,float)
+        center : (float,float)
                       Initial gaussian center (y_peak,x_peak)
                       If None it is estimated.
                       The unit is given by the unit_center parameter (degrees by default).
-        flux        : float
+        flux : float
                       Initial integrated gaussian flux
                       or gaussian peak value if peak is True.
                       If None, peak value is estimated.
-        fwhm        : (float,float)
+        fwhm : (float,float)
                       Initial gaussian fwhm (fwhm_y,fwhm_x).
                       If None, they are estimated.
                       The unit is given by the unit_fwhm parameter (arcseconds by default).
-        circular    : boolean
+        circular : boolean
                       True: circular gaussian, False: elliptical gaussian
-        cont        : float
+        cont : float
                       continuum value, 0 by default.
-        fit_back    : boolean
+        fit_back : boolean
                       False: continuum value is fixed,
                       True: continuum value is a fit parameter.
-        rot         : float
+        rot : float
                       Initial rotation in degree.
                       If None, rotation is fixed to 0.
-        peak        : boolean
+        peak : boolean
                       If true, flux contains a gaussian peak value.
-        factor      : integer
+        factor : integer
                       If factor<=1, gaussian value is computed in the center of each pixel.
                       If factor>1, for each pixel,
                       gaussian value is the sum of the gaussian values
                       on the factor*factor pixels divided by the pixel area.
-        weight      : boolean
+        weight : boolean
                       If weight is True, the weight is computed
                       as the inverse of variance.
         unit_center : astropy.units
                       type of the center and position coordinates.
                       Degrees by default (use None for coordinates in pixels).
-        unit_fwhm   : astropy.units
+        unit_fwhm : astropy.units
                       FWHM unit.
                       Arcseconds by default (use None for radius in pixels)
         maxiter : int
                       The maximum number of iterations during the sum of square minimization.
-        plot        : boolean
+        plot : boolean
                       If True, the gaussian is plotted.
-        verbose     : boolean
+        verbose : boolean
                       If True, the Gaussian parameters are printed
                       at the end of the method.
         full_output : integer
@@ -2471,63 +2472,63 @@ class Image(DataArray):
                    rot=0, peak=False, factor=1, weight=True, plot=False,
                    unit_center=u.deg, unit_fwhm=u.arcsec,
                    verbose=True, full_output=0, fit_n=True, maxiter=100):
-        """Performs moffat fit on image.
+        """Perform moffat fit on image.
 
         Parameters
         ----------
 
-        pos_min     : (float,float)
+        pos_min : (float,float)
                       Minimum y and x values.
                       Their unit is given by the unit_center parameter (degrees by default).
-        pos_max     : (float,float)
+        pos_max : (float,float)
                       Maximum y and x values.
                       Their unit is given by the unit_center parameter (degrees by default).
-        center      : (float,float)
+        center : (float,float)
                       Initial moffat center (y_peak,x_peak).
                       If None it is estimated.
                       The unit is given by the unit_center parameter (degrees by default).
-        flux        : float
+        flux : float
                       Initial integrated gaussian flux
                       or gaussian peak value if peak is True.
                       If None, peak value is estimated.
-        fwhm        : (float,float)
+        fwhm : (float,float)
                       Initial gaussian fwhm (fwhm_y,fwhm_x).
                       If None, they are estimated.
                       Their unit is given by the unit_fwhm parameter (arcseconds by default).
-        n           : integer
+        n : integer
                       Initial atmospheric scattering coefficient.
-        circular    : boolean
+        circular : boolean
                       True: circular moffat, False: elliptical moffat
-        cont        : float
+        cont : float
                       continuum value, 0 by default.
-        fit_back    : boolean
+        fit_back : boolean
                       False: continuum value is fixed,
                       True: continuum value is a fit parameter.
-        rot         : float
+        rot : float
                       Initial angle position in degree.
-        peak        : boolean
+        peak : boolean
                       If true, flux contains a gaussian peak value.
-        factor      : integer
+        factor : integer
                       If factor<=1,
                       gaussian is computed in the center of each pixel.
                       If factor>1, for each pixel,
                       gaussian value is the sum of the gaussian values
                       on the factor*factor pixels divided by the pixel area.
-        weight      : boolean
+        weight : boolean
                       If weight is True, the weight is computed
                       as the inverse of variance.
-        plot        : boolean
+        plot : boolean
                       If True, the gaussian is plotted.
         unit_center : astropy.units
                       type of the center and position coordinates.
                       Degrees by default (use None for coordinates in pixels).
-        unit_fwhm   : astropy.units
+        unit_fwhm : astropy.units
                       FWHM unit.
                       Arcseconds by default (use None for radius in pixels)
         full_output : integer
                       non-zero to return a :class:`mpdaf.obj.Moffat2D`
                       object containing the moffat image
-        fit_n       : boolean
+        fit_n : boolean
                       False: n value is fixed,
                       True: n value is a fit parameter.
         maxiter : int
@@ -2945,7 +2946,7 @@ class Image(DataArray):
         return moffat
 
     def _rebin_mean_(self, factor):
-        """Shrinks the size of the image by factor. New size is an integer
+        """Shrink the size of the image by factor. New size is an integer
         multiple of the original size.
 
         Parameters
@@ -2969,7 +2970,7 @@ class Image(DataArray):
         self.wcs = self.wcs.rebin(factor)
 
     def _rebin_mean(self, factor, margin='center'):
-        """Shrinks the size of the image by factor.
+        """Shrink the size of the image by factor.
 
         Parameters
         ----------
@@ -3370,7 +3371,7 @@ class Image(DataArray):
         self.var = var
 
     def rebin_mean(self, factor, margin='center'):
-        """Returns an image that shrinks the size of the current image by
+        """Return an image that shrinks the size of the current image by
         factor.
 
         Parameters
@@ -3397,7 +3398,7 @@ class Image(DataArray):
                                       q * qfactor:(q + 1) * qfactor])
 
     def _rebin_median_(self, factor):
-        """Shrinks the size of the image by factor. New size is an integer
+        """Shrink the size of the image by factor. New size is an integer
         multiple of the original size.
 
         Parameters
@@ -3421,7 +3422,7 @@ class Image(DataArray):
         self.wcs = self.wcs.rebin(factor)
 
     def rebin_median(self, factor, margin='center'):
-        """Shrinks the size of the image by factor. Median values are used.
+        """Shrink the size of the image by factor. Median values are used.
 
         Parameters
         ----------
@@ -3487,31 +3488,31 @@ class Image(DataArray):
 
     def _resample(self, newdim, newstart, newstep, flux=False, order=3,
                   interp='no', unit_start=u.deg, unit_step=u.arcsec):
-        """resamples the image to a new coordinate system.
+        """Resample the image to a new coordinate system.
         Uses `scipy.ndimage.affine_transform <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.affine_transform.html>`_.
 
         Parameters
         ----------
-        newdim   : integer or (integer,integer)
+        newdim : integer or (integer,integer)
                 New dimensions. Python notation: (ny,nx)
         newstart : float or (float, float)
                 New positions (y,x) for the pixel (0,0).
                 If None, old position is used.
-        newstep  : float or (float, float)
+        newstep : float or (float, float)
                 New step (dy,dx).
-        flux     : boolean
+        flux : boolean
                 if flux is True, the flux is conserved.
-        order    : integer
+        order : integer
                 The order of the spline interpolation, default is 3.
                 The order has to be in the range 0-5.
-        interp   : 'no' | 'linear' | 'spline'
+        interp : 'no' | 'linear' | 'spline'
                 if 'no', data median value replaced masked values.
                 if 'linear', linear interpolation of the masked values.
                 if 'spline', spline interpolation of the masked values.
         unit_start : astropy.units
                      type of the newstart coordinates.
                     Degrees by default (use None for coordinates in pixels).
-        unit_step  : astropy.units
+        unit_step : astropy.units
                      step unit.
                       Arcseconds by default (use None for radius in pixels)
         """
@@ -3570,26 +3571,26 @@ class Image(DataArray):
 
         Parameters
         ----------
-        newdim    : integer or (integer,integer)
+        newdim : integer or (integer,integer)
                     New dimensions. Python notation: (ny,nx)
-        newstart  : float or (float, float)
+        newstart : float or (float, float)
                     New positions (y,x) for the pixel (0,0).
                     If None, old position is used.
-        newstep   : float or (float, float)
+        newstep : float or (float, float)
                     New step (dy,dx).
-        flux      : boolean
+        flux : boolean
                     if flux is True, the flux is conserved.
-        order     : integer
+        order : integer
                     The order of the spline interpolation, default is 3.
                     The order has to be in the range 0-5.
-        interp    : 'no' | 'linear' | 'spline'
+        interp : 'no' | 'linear' | 'spline'
                      if 'no', data median value replaced masked values.
                      if 'linear', linear interpolation of the masked values.
                      if 'spline', spline interpolation of the masked values.
         unit_start : astropy.units
                      type of the newstart coordinates.
                     Degrees by default.
-        unit_step  : astropy.units
+        unit_step : astropy.units
                      step unit.
                       Arcseconds by default.
 
@@ -3603,12 +3604,13 @@ class Image(DataArray):
         return res
 
     def _gaussian_filter(self, sigma=3, interp='no'):
-        """Applies Gaussian filter to the image.
+        """Apply Gaussian filter to the image.
+
         Uses `scipy.ndimage.gaussian_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html>`_.
 
         Parameters
         ----------
-        sigma  : float
+        sigma : float
                 Standard deviation for Gaussian kernel
         interp : 'no' | 'linear' | 'spline'
                 if 'no', data median value replaced masked values.
@@ -3628,13 +3630,14 @@ class Image(DataArray):
             self.var = ndimage.gaussian_filter(self.var, sigma)
 
     def gaussian_filter(self, sigma=3, interp='no'):
-        """Returns an image containing Gaussian filter
-        applied to the current image.
+        """Return an image containing Gaussian filter applied to the current
+        image.
+
         Uses `scipy.ndimage.gaussian_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html>`_.
 
         Parameters
         ----------
-        sigma  : float
+        sigma : float
                 Standard deviation for Gaussian kernel
         interp : 'no' | 'linear' | 'spline'
                 if 'no', data median value replaced masked values.
@@ -3650,12 +3653,13 @@ class Image(DataArray):
         return res
 
     def _median_filter(self, size=3, interp='no'):
-        """Applies median filter to the image.
+        """Apply median filter to the image.
+
         Uses `scipy.ndimage.median_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.median_filter.html>`_.
 
         Parameters
         ----------
-        size   : float
+        size : float
                 Shape that is taken from the input array,
                 at every element position, to define the input to
                 the filter function. Default is 3.
@@ -3677,13 +3681,14 @@ class Image(DataArray):
             self.var = ndimage.median_filter(self.var, size)
 
     def median_filter(self, size=3, interp='no'):
-        """Returns an image containing median filter
-        applied to the current image.
+        """Return an image containing median filter applied to the current
+        image.
+
         Uses `scipy.ndimage.median_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.median_filter.html>`_.
 
         Parameters
         ----------
-        size   : float
+        size : float
                 Shape that is taken from the input array,
                 at every element position, to define the input to
                 the filter function. Default is 3.
@@ -3701,12 +3706,13 @@ class Image(DataArray):
         return res
 
     def _maximum_filter(self, size=3, interp='no'):
-        """Applies maximum filter to the image.
+        """Apply maximum filter to the image.
+
         Uses `scipy.ndimage.maximum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.maximum_filter.html>`_.
 
         Parameters
         ----------
-        size   : float
+        size : float
                 Shape that is taken from the input array,
                 at every element position, to define the input to
                 the filter function. Default is 3.
@@ -3726,13 +3732,14 @@ class Image(DataArray):
                                 mask=self.data.mask)
 
     def maximum_filter(self, size=3, interp='no'):
-        """Returns an image containing maximum filter
-        applied to the current image.
+        """Return an image containing maximum filter applied to the current
+        image.
+
         Uses `scipy.ndimage.maximum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.maximum_filter.html>`_.
 
         Parameters
         ----------
-        size   : float
+        size : float
                 Shape that is taken from the input array,
                 at every element position, to define the input to
                 the filter function. Default is 3.
@@ -3750,12 +3757,13 @@ class Image(DataArray):
         return res
 
     def _minimum_filter(self, size=3, interp='no'):
-        """Applies minimum filter to the image.
+        """Apply minimum filter to the image.
+
         Uses `scipy.ndimage.minimum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.minimum_filter.html>`_.
 
         Parameters
         ----------
-        size   : float
+        size : float
                 Shape that is taken from the input array,
                 at every element position, to define the input to
                 the filter function. Default is 3.
@@ -3775,13 +3783,14 @@ class Image(DataArray):
                                 mask=self.data.mask)
 
     def minimum_filter(self, size=3, interp='no'):
-        """Returns an image containing minimum filter
-        applied to the current image.
+        """Return an image containing minimum filter applied to the current
+        image.
+
         Uses `scipy.ndimage.minimum_filter <http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.minimum_filter.html>`_.
 
         Parameters
         ----------
-        size   : float
+        size : float
                 Shape that is taken from the input array,
                 at every element position, to define the input to
                 the filter function. Default is 3.
@@ -3799,7 +3808,7 @@ class Image(DataArray):
         return res
 
     def add(self, other):
-        """Adds the image other to the current image in place. The coordinate
+        """Add the image other to the current image in place. The coordinate
         are taken into account.
 
         Parameters
@@ -3882,7 +3891,7 @@ class Image(DataArray):
 
     def segment(self, shape=(2, 2), minsize=20, minpts=None,
                 background=20, interp='no', median=None):
-        """Segments the image in a number of smaller images.
+        """Segment the image in a number of smaller images.
 
         Returns a list of images.
 
@@ -3890,20 +3899,20 @@ class Image(DataArray):
 
         Parameters
         ----------
-        shape      : (integer,integer)
+        shape : (integer,integer)
                     Shape used for connectivity.
-        minsize    : integer
+        minsize : integer
                     Minimmum size of the images.
-        minpts     : integer
+        minpts : integer
                     Minimmum number of points in the object.
         background : float
                     Under this value,
                     flux is considered as background.
-        interp     : 'no' | 'linear' | 'spline'
+        interp : 'no' | 'linear' | 'spline'
                     if 'no', data median value replaced masked values.
                     if 'linear', linear interpolation of the masked values.
                     if 'spline', spline interpolation of the masked values.
-        median     : (integer,integer) or None
+        median : (integer,integer) or None
                     Size of the median filter
 
         Returns
@@ -3955,11 +3964,11 @@ class Image(DataArray):
         return imalist
 
     def add_gaussian_noise(self, sigma, interp='no'):
-        """Adds Gaussian noise to image in place.
+        """Add Gaussian noise to image in place.
 
         Parameters
         ----------
-        sigma  : float
+        sigma : float
                  Standard deviation.
         interp : 'no' | 'linear' | 'spline'
                  if 'no', data median value replaced masked values.
@@ -3981,7 +3990,7 @@ class Image(DataArray):
             self.var *= (sigma * sigma)
 
     def add_poisson_noise(self, interp='no'):
-        """Adds Poisson noise to image in place.
+        """Add Poisson noise to image in place.
 
         Parameters
         ----------
@@ -4005,13 +4014,13 @@ class Image(DataArray):
             self.var += self.data.data
 
     def inside(self, coord, unit=u.deg):
-        """Returns True if coord is inside image.
+        """Return True if coord is inside image.
 
         Parameters
         ----------
         coord : (float,float)
                 coordinates (y,x).
-        unit  : astropy units
+        unit : astropy units
                 Type of the coordinates (degrees by default)
 
         Returns
@@ -4029,12 +4038,13 @@ class Image(DataArray):
             return False
 
     def _fftconvolve(self, other, interp='no'):
-        """Convolves image with other using fft.
+        """Convolve image with other using fft.
+
         Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_.
 
         Parameters
         ----------
-        other  : 2d-array or Image
+        other : 2d-array or Image
                 Second Image or 2d-array.
         interp : 'no' | 'linear' | 'spline'
                 if 'no', data median value replaced masked values.
@@ -4092,12 +4102,13 @@ class Image(DataArray):
             raise IOError('Operation forbidden')
 
     def fftconvolve(self, other, interp='no'):
-        """Returns the convolution of the image with other using fft.
+        """Return the convolution of the image with other using fft.
+
         Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_.
 
         Parameters
         ----------
-        other  : 2d-array or Image
+        other : 2d-array or Image
                 Second Image or 2d-array.
         interp : 'no' | 'linear' | 'spline'
                 if 'no', data median value replaced masked values.
@@ -4115,25 +4126,25 @@ class Image(DataArray):
     def fftconvolve_gauss(self, center=None, flux=1., fwhm=(1., 1.),
                           peak=False, rot=0., factor=1, unit_center=u.deg,
                           unit_fwhm=u.arcsec):
-        """Returns the convolution of the image with a 2D gaussian.
+        """Return the convolution of the image with a 2D gaussian.
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Gaussian center (y_peak, x_peak).
                       If None the center of the image is used.
                       The unit is given by the unit_center parameter (degrees by default).
-        flux        : float
+        flux : float
                       Integrated gaussian flux or gaussian peak
                       value if peak is True.
-        fwhm        : (float,float)
+        fwhm : (float,float)
                       Gaussian fwhm (fwhm_y,fwhm_x).
                       The unit is given by the unit_fwhm parameter (arcseconds by default).
-        peak        : boolean
+        peak : boolean
                       If true, flux contains a gaussian peak value.
-        rot         : float
+        rot : float
                       Angle position in degree.
-        factor      : integer
+        factor : integer
                       If factor<=1, gaussian value is computed
                       in the center of each pixel.
                       If factor>1, for each pixel, gaussian value
@@ -4142,7 +4153,7 @@ class Image(DataArray):
         unit_center : astropy.units
                       type of the center and position coordinates.
                       Degrees by default (use None for coordinates in pixels).
-        unit_fwhm   : astropy.units
+        unit_fwhm : astropy.units
                       FWHM unit.
                       Arcseconds by default (use None for radius in pixels)
 
@@ -4160,40 +4171,40 @@ class Image(DataArray):
     def fftconvolve_moffat(self, center=None, flux=1., a=1.0, q=1.0,
                            n=2, peak=False, rot=0., factor=1,
                            unit_center=u.deg, unit_a=u.arcsec):
-        """Returns the convolution of the image with a 2D moffat.
+        """Return the convolution of the image with a 2D moffat.
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Gaussian center (y_peak, x_peak).
                       If None the center of the image is used.
                       The unit is given by the unit_center parameter (degrees by default).
-        flux        : float
+        flux : float
                       Integrated gaussian flux or gaussian peak value
                       if peak is True.
-        a           : float
+        a : float
                       Half width at half maximum of the image
                       in the absence of atmospheric scattering.
                       1 by default.
                       The unit is given by the unit_a parameter (arcseconds by default).
-        q           : float
+        q : float
                       Axis ratio, 1 by default.
-        n           : integer
+        n : integer
                       Atmospheric scattering coefficient. 2 by default.
-        rot         : float
+        rot : float
                       Angle position in degree.
-        factor      : integer
+        factor : integer
                       If factor<=1, moffat value is computed
                       in the center of each pixel.
                       If factor>1, for each pixel, moffat value is the sum
                       of the moffat values on the factor*factor pixels
                       divided by the pixel area.
-        peak        : boolean
+        peak : boolean
                       If true, flux contains a gaussian peak value.
         unit_center : astropy.units
                       type of the center and position coordinates.
                       Degrees by default (use None for coordinates in pixels).
-        unit_a      : astropy.units
+        unit_a : astropy.units
                       a unit.
                       Arcseconds by default (use None for radius in pixels)
 
@@ -4213,7 +4224,8 @@ class Image(DataArray):
         return self.fftconvolve(ima)
 
     def correlate2d(self, other, interp='no'):
-        """Returns the cross-correlation of the image with an array/image
+        """Return the cross-correlation of the image with an array/image
+
         Uses `scipy.signal.correlate2d <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate2d.html>`_.
 
         Parameters
@@ -4271,34 +4283,34 @@ class Image(DataArray):
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
              show_ylabel=True, ax=None, unit=u.deg, **kwargs):
-        """Plots the image.
+        """Plot the image.
 
         Parameters
         ----------
-        title    : string
+        title : string
                 Figure title (None by default).
-        scale    : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+        scale : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
                 The stretch function to use for the scaling
                 (default is 'linear').
-        vmin     : float
+        vmin : float
                 Minimum pixel value to use for the scaling.
                 If None, vmin is set to min of data.
-        vmax     : float
+        vmax : float
                 Maximum pixel value to use for the scaling.
                 If None, vmax is set to max of data.
-        zscale   : boolean
+        zscale : boolean
                 If true, vmin and vmax are computed
                 using the IRAF zscale algorithm.
         colorbar : boolean
                 If 'h'/'v', a horizontal/vertical colorbar is added.
-        var      : boolean
+        var : boolean
                 If var is True, the inverse of variance
                 is overplotted.
-        ax       : matplotlib.Axes
+        ax : matplotlib.Axes
                 the Axes instance in which the image is drawn
-        unit     : astropy.units
+        unit : astropy.units
                    type of the world coordinates (degrees by default)
-        kwargs   : matplotlib.artist.Artist
+        kwargs : matplotlib.artist.Artist
                 kwargs can be used to set additional Artist properties.
 
         Returns
@@ -4392,7 +4404,7 @@ class Image(DataArray):
             return 'x=%1.4f, y=%1.4f' % (x, y)
 
     def ipos(self, filename='None'):
-        """Prints cursor position in interactive mode (p and q define the
+        """Print cursor position in interactive mode (p and q define the
         nearest pixel, x and y are the position, data contains the image data
         value (data[p,q]) ).
 
@@ -4477,7 +4489,7 @@ class Image(DataArray):
                 fig.canvas.stop_event_loop_default()
 
     def idist(self):
-        """Gets distance and center from 2 cursor positions (interactive mode).
+        """Get distance and center from 2 cursor positions (interactive mode).
 
         To quit the interactive mode, click on the right mouse button.
         """
@@ -4496,7 +4508,7 @@ class Image(DataArray):
             warnings.filterwarnings(action="default")
 
     def _on_select_dist(self, eclick, erelease):
-        """Prints distance and center between 2 cursor positions."""
+        """Print distance and center between 2 cursor positions."""
         if eclick.button == 1:
             try:
                 j1, i1 = int(eclick.xdata), int(eclick.ydata)
@@ -4519,8 +4531,8 @@ class Image(DataArray):
             fig.canvas.stop_event_loop_default()
 
     def istat(self):
-        """Computes image statistics from windows defined with left mouse
-        button (mean is the mean value, median the median value, std is the rms
+        """Compute image statistics from windows defined with left mouse button
+        (mean is the mean value, median the median value, std is the rms
         standard deviation, sum the sum, peak the peak value, npts is the total
         number of points).
 
@@ -4541,7 +4553,7 @@ class Image(DataArray):
             warnings.filterwarnings(action="default")
 
     def _on_select_stat(self, eclick, erelease):
-        """Prints image statistics from windows defined by 2 cursor
+        """Print image statistics from windows defined by 2 cursor
         positions."""
         if eclick.button == 1:
             try:
@@ -4570,7 +4582,7 @@ class Image(DataArray):
             fig.canvas.stop_event_loop_default()
 
     def ipeak(self):
-        """Finds peak location in windows defined with left mouse button.
+        """Find peak location in windows defined with left mouse button.
 
         To quit the interactive mode, click on the right mouse button.
         """
@@ -4589,7 +4601,7 @@ class Image(DataArray):
             warnings.filterwarnings(action="default")
 
     def _on_select_peak(self, eclick, erelease):
-        """Prints image peak location in windows defined by 2 cursor
+        """Print image peak location in windows defined by 2 cursor
         positions."""
         if eclick.button == 1:
             try:
@@ -4614,7 +4626,7 @@ class Image(DataArray):
             fig.canvas.stop_event_loop_default()
 
     def ifwhm(self):
-        """Computes fwhm in windows defined with left mouse button.
+        """Compute fwhm in windows defined with left mouse button.
 
         To quit the interactive mode, click on the right mouse button.
         """
@@ -4633,7 +4645,7 @@ class Image(DataArray):
             warnings.filterwarnings(action="default")
 
     def _on_select_fwhm(self, eclick, erelease):
-        """Prints image peak location in windows defined'\ 'by 2 cursor
+        """Print image peak location in windows defined'\ 'by 2 cursor
         positions."""
         if eclick.button == 1:
             try:
@@ -4657,7 +4669,7 @@ class Image(DataArray):
             fig.canvas.stop_event_loop_default()
 
     def iee(self):
-        """Computes enclosed energy in windows defined with left mouse button.
+        """Compute enclosed energy in windows defined with left mouse button.
 
         To quit the interactive mode, click on the right mouse button.
         """
@@ -4676,7 +4688,7 @@ class Image(DataArray):
             warnings.filterwarnings(action="default")
 
     def _on_select_ee(self, eclick, erelease):
-        """Prints image peak location in windows defined by 2 cursor
+        """Print image peak location in windows defined by 2 cursor
         positions."""
         if eclick.button == 1:
             try:
@@ -4700,8 +4712,7 @@ class Image(DataArray):
             fig.canvas.stop_event_loop_default()
 
     def imask(self):
-        """Over-plots masked values (interactive mode).
-        """
+        """Over-plots masked values (interactive mode)."""
         try:
             try:
                 self._plot_mask_id.remove()
@@ -4730,7 +4741,7 @@ class Image(DataArray):
             pass
 
     def igauss_fit(self):
-        """Performs Gaussian fit in windows defined with left mouse button.
+        """Perform Gaussian fit in windows defined with left mouse button.
 
         To quit the interactive mode, click on the right mouse button.
         """
@@ -4772,7 +4783,7 @@ class Image(DataArray):
             fig.canvas.stop_event_loop_default()
 
     def imoffat_fit(self):
-        """Performs Moffat fit in windows defined with left mouse button.
+        """Perform Moffat fit in windows defined with left mouse button.
 
         To quit the interactive mode, click on the right mouse button.
         """
@@ -4829,45 +4840,45 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
                 center=None, flux=1., fwhm=(1., 1.), peak=False,
                 rot=0., cont=0, unit_center=u.deg,
                 unit_fwhm=u.arcsec):
-    """Creates a new image from a 2D gaussian.
+    """Create a new image from a 2D gaussian.
 
     Parameters
     ----------
-    shape       : integer or (integer,integer)
+    shape : integer or (integer,integer)
                   Lengths of the image in Y and X
                   with python notation: (ny,nx). (101,101) by default.
                   If wcs object contains dimensions,
                   shape is ignored and wcs dimensions are used.
-    wcs         : :class:`mpdaf.obj.WCS`
+    wcs : :class:`mpdaf.obj.WCS`
                   World coordinates.
-    factor      : integer
+    factor : integer
                   If factor<=1, gaussian value is computed
                   in the center of each pixel.
                   If factor>1, for each pixel, gaussian value is the sum
                   of the gaussian values on the factor*factor pixels divided
                   by the pixel area.
-    gauss       : :class:`mpdaf.obj.Gauss2D`
+    gauss : :class:`mpdaf.obj.Gauss2D`
                   object that contains all Gaussian parameters.
                   If it is present, following parameters are not used.
-    center      : (float,float)
+    center : (float,float)
                   Gaussian center (y_peak, x_peak).
                   If None the center of the image is used.
                   The unit is given by the unit_center parameter (degrees by default).
-    flux        : float
+    flux : float
                   Integrated gaussian flux or gaussian peak value if peak is True.
-    fwhm        : (float,float)
+    fwhm : (float,float)
                   Gaussian fwhm (fwhm_y,fwhm_x).
                   The unit is given by the unit_fwhm parameter (arcseconds by default).
-    peak        : boolean
+    peak : boolean
                   If true, flux contains a gaussian peak value.
-    rot         : float
+    rot : float
                   Angle position in degree.
-    cont        : float
+    cont : float
                   Continuum value. 0 by default.
     unit_center : astropy.units
                   type of the center and position coordinates.
                   Degrees by default (use None for coordinates in pixels).
-    unit_fwhm   : astropy.units
+    unit_fwhm : astropy.units
                   FWHM unit.
                   Arcseconds by default (use None for radius in pixels)
 
@@ -4970,48 +4981,48 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
 def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
                  center=None, flux=1., fwhm=(1., 1.), peak=False, n=2,
                  rot=0., cont=0, unit_center=u.deg, unit_fwhm=u.arcsec):
-    """Creates a new image from a 2D Moffat function.
+    """Create a new image from a 2D Moffat function.
 
     Parameters
     ----------
-    shape       : integer or (integer,integer)
+    shape : integer or (integer,integer)
                   Lengths of the image in Y and X
                   with python notation: (ny,nx). (101,101) by default.
                   If wcs object contains dimensions,
                   shape is ignored and wcs dimensions are used.
-    wcs         : :class:`mpdaf.obj.WCS`
+    wcs : :class:`mpdaf.obj.WCS`
                   World coordinates.
-    factor      : integer
+    factor : integer
                   If factor<=1, moffat value is computed
                   in the center of each pixel.
                   If factor>1, for each pixel, moffat value is the sum
                   of the moffat values on the factor*factor pixels divided
                   by the pixel area.
-    moffat      : :class:`mpdaf.obj.Moffat2D`
+    moffat : :class:`mpdaf.obj.Moffat2D`
                   object that contains all moffat parameters.
                   If it is present, following parameters are not used.
-    center      : (float,float)
+    center : (float,float)
                   Peak center (x_peak, y_peak).
                   The unit is genven byt the parameter unit_center (degrees by default)
                   If None the center of the image is used.
-    flux        : float
+    flux : float
                   Integrated gaussian flux or gaussian peak value
                   if peak is True.
-    fwhm        : (float,float)
+    fwhm : (float,float)
                   Gaussian fwhm (fwhm_y,fwhm_x).
                   The unit is given by the parameter unit_fwhm (arcseconds by default)
-    peak        : boolean
+    peak : boolean
                   If true, flux contains a gaussian peak value.
-    n           : integer
+    n : integer
                   Atmospheric scattering coefficient. 2 by default.
-    rot         : float
+    rot : float
                   Angle position in degree.
-    cont        : float
+    cont : float
                   Continuum value. 0 by default.
     unit_center : astropy.units
                   type of the center and position coordinates.
                   Degrees by default (use None for coordinates in pixels).
-    unit_fwhm   : astropy.units
+    unit_fwhm : astropy.units
                   FWHM unit.
                   Arcseconds by default (use None for radius in pixels)
 
@@ -5089,19 +5100,19 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
 
 def make_image(x, y, z, steps, deg=True, limits=None,
                spline=False, order=3, smooth=0):
-    """Interpolates z(x,y) and returns an image.
+    """Interpolate z(x,y) and returns an image.
 
     Parameters
     ----------
-    x      : float array
+    x : float array
             Coordinate array corresponding to the declinaison.
-    y      : float array
+    y : float array
             Coordinate array corresponding to the right ascension.
-    z      : float array
+    z : float array
             Input data.
-    steps  : (float,float)
+    steps : (float,float)
             Steps of the output image (dy,dRx).
-    deg    : boolean
+    deg : boolean
             If True, world coordinates are in decimal degrees
             (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg').
             If False (by default), world coordinates are linear
@@ -5114,7 +5125,7 @@ def make_image(x, y, z, steps, deg=True, limits=None,
             (it uses `scipy.interpolate.griddata <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html>`).
             True: spline interpolation
             (it uses `scipy.interpolate.bisplrep <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplrep.html>`_ and `scipy.interpolate.bisplev <http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.bisplev.html>`).
-    order  : integer
+    order : integer
             Polynomial order for spline interpolation (default 3)
     smooth : float
             Smoothing parameter for spline interpolation (default 0: no smoothing)
@@ -5159,20 +5170,20 @@ def make_image(x, y, z, steps, deg=True, limits=None,
 
 def composite_image(ImaColList, mode='lin', cuts=(10, 90),
                     bar=False, interp='no'):
-    """Builds composite image from a list of image and colors.
+    """Build composite image from a list of image and colors.
 
     Parameters
     ----------
     ImaColList : list of tuple (Image,float,float)
                 List of images and colors [(Image, hue, saturation)].
-    mode       : 'lin' or 'sqrt'
+    mode : 'lin' or 'sqrt'
                 Intensity mode. Use 'lin' for linear and 'sqrt'
                 for root square.
-    cuts       : (float,float)
+    cuts : (float,float)
                 Minimum and maximum in percent.
-    bar        : boolean
+    bar : boolean
                 If bar is True a color bar image is created.
-    interp     : 'no' | 'linear' | 'spline'
+    interp : 'no' | 'linear' | 'spline'
                 if 'no', data median value replaced masked values.
                 if 'linear', linear interpolation of the masked values.
                 if 'spline', spline interpolation of the masked values.
@@ -5273,18 +5284,18 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
 
 
 def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
-    """Creates a new image from a table of apertures.
+    """Create a new image from a table of apertures.
 
     ra(deg), dec(deg) and radius(arcsec).
 
     Parameters
     ----------
-    shape  : integer or (integer,integer)
+    shape : integer or (integer,integer)
               Lengths of the image in Y and X
               with python notation: (ny,nx). (101,101) by default.
               If wcs object contains dimensions,
               shape is ignored and wcs dimensions are used.
-    wcs     : :class:`mpdaf.obj.WCS`
+    wcs : :class:`mpdaf.obj.WCS`
               World coordinates.
     objects : list of (float, float, float)
               (y, x, size) describes an aperture on the sky,

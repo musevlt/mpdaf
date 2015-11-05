@@ -29,7 +29,7 @@ class iter_spe(object):
         self.index = index
 
     def next(self):
-        """Returns the next spectrum."""
+        """Return the next spectrum."""
         if self.q == 0:
             self.p -= 1
             self.q = self.cube.shape[2]
@@ -42,7 +42,7 @@ class iter_spe(object):
             return (self.cube[:, self.p - 1, self.q], (self.p - 1, self.q))
 
     def __iter__(self):
-        """Returns the iterator itself."""
+        """Return the iterator itself."""
         return self
 
 
@@ -54,7 +54,7 @@ class iter_ima(object):
         self.index = index
 
     def next(self):
-        """Returns the next image."""
+        """Return the next image."""
         if self.k == 0:
             raise StopIteration
         self.k -= 1
@@ -64,7 +64,7 @@ class iter_ima(object):
             return (self.cube[self.k, :, :], self.k)
 
     def __iter__(self):
-        """Returns the iterator itself."""
+        """Return the iterator itself."""
         return self
 
 
@@ -75,54 +75,54 @@ class Cube(DataArray):
     Parameters
     ----------
     filename : string
-                Possible FITS file name. None by default.
-    ext      : integer or (integer,integer) or string or (string,string)
-                Number/name of the data extension
-                or numbers/names of the data and variance extensions.
-    wcs      : :class:`mpdaf.obj.WCS`
-                World coordinates.
-    wave     : :class:`mpdaf.obj.WaveCoord`
-                Wavelength coordinates.
-    unit     : astropy.units
-               Physical units of the data values.
-               u.dimensionless_unscaled by default.
-    data     : float array
-                Array containing the pixel values of the cube. None by
-                default.
-    var      : float array
-                Array containing the variance. None by default.
-    ima      : boolean
-               If true (default), image extension of the FITS file are loaded
-               in the .ima dictionary.
-    copy     : boolean
-               If true (default), then the data and variance arrays are copied.
-    dtype    : numpy.dtype
-               Type of the data (integer, float)
+        Possible FITS file name. None by default.
+    ext : integer or (integer,integer) or string or (string,string)
+        Number/name of the data extension
+        or numbers/names of the data and variance extensions.
+    wcs : :class:`mpdaf.obj.WCS`
+        World coordinates.
+    wave : :class:`mpdaf.obj.WaveCoord`
+        Wavelength coordinates.
+    unit : astropy.units
+        Physical units of the data values.
+        u.dimensionless_unscaled by default.
+    data : float array
+        Array containing the pixel values of the cube. None by default.
+    var : float array
+        Array containing the variance. None by default.
+    ima : boolean
+        If true (default), image extension of the FITS file are loaded
+        in the .ima dictionary.
+    copy : boolean
+        If true (default), then the data and variance arrays are copied.
+    dtype : numpy.dtype
+        Type of the data (integer, float)
 
     Attributes
     ----------
-    filename       : string
-                     Possible FITS filename.
+    filename : string
+        Possible FITS filename.
     primary_header : pyfits.Header
-                     FITS primary header instance.
-    wcs            : :class:`mpdaf.obj.WCS`
-                     World coordinates.
-    wave           : :class:`mpdaf.obj.WaveCoord`
-                     Wavelength coordinates
-    shape          : tuple
-                     Lengths of data (python notation (nz,ny,nx)).
-    data           : masked array numpy.ma
-                     Masked array containing the cube pixel values.
-    data_header    : pyfits.Header
-                     FITS data header instance.
-    unit           : astropy.units
-                     Physical units of the data values.
-    dtype          : numpy.dtype
-                     Type of the data (integer, float)
-    var            : float array
-                     Array containing the variance.
-    ima            : dict{string,:class:`mpdaf.obj.Image`}
-                     dictionary of images
+        FITS primary header instance.
+    wcs : :class:`mpdaf.obj.WCS`
+        World coordinates.
+    wave : :class:`mpdaf.obj.WaveCoord`
+        Wavelength coordinates
+    shape : tuple
+        Lengths of data (python notation (nz,ny,nx)).
+    data : masked array numpy.ma
+        Masked array containing the cube pixel values.
+    data_header : pyfits.Header
+        FITS data header instance.
+    unit : astropy.units
+        Physical units of the data values.
+    dtype : numpy.dtype
+        Type of the data (integer, float)
+    var : float array
+        Array containing the variance.
+    ima : dict{string,:class:`mpdaf.obj.Image`}
+        dictionary of images
+
     """
 
     _ndim_required = 3
@@ -146,34 +146,34 @@ class Cube(DataArray):
             hdulist.close()
 
     def copy(self):
-        """Returns a new copy of a Cube object."""
+        """Return a new copy of a Cube object."""
         obj = super(Cube, self).copy()
         for key, ima in self.ima:
             obj.ima[key] = ima.copy()
         return obj
 
     def info(self):
-        """Prints information."""
+        """Print information."""
         super(Cube, self).info()
         if len(self.ima) > 0:
             self._logger.info('.ima: %s', ', '.join(self.ima.keys()))
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
-        """Returns astropy.io.fits.ImageHDU corresponding to the DATA extension
+        """Return astropy.io.fits.ImageHDU corresponding to the DATA extension.
 
         Parameters
         ----------
-        name     : string
-                   Extension name.
-                   DATA by default
+        name : string
+            Extension name.  DATA by default
         savemask : string
-                   If 'dq', the mask array is saved in DQ extension.
-                   If 'nan', masked data are replaced by nan in DATA extension.
-                   If 'none', masked array is not saved.
+            If 'dq', the mask array is saved in DQ extension.
+            If 'nan', masked data are replaced by nan in DATA extension.
+            If 'none', masked array is not saved.
 
         Returns
         -------
         out : astropy.io.fits.ImageHDU
+
         """
         if self.data.dtype == np.float64:
             self.data = self.data.astype(np.float32)
@@ -220,17 +220,17 @@ class Cube(DataArray):
         return imahdu
 
     def get_stat_hdu(self, name='STAT', header=None):
-        """Returns astropy.io.fits.ImageHDU corresponding to the STAT extension
+        """Return astropy.io.fits.ImageHDU corresponding to the STAT extension.
 
         Parameters
         ----------
-        name     : string
-                   Extension name.
-                   STAT by default
+        name : string
+            Extension name.  STAT by default
 
         Returns
         -------
         out : astropy.io.fits.ImageHDU
+
         """
         if self.var is None:
             return None
@@ -277,16 +277,17 @@ class Cube(DataArray):
         return imahdu
 
     def write(self, filename, savemask='dq'):
-        """Saves the cube in a FITS file.
+        """Save the cube in a FITS file.
 
         Parameters
         ----------
         filename : string
-                The FITS filename.
+            The FITS filename.
         savemask : string
-                If 'dq', the mask array is saved in DQ extension
-                If 'nan', masked data are replaced by nan in DATA extension.
-                If 'none', masked array is not saved.
+            If 'dq', the mask array is saved in DQ extension
+            If 'nan', masked data are replaced by nan in DATA extension.
+            If 'none', masked array is not saved.
+
         """
         # create primary header
         warnings.simplefilter("ignore")
@@ -337,7 +338,7 @@ class Cube(DataArray):
         self.filename = filename
 
     def resize(self):
-        """Resizes the cube to have a minimum number of masked values."""
+        """Resize the cube to have a minimum number of masked values."""
         if self.data is not None:
             ksel = np.where(~self.data.mask)
             item = (slice(ksel[0][0], ksel[0][-1] + 1, None),
@@ -378,32 +379,32 @@ class Cube(DataArray):
 
     def mask(self, center, radius, lmin=None, lmax=None, inside=True,
              unit_center=u.deg, unit_radius=u.arcsec, unit_wave=u.angstrom):
-        """Masks values inside/outside the described region.
+        """Mask values inside/outside the described region.
 
         Parameters
         ----------
         center : (float,float)
-                 Center of the explored region.
+            Center of the explored region.
         radius : float or (float,float)
-                 Radius defined the explored region.
-                 If radius is float, it defined a circular region.
-                 If radius is (float,float), it defined a rectangular region.
-        lmin   : float
-                 minimum wavelength.
-        lmax   : float
-                 maximum wavelength.
+            Radius defined the explored region.
+            If radius is float, it defined a circular region.
+            If radius is (float,float), it defined a rectangular region.
+        lmin : float
+            minimum wavelength.
+        lmax : float
+            maximum wavelength.
         inside : boolean
-                 If inside is True, pixels inside the described region are masked.
-                 If inside is False, pixels outside the described region are masked.
+            If inside is True, pixels inside the described region are masked.
+            If inside is False, pixels outside the described region are masked.
         unit_wave : astropy.units
-                 Type of the wavelengths coordinates (Angstrom by default)
-                 If None, inputs are in pixels
+            Type of the wavelengths coordinates (Angstrom by default)
+            If None, inputs are in pixels
         unit_center : astropy.units
-                 Type of the coordinates of the center (degrees by default)
-                 If None, inputs are in pixels
+            Type of the coordinates of the center (degrees by default)
+            If None, inputs are in pixels
         unit_radius : astropy.units
-                 Radius unit (arcseconds by default)
-                 If None, inputs are in pixels
+            Radius unit (arcseconds by default). If None, inputs are in pixels.
+
         """
         center = np.array(center)
 
@@ -477,7 +478,7 @@ class Cube(DataArray):
     def mask_ellipse(self, center, radius, posangle, lmin=None, lmax=None,
                      pix=False, inside=True, unit_center=u.deg,
                      unit_radius=u.arcsec, unit_wave=u.angstrom):
-        """Masks values inside/outside the described region. Uses an elliptical
+        """Mask values inside/outside the described region. Uses an elliptical
         shape.
 
         Parameters
@@ -492,9 +493,9 @@ class Cube(DataArray):
                  Position angle of the first axis.
                  It is defined in degrees against the horizontal (q) axis
                  of the image, counted counterclockwise.
-        lmin   : float
+        lmin : float
                  minimum wavelength.
-        lmax   : float
+        lmax : float
                  maximum wavelength.
         inside : boolean
                  If inside is True, pixels inside the described region are masked.
@@ -568,7 +569,7 @@ class Cube(DataArray):
                 self.data.mask[lmin:lmax, imin:imax, jmin:jmax], grid3d)
 
     def __add__(self, other):
-        """Adds other.
+        """Add other.
 
         cube1 + number = cube2 (cube2[k,p,q]=cube1[k,p,q]+number)
 
@@ -707,7 +708,7 @@ class Cube(DataArray):
         return self.__add__(other)
 
     def __sub__(self, other):
-        """Subtracts other.
+        """Subtract other.
 
         cube1 - number = cube2 (cube2[k,p,q]=cube1[k,p,q]-number)
 
@@ -856,7 +857,7 @@ class Cube(DataArray):
             return other.__sub__(self)
 
     def __mul__(self, other):
-        """Multiplies by other.
+        """Multiply by other.
 
         cube1 * number = cube2 (cube2[k,p,q]=cube1[k,p,q]*number)
 
@@ -980,7 +981,7 @@ class Cube(DataArray):
         return self.__mul__(other)
 
     def __div__(self, other):
-        """Divides by other.
+        """Divide by other.
 
         cube1 / number = cube2 (cube2[k,p,q]=cube1[k,p,q]/number)
 
@@ -1127,7 +1128,7 @@ class Cube(DataArray):
             return other.__div__(self)
 
 #     def __pow__(self, other):
-#         """Computes the power exponent."""
+#         """Compute the power exponent."""
 #         if self.data is None:
 #             raise ValueError('empty data array')
 #         res = self.copy()
@@ -1139,7 +1140,7 @@ class Cube(DataArray):
 #         return res
 
     def __getitem__(self, item):
-        """Returns the corresponding object:
+        """Return the corresponding object:
         cube[k,p,k] = value
         cube[k,:,:] = spectrum
         cube[:,p,q] = image
@@ -1161,13 +1162,13 @@ class Cube(DataArray):
             return obj
 
     def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
-        """Returns the sub-cube corresponding to a wavelength range.
+        """Return the sub-cube corresponding to a wavelength range.
 
         Parameters
         ----------
-        lbda_min  : float
+        lbda_min : float
                     Minimum wavelength.
-        lbda_max  : float
+        lbda_max : float
                     Maximum wavelength.
         unit_wave : astropy.units
                     wavelengths unit.
@@ -1191,13 +1192,13 @@ class Cube(DataArray):
                 return self[pix_min:pix_max, :, :]
 
     def get_step(self, unit_wave=None, unit_wcs=None):
-        """Returns the cube steps [dlbda,dy,dx].
+        """Return the cube steps [dlbda,dy,dx].
 
         Parameters
         ----------
         unit_wave : astropy.units
                     wavelengths unit.
-        unit_wcs  : astropy.units
+        unit_wcs : astropy.units
                     world coordinates unit.
         """
         step = np.empty(3)
@@ -1205,13 +1206,13 @@ class Cube(DataArray):
         step[1:] = self.wcs.get_step(unit_wcs)
 
     def get_range(self, unit_wave=None, unit_wcs=None):
-        """Returns [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ].
+        """Return [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ].
 
         Parameters
         ----------
         unit_wave : astropy.units
                     wavelengths unit.
-        unit_wcs  : astropy.units
+        unit_wcs : astropy.units
                     world coordinates unit.
         """
         r = np.empty((2, 3))
@@ -1220,13 +1221,13 @@ class Cube(DataArray):
         return r
 
     def get_start(self, unit_wave=None, unit_wcs=None):
-        """Returns [lbda,y,x] corresponding to pixel (0,0,0).
+        """Return [lbda,y,x] corresponding to pixel (0,0,0).
 
         Parameters
         ----------
         unit_wave : astropy.units
                     wavelengths unit.
-        unit_wcs  : astropy.units
+        unit_wcs : astropy.units
                     world coordinates unit.
         """
         start = np.empty(3)
@@ -1235,13 +1236,13 @@ class Cube(DataArray):
         return start
 
     def get_end(self, unit_wave=None, unit_wcs=None):
-        """Returns [lbda,y,x] corresponding to pixel (-1,-1,-1).
+        """Return [lbda,y,x] corresponding to pixel (-1,-1,-1).
 
         Parameters
         ----------
         unit_wave : astropy.units
                     wavelengths unit.
-        unit_wcs  : astropy.units
+        unit_wcs : astropy.units
                     world coordinates unit.
         """
         end = np.empty(3)
@@ -1250,7 +1251,7 @@ class Cube(DataArray):
         return end
 
     def get_rot(self, unit=u.deg):
-        """Returns the rotation angle.
+        """Return the rotation angle.
 
         Parameters
         ----------
@@ -1261,7 +1262,7 @@ class Cube(DataArray):
         return self.wcs.get_rot(unit)
 
     def __setitem__(self, key, other):
-        """Sets the corresponding part of data."""
+        """Set the corresponding part of data."""
         # self.data[key] = value
 
         if self.data is None:
@@ -1292,7 +1293,7 @@ class Cube(DataArray):
                                                  other.unit, self.unit)
 
     def set_wcs(self, wcs=None, wave=None):
-        """Sets the world coordinates (spatial and/or spectral).
+        """Set the world coordinates (spatial and/or spectral).
 
         Parameters
         ----------
@@ -1318,7 +1319,7 @@ class Cube(DataArray):
             self.wave.shape = self.shape[0]
 
     def sum(self, axis=None, weights=None):
-        """Returns the sum over the given axis.
+        """Return the sum over the given axis.
 
         Parameters
         ----------
@@ -1479,7 +1480,7 @@ class Cube(DataArray):
             return None
 
     def mean(self, axis=None):
-        """Returns the mean over the given axis.
+        """Return the mean over the given axis.
 
         Parameters
         ----------
@@ -1527,7 +1528,7 @@ class Cube(DataArray):
             return None
 
     def median(self, axis=None):
-        """Returns the median over the given axis.
+        """Return the median over the given axis.
 
         Parameters
         ----------
@@ -1582,13 +1583,13 @@ class Cube(DataArray):
                 array containing the sub-cube boundaries
                 [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
                 (output of `mpdaf.obj.cube.get_range`)
-        mask  : boolean
+        mask : boolean
                 if True, pixels outside [y_min,y_max]
                 and [x_min,x_max] are masked.
         unit_wave : astropy.units
                     wavelengths unit.
                     If None, inputs are in pixels
-        unit_wcs  : astropy.units
+        unit_wcs : astropy.units
                     world coordinates unit.
                     If None, inputs are in pixels
         """
@@ -1683,7 +1684,7 @@ class Cube(DataArray):
         return res
 
     def _rebin_mean_(self, factor):
-        """Shrinks the size of the cube by factor. New size must be an integer
+        """Shrink the size of the cube by factor. New size must be an integer
         multiple of the original size.
 
         Parameters
@@ -1710,13 +1711,13 @@ class Cube(DataArray):
         self.wave.rebin(factor[0])
 
     def _rebin_mean(self, factor, margin='center', flux=False):
-        """Shrinks the size of the cube by factor.
+        """Shrink the size of the cube by factor.
 
         Parameters
         ----------
         factor : integer or (integer,integer,integer)
                  Factor in z, y and x. Python notation: (nz,ny,nx).
-        flux   : boolean
+        flux : boolean
                  This parameters is used if new size is not an integer
                  multiple of the original size.
 
@@ -2157,13 +2158,13 @@ class Cube(DataArray):
                 return None
 
     def rebin_mean(self, factor, margin='center', flux=False):
-        """Shrinks the size of the cube by factor.
+        """Shrink the size of the cube by factor.
 
         Parameters
         ----------
         factor : integer or (integer,integer,integer)
                  Factor in z, y and x. Python notation: (nz,ny,nx).
-        flux   : boolean
+        flux : boolean
                  This parameters is used if new size is
                  not an integer multiple of the original size.
 
@@ -2198,7 +2199,7 @@ class Cube(DataArray):
                                       q * qfactor:(q + 1) * qfactor])
 
     def _rebin_median_(self, factor):
-        """Shrinks the size of the cube by factor. New size must be an integer
+        """Shrink the size of the cube by factor. New size must be an integer
         multiple of the original size.
 
         Parameter
@@ -2226,7 +2227,7 @@ class Cube(DataArray):
         self.wave.rebin(factor[0])
 
     def rebin_median(self, factor, margin='center'):
-        """Shrinks the size of the cube by factor.
+        """Shrink the size of the cube by factor.
 
         Parameters
         ----------
@@ -2302,15 +2303,15 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        f       : function or :class:`mpdaf.obj.Spectrum` method
+        f : function or :class:`mpdaf.obj.Spectrum` method
                   Spectrum method or function that the first argument
                   is a spectrum object.
-        cpu     : integer
+        cpu : integer
                   number of CPUs. It is also possible to set
                   the mpdaf.CPU global variable.
         verbose : boolean
                   if True, progression is printed.
-        kargs   : kargs
+        kargs : kargs
                   can be used to set function arguments.
 
         Returns
@@ -2412,14 +2413,14 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        f       : function or :class:`mpdaf.obj.Image` method
+        f : function or :class:`mpdaf.obj.Image` method
                   Image method or function that the first argument
                   is a Image object. It should return an Image object.
-        cpu     : integer
+        cpu : integer
                   number of CPUs. It is also possible to set
         verbose : boolean
                   if True, progression is printed.
-        kargs   : kargs
+        kargs : kargs
                   can be used to set function arguments.
 
         Returns
@@ -2530,12 +2531,12 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        wave         : (float, float)
+        wave : (float, float)
                        (lbda1,lbda2) interval of wavelength in angstrom.
-        unit_wave    : astropy.units
+        unit_wave : astropy.units
                        wavelengths unit (angstrom by default).
                        If None, inputs are in pixels
-        is_sum       : boolean
+        is_sum : boolean
                        if True the sum is computes, otherwise this is the
                        average.
         subtract_off : boolean
@@ -2548,10 +2549,10 @@ class Cube(DataArray):
                        or if is_sum is True:
                        sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                       flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
-        margin       : float
+        margin : float
                        This off-band is offseted by margin wrt narrow-band
                        limit.
-        fband        : float
+        fband : float
                        The size of the off-band is fband*narrow-band width.
 
         Returns
@@ -2608,18 +2609,18 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center (dec, ra) of the aperture.
-        size        : float
+        size : float
                       The size to extract. It corresponds to the size along
                       the delta axis and the image is square.
-        lbda        : (float, float) or None
+        lbda : (float, float) or None
                       If not None, tuple giving the wavelength range.
         unit_center : astropy.units
                       Type of the center coordinates (degrees by default)
-        unit_size   : astropy.units
+        unit_size : astropy.units
                       unit of the size value (arcseconds by default)
-        unit_wave   : astropy.units
+        unit_wave : astropy.units
                       Wavelengths unit (angstrom by default)
                       If None, inputs are in pixels
 
@@ -2699,9 +2700,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center (dec,ra) of the aperture.
-        radius      : float
+        radius : float
                       Radius of the aperture. It corresponds to the radius
                       along the delta axis and the image is square.
         unit_center : astropy.units
@@ -2775,9 +2776,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        center      : (float,float)
+        center : (float,float)
                       Center (dec,ra) of the aperture.
-        radius      : float
+        radius : float
                       Radius of the aperture in arcsec.
                       If None, spectrum at nearest pixel is returned
         unit_center : astropy.units
@@ -2915,7 +2916,7 @@ def _process_ima(arglist):
 #     """
 #
 #     def __init__(self, filename=None, ext=None, notnoise=False, ima=True):
-#         """Creates a CubeDisk object.
+#         """Create a CubeDisk object.
 #
 #         Parameters
 #         ----------
@@ -3023,7 +3024,7 @@ def _process_ima(arglist):
 #             f.close()
 #
 #     def __getitem__(self, item):
-#         """Returns the corresponding object:
+#         """Return the corresponding object:
 #
 #         cube[k,p,k] = value
 #

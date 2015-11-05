@@ -25,7 +25,7 @@ __version__ = 1.0
 
 class FOCUS(object):
 
-    """This class contains sources detection methods on cube object
+    """This class contains sources detection methods on cube object.
 
     Parameters
     ----------

@@ -17,7 +17,6 @@ class Catalog(Table):
     """This class contains a catalog of objects.
 
     Inherits from :class:`astropy.table.Table`.
-
     """
 
     def __init__(self, *args, **kwargs):
@@ -298,7 +297,8 @@ class Catalog(Table):
 
     @classmethod
     def from_path(cls, path, fmt='default'):
-        """Create a Catalog object from the path of a directory containing source files
+        """Create a Catalog object from the path of a directory containing
+        source files.
 
         Parameters
         ----------
@@ -408,7 +408,7 @@ class Catalog(Table):
 
     def plot_symb(self, ax, wcs, ra='RA', dec='DEC',
                   symb=0.4, col='k', alpha=1.0, **kwargs):
-        """This function plots the sources location from the catalog
+        """This function plots the sources location from the catalog.
 
         Parameters
         ----------
@@ -434,7 +434,6 @@ class Catalog(Table):
                 Symbol transparency
         kwargs : matplotlib.artist.Artist
                  kwargs can be used to set additional plotting properties.
-
         """
         if type(symb) in [list, tuple] and len(symb) == 3:
             stype = 'ellipse'
@@ -476,7 +475,7 @@ class Catalog(Table):
 
     def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC',
                 symb=0.2, alpha=0.5, col='k', **kwargs):
-        """ This function displays the id of the catalog
+        """This function displays the id of the catalog.
 
         Parameters
         ----------
@@ -498,7 +497,6 @@ class Catalog(Table):
                 Symbol transparency
         kwargs : matplotlib.artist.Artist
                  kwargs can be used to set additional plotting properties.
-
         """
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)

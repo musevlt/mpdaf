@@ -53,7 +53,6 @@ class LSF(object):
         :type size: odd integer
         :param kargs: kargs can be used to set LSF parameters.
         :rtype: np.array
-
         """
         if self.type == "qsim_v1":
             T = lambda x: np.exp((-x ** 2) / 2.0) + np.sqrt(2.0 * np.pi) \
@@ -88,7 +87,6 @@ class LSF(object):
             (min(LSF)<max(LSF)*epsilon)
         :type epsilon: float
         :rtype: integer
-
         """
         x0 = lbda
         # x = np.array([x0])

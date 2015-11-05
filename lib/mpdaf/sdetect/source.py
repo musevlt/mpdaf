@@ -42,13 +42,13 @@ emlines = {1215.67: 'LYALPHA1216',
 
 
 def vacuum2air(vac):
-    """in angstroms"""
+    """in angstroms."""
     vac = np.array(vac)
     return vac / (1.0 + 2.735182e-4 + 131.4182 / (vac**2) + 2.76249e8 / (vac**4))
 
 
 def air2vacuum(air):
-    """in angstroms"""
+    """in angstroms."""
     air = np.array(air)
     vactest = air + (air - vacuum2air(air))
     x = np.abs(air - vacuum2air(vactest))
@@ -97,7 +97,7 @@ def matchlines(nlines, wl, z, eml):
 
 
 def crackz(nlines, wl, flux, eml, zguess=None):
-    """Method to estimate the best redshift matching a list of emission lines
+    """Method to estimate the best redshift matching a list of emission lines.
 
     Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
 
@@ -213,8 +213,7 @@ class Source(object):
 
     def __init__(self, header, lines=None, mag=None, z=None,
                  spectra=None, images=None, cubes=None, tables=None):
-        """Classic constructor.
-        """
+        """Classic constructor."""
         # FITS header
         if not ('RA' in header and 'DEC' in header
                 and 'ID' in header and 'CUBE' in header
@@ -257,8 +256,7 @@ class Source(object):
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
                   lines=None, mag=None, z=None,
                   spectra=None, images=None, cubes=None, tables=None):
-        """
-        Source constructor from a list of data.
+        """Source constructor from a list of data.
 
         Parameters
         ----------
@@ -475,7 +473,7 @@ class Source(object):
         return cls(hdr, lines, mag, z, None, None, None, tables)
 
     def write(self, filename):
-        """Write the source object in a FITS file
+        """Write the source object in a FITS file.
 
         Parameters
         ----------
@@ -561,8 +559,7 @@ class Source(object):
         warnings.simplefilter("default")
 
     def info(self):
-        """Print information.
-        """
+        """Print information."""
         for card in self.header.cards:
             if card[0] not in ('SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                                'AUTHOR'):
@@ -628,16 +625,14 @@ class Source(object):
                 self._logger.info(l)
 
     def __getattr__(self, item):
-        """Map values to attributes.
-        """
+        """Map values to attributes."""
         try:
             return self.header[item]
         except KeyError:
             raise AttributeError(item)
 
     def __setattr__(self, item, value):
-        """Map attributes to values.
-        """
+        """Map attributes to values."""
         if item in ('header', 'lines', 'mag', 'z', 'cubes', 'images',
                     'spectra', 'tables', '_logger'):
             # return dict.__setattr__(self, item, value)
@@ -646,23 +641,21 @@ class Source(object):
             self.header[item] = value
 
     def add_comment(self, comment, author):
-        """Add a user comment to the FITS header of the Source object.
-        """
+        """Add a user comment to the FITS header of the Source object."""
         i = 1
         while 'COM%03d' % i in self.header:
             i += 1
         self.header['COM%03d' % i] = (comment, '%s %s' % (author, str(datetime.date.today())))
 
     def remove_comment(self, ncomment):
-        """Remove a comment from the FITS header of the Source object.
-        """
+        """Remove a comment from the FITS header of the Source object."""
         del self.header['COM%03d' % ncomment]
 
     def add_attr(self, key, value, desc=None):
-        """Add a new attribute for the current Source object.
-        This attribute will be saved as a keyword in the primary FITS header.
-        This method could also be used to update a simple Source attribute
-        that is saved in the pyfits header.
+        """Add a new attribute for the current Source object. This attribute
+        will be saved as a keyword in the primary FITS header. This method
+        could also be used to update a simple Source attribute that is saved in
+        the pyfits header.
 
         Equivalent to self.key = (value, comment)
 
@@ -681,8 +674,8 @@ class Source(object):
             self.header[key] = (value, desc)
 
     def remove_attr(self, key):
-        """Remove an Source attribute from the FITS header of the Source object
-        """
+        """Remove an Source attribute from the FITS header of the Source
+        object."""
         del self.header[key]
 
     def add_z(self, desc, z, errz=0):
@@ -763,7 +756,7 @@ class Source(object):
                 self.mag.add_row([band, m, errm])
 
     def add_line(self, cols, values, units=None, match=None):
-        """Add a line to the lines table
+        """Add a line to the lines table.
 
         Parameters
         ----------
@@ -834,8 +827,8 @@ class Source(object):
                 self.lines.add_row(row, mask=mask)
 
     def add_image(self, image, name, size=None, minsize=2.0, unit_size=u.arcsec, rotate=False):
-        """ Extract an small image centered on the source center from the input image
-        and append it to the images dictionary
+        """Extract an small image centered on the source center from the input
+        image and append it to the images dictionary.
 
         Extracted image saved in self.images['name'].
 
@@ -900,8 +893,8 @@ class Source(object):
         self.images[name] = subima
 
     def add_cube(self, cube, name, size=None, lbda=None, unit_size=u.arcsec, unit_wave=u.angstrom):
-        """Extract a cube centered on the source center
-        and append it to the cubes dictionary
+        """Extract a cube centered on the source center and append it to the
+        cubes dictionary.
 
         Extracted cube saved in self.cubes['name'].
 
@@ -941,8 +934,8 @@ class Source(object):
         self.cubes[name] = subcub
 
     def add_white_image(self, cube, size=5, unit_size=u.arcsec):
-        """ Compute the white images from the MUSE data cube
-        and appends it to the images dictionary.
+        """Compute the white images from the MUSE data cube and appends it to
+        the images dictionary.
 
         White image saved in self.images['MUSE_WHITE'].
 
@@ -964,7 +957,8 @@ class Source(object):
 
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, unit_size=u.arcsec,
                                width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
-        """Create narrow band images from a redshift value and a catalog of lines.
+        """Create narrow band images from a redshift value and a catalog of
+        lines.
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
 
@@ -1147,9 +1141,9 @@ class Source(object):
             self._logger.warning('add_seg_images method use the MUSE_WHITE image computed by add_white_image method')
 
     def add_masks(self, tags=None):
-        """Use the list of segmentation maps to compute the union mask
-        and the intersection mask and  the region where no object is detected
-        in any segmentation map is saved in the sky mask.
+        """Use the list of segmentation maps to compute the union mask and the
+        intersection mask and  the region where no object is detected in any
+        segmentation map is saved in the sky mask.
 
         Union is saved as an image of booleans in self.images['MASK_UNION']
 
@@ -1182,7 +1176,7 @@ class Source(object):
         mask_creation(self, maps)
 
     def add_table(self, tab, name):
-        """Append an astropy table to the tables dictionary
+        """Append an astropy table to the tables dictionary.
 
         Parameters
         ----------
@@ -1358,7 +1352,7 @@ class Source(object):
                 # Insert the PSF weighted flux - here re-normalised?
 
     def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS', 'FLUX'), z_desc='EMI', zguess=None):
-        """Estimate the best redshift matching the list of emission lines
+        """Estimate the best redshift matching the list of emission lines.
 
         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr).
 
@@ -1465,8 +1459,7 @@ class Source(object):
 
     def show_ima(self, ax, name, showcenter=None,
                  cuts=None, cmap=cm.gray_r, **kwargs):
-        """
-        Show image.
+        """Show image.
 
         Parameters
         ----------
@@ -1572,7 +1565,8 @@ class SourceList(list):
     """
 
     def write(self, name, path='.', overwrite=True, fmt='default'):
-        """ Create the directory and saves all sources files and the catalog file in this folder.
+        """Create the directory and saves all sources files and the catalog
+        file in this folder.
 
         path/name.fits: catalog file
         (In FITS table, the maximum number of fields is 999.
@@ -1619,7 +1613,8 @@ class SourceList(list):
 
     @classmethod
     def from_path(cls, path):
-        """Read a SourceList object from the path of a directory containing source files
+        """Read a SourceList object from the path of a directory containing
+        source files.
 
         Parameters
         ----------

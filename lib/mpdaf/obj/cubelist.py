@@ -44,13 +44,12 @@ class CubeList(object):
         Wavelength coordinates
     unit   : string
         Possible data unit type. None by default.
-
     """
 
     checkers = ('check_dim', 'check_wcs')
 
     def __init__(self, files):
-        """Creates a CubeList object.
+        """Create a CubeList object.
 
         Parameters
         ----------
@@ -81,7 +80,7 @@ class CubeList(object):
         return np.array([cube[item] for cube in self.cubes])
 
     def info(self, verbose=False):
-        """Prints information."""
+        """Print information."""
         rows = [(os.path.basename(c.filename),
                  'x'.join(str(s) for s in c.shape),
                  str(c.wcs.wcs.wcs.crpix), str(c.wcs.wcs.wcs.crval))
@@ -195,7 +194,6 @@ class CubeList(object):
                 the number of exposures used for the combination of each pixel.
               - ``statpix`` is a table that will give the number of Nan pixels
                 pixels per exposures (columns are FILENAME and NPIX_NAN)
-
         """
         # load the library, using numpy mechanisms
         path = os.path.dirname(__file__)[:-4]
@@ -268,7 +266,6 @@ class CubeList(object):
               - ``statpix`` is a table that will give the number of Nan pixels
                 and rejected pixels per exposures (columns are FILENAME,
                 NPIX_NAN and NPIX_REJECTED)
-
         """
         if is_int(nclip) or is_float(nclip):
             nclip_low = nclip
@@ -491,13 +488,12 @@ class CubeMosaic(CubeList):
         Wavelength coordinates
     unit   : string
         Possible data unit type. None by default.
-
     """
 
     checkers = ('check_dim', 'check_wcs')
 
     def __init__(self, files, output_wcs):
-        """Creates a CubeMosaic object.
+        """Create a CubeMosaic object.
 
         Parameters
         ----------
@@ -507,7 +503,6 @@ class CubeMosaic(CubeList):
             Path to a cube FITS file, this cube is used to define the output
             cube: shape, WCS and unit are needed, it must have the same WCS
             grid as the input cubes.
-
         """
         self.out = Cube(output_wcs)
         super(CubeMosaic, self).__init__(files)

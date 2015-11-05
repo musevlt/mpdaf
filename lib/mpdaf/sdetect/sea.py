@@ -1,5 +1,5 @@
-"""sea.py contains SpectExtractAnd[nothing],
-the first part of SpecExtractAndWeb software developed by Jarle
+"""sea.py contains SpectExtractAnd[nothing], the first part of
+SpecExtractAndWeb software developed by Jarle.
 
 This software has been developed by Jarle Brinchmann (University of Leiden)
 and ported to python by Laure Piqueras (CRAL).
@@ -46,9 +46,10 @@ def remove_config_files(DIR=None):
 
 
 def findCentralDetection(images, iyc, ixc, tolerance=1):
-    """
-    Determine which image has a detection close to the centre. We start with the centre for
-    all. If all have a value zero there we continue.
+    """Determine which image has a detection close to the centre.
+
+    We start with the centre for all. If all have a value zero there we
+    continue.
     """
     logger = logging.getLogger(__name__)
     min_distances = {}
@@ -140,9 +141,7 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
 
 
 def union(seg):
-    """
-    Given a list of segmentation maps, create a segmentation map
-    """
+    """Given a list of segmentation maps, create a segmentation map."""
     first = True
     for im in seg.values():
         if first:
@@ -157,9 +156,7 @@ def union(seg):
 
 
 def intersection(seg):
-    """
-    Given a list of segmentation maps, create a segmentation map
-    """
+    """Given a list of segmentation maps, create a segmentation map."""
     first = True
     for im in seg.values():
         if (np.max(im) > 0):
@@ -173,10 +170,8 @@ def intersection(seg):
 
 
 def findSkyMask(images):
-    """
-Loop over all segmentation images and use the region where no object is
-detected in any segmentation map as our sky image.
-    """
+    """Loop over all segmentation images and use the region where no object is
+    detected in any segmentation map as our sky image."""
 
     first = True
     for im in images.values():

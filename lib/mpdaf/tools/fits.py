@@ -2,8 +2,8 @@ from astropy.io import fits
 
 
 def add_mpdaf_method_keywords(header, method, params, values, comments):
-    """Adds keywords in a FITS header to describe the method
-    and the corresponding parameters.
+    """Add keywords in a FITS header to describe the method and the
+    corresponding parameters.
 
     Parameters
     ----------
@@ -40,8 +40,8 @@ def add_mpdaf_method_keywords(header, method, params, values, comments):
 
 
 def add_mpdaf_keywords_to_file(path, method, params, values, comments, ext=0):
-    """Adds keywords in a FITS file header to describe the method
-    and the corresponding parameters.
+    """Add keywords in a FITS file header to describe the method and the
+    corresponding parameters.
 
     Parameters
     ----------
@@ -74,7 +74,6 @@ def copy_keywords(srchdr, dsthdr, keys):
              Destination header
     keys   : list
              List of keys
-
     """
     for key in keys:
         if key in srchdr:

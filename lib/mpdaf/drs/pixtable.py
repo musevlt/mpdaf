@@ -167,7 +167,6 @@ class PixTableAutoCalib(object):
                number of remaining pixels.
     corr     : array of float
                correction value.
-
     """
 
     def __init__(self, filename=None, method=None, maskfile=None, skyref=None,
@@ -226,8 +225,7 @@ class PixTableAutoCalib(object):
             self.corr = hdulist['corr'].data[:, 0]
 
     def write(self, filename):
-        """Save the object in a FITS file.
-        """
+        """Save the object in a FITS file."""
         prihdu = pyfits.PrimaryHDU()
         warnings.simplefilter("ignore")
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
@@ -950,7 +948,7 @@ class PixTable(object):
         return exp
 
     def select_lambda(self, lbda, unit=u.angstrom):
-        """Return a mask corresponding to the given wavelength range
+        """Return a mask corresponding to the given wavelength range.
 
         Parameters
         ----------
@@ -1131,7 +1129,8 @@ class PixTable(object):
         return mask
 
     def select_sky(self, sky):
-        """Return a mask corresponding to the given aperture on the sky (center, size and shape)
+        """Return a mask corresponding to the given aperture on the sky
+        (center, size and shape)
 
         Parameters
         ----------
@@ -1220,7 +1219,6 @@ class PixTable(object):
         Returns
         -------
         out : PixTable
-
         """
         ksel = np.where(mask)
         nrows = len(ksel[0])
@@ -1548,7 +1546,7 @@ class PixTable(object):
         return xpos_sky, ypos_sky
 
     def get_pos_sky(self, xpos=None, ypos=None):
-        """Returns the absolute position on the sky in degrees/pixel.
+        """Return the absolute position on the sky in degrees/pixel.
 
         Parameters
         ----------
@@ -1571,7 +1569,7 @@ class PixTable(object):
             return self._get_pos_sky(xpos, ypos)
 
     def get_slices(self, verbose=True):
-        """Returns slices dictionary.
+        """Return slices dictionary.
 
         Parameters
         ----------
@@ -1612,7 +1610,7 @@ class PixTable(object):
         return slices
 
     def get_keywords(self, key):
-        """Returns the keyword value corresponding to key.
+        """Return the keyword value corresponding to key.
 
         Parameters
         ----------
@@ -1801,7 +1799,7 @@ class PixTable(object):
         return Image(data=image, wcs=wcs, unit=self.wave, copy=False)
 
     def mask_column(self, maskfile=None, verbose=True):
-        """Computes the mask column corresponding to a mask file.
+        """Compute the mask column corresponding to a mask file.
 
         Parameters
         ----------
@@ -1859,7 +1857,7 @@ class PixTable(object):
                             pixtable=self.filename)
 
     def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
-        """Computes the reference sky spectrum using sigma clipped median.
+        """Compute the reference sky spectrum using sigma clipped median.
 
         Algorithm from Kurt Soto (kurt.soto@phys.ethz.ch)
 
@@ -1953,9 +1951,9 @@ class PixTable(object):
         return spe
 
     def subtract_slice_median(self, skyref, pixmask):
-        """Computes the median value for all pairs (slice, quadrant)
-        and subtracts this factor to each pixel
-        to bring all slices to the same median value.
+        """Compute the median value for all pairs (slice, quadrant) and
+        subtracts this factor to each pixel to bring all slices to the same
+        median value.
 
         pix(x,y,lbda) += < skyref(lbda) - pix(x,y,lbda) >_slice
 
@@ -2066,7 +2064,7 @@ class PixTable(object):
         return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
-        """Computes the median value for all pairs (slices,
+        """Compute the median value for all pairs (slices,
         quadrant) and divides each pixel
         by the corresponding factor to bring all slices
         to the same median value.

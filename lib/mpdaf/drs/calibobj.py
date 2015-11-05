@@ -56,18 +56,18 @@ class CalibFile(object):
     def __init__(self, filename=None):
         """creates a CalibFile object.
 
-Parameters
-----------
-filename : string
-           The FITS file name.
-           None by default (in this case, an empty object is created).
+        Parameters
+        ----------
+        filename : string
+                   The FITS file name.
+                   None by default (in this case, an empty object is created).
 
-           The FITS file is opened with memory mapping.
+                   The FITS file is opened with memory mapping.
 
-           Just the primary header and array dimensions are loaded.
+                   Just the primary header and array dimensions are loaded.
 
-           Methods get_data, get_dq and get_stat must be used
-           to get array extensions.
+                   Methods get_data, get_dq and get_stat must be used
+                   to get array extensions.
         """
         self._logger = logging.getLogger(__name__)
         self.filename = filename
@@ -122,7 +122,7 @@ filename : string
             pass
 
     def copy(self):
-        """Returns a new copy of a CalibFile object."""
+        """Return a new copy of a CalibFile object."""
         result = CalibFile()
         result.filename = self.filename
         result.primary_header = pyfits.Header(self.primary_header)
@@ -152,7 +152,7 @@ filename : string
         return result
 
     def info(self):
-        """Prints information."""
+        """Print information."""
         if self.filename is not None:
             hdulist = pyfits.open(self.filename, memmap=1)
             self._logger.info(hdulist.info())
@@ -214,23 +214,23 @@ filename : string
             return data
 
     def get_image(self):
-        """Returns an Image object.
+        """Return an Image object.
 
-Returns
--------
-out : :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
         """
         wcs = obj.WCS(self.data_header)
         ima = obj.Image(wcs=wcs, data=self.get_data())
         return ima
 
     def write(self, filename):
-        """Saves the object in a FITS file.
+        """Save the object in a FITS file.
 
-Parameters
-----------
-filename : string
-           The FITS filename.
+        Parameters
+        ----------
+        filename : string
+                   The FITS filename.
         """
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -269,7 +269,7 @@ filename : string
         self.stat = None
 
     def __add__(self, other):
-        """Adds either a number or a CalibFile object."""
+        """Add either a number or a CalibFile object."""
         result = CalibFile()
         result.primary_header = pyfits.Header(self.primary_header)
         result.data_header = pyfits.Header(self.data_header)
@@ -524,16 +524,16 @@ class CalibDir(object):
     """
 
     def __init__(self, typ, dirname=None):
-        """Creates a CalibDir object.
+        """Create a CalibDir object.
 
-Parameters
-----------
-typ     : string
-          Type of calibration files that appears in filenames
-          (<type>_<ifu id>.fits)
-dirname : string
-          The repository name.
-          This repository must contain files labeled <type>_<ifu id>.fits
+        Parameters
+        ----------
+        typ     : string
+                  Type of calibration files that appears in filenames
+                  (<type>_<ifu id>.fits)
+        dirname : string
+                  The repository name.
+                  This repository must contain files labeled <type>_<ifu id>.fits
         """
         self._logger = logging.getLogger(__name__)
         self.dirname = dirname
@@ -549,7 +549,7 @@ dirname : string
                     self.files[ifu] = fileobj
 
     def copy(self):
-        """Returns a new copy of a CalibDir object."""
+        """Return a new copy of a CalibDir object."""
         result = CalibDir(self.type, self.dirname)
         if self.dirname is None:
             for ifu, fileobj in self.files.items():
@@ -557,7 +557,7 @@ dirname : string
         return result
 
     def info(self):
-        """Prints information."""
+        """Print information."""
         msg = '%i %s files' % (len(self.files), self.type)
         self._logger.info(msg)
 
@@ -578,11 +578,11 @@ dirname : string
             return True
 
     def __add__(self, other):
-        """Adds either a number or a CalibFile object."""
+        """Add either a number or a CalibFile object."""
         return self._mp_operator(other, _add_calib_files, _add_calib)
 
     def __sub__(self, other):
-        """Adds either a number or a CalibFile object."""
+        """Add either a number or a CalibFile object."""
         return self._mp_operator(other, _sub_calib_files, _sub_calib)
 
     def __mul__(self, other):
@@ -706,16 +706,16 @@ dirname : string
         self.dirname = dirname
 
     def __len__(self):
-        """Returns the number of files."""
+        """Return the number of files."""
         return len(self.files)
 
     def __getitem__(self, key):
-        """Returns the CalibFile object.
+        """Return the CalibFile object.
 
-Parameters
-----------
-key : integer
-      Ifu id.
+        Parameters
+        ----------
+        key : integer
+              Ifu id.
         """
         if key in self.files:
             return self.files[key]
@@ -723,14 +723,14 @@ key : integer
             raise IOError('invalid key')
 
     def __setitem__(self, key, value):
-        """Sets the corresponding CalibFile with value.
+        """Set the corresponding CalibFile with value.
 
-Parameters
-----------
-key   : integer
-        Ifu id.
-value : CalibFile
-        CalibFile object.
+        Parameters
+        ----------
+        key   : integer
+                Ifu id.
+        value : CalibFile
+                CalibFile object.
         """
         if isinstance(value, CalibFile):
             self.files[key] = value
