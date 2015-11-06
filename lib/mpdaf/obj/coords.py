@@ -1181,7 +1181,8 @@ class WaveCoord(object):
     def get_crval(self, unit=None):
         """CRVAL getter (value of the reference pixel on the wavelength axis).
 
-        Parameters:
+        Parameters
+        ----------
         x : float
             value of the reference pixel on the wavelength axis
         unit : astropy.units

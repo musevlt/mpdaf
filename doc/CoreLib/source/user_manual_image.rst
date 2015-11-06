@@ -4,8 +4,8 @@ Image object
 
 Image, optionally including a variance and a bad pixel mask.
 The Image object handles a 2D data array (basically a numpy masked array) containing flux values, associated with a :class:`WCS <mpdaf.obj.WCS>`
-object containing the spatial coordinated information (alpha,delta). Optionally, a variance data array 
-can be attached and used for weighting the flux values. Array masking is used to ignore 
+object containing the spatial coordinated information (alpha,delta). Optionally, a variance data array
+can be attached and used for weighting the flux values. Array masking is used to ignore
 some of the pixel values in the calculations.
 
 Note that virtually all numpy and scipy functions are available.
@@ -39,16 +39,16 @@ An Image object O consists of:
 +------------------+----------------------------------------------------------------------------+
 
 
-The format of each numpy array follows the indexing used by Python to 
-handle images. For an MPDAF image im, the pixel in the lower-left corner is 
-referenced as im[0,0] and the pixel im[p,q] refers to the horizontal position 
+The format of each numpy array follows the indexing used by Python to
+handle images. For an MPDAF image im, the pixel in the lower-left corner is
+referenced as im[0,0] and the pixel im[p,q] refers to the horizontal position
 q and the vertical position p, as follows:
 
 .. figure:: user_manual_image_images/grid.jpg
   :align: center
 
-In total, this image im contains nq pixels in the horizontal direction and 
-np pixels in the vertical direction. 
+In total, this image im contains nq pixels in the horizontal direction and
+np pixels in the vertical direction.
 
 
 Reference
@@ -106,9 +106,9 @@ Getters and setters
 Mask
 ----
 
-:func:`<= <mpdaf.obj.DataArray.__le__>` masks data array where greater than a given value.                                 
+:func:`<= <mpdaf.obj.DataArray.__le__>` masks data array where greater than a given value.
 
-:func:`< <mpdaf.obj.DataArray.__lt__>` masks data array where greater or equal than a given value. 
+:func:`< <mpdaf.obj.DataArray.__lt__>` masks data array where greater or equal than a given value.
 
 :func:`>= <mpdaf.obj.DataArray.__ge__>` masks data array where less than a given value.
 
@@ -182,7 +182,7 @@ Transformation
 
 :func:`mpdaf.obj.Image.moffat_fit <mpdaf.obj.Image.moffat_fit>` performs Moffat fit on image.
 
-:func:`mpdaf.obj.Image.fwhm <mpdaf.obj.Image.fwhm>` computes the fwhm center. 
+:func:`mpdaf.obj.Image.fwhm <mpdaf.obj.Image.fwhm>` computes the fwhm center.
 
 :func:`mpdaf.obj.Image.moments <mpdaf.obj.Image.moments>` returns first moments of the 2D gaussian.
 
@@ -238,15 +238,15 @@ Plotting
 :func:`mpdaf.obj.Image.igauss_fit <mpdaf.obj.Image.igauss_fit>` performs Gaussian fit in windows defined with left mouse button.
 
 :func:`mpdaf.obj.Image.imoffat_fit <mpdaf.obj.Image.imoffat_fit>` performs Moffat fit in windows defined with left mouse button.
- 
+
 
 Functions to create a new image
 ===============================
 
 :func:`mpdaf.obj.Image <mpdaf.obj.Image>` is the classic image constructor.
-            
+
 :func:`mpdaf.obj.gauss_image <mpdaf.obj.gauss_image>` creates a new image from a 2D gaussian.
-      
+
 :func:`mpdaf.obj.moffat_image <mpdaf.obj.moffat_image>` creates a new image from a 2D Moffat function.
 
 :func:`mpdaf.obj.make_image <mpdaf.obj.make_image>` interpolates z(x,y) and returns an image.
@@ -261,12 +261,12 @@ Tutorial
 
 We can load the tutorial files with the command::
 
- > git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+    > git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
 
 Preliminary imports for all tutorials::
 
-  >>> import numpy as np
-  >>> from mpdaf.obj import Image, WCS
+    >>> import numpy as np
+    >>> from mpdaf.obj import Image, WCS
 
 Tutorial 1: Image Creation, i/o and display, masking.
 -----------------------------------------------------
@@ -275,53 +275,52 @@ An Image object can be created:
 
 - either from one or two 2D numpy arrays containing the flux and variance values (optionally, the data array can be a numpy masked array to deal with bad pixel values)::
 
-  >>> MyData=np.ones([1000,1000]) #numpy data array
-  >>> MyVariance=np.ones([1000,1000]) #numpy variance array
-  >>> ima=Image(data=MyData) #image filled with MyData
-  >>> ima=Image(data=MyData, var=MyVariance) #image filled with MyData and MyVariance
+    >>> MyData=np.ones([1000,1000]) #numpy data array
+    >>> MyVariance=np.ones([1000,1000]) #numpy variance array
+    >>> ima=Image(data=MyData) #image filled with MyData
+    >>> ima=Image(data=MyData, var=MyVariance) #image filled with MyData and MyVariance
 
 - or from a FITS file (in which case the flux and variance values are read from specific extensions), using the following commands::
 
-  >>> ima=Image('image_variance.fits.gz', ext=1) #data array is read from the file (extension number 1)
-  >>> ima.info()
-  [INFO] 1542 x 1572 Image (image_variance.fits.gz)
-  [INFO] .data(1542,1572) (no unit), no noise
-  [INFO] center:(-01:34:07.7683,02:39:52.7865) size in arcsec:(154.440,157.349) step in arcsec:(0.100,0.100) rot:85.6 deg
-  >>> ima=Image('image_variance.fits.gz', ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
-  >>> ima.info()
-  [INFO] 1542 x 1572 Image (image_variance.fits.gz)
-  [INFO] .data(1542,1572) (no unit), .var(1542,1572)
-  [INFO] center:(-01:34:07.7683,02:39:52.7865) size in arcsec:(154.440,157.349) step in arcsec:(0.100,0.100) rot:85.6 deg
+    >>> ima=Image('image_variance.fits.gz', ext=1) #data array is read from the file (extension number 1)
+    >>> ima.info()
+    [INFO] 1542 x 1572 Image (image_variance.fits.gz)
+    [INFO] .data(1542,1572) (no unit), no noise
+    [INFO] center:(-01:34:07.7683,02:39:52.7865) size in arcsec:(154.440,157.349) step in arcsec:(0.100,0.100) rot:85.6 deg
+    >>> ima=Image('image_variance.fits.gz', ext=[1,2]) #data and variance arrays are read from the file (extension numbers 1 and 2)
+    >>> ima.info()
+    [INFO] 1542 x 1572 Image (image_variance.fits.gz)
+    [INFO] .data(1542,1572) (no unit), .var(1542,1572)
+    [INFO] center:(-01:34:07.7683,02:39:52.7865) size in arcsec:(154.440,157.349) step in arcsec:(0.100,0.100) rot:85.6 deg
 
 If the FITS file contains a single extension (image fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
 
 
 The :class:`WCS <mpdaf.obj.WCS>` object can be copied from another image or taken from the FITS header::
 
-  >>> wcs1=ima1.wcs #WCS copied from Image object ima1
-  >>> wcs2 = WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) #Spatial WCS created from a reference position in degrees, a pixel size and a rotation angle
-  >>> ima2 = Image(data=MyData,wcs=wcs2) #wcs created from known object
-
+    >>> wcs1=ima1.wcs #WCS copied from Image object ima1
+    >>> wcs2 = WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) #Spatial WCS created from a reference position in degrees, a pixel size and a rotation angle
+    >>> ima2 = Image(data=MyData,wcs=wcs2) #wcs created from known object
 
 Any Image object can be written as an output FITS file (containing 1 or 2 extensions)::
 
-  >>> ima2.write('ima2.fits')
+    >>> ima2.write('ima2.fits')
 
 Display an image with lower / upper scale values::
 
-  >>> ima=Image('image.fits.gz')
-  >>> ima.plot(vmin=1950, vmax=2400, colorbar='v')
+    >>> ima=Image('image.fits.gz')
+    >>> ima.plot(vmin=1950, vmax=2400, colorbar='v')
 
 .. figure:: user_manual_image_images/Image_full.png
   :align: center
 
 Masking a specific region::
 
-  >>> ima.mask(center=[800.,900.], radius=200., unit_center=None, unit_radius=None, inside=False)
+    >>> ima.mask(center=[800.,900.], radius=200., unit_center=None, unit_radius=None, inside=False)
 
 Zoom on an image section::
 
-  >>> ima[600:1000,800:1200].plot(vmin=1950,vmax=2400, colorbar='v')
+    >>> ima[600:1000,800:1200].plot(vmin=1950,vmax=2400, colorbar='v')
 
 .. figure:: user_manual_image_images/Image_zoom.png
   :align: center
@@ -332,33 +331,33 @@ Tutorial 2: Image Geometrical manipulation
 
 In this tutorial we start from an image and performs some geometric transformations onto it::
 
-  >>> im1 = Image('image.fits.gz')
+    >>> im1 = Image('image.fits.gz')
 
 We rotate the image by 40 degrees and rebin it onto a 0.4"/pixel scale (conserving flux)::
 
-  >>> im2 = im1.rotate(40) #this rotation uses an interpolation of the pixels
-  >>> import astropy.units as u
-  >>> im3 = im2.resample(newdim=(1000,1000), newstart=None, newstep=(0.4,0.4), unit_step=u.arcsec, flux=True)
+    >>> im2 = im1.rotate(40) #this rotation uses an interpolation of the pixels
+    >>> import astropy.units as u
+    >>> im3 = im2.resample(newdim=(1000,1000), newstart=None, newstep=(0.4,0.4), unit_step=u.arcsec, flux=True)
 
 The new image would look like this::
 
-  >>> im3.plot(vmin=1950*4, vmax=2400*4, colorbar='v')
+    >>> im3.plot(vmin=1950*4, vmax=2400*4, colorbar='v')
 
 .. figure:: user_manual_image_images/Image_rebin.png
   :align: center
 
 Then, we load an external image of the same field (observed with a different instrument), aligned to the previous image in WCS coordinates. We combine both datasets to produce a higher S/N image::
 
-  >>> imhst=Image('image_variance.fits.gz')
-  >>> im1[700:900,850:1050].plot(vmin=1950, vmax=2500) #original image
-  >>> im1.add(imhst)
-  >>> im1[700:900,850:1050].plot(vmin=1950, vmax=2500) #combined image
+    >>> imhst=Image('image_variance.fits.gz')
+    >>> im1[700:900,850:1050].plot(vmin=1950, vmax=2500) #original image
+    >>> im1.add(imhst)
+    >>> im1[700:900,850:1050].plot(vmin=1950, vmax=2500) #combined image
 
 .. figure:: user_manual_image_images/before-after.png
   :align: center
 
 (Left) original image (Right) combination of ground-based and high-resolution image
-  
+
 
 Tutorial 3: Object analysis: image segmentation, peak measurement, profile fitting
 ----------------------------------------------------------------------------------
@@ -366,41 +365,41 @@ Tutorial 3: Object analysis: image segmentation, peak measurement, profile fitti
 In this tutorial, we will analyse the 2D images of specific objects detected in the image.
 We start by segmenting the original image into several cutout images::
 
-  >>> im=Image('image.fits.gz')
-  >>> seg=im.segment(minsize=10,background=2100)
+    >>> im=Image('image.fits.gz')
+    >>> seg=im.segment(minsize=10,background=2100)
 
 We plot one of the sub-images to analyse the corresponding source::
 
-  >>> source=seg[8]
-  >>> source.plot(colorbar='v')
+    >>> source=seg[8]
+    >>> source.plot(colorbar='v')
 
 .. figure:: user_manual_image_images/Image_source8.png
   :align: center
 
 We find the location of the peak interactively::
 
-  >>> source.ipeak()
-  [INFO] Use left mouse button to define the box.
-  [INFO] To quit the interactive mode, click on the right mouse button.
-  [INFO] peak: y=-1.51735 x=39.9904       p=15    q=10    data=3201
-  
+    >>> source.ipeak()
+    [INFO] Use left mouse button to define the box.
+    [INFO] To quit the interactive mode, click on the right mouse button.
+    [INFO] peak: y=-1.51735 x=39.9904       p=15    q=10    data=3201
+
 We perform a 2D Gaussian fitting of the source, and plot the isocontours::
 
-  >>> gfit=source.gauss_fit(plot=True)                                                                                                             
-  [INFO] Number of calls to function has reached maxfev = 100.                                                                                         
-  [INFO] Gaussian center = (-1.51732,39.9905) (error:(nan,nan))                                                                                        
-  [INFO] Gaussian integrated flux = 51417 (error:nan)
-  [INFO] Gaussian peak value = 940.345 (error:nan)
-  [INFO] Gaussian fwhm = (1.96274,1.03988) (error:(nan,nan))
-  [INFO] Rotation in degree: 162.394 (error:nan)
-  [INFO] Gaussian continuum = 2022.43 (error:nan)
-  >>> gfit=source.gauss_fit(maxiter=150, plot=True)
-  [INFO] Gaussian center = (-1.51732,39.9905) (error:(2.40808e-06,1.46504e-06))
-  [INFO] Gaussian integrated flux = 51445.8 (error:687.259)
-  [INFO] Gaussian peak value = 940.004 (error:-8.98435)
-  [INFO] Gaussian fwhm = (1.96416,1.04009) (error:(0.0225041,0.0119187))
-  [INFO] Rotation in degree: 162.395 (error:1.41177)
-  [INFO] Gaussian continuum = 2022.39 (error:1.86548)
+    >>> gfit=source.gauss_fit(plot=True)
+    [INFO] Number of calls to function has reached maxfev = 100.
+    [INFO] Gaussian center = (-1.51732,39.9905) (error:(nan,nan))
+    [INFO] Gaussian integrated flux = 51417 (error:nan)
+    [INFO] Gaussian peak value = 940.345 (error:nan)
+    [INFO] Gaussian fwhm = (1.96274,1.03988) (error:(nan,nan))
+    [INFO] Rotation in degree: 162.394 (error:nan)
+    [INFO] Gaussian continuum = 2022.43 (error:nan)
+    >>> gfit=source.gauss_fit(maxiter=150, plot=True)
+    [INFO] Gaussian center = (-1.51732,39.9905) (error:(2.40808e-06,1.46504e-06))
+    [INFO] Gaussian integrated flux = 51445.8 (error:687.259)
+    [INFO] Gaussian peak value = 940.004 (error:-8.98435)
+    [INFO] Gaussian fwhm = (1.96416,1.04009) (error:(0.0225041,0.0119187))
+    [INFO] Rotation in degree: 162.395 (error:1.41177)
+    [INFO] Gaussian continuum = 2022.39 (error:1.86548)
 
 
 .. figure:: user_manual_image_images/Image_source8_gaussfit.png
@@ -408,30 +407,29 @@ We perform a 2D Gaussian fitting of the source, and plot the isocontours::
 
 Alternatively, we perform a 2D MOFFAT fitting of the same source::
 
-  >>> mfit=source.moffat_fit(plot=True)
-  [INFO] center = (-1.51733,39.9905) (error:(1.46706e-06,8.95714e-07))
-  [INFO] integrated flux = 253370 (error:0.000110584)
-  [INFO] peak value = 1217.37 (error:15.1703)
-  [INFO] fwhm = (0.833963,0.444835) (error:(0.0197328,0.987865))
-  [INFO] n = 1.13844 (error:0.0514963)
-  [INFO] rotation in degree: 72.3726 (error:0.453644)
-  [INFO] continuum = 1964.35 (error:4.31709)
+    >>> mfit=source.moffat_fit(plot=True)
+    [INFO] center = (-1.51733,39.9905) (error:(1.46706e-06,8.95714e-07))
+    [INFO] integrated flux = 253370 (error:0.000110584)
+    [INFO] peak value = 1217.37 (error:15.1703)
+    [INFO] fwhm = (0.833963,0.444835) (error:(0.0197328,0.987865))
+    [INFO] n = 1.13844 (error:0.0514963)
+    [INFO] rotation in degree: 72.3726 (error:0.453644)
+    [INFO] continuum = 1964.35 (error:4.31709)
 
-We can then subtract each modelled image from the original source and plot 
+We can then subtract each modelled image from the original source and plot
 the residuals::
 
-   >>> from mpdaf.obj import gauss_image
-   >>> from mpdaf.obj import moffat_image
-   >>> gfitim=gauss_image(wcs=source.wcs,gauss=gfit)
-   >>> mfitim=moffat_image(wcs=source.wcs,moffat=mfit)
-   >>> gresiduals=source-gfitim
-   >>> mresiduals=source-mfitim
-   >>> mresiduals.plot(colorbar='v')
-   >>> gresiduals.plot(colorbar='v')
+    >>> from mpdaf.obj import gauss_image
+    >>> from mpdaf.obj import moffat_image
+    >>> gfitim=gauss_image(wcs=source.wcs,gauss=gfit)
+    >>> mfitim=moffat_image(wcs=source.wcs,moffat=mfit)
+    >>> gresiduals=source-gfitim
+    >>> mresiduals=source-mfitim
+    >>> mresiduals.plot(colorbar='v')
+    >>> gresiduals.plot(colorbar='v')
 
-.. image:: user_manual_image_images/mresiduals.png 
+.. image:: user_manual_image_images/mresiduals.png
 
-.. image:: user_manual_image_images/gresiduals.png 
+.. image:: user_manual_image_images/gresiduals.png
 
 Residuals from 2D Moffat (left) and Gaussian (right) profile fittings.
- 

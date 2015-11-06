@@ -986,15 +986,17 @@ class Source(object):
         subtract_off : boolean
             If True, subtracting off nearby data.
             The method computes the subtracted flux by using the algorithm
-            from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
-            if is_sum is False
-            sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                            flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
-            or if is_sum is True:
-            sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                            flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
+            from Jarle Brinchmann (jarle@strw.leidenuniv.nl)::
+
+                # if is_sum is False
+                sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
+                                flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
+
+                # or if is_sum is True:
+                sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
+                                flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
         margin : float
-            This off-band is offseted by margin wrt narrow-band limit(in angstrom).
+            This off-band is offseted by margin wrt narrow-band limit (in angstrom).
         fband : float
             The size of the off-band is fband x narrow-band width (in angstrom).
         """
@@ -1190,25 +1192,23 @@ class Source(object):
         """Extract spectra from the MUSE data cube and from a list of
         narrow-band images (to define spectrum extraction apertures).
 
-        First, this method computes a subcube that has the same size
-        along the spatial axis as MASK_UNION image.
+        First, this method computes a subcube that has the same size along the
+        spatial axis as MASK_UNION image.
 
         The no-weighting spectrum is computed as the sum of the subcube
-        weighted by the MASK_UNION image.
-        It is saved in self.spectra['MUSE_TOT']
+        weighted by the MASK_UNION image.  It is saved in
+        ``self.spectra['MUSE_TOT']``.
 
-        The weighted spectra are computed as the sum of the subcube
-        weighted by the corresponding narrow bands image.
-        They are saved in self.spectra[nb_ima] (for nb_ima in tags_to_try)
+        The weighted spectra are computed as the sum of the subcube weighted by
+        the corresponding narrow bands image.  They are saved in
+        ``self.spectra[nb_ima]`` (for nb_ima in tags_to_try).
 
         If psf:
-
             The potential PSF weighted spectrum is computed as the sum of
             the subcube weighted by MASK_UNION*psf.
             It is saved in self.spectra['MUSE_PSF']
 
         If skysub:
-
             The local sky spectrum is computed as the average of the subcube
             weighted by the MASK_SKY image.
             It is saved in self.spectra['MUSE_SKY']
@@ -1217,9 +1217,11 @@ class Source(object):
             they are saved in self.spectra['*_SKYSUB']
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+
         The weighted sum conserves the flux by :
-            - Taking into account bad pixels in the addition.
-            - Normalizing with the median value of weighting sum/no-weighting sum
+
+        - Taking into account bad pixels in the addition.
+        - Normalizing with the median value of weighting sum/no-weighting sum
 
         Parameters
         ----------
@@ -1235,8 +1237,8 @@ class Source(object):
             axis to give the FWHM of the Gaussian PSF at each
             wavelength (in arcsec) or a cube with the PSF to use.
             psf=None by default (no PSF-weighted extraction).
-        """
 
+        """
         if self.images.has_key('MASK_UNION'):
             ima = self.images['MASK_UNION']
 
@@ -1355,8 +1357,9 @@ class Source(object):
 
         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr).
 
-        This method saves the redshift values in self.z and lists the detected
-        lines in self.lines.  self.info() could be used to print the results.
+        This method saves the redshift values in ``self.z`` and lists the
+        detected lines in ``self.lines``.  ``self.info()`` could be used to
+        print the results.
 
         Parameters
         ----------

@@ -33,16 +33,18 @@ class Catalog(Table):
     @classmethod
     def from_sources(cls, sources, fmt='default'):
         """Construct a catalog from a list of source objects.
-        The new catalog will contain all data stored in the primary headers
-        and in the tables extensions of the sources:
+
+        The new catalog will contain all data stored in the primary headers and
+        in the tables extensions of the sources:
 
         * a column per header fits
         * two columns per magnitude band:
           [BAND] [BAND]_ERR
-        * two or three columns per redshfit: 
+        * two or three columns per redshfit:
            Z_[Z_DESC], Z_[Z_DESC]_ERR or
            Z_[Z_DESC], Z_[Z_DESC]_MIN and Z_[Z_DESC]_MAX
         * several columns per line.
+
         The lines columns depend of the format.
         By default the columns names are created around unique LINE name
         [LINE]_[lines_colname].
@@ -50,14 +52,14 @@ class Catalog(Table):
         [lines_colname]_xxx
         where xxx is the number of lines present in each source.
 
-
         Parameters
         ----------
         sources : list< :class:`mpdaf.sdetect.Source` >
-                  List of :class:`mpdaf.sdetect.Source` objects
+            List of :class:`mpdaf.sdetect.Source` objects
         fmt : string 'working'|'default'
-              Format of the catalog
-              The format differs for the LINES table.
+            Format of the catalog
+            The format differs for the LINES table.
+
         """
         invalid = {type(1): -9999, np.int_: -9999,
                    type(1.0): np.nan, np.float_: np.nan,
@@ -303,7 +305,7 @@ class Catalog(Table):
         Parameters
         ----------
         path : string
-               Directory containing Source files
+            Directory containing Source files
         """
         logger = logging.getLogger(__name__)
 
@@ -338,8 +340,7 @@ class Catalog(Table):
         return t
 
     def masked_invalid(self):
-        """Mask where invalid values occur (NaNs or infs or -9999 or '').
-        """
+        """Mask where invalid values occur (NaNs or infs or -9999 or '')."""
         for col in self.colnames:
             try:
                 self[col] = np.ma.masked_invalid(self[col])
@@ -352,20 +353,18 @@ class Catalog(Table):
 
         Parameters
         ----------
-        cat2   : astropy.Table
-                 Catalog to match
+        cat2 : astropy.Table
+            Catalog to match
         radius : float
-                 Matching size in arcsec
+            Matching size in arcsec
 
         Returns
         -------
         match, nomatch, nomatch2 : astropy.Table, astropy.Table, astropy.Table
+            1- match table of matched elements in RA,DEC
+            2- sub-table of non matched elements of the current catalog
+            3- sub-table of non matched elements of the catalog cat2
 
-                                   1- match table of matched elements in RA,DEC
-
-                                   2- sub-table of non matched elements of the current catalog
-
-                                   3- sub-table of non matched elements of the catalog cat2
         """
         coord1 = SkyCoord(zip(self['RA'], self['DEC']), unit=(u.degree, u.degree))
         coord2 = SkyCoord(zip(cat2['RA'], cat2['DEC']), unit=(u.degree, u.degree))
@@ -388,15 +387,16 @@ class Catalog(Table):
         Parameters
         ----------
         wcs : :class:`mpdaf.obj.WCS`
-              Image WCS
-        ra  : string
-              Name of the column that contains RA values in degrees
+            Image WCS
+        ra : string
+            Name of the column that contains RA values in degrees
         dec : string
-              Name of the column that contains DEC values in degrees
+            Name of the column that contains DEC values in degrees
 
         Returns
         -------
         out : :class:`mpdaf.sdetect.Catalog`
+
         """
         ksel = []
         for k, src in enumerate(self):
@@ -412,28 +412,27 @@ class Catalog(Table):
 
         Parameters
         ----------
-        ax  : matplotlib.axes._subplots.AxesSubplot
-              Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+        ax : matplotlib.axes._subplots.AxesSubplot
+            Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         wcs : :class:`mpdaf.obj.WCS`
-              Image WCS
-        ra  : string
-              Name of the column that contains RA values (in degrees)
+            Image WCS
+        ra : string
+            Name of the column that contains RA values (in degrees)
         dec : string
-              Name of the column that contains DEC values (in degrees)
+            Name of the column that contains DEC values (in degrees)
         symb : list or string or float
-
-               - List of 3 columns names containing FWHM1,
-                 FWHM2 and ANGLE values to define the ellipse of each source.
-               - Column name containing value that will be used
-                 to define the circle size of each source.
-               - float in the case of circle with constant size in arcsec
-
+            - List of 3 columns names containing FWHM1,
+                FWHM2 and ANGLE values to define the ellipse of each source.
+            - Column name containing value that will be used
+                to define the circle size of each source.
+            - float in the case of circle with constant size in arcsec
         col : string
-              Symbol color.
+            Symbol color.
         alpha : float
-                Symbol transparency
+            Symbol transparency
         kwargs : matplotlib.artist.Artist
-                 kwargs can be used to set additional plotting properties.
+            kwargs can be used to set additional plotting properties.
+
         """
         if type(symb) in [list, tuple] and len(symb) == 3:
             stype = 'ellipse'
@@ -480,23 +479,24 @@ class Catalog(Table):
         Parameters
         ----------
         ax : matplotlib.axes._subplots.AxesSubplot
-             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+            Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         wcs : :class:`mpdaf.obj.WCS`
-              Image WCS
+            Image WCS
         iden : string
-               Name of the column that contains ID values
-        ra  : string
-              Name of the column that contains RA values
+            Name of the column that contains ID values
+        ra : string
+            Name of the column that contains RA values
         dec : string
-              Name of the column that contains DEC values
+            Name of the column that contains DEC values
         symb : float
-               Size of the circle in arcsec
+            Size of the circle in arcsec
         col : string
-              Symbol color.
+            Symbol color.
         alpha : float
-                Symbol transparency
+            Symbol transparency
         kwargs : matplotlib.artist.Artist
-                 kwargs can be used to set additional plotting properties.
+            kwargs can be used to set additional plotting properties.
+
         """
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)
