@@ -259,7 +259,7 @@ def segmentation(source, tags, DIR, remove):
     # Save segmentation maps
     if len(maps) > 0:
         for tag, data in maps.iteritems():
-            ima = Image(wcs=wcs, data=data, unit=None)
+            ima = Image(wcs=wcs, data=data)
             source.images['SEG_' + tag] = ima
 
 
@@ -273,11 +273,11 @@ def mask_creation(source, maps):
     small_mask = intersection(r['seg'])
     sky_mask = findSkyMask(maps)
 
-    ima = Image(wcs=wcs, data=object_mask, unit=None)
+    ima = Image(wcs=wcs, data=object_mask)
     source.images['MASK_UNION'] = ima
-    ima = Image(wcs=wcs, data=sky_mask, unit=None)
+    ima = Image(wcs=wcs, data=sky_mask)
     source.images['MASK_SKY'] = ima
-    ima = Image(wcs=wcs, data=small_mask, unit=None)
+    ima = Image(wcs=wcs, data=small_mask)
     source.images['MASK_INTER'] = ima
 
 
@@ -328,7 +328,7 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
            wavelength (in arcsec) or a cube with the PSF to use.
     path : path where the source file will be saved.
            This option should be used to avoid memory problem
-           (source are saved as we go along) 
+           (source are saved as we go along)
 
     Returns
     -------
