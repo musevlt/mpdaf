@@ -211,13 +211,13 @@ class DataArray(object):
         if wcs is not None and wcs.naxis1 != 1 and wcs.naxis2 != 1:
             try:
                 self.wcs = wcs.copy()
-                if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
-                        self._shape is not None and
+                if self._shape is not None:
+                    if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
                         (wcs.naxis1 != self._shape[-1] or
                          wcs.naxis2 != self._shape[-2])):
-                    self._logger.warning(
-                        'world coordinates and data have not the same '
-                        'dimensions: shape of WCS object is modified')
+                        self._logger.warning(
+                            'world coordinates and data have not the same '
+                            'dimensions: shape of WCS object is modified')
                     self.wcs.naxis1 = self._shape[-1]
                     self.wcs.naxis2 = self._shape[-2]
             except:
@@ -228,11 +228,12 @@ class DataArray(object):
         if wave is not None and wave.shape != 1:
             try:
                 self.wave = wave.copy()
-                if wave.shape is not None and self._shape is not None and \
+                if self._shape is not None:
+                    if wave.shape is not None and \
                         wave.shape != self._shape[0]:
-                    self._logger.warning(
-                        'wavelength coordinates and data have not the same '
-                        'dimensions: shape of WaveCoord object is modified')
+                        self._logger.warning(
+                            'wavelength coordinates and data have not the same '
+                            'dimensions: shape of WaveCoord object is modified')
                     self.wave.shape = self._shape[0]
             except:
                 self._logger.warning('wavelength solution not copied',
