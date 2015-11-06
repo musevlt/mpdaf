@@ -59,28 +59,29 @@ def air2vacuum(air):
 
 
 def matchlines(nlines, wl, z, eml):
-    """ try to match all the lines given :
-    for each line computes the distance in Angstroms to the closest line.
+    """Try to match all the lines given.
+
+    For each line computes the distance in Angstroms to the closest line.
     Add the errors
 
     Algorithm from Johan Richard (johan.richard@univ-lyon1.fr)
 
-     Parameters
-     ----------
-     nlines : integer
-              Number of emission lines
-     wl     : array<double>
-              Table of wavelengths
-     z      : double
-              Redshift to test
-     eml    : dict
-              Full catalog of lines to test redshift
-              key: wavelength, value: name
+    Parameters
+    ----------
+    nlines : integer
+        Number of emission lines
+    wl : array<double>
+        Table of wavelengths
+    z : double
+        Redshift to test
+    eml : dict
+        Full catalog of lines to test redshift
+        key: wavelength, value: name
 
     Returns
     -------
     out : (array<double>, array<double>)
-          (list of wavelengths, errors)
+        (list of wavelengths, errors)
 
     """
     jfound = np.zeros(nlines, dtype=np.int)
@@ -104,21 +105,21 @@ def crackz(nlines, wl, flux, eml, zguess=None):
     Parameters
     ----------
     nlines : integer
-             Number of emission lines
-    wl     : array<double>
-             Table of observed line wavelengths
-    flux   : array<double>
-             Table of line fluxes
-    eml    : dict
-             Full catalog of lines to test redshift
+        Number of emission lines
+    wl : array<double>
+        Table of observed line wavelengths
+    flux : array<double>
+        Table of line fluxes
+    eml : dict
+        Full catalog of lines to test redshift
     zguess : float
-             Guess redshift to test (only this)
+        Guess redshift to test (only this)
 
     Returns
     -------
     out : (float, float, integer, list<double>, list<double>, list<string>)
-          (redshift, redshift error, list of wavelengths, list of fluxes,
-          list of lines names)
+        (redshift, redshift error, list of wavelengths, list of fluxes,
+        list of lines names)
     """
     errmin = 3.0
     zstep = 0.0002
@@ -176,39 +177,30 @@ class Source(object):
 
     Attributes
     ----------
-    header  : pyfits.Header
-              FITS header instance
-    lines   : astropy.Table
-              List of lines
-    mag     : astropy.Table
-              List of magnitudes
-    z       : astropy.Table
-              List of redshifts
+    header : pyfits.Header
+        FITS header instance
+    lines : astropy.Table
+        List of lines
+    mag : astropy.Table
+        List of magnitudes
+    z : astropy.Table
+        List of redshifts
     spectra : :class:`dict`
-              Dictionary containing spectra.
-
-              Keys give origin of spectra
-              ('tot' for total spectrum, TBC).
-
-              Values are :class:`mpdaf.obj.Spectrum` object
-    images  : :class:`dict`
-              Dictionary containing images.
-
-              Keys give filter names ('MUSE_WHITE' for white image, TBC)
-
-              Values are :class:`mpdaf.obj.Image` object
-    cubes   : :class:`dict`
-                  Dictionary containing small data cubes
-
-                  Keys give a description of the cube
-
-                  Values are :class:`mpdaf.obj.Cube` objects
-    tables   : :class:`dict`
-                  Dictionary containing tables
-
-                  Keys give a description of each table
-
-                  Values are astropy.Table objects
+        Dictionary containing spectra.
+        Keys give origin of spectra ('tot' for total spectrum, TBC).
+        Values are :class:`mpdaf.obj.Spectrum` object
+    images : :class:`dict`
+        Dictionary containing images.
+        Keys give filter names ('MUSE_WHITE' for white image, TBC)
+        Values are :class:`mpdaf.obj.Image` object
+    cubes : :class:`dict`
+        Dictionary containing small data cubes
+        Keys give a description of the cube
+        Values are :class:`mpdaf.obj.Cube` objects
+    tables : :class:`dict`
+        Dictionary containing tables
+        Keys give a description of each table
+        Values are astropy.Table objects
     """
 
     def __init__(self, header, lines=None, mag=None, z=None,
@@ -253,60 +245,53 @@ class Source(object):
         self.masked_invalid()
 
     @classmethod
-    def from_data(cls, ID, ra, dec, origin, proba=None, confi=None, extras=None,
-                  lines=None, mag=None, z=None,
-                  spectra=None, images=None, cubes=None, tables=None):
+    def from_data(cls, ID, ra, dec, origin, proba=None, confi=None,
+                  extras=None, lines=None, mag=None, z=None, spectra=None,
+                  images=None, cubes=None, tables=None):
         """Source constructor from a list of data.
 
         Parameters
         ----------
-        ID      : integer
-                  ID of the source
-        ra      : double
-                  Right ascension in degrees
-        dec     : double
-                  Declination in degrees
-        origin  : tuple (string, string, string)
-                  1- Name of the detector software which creates this object
-                  2- Version of the detector software which creates this object
-                  3- Name of the FITS data cube from which this object has been extracted.
-        proba   : float
-                  Detection probability
-        confi   : integer
-                  Expert confidence index
-        extras  : dict{key: value} or dict{key: (value, comment)}
-                  Extra keywords
-        lines   : astropy.Table
-                  List of lines
-        mag     : astropy.Lines
-                  List of magnitudes.
-        z       : astropy.Table
-                  List of redshifts
+        ID : integer
+            ID of the source
+        ra : double
+            Right ascension in degrees
+        dec : double
+            Declination in degrees
+        origin : tuple (string, string, string)
+            1- Name of the detector software which creates this object
+            2- Version of the detector software which creates this object
+            3- Name of the FITS data cube from which this object has been
+            extracted.
+        proba : float
+            Detection probability
+        confi : integer
+            Expert confidence index
+        extras : dict{key: value} or dict{key: (value, comment)}
+            Extra keywords
+        lines : astropy.Table
+            List of lines
+        mag : astropy.Lines
+            List of magnitudes.
+        z : astropy.Table
+            List of redshifts
         spectra : :class:`dict`
-                  Dictionary containing spectra.
-
-                  Keys gives the origin of the spectrum
-                  ('tot' for total spectrum, TBC).
-
-                  Values are :class:`mpdaf.obj.Spectrum` object
-        images  : :class:`dict`
-                  Dictionary containing small images.
-
-                  Keys gives the filter ('MUSE_WHITE' for white image, TBC)
-
-                  Values are :class:`mpdaf.obj.Image` object
-        cubes   : :class:`dict`
-                  Dictionary containing small data cubes
-
-                  Keys gives a description of the cube
-
-                  Values are :class:`mpdaf.obj.Cube` objects
-        tables   : :class:`dict`
-                  Dictionary containing tables
-
-                  Keys give a description of each table
-
-                  Values are astropy.Table objects
+            Dictionary containing spectra.
+            Keys gives the origin of the spectrum ('tot' for total spectrum,
+            TBC).
+            Values are :class:`mpdaf.obj.Spectrum` object
+        images : :class:`dict`
+            Dictionary containing small images.
+            Keys gives the filter ('MUSE_WHITE' for white image, TBC)
+            Values are :class:`mpdaf.obj.Image` object
+        cubes : :class:`dict`
+            Dictionary containing small data cubes
+            Keys gives a description of the cube
+            Values are :class:`mpdaf.obj.Cube` objects
+        tables : :class:`dict`
+            Dictionary containing tables
+            Keys give a description of each table
+            Values are astropy.Table objects
         """
         header = pyfits.Header()
         header['ID'] = (ID, 'object ID')
@@ -332,7 +317,7 @@ class Source(object):
         Parameters
         ----------
         filename : string
-                   FITS filename
+            FITS filename
         """
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
@@ -425,7 +410,7 @@ class Source(object):
         Parameters
         ----------
         filename : string
-                   FITS filename
+            FITS filename
         """
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
@@ -478,7 +463,7 @@ class Source(object):
         Parameters
         ----------
         filename : string
-                   FITS filename
+            FITS filename
         """
         warnings.simplefilter("ignore")
         # create primary header
@@ -571,9 +556,9 @@ class Source(object):
             print ''
         for key, spe in self.spectra.iteritems():
             msg = 'spectra[\'%s\']' % key
-            msg += ',%i elements (%0.2f-%0.2f A)' % (spe.shape[0],
-                                                     spe.get_start(unit=u.angstrom),
-                                                     spe.get_end(unit=u.angstrom))
+            msg += ',%i elements (%0.2f-%0.2f A)' % (
+                spe.shape[0], spe.get_start(unit=u.angstrom),
+                spe.get_end(unit=u.angstrom))
             data = '.data'
             if spe.data is None:
                 data = ''
@@ -662,11 +647,11 @@ class Source(object):
         Parameters
         ----------
         key : string
-              Attribute name
+            Attribute name
         value : integer/float/string
-                Attribute value
+            Attribute value
         desc : string
-               Attribute description
+            Attribute description
         """
         if desc is None:
             self.header[key] = value
@@ -684,11 +669,11 @@ class Source(object):
         Parameters
         ----------
         desc : string
-               Redshift description.
-        z    : float
-               Redshidt value.
+            Redshift description.
+        z : float
+            Redshidt value.
         errz : float or (float,float)
-               Redshift error (deltaz) or redshift interval (zmin,zmax).
+            Redshift error (deltaz) or redshift interval (zmin,zmax).
         """
         if is_float(errz) or is_int(errz):
             if errz == -9999:
@@ -701,7 +686,7 @@ class Source(object):
             try:
                 zmin, zmax = errz
             except:
-                raise ValueError, 'Wrong type for errz in add_z'
+                raise ValueError('Wrong type for errz in add_z')
         if self.z is None:
             if z != -9999:
                 self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
@@ -735,11 +720,11 @@ class Source(object):
         Parameters
         ----------
         band : string
-               Filter name.
-        m    : float
-               Magnitude value.
+            Filter name.
+        m : float
+            Magnitude value.
         errm : float
-               Magnitude error.
+            Magnitude error.
         """
         if self.mag is None:
             self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
@@ -760,15 +745,15 @@ class Source(object):
 
         Parameters
         ----------
-        cols   : list<string>
-                 Names of the columns
+        cols : list<string>
+            Names of the columns
         values : list<integer/float/string>
-                 List of corresponding values
-        units  : list<astropy.units>
-                 Unity of each column
-        match  : (string,float/integer/string)
-                 Tuple (key,value) that gives the key to match the added line with an existing line.
-                 eg ('LINE','LYALPHA1216')
+            List of corresponding values
+        units : list<astropy.units>
+            Unity of each column
+        match : (string,float/integer/string)
+            Tuple (key,value) that gives the key to match the added line with
+            an existing line.  eg ('LINE','LYALPHA1216')
         """
         if self.lines is None:
             types = []
@@ -779,7 +764,8 @@ class Source(object):
                     types.append('<f8')
                 else:
                     types.append('S20')
-            self.lines = Table(rows=[values], names=cols, dtype=types, masked=True)
+            self.lines = Table(rows=[values], names=cols, dtype=types,
+                               masked=True)
             if units is not None:
                 for colname, unit in zip(self.lines.colnames, units):
                     self.lines[colname].unit = unit
@@ -826,7 +812,8 @@ class Source(object):
                     mask[i] = 0
                 self.lines.add_row(row, mask=mask)
 
-    def add_image(self, image, name, size=None, minsize=2.0, unit_size=u.arcsec, rotate=False):
+    def add_image(self, image, name, size=None, minsize=2.0,
+                  unit_size=u.arcsec, rotate=False):
         """Extract an small image centered on the source center from the input
         image and append it to the images dictionary.
 
@@ -835,20 +822,20 @@ class Source(object):
         Parameters
         ----------
         image : :class:`mpdaf.obj.Image`
-                Input image MPDAF object.
-        name  : string
-                Name used to distinguish this image
-        size        : float
-                      The size to extract.
-                      It corresponds to the size along the delta axis and the image is square.
-                      If None, the size of the white image extension is taken if it exists.
-        unit_size   : astropy.units
-                      Size and minsize unit.
-                      Arcseconds by default (use None for size in pixels)
-        minsize     : float
-                      The minimum size of the output image.
+            Input image MPDAF object.
+        name : string
+            Name used to distinguish this image
+        size : float
+            The size to extract.
+            It corresponds to the size along the delta axis and the image is square.
+            If None, the size of the white image extension is taken if it exists.
+        unit_size : astropy.units
+            Size and minsize unit.
+            Arcseconds by default (use None for size in pixels)
+        minsize : float
+            The minimum size of the output image.
         rotate : bool
-                if True, the image is rotated to the same PA as the white-light image
+            if True, the image is rotated to the same PA as the white-light image
         """
         if size is None:
             try:
@@ -892,7 +879,8 @@ class Source(object):
             return
         self.images[name] = subima
 
-    def add_cube(self, cube, name, size=None, lbda=None, unit_size=u.arcsec, unit_wave=u.angstrom):
+    def add_cube(self, cube, name, size=None, lbda=None,
+                 unit_size=u.arcsec, unit_wave=u.angstrom):
         """Extract a cube centered on the source center and append it to the
         cubes dictionary.
 
@@ -901,21 +889,21 @@ class Source(object):
         Parameters
         ----------
         cube : :class:`mpdaf.obj.Cube`
-                Input cube MPDAF object.
-        name  : string
-                Name used to distinguish this cube
-        size        : float
-                      The size to extract.
-                      It corresponds to the size along the delta axis and the image is square.
-                      If None, the size of the white image extension is taken if it exists.
-        lbda        : (float, float) or None
-                      If not None, tuple giving the wavelength range.
-        unit_size   : astropy.units
-                      unit of the size value (arcseconds by default)
-                       If None, size is in pixels
-        unit_wave   : astropy.units
-                      Wavelengths unit (angstrom by default)
-                      If None, inputs are in pixels
+            Input cube MPDAF object.
+        name : string
+            Name used to distinguish this cube
+        size : float
+            The size to extract.
+            It corresponds to the size along the delta axis and the image is square.
+            If None, the size of the white image extension is taken if it exists.
+        lbda : (float, float) or None
+            If not None, tuple giving the wavelength range.
+        unit_size : astropy.units
+            unit of the size value (arcseconds by default)
+            If None, size is in pixels
+        unit_wave : astropy.units
+            Wavelengths unit (angstrom by default)
+            If None, inputs are in pixels
         """
         if size is None:
             try:
@@ -942,21 +930,22 @@ class Source(object):
         Parameters
         ----------
         cube : :class:`mpdaf.obj.Cube`
-               MUSE data cube.
+            MUSE data cube.
         size : float
-               The total size to extract in arcseconds.
-               It corresponds to the size along the delta axis and the image is square.
-               By default 5x5arcsec
-        unit_size   : astropy.units
-                      unit of the size value (arcseconds by default)
-                      If None, size is in pixels
+            The total size to extract in arcseconds.
+            It corresponds to the size along the delta axis and the image is
+            square.  By default 5x5arcsec
+        unit_size : astropy.units
+            unit of the size value (arcseconds by default)
+            If None, size is in pixels
         """
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
 
-    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None, unit_size=u.arcsec,
-                               width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
+    def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
+                               unit_size=u.arcsec, width=8, is_sum=False,
+                               subtract_off=True, margin=10., fband=3.):
         """Create narrow band images from a redshift value and a catalog of
         lines.
 
@@ -966,47 +955,48 @@ class Source(object):
 
         Parameters
         ----------
-        cube   : :class:`mpdaf.obj.Cube`
-                 MUSE data cube.
+        cube : :class:`mpdaf.obj.Cube`
+            MUSE data cube.
         z_desc : string
-                 Redshift description.  The redshift value corresponding to
-                 this description will be used.
-        eml    : dict{float: string}
-                 Full catalog of lines
-                 Dictionary: key is the wavelength value in Angstrom,
-                 value is the name of the line.
-                 if None, the following catalog is used::
+            Redshift description. The redshift value corresponding to
+            this description will be used.
+        eml : dict{float: string}
+            Full catalog of lines
+            Dictionary: key is the wavelength value in Angstrom,
+            value is the name of the line.
+            if None, the following catalog is used::
 
-                    eml = {1216 : 'LYALPHA1216', 1909: 'CIII]1909',
-                           3727: '[OII]3727', 4861: 'HBETA4861' ,
-                           5007: '[OIII]5007', 6563: 'HALPHA6563',
-                           6724 : '[SII]6724'}
+                eml = {1216 : 'LYALPHA1216', 1909: 'CIII]1909',
+                        3727: '[OII]3727', 4861: 'HBETA4861' ,
+                        5007: '[OIII]5007', 6563: 'HALPHA6563',
+                        6724 : '[SII]6724'}
 
-        size   : float
-                 The total size to extract.
-                 It corresponds to the size along the delta axis and the image is square.
-                 If None, the size of the white image extension is taken if it exists.
+        size : float
+            The total size to extract.
+            It corresponds to the size along the delta axis and the image is square.
+            If None, the size of the white image extension is taken if it exists.
         unit_size : astropy.units
-                    unit of the size value (arcseconds by default)
-                      If None, size is in pixels
-        width  : float
-                 Narrow-band width(in angstrom).
-        is_sum       : boolean
-                       if True the image is computed as the sum over the wavelength axis, otherwise this is the average.
+            unit of the size value (arcseconds by default)
+            If None, size is in pixels
+        width : float
+            Narrow-band width(in angstrom).
+        is_sum : boolean
+            if True the image is computed as the sum over the wavelength axis,
+            otherwise this is the average.
         subtract_off : boolean
-                       If True, subtracting off nearby data.
-                       The method computes the subtracted flux by using the algorithm
-                       from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
-                       if is_sum is False
-                       sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                                       flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
-                       or if is_sum is True:
-                       sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                                      flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
+            If True, subtracting off nearby data.
+            The method computes the subtracted flux by using the algorithm
+            from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
+            if is_sum is False
+            sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
+                            flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
+            or if is_sum is True:
+            sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
+                            flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
         margin : float
-                 This off-band is offseted by margin wrt narrow-band limit(in angstrom).
-        fband  : float
-                 The size of the off-band is fband x narrow-band width (in angstrom).
+            This off-band is offseted by margin wrt narrow-band limit(in angstrom).
+        fband : float
+            The size of the off-band is fband x narrow-band width (in angstrom).
         """
         if self.z is not None:
             if size is None:
@@ -1053,36 +1043,39 @@ class Source(object):
                                                                       subtract_off=subtract_off, margin=margin,
                                                                       fband=fband, unit_wave=u.angstrom)
 
-    def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None, unit_size=u.arcsec, width=8, is_sum=False, subtract_off=True, margin=10., fband=3.):
+    def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None,
+                                      unit_size=u.arcsec, width=8, is_sum=False,
+                                      subtract_off=True, margin=10., fband=3.):
         """Create narrow band image around an observed wavelength value.
 
         Narrow-band images are saved in self.images['MUSE_*'].
 
         Parameters
         ----------
-        cube   : :class:`mpdaf.obj.Cube`
-                 MUSE data cube.
-        tag   : string
-                key used to identify the new narrow band image in the images dictionary.
-        lbda  : float
-                Observed wavelength value in angstrom.
-        size  : float
-                The total size to extract in arcseconds.
-                It corresponds to the size along the delta axis and the image is square.
-                If None, the size of the white image extension is taken if it exists.
+        cube : :class:`mpdaf.obj.Cube`
+            MUSE data cube.
+        tag : string
+            key used to identify the new narrow band image in the images dictionary.
+        lbda : float
+            Observed wavelength value in angstrom.
+        size : float
+            The total size to extract in arcseconds.
+            It corresponds to the size along the delta axis and the image is square.
+            If None, the size of the white image extension is taken if it exists.
         unit_size : astropy.units
-                    unit of the size value (arcseconds by default)
-                      If None, size is in pixels
+            unit of the size value (arcseconds by default)
+            If None, size is in pixels
         width : float
-                 Angstrom total width
-        is_sum       : boolean
-                       if True the image is computed as the sum over the wavelength axis, otherwise this is the average.
+            Angstrom total width
+        is_sum : boolean
+            if True the image is computed as the sum over the wavelength axis,
+            otherwise this is the average.
         subtract_off : boolean
-                       If True, subtracting off nearby data.
-        margin       : float
-                       This off-band is offseted by margin wrt narrow-band limit (in angstrom)
-        fband        : float
-                       The size of the off-band is fband*narrow-band width (in angstrom).
+            If True, subtracting off nearby data.
+        margin : float
+            This off-band is offseted by margin wrt narrow-band limit (in angstrom)
+        fband : float
+            The size of the off-band is fband*narrow-band width (in angstrom).
         """
         self._logger.info('Doing %s' % tag)
         if size is None:
@@ -1125,20 +1118,22 @@ class Source(object):
         Parameters
         ----------
         tags : list<string>
-               List of tags of selected images
-        DIR      : string
-                   Directory that contains the configuration files of sextractor
-        del_sex  : boolean
-                   If False, configuration files of sextractor are not removed.
+            List of tags of selected images
+        DIR : string
+            Directory that contains the configuration files of sextractor
+        del_sex : boolean
+            If False, configuration files of sextractor are not removed.
         """
         if 'MUSE_WHITE' in self.images:
             if tags is None:
-                tags = [tag for tag in self.images.keys() if tag[0:4] != 'SEG_' and 'MASK' not in tag]
+                tags = [tag for tag in self.images.keys()
+                        if tag[0:4] != 'SEG_' and 'MASK' not in tag]
 
             from ..sdetect.sea import segmentation
             segmentation(self, tags, DIR, del_sex)
         else:
-            self._logger.warning('add_seg_images method use the MUSE_WHITE image computed by add_white_image method')
+            self._logger.warning('add_seg_images method use the MUSE_WHITE '
+                                 'image computed by add_white_image method')
 
     def add_masks(self, tags=None):
         """Use the list of segmentation maps to compute the union mask and the
@@ -1156,7 +1151,7 @@ class Source(object):
         Parameters
         ----------
         tags : list<string>
-               List of tags of selected segmentation images
+            List of tags of selected segmentation images
         """
         maps = {}
         if tags is None:
@@ -1170,7 +1165,8 @@ class Source(object):
                 else:
                     maps[tag] = self.images[tag].data.data
         if len(maps) == 0:
-            self._logger.warning('no segmentation images. Use add_seg_images to create them')
+            self._logger.warning('no segmentation images. Use add_seg_images '
+                                 'to create them')
 
         from ..sdetect.sea import mask_creation
         mask_creation(self, maps)
@@ -1181,17 +1177,18 @@ class Source(object):
         Parameters
         ----------
         tab : astropy.table
-              Input astropy table object.
-        name  : string
-                Name used to distingish this table
+            Input astropy table object.
+        name : string
+            Name used to distinguish this table
         """
         self.tables[name] = tab
 
     def extract_spectra(self, cube,
-                        tags_to_try=['MUSE_WHITE', 'MUSE_LYALPHA1216', 'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
+                        tags_to_try=['MUSE_WHITE', 'MUSE_LYALPHA1216',
+                                     'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
                         skysub=True, psf=None):
-        """Extract spectra from the MUSE data cube and from a list of narrow-band images
-        (to define spectrum extraction apertures).
+        """Extract spectra from the MUSE data cube and from a list of
+        narrow-band images (to define spectrum extraction apertures).
 
         First, this method computes a subcube that has the same size
         along the spatial axis as MASK_UNION image.
@@ -1226,18 +1223,18 @@ class Source(object):
 
         Parameters
         ----------
-        cube        : :class:`mpdaf.obj.Cube`
-                      MUSE data cube.
+        cube : :class:`mpdaf.obj.Cube`
+            MUSE data cube.
         tags_to_try : list<string>
-                      List of narrow bands images.
-        skysub      : boolean
-                      If True, a local sky subtraction is done.
-        psf         : np.array
-                      The PSF to use for PSF-weighted extraction.
-                      This can be a vector of length equal to the wavelength
-                      axis to give the FWHM of the Gaussian PSF at each
-                      wavelength (in arcsec) or a cube with the PSF to use.
-                      psf=None by default (no PSF-weighted extraction).
+            List of narrow bands images.
+        skysub : boolean
+            If True, a local sky subtraction is done.
+        psf : np.array
+            The PSF to use for PSF-weighted extraction.
+            This can be a vector of length equal to the wavelength
+            axis to give the FWHM of the Gaussian PSF at each
+            wavelength (in arcsec) or a cube with the PSF to use.
+            psf=None by default (no PSF-weighted extraction).
         """
 
         if self.images.has_key('MASK_UNION'):
@@ -1274,7 +1271,8 @@ class Source(object):
                                                                 order=0, unit_start=u.deg,
                                                                 unit_step=u.arcsec).data.data
             else:
-                raise IOError('extract_spectra method use the MASK_SKY computed by add_mask method')
+                raise IOError('extract_spectra method use the MASK_SKY '
+                              'computed by add_mask method')
 
             # Get the sky spectrum to subtract
             sky = subcub.sum(axis=(1, 2), weights=sky_mask)
@@ -1351,7 +1349,8 @@ class Source(object):
                     self.spectra['MUSE_PSF'] = spec
                 # Insert the PSF weighted flux - here re-normalised?
 
-    def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS', 'FLUX'), z_desc='EMI', zguess=None):
+    def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS', 'FLUX'),
+                z_desc='EMI', zguess=None):
         """Estimate the best redshift matching the list of emission lines.
 
         Algorithm from Johan Richard (johan.richard@univ-lyon1.fr).
@@ -1361,34 +1360,39 @@ class Source(object):
 
         Parameters
         ----------
-        eml    : dict{float: string}
-                 Full catalog of lines to test redshift
-                 Dictionary: key is the wavelength value in Angtsrom,
-                 value is the name of the line.
-                 if None, the following catalog is used::
+        eml : dict{float: string}
+            Full catalog of lines to test redshift
+            Dictionary: key is the wavelength value in Angtsrom,
+            value is the name of the line.
+            if None, the following catalog is used::
 
-                    emlines = {1215.67  : 'LYALPHA1216' , 1550.0   : 'CIV1550',
-                                1909.0   : 'CIII]1909'   , 2326.0   : 'CII2326',
-                                3726.032 : '[OII]3726'   , 3728.8149: '[OII]3729',
-                                3798.6001: 'HTHETA3799'  , 3834.6599: 'HETA3835',
-                                3869.0   : '[NEIII]3869' , 3888.7   : 'HZETA3889',
-                                3967.0   : '[NEIII]3967' , 4102.0   : 'HDELTA4102',
-                                4340.0   : 'HGAMMA4340'  , 4861.3198: 'HBETA4861',
-                                4959.0   : '[OIII]4959'  , 5007.0   : '[OIII]5007',
-                                6548.0   : '[NII6548]'   , 6562.7998: 'HALPHA6563',
-                                6583.0   : '[NII]6583'   , 6716.0   : '[SII]6716',
-                                6731.0   : '[SII]6731'}
+                emlines = {
+                    1215.67: 'LYALPHA1216'  , 1550.0: 'CIV1550'       ,
+                    1908.0: 'CIII]1909'     , 2326.0: 'CII2326'       ,
+                    3726.032: '[OII]3726'   , 3728.8149: '[OII]3729'  ,
+                    3798.6001: 'HTHETA3799' , 3834.6599: 'HETA3835'   ,
+                    3869.0: '[NEIII]3869'   , 3888.7: 'HZETA3889'     ,
+                    3967.0: '[NEIII]3967'   , 4102.0: 'HDELTA4102'    ,
+                    4340.0: 'HGAMMA4340'    , 4861.3198: 'HBETA4861'  ,
+                    4959.0: '[OIII]4959'    , 5007.0: '[OIII]5007'    ,
+                    6548.0: '[NII6548]'     , 6562.7998: 'HALPHA6563' ,
+                    6583.0: '[NII]6583'     , 6716.0: '[SII]6716'     ,
+                    6731.0: '[SII]6731'
+                }
 
-        nlines  : integer
-                  estimated the redshift if the number of emission lines is
-                  inferior to this value
-        cols    : (string, string)
-                  tuple (wavelength column name, flux column name)
-                  Two columns of self.lines that will be used to define the emission lines.
-        z_desc  : string
-                  Estimated redshift will be saved in self.z table under these name.
-        zguess  : float
-                  Guess redshift. Test if this redshift is a match and fills the detected lines
+        nlines : integer
+            estimated the redshift if the number of emission lines is
+            inferior to this value
+        cols : (string, string)
+            tuple (wavelength column name, flux column name)
+            Two columns of self.lines that will be used to define the emission
+            lines.
+        z_desc : string
+            Estimated redshift will be saved in self.z table under these name.
+        zguess : float
+            Guess redshift. Test if this redshift is a match and fills the
+            detected lines
+
         """
         nline_max = nlines
         if eml is None:
@@ -1407,10 +1411,12 @@ class Source(object):
             flux = np.array(self.lines[col_flux])
             nlines = len(wl)
         except:
-            self._logger.info('Impossible to estimate the redshift, no emission lines')
+            self._logger.info('Impossible to estimate the redshift, no '
+                              'emission lines')
             return
 
-        z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml, zguess)
+        z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml,
+                                                   zguess)
         # observed wavelengths
         wl = vacuum2air(wl)
 
@@ -1432,9 +1438,12 @@ class Source(object):
                 for l in self.lines.pformat():
                     self._logger.info(l)
             else:
-                self._logger.info('Impossible to estimate the redshift, the number of emission lines is inferior to %d' % nline_max)
+                self._logger.info('Impossible to estimate the redshift, the '
+                                  'number of emission lines is inferior to %d',
+                                  nline_max)
         else:
-            self._logger.info('Impossible to estimate the redshift, no emission lines')
+            self._logger.info('Impossible to estimate the redshift, no '
+                              'emission lines')
 
     def sort_lines(self, nlines_max=25):
         """Sort lines by flux in descending order.
@@ -1442,7 +1451,7 @@ class Source(object):
         Parameters
         ----------
         nlines_max : integer
-                     Maximum number of stored lines
+            Maximum number of stored lines
         """
         if self.lines is not None:
             subtab1 = self.lines[self.lines['LINE'] != ""]
@@ -1463,23 +1472,25 @@ class Source(object):
 
         Parameters
         ----------
-        ax         : matplotlib.axes._subplots.AxesSubplot
-                     Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
-        name       : string
-                     Name of image to display.
+        ax : matplotlib.axes._subplots.AxesSubplot
+            Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+        name : string
+            Name of image to display.
         showcenter : (float, string)
-                     radius in arcsec and color used to plot a circle around the center of the source.
-        cuts       : (float, float)
-                     Minimum and maximum values to use for the scaling.
-        cmap       : matplotlib.cm
-                     Color map.
-        kwargs     : matplotlib.artist.Artist
-                     kwargs can be used to set additional plotting properties.
+            radius in arcsec and color used to plot a circle around the center
+            of the source.
+        cuts : (float, float)
+            Minimum and maximum values to use for the scaling.
+        cmap : matplotlib.cm
+            Color map.
+        kwargs : matplotlib.artist.Artist
+            kwargs can be used to set additional plotting properties.
+
         """
         if name not in self.images.keys():
-            raise ValueError, 'Image %s not found' % (name)
+            raise ValueError('Image %s not found' % name)
         zima = self.images[name]
-        if cuts == None:
+        if cuts is None:
             vmin = None
             vmax = None
         else:
@@ -1499,26 +1510,27 @@ class Source(object):
         ax.axis('off')
         return
 
-    def show_spec(self, ax, name, cuts=None, zero=False, sky=None, lines=None, **kwargs):
+    def show_spec(self, ax, name, cuts=None, zero=False, sky=None, lines=None,
+                  **kwargs):
         """Display a spectra.
 
         Parameters
         ----------
-        ax         : matplotlib.axes._subplots.AxesSubplot
-                     Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
-        name       : string
-                     Name of spectra to display.
-        cuts       : (float, float)
-                     Minimum and maximum values to use for the scaling.
-        zero       : float
-                     If True, the 0 flux line is plotted in black.
-        sky        : :class:`mpdaf.obj.Spectrum`
-                     Sky spectra to overplot (default None).
-        lines      : string
-                     Name of a columns of the lines table containing wavelength values.
-                     If not None, overplot red vertical lines at the given wavelengths.
-        kwargs     : matplotlib.artist.Artist
-                     kwargs can be used to set additional plotting properties.
+        ax : matplotlib.axes._subplots.AxesSubplot
+            Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+        name : string
+            Name of spectra to display.
+        cuts : (float, float)
+            Minimum and maximum values to use for the scaling.
+        zero : float
+            If True, the 0 flux line is plotted in black.
+        sky : :class:`mpdaf.obj.Spectrum`
+            Sky spectra to overplot (default None).
+        lines : string
+            Name of a columns of the lines table containing wavelength values.
+            If not None, overplot red vertical lines at the given wavelengths.
+        kwargs : matplotlib.artist.Artist
+            kwargs can be used to set additional plotting properties.
         """
         spec = self.spectra[name]
         spec.plot(ax=ax, **kwargs)
@@ -1529,7 +1541,8 @@ class Source(object):
         if sky is not None:
             ax2 = ax.twinx()
             if 'lmin' in kwargs:
-                sky.plot(ax=ax2, color='k', alpha=0.2, lmin=kwargs['lmin'], lmax=kwargs['lmax'])
+                sky.plot(ax=ax2, color='k', alpha=0.2, lmin=kwargs['lmin'],
+                         lmax=kwargs['lmax'])
             else:
                 sky.plot(ax=ax2, color='k', alpha=0.2)
             ax2.axis('off')
@@ -1572,16 +1585,17 @@ class SourceList(list):
         (In FITS table, the maximum number of fields is 999.
         In this case, the catalog is saved as an ascci table).
 
-        path/name/nameNNNN.fits: source file (NNNN corresponds to the ID of the source)
+        path/name/nameNNNN.fits: source file (NNNN corresponds to the ID of the
+        source)
 
         Parameters
         ----------
         name : string
-               Name of the catalog
+            Name of the catalog
         path : string
-               path where the catalog will be saved.
+            path where the catalog will be saved.
         overwrite : boolean
-                    Overwrite the catalog if it already exists
+            Overwrite the catalog if it already exists
         """
         if not os.path.exists(path):
             raise IOError("Invalid path: {0}".format(path))
@@ -1619,7 +1633,7 @@ class SourceList(list):
         Parameters
         ----------
         path : string
-               Directory containing Source files
+            Directory containing Source files
         """
         if not os.path.exists(path):
             raise IOError("Invalid path: {0}".format(path))

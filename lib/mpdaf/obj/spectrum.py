@@ -273,7 +273,8 @@ class Spectrum(DataArray):
                 imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
                                           'data unit type')
             except u.format.fits.UnitScaleError:
-                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)), 'data unit type')
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)),
+                                          'data unit type')
 
         return imahdu
 
@@ -300,7 +301,8 @@ class Spectrum(DataArray):
                     hdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
                                            'data unit type')
                 except u.format.fits.UnitScaleError:
-                    imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)), 'data unit type')
+                    hdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)),
+                                           'data unit type')
             return hdu
 
     def write(self, filename, savemask='dq'):
