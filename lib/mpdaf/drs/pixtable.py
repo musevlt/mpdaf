@@ -8,7 +8,7 @@ import logging
 import os.path
 import numpy as np
 import warnings
-from scipy import interpolate, ndimage
+from scipy import ndimage
 
 import astropy.units as u
 from astropy.io import fits as pyfits
@@ -1708,6 +1708,7 @@ class PixTable(object):
 #         points[:, 0] = y
 #         points[:, 1] = x
 #
+#         from scipy import interpolate
 #         new_data = interpolate.griddata(points, data,
 #                                         np.meshgrid(grid_y, grid_x),
 #                                         method='linear').T

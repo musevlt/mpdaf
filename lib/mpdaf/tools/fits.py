@@ -1,4 +1,9 @@
+# -*- coding: utf-8 -*-
+
+import numpy as np
+import os
 from astropy.io import fits
+from numpy import ma
 
 
 def add_mpdaf_method_keywords(header, method, params, values, comments):
@@ -78,3 +83,27 @@ def copy_keywords(srchdr, dsthdr, keys):
     for key in keys:
         if key in srchdr:
             dsthdr[key] = (srchdr[key], srchdr.comments[key])
+
+
+def is_valid_fits_file(filename):
+    """Return True is a file exist and is a valid FITS file (based on its
+    extension)."""
+    return os.path.isfile(filename) and filename.endswith(("fits", "fits.gz"))
+
+
+def read_slice_from_fits(filename, item=None, ext='DATA', mask_ext=None,
+                         dtype=None):
+    """Read data from a FITS file."""
+    hdulist = fits.open(filename)
+    if item is None:
+        data = np.asarray(hdulist[ext].data, dtype=dtype)
+    else:
+        data = np.asarray(hdulist[ext].data[item], dtype=dtype)
+
+    # mask extension
+    if mask_ext is not None and mask_ext in hdulist:
+        mask = ma.make_mask(hdulist[mask_ext].data[item])
+        data = ma.MaskedArray(data, mask=mask)
+
+    hdulist.close()
+    return data
