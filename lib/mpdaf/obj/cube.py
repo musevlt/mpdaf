@@ -16,6 +16,7 @@ from .data import DataArray
 from .image import Image
 from .objs import is_float, is_int, UnitArray, UnitMaskedArray, fix_unit_write
 from .spectrum import Spectrum
+from ..tools import deprecated
 
 __all__ = ['iter_spe', 'iter_ima', 'Cube']
 
@@ -2861,13 +2862,14 @@ def _process_ima(arglist):
         raise type(inst), str(inst) + '\n The error occurred '\
             'for the image [%i,:,:]' % k
 
+    @deprecated('rebin_factor method is deprecated, use rebin_mean instead')
     def rebin_factor(self, factor, margin='center'):
-        raise DeprecationWarning('Using rebin_factor method is deprecated: Please use rebin_mean instead')
         return self.rebin_mean(factor, margin)
 
+    @deprecated('subcube_aperture method is deprecated: use '
+                'subcube_circle_aperture instead')
     def subcube_aperture(self, center, radius, unit_center=u.deg,
                          unit_radius=u.angstrom):
-        raise DeprecationWarning('Using subcube_aperture method is deprecated: Please use subcube_circle_aperture instead')
         return self.subcube_circle_aperture(center, radius,
                                             unit_center, unit_radius)
 
