@@ -2610,88 +2610,86 @@ class Cube(DataArray):
         Parameters
         ----------
         center : (float,float)
-                      Center (dec, ra) of the aperture.
+            Center (dec, ra) of the aperture.
         size : float
-                      The size to extract. It corresponds to the size along
-                      the delta axis and the image is square.
+            The size to extract. It corresponds to the size along the delta
+            axis and the image is square.
         lbda : (float, float) or None
-                      If not None, tuple giving the wavelength range.
+            If not None, tuple giving the wavelength range.
         unit_center : astropy.units
-                      Type of the center coordinates (degrees by default)
+            Type of the center coordinates (degrees by default)
         unit_size : astropy.units
-                      unit of the size value (arcseconds by default)
+            unit of the size value (arcseconds by default)
         unit_wave : astropy.units
-                      Wavelengths unit (angstrom by default)
-                      If None, inputs are in pixels
+            Wavelengths unit (angstrom by default)
+            If None, inputs are in pixels
 
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`
+
         """
-        if size > 0:
-            if unit_center is not None:
-                center = self.wcs.sky2pix(center, unit=unit_center)[0]
-            else:
-                center = np.array(center)
-            if unit_size is not None:
-                size = size / np.abs(self.wcs.get_step(unit=unit_size)[0])
-            radius = size / 2.
-
-            size = int(size)
-            i, j = (center - radius + 0.5).astype(int)
-            imin, jmin = np.maximum(np.minimum(
-                [i, j], [self.shape[1] - 1, self.shape[2] - 1]),
-                [0, 0])
-            imax, jmax = np.maximum(np.minimum(
-                [i + size, j + size],
-                [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-
-            i0, j0 = - np.minimum([i, j], [0, 0])
-
-            data = np.ones((self.shape[0], size, size)) * np.nan
-
-            wcs = self.wcs[imin:imax, jmin:jmax]
-            wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
-            wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
-            wcs.set_naxis1(size)
-            wcs.set_naxis2(size)
-
-            if lbda is None:
-                data[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = self.data[:, imin:imax, jmin:jmax].copy()
-                if self.var is not None:
-                    var = np.ones((self.shape[0], size, size)) * np.nan
-                    var[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = self.var[:, imin:imax, jmin:jmax].copy()
-                else:
-                    var = None
-                cub = Cube(wcs=wcs, wave=self.wave,
-                           unit=self.unit, data=np.ma.masked_invalid(data),
-                           var=var)
-                cub.data_header = pyfits.Header(self.data_header)
-                cub.primary_header = pyfits.Header(self.primary_header)
-                return cub
-            else:
-                lmin, lmax = lbda
-                if unit_wave is None:
-                    kmin = int(lmin + 0.5)
-                    kmax = int(lmax + 0.5)
-                else:
-                    kmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
-                    kmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1
-                data = np.ones((kmax - kmin, size, size)) * np.nan
-                data[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = self.data[kmin:kmax, imin:imax, jmin:jmax].copy()
-                if self.var is not None:
-                    var = np.ones((kmax - kmin, size, size)) * np.nan
-                    var[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = self.var[kmin:kmax, imin:imax, jmin:jmax].copy()
-                else:
-                    var = None
-                cub = Cube(wcs=wcs, wave=self.wave[kmin:kmax],
-                           unit=self.unit, data=np.ma.masked_invalid(data),
-                           var=var)
-                cub.data_header = pyfits.Header(self.data_header)
-                cub.primary_header = pyfits.Header(self.primary_header)
-                return cub
-        else:
+        if size <= 0:
             return None
+
+        if unit_center is not None:
+            center = self.wcs.sky2pix(center, unit=unit_center)[0]
+        else:
+            center = np.array(center)
+        if unit_size is not None:
+            size = size / np.abs(self.wcs.get_step(unit=unit_size)[0])
+        radius = size / 2.
+
+        size = int(size)
+        i, j = (center - radius + 0.5).astype(int)
+        imin, jmin = np.maximum(np.minimum(
+            [i, j], [self.shape[1] - 1, self.shape[2] - 1]),
+            [0, 0])
+        imax, jmax = np.maximum(np.minimum(
+            [i + size, j + size],
+            [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
+
+        i0, j0 = - np.minimum([i, j], [0, 0])
+
+        wcs = self.wcs[imin:imax, jmin:jmax]
+        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
+        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
+        wcs.set_naxis1(size)
+        wcs.set_naxis2(size)
+
+        slin = [slice(None), slice(imin, imax), slice(jmin, jmax)]
+        slout = [slice(None), slice(i0, i0 + imax - imin),
+                 slice(j0, j0 + jmax - jmin)]
+
+        if lbda is not None:
+            lmin, lmax = lbda
+            if unit_wave is None:
+                kmin = int(lmin + 0.5)
+                kmax = int(lmax + 0.5)
+            else:
+                kmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
+                kmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1
+            nk = kmax - kmin
+            wave = self.wave[kmin:kmax]
+            slin[0] = slice(kmin, kmax)
+        else:
+            nk = self.shape[0]
+            wave = self.wave
+
+        var = None
+        data = np.empty((nk, size, size))
+        data[:] = np.nan
+        data[slout] = self.data[slin].copy()
+
+        if self.var is not None:
+            var = np.empty((nk, size, size))
+            var[:] = np.nan
+            var[slout] = self.var[slin].copy()
+
+        return Cube(wcs=wcs, wave=wave, unit=self.unit, copy=False,
+                    data=np.ma.masked_invalid(data), var=var,
+                    data_header=pyfits.Header(self.data_header),
+                    primary_header=pyfits.Header(self.primary_header))
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
                                 unit_radius=u.arcsec):
@@ -2701,16 +2699,16 @@ class Cube(DataArray):
         Parameters
         ----------
         center : (float,float)
-                      Center (dec,ra) of the aperture.
+            Center (dec,ra) of the aperture.
         radius : float
-                      Radius of the aperture. It corresponds to the radius
-                      along the delta axis and the image is square.
+            Radius of the aperture. It corresponds to the radius
+            along the delta axis and the image is square.
         unit_center : astropy.units
-                      Type of the center coordinates (degrees by default)
-                      If None, inputs are in pixels
+            Type of the center coordinates (degrees by default)
+            If None, inputs are in pixels
         unit_radius : astropy.units
-                      unit of the radius value (arcseconds by default)
-                      If None, inputs are in pixels
+            unit of the radius value (arcseconds by default)
+            If None, inputs are in pixels
 
         Returns
         -------
@@ -2777,16 +2775,16 @@ class Cube(DataArray):
         Parameters
         ----------
         center : (float,float)
-                      Center (dec,ra) of the aperture.
+            Center (dec,ra) of the aperture.
         radius : float
-                      Radius of the aperture in arcsec.
-                      If None, spectrum at nearest pixel is returned
+            Radius of the aperture in arcsec.
+            If None, spectrum at nearest pixel is returned
         unit_center : astropy.units
-                      Type of the center coordinates (degrees by default)
-                      If None, inputs are in pixels
+            Type of the center coordinates (degrees by default)
+            If None, inputs are in pixels
         unit_radius : astropy.units
-                      unit of the radius value (arcseconds by default)
-                      If None, inputs are in pixels
+            unit of the radius value (arcseconds by default)
+            If None, inputs are in pixels
 
         Returns
         -------

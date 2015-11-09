@@ -292,19 +292,18 @@ class WCS(object):
             sexa = deg2sexa(pixsky)
             ra = sexa[0][1]
             dec = sexa[0][0]
-            msg = ('center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '
-                   'step in arcsec:(%0.3f,%0.3f) rot:%0.1f deg') % (
-                       dec, ra, sizey, sizex, dy, dx, self.get_rot())
+            self._logger.info('center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '
+                              'step in arcsec:(%0.3f,%0.3f) rot:%0.1f deg',
+                              dec, ra, sizey, sizex, dy, dx, self.get_rot())
         except:
             pixcrd = [[0, 0], [self.naxis2 - 1, self.naxis1 - 1]]
             pixsky = self.pix2sky(pixcrd)
             dy, dx = self.get_step()
-            msg = ('spatial coord (%s): min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '
-                   'step:(%0.1f,%0.1f) rot:%0.1f deg') % (
-                       self.unit,
-                       pixsky[0, 0], pixsky[0, 1], pixsky[1, 0], pixsky[1, 1],
-                       dy, dx, self.get_rot())
-        self._logger.info(msg)
+            self._logger.info(
+                'spatial coord (%s): min:(%0.1f,%0.1f) max:(%0.1f,%0.1f) '
+                'step:(%0.1f,%0.1f) rot:%0.1f deg', self.unit,
+                pixsky[0, 0], pixsky[0, 1], pixsky[1, 0], pixsky[1, 1],
+                dy, dx, self.get_rot())
 
     def to_header(self):
         """Generate a astropy.fits header object with the WCS information."""

@@ -1243,7 +1243,7 @@ class Source(object):
             psf=None by default (no PSF-weighted extraction).
 
         """
-        if self.images.has_key('MASK_UNION'):
+        if 'MASK_UNION' in self.images:
             ima = self.images['MASK_UNION']
 
             if ima.wcs.sameStep(cube.wcs):
@@ -1258,24 +1258,27 @@ class Source(object):
             if ima.wcs.isEqual(subcub.wcs):
                 object_mask = ima.data.data
             else:
-                object_mask = ima.resample(newdim=(subcub.shape[1], subcub.shape[2]),
-                                           newstart=subcub.wcs.get_start(unit=u.deg),
-                                           newstep=subcub.wcs.get_step(unit=u.arcsec),
-                                           order=0, unit_start=u.deg,
-                                           unit_step=u.arcsec).data.data
+                object_mask = ima.resample(
+                    newdim=(subcub.shape[1], subcub.shape[2]),
+                    newstart=subcub.wcs.get_start(unit=u.deg),
+                    newstep=subcub.wcs.get_step(unit=u.arcsec),
+                    order=0, unit_start=u.deg,
+                    unit_step=u.arcsec).data.data
         else:
-            raise IOError('extract_spectra method use the MASK_UNION computed by add_mask method')
+            raise IOError('extract_spectra method use the MASK_UNION computed '
+                          'by add_mask method')
 
         if skysub:
-            if self.images.has_key('MASK_SKY'):
+            if 'MASK_SKY' in self.images:
                 if self.images['MASK_SKY'].wcs.isEqual(subcub.wcs):
                     sky_mask = self.images['MASK_SKY'].data.data
                 else:
-                    sky_mask = self.images['MASK_SKY'].resample(newdim=(subcub.shape[1], subcub.shape[2]),
-                                                                newstart=subcub.wcs.get_start(unit=u.deg),
-                                                                newstep=subcub.wcs.get_step(unit=u.arcsec),
-                                                                order=0, unit_start=u.deg,
-                                                                unit_step=u.arcsec).data.data
+                    sky_mask = self.images['MASK_SKY'].resample(
+                        newdim=(subcub.shape[1], subcub.shape[2]),
+                        newstart=subcub.wcs.get_start(unit=u.deg),
+                        newstep=subcub.wcs.get_step(unit=u.arcsec),
+                        order=0, unit_start=u.deg,
+                        unit_step=u.arcsec).data.data
             else:
                 raise IOError('extract_spectra method use the MASK_SKY '
                               'computed by add_mask method')
@@ -1283,7 +1286,8 @@ class Source(object):
             # Get the sky spectrum to subtract
             sky = subcub.sum(axis=(1, 2), weights=sky_mask)
             old_mask = subcub.data.mask.copy()
-            subcub.data.mask[np.where(np.tile(sky_mask, (subcub.shape[0], 1, 1)) == 0)] = True
+            subcub.data.mask[np.where(
+                np.tile(sky_mask, (subcub.shape[0], 1, 1)) == 0)] = True
             sky = subcub.mean(axis=(1, 2))
             self.spectra['MUSE_SKY'] = sky
             subcub.data.mask = old_mask
@@ -1306,11 +1310,11 @@ class Source(object):
         # the object mask and ensure that the weight map within the
         # object mask is >=0.
         # Weighted extractions
-        ksel = np.where(object_mask != 0)
+        ksel = (object_mask != 0)
         for tag in nb_tags:
             if self.images[tag].wcs.isEqual(subcub.wcs):
                 weight = self.images[tag].data * object_mask
-                weight[ksel] = weight[ksel] - np.min(weight[ksel])
+                weight[ksel] -= np.min(weight[ksel])
                 weight = weight.filled(0)
                 spec = subcub.sum(axis=(1, 2), weights=weight)
                 if skysub:
@@ -1323,13 +1327,10 @@ class Source(object):
             if len(psf.shape) == 3:
                 # PSF cube. The user is responsible for getting the
                 # dimensions right
-                if psf.shape[0] != subcub.shape[0] or \
-                   psf.shape[1] != subcub.shape[1] or \
-                   psf.shape[2] != subcub.shape[2]:
-                    msg = 'Incorrect dimensions for the PSF cube (%i,%i,%i) (it must be (%i,%i,%i)) '\
-                        % (psf.shape[0], psf.shape[1], psf.shape[2],
-                           subcub.shape[0], subcub.shape[1], subcub.shape[2])
-                    self._logger.warning(msg)
+                if not np.array_equal(psf.shape, subcub.shape):
+                    self._logger.warning(
+                        'Incorrect dimensions for the PSF cube (%s) (it must '
+                        'be (%s)) ', psf.shape, subcub.shape)
                     white_cube = None
                 else:
                     white_cube = psf
@@ -1337,17 +1338,19 @@ class Source(object):
                 # a Gaussian expected.
                 white_cube = np.zeros_like(subcub.data.data)
                 for l in range(subcub.shape[0]):
-                    gauss_ima = gauss_image(shape=(subcub.shape[1], subcub.shape[2]),
-                                            wcs=subcub.wcs, fwhm=(psf[l], psf[l]),
-                                            peak=False, unit_fwhm=u.arcsec)
+                    gauss_ima = gauss_image(
+                        shape=(subcub.shape[1], subcub.shape[2]),
+                        wcs=subcub.wcs, fwhm=(psf[l], psf[l]), peak=False,
+                        unit_fwhm=u.arcsec)
                     white_cube[l, :, :] = gauss_ima.data.data
             else:
-                msg = 'Incorrect dimensions for the PSF vector (%i) (it must be (%i)) '\
-                    % (psf.shape[0], subcub.shape[0])
-                self._logger.warning(msg)
+                self._logger.warning('Incorrect dimensions for the PSF vector '
+                                     '(%i) (it must be (%i)) ', psf.shape[0],
+                                     subcub.shape[0])
                 white_cube = None
             if white_cube is not None:
-                weight = white_cube * np.tile(object_mask, (subcub.shape[0], 1, 1))
+                weight = white_cube * np.tile(object_mask,
+                                              (subcub.shape[0], 1, 1))
                 spec = subcub.sum(axis=(1, 2), weights=weight)
                 if skysub:
                     self.spectra['MUSE_PSF_SKYSUB'] = spec
