@@ -485,30 +485,29 @@ class Cube(DataArray):
         Parameters
         ----------
         center : (float,float)
-                 Center of the explored region.
+            Center of the explored region.
         radius : (float,float)
-                 Radius defined the explored region.
-                 radius is (float,float), it defines an elliptical region
-                 with semi-major and semi-minor axes.
+            Radius defined the explored region.  radius is (float,float), it
+            defines an elliptical region with semi-major and semi-minor axes.
         posangle : float
-                 Position angle of the first axis.
-                 It is defined in degrees against the horizontal (q) axis
-                 of the image, counted counterclockwise.
+            Position angle of the first axis. It is defined in degrees against
+            the horizontal (q) axis of the image, counted counterclockwise.
         lmin : float
-                 minimum wavelength.
+            minimum wavelength.
         lmax : float
-                 maximum wavelength.
+            maximum wavelength.
         inside : boolean
-                 If inside is True, pixels inside the described region are masked.
+            If inside is True, pixels inside the described region are masked.
         unit_wave : astropy.units
-                 Type of the wavelengths coordinates (Angstrom by default)
-                 If None, inputs are in pixels
+            Type of the wavelengths coordinates (Angstrom by default)
+            If None, inputs are in pixels
         unit_center : astropy.units
-                 Type of the coordinates of the center (degrees by default)
-                 If None, inputs are in pixels
+            Type of the coordinates of the center (degrees by default)
+            If None, inputs are in pixels
         unit_radius : astropy.units
-                 Radius unit (arcseconds by default)
-                 If None, inputs are in pixels
+            Radius unit (arcseconds by default)
+            If None, inputs are in pixels
+
         """
         center = np.array(center)
         radius = np.array(radius)
@@ -1168,12 +1167,13 @@ class Cube(DataArray):
         Parameters
         ----------
         lbda_min : float
-                    Minimum wavelength.
+            Minimum wavelength.
         lbda_max : float
-                    Maximum wavelength.
+            Maximum wavelength.
         unit_wave : astropy.units
-                    wavelengths unit.
-                    If None, inputs are in pixels
+            wavelengths unit.
+            If None, inputs are in pixels
+
         """
         if lbda_max is None:
             lbda_max = lbda_min
@@ -1198,9 +1198,10 @@ class Cube(DataArray):
         Parameters
         ----------
         unit_wave : astropy.units
-                    wavelengths unit.
+            wavelengths unit.
         unit_wcs : astropy.units
-                    world coordinates unit.
+            world coordinates unit.
+
         """
         step = np.empty(3)
         step[0] = self.wave.get_step(unit_wave)
@@ -1212,9 +1213,10 @@ class Cube(DataArray):
         Parameters
         ----------
         unit_wave : astropy.units
-                    wavelengths unit.
+            wavelengths unit.
         unit_wcs : astropy.units
-                    world coordinates unit.
+            world coordinates unit.
+
         """
         r = np.empty((2, 3))
         r[:, 0] = self.wave.get_range(unit_wave)
@@ -1227,9 +1229,10 @@ class Cube(DataArray):
         Parameters
         ----------
         unit_wave : astropy.units
-                    wavelengths unit.
+            wavelengths unit.
         unit_wcs : astropy.units
-                    world coordinates unit.
+            world coordinates unit.
+
         """
         start = np.empty(3)
         start[0] = self.wave.get_start(unit_wave)
@@ -1242,9 +1245,10 @@ class Cube(DataArray):
         Parameters
         ----------
         unit_wave : astropy.units
-                    wavelengths unit.
+            wavelengths unit.
         unit_wcs : astropy.units
-                    world coordinates unit.
+            world coordinates unit.
+
         """
         end = np.empty(3)
         end[0] = self.wave.get_end(unit_wave)
@@ -1257,8 +1261,9 @@ class Cube(DataArray):
         Parameters
         ----------
         unit : astropy.units
-               type of the angle coordinate
-               degree by default
+            type of the angle coordinate
+            degree by default
+
         """
         return self.wcs.get_rot(unit)
 
@@ -1299,9 +1304,10 @@ class Cube(DataArray):
         Parameters
         ----------
         wcs : :class:`mpdaf.obj.WCS`
-              World coordinates.
+            World coordinates.
         wave : :class:`mpdaf.obj.WaveCoord`
-               Wavelength coordinates.
+            Wavelength coordinates.
+
         """
         if wcs is not None:
             self.wcs = wcs.copy()
@@ -1325,28 +1331,27 @@ class Cube(DataArray):
         Parameters
         ----------
         axis : None or int or tuple of ints
-               Axis or axes along which a sum is performed.
+            Axis or axes along which a sum is performed:
 
-               The default (axis = None) is perform a sum over all
-               the dimensions of the cube and returns a float.
+            - The default (``axis = None``) is perform a sum over all the
+              dimensions of the cube and returns a float.
+            - ``axis = 0`` is perform a sum over the wavelength dimension and
+              returns an image.
+            - ``axis = (1,2)`` is perform a sum over the (X,Y) axes and returns
+              a spectrum.
 
-               axis = 0  is perform a sum over the wavelength dimension
-               and returns an image.
-
-               axis = (1,2) is perform a sum over the (X,Y) axes and
-               returns a spectrum.
-
-               Other cases return None.
+            Other cases return None.
         weights : array_like, optional
-               An array of weights associated with the data values. The weights
-               array can either be 1-D (axis=(1,2)) or 2-D (axis=0) or of the
-               same shape as the cube. If weights=None, then all data in a are
-               assumed to have a weight equal to one.
+            An array of weights associated with the data values. The weights
+            array can either be 1-D (axis=(1,2)) or 2-D (axis=0) or of the
+            same shape as the cube. If weights=None, then all data in a are
+            assumed to have a weight equal to one.
 
-               The method conserves the flux by using the algorithm
-               from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
-               - Take into account bad pixels in the addition.
-               - Normalize with the median value of weighting sum/no-weighting sum
+            The method conserves the flux by using the algorithm
+            from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
+            - Take into account bad pixels in the addition.
+            - Normalize with the median value of weighting sum/no-weighting sum
+
         """
         if weights is not None:
             w = np.array(weights, dtype=np.float)
@@ -1486,18 +1491,17 @@ class Cube(DataArray):
         Parameters
         ----------
         axis : None or int or tuple of ints
-               Axis or axes along which a mean is performed.
+            Axis or axes along which a mean is performed.
 
-               The default (axis = None) is perform a mean over all the
-               dimensions of the cube and returns a float.
+            - The default (``axis = None``) is perform a mean over all the
+              dimensions of the cube and returns a float.
+            - ``axis = 0`` is perform a mean over the wavelength dimension and
+              returns an image.
+            - ``axis = (1,2)`` is perform a mean over the (X,Y) axes and
+              returns a spectrum.
 
-               axis = 0  is perform a mean over the wavelength dimension
-               and returns an image.
+            Other cases return None.
 
-               axis = (1,2) is perform a mean over the (X,Y) axes and
-               returns a spectrum.
-
-               Other cases return None.
         """
         if axis is None:
             return self.data.mean()
@@ -1534,18 +1538,17 @@ class Cube(DataArray):
         Parameters
         ----------
         axis : None or int or tuple of ints
-               Axis or axes along which a mean is performed.
+            Axis or axes along which a median is performed.
 
-               The default (axis = None) is perform a mean over all the
-               dimensions of the cube and returns a float.
+            - The default (``axis = None``) is perform a median over all the
+              dimensions of the cube and returns a float.
+            - ``axis = 0`` is perform a median over the wavelength dimension and
+              returns an image.
+            - ``axis = (1,2)`` is perform a median over the (X,Y) axes and
+              returns a spectrum.
 
-               axis = 0  is perform a mean over the wavelength dimension
-               and returns an image.
+            Other cases return None.
 
-               axis = (1,2) is perform a mean over the (X,Y) axes and
-               returns a spectrum.
-
-               Other cases return None.
         """
         if axis is None:
             return self.data.median()
@@ -1581,18 +1584,16 @@ class Cube(DataArray):
         Parameters
         ----------
         coord : array
-                array containing the sub-cube boundaries
-                [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
-                (output of `mpdaf.obj.cube.get_range`)
+            array containing the sub-cube boundaries
+            [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
+            (output of `mpdaf.obj.cube.get_range`)
         mask : boolean
-                if True, pixels outside [y_min,y_max]
-                and [x_min,x_max] are masked.
+            if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
         unit_wave : astropy.units
-                    wavelengths unit.
-                    If None, inputs are in pixels
+            wavelengths unit.  If None, inputs are in pixels
         unit_wcs : astropy.units
-                    world coordinates unit.
-                    If None, inputs are in pixels
+            world coordinates unit.  If None, inputs are in pixels
+
         """
         lmin = coord[0][0]
         y_min = coord[0][1]
@@ -1691,8 +1692,8 @@ class Cube(DataArray):
         Parameters
         ----------
         factor : (integer,integer,integer)
-                 Factor in z, y and x.
-                 Python notation: (nz,ny,nx)
+            Factor in z, y and x.  Python notation: (nz,ny,nx)
+
         """
         assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
         shape = self.shape / np.asarray(factor)
@@ -1717,26 +1718,26 @@ class Cube(DataArray):
         Parameters
         ----------
         factor : integer or (integer,integer,integer)
-                 Factor in z, y and x. Python notation: (nz,ny,nx).
+            Factor in z, y and x. Python notation: (nz,ny,nx).
         flux : boolean
-                 This parameters is used if new size is not an integer
-                 multiple of the original size.
+            This parameters is used if new size is not an integer
+            multiple of the original size.
 
-                 If Flux is False, the cube is truncated and the flux
-                 is not conserved.
+            If Flux is False, the cube is truncated and the flux
+            is not conserved.
 
-                 If Flux is True, margins are added to the cube to
-                 conserve the flux.
+            If Flux is True, margins are added to the cube to
+            conserve the flux.
         margin : 'center' or 'origin'
-                 This parameters is used if new size is not an
-                 integer multiple of the original size.
+            This parameters is used if new size is not an
+            integer multiple of the original size.
 
-                 In 'center' case, cube is truncated/pixels are added on the
-                 left and on the right, on the bottom and of the top of the
-                 cube.
+            In 'center' case, cube is truncated/pixels are added on the
+            left and on the right, on the bottom and of the top of the
+            cube.
 
-                 In 'origin'case, cube is truncated/pixels are added at the end
-                 along each direction
+            In 'origin'case, cube is truncated/pixels are added at the end
+            along each direction
         """
         if is_int(factor):
             factor = (factor, factor, factor)
@@ -2164,26 +2165,27 @@ class Cube(DataArray):
         Parameters
         ----------
         factor : integer or (integer,integer,integer)
-                 Factor in z, y and x. Python notation: (nz,ny,nx).
+            Factor in z, y and x. Python notation: (nz,ny,nx).
         flux : boolean
-                 This parameters is used if new size is
-                 not an integer multiple of the original size.
+            This parameters is used if new size is
+            not an integer multiple of the original size.
 
-                 If Flux is False, the cube is truncated and the flux
-                 is not conserved.
+            If Flux is False, the cube is truncated and the flux
+            is not conserved.
 
-                 If Flux is True, margins are added to the cube
-                 to conserve the flux.
+            If Flux is True, margins are added to the cube
+            to conserve the flux.
         margin : 'center' or 'origin'
-                 This parameters is used if new size is not
-                 an integer multiple of the original size.
+            This parameters is used if new size is not
+            an integer multiple of the original size.
 
-                 In 'center' case, cube is truncated/pixels are added on the
-                 left and on the right, on the bottom and of the top of the
-                 cube.
+            In 'center' case, cube is truncated/pixels are added on the
+            left and on the right, on the bottom and of the top of the
+            cube.
 
-                 In 'origin'case, cube is truncated/pixels are added
-                 at the end along each direction
+            In 'origin'case, cube is truncated/pixels are added
+            at the end along each direction
+
         """
         if is_int(factor):
             factor = (factor, factor, factor)
@@ -2206,8 +2208,8 @@ class Cube(DataArray):
         Parameter
         ---------
         factor : (integer,integer,integer)
-                 Factor in z, y and x.
-                Python notation: (nz,ny,nx)
+            Factor in z, y and x.  Python notation: (nz,ny,nx)
+
         """
         assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
         self.shape /= np.asarray(factor)
@@ -2305,21 +2307,22 @@ class Cube(DataArray):
         Parameters
         ----------
         f : function or :class:`mpdaf.obj.Spectrum` method
-                  Spectrum method or function that the first argument
-                  is a spectrum object.
+            Spectrum method or function that the first argument
+            is a spectrum object.
         cpu : integer
-                  number of CPUs. It is also possible to set
-                  the mpdaf.CPU global variable.
+            number of CPUs. It is also possible to set
+            the ``mpdaf.CPU`` global variable.
         verbose : boolean
-                  if True, progression is printed.
+            if True, progression is printed.
         kargs : kargs
-                  can be used to set function arguments.
+            can be used to set function arguments.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Spectrum`,
         out : :class:`mpdaf.obj.Image` if f returns a number,
         out : np.array(dtype=object) in others cases.
+
         """
         from mpdaf import CPU
         if cpu is not None and cpu < multiprocessing.cpu_count():
@@ -2415,20 +2418,21 @@ class Cube(DataArray):
         Parameters
         ----------
         f : function or :class:`mpdaf.obj.Image` method
-                  Image method or function that the first argument
-                  is a Image object. It should return an Image object.
+            Image method or function that the first argument
+            is a Image object. It should return an Image object.
         cpu : integer
-                  number of CPUs. It is also possible to set
+            number of CPUs. It is also possible to set
         verbose : boolean
-                  if True, progression is printed.
+            if True, progression is printed.
         kargs : kargs
-                  can be used to set function arguments.
+            can be used to set function arguments.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Image`,
         out : :class:`mpdaf.obj.Spectrum` if f returns a number,
         out : np.array(dtype=object) in others cases.
+
         """
         from mpdaf import CPU
         if cpu is not None and cpu < multiprocessing.cpu_count():
@@ -2533,32 +2537,32 @@ class Cube(DataArray):
         Parameters
         ----------
         wave : (float, float)
-                       (lbda1,lbda2) interval of wavelength in angstrom.
+            (lbda1,lbda2) interval of wavelength in angstrom.
         unit_wave : astropy.units
-                       wavelengths unit (angstrom by default).
-                       If None, inputs are in pixels
+            wavelengths unit (angstrom by default).
+            If None, inputs are in pixels
         is_sum : boolean
-                       if True the sum is computes, otherwise this is the
-                       average.
+            if True the sum is computes, otherwise this is the average.
         subtract_off : boolean
-                       If True, subtracting off nearby data.
-                       The method computes the subtracted flux by using the algorithm
-                       from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
-                       if is_sum is False
-                       sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                                       flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
-                       or if is_sum is True:
-                       sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                                      flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
+            If True, subtracting off nearby data.
+            The method computes the subtracted flux by using the algorithm
+            from Jarle Brinchmann (jarle@strw.leidenuniv.nl)::
+
+                # if is_sum is False
+                sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
+                                flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
+                # or if is_sum is True:
+                sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
+                                flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
         margin : float
-                       This off-band is offseted by margin wrt narrow-band
-                       limit.
+            This off-band is offseted by margin wrt narrow-band limit.
         fband : float
-                       The size of the off-band is fband*narrow-band width.
+            The size of the off-band is fband*narrow-band width.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
+
         """
         if unit_wave is None:
             k1, k2 = wave
@@ -2825,7 +2829,6 @@ def _process_spe(arglist):
                 out.data.mask, out.var, out.unit]
         else:
             return pos, 'other', [out]
-
     except Exception as inst:
         raise type(inst), str(inst) + \
             '\n The error occurred for the spectrum '\
@@ -2857,7 +2860,6 @@ def _process_ima(arglist):
         else:
             # f returns dtype -> iterator returns an array of dtype
             return k, 'other', [out]
-
     except Exception as inst:
         raise type(inst), str(inst) + '\n The error occurred '\
             'for the image [%i,:,:]' % k
