@@ -865,7 +865,11 @@ class Source(object):
             if np.abs(pa_white - pa) > 1.e-3:
                 subima = image.subimage((self.dec, self.ra), size * 1.5, minsize=minsize,
                                         unit_center=u.deg, unit_size=unit_size)
-                subima = subima.rotate(pa - pa_white)
+                uniq = np.unique(subima.data.data)
+                if ((uniq==0) | (uniq==1)).all():
+                    subima = subima.rotate(pa - pa_white, order=0)
+                else:
+                    subima = subima.rotate(pa - pa_white)
                 subima = subima.subimage((self.dec, self.ra), size, minsize=minsize,
                                          unit_center=u.deg, unit_size=unit_size)
             else:
