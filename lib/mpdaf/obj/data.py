@@ -5,10 +5,11 @@ import warnings
 
 from astropy import units as u
 from astropy.io import fits as pyfits
+from datetime import datetime
 from numpy import ma
 
 from .coords import WCS, WaveCoord
-from .objs import fix_unit_read
+from .objs import fix_unit_read, fix_unit_write
 from ..tools import (MpdafWarning, deprecated, is_valid_fits_file,
                      read_slice_from_fits)
 
@@ -19,12 +20,12 @@ class DataArray(object):
 
     Parameters
     ----------
-    filename : string
+    filename : str
         FITS file name, default to ``None``.
     hdulist : pyfits.hdulist
         HDU list class, used instead of ``fits.open(filename)`` if not None,
         to avoid opening the FITS file.
-    ext : integer or (integer,integer) or string or (string,string)
+    ext : integer or (integer,integer) or str or (str,str)
         Number/name of the data extension or numbers/names of the data and
         variance extensions.
     unit : astropy.units
@@ -43,7 +44,7 @@ class DataArray(object):
 
     Attributes
     ----------
-    filename : string
+    filename : str
         FITS filename.
     primary_header : pyfits.Header
         FITS primary header instance.
@@ -487,7 +488,193 @@ class DataArray(object):
                 primary_header=pyfits.Header(self.primary_header))
             res.filename = self.filename
             return res
-        
+
+    def get_wcs_header(self):
+        """Return a FITS header with the world coordinates from the wcs."""
+        if self.ndim == 1:
+            return self.wave.to_header()
+        elif self.ndim == 2:
+            return self.wcs.to_header()
+        elif self.ndim == 3:
+            return self.wcs.to_cube_header(self.wave)
+
+    def get_data_hdu(self, name='DATA', savemask='dq'):
+        """Return astropy.io.fits.ImageHDU corresponding to the DATA extension.
+
+        Parameters
+        ----------
+        name : str
+            Extension name, ``DATA`` by default.
+        savemask : str
+            If `dq`, the mask array is saved in ``DQ`` extension.
+            If `nan`, masked data are replaced by nan in ``DATA`` extension.
+            If `none`, masked array is not saved.
+
+        Returns
+        -------
+        out : astropy.io.fits.ImageHDU
+
+        """
+        if self.data.dtype == np.float64:
+            # Force data to be stored in float instead of double
+            self.data = self.data.astype(np.float32)
+
+        # world coordinates
+        hdr = self.get_wcs_header()
+
+        # create DATA extension
+        if savemask == 'nan':
+            data = self.data.filled(fill_value=np.nan)
+        else:
+            data = self.data.data
+        imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
+
+        for card in self.data_header.cards:
+            if (card.keyword[0:2] not in ('CD', 'PC') and
+                    card.keyword not in imahdu.header):
+                try:
+                    card.verify('fix')
+                    imahdu.header[card.keyword] = (card.value, card.comment)
+                except:
+                    try:
+                        if isinstance(card.value, str):
+                            n = 80 - len(card.keyword) - 14
+                            s = card.value[0:n]
+                            imahdu.header['hierarch %s' % card.keyword] = \
+                                (s, card.comment)
+                        else:
+                            imahdu.header['hierarch %s' % card.keyword] = \
+                                (card.value, card.comment)
+                    except:
+                        self._logger.warning("%s not copied in data header",
+                                             card.keyword)
+
+        if self.unit != u.dimensionless_unscaled:
+            try:
+                imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
+                                          'data unit type')
+            except u.format.fits.UnitScaleError:
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)),
+                                          'data unit type')
+
+        return imahdu
+
+    def get_stat_hdu(self, name='STAT', header=None):
+        """Return astropy.io.fits.ImageHDU corresponding to the STAT extension.
+
+        Parameters
+        ----------
+        name : str
+            Extension name, ``STAT`` by default.
+
+        Returns
+        -------
+        out : astropy.io.fits.ImageHDU
+
+        """
+        if self.var is None:
+            return None
+
+        if self.var.dtype == np.float64:
+            self.var = self.var.astype(np.float32)
+
+        # world coordinates
+        if header is None:
+            header = self.get_wcs_header()
+
+        imahdu = pyfits.ImageHDU(name=name, data=self.var, header=header)
+
+        # if header is None:
+        for card in self.data_header.cards:
+            if (card.keyword[0:2] not in ('CD', 'PC') and
+                    card.keyword not in imahdu.header):
+                try:
+                    card.verify('fix')
+                    imahdu.header[card.keyword] = (card.value, card.comment)
+                except:
+                    try:
+                        if isinstance(card.value, str):
+                            n = 80 - len(card.keyword) - 14
+                            s = card.value[0:n]
+                            imahdu.header['hierarch %s' % card.keyword] = \
+                                (s, card.comment)
+                        else:
+                            imahdu.header['hierarch %s' % card.keyword] = \
+                                (card.value, card.comment)
+                    except:
+                        self._logger.warning('%s not copied in data header',
+                                             card.keyword)
+
+        if self.unit != u.dimensionless_unscaled:
+            try:
+                imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
+                                          'data unit type')
+            except u.format.fits.UnitScaleError:
+                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)),
+                                          'data unit type')
+
+        return imahdu
+
+    def write(self, filename, savemask='dq'):
+        """Save the cube in a FITS file.
+
+        Parameters
+        ----------
+        filename : str
+            The FITS filename.
+        savemask : str
+            If 'dq', the mask array is saved in ``DQ`` extension
+            If 'nan', masked data are replaced by nan in ``DATA`` extension.
+            If 'none', masked array is not saved.
+
+        """
+        warnings.simplefilter('ignore')
+        prihdu = pyfits.PrimaryHDU()
+
+        for card in self.primary_header.cards:
+            try:
+                card.verify('fix')
+                prihdu.header[card.keyword] = (card.value, card.comment)
+            except:
+                try:
+                    if isinstance(card.value, str):
+                        n = 80 - len(card.keyword) - 14
+                        s = card.value[0:n]
+                        prihdu.header['hierarch %s' % card.keyword] = \
+                            (s, card.comment)
+                    else:
+                        prihdu.header['hierarch %s' % card.keyword] = \
+                            (card.value, card.comment)
+                except:
+                    self._logger.warning("%s not copied in primary header",
+                                         card.keyword)
+
+        prihdu.header['date'] = (str(datetime.now()), 'creation date')
+        prihdu.header['author'] = ('MPDAF', 'origin of the file')
+        hdulist = [prihdu]
+        warnings.simplefilter('default')
+
+        # create cube DATA extension
+        datahdu = self.get_data_hdu(savemask=savemask)
+        hdulist.append(datahdu)
+
+        # create spectrum STAT extension
+        if self.var is not None:
+            hdulist.append(self.get_stat_hdu(header=datahdu.header))
+
+        # create DQ extension
+        if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
+            hdulist.append(pyfits.ImageHDU(name='DQ', header=datahdu.header,
+                                           data=np.uint8(self.data.mask)))
+
+        # save to disk
+        hdu = pyfits.HDUList(hdulist)
+        warnings.simplefilter('ignore')
+        hdu.writeto(filename, clobber=True, output_verify='silentfix')
+        warnings.simplefilter('default')
+
+        self.filename = filename
+
     def _sqrt(self):
         if self.data is None:
             raise ValueError('empty data array')
@@ -542,4 +729,3 @@ class DataArray(object):
 
         """
         self.data[ksel] = np.ma.masked
-

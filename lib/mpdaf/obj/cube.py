@@ -1,12 +1,10 @@
 """cube.py manages Cube objects."""
 
-import datetime
 import multiprocessing
 import numpy as np
 import sys
 import time
 import types
-import warnings
 
 import astropy.units as u
 from astropy.io import fits as pyfits
@@ -14,7 +12,7 @@ from astropy.io import fits as pyfits
 from .coords import WCS, WaveCoord
 from .data import DataArray
 from .image import Image
-from .objs import is_float, is_int, UnitArray, UnitMaskedArray, fix_unit_write
+from .objs import is_float, is_int, UnitArray, UnitMaskedArray
 from .spectrum import Spectrum
 from ..tools import deprecated
 
@@ -158,185 +156,6 @@ class Cube(DataArray):
         super(Cube, self).info()
         if len(self.ima) > 0:
             self._logger.info('.ima: %s', ', '.join(self.ima.keys()))
-
-    def get_data_hdu(self, name='DATA', savemask='dq'):
-        """Return astropy.io.fits.ImageHDU corresponding to the DATA extension.
-
-        Parameters
-        ----------
-        name : string
-            Extension name.  DATA by default
-        savemask : string
-            If 'dq', the mask array is saved in DQ extension.
-            If 'nan', masked data are replaced by nan in DATA extension.
-            If 'none', masked array is not saved.
-
-        Returns
-        -------
-        out : astropy.io.fits.ImageHDU
-
-        """
-        if self.data.dtype == np.float64:
-            self.data = self.data.astype(np.float32)
-
-        # world coordinates
-        hdr = self.wcs.to_cube_header(self.wave)
-
-        # create scube DATA extension
-        if savemask == 'nan':
-            data = self.data.filled(fill_value=np.nan)
-        else:
-            data = self.data.data
-        imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
-
-        for card in self.data_header.cards:
-            to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
-                       card.keyword not in imahdu.header)
-            if to_copy:
-                try:
-                    card.verify('fix')
-                    imahdu.header[card.keyword] = (card.value, card.comment)
-                except:
-                    try:
-                        if isinstance(card.value, str):
-                            n = 80 - len(card.keyword) - 14
-                            s = card.value[0:n]
-                            imahdu.header['hierarch %s' % card.keyword] = \
-                                (s, card.comment)
-                        else:
-                            imahdu.header['hierarch %s' % card.keyword] = \
-                                (card.value, card.comment)
-                    except:
-                        self._logger.warning("%s not copied in data header",
-                                             card.keyword)
-
-        if self.unit != u.dimensionless_unscaled:
-            try:
-                imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
-                                          'data unit type')
-            except u.format.fits.UnitScaleError:
-                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)),
-                                          'data unit type')
-
-        return imahdu
-
-    def get_stat_hdu(self, name='STAT', header=None):
-        """Return astropy.io.fits.ImageHDU corresponding to the STAT extension.
-
-        Parameters
-        ----------
-        name : string
-            Extension name.  STAT by default
-
-        Returns
-        -------
-        out : astropy.io.fits.ImageHDU
-
-        """
-        if self.var is None:
-            return None
-
-        if self.var.dtype == np.float64:
-            self.var = self.var.astype(np.float32)
-
-        # world coordinates
-        if header is None:
-            header = self.wcs.to_cube_header(self.wave)
-
-        imahdu = pyfits.ImageHDU(name=name, data=self.var, header=header)
-
-        if header is None:
-            for card in self.data_header.cards:
-                to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
-                           card.keyword not in imahdu.header)
-                if to_copy:
-                    try:
-                        card.verify('fix')
-                        imahdu.header[card.keyword] = (card.value, card.comment)
-                    except:
-                        try:
-                            if isinstance(card.value, str):
-                                n = 80 - len(card.keyword) - 14
-                                s = card.value[0:n]
-                                imahdu.header['hierarch %s' % card.keyword] = \
-                                    (s, card.comment)
-                            else:
-                                imahdu.header['hierarch %s' % card.keyword] = \
-                                    (card.value, card.comment)
-                        except:
-                            self._logger.warning("%s not copied in data header",
-                                                 card.keyword)
-
-        if self.unit != u.dimensionless_unscaled:
-            try:
-                imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
-                                          'data unit type')
-            except u.format.fits.UnitScaleError:
-                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)),
-                                          'data unit type')
-
-        return imahdu
-
-    def write(self, filename, savemask='dq'):
-        """Save the cube in a FITS file.
-
-        Parameters
-        ----------
-        filename : string
-            The FITS filename.
-        savemask : string
-            If 'dq', the mask array is saved in DQ extension
-            If 'nan', masked data are replaced by nan in DATA extension.
-            If 'none', masked array is not saved.
-
-        """
-        # create primary header
-        warnings.simplefilter("ignore")
-        prihdu = pyfits.PrimaryHDU()
-        for card in self.primary_header.cards:
-            try:
-                card.verify('fix')
-                prihdu.header[card.keyword] = (card.value, card.comment)
-            except:
-                try:
-                    if isinstance(card.value, str):
-                        n = 80 - len(card.keyword) - 14
-                        s = card.value[0:n]
-                        prihdu.header['hierarch %s' % card.keyword] = \
-                            (s, card.comment)
-                    else:
-                        prihdu.header['hierarch %s' % card.keyword] = \
-                            (card.value, card.comment)
-                except:
-                    self._logger.warning("%s not copied in primary header",
-                                         card.keyword)
-
-        prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
-        prihdu.header['author'] = ('MPDAF', 'origin of the file')
-        hdulist = [prihdu]
-        warnings.simplefilter("default")
-
-        # create cube DATA extension
-        datahdu = self.get_data_hdu('DATA', savemask)
-        hdulist.append(datahdu)
-
-        # create spectrum STAT extension
-        if self.var is not None:
-            stathdu = self.get_stat_hdu('STAT', datahdu.header)
-            hdulist.append(stathdu)
-
-        # create DQ extension
-        if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
-            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask))
-            hdulist.append(dqhdu)
-
-        # save to disk
-        hdu = pyfits.HDUList(hdulist)
-        warnings.simplefilter("ignore")
-        hdu.writeto(filename, clobber=True, output_verify='silentfix')
-        warnings.simplefilter("default")
-
-        self.filename = filename
 
     def resize(self):
         """Resize the cube to have a minimum number of masked values."""

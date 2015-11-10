@@ -1,6 +1,5 @@
 """spectrum.py defines Spectrum objects."""
 
-import datetime
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,8 +13,7 @@ from scipy.optimize import leastsq
 
 from . import ABmag_filters
 from .data import DataArray
-from .objs import (is_float, is_int, flux2mag, UnitMaskedArray, UnitArray,
-                   fix_unit_write)
+from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
 from ..tools import deprecated
 
 
@@ -219,153 +217,6 @@ class Spectrum(DataArray):
             filename=filename, ext=ext, wave=wave, unit=unit, data=data,
             var=var, copy=copy, dtype=dtype, **kwargs)
         self._clicks = None
-
-    def get_data_hdu(self, name='DATA', savemask='dq'):
-        """Return astropy.io.fits.ImageHDU corresponding to the DATA extension.
-
-        Parameters
-        ----------
-        name : string
-            Extension name.  DATA by default
-        savemask : string
-            If 'dq', the mask array is saved in DQ extension.
-            If 'nan', masked data are replaced by nan in DATA extension.
-            If 'none', masked array is not saved.
-
-        Returns
-        -------
-        out : astropy.io.fits.ImageHDU
-
-        """
-        # create spectrum DATA extension
-        if savemask == 'nan':
-            data = self.data.filled(fill_value=np.nan)
-        else:
-            data = self.data.data
-        data = data.astype(np.float32)
-        hdr = self.wave.to_header()
-        imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
-
-        for card in self.data_header.cards:
-            to_copy = (card.keyword[0:2] not in ('CD', 'PC') and
-                       card.keyword not in imahdu.header)
-            if to_copy:
-                try:
-                    card.verify('fix')
-                    imahdu.header[card.keyword] = \
-                        (card.value, card.comment)
-                except:
-                    try:
-                        if isinstance(card.value, str):
-                            n = 80 - len(card.keyword) - 14
-                            s = card.value[0: n]
-                            imahdu.header['hierarch %s' % card.keyword] = \
-                                (s, card.comment)
-                        else:
-                            imahdu.header['hierarch %s' % card.keyword] = \
-                                (card.value, card.comment)
-                    except:
-                        self._logger.warning("%s not copied in data header",
-                                             card.keyword)
-
-        if self.unit != u.dimensionless_unscaled:
-            try:
-                imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
-                                          'data unit type')
-            except u.format.fits.UnitScaleError:
-                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)),
-                                          'data unit type')
-
-        return imahdu
-
-    def get_stat_hdu(self, name='STAT'):
-        """Return astropy.io.fits.ImageHDU corresponding to the STAT extension.
-
-        Parameters
-        ----------
-        name : string
-            Extension name.  STAT by default
-
-        Returns
-        -------
-        out : astropy.io.fits.ImageHDU
-        """
-        if self.var is None:
-            return None
-        else:
-            var = self.var.astype(np.float32)
-            hdr = self.wave.to_header()
-            hdu = pyfits.ImageHDU(name=name, data=var, header=hdr)
-            if self.unit != u.dimensionless_unscaled:
-                try:
-                    hdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
-                                           'data unit type')
-                except u.format.fits.UnitScaleError:
-                    hdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)),
-                                           'data unit type')
-            return hdu
-
-    def write(self, filename, savemask='dq'):
-        """Save the object in a FITS file.
-
-        Parameters
-        ----------
-        filename : string
-            The FITS filename.
-        savemask : string
-            If 'dq', the mask array is saved in DQ extension.
-            If 'nan', masked data are replaced by nan in DATA extension.
-            If 'none', masked array is not saved.
-
-        """
-        assert self.data is not None
-        warnings.simplefilter("ignore")
-
-        # create primary header
-        prihdu = pyfits.PrimaryHDU()
-        for card in self.primary_header.cards:
-            try:
-                card.verify('fix')
-                prihdu.header[card.keyword] = (card.value, card.comment)
-            except:
-                try:
-                    if isinstance(card.value, str):
-                        n = 80 - len(card.keyword) - 14
-                        s = card.value[0:n]
-                        prihdu.header['hierarch %s' % card.keyword] = \
-                            (s, card.comment)
-                    else:
-                        prihdu.header['hierarch %s' % card.keyword] = \
-                            (card.value, card.comment)
-                except:
-                    self._logger.warning("%s not copied in primary header",
-                                         card.keyword)
-        prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
-        prihdu.header['author'] = ('MPDAF', 'origin of the file')
-        hdulist = [prihdu]
-
-        # create spectrum DATA extension
-        data_hdu = self.get_data_hdu('DATA', savemask)
-        hdulist.append(data_hdu)
-
-        # create spectrum STAT extension
-        stat_hdu = self.get_stat_hdu('STAT')
-        if stat_hdu is not None:
-            hdulist.append(stat_hdu)
-
-        # create spectrum DQ extension
-        if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
-            hdr = self.wave.to_header()
-            dqhdu = pyfits.ImageHDU(name='DQ', data=np.uint8(self.data.mask),
-                                    header=hdr)
-            hdulist.append(dqhdu)
-
-        # save to disk
-        hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True, output_verify='fix')
-        warnings.simplefilter("default")
-
-        self.filename = filename
 
     def resize(self):
         """Resize the spectrum to have a minimum number of masked values."""
