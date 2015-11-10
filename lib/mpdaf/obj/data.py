@@ -481,10 +481,13 @@ class DataArray(object):
         if data.shape == ():
             return data
         else:
-            return self.__class__(
+            res = self.__class__(
                 data=data, unit=self.unit, var=var, wcs=wcs, wave=wave,  # copy
                 data_header=pyfits.Header(self.data_header),
                 primary_header=pyfits.Header(self.primary_header))
+            res.filename = self.filename
+            return res
+        
     def _sqrt(self):
         if self.data is None:
             raise ValueError('empty data array')

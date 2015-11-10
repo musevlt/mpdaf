@@ -1149,15 +1149,17 @@ class Cube(DataArray):
         obj = super(Cube, self).__getitem__(item)
         if isinstance(obj, DataArray):
             if obj.ndim == 1:
-                return Spectrum(data=obj.data, unit=obj.unit, var=obj.var,
+                res = Spectrum(data=obj.data, unit=obj.unit, var=obj.var,
                                 wave=obj.wave, dtype=obj.dtype, copy=False)
             elif obj.ndim == 2:
-                return Image(data=obj.data, unit=obj.unit, var=obj.var,
+                res = Image(data=obj.data, unit=obj.unit, var=obj.var,
                              wcs=obj.wcs, dtype=obj.dtype, copy=False)
             elif obj.ndim == 3:
-                return Cube(data=obj.data, unit=obj.unit, var=obj.var,
+                res = Cube(data=obj.data, unit=obj.unit, var=obj.var,
                             wave=obj.wave, wcs=obj.wcs, dtype=obj.dtype,
                             copy=False)
+            res.filename = self.filename
+            return res
         else:
             return obj
 
