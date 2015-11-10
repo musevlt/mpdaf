@@ -178,7 +178,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
         if(nbcube):
             outnbcubename = 'NB_' + os.path.basename(cubename)
-            outnbcube = c.clone()
+            outnbcube = c.clone(data_init=np.empty)
             outnbcube.var = None
 
         f2 = open("nb/dosex", 'w')
