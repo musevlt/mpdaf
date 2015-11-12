@@ -632,7 +632,7 @@ class Source(object):
 
     def add_comment(self, comment, author, date=None):
         """Add a user comment to the FITS header of the Source object.
-        
+
         Parameters
         ----------
         comment : str
@@ -652,17 +652,17 @@ class Source(object):
 
     def remove_comment(self, ncomment):
         """Remove a comment from the FITS header of the Source object.
-        
+
         Parameters
         ----------
         ncomment : integer
                    Comment ID
         """
         del self.header['COM%03d' % ncomment]
-        
+
     def add_history(self, text, author="", date=None):
         """Add a history to the FITS header of the Source object.
-        
+
         Parameters
         ----------
         text : str
@@ -682,7 +682,7 @@ class Source(object):
 
     def remove_history(self, nhist):
         """Remove an history from the FITS header of the Source object.
-        
+
         Parameters
         ----------
         nhist : integer
@@ -1247,7 +1247,7 @@ class Source(object):
     def extract_spectra(self, cube,
                         tags_to_try=['MUSE_WHITE', 'MUSE_LYALPHA1216',
                                      'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
-                        skysub=True, psf=None, lbda=None):
+                        skysub=True, psf=None, lbda=None, unit_wave=u.angstrom):
         """Extract spectra from the MUSE data cube and from a list of
         narrow-band images (to define spectrum extraction apertures).
 
@@ -1298,6 +1298,9 @@ class Source(object):
             psf=None by default (no PSF-weighted extraction).
         lbda : (float, float) or none
             if not none, tuple giving the wavelength range.
+        unit_wave : astropy.units
+            Wavelengths unit (angstrom by default)
+            If None, inputs are in pixels
 
         """
         if 'MASK_UNION' in self.images:
@@ -1312,7 +1315,7 @@ class Source(object):
 
             subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                                   unit_center=u.deg, unit_size=unit_size,
-                                  lbda=lbda)
+                                  lbda=lbda, unit_wave=unit_wave)
             if ima.wcs.isEqual(subcub.wcs):
                 object_mask = ima.data.data
             else:
