@@ -289,12 +289,13 @@ class Catalog(Table):
         t['DEC'].unit = u.deg
         for names in names_z:
             t[names].format = '%.6f'
-        for names, unit in zip(names_lines, units_lines):
-            t[names].unit = unit
-            if names[:4] == 'LBDA':
-                t[names].format = '%0.2f'
-            if names[:4] == 'FLUX':
-                t[names].format = '%0.4f'
+        if len(llines)!=0:
+            for names, unit in zip(names_lines, units_lines):
+                t[names].unit = unit
+                if names[:4] == 'LBDA':
+                    t[names].format = '%0.2f'
+                if names[:4] == 'FLUX':
+                    t[names].format = '%0.4f'
         return t
 
     @classmethod
