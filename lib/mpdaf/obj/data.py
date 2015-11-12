@@ -499,7 +499,7 @@ class DataArray(object):
             return self.wcs.to_cube_header(self.wave)
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
-        """Return astropy.io.fits.ImageHDU corresponding to the DATA extension.
+        """Return an ImageHDU corresponding to the DATA extension.
 
         Parameters
         ----------
@@ -512,21 +512,28 @@ class DataArray(object):
 
         Returns
         -------
-        out : astropy.io.fits.ImageHDU
+        out : :class:`astropy.io.fits.ImageHDU`
 
         """
         if self.data.dtype == np.float64:
             # Force data to be stored in float instead of double
             self.data = self.data.astype(np.float32)
 
-        # world coordinates
-        hdr = self.get_wcs_header()
-
         # create DATA extension
-        if savemask == 'nan':
+        if savemask == 'nan' and self.data.count() > 0:
+            # NaNs can be used only for float arrays, so we raise an exception
+            # if there are masked values in a non-float array.
+            if not np.issubdtype(self.data.dtype, np.float):
+                raise ValueError('The .data array contains masked values but '
+                                 'its type does not allow to replace with '
+                                 'NaNs. You can either fill the array with '
+                                 'another value or use another option for '
+                                 'savemask.')
             data = self.data.filled(fill_value=np.nan)
         else:
             data = self.data.data
+
+        hdr = self.get_wcs_header()
         imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
 
         for card in self.data_header.cards:
@@ -560,7 +567,7 @@ class DataArray(object):
         return imahdu
 
     def get_stat_hdu(self, name='STAT', header=None):
-        """Return astropy.io.fits.ImageHDU corresponding to the STAT extension.
+        """Return an ImageHDU corresponding to the STAT extension.
 
         Parameters
         ----------
@@ -569,7 +576,7 @@ class DataArray(object):
 
         Returns
         -------
-        out : astropy.io.fits.ImageHDU
+        out : :class:`astropy.io.fits.ImageHDU`
 
         """
         if self.var is None:
