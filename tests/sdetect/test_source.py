@@ -50,6 +50,15 @@ class TestSource():
         self.source1.add_attr('test', 'toto')
         nose.tools.assert_equal(self.source1.test, 'toto')
         self.source1.remove_attr('test')
+        self.source1.add_history('test_arg unitary test', 'mpdaf')
+        nose.tools.assert_equal(self.source1.hist001, 'test_arg unitary test')
+        self.source1.add_history('an other', 'mpdaf')
+        nose.tools.assert_equal(self.source1.hist002, 'an other')
+        self.source1.remove_history(2)
+        self.source1.add_history('an other', 'mpdaf')
+        nose.tools.assert_equal(self.source1.hist002, 'an other')
+        self.source1.remove_history(1)
+        self.source1.remove_history(2)
 
     @attr(speed='fast')
     def test_z(self):

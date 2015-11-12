@@ -629,16 +629,65 @@ class Source(object):
         else:
             self.header[item] = value
 
-    def add_comment(self, comment, author):
-        """Add a user comment to the FITS header of the Source object."""
+    def add_comment(self, comment, author, date=None):
+        """Add a user comment to the FITS header of the Source object.
+        
+        Parameters
+        ----------
+        comment : str
+                  Comment
+        author : str
+                 Initial of the author
+        date   : datetime.date
+                 Date
+                 By default the current local date is used.
+        """
+        if date is None:
+            date = datetime.date.today()
         i = 1
         while 'COM%03d' % i in self.header:
             i += 1
-        self.header['COM%03d' % i] = (comment, '%s %s' % (author, str(datetime.date.today())))
+        self.header['COM%03d' % i] = (comment, '%s %s' % (author, str(date)))
 
     def remove_comment(self, ncomment):
-        """Remove a comment from the FITS header of the Source object."""
+        """Remove a comment from the FITS header of the Source object.
+        
+        Parameters
+        ----------
+        ncomment : integer
+                   Comment ID
+        """
         del self.header['COM%03d' % ncomment]
+        
+    def add_history(self, text, author="", date=None):
+        """Add a history to the FITS header of the Source object.
+        
+        Parameters
+        ----------
+        text : str
+               History text
+        author : str
+                 Initial of the author.
+        date   : datetime.date
+                 Date
+                 By default the current local date is used.
+        """
+        if date is None:
+            date = datetime.date.today()
+        i = 1
+        while 'HIST%03d' % i in self.header:
+            i += 1
+        self.header['HIST%03d' % i] = (text, '%s %s' % (author, str(date)))
+
+    def remove_history(self, nhist):
+        """Remove an history from the FITS header of the Source object.
+        
+        Parameters
+        ----------
+        nhist : integer
+                History ID
+        """
+        del self.header['HIST%03d' % nhist]
 
     def add_attr(self, key, value, desc=None):
         """Add a new attribute for the current Source object. This attribute
