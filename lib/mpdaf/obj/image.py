@@ -3864,7 +3864,7 @@ class Image(DataArray):
         ima = gauss_image(self.shape, wcs=self.wcs, center=center,
                           flux=flux, fwhm=fwhm, peak=peak, rot=rot,
                           factor=factor, gauss=None, unit_center=unit_center,
-                          unit_fwhm=unit_fwhm, cont=0)
+                          unit_fwhm=unit_fwhm, cont=0, unit=self.unit)
         ima.norm(typ='sum')
         return self.fftconvolve(ima)
 
@@ -3915,7 +3915,7 @@ class Image(DataArray):
         ima = moffat_image(self.shape, wcs=self.wcs, factor=factor,
                            center=center, flux=flux, fwhm=(fwhmy, fwhmx), n=n,
                            rot=rot, peak=peak, unit_center=unit_center,
-                           unit_fwhm=unit_a)
+                           unit_fwhm=unit_a, unit=self.unit)
 
         ima.norm(typ='sum')
         return self.fftconvolve(ima)
@@ -4540,9 +4540,9 @@ class Image(DataArray):
 
 
 def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
-                center=None, flux=1., fwhm=(1., 1.), peak=False,
-                rot=0., cont=0, unit_center=u.deg,
-                unit_fwhm=u.arcsec):
+                center=None, flux=1., fwhm=(1., 1.), peak=False, rot=0.,
+                cont=0, unit_center=u.deg, unit_fwhm=u.arcsec,
+                unit=u.dimensionless_unscaled):
     """Create a new image from a 2D gaussian.
 
     Parameters
@@ -4675,12 +4675,13 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
         data = gauss(pixcrd[:, 0], pixcrd[:, 1])
         data = np.reshape(data, (shape[1], shape[0])).T
 
-    return Image(data=data + cont, wcs=wcs)
+    return Image(data=data + cont, wcs=wcs, unit=unit)
 
 
 def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
                  center=None, flux=1., fwhm=(1., 1.), peak=False, n=2,
-                 rot=0., cont=0, unit_center=u.deg, unit_fwhm=u.arcsec):
+                 rot=0., cont=0, unit_center=u.deg, unit_fwhm=u.arcsec,
+                 unit=u.dimensionless_unscaled):
     """Create a new image from a 2D Moffat function.
 
     Parameters
@@ -4793,11 +4794,11 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
         data = moffat(pixcrd[:, 0], pixcrd[:, 1])
         data = np.reshape(data, (shape[1], shape[0])).T
 
-    return Image(data=data + cont, wcs=wcs)
+    return Image(data=data + cont, wcs=wcs, unit=unit)
 
 
-def make_image(x, y, z, steps, deg=True, limits=None,
-               spline=False, order=3, smooth=0):
+def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
+               smooth=0, unit=u.dimensionless_unscaled):
     """Interpolate z(x,y) and returns an image.
 
     Parameters
@@ -4863,7 +4864,7 @@ def make_image(x, y, z, steps, deg=True, limits=None,
         data = interpolate.griddata(points, z.ravel(),
                                     (Xi, Yi), method='linear')
 
-    return Image(data=data, wcs=wcs)
+    return Image(data=data, wcs=wcs, unit=unit)
 
 
 def composite_image(ImaColList, mode='lin', cuts=(10, 90),
@@ -4981,7 +4982,8 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
         return p1
 
 
-def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
+def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
+               unit=u.dimensionless_unscaled):
     """Create a new image from a table of apertures.
 
     ra(deg), dec(deg) and radius(arcsec).
@@ -5026,4 +5028,4 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[]):
                            np.arange(jmin, jmax) - center[1], indexing='ij')
         data[imin:imax, jmin:jmax] = np.array(
             (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
-    return Image(data=data, wcs=wcs)
+    return Image(data=data, wcs=wcs, unit=unit)
