@@ -520,7 +520,8 @@ class Source(object):
         # images
         for key, ima in self.images.iteritems():
             ext_name = 'IMA_%s_DATA' % key
-            data_hdu = ima.get_data_hdu(name=ext_name, savemask='nan')
+            savemask = 'none' if key.startswith(('MASK_', 'SEG_')) else 'nan'
+            data_hdu = ima.get_data_hdu(name=ext_name, savemask=savemask)
             hdulist.append(data_hdu)
             ext_name = 'IMA_%s_STAT' % key
             stat_hdu = ima.get_stat_hdu(name=ext_name)
