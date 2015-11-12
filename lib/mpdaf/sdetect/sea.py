@@ -98,94 +98,72 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
 
 #         count = count+1
 
-    # We have now looped through. Time to take stock. First let us check that there
-    # was at least one detection.
+    # We have now looped through. Time to take stock. First let us check that
+    # there was at least one detection.
     n_useful = 0
     segmentation_maps = {}
     isUseful = {}
-    if (global_ix_min >= 0):
+    if global_ix_min >= 0:
         # Ok, we are good. We have now at least one good segmentation map.
         # So we can make one simple one here.
         ref_map = np.where(images[global_im_index_min] == global_value, 1, 0)
 
-        # Then check the others as well and if they do have a map at this position
-        # get another simple segmentation map.
+        # Then check the others as well and if they do have a map at this
+        # position get another simple segmentation map.
         for key in images:
             if bad[key] == 1:
-                logger.info('Image %s has no objects' % key)
-                this_map = np.zeros(ref_map.shape)
+                logger.info('Image %s has no objects', key)
+                this_map = np.zeros(ref_map.shape, dtype=bool)
             else:
                 # Has at least one object - let us see.
                 if np.abs(min_distances[key] - global_min) <= tolerance:
                     # Create simple map
-                    logger.info('Image %s has one useful objects' % key)
-                    this_map = np.where(images[key] == min_values[key], 1, 0)
+                    logger.info('Image %s has one useful objects', key)
+                    this_map = images[key] == min_values[key]
                     n_useful = n_useful + 1
                     isUseful[key] = True
                 else:
                     # Ok, this is too far away, I do not want to use this.
-                    this_map = np.zeros(ref_map.shape)
+                    this_map = np.zeros(ref_map.shape, dtype=bool)
 
             segmentation_maps[key] = this_map
 
     else:
         # No objects found. Let us create a list of empty images.
         keys = images.keys()
-        segmentation_maps = {key: np.zeros(images[keys[0]].shape) for key in keys}
+        segmentation_maps = {key: np.zeros(images[keys[0]].shape, dtype=bool)
+                             for key in keys}
         isUseful = {key: 0 for key in keys}
         n_useful = 0
 
-    result = {'N_useful': n_useful, 'seg': segmentation_maps, 'isUseful': isUseful}
-
-    return result
+    return {'N_useful': n_useful,
+            'seg': segmentation_maps,
+            'isUseful': isUseful}
 
 
 def union(seg):
-    """Given a list of segmentation maps, create a segmentation map."""
-    first = True
-    for im in seg.values():
-        if first:
-            mask = im
-            first = False
-        else:
-            mask += im
-
-        mask = np.where(mask > 0, 1, 0)
-
+    """Return the union of a list of boolean arrays."""
+    mask = np.zeros(seg[0].shape, dtype=bool)
+    for im in seg:
+        mask |= np.asarray(im, dtype=bool)
     return mask
 
 
 def intersection(seg):
-    """Given a list of segmentation maps, create a segmentation map."""
-    first = True
-    for im in seg.values():
-        if (np.max(im) > 0):
-            if first:
-                mask = im
-                first = False
-            else:
-                mask *= im
-
+    """Return the intersection of a list of boolean arrays."""
+    mask = np.ones(seg[0].shape, dtype=bool)
+    for im in seg:
+        mask &= np.asarray(im, dtype=bool)
     return mask
 
 
 def findSkyMask(images):
     """Loop over all segmentation images and use the region where no object is
     detected in any segmentation map as our sky image."""
-
-    first = True
-    for im in images.values():
-        if first:
-            # Define the sky mask to have ones everywhere.
-            # For every segmentation map i will set the regions
-            # where an object is detected to zero.
-            skymask = np.ones(im.shape, dtype=np.int)
-            first = False
-
-        isObj = np.where(im > 0)
-        skymask[isObj] = 0
-
-    return skymask
+    mask = np.ones(images[0].shape, dtype=np.bool)
+    for im in images:
+        mask &= (~np.asarray(im, dtype=bool))
+    return mask
 
 
 def segmentation(source, tags, DIR, remove):
@@ -219,7 +197,7 @@ def segmentation(source, tags, DIR, remove):
         rot_ima = ima.get_rot()
         prihdu = pyfits.PrimaryHDU()
         hdulist = [prihdu]
-        if ima.shape[0] == dim[0] and  ima.shape[1] == dim[1] and \
+        if ima.shape[0] == dim[0] and ima.shape[1] == dim[1] and \
                 start_ima[0] == start[0] and start_ima[1] == start[1] and \
                 step_ima[0] == step[0] and step_ima[1] == step[1] and \
                 rot_ima == rot:
@@ -258,27 +236,22 @@ def segmentation(source, tags, DIR, remove):
 
     # Save segmentation maps
     if len(maps) > 0:
+        import pdb; pdb.set_trace()
         for tag, data in maps.iteritems():
-            ima = Image(wcs=wcs, data=data)
+            ima = Image(wcs=wcs, data=data, dtype=np.uint8, copy=False)
             source.images['SEG_' + tag] = ima
 
 
 def mask_creation(source, maps):
     wcs = source.images['MUSE_WHITE'].wcs
     yc, xc = wcs.sky2pix((source.DEC, source.RA), unit=u.deg)[0]
-
     r = findCentralDetection(maps, yc, xc, tolerance=3)
-
-    object_mask = union(r['seg'])
-    small_mask = intersection(r['seg'])
-    sky_mask = findSkyMask(maps)
-
-    ima = Image(wcs=wcs, data=object_mask)
-    source.images['MASK_UNION'] = ima
-    ima = Image(wcs=wcs, data=sky_mask)
-    source.images['MASK_SKY'] = ima
-    ima = Image(wcs=wcs, data=small_mask)
-    source.images['MASK_INTER'] = ima
+    source.images['MASK_UNION'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
+                                        data=union(r['seg'].values()))
+    source.images['MASK_SKY'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
+                                      data=findSkyMask(maps.values()))
+    source.images['MASK_INTER'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
+                                        data=intersection(r['seg'].values()))
 
 
 def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
