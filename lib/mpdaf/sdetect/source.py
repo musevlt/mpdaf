@@ -478,14 +478,18 @@ class Source(object):
             cols = []
             for colname in self.lines.colnames:
                 col = self.lines[colname]
+                if col.unit is not None:
+                    unit = col.unit.to_string('fits')
+                else:
+                    unit=None
                 try:
                     cols.append(pyfits.Column(
                         name=col.name, format=col.dtype.char,
-                        unit=col.unit.to_string('fits'), array=np.array(col)))
+                        unit=unit, array=np.array(col)))
                 except:
                     cols.append(pyfits.Column(
                         name=col.name, format='A20',
-                        unit=col.unit.to_string('fits'),
+                        unit=unit,
                         array=np.array(col)))
 
             coldefs = pyfits.ColDefs(cols)
