@@ -951,9 +951,9 @@ class Source(object):
         name : string
             Name used to distinguish this cube
         size : float
-            The size to extract.
-            It corresponds to the size along the delta axis and the image is square.
-            If None, the size of the white image extension is taken if it exists.
+            The size to extract. It corresponds to the size along the delta
+            axis and the image is square. If None, the size of the white image
+            extension is taken if it exists.
         lbda : (float, float) or None
             If not None, tuple giving the wavelength range.
         unit_size : astropy.units
@@ -976,7 +976,8 @@ class Source(object):
                 unit_size = u.arcsec
 
         subcub = cube.subcube(center=(self.dec, self.ra), size=size, lbda=lbda,
-                              unit_center=u.deg, unit_size=unit_size, unit_wave=unit_wave)
+                              unit_center=u.deg, unit_size=unit_size,
+                              unit_wave=unit_wave)
         self.cubes[name] = subcub
 
     def add_white_image(self, cube, size=5, unit_size=u.arcsec):
@@ -1246,7 +1247,7 @@ class Source(object):
     def extract_spectra(self, cube,
                         tags_to_try=['MUSE_WHITE', 'MUSE_LYALPHA1216',
                                      'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
-                        skysub=True, psf=None):
+                        skysub=True, psf=None, lbda=None):
         """Extract spectra from the MUSE data cube and from a list of
         narrow-band images (to define spectrum extraction apertures).
 
@@ -1295,6 +1296,8 @@ class Source(object):
             axis to give the FWHM of the Gaussian PSF at each
             wavelength (in arcsec) or a cube with the PSF to use.
             psf=None by default (no PSF-weighted extraction).
+        lbda : (float, float) or none
+            if not none, tuple giving the wavelength range.
 
         """
         if 'MASK_UNION' in self.images:
@@ -1308,7 +1311,8 @@ class Source(object):
                 unit_size = u.arcsec
 
             subcub = cube.subcube(center=(self.dec, self.ra), size=size,
-                                  unit_center=u.deg, unit_size=unit_size)
+                                  unit_center=u.deg, unit_size=unit_size,
+                                  lbda=lbda)
             if ima.wcs.isEqual(subcub.wcs):
                 object_mask = ima.data.data
             else:
