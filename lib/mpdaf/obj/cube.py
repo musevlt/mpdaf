@@ -2477,12 +2477,6 @@ class Cube(DataArray):
 
         i0, j0 = - np.minimum([i, j], [0, 0])
 
-        wcs = self.wcs[imin:imax, jmin:jmax]
-        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
-        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
-        wcs.set_naxis1(size)
-        wcs.set_naxis2(size)
-
         slin = [slice(None), slice(imin, imax), slice(jmin, jmax)]
         slout = [slice(None), slice(i0, i0 + imax - imin),
                  slice(j0, j0 + jmax - jmin)]
@@ -2502,15 +2496,22 @@ class Cube(DataArray):
             nk = self.shape[0]
             wave = self.wave
 
+        subcub = self[slin]
         var = None
         data = np.empty((nk, size, size))
         data[:] = np.nan
-        data[slout] = self.data[slin].copy()
+        data[slout] = subcub.data
 
-        if self.var is not None:
+        if subcub.var is not None:
             var = np.empty((nk, size, size))
             var[:] = np.nan
-            var[slout] = self.var[slin].copy()
+            var[slout] = subcub.var
+
+        wcs = subcub.wcs
+        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
+        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
+        wcs.set_naxis1(size)
+        wcs.set_naxis2(size)
 
         return Cube(wcs=wcs, wave=wave, unit=self.unit, copy=False,
                     data=np.ma.masked_invalid(data), var=var,

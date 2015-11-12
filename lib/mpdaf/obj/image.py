@@ -1176,22 +1176,13 @@ class Image(DataArray):
             imin, jmin = np.maximum(np.minimum(
                 (center - radius + 0.5).astype(int),
                 [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + int(size + 0.5), jmin + int(size + 0.5)],
+            imax, jmax = np.minimum([imin + int(size + 0.5),
+                                     jmin + int(size + 0.5)],
                                     [self.shape[0], self.shape[1]])
 
-            data = self.data[imin:imax, jmin:jmax].copy()
-
-            if data.shape[0] < minsize or data.shape[1] < minsize:
+            if (imax - imin + 1) < minsize or (jmax - jmin + 1) < minsize:
                 return None
-            if self.var is not None:
-                var = self.var[imin:imax, jmin:jmax].copy()
-            else:
-                var = None
-            ima = Image(wcs=self.wcs[imin:imax, jmin:jmax],
-                        unit=self.unit, data=data, var=var)
-            ima.data_header = pyfits.Header(self.data_header)
-            ima.primary_header = pyfits.Header(self.primary_header)
-            return ima
+            return self[imin:imax, jmin:jmax]
         else:
             return None
 
@@ -4675,7 +4666,7 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
         data = gauss(pixcrd[:, 0], pixcrd[:, 1])
         data = np.reshape(data, (shape[1], shape[0])).T
 
-    return Image(data=data + cont, wcs=wcs, unit=unit)
+    return Image(data=data + cont, wcs=wcs, unit=unit, copy=False, dtype=None)
 
 
 def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
@@ -4794,7 +4785,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
         data = moffat(pixcrd[:, 0], pixcrd[:, 1])
         data = np.reshape(data, (shape[1], shape[0])).T
 
-    return Image(data=data + cont, wcs=wcs, unit=unit)
+    return Image(data=data + cont, wcs=wcs, unit=unit, copy=False, dtype=None)
 
 
 def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
@@ -4864,7 +4855,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
         data = interpolate.griddata(points, z.ravel(),
                                     (Xi, Yi), method='linear')
 
-    return Image(data=data, wcs=wcs, unit=unit)
+    return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)
 
 
 def composite_image(ImaColList, mode='lin', cuts=(10, 90),
@@ -5028,4 +5019,4 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
                            np.arange(jmin, jmax) - center[1], indexing='ij')
         data[imin:imax, jmin:jmax] = np.array(
             (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
-    return Image(data=data, wcs=wcs, unit=unit)
+    return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)

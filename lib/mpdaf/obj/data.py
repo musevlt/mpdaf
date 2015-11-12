@@ -446,7 +446,7 @@ class DataArray(object):
                     var = read_slice_from_fits(
                         self.filename, item=item, ext=self._var_ext,
                         dtype=self.dtype)
-                    if var.ndim != self.data.ndim:
+                    if var.ndim != data.ndim:
                         raise IOError('Wrong dimension number in STAT '
                                       'extension')
                     if not np.array_equal(var.shape, data.shape):
@@ -459,7 +459,8 @@ class DataArray(object):
 
         wave = None
         wcs = None
-        if self.ndim == 3 and isinstance(item, tuple) and len(item) == 3:
+        if self.ndim == 3 and isinstance(item, (list, tuple)) and \
+                len(item) == 3:
             try:
                 wcs = self.wcs[item[1], item[2]]
             except:
@@ -468,7 +469,8 @@ class DataArray(object):
                 wave = self.wave[item[0]]
             except:
                 wave = None
-        elif self.ndim == 2 and isinstance(item, tuple) and len(item) == 2:
+        elif self.ndim == 2 and isinstance(item, (list, tuple)) and \
+                len(item) == 2:
             try:
                 wcs = self.wcs[item]
             except:
@@ -482,12 +484,11 @@ class DataArray(object):
         if data.shape == ():
             return data
         else:
-            res = self.__class__(
+            return self.__class__(
                 data=data, unit=self.unit, var=var, wcs=wcs, wave=wave,  # copy
+                filename=self.filename,
                 data_header=pyfits.Header(self.data_header),
                 primary_header=pyfits.Header(self.primary_header))
-            res.filename = self.filename
-            return res
 
     def get_wcs_header(self):
         """Return a FITS header with the world coordinates from the wcs."""
