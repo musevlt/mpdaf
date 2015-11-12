@@ -969,14 +969,14 @@ class Cube(DataArray):
         if isinstance(obj, DataArray):
             if obj.ndim == 1:
                 res = Spectrum(data=obj.data, unit=obj.unit, var=obj.var,
-                                wave=obj.wave, dtype=obj.dtype, copy=False)
+                               wave=obj.wave, dtype=obj.dtype, copy=False)
             elif obj.ndim == 2:
                 res = Image(data=obj.data, unit=obj.unit, var=obj.var,
-                             wcs=obj.wcs, dtype=obj.dtype, copy=False)
+                            wcs=obj.wcs, dtype=obj.dtype, copy=False)
             elif obj.ndim == 3:
                 res = Cube(data=obj.data, unit=obj.unit, var=obj.var,
-                            wave=obj.wave, wcs=obj.wcs, dtype=obj.dtype,
-                            copy=False)
+                           wave=obj.wave, wcs=obj.wcs, dtype=obj.dtype,
+                           copy=False)
             res.filename = self.filename
             return res
         else:
@@ -2631,6 +2631,17 @@ class Cube(DataArray):
             self._logger.info('returning spectrum at nearest spaxel')
         return spec
 
+    @deprecated('rebin_factor method is deprecated, use rebin_mean instead')
+    def rebin_factor(self, factor, margin='center'):
+        return self.rebin_mean(factor, margin)
+
+    @deprecated('subcube_aperture method is deprecated: use '
+                'subcube_circle_aperture instead')
+    def subcube_aperture(self, center, radius, unit_center=u.deg,
+                         unit_radius=u.angstrom):
+        return self.subcube_circle_aperture(center, radius,
+                                            unit_center, unit_radius)
+
 
 def _process_spe(arglist):
     try:
@@ -2684,14 +2695,3 @@ def _process_ima(arglist):
     except Exception as inst:
         raise type(inst), str(inst) + '\n The error occurred '\
             'for the image [%i,:,:]' % k
-
-    @deprecated('rebin_factor method is deprecated, use rebin_mean instead')
-    def rebin_factor(self, factor, margin='center'):
-        return self.rebin_mean(factor, margin)
-
-    @deprecated('subcube_aperture method is deprecated: use '
-                'subcube_circle_aperture instead')
-    def subcube_aperture(self, center, radius, unit_center=u.deg,
-                         unit_radius=u.angstrom):
-        return self.subcube_circle_aperture(center, radius,
-                                            unit_center, unit_radius)
