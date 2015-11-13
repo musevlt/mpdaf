@@ -1110,8 +1110,8 @@ class Source(object):
                 tags = all_tags[useful]
                 for l1, l2, tag in zip(lambda_ranges[0, :],
                                        lambda_ranges[1, :], tags):
-                    self._logger.info('Generate narrow band image for MUSE_%s',
-                                      ' with z=%s', tag, self.z)
+                    self._logger.info('Generate narrow band image for MUSE_%s'
+                                      ' with z=%s', tag, z[0])
                     self.images['MUSE_' + tag] = subcub.get_image(
                         wave=(l1, l2), is_sum=is_sum,
                         subtract_off=subtract_off, margin=margin,
