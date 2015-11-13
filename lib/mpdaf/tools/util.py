@@ -1,11 +1,16 @@
 import functools
 import inspect
 import warnings
+from astropy.units import UnitsWarning
 
 
 # NOTE(kgriffs): We don't want our deprecations to be ignored by default,
 # so create our own type.
 class MpdafWarning(UserWarning):
+    pass
+
+
+class MpdafUnitsWarning(UnitsWarning):
     pass
 
 

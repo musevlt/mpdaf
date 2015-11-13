@@ -10,8 +10,8 @@ from numpy import ma
 
 from .coords import WCS, WaveCoord
 from .objs import fix_unit_read, fix_unit_write
-from ..tools import (MpdafWarning, deprecated, is_valid_fits_file,
-                     read_slice_from_fits)
+from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
+                     is_valid_fits_file, read_slice_from_fits)
 
 
 class DataArray(object):
@@ -139,12 +139,11 @@ class DataArray(object):
             try:
                 self.unit = u.Unit(fix_unit_read(hdr['BUNIT']))
             except KeyError:
-                self._logger.warning('The physical unit of the data is not '
-                                     'loaded from the FITS header.\n'
-                                     'No BUNIT in the DATA.')
+                warnings.warn('No physical unit in the FITS header: missing '
+                              'BUNIT keyword.', MpdafUnitsWarning)
             except Exception as e:
-                self._logger.warning('The physical unit of the data is not '
-                                     'loaded from the FITS header.\n %s', e)
+                warnings.warn('Error parsing the BUNIT: ' + e.message,
+                              MpdafUnitsWarning)
 
             if 'FSCALE' in hdr:
                 self.unit *= u.Unit(hdr['FSCALE'])
