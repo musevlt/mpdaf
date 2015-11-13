@@ -1,10 +1,4 @@
-from astropy.io import fits as pyfits
-from astropy.table import Table, MaskedColumn, vstack
 import astropy.units as u
-
-from matplotlib import cm
-from matplotlib.patches import Ellipse
-
 import datetime
 import glob
 import logging
@@ -12,6 +6,12 @@ import numpy as np
 import os.path
 import shutil
 import warnings
+
+from astropy.io import fits as pyfits
+from astropy.table import Table, MaskedColumn, vstack
+from matplotlib import cm
+from matplotlib.patches import Ellipse
+from numpy import ma
 
 from ..obj import Cube, Image, Spectrum, gauss_image
 from ..obj.objs import is_int, is_float
@@ -481,7 +481,7 @@ class Source(object):
                 if col.unit is not None:
                     unit = col.unit.to_string('fits')
                 else:
-                    unit=None
+                    unit = None
                 try:
                     cols.append(pyfits.Column(
                         name=col.name, format=col.dtype.char,
@@ -493,8 +493,8 @@ class Source(object):
                         array=np.array(col)))
 
             coldefs = pyfits.ColDefs(cols)
-            tbhdu = pyfits.BinTableHDU.from_columns(name='LINES', columns=coldefs)
-            #tbhdu = pyfits.BinTableHDU(name='LINES', data=np.array(self.lines))
+            tbhdu = pyfits.BinTableHDU.from_columns(name='LINES',
+                                                    columns=coldefs)
             hdulist.append(tbhdu)
 
         # magnitudes
@@ -764,9 +764,9 @@ class Source(object):
                     self.z.add_row([desc, z, zmin, zmax])
 
         if self.z is not None:
-            self.z['Z'] = np.ma.masked_equal(self.z['Z'], -9999)
-            self.z['Z_MIN'] = np.ma.masked_equal(self.z['Z_MIN'], -9999)
-            self.z['Z_MAX'] = np.ma.masked_equal(self.z['Z_MAX'], -9999)
+            self.z['Z'] = ma.masked_equal(self.z['Z'], -9999)
+            self.z['Z_MIN'] = ma.masked_equal(self.z['Z_MIN'], -9999)
+            self.z['Z_MAX'] = ma.masked_equal(self.z['Z_MAX'], -9999)
 
     def add_mag(self, band, m, errm):
         """Add a magnitude value to the mag table.
@@ -836,8 +836,8 @@ class Source(object):
                         typ = '<f8'
                     else:
                         typ = 'S20'
-                    col = MaskedColumn(np.ma.masked_array(np.empty(nlines),
-                                                          mask=np.ones(nlines)),
+                    col = MaskedColumn(ma.masked_array(np.empty(nlines),
+                                                       mask=np.ones(nlines)),
                                        name=col, dtype=typ, unit=unit)
                     self.lines.add_column(col)
 
@@ -880,16 +880,18 @@ class Source(object):
         name : string
             Name used to distinguish this image
         size : float
-            The size to extract.
-            It corresponds to the size along the delta axis and the image is square.
-            If None, the size of the white image extension is taken if it exists.
+            The size to extract. It corresponds to the size along the delta
+            axis and the image is square. If None, the size of the white image
+            extension is taken if it exists.
         unit_size : astropy.units
             Size and minsize unit.
             Arcseconds by default (use None for size in pixels)
         minsize : float
             The minimum size of the output image.
         rotate : bool
-            if True, the image is rotated to the same PA as the white-light image
+            if True, the image is rotated to the same PA as the white-light
+            image.
+
         """
         if size is None:
             try:
@@ -933,7 +935,8 @@ class Source(object):
             subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
                                     unit_center=u.deg, unit_size=unit_size)
         if subima is None:
-            self._logger.warning('Image %s not added. Source outside or at the edges' % (name))
+            self._logger.warning('Image %s not added. Source outside or at the'
+                                 ' edges', name)
             return
         self.images[name] = subima
 
@@ -962,6 +965,7 @@ class Source(object):
         unit_wave : astropy.units
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
+
         """
         if size is None:
             try:
@@ -1031,9 +1035,9 @@ class Source(object):
                         6724 : '[SII]6724'}
 
         size : float
-            The total size to extract.
-            It corresponds to the size along the delta axis and the image is square.
-            If None, the size of the white image extension is taken if it exists.
+            The total size to extract. It corresponds to the size along the
+            delta axis and the image is square. If None, the size of the white
+            image extension is taken if it exists.
         unit_size : astropy.units
             unit of the size value (arcseconds by default)
             If None, size is in pixels
@@ -1055,54 +1059,63 @@ class Source(object):
                 sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                 flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
         margin : float
-            This off-band is offseted by margin wrt narrow-band limit (in angstrom).
+            This off-band is offseted by margin wrt narrow-band limit (in
+            angstrom).
         fband : float
-            The size of the off-band is fband x narrow-band width (in angstrom).
+            The size of the off-band is ``fband x narrow-band width`` (in
+            angstrom).
+
         """
-        if self.z is not None:
-            if size is None:
-                try:
-                    white_ima = self.images['MUSE_WHITE']
-                except:
-                    raise IOError('Size of the image is required')
-                if white_ima.wcs.sameStep(cube.wcs):
-                    size = white_ima.shape[0]
-                    unit_size = None
-                else:
-                    size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
-                    unit_size = u.arcsec
+        if self.z is None:
+            self._logger.warning('Cannot generate narrow band image if the '
+                                 'redshift is None.')
+            return
 
-            subcub = cube.subcube(center=(self.dec, self.ra), size=size,
-                                  unit_center=u.deg, unit_size=unit_size)
+        if size is None:
+            try:
+                white = self.images['MUSE_WHITE']
+            except:
+                raise IOError('Size of the image is required')
 
-            z = self.z['Z'][self.z['Z_DESC'] == z_desc]
+            if white.wcs.sameStep(cube.wcs):
+                size = white.shape[0]
+                unit_size = None
+            else:
+                size = white.wcs.get_step(unit=u.arcsec)[0] * white.shape[0]
+                unit_size = u.arcsec
 
-            if z > 0:
+        subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+                              unit_center=u.deg, unit_size=unit_size)
 
-                if eml is None:
-                    all_lines = np.array([1216, 1909, 3727, 4861, 5007,
-                                          6563, 6724])
-                    all_tags = np.array(['LYALPHA1216', 'CIII]1909',
-                                         '[OII]3727', 'HBETA4861',
-                                         '[OIII]5007', 'HALPHA6563',
-                                         '[SII]6724'])
-                else:
-                    all_lines = np.array(eml.keys())
-                    all_tags = np.array(eml.values())
+        z = self.z['Z'][self.z['Z_DESC'] == z_desc]
 
-                minl, maxl = subcub.wave.get_range(unit=u.angstrom) / (1 + z)
-                useful = np.where((all_lines > minl) & (all_lines < maxl))
-                nlines = len(useful[0])
-                if nlines > 0:
-                    lambda_ranges = np.empty((2, nlines))
-                    lambda_ranges[0, :] = (1 + z) * all_lines[useful] - width / 2.0
-                    lambda_ranges[1, :] = (1 + z) * all_lines[useful] + width / 2.0
-                    tags = all_tags[useful]
-                    for l1, l2, tag in zip(lambda_ranges[0, :], lambda_ranges[1, :], tags):
-                        self._logger.info('Doing MUSE_%s' % tag)
-                        self.images['MUSE_' + tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
-                                                                      subtract_off=subtract_off, margin=margin,
-                                                                      fband=fband, unit_wave=u.angstrom)
+        if z > 0:
+            if eml is None:
+                all_lines = np.array([1216, 1909, 3727, 4861, 5007,
+                                      6563, 6724])
+                all_tags = np.array(['LYALPHA1216', 'CIII]1909', '[OII]3727',
+                                     'HBETA4861', '[OIII]5007', 'HALPHA6563',
+                                     '[SII]6724'])
+            else:
+                all_lines = np.array(eml.keys())
+                all_tags = np.array(eml.values())
+
+            minl, maxl = subcub.wave.get_range(unit=u.angstrom) / (1 + z)
+            useful = np.where((all_lines > minl) & (all_lines < maxl))
+            nlines = len(useful[0])
+            if nlines > 0:
+                lambda_ranges = np.empty((2, nlines))
+                lambda_ranges[0, :] = (1 + z) * all_lines[useful] - width / 2.0
+                lambda_ranges[1, :] = (1 + z) * all_lines[useful] + width / 2.0
+                tags = all_tags[useful]
+                for l1, l2, tag in zip(lambda_ranges[0, :],
+                                       lambda_ranges[1, :], tags):
+                    self._logger.info('Generate narrow band image for MUSE_%s',
+                                      ' with z=%s', tag, self.z)
+                    self.images['MUSE_' + tag] = subcub.get_image(
+                        wave=(l1, l2), is_sum=is_sum,
+                        subtract_off=subtract_off, margin=margin,
+                        fband=fband, unit_wave=u.angstrom)
 
     def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None,
                                       unit_size=u.arcsec, width=8, is_sum=False,
@@ -1116,13 +1129,14 @@ class Source(object):
         cube : :class:`mpdaf.obj.Cube`
             MUSE data cube.
         tag : string
-            key used to identify the new narrow band image in the images dictionary.
+            key used to identify the new narrow band image in the images
+            dictionary.
         lbda : float
             Observed wavelength value in angstrom.
         size : float
-            The total size to extract in arcseconds.
-            It corresponds to the size along the delta axis and the image is square.
-            If None, the size of the white image extension is taken if it exists.
+            The total size to extract in arcseconds. It corresponds to the size
+            along the delta axis and the image is square. If None, the size of
+            the white image extension is taken if it exists.
         unit_size : astropy.units
             unit of the size value (arcseconds by default)
             If None, size is in pixels
@@ -1134,11 +1148,14 @@ class Source(object):
         subtract_off : boolean
             If True, subtracting off nearby data.
         margin : float
-            This off-band is offseted by margin wrt narrow-band limit (in angstrom)
+            This off-band is offseted by margin wrt narrow-band limit (in
+            angstrom).
         fband : float
             The size of the off-band is fband*narrow-band width (in angstrom).
+
         """
-        self._logger.info('Doing %s' % tag)
+        self._logger.info('Generate narrow band image for %s, lamdba: %s', tag,
+                          lbda)
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
@@ -1198,21 +1215,21 @@ class Source(object):
 
     def add_masks(self, tags=None):
         """Use the list of segmentation maps to compute the union mask and the
-        intersection mask and  the region where no object is detected in any
+        intersection mask and the region where no object is detected in any
         segmentation map is saved in the sky mask.
 
-        Union is saved as an image of booleans in self.images['MASK_UNION']
+        Masks are saved as boolean images:
+        - Union is saved in ``self.images['MASK_UNION']``.
+        - Intersection is saved in ``self.images['MASK_INTER']``.
+        - Sky mask is saved in ``self.images['MASK_SKY']``.
 
-        Intersection is saved as an image of booleans in self.images['MASK_INTER']
-
-        Sky mask is saved as an image of booleans in self.images['MASK_SKY']
-
-        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl).
 
         Parameters
         ----------
         tags : list<string>
             List of tags of selected segmentation images
+
         """
         maps = {}
         if tags is None:
@@ -1499,8 +1516,8 @@ class Source(object):
                 # line names
                 if 'LINE' not in self.lines.colnames:
                     nlines = len(self.lines)
-                    col = MaskedColumn(np.ma.masked_array(np.array([''] * nlines),
-                                                          mask=np.ones(nlines)),
+                    col = MaskedColumn(ma.masked_array(np.array([''] * nlines),
+                                                       mask=np.ones(nlines)),
                                        name='LINE', dtype='S20')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
@@ -1630,15 +1647,15 @@ class Source(object):
             if tab is not None:
                 for col in tab.colnames:
                     try:
-                        tab[col] = np.ma.masked_invalid(tab[col])
-                        tab[col] = np.ma.masked_equal(tab[col], -9999)
+                        tab[col] = ma.masked_invalid(tab[col])
+                        tab[col] = ma.masked_equal(tab[col], -9999)
                     except:
                         pass
         for tab in self.tables.values():
             for col in tab.colnames:
                 try:
-                    tab[col] = np.ma.masked_invalid(tab[col])
-                    tab[col] = np.ma.masked_equal(tab[col], -9999)
+                    tab[col] = ma.masked_invalid(tab[col])
+                    tab[col] = ma.masked_equal(tab[col], -9999)
                 except:
                     pass
 
