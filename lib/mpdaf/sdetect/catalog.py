@@ -1,15 +1,21 @@
 
-from astropy.coordinates import SkyCoord, search_around_sky
-from astropy.table import Table, hstack, vstack
-from astropy import units as u
-
-from matplotlib.patches import Ellipse
-
 import glob
 import logging
 import numpy as np
-import os.path
+import os
 import sys
+
+from astropy.coordinates import SkyCoord, search_around_sky
+from astropy.table import Table, hstack, vstack
+from astropy import units as u
+from matplotlib.patches import Ellipse
+
+INVALID = {
+    type(1): -9999, np.int_: -9999,
+    type(1.0): np.nan, np.float_: np.nan,
+    type('1'): '', np.str_: '',
+    type(False): -9999, np.bool_: -9999
+}
 
 
 class Catalog(Table):
@@ -56,19 +62,12 @@ class Catalog(Table):
         ----------
         sources : list< :class:`mpdaf.sdetect.Source` >
             List of :class:`mpdaf.sdetect.Source` objects
-        fmt : string 'working'|'default'
-            Format of the catalog
-            The format differs for the LINES table.
+        fmt : str 'working'|'default'
+            Format of the catalog. The format differs for the LINES table.
 
         """
         logger = logging.getLogger(__name__)
-        invalid = {type(1): -9999, np.int_: -9999,
-                   type(1.0): np.nan, np.float_: np.nan,
-                   type('1'): '', np.str_: '',
-                   type(False): -9999, np.bool_: -9999}
-        #invalid = {type(1): np.ma.masked_array([-9999], mask=[1], fill_value=-9999), type(1.0): np.ma.masked_array([np.nan], mask=[1], fill_value=np.nan), type('1'): '', type(False): -1}
         # union of all headers keywords without mandatory FITS keywords
-
         h = sources[0].header
         d = dict(zip(h.keys(), [type(v) for v in h.values()]))
         for source in sources[1:]:
@@ -195,9 +194,9 @@ class Catalog(Table):
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
                 if typ == type('1'):
-                    row += ['%s' % h[key] if key in keys else invalid[typ]]
+                    row += ['%s' % h[key] if key in keys else INVALID[typ]]
                 else:
-                    row += [h[key] if key in keys else invalid[typ]]
+                    row += [h[key] if key in keys else INVALID[typ]]
 
             # magnitudes
             if len(lmag) != 0:
@@ -234,7 +233,7 @@ class Catalog(Table):
             if len(llines) != 0:
                 if source.lines is None:
                     for typ in dtype_lines:
-                        row += [invalid[typ.type]]
+                        row += [INVALID[typ.type]]
                     #row += [None for key in names_lines]
                 else:
                     if fmt == 'default':
@@ -246,11 +245,11 @@ class Catalog(Table):
                                line in source.lines['LINE'].data.data:
                                 row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
                             else:
-                                row += [invalid[typ.type]]
+                                row += [INVALID[typ.type]]
                     elif fmt == 'working':
                         keys = source.lines.colnames
                         if lmax == 1:
-                            row += [source.lines[key][0] if key in keys else invalid[typ.type] for key, typ in zip(names_lines, dtype_lines)]
+                            row += [source.lines[key][0] if key in keys else INVALID[typ.type] for key, typ in zip(names_lines, dtype_lines)]
                         else:
                             try:
                                 subtab1 = source.lines[source.lines['LINE'] != ""]
@@ -263,7 +262,7 @@ class Catalog(Table):
                                 if key[:-3] in keys and int(key[-3:]) <= n:
                                     row += [lines[key[:-3]][int(key[-3:]) - 1]]
                                 else:
-                                    row += [invalid[typ.type]]
+                                    row += [INVALID[typ.type]]
                     else:
                         pass
 
@@ -305,14 +304,19 @@ class Catalog(Table):
         return t
 
     @classmethod
-    def from_path(cls, path, fmt='default'):
+    def from_path(cls, path, fmt='default', pattern='*.fits'):
         """Create a Catalog object from the path of a directory containing
         source files.
 
         Parameters
         ----------
-        path : string
+        path : str
             Directory containing Source files
+        fmt : str 'working'|'default'
+            Format of the catalog. The format differs for the LINES table.
+        pattern : str
+            Pattern used to select the files, default to '*.fits'.
+
         """
         logger = logging.getLogger(__name__)
 
@@ -323,21 +327,21 @@ class Catalog(Table):
 
         slist = []
         filenames = []
-        files = glob.glob(path + '/*.fits')
+        files = glob.glob(os.path.join(path, pattern))
         n = len(files)
-
-        logger.info('Building catalog from path %s' % path)
+        logger.info('Building catalog from path %s', path)
 
         for f in files:
             try:
                 slist.append(Source._light_from_file(f))
                 filenames.append(os.path.basename(f))
-            except:
-                logger.warning('source %s not loaded' % f)
+            except KeyboardInterrupt:
+                return
+            except Exception:
+                logger.warning('source %s not loaded', f, exc_info=True)
             sys.stdout.write("\r\x1b[K %i%%" % (100 * len(filenames) / n))
             sys.stdout.flush()
 
-        #output = ""
         sys.stdout.write("\r\x1b[K ")
         sys.stdout.flush()
 
