@@ -946,18 +946,6 @@ class Cube(DataArray):
         else:
             return other.__div__(self)
 
-#     def __pow__(self, other):
-#         """Compute the power exponent."""
-#         if self.data is None:
-#             raise ValueError('empty data array')
-#         res = self.copy()
-#         if is_float(other) or is_int(other):
-#             res.data = (self.data ** other) * (self.fscale ** (other - 1))
-#             res.var = None
-#         else:
-#             raise ValueError('Operation forbidden')
-#         return res
-
     def __getitem__(self, item):
         """Return the corresponding object:
         cube[k,p,k] = value
@@ -2466,7 +2454,7 @@ class Cube(DataArray):
             size = size / np.abs(self.wcs.get_step(unit=unit_size)[0])
         radius = size / 2.
 
-        size = int(size)
+        size = int(size + 0.5)
         i, j = (center - radius + 0.5).astype(int)
         imin, jmin = np.maximum(np.minimum(
             [i, j], [self.shape[1] - 1, self.shape[2] - 1]),
@@ -2550,7 +2538,7 @@ class Cube(DataArray):
                 radius = radius / np.abs(self.wcs.get_step(unit=unit_radius)[0])
 
             radius2 = radius * radius
-            size = int(2 * radius)
+            size = int(2 * radius + 0.5)
             i, j = (center - radius + 0.5).astype(int)
             imin, jmin = np.maximum(np.minimum(
                 [i, j], [self.shape[1] - 1, self.shape[2] - 1]),

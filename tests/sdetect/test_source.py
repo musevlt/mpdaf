@@ -95,7 +95,8 @@ class TestSource():
         nose.tools.assert_equal(ima[15, 25], self.source2.images['MUSE_WHITE'][9, 5])
         hst = Image('data/sdetect/a478hst.fits')
         self.source2.add_image(hst, 'HST1')
-        self.source2.add_image(hst, 'HST2', size=48, minsize=48.0, unit_size=None)
+        size = self.source2.images['HST1'].shape[0]
+        self.source2.add_image(hst, 'HST2', size=size, minsize=size, unit_size=None)
         nose.tools.assert_equal(self.source2.images['HST1'][10, 10],
                                 self.source2.images['HST2'][10, 10])
         self.source2.add_image(hst, 'HST3', rotate=True)
