@@ -9,6 +9,7 @@ import warnings
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, vstack
+from functools import partial
 from matplotlib import cm
 from matplotlib.patches import Ellipse
 from numpy import ma
@@ -172,6 +173,32 @@ def crackz(nlines, wl, flux, eml, zguess=None):
                 return crackz(1, [wl[ksel]], [flux[ksel]], eml)
 
 
+def _read_ext(cls, hdulist, extname, **kwargs):
+    """Read an extension from a FITS HDUList."""
+    try:
+        obj = cls(hdulist[extname].data, **kwargs)
+    except Exception as e:
+        raise IOError('%s: Impossible to open extension %s as a %s\n%s' % (
+            os.path.basename(hdulist.filename), extname, cls.__name__, e))
+    return obj
+
+
+def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
+    """Read an extension from a FITS HDUList and return an MPDAF object."""
+    filename = hdulist.filename()
+    try:
+        obj = cls(filename=filename, hdulist=hdulist, ext=ext, **kwargs)
+    except Exception as e:
+        raise IOError('%s: Impossible to open extension %s as a %s\n%s' % (
+            os.path.basename(filename), ext, cls.__name__, e))
+    return obj
+
+_read_masked_table = partial(_read_ext, Table, masked=True)
+_read_spectrum = partial(_read_mpdaf_obj, Spectrum)
+_read_image = partial(_read_mpdaf_obj, Image)
+_read_cube = partial(_read_mpdaf_obj, Cube)
+
+
 class Source(object):
     """This class contains a Source object.
 
@@ -210,8 +237,8 @@ class Source(object):
         if not ('RA' in header and 'DEC' in header
                 and 'ID' in header and 'CUBE' in header
                 and 'ORIGIN' in header and 'ORIGIN_V' in header):
-            raise IOError('ID, RA, DEC, ORIGIN, ORIGIN_V and CUBE are \
-            mandatory parameters to create a Source object')
+            raise IOError('ID, RA, DEC, ORIGIN, ORIGIN_V and CUBE are '
+                          'mandatory parameters to create a Source object')
         self.header = header
         # Table LINES
         self.lines = lines
@@ -220,25 +247,13 @@ class Source(object):
         # Table Z
         self.z = z
         # Dictionary SPECTRA
-        if spectra is None:
-            self.spectra = {}
-        else:
-            self.spectra = spectra
+        self.spectra = spectra or {}
         # Dictionary IMAGES
-        if images is None:
-            self.images = {}
-        else:
-            self.images = images
+        self.images = images or {}
         # Dictionary CUBES
-        if cubes is None:
-            self.cubes = {}
-        else:
-            self.cubes = cubes
+        self.cubes = cubes or {}
         # Dictionary TABLES
-        if tables is None:
-            self.tables = {}
-        else:
-            self.tables = tables
+        self.tables = tables or {}
         # logger
         self._logger = logging.getLogger(__name__)
         # mask invalid
@@ -292,6 +307,7 @@ class Source(object):
             Dictionary containing tables
             Keys give a description of each table
             Values are astropy.Table objects
+
         """
         header = pyfits.Header()
         header['ID'] = (ID, 'object ID')
@@ -305,8 +321,7 @@ class Source(object):
         if confi is not None:
             header['CONFI'] = (confi, 'Confidence index')
         if extras is not None:
-            for key, value in extras.iteritems():
-                header[key] = value
+            header.update(extras)
 
         return cls(header, lines, mag, z, spectra, images, cubes, tables)
 
@@ -321,81 +336,43 @@ class Source(object):
         """
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
-        lines = None
-        mag = None
-        z = None
         spectra = {}
         images = {}
         cubes = {}
         tables = {}
-        for i in range(1, len(hdulist)):
+
+        lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in hdulist
+                 else None)
+        mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in hdulist else None
+        z = _read_masked_table(hdulist, 'Z') if 'Z' in hdulist else None
+
+        for i, hdu in enumerate(hdulist[1:]):
             try:
-                hdu = hdulist[i]
-                if 'EXTNAME' in hdu.header:
-                    extname = hdu.header['EXTNAME']
-                    # lines
-                    if extname == 'LINES':
-                        try:
-                            lines = Table(hdu.data, masked=True)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
-                    # mag
-                    elif extname == 'MAG':
-                        try:
-                            mag = Table(hdu.data, masked=True)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
-                    # Z
-                    elif extname == 'Z':
-                        try:
-                            z = Table(hdu.data, masked=True)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
-                    # spectra
-                    elif extname[:3] == 'SPE' and extname[-4:] == 'DATA':
-                        spe_name = extname[4:-5]
-                        stat_ext = 'SPE_' + spe_name + '_STAT'
-                        if stat_ext in hdulist:
-                            ext_var = hdulist.index_of(stat_ext)
-                            ext = (i, ext_var)
-                        else:
-                            ext = i
-                        try:
-                            spectra[spe_name] = Spectrum(filename, ext=ext)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a spectrum\n%s' % (os.path.basename(filename), extname, e))
-                    # images
-                    elif extname[:3] == 'IMA' and extname[-4:] == 'DATA':
-                        ima_name = extname[4:-5]
-                        stat_ext = 'IMA_' + ima_name + '_STAT'
-                        if stat_ext in hdulist:
-                            ext_var = hdulist.index_of(stat_ext)
-                            ext = (i, ext_var)
-                        else:
-                            ext = i
-                        try:
-                            images[ima_name] = Image(filename, ext=ext)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as an image\n%s' % (os.path.basename(filename), extname, e))
-                    elif extname[:3] == 'CUB' and extname[-4:] == 'DATA':
-                        cub_name = extname[4:-5]
-                        stat_ext = 'CUB_' + cub_name + '_STAT'
-                        if stat_ext in hdulist:
-                            ext_var = hdulist.index_of(stat_ext)
-                            ext = (i, ext_var)
-                        else:
-                            ext = i
-                        try:
-                            cubes[cub_name] = Cube(filename, ext=ext, ima=False)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a cube\n%s' % (os.path.basename(filename), extname, e))
-                    elif extname[:3] == 'TAB':
-                        try:
-                            tables[extname[4:]] = Table(hdu.data, masked=True)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
-                else:
-                    raise IOError('%s: Extension %d without EXTNAME' % (os.path.basename(filename), i))
+                extname = hdu.name
+                if not extname:
+                    raise IOError('%s: Extension %d without EXTNAME' % (
+                        os.path.basename(filename), i))
+
+                start = extname[:3]
+                end = extname[-4:]
+
+                if end == 'STAT':
+                    continue
+                elif end == 'DATA':
+                    name = extname[4:-5]
+                    stat_ext = '%s_%s_STAT' % (start, name)
+                    if stat_ext in hdulist:
+                        ext = (extname, stat_ext)
+                    else:
+                        ext = extname
+                    if start == 'SPE':
+                        spectra[name] = _read_spectrum(hdulist, ext)
+                    elif start == 'IMA':
+                        images[name] = _read_image(hdulist, ext)
+                    elif start == 'CUB':
+                        cubes[name] = _read_cube(hdulist, ext, ima=False)
+                elif start == 'TAB':
+                    tables[extname[4:]] = _read_masked_table(hdulist, extname)
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
@@ -405,7 +382,8 @@ class Source(object):
     @classmethod
     def _light_from_file(cls, filename):
         """Source constructor from a FITS file.
-        Light: Only data that are stored in catalog were loaded
+
+        Light: Only data that are stored in catalog are loaded.
 
         Parameters
         ----------
@@ -414,42 +392,24 @@ class Source(object):
         """
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
-        lines = None
-        mag = None
-        z = None
+
+        lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in hdulist
+                 else None)
+        mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in hdulist else None
+        z = _read_masked_table(hdulist, 'Z') if 'Z' in hdulist else None
 
         tables = {}
         for i in range(1, len(hdulist)):
             try:
                 hdu = hdulist[i]
-                if 'EXTNAME' in hdu.header:
-                    extname = hdu.header['EXTNAME']
-                    # lines
-                    if extname == 'LINES':
-                        try:
-                            lines = Table(hdu.data, masked=True)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
-                    # mag
-                    elif extname == 'MAG':
-                        try:
-                            mag = Table(hdu.data, masked=True)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
-                    # Z
-                    elif extname == 'Z':
-                        try:
-                            z = Table(hdu.data, masked=True)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
-                    # tables
-                    elif extname[:3] == 'TAB':
-                        try:
-                            tables[extname[4:]] = Table(hdu.data, masked=True)
-                        except Exception as e:
-                            raise IOError('%s: Impossible to open extension %s as a table\n%s' % (os.path.basename(filename), extname, e))
-                else:
-                    raise IOError('%s: Extension %d without EXTNAME' % (os.path.basename(filename), i))
+                if 'EXTNAME' not in hdu.header:
+                    raise IOError('%s: Extension %d without EXTNAME' % (
+                        os.path.basename(filename), i))
+
+                extname = hdu.header['EXTNAME']
+                # tables
+                if extname[:3] == 'TAB':
+                    tables[extname[4:]] = _read_masked_table(hdulist, extname)
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
