@@ -61,6 +61,7 @@ class Catalog(Table):
             The format differs for the LINES table.
 
         """
+        logger = logging.getLogger(__name__)
         invalid = {type(1): -9999, np.int_: -9999,
                    type(1.0): np.nan, np.float_: np.nan,
                    type('1'): '', np.str_: '',
@@ -151,8 +152,12 @@ class Catalog(Table):
                             unit[col] = source.lines[col].unit
 
                         for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
-                            if not mask:
-                                names_lines += ['%s_%s' % (line, col) for col in colnames]
+                            if not mask and line != 'None':
+                                try:
+                                    float(line)
+                                    logger.warning('source %d: line labeled \"%s\" not loaded' %(source.ID, line))
+                                except:
+                                    names_lines += ['%s_%s' % (line, col) for col in colnames]
 
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
