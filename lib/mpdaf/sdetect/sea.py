@@ -236,7 +236,6 @@ def segmentation(source, tags, DIR, remove):
 
     # Save segmentation maps
     if len(maps) > 0:
-        import pdb; pdb.set_trace()
         for tag, data in maps.iteritems():
             ima = Image(wcs=wcs, data=data, dtype=np.uint8, copy=False)
             source.images['SEG_' + tag] = ima
