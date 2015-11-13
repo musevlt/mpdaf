@@ -137,6 +137,7 @@ class Catalog(Table):
         if len(llines) == 0:
             names_lines = []
             dtype_lines = []
+            units_lines = []
         else:
             if fmt == 'default':
                 names_lines = []
