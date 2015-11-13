@@ -4,6 +4,7 @@
 *.so
 *.egg-info/
 .coverage
+.tox/
 tags
 build/
 dist/
