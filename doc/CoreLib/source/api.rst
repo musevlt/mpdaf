@@ -10,6 +10,7 @@ Contents:
    catalog
    coord
    cube
+   data
    displaypixtable
    focus
    gauss1d

@@ -22,25 +22,25 @@ class DataArray(object):
     ----------
     filename : str
         FITS file name, default to ``None``.
-    hdulist : pyfits.hdulist
+    hdulist : :class:`astropy.fits.HDUList`
         HDU list class, used instead of ``fits.open(filename)`` if not None,
         to avoid opening the FITS file.
     ext : integer or (integer,integer) or str or (str,str)
         Number/name of the data extension or numbers/names of the data and
         variance extensions.
-    unit : astropy.units
+    unit : :class:`astropy.units.Unit`
         Physical units of the data values, default to
         ``u.dimensionless_unscaled``.
     copy : boolean
-        If true (default), then the data and variance arrays are copied.
-        Passed to ``np.ma.MaskedArray``.
+        If ``True`` (default), then the data and variance arrays are copied.
+        Passed to :class:`np.ma.MaskedArray`.
     dtype : numpy.dtype
         Type of the data, default to ``float``.
-        Passed to ``np.ma.MaskedArray``.
+        Passed to :class:`np.ma.MaskedArray`.
     data : numpy.ndarray or list
-        Data array, passed to ``np.ma.MaskedArray``.
+        Data array, passed to :class:`np.ma.MaskedArray`.
     var : numpy.ndarray or list
-        Variance array, passed to ``np.array``.
+        Variance array, passed to :func:`np.array`.
 
     Attributes
     ----------
