@@ -1077,15 +1077,12 @@ class Image(DataArray):
         jmax = int(np.max(pixcrd[:, 1]) + 0.5) + 1
         if jmax > self.shape[1]:
             jmax = self.shape[1]
-
-        self.data = self.data[imin:imax, jmin:jmax]
+            
+        subima = self[imin:imax, jmin:jmax]
+        self.data = subima.data
         if self.var is not None:
-            self.var = self.var[imin:imax, jmin:jmax]
-
-        try:
-            self.wcs = self.wcs[imin:imax, jmin:jmax]
-        except:
-            self.wcs = None
+            self.var = subima.var
+        self.wcs = subima.wcs
 
         if mask:
             # mask outside pixels

@@ -667,7 +667,7 @@ class Spectrum(DataArray):
                 pix_max = min(self.shape[0],
                               self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
             if (pix_min + 1) == pix_max:
-                return self.data[pix_min]
+                return self[pix_min]
             else:
                 return self[pix_min:pix_max]
 
@@ -1243,12 +1243,13 @@ class Spectrum(DataArray):
                 i2 = min(self.shape[0],
                          self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
 
+        subspe = self[i1:i2]
         if weight:
-            weights = 1.0 / self.var[i1:i2]
+            weights = 1.0 / subspe.var
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
-            flux = np.ma.average(self.data[i1:i2], weights=weights)
+            flux = np.ma.average(subspe.data, weights=weights)
         else:
-            flux = self.data[i1:i2].mean()
+            flux = subspe.data.mean()
         return flux
 
     def sum(self, lmin=None, lmax=None, weight=True, unit=u.angstrom):
@@ -1286,12 +1287,13 @@ class Spectrum(DataArray):
             else:
                 i2 = min(self.shape[0], self.wave.pixel(lmax, True, unit) + 1)
 
+        subspe = self[i1:i2]
         if weight and self.var is not None:
-            weights = 1.0 / self.var[i1:i2]
+            weights = 1.0 / subspe.var
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
-            flux = (i2 - i1) * np.ma.average(self.data[i1:i2], weights=weights)
+            flux = (i2 - i1) * np.ma.average(subspe.data, weights=weights)
         else:
-            flux = self.data[i1:i2].sum()
+            flux = subspe.data.sum()
         return flux
 
     def integrate(self, lmin=None, lmax=None, unit=u.angstrom):
@@ -1339,16 +1341,18 @@ class Spectrum(DataArray):
 
         if unit is None:
             unit = self.wave.unit
+            
+        subspe = self[i1:i2]
 
         if u.angstrom in self.unit.bases and unit is not u.angstrom:
             try:
-                return np.sum(self.data[i1:i2] *
+                return np.sum(subspe.data *
                               ((np.diff(d) * unit).to(u.angstrom).value)
                               ) * self.unit * u.angstrom
             except:
-                return (self.data[i1:i2] * np.diff(d)).sum() * self.unit * unit
+                return (subspe.data * np.diff(d)).sum() * self.unit * unit
         else:
-            return (self.data[i1:i2] * np.diff(d)).sum() * self.unit * unit
+            return (subspe.data * np.diff(d)).sum() * self.unit * unit
 
     def poly_fit(self, deg, weight=True, maxiter=0,
                  nsig=(-3.0, 3.0), verbose=False):

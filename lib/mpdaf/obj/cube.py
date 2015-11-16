@@ -965,7 +965,9 @@ class Cube(DataArray):
                 res = Cube(data=obj.data, unit=obj.unit, var=obj.var,
                            wave=obj.wave, wcs=obj.wcs, dtype=obj.dtype,
                            copy=False)
-            res.filename = self.filename
+            res.filename = obj.filename
+            res.data_header = pyfits.Header(obj.data_header)
+            res.primary_header=pyfits.Header(obj.primary_header)
             return res
         else:
             return obj
@@ -997,7 +999,7 @@ class Cube(DataArray):
                 pix_min = max(0, int(self.wave.pixel(lbda_min, unit=unit_wave)))
                 pix_max = min(self.shape[0], int(self.wave.pixel(lbda_max, unit=unit_wave)) + 1)
             if (pix_min + 1) == pix_max:
-                return self.data[pix_min, :, :]
+                return self[pix_min, :, :]
             else:
                 return self[pix_min:pix_max, :, :]
 
@@ -1078,8 +1080,6 @@ class Cube(DataArray):
 
     def __setitem__(self, key, other):
         """Set the corresponding part of data."""
-        # self.data[key] = value
-
         if self.data is None:
             raise ValueError('empty data array')
 
@@ -1452,25 +1452,7 @@ class Cube(DataArray):
             raise ValueError('Minimum and maximum wavelengths are outside'
                              ' the spectrum range')
 
-        data = self.data[kmin:kmax, imin:imax, jmin:jmax]
-
-        if self.var is not None:
-            var = self.var[kmin:kmax, imin:imax, jmin:jmax]
-        else:
-            var = None
-        try:
-            wcs = self.wcs[imin:imax, jmin:jmax]
-        except:
-            wcs = None
-        try:
-            wave = self.wave[kmin:kmax]
-        except:
-            wave = None
-
-        res = Cube(wcs=wcs, wave=wave, unit=self.unit, data=data, var=var,
-                   copy=False)
-        res.data_header = pyfits.Header(self.data_header)
-        res.primary_header = pyfits.Header(self.primary_header)
+        res = self[kmin:kmax, imin:imax, jmin:jmax]
 
         if mask:
             # mask outside pixels
@@ -2556,15 +2538,19 @@ class Cube(DataArray):
                                indexing='ij')
             grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
                                (self.shape[0], imax - imin, jmax - jmin))
-
-            data[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = self.data[:, imin:imax, jmin:jmax].copy()
+            
+            
+            
+            subcub = self[:, imin:imax, jmin:jmax]
+            var = None
+            data[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = subcub.data
             mask = np.ones((self.shape[0], size, size), dtype=np.bool)
             mask[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = np.logical_or(
-                self.data.mask[:, imin:imax, jmin:jmax], grid3d)
+                subcub.data.mask, grid3d)
 
-            if self.var is not None:
+            if subcub.var is not None:
                 var = np.ones((self.shape[0], size, size)) * np.nan
-                var[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = self.var[:, imin:imax, jmin:jmax].copy()
+                var[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = subcub.var
             else:
                 var = None
 
