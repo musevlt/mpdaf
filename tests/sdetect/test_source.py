@@ -2,10 +2,11 @@
 import nose.tools
 from nose.plugins.attrib import attr
 
-from mpdaf.sdetect import Source, Catalog
-from mpdaf.obj import Spectrum, Image, Cube
+from mpdaf.sdetect import Source
+from mpdaf.obj import Image, Cube
 from astropy.table import Table
 import numpy as np
+from numpy.testing import assert_array_equal
 
 
 class TestSource():
@@ -124,7 +125,12 @@ class TestSource():
         nose.tools.assert_true('SEG_MUSE_[SII]6724' in src.images)
         nose.tools.assert_true('SEG_MUSE_HBETA4861' in src.images)
         nose.tools.assert_true('SEG_OBS7128' in src.images)
-        src.add_masks()
+        src.find_sky_mask(seg_tags=['SEG_MUSE_WHITE', 'SEG_MUSE_[OIII]5007', 'SEG_OBS7128', 'SEG_MUSE_HBETA4861', 'SEG_MUSE_HALPHA6563', 'SEG_MUSE_[SII]6724'])
+        src.find_union_mask(seg_tags=['SEG_MUSE_WHITE', 'SEG_MUSE_[OIII]5007', 'SEG_OBS7128', 'SEG_MUSE_HBETA4861', 'SEG_MUSE_HALPHA6563', 'SEG_MUSE_[SII]6724'])
+        src.find_intersection_mask(seg_tags=['SEG_MUSE_WHITE', 'SEG_MUSE_[OIII]5007', 'SEG_OBS7128', 'SEG_MUSE_HBETA4861', 'SEG_MUSE_HALPHA6563', 'SEG_MUSE_[SII]6724'])
+        assert_array_equal(np.array(src.images['MASK_UNION'].data.data, dtype=bool),
+                           ~(np.array(src.images['MASK_SKY'].data.data, dtype=bool)))
+        assert_array_equal(src.images['MASK_INTER'].data.data, np.zeros(src.images['MASK_INTER'].shape))
         nose.tools.assert_true('MASK_UNION' in src.images)
         nose.tools.assert_true('MASK_INTER' in src.images)
         nose.tools.assert_true('MASK_SKY' in src.images)

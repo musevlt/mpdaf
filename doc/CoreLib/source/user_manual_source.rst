@@ -78,7 +78,11 @@ Reference
 
 :func:`mpdaf.sdetect.Source.add_seg_images <mpdaf.sdetect.Source.add_seg_images>` runs SExtractor to create segmentation maps.
 
-:func:`mpdaf.sdetect.Source.add_masks <mpdaf.sdetect.Source.add_masks>` runs SExtractor to create masked images.
+:func:`mpdaf.sdetect.Source.find_sky_mask <mpdaf.sdetect.Source.find_sky_mask>` creates a sky mask from a list of segmentation maps.
+	    
+:func:`mpdaf.sdetect.Source.find_union_mask <mpdaf.sdetect.Source.find_union_mask>` creates an object mask as the union of the segmentation maps.
+
+:func:`mpdaf.sdetect.Source.find_intersection_mask <mpdaf.sdetect.Source.find_intersection_mask>` creates an object mask as the intersection of the segmentation maps.
 
 :func:`mpdaf.sdetect.Source.add_table <mpdaf.sdetect.Source.add_table>` appends an astropy table to the tables dictionary.
 
@@ -148,74 +152,7 @@ We can also extract an HST image centered on the source center and append it to 
  [INFO] 25 X 25 image (no name)
  [INFO] .data(25,25) (10**(-20)*erg/s/cm**2/Angstrom) fscale=1, .var(25,25)
  [INFO] center:(02:36:11.9131,10:00:13.5686) size in arcsec:(5.000,5.000) step in arcsec:(0.200,0.200) rot:0.0
- 
-:func:`Source.add_seg_images <mpdaf.sdetect.Source.add_seg_images>` method runs SExtractor on all images present in self.images dictionary to create segmentation maps.
-After that, :func:`Source.add_masks <mpdaf.sdetect.Source.add_masks>` uses the list of segmentation maps to compute the union mask and the intersection mask and  the region where no object is detected in any segmentation map is saved in the sky mask.
-Union is saved as an image of booleans nammed 'MASK_UNION', intersection is saved as 'MASK_INTER' and sky mask is saved as 'MASK_SKY'::
- 
- >>> s.add_seg_images()
- >>> s.add_masks()
 
- SExtractor  version 2.19.5 (2014-03-21)
-
- Written by Emmanuel BERTIN <bertin@iap.fr>
- Copyright 2012 IAP/CNRS/UPMC
-
- visit http://astromatic.net/software/sextractor
-
- SExtractor comes with ABSOLUTELY NO WARRANTY
- You may redistribute copies of SExtractor
- under the terms of the GNU General Public License.
-
- ----- SExtractor 2.19.5 started on 2015-06-03 at 14:38:46 with 1 thread
-
- ----- Measuring from: 0001-HST_F814W.fits [1/1]
-       "Unnamed" / no ext. header / 25x25 / 32 bits (floats)
- (M+D) Background: -0.00378665 RMS: 0.121295   / Threshold: 0.0909715  
-       Objects: detected 1        / sextracted 1               
-
- All done (in 0.0 s: 1903.9 lines/s , 76.2 detections/s)
- ----- SExtractor 2.19.5 started on 2015-06-03 at 14:38:46 with 1 thread
-
- ----- Measuring from: 0001-MUSE_WHITE.fits [1/1]
-       "Unnamed" / no ext. header / 25x25 / 32 bits (floats)
- (M+D) Background: 118.647    RMS: 603.26     / Threshold: 452.445    
-       Objects: detected 1        / sextracted 1               
-
- All done (in 0.0 s: 1974.1 lines/s , 79.0 detections/s)
- [INFO] Doing HST_F814W
- [INFO] Doing MUSE_WHITE
- [INFO] Image HST_F814W has one useful object
- [INFO] Image MUSE_WHITE has one useful object
-
-Now, we plot these different images::
-
- >>> fig = plt.figure()
- >>> ax = fig.add_subplot(1,3,1)
- >>> s.show_ima(ax, 'MUSE_WHITE', showcenter=(0.2, 'r'))
- >>> ax = fig.add_subplot(1,3,2)
- >>> s.show_ima(ax, 'HST_F814W', showcenter=(0.2, 'r'))
- >>> ax = fig.add_subplot(1,3,3)
- >>> s.show_ima(ax, 'MASK_UNION')
- 
-.. image::  user_manual_sourceselect_images/show_ima.png
- 
-Now, we extract spectra from the MUSE data cube::
- 
- >>> s.extract_spectra(cub)
- >>> fig = plt.figure()
- >>> ax = fig.add_subplot(1,1,1)
- >>> s.show_spec(ax, 'MUSE_WHITE_NOSKY', zero=True, sky=s.spectra['MUSE_SKY'])
- 
-.. image::  user_manual_sourceselect_images/show_spec.png
- 
-The source can be saved as a FITS file::
- 
- >>> s.write('test.fits')
- 
-Later we can load it like this::
-
- >>> s = Source.from_file('test.fits')
 
 
 SourceList class

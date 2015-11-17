@@ -16,7 +16,7 @@ from numpy import ma
 
 from ..obj import Cube, Image, Spectrum, gauss_image
 from ..obj.objs import is_int, is_float
-
+from ..tools import deprecated
 
 emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
@@ -1173,6 +1173,7 @@ class Source(object):
             self._logger.warning('add_seg_images method use the MUSE_WHITE '
                                  'image computed by add_white_image method')
 
+    @deprecated('add_mask method is deprecated, use find_sky_mask or find_union_mask or find_intersection_mask')
     def add_masks(self, tags=None):
         """Use the list of segmentation maps to compute the union mask and the
         intersection mask and the region where no object is detected in any
@@ -1208,6 +1209,92 @@ class Source(object):
 
         from ..sdetect.sea import mask_creation
         mask_creation(self, maps)
+        
+    def find_sky_mask(self, seg_tags, sky_mask='MASK_SKY'):
+        """Loop over all segmentation images and use the region where no object is
+        detected in any segmentation map as our sky image.
+        
+        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
+    
+        Parameters
+        ----------
+        seg_tags : list<string>
+            List of tags of selected segmentation images.
+        sky_mask : string
+            Name of the sky mask image.
+        """
+        shape = self.images[seg_tags[0]].shape
+        wcs = self.images[seg_tags[0]].wcs
+        mask = np.ones(shape, dtype=np.bool)
+        for key in seg_tags:
+            im = self.images[key]
+            if im.shape[0] == shape[0] and im.shape[1] == shape[1]:
+                mask &= (~np.asarray(im.data, dtype=bool))
+            else:
+                raise IOError('segmentation maps have not the same dimensions')
+        self.images[sky_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
+                                      data=mask)
+        
+
+    def find_union_mask(self, seg_tags, union_mask='MASK_UNION'):
+        """Use the list of segmentation maps to compute the union mask.
+        
+        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
+        
+        1- Select on each segmentation map the object at the centre of the map.
+        (the algo supposes that each objects have different labels)
+        2- compute the union of these selected objects
+
+        Parameters
+        ----------
+        tags : list<string>
+            List of tags of selected segmentation images
+        union_mask : string
+            Name of the union mask image.
+        """
+        wcs = self.images['MUSE_WHITE'].wcs
+        yc, xc = wcs.sky2pix((self.DEC, self.RA), unit=u.deg)[0]
+        maps = {}
+        for tag in seg_tags:
+            if tag[0:4] == 'SEG_':
+                maps[tag[4:]] = self.images[tag].data.data
+            else:
+                maps[tag] = self.images[tag].data.data
+                
+        from ..sdetect.sea import findCentralDetection, union
+        r = findCentralDetection(maps, yc, xc, tolerance=3)
+        self.images[union_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
+                                        data=union(r['seg'].values()))
+        
+    def find_intersection_mask(self, seg_tags, inter_mask='MASK_INTER'):
+        """Use the list of segmentation maps to compute the instersection mask.
+        
+        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
+        
+        1- Select on each segmentation map the object at the centre of the map.
+        (the algo supposes that each objects have different labels)
+        2- compute the intersection of these selected objects
+
+        Parameters
+        ----------
+        tags : list<string>
+            List of tags of selected segmentation images
+        inter_mask : string
+            Name of the intersection mask image.
+        """
+        wcs = self.images['MUSE_WHITE'].wcs
+        yc, xc = wcs.sky2pix((self.DEC, self.RA), unit=u.deg)[0]
+        maps = {}
+        for tag in seg_tags:
+            if tag[0:4] == 'SEG_':
+                maps[tag[4:]] = self.images[tag].data.data
+            else:
+                maps[tag] = self.images[tag].data.data
+                
+        from ..sdetect.sea import findCentralDetection, intersection
+        r = findCentralDetection(maps, yc, xc, tolerance=3)
+        self.images[inter_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
+                                        data=intersection(r['seg'].values()))
 
     def add_table(self, tab, name):
         """Append an astropy table to the tables dictionary.
@@ -1221,7 +1308,7 @@ class Source(object):
         """
         self.tables[name] = tab
 
-    def extract_spectra(self, cube,
+    def extract_spectra(self, cube, obj_mask='MASK_UNION', sky_mask='MASK_SKY',
                         tags_to_try=['MUSE_WHITE', 'MUSE_LYALPHA1216',
                                      'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
                         skysub=True, psf=None, lbda=None, unit_wave=u.angstrom):
@@ -1229,10 +1316,10 @@ class Source(object):
         narrow-band images (to define spectrum extraction apertures).
 
         First, this method computes a subcube that has the same size along the
-        spatial axis as MASK_UNION image.
+        spatial axis as the image that contains the mask of the objet.
 
-        The no-weighting spectrum is computed as the sum of the subcube
-        weighted by the MASK_UNION image.  It is saved in
+        Then, the no-weighting spectrum is computed as the sum of the subcube
+        weighted by the mask of the object.  It is saved in
         ``self.spectra['MUSE_TOT']``.
 
         The weighted spectra are computed as the sum of the subcube weighted by
@@ -1241,12 +1328,12 @@ class Source(object):
 
         If psf:
             The potential PSF weighted spectrum is computed as the sum of
-            the subcube weighted by MASK_UNION*psf.
+            the subcube weighted by mutliplication of the mask of the objetct and the PSF.
             It is saved in self.spectra['MUSE_PSF']
 
         If skysub:
             The local sky spectrum is computed as the average of the subcube
-            weighted by the MASK_SKY image.
+            weighted by the sky mask image.
             It is saved in self.spectra['MUSE_SKY']
 
             The other spectra are computed on the sky-subtracted subcube and
@@ -1263,6 +1350,10 @@ class Source(object):
         ----------
         cube : :class:`mpdaf.obj.Cube`
             MUSE data cube.
+        obj_mask : string
+            Name of the image that contains the mask of the object.
+        sky_mask : string
+            Name of the sky mask image.
         tags_to_try : list<string>
             List of narrow bands images.
         skysub : boolean
@@ -1280,8 +1371,8 @@ class Source(object):
             If None, inputs are in pixels
 
         """
-        if 'MASK_UNION' in self.images:
-            ima = self.images['MASK_UNION']
+        if obj_mask in self.images:
+            ima = self.images[obj_mask]
 
             if ima.wcs.sameStep(cube.wcs):
                 size = ima.shape[0]
@@ -1303,29 +1394,27 @@ class Source(object):
                     order=0, unit_start=u.deg,
                     unit_step=u.arcsec).data.data
         else:
-            raise IOError('extract_spectra method use the MASK_UNION computed '
-                          'by add_mask method')
+            raise IOError('key %s not present in the images dictionary'%obj_mask)
 
         if skysub:
-            if 'MASK_SKY' in self.images:
-                if self.images['MASK_SKY'].wcs.isEqual(subcub.wcs):
-                    sky_mask = self.images['MASK_SKY'].data.data
+            if sky_mask in self.images:
+                if self.images[sky_mask].wcs.isEqual(subcub.wcs):
+                    skymask = self.images[sky_mask].data.data
                 else:
-                    sky_mask = self.images['MASK_SKY'].resample(
+                    skymask = self.images[sky_mask].resample(
                         newdim=(subcub.shape[1], subcub.shape[2]),
                         newstart=subcub.wcs.get_start(unit=u.deg),
                         newstep=subcub.wcs.get_step(unit=u.arcsec),
                         order=0, unit_start=u.deg,
                         unit_step=u.arcsec).data.data
             else:
-                raise IOError('extract_spectra method use the MASK_SKY '
-                              'computed by add_mask method')
+                raise IOError('key %s not present in the images dictionary'%sky_mask)
 
             # Get the sky spectrum to subtract
-            sky = subcub.sum(axis=(1, 2), weights=sky_mask)
+            sky = subcub.sum(axis=(1, 2), weights=skymask)
             old_mask = subcub.data.mask.copy()
             subcub.data.mask[np.where(
-                np.tile(sky_mask, (subcub.shape[0], 1, 1)) == 0)] = True
+                np.tile(skymask, (subcub.shape[0], 1, 1)) == 0)] = True
             sky = subcub.mean(axis=(1, 2))
             self.spectra['MUSE_SKY'] = sky
             subcub.data.mask = old_mask
