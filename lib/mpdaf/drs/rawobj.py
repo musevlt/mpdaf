@@ -1,16 +1,18 @@
 """rawobj.py Manages raw FITS file."""
-import numpy as np
-from astropy.io import fits as pyfits
-import multiprocessing
+
 import datetime
-import sys
-import matplotlib.pyplot as plt
-from mpdaf import obj
-import warnings
-from scipy import integrate
-import matplotlib.cm as cm
 import logging
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import multiprocessing
+import numpy as np
 import os.path
+import sys
+import warnings
+
+from astropy.io import fits as pyfits
+from mpdaf import obj
+from scipy import integrate
 
 NB_SUBSLICERS = 4  # number of sub-slicers
 NB_SPEC_PER_SLICE = 75  # number of pixels per slice
@@ -26,38 +28,29 @@ class Channel(object):
 
     Parameters
     ----------
-    extname  : string
-               The extension name.
-    filename : string
-               The raw FITS file name.
+    extname : str
+        The extension name.
+    filename : str
+        The raw FITS file name.
 
     Attributes
     ----------
-    extname : string
-              The extension name
-    header  : pyfits.Header
-              The extension header
-    data    : array
-              Array containing the pixel values of the image extension
-    nx      : integer
-              Lengths of data in X
-    ny      : integer
-              Lengths of data in Y
-    mask    : array of booleans
-              Arrays that contents TRUE for overscanned pixels,
-              FALSE for the others
+    extname : str
+        The extension name
+    header : pyfits.Header
+        The extension header
+    data : array
+        Array containing the pixel values of the image extension
+    nx : integer
+        Lengths of data in X
+    ny : integer
+        Lengths of data in Y
+    mask : array of booleans
+        Arrays that contents TRUE for overscanned pixels, FALSE for the others.
+
     """
 
     def __init__(self, extname=None, filename=None, data=None):
-        """Create a Channel object.
-
-        Parameters
-        ----------
-        extname  : string
-                   The extension name.
-        filename : string
-                   The raw FITS file name.
-        """
         self._logger = logging.getLogger(__name__)
         self.extname = extname
         if filename is not None:
@@ -138,8 +131,7 @@ class Channel(object):
                     break
         except:
             pass
-        mask = np.ma.make_mask(m)
-        return mask
+        return np.ma.make_mask(m)
 
     def copy(self):
         """Return a copy of the Channel object."""
@@ -282,8 +274,7 @@ class Channel(object):
             return np.ndarray.__pow__(self, other)
 
     def sqrt(self):
-        """Compute the positive square-root.
-        """
+        """Compute the positive square-root."""
         result = Channel(self.extname)
         result.header = self.header
         result.nx = self.nx
@@ -334,11 +325,9 @@ class Channel(object):
         Parameters
         ----------
         det_out : integer in [1,4]
-                  Number of output detector.
-                  If None, all image is returned.
+            Number of output detector. If None, all image is returned.
         bias    : boolean
-                  If True, median value of the overscanned pixels
-                  is subtracted
+            If True, median value of the overscanned pixels is subtracted.
 
         Returns
         -------
@@ -430,7 +419,7 @@ class Channel(object):
         Parameters
         ----------
         det_out : integer in [1,4]
-                  Number of detector taken into account.
+            Number of detector taken into account.
 
         Returns
         -------
@@ -446,15 +435,12 @@ class Channel(object):
 
         Parameters
         ----------
-        det_out        : integer in [1,4]
-                         Number of output detector.
-                         If None, all image is returned.
+        det_out : integer in [1,4]
+            Number of output detector. If None, all image is returned.
         bias_substract : boolean
-                         If True, median value
-                         of the overscanned pixels is substracted
-        bias           : boolean
-                         If True, median value of the
-                         overscanned pixels is subtracted
+            If True, median value of the overscanned pixels is substracted.
+        bias : boolean
+            If True, median value of the overscanned pixels is subtracted.
 
         Returns
         -------
@@ -477,7 +463,6 @@ class Channel(object):
             bias = True
 
         if bias:
-
             ksel = np.where(self.mask == True)
             # length of data in X
             nx_data = self.header["NAXIS1"]
@@ -648,8 +633,7 @@ class Channel(object):
         Parameters
         ----------
         det_out : integer in [1,4]
-                  Number of output detector.
-                  If None, all image is returned.
+            Number of output detector. If None, all image is returned.
 
         Returns
         -------
@@ -740,88 +724,63 @@ class RawFile(object):
 
     Parameters
     ----------
-    filename : string
-        The raw FITS file name.
-        filename=None creates an empty object.
-        The FITS file is opened with memory mapping.
-        Just the primary header and the list of extension name are loaded.
-        Method get_channel(extname) returns the corresponding channel
-        Operator [extnumber] loads and returns the corresponding channel.
+    filename : str
+        The raw FITS file name. ``filename=None`` creates an empty object. The
+        FITS file is opened with memory mapping. Just the primary header and
+        the list of extension name are loaded. Method get_channel(extname)
+        returns the corresponding channel Operator [extnumber] loads and
+        returns the corresponding channel.
 
     Attributes
     ----------
-    filename       : string
-                     The raw FITS file name. None if any.
-    channels       : dict
-                     List of extension (extname,Channel)
+    filename : str
+        The raw FITS file name. None if any.
+    channels : dict
+        List of extension (extname,Channel)
     primary_header : pyfits.Header
-                     The primary header
-    nx             : integer
-                     Lengths of data in X
-    ny             : integer
-                     Lengths of data in Y
-    next           : integer
-                     Number of extensions
-    progress       : boolean
-                     If True, progress of multiprocessing tasks
-                     are displayed. True by default.
+        The primary header
+    nx : integer
+        Lengths of data in X
+    ny : integer
+        Lengths of data in Y
+    next : integer
+        Number of extensions
+    progress : boolean
+        If True, progress of multiprocessing tasks are displayed. True by
+        default.
+
     """
 
     def __init__(self, filename=None):
-        """Create a RawFile object.
-
-        Parameters
-        ----------
-        filename : string
-            The raw FITS file name.
-            filename=None creates an empty object.
-            The FITS file is opened with memory mapping.
-            Just the primary header and the list of extension name are loaded.
-            Method get_channel(extname) returns the corresponding channel
-            Operator [extnumber] loads and returns the corresponding channel.
-        """
         self._logger = logging.getLogger(__name__)
         self.filename = filename
+        self.primary_header = pyfits.Header()
         self.progress = True
         self.channels = dict()
         self.nx = 0
         self.ny = 0
         self.next = 0
+
         if filename is not None:
-            try:
-                hdulist = pyfits.open(self.filename, memmap=1)
-                self.primary_header = hdulist[0].header
-                n = 1
-                while True:
-                    try:
-                        extname = hdulist[n].header["EXTNAME"]
-                        exttype = hdulist[n].header["XTENSION"]
-                        if exttype == 'IMAGE' \
-                                and hdulist[n].header["NAXIS"] != 0:
-                            nx = hdulist[n].header["NAXIS1"]
-                            ny = hdulist[n].header["NAXIS2"]
-                            if self.nx == 0:
-                                self.nx = nx
-                                self.ny = ny
-                            if nx != self.nx and ny != self.ny:
-                                self._logger.warning("image extensions %s not"
-                                                     " considered "
-                                                     "(different sizes)",
-                                                     extname)
-                            else:
-                                self.channels[extname] = None
-                        n = n + 1
-                    except:
-                        break
-                    self.next = len(self.channels)
-                    hdulist.close()
-            except IOError:
-                raise IOError('file %s not found' % filename)
-                self.filename = None
-                self.primary_header = None
-        else:
-            self.filename = None
-            self.primary_header = pyfits.Header()
+            hdulist = pyfits.open(self.filename)
+            self.primary_header = hdulist[0].header
+            for hdu in hdulist[1:]:
+                extname = hdu.header["EXTNAME"]
+                exttype = hdu.header["XTENSION"]
+                if exttype == 'IMAGE' and hdu.header["NAXIS"] != 0:
+                    nx = hdu.header["NAXIS1"]
+                    ny = hdu.header["NAXIS2"]
+                    if self.nx == 0:
+                        self.nx = nx
+                        self.ny = ny
+                    if nx != self.nx and ny != self.ny:
+                        self._logger.warning(
+                            'image extensions %s not considered '
+                            '(different sizes)', extname)
+                    else:
+                        self.channels[extname] = None
+            self.next = len(self.channels)
+            hdulist.close()
 
     def copy(self):
         """Return a copy of the RawFile object."""
@@ -865,7 +824,7 @@ class RawFile(object):
 
         Parameters
         ----------
-        extname : string
+        extname : str
             The extension name.
 
         Returns
@@ -875,8 +834,7 @@ class RawFile(object):
         if self.channels[extname] is not None:
             return self.channels[extname]
         else:
-            chan = Channel(extname, self.filename)
-            return chan
+            return Channel(extname, self.filename)
 
     def __len__(self):
         """Return the number of extensions."""
@@ -888,14 +846,14 @@ class RawFile(object):
         Parameters
         ----------
         key : integer
-              The extension number.
+            The extension number.
 
         Returns
         -------
         out : :class:`mpdaf.drs.Channel`
         """
         extname = "CHAN%02d" % key
-        if self.channels[extname] == None:
+        if self.channels[extname] is None:
             self.channels[extname] = Channel(extname, self.filename)
         return self.channels[extname]
 
@@ -908,6 +866,7 @@ class RawFile(object):
             The extension number.
         value : `mpdaf.drs.Channel` or array
             Channel object or image
+
         """
         extname = "CHAN%02d" % key
         if isinstance(value, Channel):
@@ -1061,8 +1020,11 @@ class RawFile(object):
     def write(self, filename):
         """Save the object in a FITS file.
 
-        :param filename: The FITS filename.
-        :type filename: string
+        Parameters
+        ----------
+        filename : str
+            The FITS filename.
+
         """
         # create primary header
         prihdu = pyfits.PrimaryHDU()
@@ -1120,29 +1082,32 @@ class RawFile(object):
              vmin=None, vmax=None, zscale=False, colorbar=None, **kargs):
         """Plot the raw images.
 
-        :param title: Figure title (None by default).
-        :type title: string
-        :param channels: list of channel names. All by default.
-        :type channels: list or 'all'
-        :param area: list of pixels [pmin,pmax,qmin,qmax] to zoom.
-        :type title: list
-        :param scale: The stretch function to use for the scaling
+        Parameters
+        ----------
+        title : str
+            Figure title (None by default).
+        channels : list or 'all'
+            list of channel names. All by default.
+        area : list
+            list of pixels ``[pmin,pmax,qmin,qmax]`` to zoom.
+        scale : str
+            'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
+            The stretch function to use for the scaling
             (default is 'linear').
-        :type scale: linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-        :param vmin: Minimum pixel value to use for the scaling. If None, vmin
+        vmin : float
+            Minimum pixel value to use for the scaling. If None, vmin
             is set to min of data.
-        :type vmin: float
-        :param vmax: Maximum pixel value to use for the scaling. If None, vmax
+        vmax : float
+            Maximum pixel value to use for the scaling. If None, vmax
             is set to max of data.
-        :type vmax: float
-        :param zscale: If true, vmin and vmax are computed
+        zscale : bool
+            If true, vmin and vmax are computed
             using the IRAF zscale algorithm.
-        :type zscale: bool
-        :param colorbar: If 'h'/'v', a horizontal/vertical
-            colorbar is added.
-        :type colorbar: bool
-        :param kargs: kargs can be used to set additional Artist properties.
-        :type kargs: matplotlib.artist.Artist
+        colorbar : str
+            If 'h'/'v', a horizontal/vertical colorbar is added.
+        kargs : dict
+            kargs can be used to set additional Artist properties.
+
         """
         fig = plt.figure()
         fig.subplots_adjust(wspace=0.02, hspace=0.01)
@@ -1156,7 +1121,7 @@ class RawFile(object):
                                              bias=False)
                 if area is not None:
                     ima = ima[area[0]:area[1], area[2]:area[3]]
-                ima = ima.rebin_sum(6)
+                ima = ima.rebin_mean(6)
                 ichan = int(name[-2:])
                 fig.add_subplot(4, 6, ichan)
                 ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
@@ -1177,7 +1142,7 @@ class RawFile(object):
                                              bias_substract=False, bias=False)
                 if area is not None:
                     ima = ima[area[0]:area[1], area[2]:area[3]]
-                ima = ima.rebin_sum(6)
+                ima = ima.rebin_mean(6)
                 ichan = int(name[-2:])
                 fig.add_subplot(nrows, ncols, i + 1)
                 ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
@@ -1189,13 +1154,18 @@ class RawFile(object):
     def reconstruct_white_image(self, mask=None, verbose=True):
         """Reconstructs the white image of the FOV using a mask file.
 
-        :param mask: mumdatMask_1x1.fits filename used fot this reconstruction
+        Parameters
+        ----------
+        mask : str
+            mumdatMask_1x1.fits filename used for this reconstruction
             (if None, the last file stored in mpdaf is used).
-        :type mask: string
-        :param verbose: if True, progression is printed.
-        :type verbose: boolean
+        verbose : bool
+            if True, progression is printed.
 
-        :rtype: :class:`mpdaf.obj.Image`
+        Returns
+        -------
+        :class:`mpdaf.obj.Image`
+
         """
         if mask is None:
             path = os.path.dirname(__file__)
@@ -1346,9 +1316,12 @@ class RawFile(object):
         """Reconstructs the white image of the FOV using a mask file and plots
         this image.
 
-        :param mask: mumdatMask_1x1.fits filename used for this reconstruction
+        Parameters
+        ----------
+        mask : str
+            mumdatMask_1x1.fits filename used for this reconstruction
             (if None, the last file stored in mpdaf is used).
-        :type mask: string
+
         """
         if mask is None:
             path = os.path.dirname(__file__)
@@ -1364,7 +1337,7 @@ class RawFile(object):
         # plot raw image
         plt.subplot(1, 2, 2)
         self._plot_slice_on_raw_image(selected_ifu, 1)
-        cid = self.fig.canvas.mpl_connect('button_press_event', self._onclick)
+        self.fig.canvas.mpl_connect('button_press_event', self._onclick)
         print 'To select on other channel/slice, '\
             'click on the images with the right mouse button.'
 

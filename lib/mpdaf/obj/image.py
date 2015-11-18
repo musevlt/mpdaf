@@ -21,7 +21,8 @@ from .objs import is_float, is_int, UnitArray, UnitMaskedArray
 from ..tools import deprecated
 
 
-class ImageClicks(object):  # Object used to save click on image plot.
+class ImageClicks(object):
+    """Object used to save click on image plot."""
 
     def __init__(self, binding_id, filename=None):
         self._logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class ImageClicks(object):  # Object used to save click on image plot.
         self.id_lines = []  # Plot id (cross for cursor positions).
 
     def remove(self, ic, jc):
-        # removes a cursor position
+        """removes a cursor position"""
         d2 = (self.i - ic) * (self.i - ic) + (self.j - jc) * (self.j - jc)
         i = np.argmin(d2)
         line = self.id_lines[i]
@@ -63,13 +64,12 @@ class ImageClicks(object):  # Object used to save click on image plot.
         self.id_lines.append(len(plt.gca().lines) - 1)
 
     def iprint(self, i):
-        # prints a cursor positions
-        msg = 'y=%g\tx=%g\tp=%d\tq=%d\tdata=%g' % (
-            self.y[i], self.x[i], self.p[i], self.q[i], self.data[i])
-        self._logger.info(msg)
+        """prints a cursor positions"""
+        self._logger.info('y=%g\tx=%g\tp=%d\tq=%d\tdata=%g', self.y[i],
+                          self.x[i], self.p[i], self.q[i], self.data[i])
 
     def write_fits(self):
-        # prints coordinates in fits table.
+        """prints coordinates in fits table."""
         if self.filename != 'None':
             c1 = pyfits.Column(name='p', format='I', array=self.p)
             c2 = pyfits.Column(name='q', format='I', array=self.q)
@@ -80,13 +80,12 @@ class ImageClicks(object):  # Object used to save click on image plot.
             coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
             tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
             tbhdu.writeto(self.filename, clobber=True, output_verify='fix')
-            msg = 'printing coordinates in fits table %s' % self.filename
-            self._logger.info(msg)
+            self._logger.info('printing coordinates in fits table %s',
+                              self.filename)
 
     def clear(self):
-        # disconnects and clears
-        msg = "disconnecting console coordinate printout..."
-        self._logger.info(msg)
+        """disconnects and clears"""
+        self._logger.info('disconnecting console coordinate printout...')
         plt.disconnect(self.binding_id)
         nlines = len(self.id_lines)
         for i in range(nlines):
@@ -1490,9 +1489,10 @@ class Image(DataArray):
         else:
             if background is None:
                 background = self.background()[0]
-            di, dj = ndimage.measurements.center_of_mass(d[max(0, ic - dpix):ic + dpix + 1,
-                                                           max(0, jc - dpix):jc + dpix + 1]
-                                                         - background)
+            di, dj = ndimage.measurements.center_of_mass(
+                d[max(0, ic - dpix):ic + dpix + 1,
+                  max(0, jc - dpix):jc + dpix + 1]
+                - background)
         ic = imin + max(0, ic - dpix) + di
         jc = jmin + max(0, jc - dpix) + dj
         [[dec, ra]] = self.wcs.pix2sky([[ic, jc]])
@@ -4090,18 +4090,19 @@ class Image(DataArray):
             return 'x=%1.4f, y=%1.4f' % (x, y)
 
     def ipos(self, filename='None'):
-        """Print cursor position in interactive mode (p and q define the
-        nearest pixel, x and y are the position, data contains the image data
-        value (data[p,q]) ).
+        """Print cursor position in interactive mode.
 
-          To read cursor position, click on the left mouse button.
+        p and q define the nearest pixel, x and y are the position, data
+        contains the image data value (data[p,q]) .
 
-          To remove a cursor position, click on the left mouse button + <d>
+        To read cursor position, click on the left mouse button.
 
-          To quit the interactive mode, click on the right mouse button.
+        To remove a cursor position, click on the left mouse button + <d>
 
-          At the end, clicks are saved in self.clicks as dictionary
-          {'y','x','p','q','data'}.
+        To quit the interactive mode, click on the right mouse button.
+
+        At the end, clicks are saved in self.clicks as dictionary
+        {'y','x','p','q','data'}.
 
         Parameters
         ----------
@@ -4110,16 +4111,13 @@ class Image(DataArray):
             table with columns labeled 'I'|'J'|'RA'|'DEC'|'DATA'.
 
         """
-        msg = 'To read cursor position, click on the left mouse button'
-        self._logger.info(msg)
-        msg = 'To remove a cursor position,'\
-            ' click on the left mouse button + <d>'
-        self._logger.info(msg)
-        msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg)
-        msg = 'After quit, clicks are saved '\
-            'in self.clicks as dictionary {y,x,p,q,data}.'
-        self._logger.info(msg)
+        info = self._logger.info
+        info('To read cursor position, click on the left mouse button')
+        info('To remove a cursor position, click on the left mouse button + '
+             '<d>')
+        info('To quit the interactive mode, click on the right mouse button.')
+        info('After quit, clicks are saved in self.clicks as dictionary '
+             '{y,x,p,q,data}.')
 
         if self._clicks is None:
             binding_id = plt.connect('button_press_event', self._on_click)
@@ -4140,8 +4138,7 @@ class Image(DataArray):
                     try:
                         j, i = event.xdata, event.ydata
                         self._clicks.remove(i, j)
-                        msg = "new selection:"
-                        self._logger.info(msg)
+                        self._logger.info("new selection:")
                         for i in range(len(self._clicks.x)):
                             self._clicks.iprint(i)
                     except:
@@ -4179,10 +4176,9 @@ class Image(DataArray):
 
         To quit the interactive mode, click on the right mouse button.
         """
-        msg = 'Use left mouse button to define the line.'
-        self._logger.info(msg)
-        msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg)
+        self._logger.info('Use left mouse button to define the line.')
+        self._logger.info('To quit the interactive mode, click on the right '
+                          'mouse button.')
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_dist,
@@ -4209,8 +4205,7 @@ class Image(DataArray):
             except:
                 pass
         else:
-            msg = 'idist deactivated.'
-            self._logger.info(msg)
+            self._logger.info('idist deactivated.')
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4224,10 +4219,9 @@ class Image(DataArray):
 
         To quit the interactive mode, click on the right mouse button.
         """
-        msg = 'Use left mouse button to define the box.'
-        self._logger.info(msg)
-        msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg)
+        self._logger.info('Use left mouse button to define the box.')
+        self._logger.info('To quit the interactive mode, click on the right '
+                          'mouse button.')
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_stat,
@@ -4260,8 +4254,7 @@ class Image(DataArray):
             except:
                 pass
         else:
-            msg = 'istat deactivated.'
-            self._logger.info(msg)
+            self._logger.info('istat deactivated.')
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4272,10 +4265,9 @@ class Image(DataArray):
 
         To quit the interactive mode, click on the right mouse button.
         """
-        msg = 'Use left mouse button to define the box.'
-        self._logger.info(msg)
-        msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg)
+        self._logger.info('Use left mouse button to define the box.')
+        self._logger.info('To quit the interactive mode, click on the right '
+                          'mouse button.')
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_peak,
@@ -4305,8 +4297,7 @@ class Image(DataArray):
             except:
                 pass
         else:
-            msg = 'ipeak deactivated.'
-            self._logger.info(msg)
+            self._logger.info('ipeak deactivated.')
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4317,10 +4308,9 @@ class Image(DataArray):
 
         To quit the interactive mode, click on the right mouse button.
         """
-        msg = 'Use left mouse button to define the box.'
-        self._logger.info(msg)
-        msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg)
+        self._logger.info('Use left mouse button to define the box.')
+        self._logger.info('To quit the interactive mode, click on the right '
+                          'mouse button.')
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_fwhm,
@@ -4344,13 +4334,12 @@ class Image(DataArray):
                 radius = (np.abs(i2 - i1) / 2, np.abs(j2 - j1) / 2)
                 fwhm = self.fwhm(center, radius, unit_center=None,
                                  unit_radius=None)
-                msg = 'fwhm_y=%g\tfwhm_x=%g [pixels]' % (fwhm[0], fwhm[1])
-                self._logger.info(msg)
+                self._logger.info('fwhm_y=%g\tfwhm_x=%g [pixels]',
+                                  fwhm[0], fwhm[1])
             except:
                 pass
         else:
-            msg = 'ifwhm deactivated.'
-            self._logger.info(msg)
+            self._logger.info('ifwhm deactivated.')
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4361,10 +4350,9 @@ class Image(DataArray):
 
         To quit the interactive mode, click on the right mouse button.
         """
-        msg = 'Use left mouse button to define the box.'
-        self._logger.info(msg)
-        msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg)
+        self._logger.info('Use left mouse button to define the box.')
+        self._logger.info('To quit the interactive mode, click on the right '
+                          'mouse button.')
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_ee,
@@ -4388,13 +4376,11 @@ class Image(DataArray):
                 radius = (np.abs(i2 - i1) / 2, np.abs(j2 - j1) / 2)
                 ee = self.ee(center, radius, unit_center=None,
                              unit_radius=None)
-                msg = 'ee=%g' % ee
-                self._logger.info(msg)
+                self._logger.info('ee=%g', ee)
             except:
                 pass
         else:
-            msg = 'iee deactivated.'
-            self._logger.info(msg)
+            self._logger.info('iee deactivated.')
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4434,12 +4420,11 @@ class Image(DataArray):
 
         To quit the interactive mode, click on the right mouse button.
         """
-        msg = 'Use left mouse button to define the box.'
-        self._logger.info(msg)
-        msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg)
-        msg = 'The parameters of the last gaussian are saved in self.gauss.'
-        self._logger.info(msg)
+        self._logger.info('Use left mouse button to define the box.')
+        self._logger.info('To quit the interactive mode, click on the right '
+                          'mouse button.')
+        self._logger.info('The parameters of the last gaussian are saved in '
+                          'self.gauss.')
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_gauss_fit,
@@ -4465,8 +4450,7 @@ class Image(DataArray):
             except:
                 pass
         else:
-            msg = 'igauss_fit deactivated.'
-            self._logger.info(msg)
+            self._logger.info('igauss_fit deactivated.')
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
@@ -4477,13 +4461,11 @@ class Image(DataArray):
 
         To quit the interactive mode, click on the right mouse button.
         """
-        msg = 'Use left mouse button to define the box.'
-        self._logger.info(msg)
-        msg = 'To quit the interactive mode, click on the right mouse button.'
-        self._logger.info(msg)
-        msg = 'The parameters of the last moffat fit are '\
-            'saved in self.moffat.'
-        self._logger.info(msg)
+        self._logger.info('Use left mouse button to define the box.')
+        self._logger.info('To quit the interactive mode, click on the right '
+                          'mouse button.')
+        self._logger.info('The parameters of the last moffat fit are saved '
+                          'in self.moffat.')
         if self._clicks is None and self._selector is None:
             ax = plt.subplot(111)
             self._selector = RectangleSelector(ax, self._on_select_moffat_fit,
@@ -4509,8 +4491,7 @@ class Image(DataArray):
             except:
                 pass
         else:
-            msg = 'imoffat_fit deactivated.'
-            self._logger.info(msg)
+            self._logger.info('imoffat_fit deactivated.')
             self._selector.set_active(False)
             self._selector = None
             fig = plt.gcf()
