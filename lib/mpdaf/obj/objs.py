@@ -50,6 +50,7 @@ def UnitMaskedArray(mask_array, old_unit, new_unit):
 def fix_unit_read(x):
     x = x.replace('10**(-20)', '1e-20')
     x = x.replace('*', ' ')
+    x = x.replace('mum', 'micron')
     return x
 
 

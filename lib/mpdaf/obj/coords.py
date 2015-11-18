@@ -7,8 +7,7 @@ import astropy.wcs as pywcs
 import logging
 import numpy as np
 
-from .objs import is_float, is_int
-
+from .objs import is_float, is_int, fix_unit_read
 
 def deg2sexa(x):
     """Transform the values of n coordinates from degrees to sexagesimal.
@@ -875,7 +874,7 @@ class WaveCoord(object):
             axis = 1 if n == 1 else 3
             # Get the unit and remove it from the header so that wcslib does
             # not convert the values.
-            self.unit = u.Unit(hdr.pop('CUNIT%d' % axis))
+            self.unit = u.Unit(fix_unit_read(hdr.pop('CUNIT%d' % axis)))
             self.wcs = wcs_from_header(hdr).sub([axis])
             if shape is not None:
                 self.shape = shape
