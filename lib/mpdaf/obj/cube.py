@@ -955,20 +955,16 @@ class Cube(DataArray):
         """
         obj = super(Cube, self).__getitem__(item)
         if isinstance(obj, DataArray):
-            if obj.ndim == 1:
-                res = Spectrum(data=obj.data, unit=obj.unit, var=obj.var,
-                               wave=obj.wave, dtype=obj.dtype, copy=False)
+            if obj.ndim == 3:
+                return obj
+            elif obj.ndim == 1:
+                cls = Spectrum
             elif obj.ndim == 2:
-                res = Image(data=obj.data, unit=obj.unit, var=obj.var,
-                            wcs=obj.wcs, dtype=obj.dtype, copy=False)
-            elif obj.ndim == 3:
-                res = Cube(data=obj.data, unit=obj.unit, var=obj.var,
-                           wave=obj.wave, wcs=obj.wcs, dtype=obj.dtype,
-                           copy=False)
-            res.filename = obj.filename
-            res.data_header = pyfits.Header(obj.data_header)
-            res.primary_header=pyfits.Header(obj.primary_header)
-            return res
+                cls = Image
+            return cls(filename=obj.filename, data=obj.data, unit=obj.unit,
+                       var=obj.var, wcs=obj.wcs, dtype=obj.dtype, copy=False,
+                       wave=obj.wave, primary_header=obj.primary_header,
+                       data_header=obj.data_header)
         else:
             return obj
 
@@ -2538,9 +2534,9 @@ class Cube(DataArray):
                                indexing='ij')
             grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
                                (self.shape[0], imax - imin, jmax - jmin))
-            
-            
-            
+
+
+
             subcub = self[:, imin:imax, jmin:jmax]
             var = None
             data[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = subcub.data

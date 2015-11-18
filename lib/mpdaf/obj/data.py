@@ -403,7 +403,7 @@ class DataArray(object):
         Parameters
         ----------
         item : float
-               maximum value.
+            maximum value.
 
         Returns
         -------

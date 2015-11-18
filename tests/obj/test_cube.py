@@ -277,3 +277,35 @@ def test_write():
     nose.tools.assert_equal(hdr['NAXIS3'], cube.shape[0])
     for key in ('CRPIX1', 'CRPIX2', 'CDELT1', 'CDELT2'):
         nose.tools.assert_equal(hdr[key], 1.0)
+
+
+@attr(speed='fast')
+def test_get_item():
+    """Cube class: testing __getitem__"""
+    c = generate_cube(scale=1, wave=WaveCoord(crval=1, cunit=u.angstrom))
+    c.primary_header['KEY'] = 'primary value'
+    c.data_header['KEY'] = 'data value'
+
+    r = c[:, :2, :2]
+    assert_array_equal(r.shape, (10, 2, 2))
+    nose.tools.assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
+    nose.tools.assert_equal(r.data_header['KEY'], c.data_header['KEY'])
+    nose.tools.assert_true(isinstance(r, Cube))
+    nose.tools.assert_true(r.wcs.isEqual(c.wcs[:2, :2]))
+    nose.tools.assert_true(r.wave.isEqual(c.wave))
+
+    r = c[0, :, :]
+    assert_array_equal(r.shape, (6, 5))
+    nose.tools.assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
+    nose.tools.assert_equal(r.data_header['KEY'], c.data_header['KEY'])
+    nose.tools.assert_true(isinstance(r, Image))
+    nose.tools.assert_true(r.wcs.isEqual(c.wcs))
+    nose.tools.assert_is_none(r.wave)
+
+    r = c[:, 2, 2]
+    assert_array_equal(r.shape, (10, ))
+    nose.tools.assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
+    nose.tools.assert_equal(r.data_header['KEY'], c.data_header['KEY'])
+    nose.tools.assert_true(isinstance(r, Spectrum))
+    nose.tools.assert_true(r.wave.isEqual(c.wave))
+    nose.tools.assert_is_none(r.wcs)
