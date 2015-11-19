@@ -255,14 +255,15 @@ def test_write():
     unit = u.Unit('1e-20 erg/s/cm2/Angstrom')
     cube = generate_cube(scale=1, wave=WaveCoord(crval=1, cunit=u.angstrom),
                          unit=unit)
+    cube.data[:, 0, 0] = np.ma.masked
+    cube.var = np.ones_like(cube.data)
     fobj = NamedTemporaryFile()
     cube.write(fobj.name)
 
     hdu = fits.open(fobj)
-    # print repr(hdu[0].header)
-    # print '========='
-    # print repr(hdu[1].header)
     assert_array_equal(hdu[1].data.shape, cube.shape)
+    assert_array_equal([h.name for h in hdu],
+                       ['PRIMARY', 'DATA', 'STAT', 'DQ'])
 
     hdr = hdu[0].header
     nose.tools.assert_equal(hdr['AUTHOR'], 'MPDAF')
