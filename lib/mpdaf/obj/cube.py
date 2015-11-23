@@ -1013,6 +1013,7 @@ class Cube(DataArray):
         step = np.empty(3)
         step[0] = self.wave.get_step(unit_wave)
         step[1:] = self.wcs.get_step(unit_wcs)
+        return step
 
     def get_range(self, unit_wave=None, unit_wcs=None):
         """Return [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ].
