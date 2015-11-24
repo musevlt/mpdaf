@@ -131,43 +131,52 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
     if(step == 1):
         logger.info("muselet - Opening: " + cubename)
-        c = Cube(cubename)
+        c = Cube(cubename, copy=False, dtype=np.float32)
 
         mvar = np.ma.masked_invalid(c.var)
+        c._var = None
 
         imsum = c[0, :, :]
         size1 = c.shape[0]
         size2 = c.shape[1]
         size3 = c.shape[2]
 
-        mcentralvar = np.ma.masked_invalid(c[2: size1 - 3, :, :].var)
+        mcentralvar = mvar[2: size1 - 3, :, :]
 
         nsfilter = int(size1 / 3.0)
 
         logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images")
         weight_data = np.ma.average(c.data[1:size1 - 1, :, :], weights=1. / mvar[1:size1 - 1, :, :], axis=0)
-        weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), unit=imsum.unit)
+        weight = Image(wcs=imsum.wcs, data=np.ma.filled(weight_data, np.nan), unit=imsum.unit, copy=False)
         weight.write('white.fits', savemask='nan')
 
         if not expmapcube:
             fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
-            fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=u.Unit(1) / (imsum.unit**2))
+            fullvar = Image(wcs=imsum.wcs, data=np.ma.filled(fullvar_data, np.nan), unit=u.Unit(1) / (imsum.unit**2), copy=False)
             fullvar.write('inv_variance.fits', savemask='nan')
+            fullvar_data = None
         else:
             logger.info("muselet - Opening exposure map cube: " + expmapcube)
             expmap = Cube(expmapcube)
             fullvar = expmap.mean(axis=0)
             fullvar.write('inv_variance.fits', savemask='nan')
+            fullvar = None
 
         bdata = np.ma.average(c.data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)
+        bdata = np.ma.filled(bdata, np.nan)
         gdata = np.ma.average(c.data[nsfilter:2 * nsfilter, :, :], weights=1. / mvar[nsfilter:2 * nsfilter, :, :], axis=0)
+        gdata = np.ma.filled(gdata, np.nan)
         rdata = np.ma.average(c.data[2 * nsfilter:size1 - 1, :, :], weights=1. / mvar[2 * nsfilter:size1 - 1, :, :], axis=0)
-        r = Image(wcs=imsum.wcs, data=np.ma.filled(rdata, np.nan), unit=imsum.unit)
-        g = Image(wcs=imsum.wcs, data=np.ma.filled(gdata, np.nan), unit=imsum.unit)
-        b = Image(wcs=imsum.wcs, data=np.ma.filled(bdata, np.nan), unit=imsum.unit)
+        rdata = np.ma.filled(rdata, np.nan)
+        r = Image(wcs=imsum.wcs, data=rdata, unit=imsum.unit, copy=False)
+        g = Image(wcs=imsum.wcs, data=gdata, unit=imsum.unit, copy=False)
+        b = Image(wcs=imsum.wcs, data=bdata, unit=imsum.unit, copy=False)
         r.write('whiter.fits', savemask='nan')
         g.write('whiteg.fits', savemask='nan')
         b.write('whiteb.fits', savemask='nan')
+        bdata = None
+        gdata = None
+        rdata = None
 
         fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
 
@@ -177,9 +186,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             pass
 
         if(nbcube):
-            outnbcubename = 'NB_' + os.path.basename(cubename)
-            outnbcube = c.clone(data_init=np.empty)
-            outnbcube.var = None
+            outnbcube = np.empty(c.shape, dtype=np.float32)
 
         f2 = open("nb/dosex", 'w')
         for k in range(2, size1 - 3):
@@ -205,11 +212,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             sizeright = rightmax - rightmin
             contmean = (sizeleft * contleft + sizeright * contright) / (sizeleft + sizeright)
             imnb = Image(wcs=imsum.wcs, data=np.ma.filled(imslice - contmean, np.nan),
-                         unit=imsum.unit)
+                         unit=imsum.unit, copy=False)
             kstr = "%04d" % k
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
             if(nbcube):
-                outnbcube.data[k, :, :] = imnb.data[:, :]
+                outnbcube[k, :, :] = imnb.data[:, :]
             if(expmapcube):
                 expmap[k, :, :].write('nb/exp' + kstr + '.fits', savemask='nan')
                 f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' + kstr + '.fits\n')
@@ -220,7 +227,13 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         sys.stdout.flush()
         f2.close()
         if(nbcube):
-            outnbcube.write(outnbcubename)
+            wcs = c.wcs.copy()
+            wave = c.wave.copy()
+            c = None
+            outnbcubename = 'NB_' + os.path.basename(cubename)
+            outcube = Cube(data=outnbcube, copy=False, wcs=wcs, wave=wave, dtype=None)
+            outcube.write(outnbcubename)
+            outnbcube = None
 
     if(step <= 2):
         logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and narrow-band images")

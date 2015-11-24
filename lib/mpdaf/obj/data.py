@@ -305,8 +305,9 @@ class DataArray(object):
 
         return self.__class__(
             unit=self.unit,
-            data=None if data_init is None else data_init(self.shape),
-            var=None if var_init is None else var_init(self.shape),
+            data=None if data_init is None else data_init(self.shape, dtype=self.dtype),
+            var=None if var_init is None else var_init(self.shape, dtype=self.dtype),
+            dtype=None, copy=False,
             wcs=None if self.wcs is None else self.wcs.copy(),
             wave=None if self.wave is None else self.wave.copy(),
             data_header=pyfits.Header(self.data_header),
