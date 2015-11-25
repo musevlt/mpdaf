@@ -38,34 +38,56 @@ v1.2b1 (05/11/2015)
 Breaking changes
 ~~~~~~~~~~~~~~~~
 
+* Add a new base class for the :class:`~mpdaf.obj.Cube`,
+  :class:`~mpdaf.obj.Image` and :class:`~mpdaf.obj.Spectrum` classes.  This
+  allows to fix some inconsistencies between these classes and to bring more
+  easily new common features.
+
+* FITS files are now read only when the data is needed: when creating an object
+  the data is not loaded into memory. The data is loaded at the first access of
+  the ``.data`` attribute, and the same goes for the variance (and ``.var``).
+  A consequence of these optimization is that the ``CubeDisk`` class has
+  been removed.
+
 * Shape of objects:
 
-  - Remove useless usage of shape in constructors. Instead the shape is derived
-    from the data.
-  - Spectrum's shape is now a tuple as Cube and Image classes.
-
-* Add a new base class to read Cube/Image/Spectrum FITS files only when the data
-  is needed. A consequence of these optimization is that the CubeDisk class has
-  disappeared.
+  - Remove the ``shape`` parameter in constructors. Instead the shape is derived
+    from the datasets.
+  - Spectrum's shape is now a tuple, which is consistent with the Cube and Image
+    classes, and with Numpy arrays.
 
 * Allow to specify the data type of Cube/Image/Spectrum in the constructor (and
   read an extension as an integer array).
 
+* Change the behavior of the ``.clone`` method: now by default it returns an
+  object with the data attribute set to None. This was changed as an
+  optimization, because in most cases (at least in MPDAF's code) a Numpy array
+  is set to the cloned object, just after the clone, so the Numpy array that was
+  created by clone was discarded. You can get the previous behavior with::
+
+    sp = sptot.clone(data_init=np.zeros)
+
+  Or you can set directly a Numpy array to the cloned object::
+
+    sp = sptot.clone()
+    sp.data = np.zeros(sptot.shape)
+
 * The ``fscale`` attribute of a Cube/Image/Spectrum object has disappeared.
   MUSE units are now read from the FITS header (it takes into account possible
-  fscale keyword). The ``.unit`` attribute of Cube/Image/Spectrum saves physical
-  units of the data values and the scale value as an ``astropy.units`` object.
+  ``FSCALE`` keyword). The ``.unit`` attribute of Cube/Image/Spectrum saves
+  physical units of the data values and the scale value as an ``astropy.units``
+  object.
 
-* When a method of mpdaf objects requires physical value as input, the unit of
+* When a method of MPDAF objects requires a physical value as input, the unit of
   this value is also given ``(x=, x_unit=)``. By default coordinates are in
   degrees and wavelengths are in angstroms.
 
 * Results of ``Source.subcube`` methods are always centered on the source given
-  in input (colums/row of nan added when the source is on the border).
+  in input (columns/row of NaN are added when the source is on the border).
 
 * Source/Catalog object write and read masked values.
 
-* From Johan and Benjamin: shell script to interact in topcat between the
+* From Johan and Benjamin: shell script to interact in Topcat between the
   muselet catalog and a MUSE datacube opened in ds9.
 
 Changes that should be imperceptible to users
