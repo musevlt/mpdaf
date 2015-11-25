@@ -35,6 +35,7 @@ Contents
    sdetect
    dvper_manual
    api
+   changelog
 
 
 Indices and tables

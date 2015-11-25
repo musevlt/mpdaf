@@ -9,6 +9,7 @@ import numpy as np
 
 from .objs import is_float, is_int, fix_unit_read
 
+
 def deg2sexa(x):
     """Transform the values of n coordinates from degrees to sexagesimal.
 
@@ -902,11 +903,12 @@ class WaveCoord(object):
         step = self.get_step(unit=unit)
 
         if self.shape is None:
-            msg = 'wavelength: min:%0.2f step:%0.2f %s' % (start, step, unit)
+            self._logger.info('wavelength: min:%0.2f step:%0.2f %s',
+                              start, step, unit)
         else:
             end = self.get_end(unit=unit)
-            msg = 'wavelength: min:%0.2f max:%0.2f step:%0.2f %s' % (start, end, step, unit)
-        self._logger.info(msg)
+            self._logger.info('wavelength: min:%0.2f max:%0.2f step:%0.2f %s',
+                              start, end, step, unit)
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""
