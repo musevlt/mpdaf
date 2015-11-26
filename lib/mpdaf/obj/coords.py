@@ -822,7 +822,8 @@ class WCS(object):
         """Generate a astropy.fits header object with the WCS information and
         the wavelength information."""
         hdr = self.to_header()
-        hdr.update(wave.to_header(naxis=3, use_cd='CD1_1' in hdr))
+        if wave is not None:
+            hdr.update(wave.to_header(naxis=3, use_cd='CD1_1' in hdr))
         return hdr
 
 

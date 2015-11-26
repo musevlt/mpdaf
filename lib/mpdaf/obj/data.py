@@ -175,8 +175,8 @@ class DataArray(object):
                 hdulist.close()
         else:
             if data is not None:
-                # set mask=False to force the expansion of the mask array with
-                # the same dimension as the data
+                # by default, set mask=False to force the expansion of the
+                # mask array with the same dimension as the data
                 self._data = ma.MaskedArray(data, mask=mask, dtype=dtype,
                                             copy=copy)
                 self._shape = self._data.shape
@@ -492,11 +492,11 @@ class DataArray(object):
 
     def get_wcs_header(self):
         """Return a FITS header with the world coordinates from the wcs."""
-        if self.ndim == 1:
+        if self.ndim == 1 and self.wave is not None:
             return self.wave.to_header()
-        elif self.ndim == 2:
+        elif self.ndim == 2 and self.wcs is not None:
             return self.wcs.to_header()
-        elif self.ndim == 3:
+        elif self.ndim == 3 and self.wcs is not None:
             return self.wcs.to_cube_header(self.wave)
 
     def get_data_hdu(self, name='DATA', savemask='dq'):
