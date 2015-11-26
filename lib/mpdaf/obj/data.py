@@ -521,7 +521,7 @@ class DataArray(object):
             self.data = self.data.astype(np.float32)
 
         # create DATA extension
-        if savemask == 'nan' and self.data.count() > 0:
+        if savemask == 'nan' and ma.count_masked(self.data) > 0:
             # NaNs can be used only for float arrays, so we raise an exception
             # if there are masked values in a non-float array.
             if not np.issubdtype(self.data.dtype, np.float):
