@@ -1,3 +1,4 @@
+from astropy.io import fits as pyfits
 from astropy.table import Table
 import astropy.units as u
 import logging
@@ -8,7 +9,6 @@ import subprocess
 import stat
 import sys
 from glob import glob
-
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
@@ -51,7 +51,6 @@ def remove_files():
     for f in glob('nb/*'):
         os.remove(f)
     os.removedirs('nb')
-
 
 def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25, clean=0.5, nbcube=True, expmapcube=None, skyclean=[(5573.5, 5578.8), (6297.0, 6300.5)], del_sex=False):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
@@ -216,7 +215,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             kstr = "%04d" % k
             imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
             if(nbcube):
-                outnbcube[k, :, :] = imnb.data[:, :]
+                outnbcube[k, :, :] = imnb.data.data[:, :]
             if(expmapcube):
                 expmap[k, :, :].write('nb/exp' + kstr + '.fits', savemask='nan')
                 f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' + kstr + '.fits\n')
@@ -227,13 +226,10 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         sys.stdout.flush()
         f2.close()
         if(nbcube):
-            wcs = c.wcs.copy()
-            wave = c.wave.copy()
-            c = None
             outnbcubename = 'NB_' + os.path.basename(cubename)
-            outcube = Cube(data=outnbcube, copy=False, wcs=wcs, wave=wave, dtype=None)
-            outcube.write(outnbcubename)
+            pyfits.writeto(outnbcubename, outnbcube, c.data_header, clobber=True)
             outnbcube = None
+        c = None
 
     if(step <= 2):
         logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and narrow-band images")
