@@ -1591,6 +1591,8 @@ class Source(object):
             Maximum number of stored lines
         """
         if self.lines is not None:
+            if isinstance(self.lines['LINE'], MaskedColumn):
+                self.lines['LINE'] = self.lines['LINE'].filled('')
             subtab1 = self.lines[self.lines['LINE'] != ""]
             subtab1.sort('FLUX')
             subtab1.reverse()
@@ -1599,7 +1601,7 @@ class Source(object):
             subtab2.sort('FLUX')
             subtab2.reverse()
             n2 = len(subtab2)
-            if (n1 + n2) > 25:
+            if (n1 + n2) > nlines_max:
                 n2 = max(nlines_max - n1, 0)
             self.lines = vstack([subtab1, subtab2[0:n2]])
 
