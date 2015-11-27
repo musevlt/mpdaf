@@ -4,7 +4,7 @@ import numpy as np
 import warnings
 
 from astropy import units as u
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from datetime import datetime
 from numpy import ma
 
@@ -25,13 +25,13 @@ class DataArray(object):
     hdulist : :class:`astropy.fits.HDUList`
         HDU list class, used instead of ``fits.open(filename)`` if not None,
         to avoid opening the FITS file.
-    ext : integer or (integer,integer) or str or (str,str)
+    ext : int or (int,int) or str or (str,str)
         Number/name of the data extension or numbers/names of the data and
         variance extensions.
     unit : :class:`astropy.units.Unit`
         Physical units of the data values, default to
         ``u.dimensionless_unscaled``.
-    copy : boolean
+    copy : bool
         If ``True`` (default), then the data and variance arrays are copied.
         Passed to :class:`np.ma.MaskedArray`.
     dtype : numpy.dtype
@@ -41,29 +41,35 @@ class DataArray(object):
         Data array, passed to :class:`np.ma.MaskedArray`.
     var : numpy.ndarray or list
         Variance array, passed to :func:`np.array`.
+    mask : bool or numpy.ma.nomask or numpy.ndarray
+        Mask used for the creation of the ``.data`` MaskedArray. If mask is
+        False (default value), a mask array of the same size of the data array
+        is created. To avoid creating an array, it is possible to use
+        ``numpy.ma.nomask``, but in this case several methods will break if
+        they use the mask.
 
     Attributes
     ----------
     filename : str
         FITS filename.
-    primary_header : pyfits.Header
+    primary_header : :class:`astropy.io.fits.Header`
         FITS primary header instance.
     wcs : :class:`mpdaf.obj.WCS`
         World coordinates.
     wave : :class:`mpdaf.obj.WaveCoord`
         Wavelength coordinates
-    ndim : integer
+    ndim : int
         Number of dimensions.
     shape : tuple
         Lengths of data (python notation (nz,ny,nx)).
     data : np.ma.MaskedArray
         Masked array containing the cube pixel values.
-    data_header : pyfits.Header
+    data_header : :class:`astropy.io.fits.Header`
         FITS data header instance.
-    unit : astropy.units.Unit
+    unit : :class:`astropy.units.Unit`
         Physical units of the data values.
     dtype : numpy.dtype
-        Type of the data (integer, float)
+        Type of the data (int, float, ...).
     var : numpy.ndarray
         Array containing the variance.
 
@@ -73,10 +79,9 @@ class DataArray(object):
     _has_wcs = False
     _has_wave = False
 
-    def __init__(self, filename=None, hdulist=None, ext=None, data=None,
-                 var=None, mask=False, unit=u.dimensionless_unscaled,
-                 copy=True, dtype=float, primary_header=None, data_header=None,
-                 **kwargs):
+    def __init__(self, filename=None, hdulist=None, data=None, mask=False,
+                 var=None, ext=None, unit=u.dimensionless_unscaled, copy=True,
+                 dtype=float, primary_header=None, data_header=None, **kwargs):
         self._logger = logging.getLogger(__name__)
         self.filename = filename
         self._data = None
@@ -89,8 +94,8 @@ class DataArray(object):
         self.wave = None
         self.dtype = dtype
         self.unit = unit
-        self.data_header = data_header or pyfits.Header()
-        self.primary_header = primary_header or pyfits.Header()
+        self.data_header = data_header or fits.Header()
+        self.primary_header = primary_header or fits.Header()
 
         if kwargs.pop('shape', None) is not None:
             warnings.warn('The shape parameter is no more used, it is derived '
@@ -105,7 +110,7 @@ class DataArray(object):
                 raise IOError('Invalid file: %s' % filename)
 
             if hdulist is None:
-                hdulist = pyfits.open(filename)
+                hdulist = fits.open(filename)
                 close_hdu = True
             else:
                 close_hdu = False
@@ -158,7 +163,7 @@ class DataArray(object):
             if self._has_wcs:
                 try:
                     self.wcs = WCS(hdr)  # WCS object from data header
-                except pyfits.VerifyError as e:
+                except fits.VerifyError as e:
                     # Workaround for
                     # https://github.com/astropy/astropy/issues/887
                     self._logger.warning(e)
@@ -175,8 +180,12 @@ class DataArray(object):
                 hdulist.close()
         else:
             if data is not None:
-                # by default, set mask=False to force the expansion of the
-                # mask array with the same dimension as the data
+                # By default, if mask=False create a mask array with False
+                # values. numpy.ma does it but with a np.resize/np.concatenate
+                # which cause a huge memory peak, so a workaround is to create
+                # the mask here.
+                if mask is False:
+                    mask = np.zeros(data.shape, dtype=bool)
                 self._data = ma.MaskedArray(data, mask=mask, dtype=dtype,
                                             copy=copy)
                 self._shape = self._data.shape
@@ -284,8 +293,8 @@ class DataArray(object):
         return self.__class__(
             filename=self.filename, data=self.data, unit=self.unit,
             var=self.var, wcs=self.wcs, wave=self.wave, copy=True,
-            data_header=pyfits.Header(self.data_header),
-            primary_header=pyfits.Header(self.primary_header))
+            data_header=fits.Header(self.data_header),
+            primary_header=fits.Header(self.primary_header))
 
     def clone(self, var=None, data_init=None, var_init=None):
         """Return a shallow copy with the same header and coordinates.
@@ -304,14 +313,15 @@ class DataArray(object):
             warnings.warn('The var parameter is no more used.', MpdafWarning)
 
         return self.__class__(
-            unit=self.unit,
-            data=None if data_init is None else data_init(self.shape, dtype=self.dtype),
-            var=None if var_init is None else var_init(self.shape, dtype=self.dtype),
-            dtype=None, copy=False,
+            unit=self.unit, dtype=None, copy=False,
+            data=None if data_init is None else data_init(self.shape,
+                                                          dtype=self.dtype),
+            var=None if var_init is None else var_init(self.shape,
+                                                       dtype=self.dtype),
             wcs=None if self.wcs is None else self.wcs.copy(),
             wave=None if self.wave is None else self.wave.copy(),
-            data_header=pyfits.Header(self.data_header),
-            primary_header=pyfits.Header(self.primary_header))
+            data_header=fits.Header(self.data_header),
+            primary_header=fits.Header(self.primary_header))
 
     def info(self):
         """Print information."""
@@ -487,8 +497,8 @@ class DataArray(object):
             return self.__class__(
                 data=data, unit=self.unit, var=var, wcs=wcs, wave=wave,  # copy
                 filename=self.filename,
-                data_header=pyfits.Header(self.data_header),
-                primary_header=pyfits.Header(self.primary_header))
+                data_header=fits.Header(self.data_header),
+                primary_header=fits.Header(self.primary_header))
 
     def get_wcs_header(self):
         """Return a FITS header with the world coordinates from the wcs."""
@@ -535,7 +545,7 @@ class DataArray(object):
             data = self.data.data
 
         hdr = self.get_wcs_header()
-        imahdu = pyfits.ImageHDU(name=name, data=data, header=hdr)
+        imahdu = fits.ImageHDU(name=name, data=data, header=hdr)
 
         for card in self.data_header.cards:
             if (card.keyword[0:2] not in ('CD', 'PC') and
@@ -590,7 +600,7 @@ class DataArray(object):
         if header is None:
             header = self.get_wcs_header()
 
-        imahdu = pyfits.ImageHDU(name=name, data=self.var, header=header)
+        imahdu = fits.ImageHDU(name=name, data=self.var, header=header)
 
         # if header is None:
         for card in self.data_header.cards:
@@ -637,7 +647,7 @@ class DataArray(object):
 
         """
         warnings.simplefilter('ignore')
-        prihdu = pyfits.PrimaryHDU()
+        prihdu = fits.PrimaryHDU()
 
         for card in self.primary_header.cards:
             try:
@@ -672,11 +682,11 @@ class DataArray(object):
 
         # create DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
-            hdulist.append(pyfits.ImageHDU(name='DQ', header=datahdu.header,
-                                           data=np.uint8(self.data.mask)))
+            hdulist.append(fits.ImageHDU(name='DQ', header=datahdu.header,
+                                         data=np.uint8(self.data.mask)))
 
         # save to disk
-        hdu = pyfits.HDUList(hdulist)
+        hdu = fits.HDUList(hdulist)
         warnings.simplefilter('ignore')
         hdu.writeto(filename, clobber=True, output_verify='silentfix')
         warnings.simplefilter('default')
