@@ -1,6 +1,3 @@
-[submodule "mpdaf_user/fsf"]
-	path = mpdaf_user/fsf
-	url = urania1.univ-lyon1.fr:/git/fsf.git
 [submodule "mpdaf_user/zap"]
 	path = mpdaf_user/zap
 	url = urania1.univ-lyon1.fr:/git/zap.git

@@ -26,9 +26,6 @@ mpdaf contains user packages:
 +-------------------+--------------------+-----------------------------------------------------------------------+
 | User packages     | Path               |                                                                       |
 +===================+====================+=======================================================================+
-| mpdaf_user.fsf    | mpdaf_user/fsf     | Estimation of the Field Spread Function                               |
-|                   |                    | `fsf doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/FsfModelWiki>`_     |
-+-------------------+--------------------+-----------------------------------------------------------------------+
 | mpdaf_user.zap    | mpdaf_user/zap     | sky subtraction tool                                                  |
 |                   |                    | `zap doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/ZapWiki>`_          |
 +-------------------+--------------------+-----------------------------------------------------------------------+
