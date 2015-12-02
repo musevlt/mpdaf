@@ -38,19 +38,6 @@ mpdaf contains user packages:
 
 These user packages are included in the mpdaf tarball.
 
-However mpdaf contains also a large package that is not present in tarball:
-
-+-------------------+--------------------+-----------------------------------------------------------------------+
-| Large packages    | Path               | Description                                                           |
-+===================+====================+=======================================================================+
-| quickViz          | lib/mpdaf/quickViz | vizualisation tool for MUSE cubes                                     |
-|                   |                    | `quickViz doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/DocQuickViz>`_ |
-+-------------------+--------------------+-----------------------------------------------------------------------+
-
-
-The user can download this package from the wiki page `CoreLib <http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
-
-
 
 Prerequisites
 =============
