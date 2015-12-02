@@ -55,4 +55,3 @@ from calibobj import CalibDir
 from pixtable import PixTableMask
 from pixtable import PixTableAutoCalib
 from pixtable import PixTable
-from displaypixtable import DisplayPixTable
