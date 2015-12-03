@@ -30,56 +30,7 @@
 # DAMAGE.
 #
 
-# Prerequisites
-# =============
-#
-# The various software required are:
-#
-#  * Python (version 2.6 or 2.7)
-#  * IPython
-#  * numpy (version 1.6.2 or above)
-#  * scipy (version 0.10.1 or above)
-#  * matplotlib (version 1.1.0 or above)
-#  * astropy (version 0.4 or above)
-#  * nose
-#  * PIL
-#  * numexpr
-#  * python-development package
-#  * pkg-config tool
-#  * C numerics library
-#  * C CFITSIO library
-#  * C OpenMP library (optional)
-#
-# Installation
-# ============
-#
-# To install the mpdaf package, you first run the *setup.py build* command to
-# build everything needed to install:
-#
-#   /mpdaf$ python setup.py build
-#
-# The setup script tries to use pkg-config to find the correct compiler flags
-# and library flags.
-#
-# Note that on MAC OS, openmp is not used by default because clang doesn't
-# support OpenMp.  To force it, the USEOPENMP environment variable can be set
-# to anything except an empty string:
-#
-#  /mpdaf$ sudo USEOPENMP=0 CC=<local path of gcc> python setup.py build
-#
-#
-# After building everything, you log as root and install everything from build
-# directory:
-#
-#   root:/mpdaf$ python setup.py install
-#
-#
-# Unit tests
-# ==========
-#
-# The command *setup.py test* runs unit tests after in-place build::
-#
-#   /mpdaf$ python setup.py test
+# See README.rst for details on how to install MPDAF.
 
 from __future__ import print_function
 
@@ -87,8 +38,18 @@ import os
 import subprocess
 import sys
 import shutil
-import numpy
+
+# Bootstrap setuptools if not available
+import ez_setup
+ez_setup.use_setuptools()  # NOQA
+
 from setuptools import setup, find_packages, Command, Extension
+
+try:
+    import numpy
+except ImportError:
+    sys.exit('You must install Numpy before MPDAF, as it is required to '
+             'build C extensions.')
 
 try:
     from Cython.Distutils import build_ext
@@ -97,9 +58,31 @@ except ImportError:
     HAVE_CYTHON = False
 else:
     HAVE_CYTHON = True
+    print('Cython detected, building from sources.')
 
+try:
+    out = subprocess.check_output(['pkg-config', '--version'])
+except subprocess.CalledProcessError as e:
+    sys.exit(e.output)
+except OSError:
+    sys.exit('pkg-config is required to install MPDAF. Please check if it '
+             'is installed and in your $PATH.')
+else:
+    print('Found pkg-config {}'.format(out))
+    del out
+
+# rm old focus directory
+try:
+    import mpdaf
+    d = mpdaf.__path__[0]+'/sdetect/focus'
+    if os.path.exists(d):
+        shutil.rmtree('build')
+        shutil.rmtree(mpdaf.__path__[0]+'/sdetect/focus')
+except:
+    pass
 
 # os.environ['DISTUTILS_DEBUG'] = '1'
+
 
 class UnitTest(Command):
     user_options = []
@@ -115,33 +98,18 @@ class UnitTest(Command):
                                  '--logging-clear-handlers', 'tests/'])
         raise SystemExit(errno)
 
-# rm old focus directory
-try:
-    import mpdaf
-    d = mpdaf.__path__[0]+'/sdetect/focus'
-    if os.path.exists(d):
-        shutil.rmtree('build')
-        shutil.rmtree(mpdaf.__path__[0]+'/sdetect/focus')
-except:
-    pass
-
 
 def options(*packages, **kw):
     flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
 
-    try:
-        subprocess.check_call(["pkg-config", "--version"])
-    except subprocess.CalledProcessError as e:
-        sys.exit(e.output)
-    except OSError:
-        sys.exit('pkg-config is required to install MPDAF. Please check if it '
-                 'is installed and in your $PATH.')
-
     for package in packages:
         try:
-            subprocess.check_call(["pkg-config", package])
-        except subprocess.CalledProcessError as e:
+            out = subprocess.check_output(['pkg-config', '--modversion',
+                                           package])
+        except subprocess.CalledProcessError:
             sys.exit("package '{}' not found.".format(package))
+        else:
+            print('Found {} {}'.format(package, out))
 
     for token in subprocess.check_output(["pkg-config", "--libs", "--cflags",
                                           ' '.join(packages)]).split():
@@ -164,6 +132,12 @@ def options(*packages, **kw):
     return kw
 
 
+with open('README.rst') as f:
+    README = f.read()
+
+with open('doc/CoreLib/source/changelog.rst') as f:
+    CHANGELOG = f.read()
+
 cmdclass = {'test': UnitTest}
 
 ext = '.pyx' if HAVE_CYTHON else '.c'
@@ -178,24 +152,22 @@ if HAVE_CYTHON:
     cmdclass.update({'build_ext': build_ext})
     ext_modules = cythonize(ext_modules)
 
-package_dir = {'': 'lib'}
-packages = find_packages('lib')
-
 setup(
     name='mpdaf',
     version='1.2b1',
+    maintainer='Laure Piqueras',
+    maintainer_email='laure.piqueras@univ-lyon1.fr',
     description='MUSE Python Data Analysis Framework is a python framework '
     'in view of the analysis of MUSE data in the context of the GTO.',
+    long_description=README + '\n' + CHANGELOG,
     url='http://urania1.univ-lyon1.fr/mpdaf/login',
     install_requires=['numpy', 'scipy', 'matplotlib', 'astropy', 'numexpr'],
     tests_require=['nose'],
     extras_require={'Image':  ['Pillow']},
-    package_dir=package_dir,
-    packages=packages,
-    package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'],
-                  'mpdaf.sdetect': ['muselet_data/*', 'sea_data/*']},
-    maintainer='Laure Piqueras',
-    maintainer_email='laure.piqueras@univ-lyon1.fr',
+    package_dir={'': 'lib'},
+    packages=find_packages('lib'),
+    zip_safe=False,
+    include_package_data=True,
     platforms='any',
     cmdclass=cmdclass,
     entry_points={
