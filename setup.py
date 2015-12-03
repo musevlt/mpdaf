@@ -1,4 +1,4 @@
-#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright (C) 2011  Centre de Recherche Astronomique de Lyon (CRAL)
 #
@@ -81,15 +81,14 @@
 #
 #   /mpdaf$ python setup.py test
 
+from __future__ import print_function
 
 import os
 import subprocess
 import sys
 import shutil
 import numpy
-# import setuptools
-
-from distutils.core import setup, Command, Extension
+from setuptools import setup, find_packages, Command, Extension
 
 try:
     from Cython.Distutils import build_ext
@@ -127,34 +126,16 @@ except:
     pass
 
 
-package_dir = {'mpdaf': 'lib/mpdaf/', 'mpdaf_user': 'mpdaf_user/'}
-packages = ['mpdaf', 'mpdaf.tools', 'mpdaf.obj', 'mpdaf.drs', 'mpdaf.MUSE',
-            'mpdaf_user', 'mpdaf.sdetect']
-
-for path in os.listdir('mpdaf_user'):
-    if os.path.isdir('mpdaf_user/' + path + '/lib/' + path):
-        package_dir['mpdaf_user.' + path] = 'mpdaf_user/' + path + '/lib/' + path
-        packages.append('mpdaf_user.' + path)
-    if os.path.isfile('mpdaf_user/' + path + '/__init__.py'):
-        package_dir['mpdaf_user.' + path] = 'mpdaf_user/' + path + '/lib/'
-        packages.append('mpdaf_user.' + path)
-        #package_dir[path] = 'mpdaf_user/'+path
-        # packages.append(path)
-    if os.path.isfile('mpdaf_user/' + path + '/' + path + '.py'):
-        package_dir['mpdaf_user.' + path] = 'mpdaf_user/' + path
-        packages.append('mpdaf_user.' + path)
-
-
 def options(*packages, **kw):
     flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
 
     try:
-        subprocess.check_output(["pkg-config", "--version"])
+        subprocess.check_call(["pkg-config", "--version"])
     except subprocess.CalledProcessError as e:
         sys.exit(e.output)
-    except OSError as e:
-        print 'pkg-config not installed ?'
-        sys.exit(e)
+    except OSError:
+        sys.exit('pkg-config is required to install MPDAF. Please check if it '
+                 'is installed and in your $PATH.')
 
     for package in packages:
         try:
@@ -176,7 +157,7 @@ def options(*packages, **kw):
         kw.setdefault('extra_link_args', []).append('-lgomp')
         kw.setdefault('extra_compile_args', []).append('-fopenmp')
     else:
-        print "Unable to find OPENMP"
+        print("Unable to find OPENMP")
 
     for k, v in kw.iteritems():  # remove duplicated
         kw[k] = list(set(v))
@@ -191,14 +172,14 @@ ext_modules = [
         'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
         **options('cfitsio')),
     Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
-              include_dirs=[numpy.get_include()],
-              # extra_compile_args=['-fopenmp'],
-              # extra_link_args=['-fopenmp']
-              ),
+              include_dirs=[numpy.get_include()]),
 ]
 if HAVE_CYTHON:
     cmdclass.update({'build_ext': build_ext})
     ext_modules = cythonize(ext_modules)
+
+package_dir = {'': 'lib'}
+packages = find_packages('lib')
 
 setup(
     name='mpdaf',
@@ -206,8 +187,9 @@ setup(
     description='MUSE Python Data Analysis Framework is a python framework '
     'in view of the analysis of MUSE data in the context of the GTO.',
     url='http://urania1.univ-lyon1.fr/mpdaf/login',
-    requires=['numpy (>= 1.0)', 'scipy (>= 0.10)', 'matplotlib', 'astropy',
-              'nose', 'PIL'],
+    install_requires=['numpy', 'scipy', 'matplotlib', 'astropy', 'numexpr'],
+    tests_require=['nose'],
+    extras_require={'Image':  ['Pillow']},
     package_dir=package_dir,
     packages=packages,
     package_data={'mpdaf.drs': ['mumdatMask_1x1/*.fits.gz'],
@@ -216,8 +198,12 @@ setup(
     maintainer_email='laure.piqueras@univ-lyon1.fr',
     platforms='any',
     cmdclass=cmdclass,
-    scripts=['lib/mpdaf/scripts/make_white_image.py',
-             'lib/mpdaf/scripts/topcat_show_ds9'],
+    entry_points={
+        'console_scripts': [
+            'make_white_image = mpdaf.scripts.make_white_image:main'
+        ],
+    },
+    scripts=['lib/mpdaf/scripts/topcat_show_ds9'],
     ext_package='mpdaf',
     ext_modules=ext_modules,
 )
