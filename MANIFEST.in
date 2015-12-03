@@ -1,16 +1,15 @@
+include README.txt
+include CHANGES.rst
+
 graft src
 graft lib
 graft doc
 graft tests
 graft data/obj
-graft mpdaf_user
 
-prune lib/mpdaf/quickViz
-prune mpdaf_user/galpak/data
-prune mpdaf_user/galpak/web
-prune mpdaf_user/galpak/build
-prune mpdaf_user/galpak/tests
-
-include README.txt
+prune lib/mpdaf_user/galpak/data
+prune lib/mpdaf_user/galpak/web
+prune lib/mpdaf_user/galpak/build
+prune lib/mpdaf_user/galpak/tests
 
 global-exclude *.py[cod] __pycache__ *.so
