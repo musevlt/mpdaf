@@ -2011,7 +2011,7 @@ class PixTable(object):
         mask = maskcol.astype(np.int32)
         skyref_flux = (skyref.data.data.astype(np.float64) * skyref.unit).to(self.unit_data).value
         skyref_lbda = skyref.wave.coord(unit=self.wave)
-        skyref_n = skyref.shape
+        skyref_n = skyref.shape[0]
         xpix = xpix.astype(np.int32)
         ypix = ypix.astype(np.int32)
 
