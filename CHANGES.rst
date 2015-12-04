@@ -9,9 +9,26 @@ v1.2-dev (unreleased)
   things (avoid reading the full cube/image).
 - Add missing units in image methods.
 - Fill data with NaNs only for float arrays, otherwise raise exception.
-- Use a new ``MpdafUnitsWarning`` to allow filtering the unit warnings.
+- Use a new ``MpdafUnitsWarning`` to allow filtering the unit warnings. It can
+  be used this way::
+
+      # filter only MPDAF's warnings
+      from mpdaf.tools import MpdafUnitsWarning
+      warnings.simplefilter('ignore', category=MpdafUnitsWarning)
+
+      # or filter both MPDAF and Astropy warnings
+      import astropy.units as u
+      warnings.simplefilter('ignore', category=u.UnitsWarning)
+
 - CUNIT FITS keyword: patch to read ``mum`` as micron.
 - Correct ``cube.get_step`` that returned nothing.
+- Use setuptools for the ``setup.py``: allows to use develop mode, install
+  dependencies automatically, use optional dependencies.
+- Remove unmaintained submodules: *quickViz* and *fsf*. *quickViz* is still
+  available `here <http://lsiit-miv.u-strasbg.fr/paseo/cubevisualization.php>`_
+  but maybe not compatible with the latest Aladin version.
+- Remove the ``displaypixtable`` module.
+- Avoid a huge memory peak when creating masked arrays with ``mask=True``.
 
 Sources
 ~~~~~~~

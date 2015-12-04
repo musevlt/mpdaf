@@ -41,7 +41,7 @@ import shutil
 
 # Bootstrap setuptools if not available
 import ez_setup
-ez_setup.use_setuptools()  # NOQA
+ez_setup.use_setuptools(version='18')  # NOQA
 
 from setuptools import setup, find_packages, Command, Extension
 
@@ -135,7 +135,7 @@ def options(*packages, **kw):
 with open('README.rst') as f:
     README = f.read()
 
-with open('doc/CoreLib/source/changelog.rst') as f:
+with open('CHANGES.rst') as f:
     CHANGELOG = f.read()
 
 cmdclass = {'test': UnitTest}
