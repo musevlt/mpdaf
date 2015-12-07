@@ -20,7 +20,7 @@ from ..tools.fits import add_mpdaf_method_keywords
 
 try:
     import numexpr
-except:
+except ImportError:
     numexpr = False
 
 
@@ -32,48 +32,32 @@ class PixTableMask(object):
 
     Parameters
     ----------
-    filename : string or None
-               Name of the FITS table containing the masked column.
-               If PixTableMask object is loaded from a FITS file,
-               the others parameters are not read but loaded from
-               the FITS file.
-    maskfile : string or None
-               Name of the FITS image masking some objects.
-    maskcol  : array of boolean or None
-               pixtable's column corresponding to the mask
-    pixtable : string or None
-               Name of the corresponding pixel table.
+    filename : str or None
+        Name of the FITS table containing the masked column. If a PixTableMask
+        object is loaded from a FITS file, the others parameters are not read
+        but loaded from the FITS file.
+    maskfile : str or None
+        Name of the FITS image masking some objects.
+    maskcol : array of bool or None
+        pixtable's column corresponding to the mask
+    pixtable : str or None
+        Name of the corresponding pixel table.
 
     Attributes
     ----------
-    filename : string
-               Name of the FITS table containing the masked column.
-    maskfile : string
-               Name of the FITS image masking some objects.
-    maskcol  : array of boolean
-               pixtable's column corresponding to the mask
-    pixtable : string
-               Name of the corresponding pixel table.
+    filename : str
+        Name of the FITS table containing the masked column.
+    maskfile : str
+        Name of the FITS image masking some objects.
+    maskcol : array of bool
+        pixtable's column corresponding to the mask
+    pixtable : str
+        Name of the corresponding pixel table.
+
     """
 
     def __init__(self, filename=None, maskfile=None, maskcol=None,
                  pixtable=None):
-        """Create a PixTableMask object.
-
-        Parameters
-        ----------
-        filename : string or None
-                   Name of the FITS table containing the masked column.
-                   If PixTableMask object is loaded from a FITS file,
-                   the others parameters are not read but loaded from
-                   the FITS file.
-        maskfile : string or None
-                   Name of the FITS image masking some objects.
-        maskcol  : array of boolean or None
-                   pixtable's column corresponding to the mask
-        pixtable : string or None
-                   Name of the corresponding pixel table.
-        """
         if filename is None:
             self.maskfile = maskfile
             self.maskcol = maskcol
@@ -89,8 +73,8 @@ class PixTableMask(object):
 
         Parameters
         ----------
-        filename    : string
-                      The FITS filename.
+        filename : str
+            The FITS filename.
         """
         prihdu = pyfits.PrimaryHDU()
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
@@ -115,90 +99,60 @@ class PixTableAutoCalib(object):
 
     """PixTableAutoCalib class.
 
-    This class manages input/output for file
-    containing auto calibration results
-    of MUSE pixel table files
+    This class manages input/output for file containing auto calibration
+    results of MUSE pixel table files
 
     Parameters
     ----------
-    filename : string
-               The FITS file name.
-               If PixTableAutoCalib object is loaded from a FITS file,
-               the others parameters are not read but loaded from
-               the FITS file.
-    method   : string or None
-               Name of the auto calibration method.
-    maskfile : string or None
-               Name of the FITS image masking some objects.
-    skyref   : string or None
-               sky reference spectrum.
-    pixtable : string or None
-               Name of the corresponding pixel table.
-    ifu      : array of integer or None
-               channel numbers.
-    sli      : array of integer or None
-               slice numbers.
-    quad      : array of integer or None
-               Detector quadrant numbers.
-    npts     : array of integer or None
-               number of remaining pixels.
-    corr     : array of float or None
-               correction value.
+    filename : str
+        The FITS file name. If PixTableAutoCalib object is loaded from a FITS
+        file, the others parameters are not read but loaded from the FITS file.
+    method : str or None
+        Name of the auto calibration method.
+    maskfile : str or None
+        Name of the FITS image masking some objects.
+    skyref : str or None
+        sky reference spectrum.
+    pixtable : str or None
+        Name of the corresponding pixel table.
+    ifu : array of int or None
+        channel numbers.
+    sli : array of int or None
+        slice numbers.
+    quad : array of int or None
+        Detector quadrant numbers.
+    npts : array of int or None
+        number of remaining pixels.
+    corr : array of float or None
+        correction value.
 
     Attributes
     ----------
-    filename : string
-               The FITS file name.
-    method   : string
-               Name of the auto calibration method.
-    maskfile : string
-               Name of the FITS image masking some objects.
-    skyref   : string
-               sky reference spectrum.
-    pixtable : string
-               Name of the corresponding pixel table.
-    ifu      : array of integer
-               channel numbers.
-    sli      : array of integer
-               slice numbers.
-    quad      : array of integer or None
-               Detector quadrant numbers.
-    npts     : array of integer
-               number of remaining pixels.
-    corr     : array of float
-               correction value.
+    filename : str
+        The FITS file name.
+    method : str
+        Name of the auto calibration method.
+    maskfile : str
+        Name of the FITS image masking some objects.
+    skyref : str
+        sky reference spectrum.
+    pixtable : str
+        Name of the corresponding pixel table.
+    ifu : array of int
+        channel numbers.
+    sli : array of int
+        slice numbers.
+    quad : array of int or None
+        Detector quadrant numbers.
+    npts : array of int
+        number of remaining pixels.
+    corr : array of float
+        correction value.
     """
 
     def __init__(self, filename=None, method=None, maskfile=None, skyref=None,
-                 pixtable=None, ifu=None, sli=None, quad=None, npts=None, corr=None):
-        """Create a PixTableAutoCalib object.
-
-        Parameters
-        ----------
-        filename : string
-                   The FITS file name.
-                   If PixTableAutoCalib object is loaded from a FITS file,
-                   the others parameters are not read but loaded from
-                   the FITS file.
-        method   : string or None
-                   Name of the auto calibration method.
-        maskfile : string or None
-                   Name of the FITS image masking some objects.
-        skyref   : string or None
-                   sky reference spectrum.
-        pixtable : string or None
-                   Name of the corresponding pixel table.
-        ifu      : array of integer or None
-                   channel numbers.
-        sli      : array of integer or None
-                   slice numbers.
-        quad     : array of integer or None
-                   Detector quadrant numbers.
-        npts     : array of integer or None
-                   number of remaining pixels.
-        corr     : array of float or None
-                   correction value.
-        """
+                 pixtable=None, ifu=None, sli=None, quad=None, npts=None,
+                 corr=None):
         if filename is None:
             self.method = method
             self.maskfile = maskfile
@@ -261,10 +215,10 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
 
     Parameters
     ----------
-    filename    : string
-                  The FITS filename.
+    filename : str
+        The FITS filename.
     save_as_ima : bool
-                  If True, pixtable is saved as multi-extension FITS
+        If True, pixtable is saved as multi-extension FITS
     """
     logger = logging.getLogger(__name__)
     pyfits.conf.extension_name_case_sensitive = True
@@ -351,31 +305,32 @@ class PixTable(object):
 
     Parameters
     ----------
-    filename : string
-               The FITS file name. None by default.
+    filename : str
+        The FITS file name. None by default.
 
     Attributes
     ----------
-    filename       : string
-                     The FITS file name. None if any.
+    filename : str
+        The FITS file name. None if any.
     primary_header : pyfits.Header
-                     The primary header.
-    nrows          : integer
-                     Number of rows.
-    nifu           : integer
-                     Number of merged IFUs that went into this pixel table.
-    skysub         : boolean
-                     If True, this pixel table was sky-subtracted.
-    fluxcal        : boolean
-                     If True, this pixel table was flux-calibrated.
-    wcs            : astropy.units
-                     Type of spatial coordinates of this pixel table
-                     (u.pix, u.deg or u.rad)
-    wave           : astropy.units
-                     Type of spectral coordinates of this pixel table
-    ima            : boolean
-                     If True, pixtable is saved as multi-extension FITS image
-                     instead of FITS binary table.
+        The primary header.
+    nrows : int
+        Number of rows.
+    nifu : int
+        Number of merged IFUs that went into this pixel table.
+    skysub : bool
+        If True, this pixel table was sky-subtracted.
+    fluxcal : bool
+        If True, this pixel table was flux-calibrated.
+    wcs : astropy.units
+        Type of spatial coordinates of this pixel table
+        (u.pix, u.deg or u.rad)
+    wave : astropy.units
+        Type of spectral coordinates of this pixel table
+    ima : bool
+        If True, pixtable is saved as multi-extension FITS image
+        instead of FITS binary table.
+
     """
 
     def __init__(self, filename, xpos=None, ypos=None, lbda=None, data=None,
@@ -386,13 +341,14 @@ class PixTable(object):
 
         Parameters
         ----------
-        filename : string
-                   The FITS file name. None by default.
+        filename : str
+            The FITS file name. None by default.
 
-        The FITS file is opened with memory mapping.
-        Just the primary header and table dimensions are loaded.
-        Methods get_xpos, get_ypos, get_lambda, get_data, get_dq
-        ,get_stat and get_origin must be used to get columns data.
+        The FITS file is opened with memory mapping. Just the primary header
+        and table dimensions are loaded. The methods ``get_xpos``,
+        ``get_ypos``, ``get_lambda``, ``get_data``, ``get_dq``, ``get_stat``
+        and ``get_origin`` must be used to get columns data.
+
         """
         self._logger = logging.getLogger(__name__)
         self.filename = filename
@@ -570,11 +526,11 @@ class PixTable(object):
 
         Parameters
         ----------
-        filename    : string
-                      The FITS filename.
+        filename : str
+            The FITS filename.
         save_as_ima : bool
-                      If True, pixtable is saved as multi-extension FITS image
-                      instead of FITS binary table.
+            If True, pixtable is saved as multi-extension FITS image
+            instead of FITS binary table.
         """
         write(filename, self.get_xpos(), self.get_ypos(),
               self.get_lambda(), self.get_data(), self.get_dq(),
@@ -590,10 +546,10 @@ class PixTable(object):
 
         Parameters
         ----------
-        name : string or attribute
-               Name of the column.
+        name : str or attribute
+            Name of the column.
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
 
         Returns
         -------
@@ -627,12 +583,12 @@ class PixTable(object):
 
         Parameters
         ----------
-        name : string or attribute
-               Name of the column.
+        name : str or attribute
+            Name of the column.
         data : numpy.array
-               data values
+            data values
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         """
         attr_name = 'lbda' if name == 'lambda' else name
         data = np.asarray(data)
@@ -651,9 +607,9 @@ class PixTable(object):
         Parameters
         ----------
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               Unit of the returned data.
+            Unit of the returned data.
 
         Returns
         -------
@@ -670,11 +626,11 @@ class PixTable(object):
         Parameters
         ----------
         xpos : numpy.array
-               xpos values
+            xpos values
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               unit of the xpos column in input.
+            unit of the xpos column in input.
         """
         if unit is not None:
             xpos = (xpos * unit).to(self.wcs).value
@@ -690,9 +646,9 @@ class PixTable(object):
         Parameters
         ----------
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               Unit of the returned data.
+            Unit of the returned data.
 
         Returns
         -------
@@ -709,11 +665,11 @@ class PixTable(object):
         Parameters
         ----------
         ypos : numpy.array
-               ypos values
+            ypos values
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               unit of the ypos column in input.
+            unit of the ypos column in input.
         """
         if unit is not None:
             ypos = (ypos * unit).to(self.wcs).value
@@ -729,9 +685,9 @@ class PixTable(object):
         Parameters
         ----------
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               Unit of the returned data.
+            Unit of the returned data.
 
         Returns
         -------
@@ -748,11 +704,11 @@ class PixTable(object):
         Parameters
         ----------
         lbda : numpy.array
-               lbda values
+            lbda values
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               unit of the lambda column in input.
+            unit of the lambda column in input.
         """
         if unit is not None:
             lbda = (lbda * unit).to(self.wave).value
@@ -770,9 +726,9 @@ class PixTable(object):
         Parameters
         ----------
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               Unit of the returned data.
+            Unit of the returned data.
 
         Returns
         -------
@@ -789,11 +745,11 @@ class PixTable(object):
         Parameters
         ----------
         data : numpy.array
-               data values
+            data values
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               unit of the data column in input.
+            unit of the data column in input.
         """
         if unit is not None:
             data = (data * unit).to(self.unit_data).value
@@ -805,9 +761,9 @@ class PixTable(object):
         Parameters
         ----------
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               Unit of the returned data.
+            Unit of the returned data.
 
         Returns
         -------
@@ -824,11 +780,11 @@ class PixTable(object):
         Parameters
         ----------
         stat : numpy.array
-               stat values
+            stat values
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         unit : astropy.units
-               unit of the stat column in input.
+            unit of the stat column in input.
         """
         if unit is not None:
             stat = (stat * unit).to(self.unit_data**2).value
@@ -840,7 +796,7 @@ class PixTable(object):
         Parameters
         ----------
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
 
         Returns
         -------
@@ -853,10 +809,10 @@ class PixTable(object):
 
         Parameters
         ----------
-        dq   : numpy.array
-               dq values
+        dq : numpy.array
+            dq values
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
         """
         self.set_column('dq', dq, ksel=ksel)
 
@@ -866,7 +822,7 @@ class PixTable(object):
         Parameters
         ----------
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
 
         Returns
         -------
@@ -880,9 +836,9 @@ class PixTable(object):
         Parameters
         ----------
         origin : numpy.array
-                 origin values
-        ksel   : output of np.where
-                 Elements depending on a condition.
+            origin values
+        ksel : output of np.where
+            Elements depending on a condition.
         """
         self.set_column('origin', origin, ksel=ksel)
         hdr = self.primary_header
@@ -904,7 +860,7 @@ class PixTable(object):
         Parameters
         ----------
         ksel : output of np.where
-               Elements depending on a condition.
+            Elements depending on a condition.
 
         Returns
         -------
@@ -922,9 +878,9 @@ class PixTable(object):
         Parameters
         ----------
         weight : numpy.array
-                 weight values
-        ksel   : output of np.where
-                 Elements depending on a condition.
+            weight values
+        ksel : output of np.where
+            Elements depending on a condition.
         """
         self.set_column('weight', weight, ksel=ksel)
 
@@ -952,15 +908,15 @@ class PixTable(object):
 
         Parameters
         ----------
-        lbda     : (float, float)
-                   (min, max) wavelength range in angstrom.
+        lbda : (float, float)
+            (min, max) wavelength range in angstrom.
         unit : astropy.units
-               Unit of the wavelengths in input.
+            Unit of the wavelengths in input.
 
         Returns
         -------
-        out : array of booleans
-              mask
+        out : array of bool
+            mask
         """
         arr = self.get_lambda()
         mask = np.zeros(self.nrows, dtype=bool)
@@ -981,12 +937,12 @@ class PixTable(object):
 
         Parameters
         ----------
-        stacks     : list of integers
-                     Sracks numbers (1,2,3 or 4)
+        stacks : list of int
+            Stacks numbers (1,2,3 or 4)
         Returns
         -------
-        out : array of booleans
-              mask
+        out : array of bool
+            mask
         """
         from ..MUSE import Slicer
         assert min(stacks) > 0
@@ -1001,13 +957,13 @@ class PixTable(object):
 
         Parameters
         ----------
-        slices       : list of integers
-                       Slice number on the CCD.
+        slices : list of int
+            Slice number on the CCD.
 
         Returns
         -------
-        out : array of booleans
-              mask
+        out : array of bool
+            mask
         """
         col_origin = origin if origin is not None else self.get_origin()
         col_sli = self.origin2slice(col_origin)
@@ -1024,13 +980,13 @@ class PixTable(object):
 
         Parameters
         ----------
-        ifu      : int or list
-                   IFU number.
+        ifu : int or list
+            IFU number.
 
         Returns
         -------
-        out : array of booleans
-              mask
+        out : array of bool
+            mask
         """
         col_origin = origin if origin is not None else self.get_origin()
         col_ifu = self.origin2ifu(col_origin)
@@ -1047,13 +1003,13 @@ class PixTable(object):
 
         Parameters
         ----------
-        exp      : list of integers
-                   List of exposure numbers
+        exp : list of int
+            List of exposure numbers
 
         Returns
         -------
-        out : array of booleans
-              mask
+        out : array of bool
+            mask
         """
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
@@ -1069,13 +1025,13 @@ class PixTable(object):
 
         Parameters
         ----------
-        xpix     : list
-                   [(min, max)] pixel range along the X axis
+        xpix : list
+            [(min, max)] pixel range along the X axis
 
         Returns
         -------
-        out : array of booleans
-              mask
+        out : array of bool
+            mask
         """
         col_origin = origin if origin is not None else self.get_origin()
         col_xpix = self.origin2xpix(col_origin)
@@ -1101,13 +1057,13 @@ class PixTable(object):
 
         Parameters
         ----------
-        ypix     : list
-                   [(min, max)] pixel range along the Y axis
+        ypix : list
+            [(min, max)] pixel range along the Y axis
 
         Returns
         -------
-        out : array of booleans
-              mask
+        out : array of bool
+            mask
         """
         col_origin = origin if origin is not None else self.get_origin()
         col_ypix = self.origin2ypix(col_origin)
@@ -1134,16 +1090,15 @@ class PixTable(object):
 
         Parameters
         ----------
-        sky      : (float, float, float, char)
-                   (y, x, size, shape) extract an aperture on the sky,
-                   defined by a center (y, x) in degrees/pixel,
-                   a shape ('C' for circular, 'S' for square)
-                   and size (radius or half side length) in arcsec/pixels.
+        sky : (float, float, float, char)
+            (y, x, size, shape) extract an aperture on the sky, defined by
+            a center (y, x) in degrees/pixel, a shape ('C' for circular, 'S'
+            for square) and size (radius or half side length) in arcsec/pixels.
 
         Returns
         -------
-        out : array of booleans
-              mask
+        out : array of bool
+            mask
         """
         xpos, ypos = self.get_pos_sky()
         mask = np.zeros(self.nrows, dtype=bool)
@@ -1214,7 +1169,7 @@ class PixTable(object):
         Parameters
         ----------
         mask : numpy.ndarray
-               Mask (array of boolean).
+            Mask (array of bool).
 
         Returns
         -------
@@ -1299,25 +1254,25 @@ class PixTable(object):
 
         Parameters
         ----------
-        filename : string
-                   The FITS filename used to saves the resulted object.
-        sky      : (float, float, float, char)
-                   (y, x, size, shape) extract an aperture on the sky,
-                   defined by a center (y, x) in degrees/pixel,
-                   a shape ('C' for circular, 'S' for square)
-                   and size (radius or half side length) in arcsec/pixels.
-        lbda     : (float, float)
-                   (min, max) wavelength range in angstrom.
-        ifu      : int or list
-                   IFU number.
-        sl       : int or list
-                   Slice number on the CCD.
-        xpix     : (int, int) or list
-                   (min, max) pixel range along the X axis
-        ypix     : (int, int) or list
-                   (min, max) pixel range along the Y axis
-        exp      : list of integers
-                   List of exposure numbers
+        filename : str
+            The FITS filename used to saves the resulted object.
+        sky : (float, float, float, char)
+            (y, x, size, shape) extract an aperture on the sky, defined by
+            a center (y, x) in degrees/pixel, a shape ('C' for circular, 'S'
+            for square) and size (radius or half side length) in arcsec/pixels.
+
+        lbda : (float, float)
+            (min, max) wavelength range in angstrom.
+        ifu : int or list
+            IFU number.
+        sl : int or list
+            Slice number on the CCD.
+        xpix : (int, int) or list
+            (min, max) pixel range along the X axis
+        ypix : (int, int) or list
+            (min, max) pixel range along the Y axis
+        exp : list of int
+            List of exposure numbers
 
         Returns
         -------
@@ -1387,12 +1342,12 @@ class PixTable(object):
 
         Parameters
         ----------
-        origin : integer
-                 Origin value.
+        origin : int
+            Origin value.
 
         Returns
         -------
-        out : integer
+        out : int
         """
         return ((origin >> 6) & 0x1f).astype(np.uint8)
 
@@ -1401,12 +1356,12 @@ class PixTable(object):
 
         Parameters
         ----------
-        origin : integer
-                 Origin value.
+        origin : int
+            Origin value.
 
         Returns
         -------
-        out : integer
+        out : int
         """
         return (origin & 0x3f).astype(np.uint8)
 
@@ -1415,8 +1370,8 @@ class PixTable(object):
 
         Parameters
         ----------
-        origin : integer
-                 Origin value.
+        origin : int
+            Origin value.
 
         Returns
         -------
@@ -1429,8 +1384,8 @@ class PixTable(object):
 
         Parameters
         ----------
-        origin : integer
-                 Origin value.
+        origin : int
+            Origin value.
 
         Returns
         -------
@@ -1459,8 +1414,8 @@ class PixTable(object):
 
         Parameters
         ----------
-        origin : integer
-                 Origin value.
+        origin : int
+            Origin value.
 
         Returns
         -------
@@ -1474,12 +1429,12 @@ class PixTable(object):
 
         Parameters
         ----------
-        origin : integer
-                 Origin value.
+        origin : int
+            Origin value.
 
         Returns
         -------
-        out : (integer, integer, float, float)
+        out : (int, int, float, float)
         """
         ifu, sli = self.origin2ifu(origin), self.origin2slice(origin)
         return (ifu, sli, self.origin2ypix(origin),
@@ -1551,9 +1506,9 @@ class PixTable(object):
         Parameters
         ----------
         xpos : numpy.array
-               xpos values
+            xpos values
         ypos : numpy.array
-               ypos values
+            ypos values
 
         Returns
         -------
@@ -1573,8 +1528,8 @@ class PixTable(object):
 
         Parameters
         ----------
-        verbose : boolean
-                  If True, progression is printed.
+        verbose : bool
+            If True, progression is printed.
 
         Returns
         -------
@@ -1614,8 +1569,8 @@ class PixTable(object):
 
         Parameters
         ----------
-        key : string
-              Keyword.
+        key : str
+            Keyword.
 
         Returns
         -------
@@ -1720,8 +1675,10 @@ class PixTable(object):
 
     def reconstruct_det_image(self, xstart=None, ystart=None,
                               xstop=None, ystop=None):
-        """Reconstructs the image on the detector from the pixtable. The
-        pixtable must concerns only one IFU, otherwise an exception is raised.
+        """Reconstructs the image on the detector from the pixtable.
+
+        The pixtable must concerns only one IFU, otherwise an exception is
+        raised.
 
         Returns
         -------
@@ -1804,12 +1761,12 @@ class PixTable(object):
 
         Parameters
         ----------
-        maskfile : string
-                   Path to a FITS image file with WCS information, used to mask
-                   out bright continuum objects present in the FoV. Values must
-                   be 0 for the background and >0 for objects.
-        verbose : boolean
-                  If True, progression is printed.
+        maskfile : str
+            Path to a FITS image file with WCS information, used to mask
+            out bright continuum objects present in the FoV. Values must
+            be 0 for the background and >0 for objects.
+        verbose : bool
+            If True, progression is printed.
 
         Returns
         -------
@@ -1864,19 +1821,19 @@ class PixTable(object):
 
         Parameters
         ----------
-        pixmask  : :class:`mpdaf.drs.PixTableMask`
-                   column corresponding to a mask file
-                   (previously computed by mask_column)
-        dlbda    : double
-                   wavelength step in angstrom
-        nmax     : integer
-                   maximum number of clipping iterations
-        nclip    : float or (float,float)
-                   Number of sigma at which to clip.
-                   Single clipping parameter or lower/upper clipping parameters
-        nstop    : integer
-                   If the number of not rejected pixels is less
-                   than this number, the clipping iterations stop.
+        pixmask : :class:`mpdaf.drs.PixTableMask`
+            Column corresponding to a mask file (previously computed by
+            ``mask_column``).
+        dlbda : double
+            Wavelength step in angstrom
+        nmax : int
+            Maximum number of clipping iterations
+        nclip : float or (float,float)
+            Number of sigma at which to clip. Single clipping parameter or
+            lower/upper clipping parameters
+        nstop : int
+            If the number of not rejected pixels is less than this number,
+            the clipping iterations stop.
 
         Returns
         -------
@@ -1960,16 +1917,17 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref  : :class:`mpdaf.obj.Spectrum`
-                  Reference sky spectrum
+        skyref : :class:`mpdaf.obj.Spectrum`
+            Reference sky spectrum
         pixmask : :class:`mpdaf.drs.PixTableMask`
-                  column corresponding to a mask file
-                  (previously computed by mask_column)
+            Column corresponding to a mask file (previously computed by
+            ``mask_column``).
+
         Returns
         -------
         out : :class:`mpdaf.drs.PixTableAutoCalib`
-        """
 
+        """
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
@@ -2009,7 +1967,8 @@ class PixTable(object):
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
         mask = maskcol.astype(np.int32)
-        skyref_flux = (skyref.data.data.astype(np.float64) * skyref.unit).to(self.unit_data).value
+        skyref_flux = (skyref.data.data.astype(np.float64) * skyref.unit)\
+            .to(self.unit_data).value
         skyref_lbda = skyref.wave.coord(unit=self.wave)
         skyref_n = skyref.shape[0]
         xpix = xpix.astype(np.int32)
@@ -2022,7 +1981,8 @@ class PixTable(object):
 
         libCmethods.mpdaf_slice_median(
             result, stat_result, corr, npts, ifu, sli, data, lbda,
-            data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n, xpix, ypix, 1)
+            data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n, xpix,
+            ypix, 1)
 
         # set pixtable data
         self.set_data(result)
@@ -2065,26 +2025,27 @@ class PixTable(object):
         return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
-        """Compute the median value for all pairs (slices,
-        quadrant) and divides each pixel
-        by the corresponding factor to bring all slices
+        """Compute the median value for all pairs (slices, quadrant) and
+        divides each pixel by the corresponding factor to bring all slices
         to the same median value.
+
         pix(x,y,lbda) /= < pix(x,y,lbda) / skyref(lbda) >_slice_quadrant
 
         Algorithm from Kurt Soto (kurt.soto@phys.ethz.ch)
 
         Parameters
         ----------
-        skyref  : :class:`mpdaf.obj.Spectrum`
-                  Reference sky spectrum
+        skyref : :class:`mpdaf.obj.Spectrum`
+            Reference sky spectrum
         pixmask : :class:`mpdaf.drs.PixTableMask`
-                  column corresponding to a mask file
-                  (previously computed by mask_column)
+            Column corresponding to a mask file (previously computed by
+            ``mask_column``).
+
         Returns
         -------
         out : :class:`mpdaf.drs.PixTableAutoCalib`
-        """
 
+        """
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
@@ -2124,7 +2085,8 @@ class PixTable(object):
         lbda = self.get_lambda()
         lbda = lbda.astype(np.float64)
         mask = maskcol.astype(np.int32)
-        skyref_flux = (skyref.data.data.astype(np.float64) * skyref.unit).to(self.unit_data).value
+        skyref_flux = (skyref.data.data.astype(np.float64) * skyref.unit)\
+            .to(self.unit_data).value
         skyref_lbda = skyref.wave.coord(unit=self.wave)
         skyref_n = skyref.shape
         xpix = xpix.astype(np.int32)
