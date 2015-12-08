@@ -510,10 +510,28 @@ class Source(object):
 
     def info(self):
         """Print information."""
+        excluded_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
+                               'AUTHOR']
+        icom = 1
+        while 'COM%03d' % icom in self.header:
+            excluded_cards.append('COM%03d' % icom)
+            icom += 1
+        ihist = 1
+        while 'HIST%03d' % ihist in self.header:
+            excluded_cards.append('HIST%03d' % ihist)
+            ihist += 1
         for card in self.header.cards:
-            if card[0] not in ('SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
-                               'AUTHOR'):
+            if card[0] not in excluded_cards:
                 self._logger.info(card)
+        for i in range(1, icom):
+            #self._logger.info(self.header.cards['COM%03d' % i])
+            card = self.header.cards['COM%03d' % i]
+            self._logger.info(str('%s = %s / %s'%(card[0], card[1], card[2])))
+        for i in range(1, ihist):
+            #self._logger.info(self.header.cards['HIST%03d' % i])
+            card = self.header.cards['HIST%03d' % i]
+            self._logger.info(str('%s = %s / %s'%(card[0], card[1], card[2])))
+        
         if len(self.spectra) != 0 or \
            len(self.images) != 0 or \
            len(self.cubes) != 0 or \
