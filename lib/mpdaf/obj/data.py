@@ -9,9 +9,9 @@ from datetime import datetime
 from numpy import ma
 
 from .coords import WCS, WaveCoord
-from .objs import fix_unit_read, fix_unit_write
 from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
-                     is_valid_fits_file, read_slice_from_fits)
+                     fix_unit_read, is_valid_fits_file, read_slice_from_fits,
+                     copy_header)
 
 
 class DataArray(object):
@@ -544,38 +544,9 @@ class DataArray(object):
         else:
             data = self.data.data
 
-        hdr = self.get_wcs_header()
-        imahdu = fits.ImageHDU(name=name, data=data, header=hdr)
-
-        for card in self.data_header.cards:
-            if (card.keyword[0:2] not in ('CD', 'PC') and
-                    card.keyword not in imahdu.header):
-                try:
-                    card.verify('fix')
-                    imahdu.header[card.keyword] = (card.value, card.comment)
-                except:
-                    try:
-                        if isinstance(card.value, str):
-                            n = 80 - len(card.keyword) - 14
-                            s = card.value[0:n]
-                            imahdu.header['hierarch %s' % card.keyword] = \
-                                (s, card.comment)
-                        else:
-                            imahdu.header['hierarch %s' % card.keyword] = \
-                                (card.value, card.comment)
-                    except:
-                        self._logger.warning("%s not copied in data header",
-                                             card.keyword)
-
-        if self.unit != u.dimensionless_unscaled:
-            try:
-                imahdu.header['BUNIT'] = (self.unit.to_string('fits'),
-                                          'data unit type')
-            except u.format.fits.UnitScaleError:
-                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit)),
-                                          'data unit type')
-
-        return imahdu
+        hdr = copy_header(self.data_header, self.get_wcs_header(),
+                          exclude=('CD*', 'PC*'), unit=self.unit)
+        return fits.ImageHDU(name=name, data=data, header=hdr)
 
     def get_stat_hdu(self, name='STAT', header=None):
         """Return an ImageHDU corresponding to the STAT extension.
@@ -600,38 +571,9 @@ class DataArray(object):
         if header is None:
             header = self.get_wcs_header()
 
-        imahdu = fits.ImageHDU(name=name, data=self.var, header=header)
-
-        # if header is None:
-        for card in self.data_header.cards:
-            if (card.keyword[0:2] not in ('CD', 'PC') and
-                    card.keyword not in imahdu.header):
-                try:
-                    card.verify('fix')
-                    imahdu.header[card.keyword] = (card.value, card.comment)
-                except:
-                    try:
-                        if isinstance(card.value, str):
-                            n = 80 - len(card.keyword) - 14
-                            s = card.value[0:n]
-                            imahdu.header['hierarch %s' % card.keyword] = \
-                                (s, card.comment)
-                        else:
-                            imahdu.header['hierarch %s' % card.keyword] = \
-                                (card.value, card.comment)
-                    except:
-                        self._logger.warning('%s not copied in data header',
-                                             card.keyword)
-
-        if self.unit != u.dimensionless_unscaled:
-            try:
-                imahdu.header['BUNIT'] = ((self.unit**2).to_string('fits'),
-                                          'data unit type')
-            except u.format.fits.UnitScaleError:
-                imahdu.header['BUNIT'] = (fix_unit_write(str(self.unit**2)),
-                                          'data unit type')
-
-        return imahdu
+        header = copy_header(self.data_header, header,
+                             exclude=('CD*', 'PC*'), unit=self.unit**2)
+        return fits.ImageHDU(name=name, data=self.var, header=header)
 
     def write(self, filename, savemask='dq'):
         """Save the cube in a FITS file.
@@ -647,29 +589,10 @@ class DataArray(object):
 
         """
         warnings.simplefilter('ignore')
-        prihdu = fits.PrimaryHDU()
-
-        for card in self.primary_header.cards:
-            try:
-                card.verify('fix')
-                prihdu.header[card.keyword] = (card.value, card.comment)
-            except:
-                try:
-                    if isinstance(card.value, str):
-                        n = 80 - len(card.keyword) - 14
-                        s = card.value[0:n]
-                        prihdu.header['hierarch %s' % card.keyword] = \
-                            (s, card.comment)
-                    else:
-                        prihdu.header['hierarch %s' % card.keyword] = \
-                            (card.value, card.comment)
-                except:
-                    self._logger.warning("%s not copied in primary header",
-                                         card.keyword)
-
-        prihdu.header['date'] = (str(datetime.now()), 'creation date')
-        prihdu.header['author'] = ('MPDAF', 'origin of the file')
-        hdulist = [prihdu]
+        header = copy_header(self.primary_header)
+        header['date'] = (str(datetime.now()), 'creation date')
+        header['author'] = ('MPDAF', 'origin of the file')
+        hdulist = [fits.PrimaryHDU(header=header)]
         warnings.simplefilter('default')
 
         # create cube DATA extension
@@ -678,12 +601,13 @@ class DataArray(object):
 
         # create spectrum STAT extension
         if self.var is not None:
-            hdulist.append(self.get_stat_hdu(header=datahdu.header))
+            hdulist.append(self.get_stat_hdu(header=datahdu.header.copy()))
 
         # create DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
-            hdulist.append(fits.ImageHDU(name='DQ', header=datahdu.header,
-                                         data=np.uint8(self.data.mask)))
+            hdulist.append(fits.ImageHDU(
+                name='DQ', header=datahdu.header.copy(),
+                data=np.uint8(self.data.mask)))
 
         # save to disk
         hdu = fits.HDUList(hdulist)

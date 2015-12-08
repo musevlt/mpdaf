@@ -7,7 +7,8 @@ import astropy.wcs as pywcs
 import logging
 import numpy as np
 
-from .objs import is_float, is_int, fix_unit_read
+from .objs import is_float, is_int
+from ..tools import fix_unit_read
 
 
 def deg2sexa(x):

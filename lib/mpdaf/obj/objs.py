@@ -45,15 +45,3 @@ def UnitArray(array, old_unit, new_unit):
 def UnitMaskedArray(mask_array, old_unit, new_unit):
     return np.ma.array((mask_array.data[:] * old_unit).to(new_unit).value,
                        mask=mask_array.mask)
-
-
-def fix_unit_read(x):
-    x = x.replace('10**(-20)', '1e-20')
-    x = x.replace('*', ' ')
-    x = x.replace('mum', 'micron')
-    return x
-
-
-def fix_unit_write(x):
-    x = x.replace('1e-20', '10**(-20)')
-    return x
