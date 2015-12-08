@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '1.2b1'
-__date__ = '2015/11/05'
+import logging
 
 import tools
 import obj
 import drs
 import sdetect
 import MUSE
-import logging
-from logging.handlers import RotatingFileHandler
+
+__version__ = '1.2b1'
+__date__ = '2015/11/05'
 
 # cpu numbers
 CPU = 0
@@ -30,6 +30,7 @@ def setup_logging(level):
 
 def setup_logfile(level, logfile):
     """Setup logging to file."""
+    from logging.handlers import RotatingFileHandler
     logger = logging.getLogger(__name__)
     formatter = logging.Formatter(
         '%(asctime)s [%(levelname)s] {%(name)s:%(lineno)d} %(message)s')
