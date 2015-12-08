@@ -301,7 +301,11 @@ class PixTable(object):
 
     """PixTable class.
 
-    This class manages input/output for MUSE pixel table files
+    This class manages input/output for MUSE pixel table files. The FITS file
+    is opened with memory mapping. Just the primary header and table dimensions
+    are loaded. The methods ``get_xpos``, ``get_ypos``, ``get_lambda``,
+    ``get_data``, ``get_dq``, ``get_stat`` and ``get_origin`` must be used to
+    get columns data.
 
     Parameters
     ----------
@@ -337,19 +341,6 @@ class PixTable(object):
                  dq=None, stat=None, origin=None, weight=None,
                  primary_header=None, save_as_ima=True, wcs=u.pix,
                  wave=u.angstrom, unit_data=u.count):
-        """Create a PixTable object.
-
-        Parameters
-        ----------
-        filename : str
-            The FITS file name. None by default.
-
-        The FITS file is opened with memory mapping. Just the primary header
-        and table dimensions are loaded. The methods ``get_xpos``,
-        ``get_ypos``, ``get_lambda``, ``get_data``, ``get_dq``, ``get_stat``
-        and ``get_origin`` must be used to get columns data.
-
-        """
         self._logger = logging.getLogger(__name__)
         self.filename = filename
         self.wcs = wcs
@@ -373,11 +364,7 @@ class PixTable(object):
         self.yc = 0.0
 
         if filename is not None:
-            try:
-                self.hdulist = pyfits.open(self.filename, memmap=1)
-            except IOError:
-                raise IOError('file %s not found' % filename)
-
+            self.hdulist = pyfits.open(self.filename, memmap=1)
             self.primary_header = self.hdulist[0].header
             self.nrows = self.hdulist[1].header["NAXIS2"]
             self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
@@ -407,11 +394,11 @@ class PixTable(object):
                 dq = np.array(dq)
                 origin = np.array(origin)
                 self.nrows = xpos.shape[0]
-                if ypos.shape[0] != self.nrows or\
-                   lbda.shape[0] != self.nrows or\
-                   data.shape[0] != self.nrows or\
-                   stat.shape[0] != self.nrows or\
-                   dq.shape[0] != self.nrows or\
+                if ypos.shape[0] != self.nrows or \
+                   lbda.shape[0] != self.nrows or \
+                   data.shape[0] != self.nrows or \
+                   stat.shape[0] != self.nrows or \
+                   dq.shape[0] != self.nrows or \
                    origin.shape[0] != self.nrows:
                     raise IOError('input data with different dimensions')
                 else:
@@ -1975,7 +1962,7 @@ class PixTable(object):
         ypix = ypix.astype(np.int32)
 
         result = np.empty_like(data, dtype=np.float64)
-        stat_result = np.empty_like(data, dtype=np.float64)
+        stat_result = np.empty((1,), dtype=np.float64)
         corr = np.ones(24 * 48 * 4, dtype=np.float64)  # zeros
         npts = np.zeros(24 * 48 * 4, dtype=np.int32)
 

@@ -3,11 +3,12 @@
 # import nose.tools
 from nose.plugins.attrib import attr
 
+import astropy.units as u
 import io
 import numpy as np
 import unittest
 from astropy.io import fits
-from mpdaf.drs import PixTable
+from mpdaf.drs import PixTable, pixtable
 from numpy.testing import assert_array_equal
 
 MUSE_ORIGIN_SHIFT_XSLICE = 24
@@ -73,6 +74,8 @@ class TestBasicPixTable(unittest.TestCase):
     def test_empty_pixtable(self):
         pix = PixTable(None)
         self.assertEqual(pix.nrows, 0)
+        self.assertEqual(pix.extract(), None)
+        self.assertEqual(pix.get_data(), None)
 
     @attr(speed='fast')
     def test_getters(self):
@@ -85,8 +88,10 @@ class TestBasicPixTable(unittest.TestCase):
                                getattr(self, name))
 
     @attr(speed='fast')
-    def test_get_column(self):
+    def test_get_lambda(self):
         assert_array_equal(self.lbda, self.pix.get_lambda())
+        assert_array_equal(self.lbda*u.angstrom.to(u.nm),
+                           self.pix.get_lambda(unit=u.nm))
         ksel = np.where(self.lbda > 6000)
         assert_array_equal(self.lbda[ksel], self.pix.get_lambda(ksel))
         ksel = (self.lbda > 6000)
@@ -96,36 +101,62 @@ class TestBasicPixTable(unittest.TestCase):
         ksel = np.where(self.lbda > 6000)
         assert_array_equal(self.lbda[ksel], self.pix2.get_lambda(ksel))
 
-        # Indexing with a boolean array is not (yet) supported
-        # ksel = (self.lbda > 6000)
-        # assert_array_equal(self.lbda[ksel], self.pix2.get_lambda(ksel))
+    @attr(speed='fast')
+    def test_get_xypos(self):
+        assert_array_equal(self.xpos, self.pix2.get_xpos())
+        assert_array_equal(self.xpos, self.pix.get_xpos(unit=u.pix))
+        assert_array_equal(self.ypos, self.pix2.get_ypos())
+        assert_array_equal(self.ypos, self.pix.get_ypos(unit=u.pix))
+
+    @attr(speed='fast')
+    def test_get_data(self):
+        assert_array_equal(self.data, self.pix2.get_data())
+        assert_array_equal(self.data, self.pix.get_data(unit=u.count))
+        assert_array_equal(self.stat, self.pix2.get_stat())
+        assert_array_equal(self.stat, self.pix.get_stat(unit=u.count**2))
 
     @attr(speed='fast')
     def test_set_column(self):
-        for pixtable in (self.pix, self.pix2):
-            pix = pixtable.copy()
+        for pixt in (self.pix, self.pix2):
+            pix = pixt.copy()
             with self.assertRaises(AssertionError):
                 pix.set_xpos(range(5))
 
+        for pix in (self.pix, self.pix2):
             new_xpos = np.linspace(2, 3, self.nrows)
             pix.set_xpos(new_xpos)
             assert_array_equal(new_xpos, pix.get_xpos())
+
+            new_ypos = np.linspace(2, 3, self.nrows)
+            pix.set_ypos(new_ypos)
+            assert_array_equal(new_ypos, pix.get_ypos())
 
             new_lambda = np.linspace(4000, 5000, self.nrows)
             pix.set_lambda(new_lambda)
             assert_array_equal(new_lambda, pix.get_lambda())
 
+    @attr(speed='fast')
+    def test_set_data(self):
+        for pix in (self.pix, self.pix2):
             new_data = pix.get_data()
+            new_stat = pix.get_stat()
             ksel = np.where(new_data > 50)
             new_data[ksel] = 0
+            new_stat[ksel] = 0
             pix.set_data(0, ksel=ksel)
             assert_array_equal(new_data, pix.get_data())
+            pix.set_stat(0, ksel=ksel)
+            assert_array_equal(new_stat, pix.get_stat())
 
             new_data = pix.get_data()
+            new_stat = pix.get_stat()
             ksel = (new_data > 60)
             new_data[ksel] = 1
-            pix.set_data(1, ksel=ksel)
+            new_stat[ksel] = 0
+            pix.set_data(1, ksel=ksel, unit=u.count)
             assert_array_equal(new_data, pix.get_data())
+            pix.set_stat(1, ksel=ksel, unit=u.count**2)
+            assert_array_equal(new_stat, pix.get_stat())
 
     @attr(speed='fast')
     def test_origin_conversion(self):
@@ -142,14 +173,21 @@ class TestBasicPixTable(unittest.TestCase):
 
     @attr(speed='fast')
     def test_extract(self):
-        pix = self.pix.extract(lbda=(5000, 6000))
-        ksel = (self.lbda >= 5000) & (self.lbda < 6000)
-        assert_array_equal(self.data[ksel], pix.get_data())
+        for numexpr in (True, False):
+            if not numexpr:
+                _numexpr = pixtable.numexpr
+                pixtable.numexpr = False
+            pix = self.pix.extract(lbda=(5000, 6000))
+            ksel = (self.lbda >= 5000) & (self.lbda < 6000)
+            assert_array_equal(self.data[ksel], pix.get_data())
 
-        pix = self.pix.extract(ifu=1)
-        ksel = (self.aifu == 1)
-        assert_array_equal(self.data[ksel], pix.get_data())
+            pix = self.pix.extract(ifu=1)
+            ksel = (self.aifu == 1)
+            assert_array_equal(self.data[ksel], pix.get_data())
 
-        pix = self.pix.extract(sl=(1, 2, 3))
-        ksel = (self.aslice == 1) | (self.aslice == 2) | (self.aslice == 3)
-        assert_array_equal(self.data[ksel], pix.get_data())
+            pix = self.pix.extract(sl=(1, 2, 3))
+            ksel = (self.aslice == 1) | (self.aslice == 2) | (self.aslice == 3)
+            assert_array_equal(self.data[ksel], pix.get_data())
+
+            if not numexpr:
+                pixtable.numexpr = _numexpr
