@@ -53,9 +53,9 @@ class Catalog(Table):
 
         The lines columns depend of the format.
         By default the columns names are created around unique LINE name
-        [LINE]_[lines_colname].
+        [LINE]_[columns names of lines table].
         But it is possible to use a working format.
-        [lines_colname]_xxx
+        [columns names of lines table]_xxx
         where xxx is the number of lines present in each source.
 
         Parameters
@@ -157,7 +157,7 @@ class Catalog(Table):
                                     float(line)
                                     logger.warning('source %d: line labeled \"%s\" not loaded' %(source.ID, line))
                                 except:
-                                    names_lines += ['%s_%s' % (line, col) for col in colnames]
+                                    names_lines += ['%s_%s' % (line.replace('_',''), col) for col in colnames]
 
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
@@ -236,7 +236,11 @@ class Catalog(Table):
                         row += [INVALID[typ.type]]
                     #row += [None for key in names_lines]
                 else:
+                    
                     if fmt == 'default':
+                        copy = source.lines['LINE'].data.data
+                        for i in range(len(source.lines)):
+                            source.lines['LINE'][i] = source.lines['LINE'][i].replace('_','')
                         for name, typ in zip(names_lines, dtype_lines):
                             colname = '_'.join(name.split('_')[1:])
                             line = name.split('_')[0]
@@ -246,6 +250,8 @@ class Catalog(Table):
                                 row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
                             else:
                                 row += [INVALID[typ.type]]
+                        for i in range(len(source.lines)):
+                            source.lines['LINE'][i] = copy[i]
                     elif fmt == 'working':
                         keys = source.lines.colnames
                         if lmax == 1:
