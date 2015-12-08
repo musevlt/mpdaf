@@ -35,7 +35,7 @@ class Catalog(Table):
         if self.colnames.count('z') != 0:
             self.rename_column('z', 'Z')
         self.masked_invalid()
-
+        
     @classmethod
     def from_sources(cls, sources, fmt='default'):
         """Construct a catalog from a list of source objects.
@@ -69,33 +69,52 @@ class Catalog(Table):
         logger = logging.getLogger(__name__)
         # union of all headers keywords without mandatory FITS keywords
         h = sources[0].header
-        d = dict(zip(h.keys(), [type(v) for v in h.values()]))
+        
+        #d = dict(zip(h.keys(), [type(v) for v in h.values()]))
+        d = dict(zip(h.keys(), [(type(c[1]),c[2]) for c in h.cards]))
         for source in sources[1:]:
             h = source.header
-            d.update(dict(zip(h.keys(), [type(v) for v in h.values()])))
-        d = {key: value for key, value in d.items() if key not in [
-            'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE', 'AUTHOR']}
+            d.update(dict(zip(h.keys(), [(type(c[1]),c[2]) for c in h.cards])))
+        
+        excluded_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
+                               'AUTHOR']
+        i = 1
+        while 'COM%03d' % i in d.keys():
+            excluded_cards.append('COM%03d' % i)
+            i += 1
+        i = 1
+        while 'HIST%03d' % i in d.keys():
+            excluded_cards.append('HIST%03d' % i)
+            i += 1
+            
+        d = {key: value for key, value in d.items() if key not in excluded_cards}
         names_hdr = d.keys()
-        dtype_hdr = d.values()
+        tuple_hdr = d.values()
         # sort mandatory keywords
         index = names_hdr.index('ID')
         names_hdr.insert(0, names_hdr.pop(index))
-        dtype_hdr.insert(0, dtype_hdr.pop(index))
+        tuple_hdr.insert(0, tuple_hdr.pop(index))
         index = names_hdr.index('RA')
         names_hdr.insert(1, names_hdr.pop(index))
-        dtype_hdr.insert(1, dtype_hdr.pop(index))
+        tuple_hdr.insert(1, tuple_hdr.pop(index))
         index = names_hdr.index('DEC')
         names_hdr.insert(2, names_hdr.pop(index))
-        dtype_hdr.insert(2, dtype_hdr.pop(index))
+        tuple_hdr.insert(2, tuple_hdr.pop(index))
         index = names_hdr.index('ORIGIN')
         names_hdr.insert(3, names_hdr.pop(index))
-        dtype_hdr.insert(3, dtype_hdr.pop(index))
+        tuple_hdr.insert(3, tuple_hdr.pop(index))
         index = names_hdr.index('ORIGIN_V')
         names_hdr.insert(4, names_hdr.pop(index))
-        dtype_hdr.insert(4, dtype_hdr.pop(index))
+        tuple_hdr.insert(4, tuple_hdr.pop(index))
         index = names_hdr.index('CUBE')
         names_hdr.insert(5, names_hdr.pop(index))
-        dtype_hdr.insert(5, dtype_hdr.pop(index))
+        tuple_hdr.insert(5, tuple_hdr.pop(index))
+        
+        dtype_hdr = [c[0] for c in tuple_hdr]
+        desc_hdr = [c[1][:c[1].find('u.')] if c[1].find('u.')!=-1 else c[1][:c[1].find('%')] if c[1].find('%')!=-1 else c[1] for c in tuple_hdr] 
+        unit_hdr = [c[1][c[1].find('u.'):].split()[0][2:] if c[1].find('u.')!=-1 else None for c in tuple_hdr]
+        format_hdr = [c[1][c[1].find('%'):].split()[0] if c[1].find('%')!=-1 else None for c in tuple_hdr]
+        
 
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
@@ -184,7 +203,7 @@ class Catalog(Table):
                     dtype_lines = [d[key] for key in sorted(d)] * lmax
                     units_lines = [unit[key] for key in sorted(d)] * lmax
             else:
-                raise IOError('Catalog creation: invalid format. It must be dafault or working.')
+                raise IOError('Catalog creation: invalid format. It must be default or working.')
 
         data_rows = []
         for source in sources:
@@ -234,7 +253,6 @@ class Catalog(Table):
                 if source.lines is None:
                     for typ in dtype_lines:
                         row += [INVALID[typ.type]]
-                    #row += [None for key in names_lines]
                 else:
                     
                     if fmt == 'default':
@@ -293,20 +311,35 @@ class Catalog(Table):
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
-        t['ID'].format = '%d'
-        t['RA'].format = '%.7f'
-        t['RA'].unit = u.deg
-        t['DEC'].format = '%.7f'
-        t['DEC'].unit = u.deg
-        for names in names_z:
-            t[names].format = '%.6f'
+        for name, desc, unit, fmt in zip(names_hdr, desc_hdr, unit_hdr, format_hdr):
+            t[name].description = desc
+            t[name].unit = unit
+            t[name].format = fmt
+        for name in names_z:
+            t[name].format = '.4f'
+            t[name].unit = 'unitless'
+            if name[-3:] == 'MIN':
+                t[name].description = 'Lower bound of estimated redshift'
+            elif name[-3:] == 'MAX':
+                t[name].description = 'Upper bound of estimated redshift'
+            elif name[-3:] == 'ERR':
+                t[name].description = 'Error of estimated redshift'
+            else:
+                t[name].description = 'Estimated redshift'
+        for name in names_mag:
+            t[name].format = '.3f'
+            t[name].unit = 'unitless'
+            if name[-3:] == 'ERR':
+                t[name].description = 'Error in AB Magnitude'
+            else:
+                t[name].description = 'AB Magnitude'
         if len(llines)!=0:
-            for names, unit in zip(names_lines, units_lines):
-                t[names].unit = unit
-                if names[:4] == 'LBDA':
-                    t[names].format = '%0.2f'
-                if names[:4] == 'FLUX':
-                    t[names].format = '%0.4f'
+            for name, unit in zip(names_lines, units_lines):
+                t[name].unit = unit
+                if 'LBDA' in name or 'EQW' in name:
+                    t[name].format = '.2f'
+                if 'FLUX' in name or 'FWHM' in name:
+                    t[name].format = '.1f'
         return t
 
     @classmethod

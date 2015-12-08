@@ -193,7 +193,18 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
             os.path.basename(filename), ext, cls.__name__, e))
     return obj
 
-_read_masked_table = partial(_read_ext, Table, masked=True)
+def _read_masked_table(hdulist, extname, **kwargs):
+    """Read a masked Table from a FITS HDUList."""
+    t = _read_ext(Table, hdulist, extname, masked=True)
+    h = hdulist[extname].header
+    for i in range(h['TFIELDS']):
+        try:
+            t.columns[i].unit = h['TUNIT%d'%i]
+        except:
+            pass
+    return t
+
+#_read_masked_table = partial(_read_ext, Table, masked=True)
 _read_spectrum = partial(_read_mpdaf_obj, Spectrum)
 _read_image = partial(_read_mpdaf_obj, Image)
 _read_cube = partial(_read_mpdaf_obj, Cube)
@@ -310,9 +321,9 @@ class Source(object):
 
         """
         header = pyfits.Header()
-        header['ID'] = (ID, 'object ID')
-        header['RA'] = (ra, 'RA in degrees')
-        header['DEC'] = (dec, 'DEC in degrees')
+        header['ID'] = (ID, 'object ID u.unitless %d')
+        header['RA'] = (ra, 'RA u.degree %.7f')
+        header['DEC'] = (dec, 'DEC u.degree %.7f')
         header['ORIGIN'] = (origin[0], 'detection software')
         header['ORIGIN_V'] = (origin[1], 'version of the detection software')
         header['CUBE'] = (os.path.basename(origin[2]), 'MUSE data cube')
@@ -668,7 +679,7 @@ class Source(object):
         """
         del self.header['HIST%03d' % nhist]
 
-    def add_attr(self, key, value, desc=None):
+    def add_attr(self, key, value, desc=None, unit=None, fmt=None):
         """Add a new attribute for the current Source object. This attribute
         will be saved as a keyword in the primary FITS header. This method
         could also be used to update a simple Source attribute that is saved in
@@ -684,11 +695,18 @@ class Source(object):
             Attribute value
         desc : string
             Attribute description
+        unit : astropy.units
+               Attribute units
+        fmt : string
+              Attribute format ('.2f' for example)
         """
         if desc is None:
-            self.header[key] = value
-        else:
-            self.header[key] = (value, desc)
+            desc = ''
+        if unit is not None:
+            desc += ' u.%s'%(unit.to_string('fits'))
+        if fmt is not None:
+            desc += ' %%%s'%fmt
+        self.header[key] = (value, desc)
 
     def remove_attr(self, key):
         """Remove an Source attribute from the FITS header of the Source
@@ -725,9 +743,17 @@ class Source(object):
                                rows=[[desc, z, zmin, zmax]],
                                dtype=('S20', 'f8', 'f8', 'f8'),
                                masked=True)
-                self.z['Z'].format = '%.6f'
-                self.z['Z_MIN'].format = '%.6f'
-                self.z['Z_MAX'].format = '%.6f'
+                self.z['Z'].format = '.4f'
+                self.z['Z'].description = 'Estimated redshift'
+                self.z['Z'].unit = 'unitless'
+                self.z['Z_MIN'].format = '.4f'
+                self.z['Z_MIN'].description = 'Lower bound of estimated redshift'
+                self.z['Z_MIN'].unit = 'unitless'
+                self.z['Z_MAX'].format = '.4f'
+                self.z['Z_MAX'].description = 'Upper bound of estimated redshift'
+                self.z['Z_MAX'].unit = 'unitless'
+                self.z['Z_DESC'].description = 'Type of redshift'
+                self.z['Z_DESC'].unit = 'unitless'
         else:
             if desc in self.z['Z_DESC']:
                 if z != -9999:
@@ -763,8 +789,12 @@ class Source(object):
                              rows=[[band, m, errm]],
                              dtype=('S20', 'f8', 'f8'),
                              masked=True)
-            self.mag['MAG'].format = '%.6f'
-            self.mag['MAG_ERR'].format = '%.6f'
+            self.mag['MAG'].format = '.3f'
+            self.mag['MAG'].description = 'AB Magnitude'
+            self.mag['MAG'].unit = 'unitless'
+            self.mag['MAG_ERR'].format = '.3f'
+            self.mag['MAG_ERR'].description = 'Error in AB Magnitude'
+            self.mag['MAG_ERR'].unit = 'unitless'
         else:
             if band in self.mag['BAND']:
                 self.mag['MAG'][self.mag['BAND'] == band] = m
@@ -772,7 +802,7 @@ class Source(object):
             else:
                 self.mag.add_row([band, m, errm])
 
-    def add_line(self, cols, values, units=None, match=None):
+    def add_line(self, cols, values, units=None, desc=None, fmt=None, match=None):
         """Add a line to the lines table.
 
         Parameters
@@ -783,6 +813,10 @@ class Source(object):
             List of corresponding values
         units : list<astropy.units>
             Unity of each column
+        desc : list<string>
+               Description of each column
+        fmt : list<string>
+               Fromat of each column.
         match : (string,float/integer/string)
             Tuple (key,value) that gives the key to match the added line with
             an existing line.  eg ('LINE','LYALPHA1216')
@@ -801,11 +835,21 @@ class Source(object):
             if units is not None:
                 for colname, unit in zip(self.lines.colnames, units):
                     self.lines[colname].unit = unit
+            if desc is not None:
+                for colname, d in zip(self.lines.colnames, desc):
+                    self.lines[colname].description = d
+            if fmt is not None:
+                for colname, f in zip(self.lines.colnames, fmt):
+                    self.lines[colname].format = f
         else:
             # add new columns
             if units is None:
                 units = [None] * len(cols)
-            for col, val, unit in zip(cols, values, units):
+            if desc is None:
+                desc = [None] * len(cols)
+            if fmt is None:
+                fmt = [None] * len(cols)
+            for col, val, unit, d, f in zip(cols, values, units, desc, fmt):
                 if col not in self.lines.colnames:
                     nlines = len(self.lines)
                     if is_int(val):
@@ -816,7 +860,8 @@ class Source(object):
                         typ = 'S20'
                     col = MaskedColumn(ma.masked_array(np.empty(nlines),
                                                        mask=np.ones(nlines)),
-                                       name=col, dtype=typ, unit=unit)
+                                       name=col, dtype=typ, unit=unit, 
+                                       description=d, format=f)
                     self.lines.add_column(col)
 
             if match is not None:
@@ -1585,7 +1630,7 @@ class Source(object):
                     nlines = len(self.lines)
                     col = MaskedColumn(ma.masked_array(np.array([''] * nlines),
                                                        mask=np.ones(nlines)),
-                                       name='LINE', dtype='S20')
+                                       name='LINE', dtype='S20', unit='unitless', description='line name')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
                     self.lines['LINE'][self.lines[col_lbda] == w] = name
