@@ -127,27 +127,36 @@ def test_multiprocess():
 @attr(speed='fast')
 def test_mask():
     """Cube class: testing mask functionalities"""
-    cube1 = generate_cube()
-    cube1.mask((2, 2), (1, 1), lmin=2, lmax=5, inside=False, unit_center=None,
-               unit_radius=None, unit_wave=None)
-    nose.tools.assert_almost_equal(cube1.sum(), 2.3 * 9 * 3)
-    cube1.unmask()
+    cube = generate_cube()
+    cube.mask((2, 2), (1, 1), lmin=2, lmax=5, inside=False, unit_center=None,
+              unit_radius=None, unit_wave=None)
+    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 9 * 3)
+    cube.unmask()
     wcs = WCS(deg=True)
     wave = WaveCoord(cunit=u.angstrom)
-    cube1 = Cube(data=cube1.data, wave=wave, wcs=wcs, copy=False)
-    cube1.mask(wcs.pix2sky([2, 2]), (3600, 3600), lmin=2, lmax=5, inside=False)
-    nose.tools.assert_almost_equal(cube1.sum(), 2.3 * 9 * 3)
-    cube1.unmask()
-    cube1.mask(wcs.pix2sky([2, 2]), 4000, lmin=2, lmax=5, inside=False)
-    nose.tools.assert_almost_equal(cube1.sum(), 2.3 * 5 * 3)
-    cube1.unmask()
-    cube1.mask_ellipse(wcs.pix2sky([2, 2]), (10000, 3000), 20, lmin=2, lmax=5,
-                       inside=False)
-    nose.tools.assert_almost_equal(cube1.sum(), 2.3 * 7 * 3)
-    ksel = np.where(cube1.data.mask)
-    cube1.unmask()
-    cube1.mask_selection(ksel)
-    nose.tools.assert_almost_equal(cube1.sum(), 2.3 * 7 * 3)
+    cube = Cube(data=cube.data, wave=wave, wcs=wcs, copy=False)
+    cube.mask(wcs.pix2sky([2, 2]), (3600, 3600), lmin=2, lmax=5, inside=False)
+    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 9 * 3)
+    cube.unmask()
+    cube.mask(wcs.pix2sky([2, 2]), 4000, lmin=2, lmax=5, inside=False)
+    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 5 * 3)
+    cube.unmask()
+    cube.mask_ellipse(wcs.pix2sky([2, 2]), (10000, 3000), 20, lmin=2, lmax=5,
+                      inside=False)
+    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 7 * 3)
+    ksel = np.where(cube.data.mask)
+    cube.unmask()
+    cube.mask_selection(ksel)
+    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 7 * 3)
+
+    with nose.tools.assert_raises(ValueError):
+        cube.mask_variance(0.1)
+
+    cube.unmask()
+    cube.var = np.random.randn(*cube.shape)
+    mask = cube.var > 0.1
+    cube.mask_variance(0.1)
+    assert_array_equal(cube.data.mask, mask)
 
 
 @attr(speed='fast')
@@ -242,9 +251,9 @@ def test_subcube():
 @attr(speed='fast')
 def test_aperture():
     """Cube class: testing spectrum extraction"""
-    cube1 = generate_cube(scale=1, wave=WaveCoord(crval=1))
-    spe = cube1.aperture(center=(2, 2.8), radius=1,
-                         unit_center=None, unit_radius=None)
+    cube = generate_cube(scale=1, wave=WaveCoord(crval=1))
+    spe = cube.aperture(center=(2, 2.8), radius=1,
+                        unit_center=None, unit_radius=None)
     nose.tools.assert_equal(spe.shape[0], 10)
     nose.tools.assert_equal(spe.get_start(), 1)
 
