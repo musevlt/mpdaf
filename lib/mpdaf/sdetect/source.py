@@ -354,8 +354,44 @@ class Source(object):
 
         lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in hdulist
                  else None)
+        if lines is not None:
+            for name in lines.colnames:
+                if 'LBDA' in name or 'EQW' in name:
+                    lines[name].format = '.2f'
+                if 'FLUX' in name or 'FWHM' in name:
+                    lines[name].format = '.1f'
+                
         mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in hdulist else None
+        if mag is not None:
+            for name in mag.colnames:
+                mag[name].unit = 'unitless'
+                if name == 'BAND':
+                    mag[name].description = 'Filter name'
+                elif name == 'MAG_ERR':
+                    mag[name].format = '.3f'
+                    mag[name].description = 'Error in AB Magnitude'
+                elif name == 'MAG':
+                    mag[name].format = '.3f'
+                    mag[name].description = 'AB Magnitude'
+                
         z = _read_masked_table(hdulist, 'Z') if 'Z' in hdulist else None
+        if z is not None:
+            for name in z.colnames:
+                z[name].unit = 'unitless'
+                if name == 'Z_DESC':
+                    z[name].description = 'Redshift description'
+                elif name == 'Z_MIN':
+                    z[name].format = '.4f'
+                    z[name].description = 'Lower bound of estimated redshift'
+                elif name == 'Z_MAX':
+                    z[name].format = '.4f'
+                    z[name].description = 'Upper bound of estimated redshift'
+                elif name == 'Z_ERR':
+                    z[name].format = '.4f'
+                    z[name].description = 'Error of estimated redshift'
+                elif name=='Z':
+                    z[name].format = '.4f'
+                    z[name].description = 'Estimated redshift'
 
         for i, hdu in enumerate(hdulist[1:]):
             try:
