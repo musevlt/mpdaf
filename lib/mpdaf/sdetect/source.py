@@ -199,7 +199,7 @@ def _read_masked_table(hdulist, extname, **kwargs):
     h = hdulist[extname].header
     for i in range(h['TFIELDS']):
         try:
-            t.columns[i].unit = h['TUNIT%d'%i]
+            t.columns[i].unit = h['TUNIT%d'%(i+1)]
         except:
             pass
     return t
