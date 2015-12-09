@@ -1922,75 +1922,54 @@ class Image(DataArray):
         out : :class:`mpdaf.obj.Gauss2D`
 
         """
+        pmin, qmin = 0, 0
+        pmax, qmax = self.shape
+
         if unit_center is None:
-            if pos_min is None:
-                pmin = 0
-                qmin = 0
-            else:
-                pmin = pos_min[0]
-                qmin = pos_min[1]
-            if pos_max is None:
-                pmax = self.shape[0]
-                qmax = self.shape[1]
-            else:
-                pmax = pos_max[0]
-                qmax = pos_max[1]
+            if pos_min is not None:
+                pmin, qmin = pos_min
+            if pos_max is not None:
+                pmax, qmax = pos_max
         else:
-            if pos_min is None:
-                pmin = 0
-                qmin = 0
-            else:
+            if pos_min is not None:
                 pixcrd = self.wcs.sky2pix(pos_min, unit=unit_center)
                 pmin = pixcrd[0][0]
                 qmin = pixcrd[0][1]
-            if pos_max is None:
-                pmax = self.shape[0]
-                qmax = self.shape[1]
-            else:
+            if pos_max is not None:
                 pixcrd = self.wcs.sky2pix(pos_max, unit=unit_center)
                 pmax = pixcrd[0][0]
                 qmax = pixcrd[0][1]
             if pmin > pmax:
-                a = pmax
-                pmax = pmin
-                pmin = a
+                pmin, pmax = pmax, pmin
             if qmin > qmax:
-                a = qmax
-                qmax = qmin
-                qmin = a
+                qmin, qmax = qmax, qmin
 
         pmin = max(0, pmin)
         qmin = max(0, qmin)
         ima = self[pmin:pmax, qmin:qmax]
 
-        ksel = np.where(ima.data.mask == False)
-        N = np.shape(ksel[0])[0]
+        N = ima.data.count()
         if N == 0:
             raise ValueError('empty sub-image')
-        pixcrd = np.empty((np.shape(ksel[0])[0], 2))
-        p = ksel[0]
-        q = ksel[1]
-        data = ima.data.data[ksel]
+        data = ima.data.compressed()
+        p, q = np.where(ima.data.mask == False)
 
         # weight
         if ima.var is not None and weight:
-            #wght = 1.0 / ima.var[ksel]
-            wght = 1.0 / np.sqrt(np.abs(ima.var[ksel]))
+            wght = 1.0 / np.sqrt(np.abs(ima.var[p, q]))
             np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
-            wght = np.ones(np.shape(ksel[0])[0])
+            wght = np.ones(N)
 
         # initial gaussian peak position
         if center is None:
-            imax = data.argmax()
-            center = np.array([p[imax], q[imax]])
+            center = np.array(np.unravel_index(ima.data.argmax(), ima.shape))
+        elif unit_center is not None:
+            center = ima.wcs.sky2pix(center, unit=unit_center)[0]
         else:
-            if unit_center is not None:
-                center = ima.wcs.sky2pix(center, unit=unit_center)[0]
-            else:
-                center = np.array(center)
-                center[0] -= pmin
-                center[1] -= qmin
+            center = np.array(center)
+            center[0] -= pmin
+            center[1] -= qmin
 
         # initial moment value
         if fwhm is None:
@@ -2005,14 +1984,11 @@ class Image(DataArray):
         # initial gaussian integrated flux
         if flux is None:
             peak = ima.data.data[center[0], center[1]] - cont
-            flux = peak * np.sqrt(2 * np.pi * (width[0] ** 2)) \
-                * np.sqrt(2 * np.pi * (width[1] ** 2))
         elif peak is True:
             peak = flux - cont
-            flux = peak * np.sqrt(2 * np.pi * (width[0] ** 2)) \
-                * np.sqrt(2 * np.pi * (width[1] ** 2))
-        else:
-            pass
+
+        flux = peak * np.sqrt(2 * np.pi * (width[0] ** 2)) \
+            * np.sqrt(2 * np.pi * (width[1] ** 2))
 
         if circular:
             rot = None
