@@ -1076,7 +1076,7 @@ class Image(DataArray):
         jmax = int(np.max(pixcrd[:, 1]) + 0.5) + 1
         if jmax > self.shape[1]:
             jmax = self.shape[1]
-            
+
         subima = self[imin:imax, jmin:jmax]
         self.data = subima.data
         if self.var is not None:
@@ -1407,16 +1407,13 @@ class Image(DataArray):
 
         selec = self.data > threshold
         selec.bill_value = False
-        selec = \
-            ndimage.morphology.binary_erosion(selec,
-                                              structure=self._struct(nstruct),
-                                              iterations=niter)
-        selec = \
-            ndimage.morphology.binary_dilation(selec,
-                                               structure=self._struct(nstruct),
-                                               iterations=niter)
+        struct = self._struct(nstruct)
+        selec = ndimage.binary_erosion(selec, structure=struct,
+                                       iterations=niter)
+        selec = ndimage.binary_dilation(selec, structure=struct,
+                                        iterations=niter)
         selec = ndimage.binary_fill_holes(selec)
-        structure = ndimage.morphology.generate_binary_structure(2, 2)
+        structure = ndimage.generate_binary_structure(2, 2)
         label = ndimage.measurements.label(selec, structure)
         pos = ndimage.measurements.center_of_mass(self.data, label[0],
                                                   np.arange(label[1]) + 1)
@@ -3594,8 +3591,8 @@ class Image(DataArray):
         """Segment the image in a number of smaller images.
 
         Returns a list of images. Uses
-        :func:`scipy.ndimage.morphology.generate_binary_structure`,
-        :func:`scipy.ndimage.morphology.grey_dilation`,
+        :func:`scipy.ndimage.generate_binary_structure`,
+        :func:`scipy.ndimage.grey_dilation`,
         :func:`scipy.ndimage.measurements.label`, and
         :func:`scipy.ndimage.measurements.find_objects`.
 
@@ -3628,12 +3625,11 @@ class Image(DataArray):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        structure = \
-            ndimage.morphology.generate_binary_structure(shape[0], shape[1])
+        structure = ndimage.generate_binary_structure(shape[0], shape[1])
         if median is not None:
             data = np.ma.array(ndimage.median_filter(data, median),
                                mask=self.data.mask)
-        expanded = ndimage.morphology.grey_dilation(data, (minsize, minsize))
+        expanded = ndimage.grey_dilation(data, (minsize, minsize))
         ksel = np.where(expanded < background)
         expanded[ksel] = 0
 
