@@ -1,17 +1,45 @@
-class Slicer:
+# -*- coding: utf-8 -*-
 
-    """Tools to convert a slice number between the various numbering
-       schemes. The definition of the various numbering schemes and the
-       conversion table can be found in the "Global Positioning System"
-       document (VLT-TRE-MUSE-14670-0657).
 
-       All the methods are static and thus there is no need to
-       instanciate an object to use this class. E.g.:
+class Slicer(object):
 
-           print(Slicer.ccd2sky(4))
+    """Convert slice number between the various numbering schemes.
 
-           print(Slicer.optical2sky((4, 2)))
-       """
+    The definition of the various numbering schemes and the conversion table
+    can be found in the *"Global Positioning System"* document
+    (*VLT-TRE-MUSE-14670-0657*).
+
+    All the methods are static and thus there is no need to instanciate an
+    object to use this class.
+
+    Examples
+    --------
+
+    Convert slice number 4 in CCD numbering to SKY numbering :
+
+    >>> print(Slicer.ccd2sky(4))
+    10
+
+    >>> print(Slicer.sky2ccd(10))
+    4
+
+    Convert slice number 12 of stack 3 in OPTICAL numbering to SKY numbering:
+
+    >>> print(Slicer.optical2sky((2, 12)))
+    25
+
+    >>> print(Slicer.sky2optical(25))
+    (2, 12)
+
+    Convert slice number 12 of stack 3 in OPTICAL numbering to CCD numbering:
+
+    >>> print(Slicer.optical2ccd((2, 12)))
+    27
+
+    >>> print(Slicer.ccd2optical(27))
+    (2, 12)
+
+    """
     __CCD2SKY__ = dict({1: 9, 2: 8, 3: 1, 4: 10, 5: 7, 6: 2,
                         7: 11, 8: 6, 9: 3, 10: 12, 11: 5, 12: 4,
                         13: 21, 14: 20, 15: 13, 16: 22, 17: 19, 18: 14,
@@ -45,8 +73,9 @@ class Slicer:
 
     @staticmethod
     def ccd2sky(s):
-        """Convert a slice number from CCD to SKY numbering scheme. Return None
-        if the input slice number is invalid.
+        """Convert a slice number from CCD to SKY numbering scheme.
+
+        Return None if the input slice number is invalid.
 
         :param s: slice number in CCD numbering scheme
         :type s: int
@@ -55,8 +84,9 @@ class Slicer:
 
     @staticmethod
     def sky2ccd(s):
-        """Convert a slice number from SKY to CCD numbering scheme. Return None
-        if the input slice number is invalid.
+        """Convert a slice number from SKY to CCD numbering scheme.
+
+        Return None if the input slice number is invalid.
 
         :param s: slice number in SKY numbering scheme
         :type s: int
@@ -65,8 +95,9 @@ class Slicer:
 
     @staticmethod
     def sky2optical(s):
-        """Convert a slice number from SKY to OPTICAL numbering scheme. Return
-        None if the input slice number is invalid.
+        """Convert a slice number from SKY to OPTICAL numbering scheme.
+
+        Return None if the input slice number is invalid.
 
         :param s: slice number in SKY numbering scheme
         :type s: int
@@ -75,8 +106,9 @@ class Slicer:
 
     @staticmethod
     def optical2sky(s):
-        """Convert a slice number from OPTICAL to SKY numbering scheme. Return
-        None if the input slice number is invalid.
+        """Convert a slice number from OPTICAL to SKY numbering scheme.
+
+        Return None if the input slice number is invalid.
 
         :param s: slice number in OPTICAL numbering scheme
         :type s: tuple of ints
@@ -85,8 +117,9 @@ class Slicer:
 
     @staticmethod
     def optical2ccd(s):
-        """Convert a slice number from OPTICAL to CCD numbering scheme. Return
-        None if the input slice number is invalid.
+        """Convert a slice number from OPTICAL to CCD numbering scheme.
+
+        Return None if the input slice number is invalid.
 
         :param s: slice number in OPTICAL numbering scheme
         :type s: tuple of ints
@@ -96,8 +129,9 @@ class Slicer:
 
     @staticmethod
     def ccd2optical(s):
-        """Convert a slice number from CCD to OPTICAL numbering scheme. Return
-        None if the input slice number is invalid.
+        """Convert a slice number from CCD to OPTICAL numbering scheme.
+
+        Return None if the input slice number is invalid.
 
         :param s: slice number in CCD numbering scheme
         :type s: int

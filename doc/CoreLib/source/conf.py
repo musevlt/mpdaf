@@ -14,6 +14,7 @@ import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
+# read version from lib/mpdaf/version.py
 mpdaf_dir = os.path.join(os.path.dirname(__file__),
                          '..', '..', '..', 'lib', 'mpdaf')
 pkgmeta = {}
