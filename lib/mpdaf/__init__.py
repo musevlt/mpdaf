@@ -2,14 +2,8 @@
 
 import logging
 
-import tools
-import obj
-import drs
-import sdetect
-import MUSE
-
-__version__ = '1.2b1'
-__date__ = '2015/11/05'
+from . import drs, MUSE, obj, sdetect, tools
+from .version import __version__, __date__
 
 # cpu numbers
 CPU = 0

@@ -45,12 +45,16 @@ ez_setup.use_setuptools(version='18.0')  # NOQA
 
 from setuptools import setup, find_packages, Command, Extension
 
+# os.environ['DISTUTILS_DEBUG'] = '1'
+
+# Check if Numpy is available
 try:
     import numpy
 except ImportError:
     sys.exit('You must install Numpy before MPDAF, as it is required to '
              'build C extensions.')
 
+# Check if Cython is available
 try:
     from Cython.Distutils import build_ext
     from Cython.Build import cythonize
@@ -60,6 +64,7 @@ else:
     HAVE_CYTHON = True
     print('Cython detected, building from sources.')
 
+# Check if pkg-config is available
 try:
     out = subprocess.check_output(['pkg-config', '--version'])
 except subprocess.CalledProcessError as e:
@@ -81,7 +86,33 @@ try:
 except:
     pass
 
-# os.environ['DISTUTILS_DEBUG'] = '1'
+# Generate version.py
+__version__ = None
+with open('lib/mpdaf/version.py') as f:
+    exec(f.read())
+
+# If the version is not stable, we can add a git hash to the __version__
+if '.dev' in __version__:
+    # Find hash for __githash__ and dev number for __version__ (can't use hash
+    # as per PEP440)
+    command_hash = 'git rev-list --max-count=1 --abbrev-commit HEAD'
+    command_number = 'git rev-list --count HEAD'
+
+    try:
+        commit_hash = subprocess.check_output(command_hash, shell=True)\
+            .decode('ascii').strip()
+        commit_number = subprocess.check_output(command_number, shell=True)\
+            .decode('ascii').strip()
+    except Exception:
+        pass
+    else:
+        # We write the git hash and value so that they gets frozen if installed
+        with open(os.path.join('lib', 'mpdaf', '_githash.py'), 'w') as f:
+            f.write("__githash__ = \"{}\"\n".format(commit_hash))
+            f.write("__dev_value__ = \"{}\"\n".format(commit_number))
+
+        # We modify __version__ here too for commands such as egg_info
+        __version__ += commit_number
 
 
 class UnitTest(Command):
@@ -154,7 +185,7 @@ if HAVE_CYTHON:
 
 setup(
     name='mpdaf',
-    version='1.2b1',
+    version=__version__,
     maintainer='Laure Piqueras',
     maintainer_email='laure.piqueras@univ-lyon1.fr',
     description='MUSE Python Data Analysis Framework is a python framework '
