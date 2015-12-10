@@ -8,6 +8,8 @@ import os
 from astropy.io import fits
 from numpy import ma
 
+from ..version import __version__
+
 
 def add_mpdaf_method_keywords(header, method, params, values, comments):
     """Add keywords in a FITS header to describe the method and the
@@ -30,8 +32,7 @@ def add_mpdaf_method_keywords(header, method, params, values, comments):
     i = 1
     while 'MPDAF METH%d ID' % i in header:
         i += 1
-    import mpdaf
-    header['HIERARCH MPDAF METH%d VERSION' % i] = (mpdaf.__version__,
+    header['HIERARCH MPDAF METH%d VERSION' % i] = (__version__,
                                                    'MPDAF version')
     header['HIERARCH MPDAF METH%d ID' % i] = (method,
                                               'MPDAF method identifier')
