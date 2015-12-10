@@ -6,7 +6,7 @@
 Welcome to mpdaf CoreLib documentation!
 =======================================
 
-:Release: |version|
+:Release: |release|
 :Date: |today|
 
 `Back to the mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
