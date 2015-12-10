@@ -27,8 +27,13 @@ if os.path.isfile(os.path.join(mpdaf_dir, '_githash.py')):
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx',
-              'sphinx.ext.autosummary', 'numpydoc']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.intersphinx',
+    'numpydoc',
+]
 # sys.path.insert(0, os.path.abspath('../../sphinxext'))
 
 intersphinx_mapping = {
@@ -58,8 +63,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'mpdaf CoreLib'
-copyright = u'2013, L. Piqueras'
+project = u'MPDAF CoreLib'
+copyright = u'2013-2015, L. Piqueras'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

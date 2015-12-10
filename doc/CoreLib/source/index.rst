@@ -3,11 +3,18 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to mpdaf CoreLib documentation!
-=======================================
+MPDAF CoreLib |release| documentation!
+======================================
 
 :Release: |release|
 :Date: |today|
+
+.. ifconfig:: 'dev' in release
+
+    .. warning::
+
+        This documentation is for the version of MPDAF currently under
+        development.
 
 `Back to the mpdaf wiki <http://urania1.univ-lyon1.fr/mpdaf/>`_
 
