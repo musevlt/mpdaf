@@ -3245,16 +3245,18 @@ class Image(DataArray):
 
     def _resample(self, newdim, newstart, newstep, flux=False, order=3,
                   interp='no', unit_start=u.deg, unit_step=u.arcsec):
+
         if is_int(newdim):
             newdim = (newdim, newdim)
+
         if newstart is None:
-            newstart = self.wcs.get_start()
+            newstart = self.wcs.get_start(unit=unit_start)
         elif is_int(newstart) or is_float(newstart):
             newstart = (newstart, newstart)
-        else:
-            pass
+
         if is_int(newstep) or is_float(newstep):
             newstep = (newstep, newstep)
+
         newdim = np.array(newdim)
         newstart = np.array(newstart)
         newstep = np.array(newstep)
@@ -3266,28 +3268,34 @@ class Image(DataArray):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        mask = np.array(1 - self.data.mask, dtype=bool)
-
         oldstep = self.wcs.get_step(unit=unit_step)
         pstep = newstep / oldstep
 
-        pixNewstart = self.wcs.sky2pix(newstart, unit=unit_start)[0]
-        offset_oldpix = 0.5 + pixNewstart - 0.5 * pstep
-        # poffset = ((self.wcs.sky2pix(newstart, unit=unit_start)[0]+0.5)) / pstep
-        poffset = offset_oldpix / pstep
+        # Before 2015/12/11: + 0.5 in old grid - 0.5 in new grid
+        # pixNewstart = self.wcs.sky2pix(newstart, unit=unit_start)[0]
+        # offset_oldpix = 0.5 + pixNewstart - 0.5 * pstep
+        # poffset = offset_oldpix / pstep
+
+        # Before 2015/09/04 (8ee439c1): + 0.5 in old grid
+        # poffset = (self.wcs.sky2pix(newstart, unit=unit_start)[0] + 0.5) / pstep
+
+        # After tests with a gaussian image and HST header, the best precision
+        # is obtained without +/- 0.5. It seems this was also used before
+        # 2015/08/25 (90f70a41)
+        poffset = self.wcs.sky2pix(newstart, unit=unit_start)[0] / pstep
 
         data = ndimage.affine_transform(data, pstep, poffset,
                                         output_shape=newdim, order=order)
 
-        newmask = ndimage.affine_transform(mask, pstep, poffset,
+        newmask = ndimage.affine_transform(~self.data.mask, pstep, poffset,
                                            output_shape=newdim, order=0)
         mask = np.ma.make_mask(1 - newmask)
 
         if flux:
             data *= newstep.prod() / oldstep.prod()
 
-        self.wcs = self.wcs.resample(step=(newstep * unit_step).to(unit_start).value,
-                                     start=newstart, unit=unit_start)
+        step = (newstep * unit_step).to(unit_start).value
+        self.wcs = self.wcs.resample(step, start=newstart, unit=unit_start)
         self.wcs.naxis1 = newdim[1]
         self.wcs.naxis2 = newdim[0]
         self.data = np.ma.array(data, mask=mask)
@@ -3329,8 +3337,9 @@ class Image(DataArray):
         """
         res = self.copy()
         # pb rotation
-        res._resample(newdim, newstart, newstep, flux, order, interp,
-                      unit_start, unit_step)
+        res._resample(newdim, newstart, newstep, flux=flux, order=order,
+                      interp=interp, unit_start=unit_start,
+                      unit_step=unit_step)
         return res
 
     def _gaussian_filter(self, sigma=3, interp='no'):
