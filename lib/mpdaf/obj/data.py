@@ -617,30 +617,48 @@ class DataArray(object):
 
         self.filename = filename
 
-    def _sqrt(self):
+    def sqrt(self, out=None):
+        """Return a new object with the positive square-root of the data.
+
+        Parameters
+        ----------
+        out : :class:`mpdaf.obj.Image`, optional
+            Array of the same shape as input, into which the output is placed.
+            By default, a new array is created.
+
+        """
         if self.data is None:
             raise ValueError('empty data array')
+
+        if out is None:
+            out = self.clone()
+
+        out.data = np.ma.sqrt(self.data)
+        out.unit = self.unit / u.Unit(np.sqrt(self.unit.scale))
         if self.var is not None:
-            self.var = 3 * self.var / self.data.data ** 4
-        self.data = np.ma.sqrt(self.data)
-        self.unit /= u.Unit(np.sqrt(self.unit.scale))
+            out.var = 3 * self.var / self.data.data ** 4
+        return out
 
-    def sqrt(self):
-        """Return a new object with the positive square-root of the data."""
-        res = self.copy()
-        res._sqrt()
-        return res
+    def abs(self, out=None):
+        """Return a new object with the absolute value of the data.
 
-    def _abs(self):
+        Parameters
+        ----------
+        out : :class:`mpdaf.obj.Image`, optional
+            Array of the same shape as input, into which the output is placed.
+            By default, a new array is created.
+
+        """
         if self.data is None:
             raise ValueError('empty data array')
-        self.data = np.ma.abs(self.data)
 
-    def abs(self):
-        """Return a new object with the absolute value of the data."""
-        res = self.copy()
-        res._abs()
-        return res
+        if out is None:
+            out = self.clone()
+
+        out.data = np.ma.abs(self.data)
+        if self.var is not None:
+            out.var = self.var.copy()
+        return out
 
     def unmask(self):
         """Unmask the data (just invalid data (nan,inf) are masked)."""
