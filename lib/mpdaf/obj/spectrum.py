@@ -1105,7 +1105,7 @@ class Spectrum(DataArray):
                   spline=False, notnoise=False, unit=u.angstrom):
         """Resample spectrum data to different wavelength step size.
 
-        Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
+        Uses :func:`scipy.integrate.quad`_.
 
         Parameters
         ----------
@@ -1179,7 +1179,7 @@ class Spectrum(DataArray):
         """Return a spectrum with data resample to different wavelength step
         size.
 
-        Uses `scipy.integrate.quad <http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quad.html>`_.
+        Uses :func:`scipy.integrate.quad`_.
 
         Parameters
         ----------
@@ -1341,7 +1341,7 @@ class Spectrum(DataArray):
 
         if unit is None:
             unit = self.wave.unit
-            
+
         subspe = self[i1:i2]
 
         if u.angstrom in self.unit.bases and unit is not u.angstrom:
@@ -1433,7 +1433,7 @@ class Spectrum(DataArray):
     def poly_val(self, z):
         """Update in place the spectrum data from polynomial coefficients.
 
-        Uses `numpy.poly1d <http://docs.scipy.org/doc/numpy/reference/generated/numpy.poly1d.html>`_.
+        Uses :func:`numpy.poly1d`_.
 
         Parameters
         ----------
@@ -1705,7 +1705,7 @@ class Spectrum(DataArray):
                   plot=False, plot_factor=10, unit=u.angstrom):
         """Perform a Gaussian fit.
 
-        Uses `scipy.optimize.leastsq <http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html>`_ to minimize the sum of squares.
+        Uses :func:`scipy.optimize.leastsq`_ to minimize the sum of squares.
 
         Parameters
         ----------
@@ -2351,7 +2351,7 @@ class Spectrum(DataArray):
                        plot=False, plot_factor=10, unit=u.angstrom):
         """Perform a Gaussian fit on a line (fixed Gaussian center).
 
-        Uses `scipy.optimize.leastsq <http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.leastsq.html>`_ to minimize the sum of squares.
+        Uses :func:`scipy.optimize.leastsq`_ to minimize the sum of squares.
 
         Parameters
         ----------
@@ -2514,7 +2514,7 @@ class Spectrum(DataArray):
     def _median_filter(self, kernel_size=1., spline=False, unit=u.angstrom):
         """Perform a median filter on the spectrum.
 
-        Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
+        Uses :func:`scipy.signal.medfilt`_.
 
         Parameters
         ----------
@@ -2539,7 +2539,7 @@ class Spectrum(DataArray):
         """Return a spectrum resulted on a median filter on the current
         spectrum.
 
-        Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
+        Uses :func:`scipy.signal.medfilt`_.
 
         Parameters
         ----------
@@ -2559,7 +2559,8 @@ class Spectrum(DataArray):
     def _convolve(self, other):
         """Convolve the spectrum with a other spectrum or an array.
 
-        Uses `scipy.signal.convolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.convolve.html>`_. self and other must have the same size.
+        Uses :func:`scipy.signal.convolve`_. self and other must have the same
+        size.
 
         Parameters
         ----------
@@ -2600,7 +2601,8 @@ class Spectrum(DataArray):
         """Return the convolution of the spectrum with a other spectrum or an
         array.
 
-        Uses `scipy.signal.convolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.convolve.html>`_. self and other must have the same size.
+        Uses :func:`scipy.signal.convolve`_. self and other must have the same
+        size.
 
         Parameters
         ----------
@@ -2618,7 +2620,8 @@ class Spectrum(DataArray):
     def _fftconvolve(self, other):
         """Convolve the spectrum with a other spectrum or an array using fft.
 
-        Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_. self and other must have the same size.
+        Uses :func:`scipy.signal.fftconvolve`_. self and other must have the
+        same size.
 
         Parameters
         ----------
@@ -2658,7 +2661,8 @@ class Spectrum(DataArray):
         """Return the convolution of the spectrum with a other spectrum or an
         array using fft.
 
-        Uses `scipy.signal.fftconvolve <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html>`_. self and other must have the same size.
+        Uses :func:`scipy.signal.fftconvolve`_. self and other must have the
+        same size.
 
         Parameters
         ----------
@@ -2676,7 +2680,8 @@ class Spectrum(DataArray):
     def _correlate(self, other):
         """Cross-correlate the spectrum with a other spectrum or an array.
 
-        Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.
+        Uses :func:`scipy.signal.correlate`_. self and other must have the same
+        size.
 
         Parameters
         ----------
@@ -2716,7 +2721,8 @@ class Spectrum(DataArray):
         """Return the cross-correlation of the spectrum with a other spectrum
         or an array.
 
-        Uses `scipy.signal.correlate <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlate.html>`_. self and other must have the same size.
+        Uses :func:`scipy.signal.correlate`_. self and other must have the same
+        size.
 
         Parameters
         ----------
@@ -2844,7 +2850,7 @@ class Spectrum(DataArray):
     def peak_detection(self, kernel_size=None, unit=u.angstrom):
         """Return a list of peak locations.
 
-        Uses `scipy.signal.medfilt <http://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.medfilt.html>`_.
+        Uses :func:`scipy.signal.medfilt`_.
 
         Parameters
         ----------
