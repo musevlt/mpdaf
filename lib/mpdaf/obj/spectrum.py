@@ -6,7 +6,6 @@ import numpy as np
 import types
 import warnings
 
-from astropy.io import fits as pyfits
 import astropy.units as u
 from scipy import integrate, interpolate, signal, special
 from scipy.optimize import leastsq
@@ -14,82 +13,8 @@ from scipy.optimize import leastsq
 from . import ABmag_filters
 from .data import DataArray
 from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
+from ..gui.clicks import SpectrumClicks
 from ..tools import deprecated
-
-
-class SpectrumClicks(object):
-    """Object used to save click on spectrum plot."""
-
-    def __init__(self, binding_id, filename=None):
-        self.filename = filename  # Name of the table fits file where are
-        # saved the clicks values.
-        self.binding_id = binding_id  # Connection id.
-        self.xc = []  # Cursor position in spectrum (world coordinates).
-        self.yc = []  # Cursor position in spectrum (world coordinates).
-        self.k = []  # Nearest pixel in spectrum.
-        self.lbda = []  # Corresponding nearest position in spectrum
-        # (world coordinates)
-        self.data = []  # Corresponding spectrum data value.
-        self.id_lines = []  # Plot id (cross for cursor positions).
-        self._logger = logging.getLogger(__name__)
-
-    def remove(self, xc):
-        # removes a cursor position
-        i = np.argmin(np.abs(self.xc - xc))
-        line = self.id_lines[i]
-        del plt.gca().lines[line]
-        self.xc.pop(i)
-        self.yc.pop(i)
-        self.k.pop(i)
-        self.lbda.pop(i)
-        self.data.pop(i)
-        self.id_lines.pop(i)
-        for j in range(i, len(self.id_lines)):
-            self.id_lines[j] -= 1
-        plt.draw()
-
-    def add(self, xc, yc, i, x, data):
-        plt.plot(xc, yc, 'r+')
-        self.xc.append(xc)
-        self.yc.append(yc)
-        self.k.append(i)
-        self.lbda.append(x)
-        self.data.append(data)
-        self.id_lines.append(len(plt.gca().lines) - 1)
-
-    def iprint(self, i):
-        # prints a cursor positions
-        msg = 'xc=%g\tyc=%g\tk=%d\tlbda=%g\tdata=%g' % (
-            self.xc[i], self.yc[i], self.k[i], self.lbda[i], self.data[i])
-        self._logger.info(msg)
-
-    def write_fits(self):
-        # prints coordinates in fits table.
-        if self.filename != 'None':
-            c1 = pyfits.Column(name='xc', format='E', array=self.xc)
-            c2 = pyfits.Column(name='yc', format='E', array=self.yc)
-            c3 = pyfits.Column(name='k', format='I', array=self.k)
-            c4 = pyfits.Column(name='lbda', format='E', array=self.lbda)
-            c5 = pyfits.Column(name='data', format='E', array=self.data)
-            # tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
-            coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
-            tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
-            tbhdu.writeto(self.filename, clobber=True)
-
-            msg = 'printing coordinates in fits table %s' % self.filename
-            self._logger.info(msg)
-
-    def clear(self):
-        # disconnects and clears
-        msg = "disconnecting console coordinate printout..."
-        self._logger.info(msg)
-
-        plt.disconnect(self.binding_id)
-        nlines = len(self.id_lines)
-        for i in range(nlines):
-            line = self.id_lines[nlines - i - 1]
-            del plt.gca().lines[line]
-        plt.draw()
 
 
 class Gauss1D(object):

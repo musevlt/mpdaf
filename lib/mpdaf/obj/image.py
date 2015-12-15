@@ -7,7 +7,6 @@ import numpy as np
 import warnings
 
 import astropy.units as u
-from astropy.io import fits as pyfits
 from matplotlib.widgets import RectangleSelector
 from matplotlib.path import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -19,79 +18,6 @@ from .coords import WCS, WaveCoord
 from .data import DataArray, is_valid_fits_file
 from .objs import is_float, is_int, UnitArray, UnitMaskedArray
 from ..tools import deprecated
-
-
-class ImageClicks(object):
-    """Object used to save click on image plot."""
-
-    def __init__(self, binding_id, filename=None):
-        self._logger = logging.getLogger(__name__)
-        self.filename = filename  # Name of the table fits file
-        #                           where are saved the clicks values.
-        self.binding_id = binding_id  # Connection id.
-        self.p = []  # Nearest pixel of the cursor position along the y-axis.
-        self.q = []  # Nearest pixel of the cursor position along the x-axis.
-        self.x = []  # Corresponding nearest position along the x-axis
-        #              (world coordinates)
-        self.y = []  # Corresponding nearest position along the y-axis
-        #              (world coordinates)
-        self.data = []  # Corresponding image data value.
-        self.id_lines = []  # Plot id (cross for cursor positions).
-
-    def remove(self, ic, jc):
-        """removes a cursor position"""
-        d2 = (self.i - ic) * (self.i - ic) + (self.j - jc) * (self.j - jc)
-        i = np.argmin(d2)
-        line = self.id_lines[i]
-        del plt.gca().lines[line]
-        self.p.pop(i)
-        self.q.pop(i)
-        self.x.pop(i)
-        self.y.pop(i)
-        self.data.pop(i)
-        self.id_lines.pop(i)
-        for j in range(i, len(self.id_lines)):
-            self.id_lines[j] -= 1
-        plt.draw()
-
-    def add(self, i, j, x, y, data):
-        plt.plot(j, i, 'r+')
-        self.p.append(i)
-        self.q.append(j)
-        self.x.append(x)
-        self.y.append(y)
-        self.data.append(data)
-        self.id_lines.append(len(plt.gca().lines) - 1)
-
-    def iprint(self, i):
-        """prints a cursor positions"""
-        self._logger.info('y=%g\tx=%g\tp=%d\tq=%d\tdata=%g', self.y[i],
-                          self.x[i], self.p[i], self.q[i], self.data[i])
-
-    def write_fits(self):
-        """prints coordinates in fits table."""
-        if self.filename != 'None':
-            c1 = pyfits.Column(name='p', format='I', array=self.p)
-            c2 = pyfits.Column(name='q', format='I', array=self.q)
-            c3 = pyfits.Column(name='x', format='E', array=self.x)
-            c4 = pyfits.Column(name='y', format='E', array=self.y)
-            c5 = pyfits.Column(name='data', format='E', array=self.data)
-            # tbhdu = pyfits.new_table(pyfits.ColDefs([c1, c2, c3, c4, c5]))
-            coltab = pyfits.ColDefs([c1, c2, c3, c4, c5])
-            tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
-            tbhdu.writeto(self.filename, clobber=True, output_verify='fix')
-            self._logger.info('printing coordinates in fits table %s',
-                              self.filename)
-
-    def clear(self):
-        """disconnects and clears"""
-        self._logger.info('disconnecting console coordinate printout...')
-        plt.disconnect(self.binding_id)
-        nlines = len(self.id_lines)
-        for i in range(nlines):
-            line = self.id_lines[nlines - i - 1]
-            del plt.gca().lines[line]
-        plt.draw()
 
 
 class Gauss2D(object):
@@ -4101,6 +4027,7 @@ class Image(DataArray):
              '{y,x,p,q,data}.')
 
         if self._clicks is None:
+            from ..gui.clicks import ImageClicks
             binding_id = plt.connect('button_press_event', self._on_click)
             self._clicks = ImageClicks(binding_id, filename)
 
