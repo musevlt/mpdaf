@@ -100,6 +100,8 @@ class TestBasicPixTable(unittest.TestCase):
         assert_array_equal(self.lbda, self.pix2.get_lambda())
         ksel = np.where(self.lbda > 6000)
         assert_array_equal(self.lbda[ksel], self.pix2.get_lambda(ksel))
+        ksel = (self.lbda > 6000)
+        assert_array_equal(self.lbda[ksel], self.pix2.get_lambda(ksel))
 
     @attr(speed='fast')
     def test_get_xypos(self):

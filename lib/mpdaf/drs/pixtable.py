@@ -559,8 +559,10 @@ class PixTable(object):
                     else:
                         column = self.hdulist[1].data.field(name)
                 else:
+                    if isinstance(ksel, tuple):
+                        ksel = ksel[0]
                     if self.ima:
-                        column = self.hdulist[name].data[ksel, 0][0]
+                        column = self.hdulist[name].data[ksel, 0]
                     else:
                         column = self.hdulist[1].data.field(name)[ksel]
                 return column
