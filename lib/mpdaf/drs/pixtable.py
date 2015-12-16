@@ -1447,12 +1447,12 @@ class PixTable(object):
                                  np.cos(theta) * np.cos(dp) * np.cos(phi)) * 180 / np.pi
         else:
             if self.wcs == u.deg:
-                dp = self.yc * np.pi / 180
-                xpos_sky = self.xc + xpos / np.cos(dp)
+                # dp = self.yc * np.pi / 180
+                xpos_sky = self.xc + xpos
                 ypos_sky = self.yc + ypos
             elif self.wcs == u.rad:
-                dp = self.yc * np.pi / 180
-                xpos_sky = self.xc + xpos * 180 / np.pi / np.cos(dp)
+                # dp = self.yc * np.pi / 180
+                xpos_sky = self.xc + xpos * 180 / np.pi
                 ypos_sky = self.yc + ypos * 180 / np.pi
             else:
                 xpos_sky = self.xc + xpos
@@ -1477,12 +1477,12 @@ class PixTable(object):
             ypos_sky = numexpr.evaluate("arcsin(sin(theta) * sin(dp) - cos(theta) * cos(dp) * cos(phi)) * 180 / pi")
         else:
             if self.wcs == u.deg:
-                dp = numexpr.evaluate("yc * pi / 180")
-                xpos_sky = numexpr.evaluate("xc + xpos / cos(dp)")
+                # dp = numexpr.evaluate("yc * pi / 180")
+                xpos_sky = numexpr.evaluate("xc + xpos")
                 ypos_sky = numexpr.evaluate("yc + ypos")
             elif self.wcs == u.rad:
-                dp = numexpr.evaluate("yc * pi / 180")
-                xpos_sky = numexpr.evaluate("xc + xpos * 180 / pi / cos(dp)")
+                # dp = numexpr.evaluate("yc * pi / 180")
+                xpos_sky = numexpr.evaluate("xc + xpos * 180 / pi")
                 ypos_sky = numexpr.evaluate("yc + ypos * 180 / pi")
             else:
                 xpos_sky = numexpr.evaluate("xc + xpos")
