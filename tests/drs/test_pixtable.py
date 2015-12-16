@@ -42,6 +42,8 @@ class TestBasicPixTable(unittest.TestCase):
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         prihdu.header['RA'] = 0.0
         prihdu.header['DEC'] = 0.0
+        prihdu.header['HIERARCH ESO DRS MUSE PIXTABLE WCS'] = \
+            'projected (intermediate)'
 
         self.pix = PixTable(
             None, xpos=self.xpos, ypos=self.ypos, lbda=self.lbda,

@@ -10,12 +10,12 @@ import numpy as np
 import warnings
 
 import astropy.units as u
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
 from ..obj.objs import is_float, is_int
-from ..tools.fits import add_mpdaf_method_keywords
+from ..tools.fits import add_mpdaf_method_keywords, copy_header
 
 try:
     import numexpr
@@ -62,7 +62,7 @@ class PixTableMask(object):
             self.maskcol = maskcol
             self.pixtable = pixtable
         else:
-            hdulist = pyfits.open(filename)
+            hdulist = fits.open(filename)
             self.maskfile = hdulist[0].header['mask']
             self.pixtable = hdulist[0].header['pixtable']
             self.maskcol = np.bool_(hdulist['maskcol'].data[:, 0])
@@ -75,7 +75,7 @@ class PixTableMask(object):
         filename : str
             The FITS filename.
         """
-        prihdu = pyfits.PrimaryHDU()
+        prihdu = fits.PrimaryHDU()
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
         add_mpdaf_method_keywords(prihdu.header,
@@ -89,7 +89,7 @@ class PixTableMask(object):
         nrows = self.maskcol.shape[0]
         hdulist.append(ImageHDU(
             name='maskcol', data=np.int32(self.maskcol.reshape((nrows, 1)))))
-        hdu = pyfits.HDUList(hdulist)
+        hdu = fits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = 'boolean'
         hdu.writeto(filename, clobber=True, output_verify='fix')
 
@@ -163,7 +163,7 @@ class PixTableAutoCalib(object):
             self.npts = npts
             self.corr = corr
         else:
-            hdulist = pyfits.open(filename)
+            hdulist = fits.open(filename)
             self.method = hdulist[0].header['method']
             self.maskfile = hdulist[0].header['mask']
             self.skyref = hdulist[0].header['skyref']
@@ -179,7 +179,7 @@ class PixTableAutoCalib(object):
 
     def write(self, filename):
         """Save the object in a FITS file."""
-        prihdu = pyfits.PrimaryHDU()
+        prihdu = fits.PrimaryHDU()
         warnings.simplefilter("ignore")
         prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
         prihdu.header['author'] = ('MPDAF', 'origin of the file')
@@ -202,7 +202,7 @@ class PixTableAutoCalib(object):
             ImageHDU(name='quad', data=np.int32(self.quad.reshape(shape))),
             ImageHDU(name='npts', data=np.int32(self.npts.reshape(shape))),
             ImageHDU(name='corr', data=np.float64(self.corr.reshape(shape)))]
-        hdu = pyfits.HDUList(hdulist)
+        hdu = fits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True, output_verify='fix')
         warnings.simplefilter("default")
 
@@ -219,30 +219,16 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
     save_as_ima : bool
         If True, pixtable is saved as multi-extension FITS
     """
-    logger = logging.getLogger(__name__)
-    pyfits.conf.extension_name_case_sensitive = True
-
-    prihdu = pyfits.PrimaryHDU()
+    fits.conf.extension_name_case_sensitive = True
     warnings.simplefilter("ignore")
+
     if primary_header is not None:
-        for card in primary_header.cards:
-            try:
-                card.verify('fix')
-                prihdu.header[card.keyword] = (card.value, card.comment)
-            except ValueError:
-                if isinstance(card.value, str):
-                    n = 80 - len(card.keyword) - 14
-                    s = card.value[0:n]
-                    prihdu.header['hierarch %s' % card.keyword] = \
-                        (s, card.comment)
-                else:
-                    prihdu.header['hierarch %s' % card.keyword] = \
-                        (card.value, card.comment)
-            except:
-                logger.warning("%s keyword not written", card.keyword)
-                pass
-    prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
-    prihdu.header['author'] = ('MPDAF', 'origin of the file')
+        header = copy_header(primary_header)
+    else:
+        header = fits.Header()
+    header['date'] = (str(datetime.datetime.now()), 'creation date')
+    header['author'] = ('MPDAF', 'origin of the file')
+    prihdu = fits.PrimaryHDU(header=header)
 
     if save_as_ima:
         nrows = xpos.shape[0]
@@ -260,7 +246,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
             hdulist.append(
                 ImageHDU(name='weight',
                          data=np.float32(weight.reshape((nrows, 1)))))
-        hdu = pyfits.HDUList(hdulist)
+        hdu = fits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = wcs.to_string('fits')
         hdu[2].header['BUNIT'] = wcs.to_string('fits')
         hdu[3].header['BUNIT'] = wave.to_string('fits')
@@ -287,9 +273,9 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
         if weight is not None:
             cols.append(Column(name='weight', format='1E',
                                array=np.float32(weight)))
-        coltab = pyfits.ColDefs(cols)
-        tbhdu = pyfits.TableHDU(pyfits.FITS_rec.from_columns(coltab))
-        hdu = pyfits.HDUList([prihdu, tbhdu])
+        coltab = fits.ColDefs(cols)
+        tbhdu = fits.TableHDU(fits.FITS_rec.from_columns(coltab))
+        hdu = fits.HDUList([prihdu, tbhdu])
 
     hdu.writeto(filename, clobber=True, output_verify='fix')
 
@@ -315,7 +301,7 @@ class PixTable(object):
     ----------
     filename : str
         The FITS file name. None if any.
-    primary_header : pyfits.Header
+    primary_header : fits.Header
         The primary header.
     nrows : int
         Number of rows.
@@ -356,14 +342,12 @@ class PixTable(object):
         self.weight = None
         self.nrows = 0
         self.nifu = 0
-        self.skysub = False
-        self.fluxcal = False
         self.unit_data = unit_data
         self.xc = 0.0
         self.yc = 0.0
 
         if filename is not None:
-            self.hdulist = pyfits.open(self.filename, memmap=1)
+            self.hdulist = fits.open(self.filename, memmap=1)
             self.primary_header = self.hdulist[0].header
             self.nrows = self.hdulist[1].header["NAXIS2"]
             self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
@@ -381,33 +365,23 @@ class PixTable(object):
             if (xpos is None or ypos is None or lbda is None or
                     data is None or dq is None or stat is None or
                     origin is None or primary_header is None):
-                self.primary_header = pyfits.Header()
-                self.nrows = 0
+                self.primary_header = fits.Header()
             else:
                 self.primary_header = primary_header
-                xpos = np.array(xpos)
-                ypos = np.array(ypos)
-                lbda = np.array(lbda)
-                data = np.array(data)
-                stat = np.array(stat)
-                dq = np.array(dq)
-                origin = np.array(origin)
+                self.xpos = np.asarray(xpos)
+                self.ypos = np.asarray(ypos)
+                self.lbda = np.asarray(lbda)
+                self.data = np.asarray(data)
+                self.stat = np.asarray(stat)
+                self.dq = np.asarray(dq)
+                self.origin = np.asarray(origin)
                 self.nrows = xpos.shape[0]
-                if ypos.shape[0] != self.nrows or \
-                   lbda.shape[0] != self.nrows or \
-                   data.shape[0] != self.nrows or \
-                   stat.shape[0] != self.nrows or \
-                   dq.shape[0] != self.nrows or \
-                   origin.shape[0] != self.nrows:
-                    raise IOError('input data with different dimensions')
-                else:
-                    self.xpos = xpos
-                    self.ypos = ypos
-                    self.lbda = lbda
-                    self.data = data
-                    self.stat = stat
-                    self.dq = dq
-                    self.origin = origin
+
+                for attr in (self.ypos, self.lbda, self.data, self.stat,
+                             self.dq, self.origin):
+                    if attr.shape[0] != self.nrows:
+                        raise IOError('input data with different dimensions')
+
                 if weight is None or weight.shape[0] == self.nrows:
                     self.weight = weight
                 else:
@@ -420,31 +394,54 @@ class PixTable(object):
                     self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE MERGED")
             except:
                 self.nifu = 1
-            # sky subtraction
-            try:
-                self.skysub = \
-                    self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE SKYSUB")
-            except:
-                self.skysub = False
-            # flux calibration
-            try:
-                self.fluxcal = self.get_keywords("HIERARCH ESO DRS MUSE "
-                                                 "PIXTABLE FLUXCAL")
-            except:
-                self.fluxcal = False
+
+            projection = self.projection
+            if projection == 'projected':  # spheric coordinates
+                keyx, keyy = 'RA', 'DEC'
+            elif projection == 'positioned':
+                keyx, keyy = 'CRVAL1', 'CRVAL2'
+            else:
+                raise Exception('Unknown projection: %s' % projection)
 
             try:
                 # center in degrees
                 cunit = u.Unit(self.get_keywords("CUNIT1"))
-                self.xc = (self.primary_header['RA'] * cunit).to(u.deg).value
-                self.yc = (self.primary_header['DEC'] * cunit).to(u.deg).value
+                self.xc = (self.primary_header[keyx] * cunit).to(u.deg).value
+                self.yc = (self.primary_header[keyy] * cunit).to(u.deg).value
             except:
                 try:
                     # center in pixels
-                    self.xc = self.primary_header['RA']
-                    self.yc = self.primary_header['DEC']
+                    self.xc = self.primary_header[keyx]
+                    self.yc = self.primary_header[keyy]
                 except:
                     pass
+
+    @property
+    def fluxcal(self):
+        """If True, this pixel table was flux-calibrated."""
+        try:
+            return self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE FLUXCAL")
+        except:
+            return False
+
+    @property
+    def skysub(self):
+        """If True, this pixel table was sky-subtracted."""
+        try:
+            return self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE SKYSUB")
+        except:
+            return False
+
+    @property
+    def projection(self):
+        """Return the projection type.
+
+        - 'positioned' for positioned pixtables
+        - 'projected' for reduced pixtables
+
+        """
+        wcs = self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE WCS")
+        return wcs.split(' ')[0]
 
     def copy(self):
         """Copy PixTable object in a new one and returns it."""
@@ -473,10 +470,8 @@ class PixTable(object):
 
         result.nrows = self.nrows
         result.nifu = self.nifu
-        result.skysub = self.skysub
-        result.fluxcal = self.fluxcal
 
-        result.primary_header = pyfits.Header(self.primary_header)
+        result.primary_header = fits.Header(self.primary_header)
 
         result.xc = self.xc
         result.yc = self.yc
@@ -485,26 +480,20 @@ class PixTable(object):
 
     def info(self):
         """Print information."""
-        msg = "%i merged IFUs went into this pixel table" % self.nifu
-        self._logger.info(msg)
+        hdr = self.primary_header
+        self._logger.info("%i merged IFUs went into this pixel table",
+                          self.nifu)
         if self.skysub:
-            msg = "This pixel table was sky-subtracted"
-            self._logger.info(msg)
+            self._logger.info("This pixel table was sky-subtracted")
         if self.fluxcal:
-            msg = "This pixel table was flux-calibrated"
-            self._logger.info(msg)
-        msg = '%s (%s)' % (
-            self.primary_header["HIERARCH ESO DRS MUSE PIXTABLE WCS"],
-            self.primary_header.comments["HIERARCH ESO DRS MUSE PIXTABLE WCS"])
-        self._logger.info(msg)
+            self._logger.info("This pixel table was flux-calibrated")
+        self._logger.info('%s (%s)', hdr["HIERARCH ESO DRS MUSE PIXTABLE WCS"],
+                          hdr.comments["HIERARCH ESO DRS MUSE PIXTABLE WCS"])
         try:
-            msg = self.hdulist.info()
-            self._logger.info(msg)
+            self._logger.info(self.hdulist.info())
         except:
-            msg = 'No\tName\tType\tDim'
-            self._logger.info(msg)
-            msg = '0\tPRIMARY\tcard\t()'
-            self._logger.info(msg)
+            self._logger.info('No\tName\tType\tDim')
+            self._logger.info('0\tPRIMARY\tcard\t()')
             # print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
 
     def write(self, filename, save_as_ima=True):
@@ -1163,32 +1152,33 @@ class PixTable(object):
         -------
         out : PixTable
         """
-        ksel = np.where(mask)
-        nrows = len(ksel[0])
+        # ksel = np.where(mask)
+        # nrows = len(ksel[0])
+        nrows = np.count_nonzero(mask)
         if nrows == 0:
             return None
 
         hdr = self.primary_header.copy()
 
         # xpos
-        xpos = self.get_xpos(ksel)
+        xpos = self.get_xpos(ksel=mask)
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X LOW'] = float(xpos.min())
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS X HIGH'] = float(xpos.max())
 
         # ypos
-        ypos = self.get_ypos(ksel)
+        ypos = self.get_ypos(ksel=mask)
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y LOW'] = float(ypos.min())
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS Y HIGH'] = float(ypos.max())
 
         # lambda
-        lbda = self.get_lambda(ksel)
+        lbda = self.get_lambda(ksel=mask)
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA LOW'] = \
             float(lbda.min())
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS LAMBDA HIGH'] = \
             float(lbda.max())
 
         # origin
-        origin = self.get_origin(ksel)
+        origin = self.get_origin(ksel=mask)
         ifu = self.origin2ifu(origin)
         sl = self.origin2slice(origin)
         hdr['HIERARCH ESO DRS MUSE PIXTABLE LIMITS IFU LOW'] = int(ifu.min())
@@ -1203,7 +1193,7 @@ class PixTable(object):
         # combined exposures
         selfexp = self.get_exp()
         if selfexp is not None:
-            newexp = selfexp[ksel]
+            newexp = selfexp[mask]
             numbers_exp = np.unique(newexp)
             hdr["HIERARCH ESO DRS MUSE PIXTABLE COMBINED"] = len(numbers_exp)
             for iexp, i in zip(numbers_exp, range(1, len(numbers_exp) + 1)):
@@ -1217,10 +1207,10 @@ class PixTable(object):
                 del hdr["HIERARCH ESO DRS MUSE PIXTABLE EXP%i LAST" % i]
 
         # return sub pixtable
-        data = self.get_data(ksel)
-        stat = self.get_stat(ksel)
-        dq = self.get_dq(ksel)
-        weight = self.get_weight(ksel)
+        data = self.get_data(ksel=mask)
+        stat = self.get_stat(ksel=mask)
+        dq = self.get_dq(ksel=mask)
+        weight = self.get_weight(ksel=mask)
         return PixTable(None, xpos, ypos, lbda, data, dq, stat, origin,
                         weight, hdr, self.ima, self.wcs, self.wave,
                         unit_data=self.unit_data)
@@ -1429,12 +1419,7 @@ class PixTable(object):
                 self.origin2xpix(origin, ifu=ifu, sli=sli))
 
     def _get_pos_sky(self, xpos, ypos):
-        try:
-            spheric = (self.get_keywords(
-                "HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
-        except:
-            spheric = False
-        if spheric:  # spheric coordinates
+        if self.projection == 'projected':  # spheric coordinates
             phi = xpos
             theta = ypos + np.pi / 2
             dp = self.yc * np.pi / 180
@@ -1459,15 +1444,10 @@ class PixTable(object):
         return xpos_sky, ypos_sky
 
     def _get_pos_sky_numexpr(self, xpos, ypos):
-        try:
-            spheric = (self.get_keywords(
-                "HIERARCH ESO DRS MUSE PIXTABLE WCS")[0:9] == 'projected')
-        except:
-            spheric = False
         pi = np.pi  # NOQA
         xc = self.xc  # NOQA
         yc = self.yc  # NOQA
-        if spheric:  # spheric coordinates
+        if self.projection == 'projected':  # spheric coordinates
             phi = xpos  # NOQA
             theta = numexpr.evaluate("ypos + pi/2")
             dp = numexpr.evaluate("yc * pi / 180")
