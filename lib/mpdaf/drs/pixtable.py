@@ -8,7 +8,6 @@ import logging
 import os.path
 import numpy as np
 import warnings
-from scipy import ndimage
 
 import astropy.units as u
 from astropy.io import fits as pyfits
@@ -1762,43 +1761,13 @@ class PixTable(object):
         out : :class:`mpdaf.drs.PixTableMask`
         """
 
-        mask = np.zeros(self.nrows, dtype=bool)
         if maskfile is None:
-            return mask
+            return np.zeros(self.nrows, dtype=bool)
 
         pos = np.array(self.get_pos_sky()[::-1]).T
-        xpos_sky = pos[:, 1]
-        ypos_sky = pos[:, 0]
-
-        ima_mask = Image(maskfile)
-
-        data = ima_mask.data.data
-        label = ndimage.measurements.label(data)[0]
-        ulabel = np.unique(label)
-        ulabel = ulabel[ulabel > 0]
-        nlabel = len(ulabel)
-        msg = 'masking object %i/%i %g<x<%g %g<y<%g (%i pixels)'
-
-        for i in ulabel:
-            try:
-                ksel = np.where(label == i)
-                item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),
-                        slice(min(ksel[1]), max(ksel[1]) + 1, None))
-                wcs = ima_mask.wcs[item]
-                coord = wcs.get_range(unit=u.deg)
-                step = wcs.get_step(unit=u.deg)
-                y0, x0 = coord.min(axis=0) - step / 2
-                y1, x1 = coord.max(axis=0) + step / 2
-                ksel = np.where((xpos_sky > x0) & (xpos_sky < x1) &
-                                (ypos_sky > y0) & (ypos_sky < y1))
-                if verbose:
-                    self._logger.info(msg, i, nlabel, x0, x1, y0, y1,
-                                      len(ksel[0]))
-                if len(ksel[0]) != 0:
-                    pix = ima_mask.wcs.sky2pix(pos[ksel], nearest=True, unit=u.deg)
-                    mask[ksel] |= (data[pix[:, 0], pix[:, 1]] != 0)
-            except Exception:
-                self._logger.warning('masking object %i failed', i)
+        ima_mask = Image(maskfile, dtype=bool)
+        sky = ima_mask.wcs.sky2pix(pos, nearest=True, unit=u.deg).T
+        mask = ima_mask.data.data[sky[0], sky[1]]
 
         return PixTableMask(maskfile=maskfile, maskcol=mask,
                             pixtable=self.filename)
