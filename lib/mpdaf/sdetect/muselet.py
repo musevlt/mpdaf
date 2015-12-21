@@ -598,11 +598,11 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
                 source.crack_z(eml2, 20)
             source.sort_lines(nlines_max)
 
-        logger.info("muselet - cleaning narrow-band images")
-        if(nbcube):
-            filelist = glob('nb/nb*.fits')
-            for f in filelist:
-                os.remove(f)
+#         logger.info("muselet - cleaning narrow-band images")
+#         if(nbcube):
+#             filelist = glob('nb/nb*.fits')
+#             for f in filelist:
+#                 os.remove(f)
 
         # sort single line sources by wavelength
         lsource = lambda s: s.lines[0][0]
