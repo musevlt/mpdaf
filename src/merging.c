@@ -246,7 +246,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 // var=0: 'propagate'
 // var=1:  'stat_mean'
 // var=2:  'stat_one'
-int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* expmap, int* selected_pix, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop, int typ_var, int mad)
+int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* expmap, double* scale, int* selected_pix, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop, int typ_var, int mad)
 {
     char* filenames[500];
     char buffer[80], begin[80];
@@ -307,7 +307,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     printf("Using %d threads\n", num_nthreads);
 
     // create threads
-    #pragma omp parallel shared(filenames, nfiles, data, var, expmap, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
+    #pragma omp parallel shared(filenames, nfiles, data, var, expmap, scale, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
     {
         int rang = omp_get_thread_num(); // current thread number
         int nthreads = omp_get_num_threads(); // number of threads
@@ -486,12 +486,12 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
             {
                 if (!isnan(pix[i][ii]))
                 {
-                    wdata[n] = pix[i][ii];
+                    wdata[n] = pix[i][ii]*scale[i];
                     files_id[n] = i;
                     indx[n] = n;
                     if (typ_var==0)
                     {
-                        wvar[n] = pixvar[i][ii];
+                        wvar[n] = pixvar[i][ii]*scale[i]*scale[i];
                     }
                     n = n + 1;
                     valid[i] = valid[i] + 1;

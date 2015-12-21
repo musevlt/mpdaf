@@ -36,6 +36,8 @@ class CubeList(object):
         List of cubes fits filenames
     nfiles : integer
         Number of files.
+    scales : list of doubles
+        List of scales
     shape  : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
     wcs    : :class:`mpdaf.obj.WCS`
@@ -48,17 +50,23 @@ class CubeList(object):
 
     checkers = ('check_dim', 'check_wcs')
 
-    def __init__(self, files):
+    def __init__(self, files, scalelist=None):
         """Create a CubeList object.
 
         Parameters
         ----------
         files : list of strings
                 List of cubes fits filenames
+        scalelist: list of double
+                (optional) list of scales to be applied to each cube
         """
         self._logger = logging.getLogger(__name__)
         self.files = files
         self.nfiles = len(files)
+        if (scalelist): 
+              self.scales = np.array(scalelist)
+        else:
+              self.scales = np.ones(self.nfiles)
         self.cubes = [Cube(filename=f) for f in self.files]
         self._set_defaults()
         self.check_compatibility()
@@ -302,11 +310,11 @@ class CubeList(object):
         # setup argument types
         libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
             charptr, array_1d_double, array_1d_double, array_1d_int,
-            array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
+            array_1d_double,array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
             ctypes.c_double, ctypes.c_int, ctypes.c_int, ctypes.c_int]
         # run C method
         libCmethods.mpdaf_merging_sigma_clipping(
-            c_char_p('\n'.join(self.files)), data, vardata, expmap,
+            c_char_p('\n'.join(self.files)), data, vardata, expmap, self.scales, 
             select_pix, valid_pix, nmax, np.float64(nclip_low),
             np.float64(nclip_up), nstop, np.int32(var_mean), np.int32(mad))
 
