@@ -1859,7 +1859,7 @@ class SourceList(list):
         cat = Catalog.from_sources(self, fmt)
         try:
             cat.write(fcat)
-            raise Warning("For FITS tables, the maximum number of fields is 999")
+            #raise Warning("For FITS tables, the maximum number of fields is 999")
         except:
             cat.write(fcat.replace('.fits', '.txt'), format='ascii')
 
