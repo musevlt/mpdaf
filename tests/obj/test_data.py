@@ -72,3 +72,11 @@ def test_clone_with_data():
     cube2 = cube1.clone(data_init=np.zeros, var_init=np.ones)
     assert_array_equal(cube2.data, np.zeros(cube1.shape))
     assert_array_equal(cube2.var, np.ones(cube1.shape))
+    
+@attr(speed='fast')
+def test_set_var():
+    cube1 = generate_cube()
+    cube1.var = cube1.data
+    nose.tools.assert_true(cube1.var is not None)
+    cube1.var = None
+    nose.tools.assert_true(cube1.var is None)
