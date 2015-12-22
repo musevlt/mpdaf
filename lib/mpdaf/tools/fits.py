@@ -105,7 +105,7 @@ def copy_header(srchdr, dsthdr=None, exclude=(), unit=None):
     if dsthdr is None:
         dsthdr = fits.Header()
 
-    keys = set(srchdr.keys())
+    keys = set(srchdr.keys())-set(dsthdr.keys())
     if exclude:
         for pat in exclude:
             keys -= set(fnmatch.filter(keys, pat))
