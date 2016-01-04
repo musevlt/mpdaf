@@ -303,16 +303,20 @@ class DataArray(object):
 
         Parameters
         ----------
+        var : bool
+            **Deprecated**, replaced by ``var_init``.
         data_init : function
             Function used to create the data array (takes the shape as
             parameter). For example ``np.zeros`` or ``np.empty``. Default to
             ``None`` which means that the ``data`` attribute is ``None``.
         var_init : function
             Function used to create the data array, same as ``data_init``.
+            Default to ``None`` which set the ``var`` attribute to ``None``.
 
         """
         if var is not None:
-            warnings.warn('The var parameter is no more used.', MpdafWarning)
+            warnings.warn('The "var" parameter is no more used, use "var_init"'
+                          'instead.', MpdafWarning)
 
         return self.__class__(
             unit=self.unit, dtype=None, copy=False,
