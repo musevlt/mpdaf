@@ -555,7 +555,7 @@ class Catalog(Table):
         if iden not in self.colnames:
             raise IOError('column %s not found in catalog' % iden)
 
-        cat = self.select(wcs)
+        cat = self.select(wcs, ra, dec)
         size = 2 * symb / wcs.get_step(unit=u.arcsec)[0]
         for src in cat:
             cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
