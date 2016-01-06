@@ -1409,8 +1409,8 @@ class Spectrum(DataArray):
             return 99
         else:
             vflux = self.data[i1:i2 + 1].mean()
-            vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.A-1')).value
-            mag = flux2mag(vflux2, lbda)
+            vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
+            mag = flux2mag(vflux2.value, lbda)
             if out == 1:
                 return mag
             if out == 2:
