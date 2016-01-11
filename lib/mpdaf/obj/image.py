@@ -3897,8 +3897,8 @@ class Image(DataArray):
         - ``CEN`` are used to compute offset.
         - ``VIS`` ones are used only for the visualization.
 
-        Params
-        ------
+        Parameters
+        ----------
         reffile: str
             Path to a FITS image which is used to compute the offset, typically
             an HST image.

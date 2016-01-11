@@ -11,7 +11,6 @@ Contents:
    coord
    cube
    data
-   displaypixtable
    focus
    gauss1d
    gauss2d
