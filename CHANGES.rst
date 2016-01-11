@@ -2,11 +2,8 @@
 v1.2-dev (unreleased)
 ---------------------
 
-- ``Source.add_image``: the order of the rotation is set to 0 in case of an
-  image of 0 and 1.
-- Some optimizations for subcube.
-- Use ``__getitem__`` in ``subcube``/``subimage`` and other methods to speed up
-  things (avoid reading the full cube/image).
+- Optimize ``Cube.subcube`` and use ``__getitem__`` in ``subcube``/``subimage``
+  and other methods to speed up things (avoid reading the full cube/image).
 - Add missing units in image methods.
 - Fill data with NaNs only for float arrays, otherwise raise exception.
 - Use a new ``MpdafUnitsWarning`` to allow filtering the unit warnings. It can
@@ -22,17 +19,38 @@ v1.2-dev (unreleased)
 
 - CUNIT FITS keyword: patch to read ``mum`` as micron.
 - Correct ``cube.get_step`` that returned nothing.
-- Use setuptools for the ``setup.py``: allows to use develop mode, install
-  dependencies automatically, use optional dependencies.
+- Use setuptools for the ``setup.py``:
+
+  - Allow to use develop mode (``python setup.py develop``).
+  - Install dependencies automatically.
+  - Use optional dependencies.
+
 - Remove unmaintained submodules: *quickViz* and *fsf*. *quickViz* is still
   available `here <http://lsiit-miv.u-strasbg.fr/paseo/cubevisualization.php>`_
   but maybe not compatible with the latest Aladin version.
 - Remove the ``displaypixtable`` module.
 - Avoid a huge memory peak when creating masked arrays with ``mask=True``.
+- Add some tools to print execution times.
+- Added scaling option in ``Cubelist.combine()``.
+- Fix ``cube.var = None`` to remove the variance part of the Cube.
+- Revert ZAP version to the same as before 1.2b1 (was updated by mistake).
+- Add a new method ``Image.find_wcs_offsets`` to find the WCS offset with a
+  reference image.
+
+PixTable
+~~~~~~~~
+
+- Use ``CRVAL1/CRVAL2`` instead of ``RA/DEC`` as reference point for positioned
+  pixtables.
+- Remove ``cos(delta)`` correction for positioned pixtables.
+- Use directly the binary mask in ``extract_from_mask``.
+- Allow to use a boolean mask for pixtable selections.
 
 Sources
 ~~~~~~~
 
+- ``Source.add_image``: the order of the rotation is set to 0 in case of an
+  image of 0 and 1.
 - Add methods to manage a history in the sources headers.
 - Use ``savemask='none'`` for MASK and SEG extensions.
 - Correct bug in ``source.write`` when a column has no unit.
@@ -41,6 +59,7 @@ Sources
 - ``Catalog.from_sources``: update the default format.
 - Split ``Source.add_masks`` in 3 methods: ``find_sky_mask``,
   ``find_union_mask`` and ``find_intersection_mask``.
+- Isolate comments and history in source information.
 
 Muselet
 ~~~~~~~
@@ -48,6 +67,7 @@ Muselet
 - Limit the memory usage.
 - Added option to clean detections on skylines.
 - Added exposure map cube.
+- Remove automatic narrow-band images cleaning in muselet.
 
 v1.2b1 (05/11/2015)
 -------------------
