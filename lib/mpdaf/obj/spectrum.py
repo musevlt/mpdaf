@@ -1513,7 +1513,7 @@ class Spectrum(DataArray):
             * self.wave.get_step(u.angstrom) + self.wave.get_crval(u.angstrom)
         w = interpolate.splev(lb, tck, der=0)
         vflux = np.ma.average(self.data[imin:imax], weights=w)
-        vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.A-1')).value
+        vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1')).value
         mag = flux2mag(vflux2, l0)
         if out == 1:
             return mag

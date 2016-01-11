@@ -324,6 +324,7 @@ def test_poly_fit():
 def test_filter():
     """Spectrum class: testing filters"""
     sp = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
+    sp.unit = u.Unit('erg/cm2/s/Angstrom')
     sp.wave.unit = u.angstrom
     nose.tools.assert_almost_equal(sp.abmag_band(5000.0, 1000.0), -22.837, 2)
     nose.tools.assert_almost_equal(
@@ -336,7 +337,7 @@ def test_filter():
 def test_mag():
     """Spectrum class: testing magnitude computations."""
     Vega = Spectrum('data/obj/Vega.fits')
-    Vega.unit = u.Unit('2E-17 erg / (A cm2 s)')
+    Vega.unit = u.Unit('2E-17 erg / (Angstrom cm2 s)')
     Vega.wave.wcs.wcs.cunit[0] = u.angstrom
     nose.tools.assert_almost_equal(Vega.abmag_filter_name('V'), 0, 1)
     mag = Vega.abmag_filter_name('Ic')
