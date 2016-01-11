@@ -7,6 +7,7 @@ import numpy as np
 import warnings
 
 import astropy.units as u
+from astropy.table import Table, Column
 from matplotlib.widgets import RectangleSelector
 from matplotlib.path import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -115,7 +116,7 @@ class Moffat2D(object):
         fwhm (fhwm_y,fwhm_x).
     cont : float
         Continuum value.
-    n : integer
+    n : int
         Atmospheric scattering coefficient.
     rot : float
         Rotation in degrees.
@@ -196,7 +197,7 @@ class Image(DataArray):
     ----------
     filename : str
         Possible filename (.fits, .png or .bmp).
-    ext : integer or (integer,integer) or string or (string,string)
+    ext : int or (int,int) or string or (string,string)
         Number/name of the data extension or numbers/names
         of the data and variance extensions.
     wcs : :class:`mpdaf.obj.WCS`
@@ -210,7 +211,7 @@ class Image(DataArray):
     copy : boolean
         If true (default), then the data and variance arrays are copied.
     dtype : numpy.dtype
-        Type of the data (integer, float)
+        Type of the data (int, float)
 
     Attributes
     ----------
@@ -229,7 +230,7 @@ class Image(DataArray):
     unit : astropy.units
         Physical units of the data values.
     dtype : numpy.dtype
-        Type of the data (integer, float)
+        Type of the data (int, float)
     var : float array
         Array containing the variance.
 
@@ -1288,7 +1289,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        niter : integer
+        niter : int
             Number of iterations.
         sigma : float
             Number of sigma used for the clipping.
@@ -1315,9 +1316,9 @@ class Image(DataArray):
 
         Parameters
         ----------
-        nstruct : integer
+        nstruct : int
             Size of the structuring element used for the erosion.
-        niter : integer
+        niter : int
             number of iterations used for the erosion and the dilatation.
         threshold : float
             threshold value. If None, it is initialized with background value
@@ -1365,7 +1366,7 @@ class Image(DataArray):
         unit_radius : astropy.units
             Radius unit.
             Arcseconds by default (use None for radius in pixels)
-        dpix : integer
+        dpix : int
             Half size of the window (in pixels) to compute the center of
             gravity.
         background : float
@@ -1818,7 +1819,7 @@ class Image(DataArray):
             If None, rotation is fixed to 0.
         peak : boolean
             If true, flux contains a gaussian peak value.
-        factor : integer
+        factor : int
             If factor<=1, gaussian value is computed in the center of each
             pixel. If factor>1, for each pixel, gaussian value is the sum of
             the gaussian values on the factor*factor pixels divided by the
@@ -1839,7 +1840,7 @@ class Image(DataArray):
         verbose : boolean
             If True, the Gaussian parameters are printed at the end of the
             method.
-        full_output : integer
+        full_output : int
             non-zero to return a :class:`mpdaf.obj.Gauss2D` object containing
             the gauss image
 
@@ -2179,7 +2180,7 @@ class Image(DataArray):
             Initial gaussian fwhm (fwhm_y,fwhm_x). If None, they are estimated.
             Their unit is given by the unit_fwhm parameter (arcseconds by
             default).
-        n : integer
+        n : int
             Initial atmospheric scattering coefficient.
         circular : boolean
             True: circular moffat, False: elliptical moffat
@@ -2192,7 +2193,7 @@ class Image(DataArray):
             Initial angle position in degree.
         peak : boolean
             If true, flux contains a gaussian peak value.
-        factor : integer
+        factor : int
             If factor<=1, gaussian is computed in the center of each pixel.
             If factor>1, for each pixel, gaussian value is the sum of the
             gaussian values on the factor*factor pixels divided by the pixel
@@ -2207,7 +2208,7 @@ class Image(DataArray):
             Degrees by default (use None for coordinates in pixels).
         unit_fwhm : astropy.units
             FWHM unit. Arcseconds by default (use None for radius in pixels)
-        full_output : integer
+        full_output : int
             non-zero to return a :class:`mpdaf.obj.Moffat2D`
             object containing the moffat image
         fit_n : boolean
@@ -2635,7 +2636,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        factor : (integer,integer)
+        factor : (int,int)
             Factor in y and x.  Python notation: (ny,nx)
 
         """
@@ -2658,7 +2659,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        factor : integer or (integer,integer)
+        factor : int or (int,int)
             Factor in y and x. Python notation: (ny,nx).
         margin : 'center' or 'origin'
             This parameters is used if new size is not an integer multiple of
@@ -3060,7 +3061,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        factor : integer or (integer,integer)
+        factor : int or (int,int)
             Factor in y and x. Python notation: (ny,nx).
         margin : 'center' or 'origin'
             This parameters is used if new size is not an integer multiple of
@@ -3087,7 +3088,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        factor : (integer,integer)
+        factor : (int,int)
             Factor in y and x.  Python notation: (ny,nx)
         """
         assert not np.sometrue(np.mod(self.shape[0], factor[0]))
@@ -3109,7 +3110,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        factor : integer or (integer,integer)
+        factor : int or (int,int)
             Factor in y and x. Python notation: (ny,nx).
         margin : 'center' or 'origin'
             This parameters is used if new size is not an integer multiple of
@@ -3235,7 +3236,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        newdim : integer or (integer,integer)
+        newdim : int or (int,int)
             New dimensions. Python notation: (ny,nx)
         newstart : float or (float, float)
             New positions (y,x) for the pixel (0,0).
@@ -3244,7 +3245,7 @@ class Image(DataArray):
             New step (dy,dx).
         flux : boolean
             if flux is True, the flux is conserved.
-        order : integer
+        order : int
             The order of the spline interpolation, default is 3.
             The order has to be in the range 0-5.
         interp : 'no' | 'linear' | 'spline'
@@ -3509,11 +3510,11 @@ class Image(DataArray):
 
         Parameters
         ----------
-        shape : (integer,integer)
+        shape : (int,int)
             Shape used for connectivity.
-        minsize : integer
+        minsize : int
             Minimmum size of the images.
-        minpts : integer
+        minpts : int
             Minimmum number of points in the object.
         background : float
             Under this value, flux is considered as background.
@@ -3521,7 +3522,7 @@ class Image(DataArray):
             if 'no', data median value replaced masked values.
             if 'linear', linear interpolation of the masked values.
             if 'spline', spline interpolation of the masked values.
-        median : (integer,integer) or None
+        median : (int,int) or None
             Size of the median filter
 
         Returns
@@ -3740,7 +3741,7 @@ class Image(DataArray):
             If true, flux contains a gaussian peak value.
         rot : float
             Angle position in degree.
-        factor : integer
+        factor : int
             If factor<=1, gaussian value is computed in the center of each
             pixel.  If factor>1, for each pixel, gaussian value is the sum of
             the gaussian values on the factor*factor pixels divided by the
@@ -3782,11 +3783,11 @@ class Image(DataArray):
             unit_a parameter (arcseconds by default).
         q : float
             Axis ratio, 1 by default.
-        n : integer
+        n : int
             Atmospheric scattering coefficient. 2 by default.
         rot : float
             Angle position in degree.
-        factor : integer
+        factor : int
             If factor<=1, moffat value is computed in the center of each pixel.
             If factor>1, for each pixel, moffat value is the sum
             of the moffat values on the factor*factor pixels
@@ -3872,6 +3873,159 @@ class Image(DataArray):
             return res
         else:
             raise IOError('Operation forbidden')
+
+    def find_wcs_offsets(self, reffile, catfile, hsize=10, seeing=0.5,
+                         plot=False):
+        """Find WCS offsets with a better resolved image.
+
+        For each object in ``catfile``, a subimage of ``hsize`` arcseconds is
+        extracted. It is then convolved with a Gaussian PSF (with ``seeing``
+        used for the FWHM) and resampled to the current image resolution. A 2D
+        correlation is performed between the two images, and the offset is
+        computed with the correlation peak.
+
+        The ascii catalog ``catfile`` must be a text file which looks like
+        this::
+
+            # field ra dec type
+            UDF-01 53.158007 -27.769189 CEN
+            UDF-03 53.187819 -27.794050 VIS
+
+        The first column correspond to the ``OBJECT`` keyword. The last column
+        gives the type of source:
+
+        - ``CEN`` are used to compute offset.
+        - ``VIS`` ones are used only for the visualization.
+
+        Params
+        ------
+        reffile: str
+            Path to a FITS image which is used to compute the offset, typically
+            an HST image.
+        catfile: str
+            Path to an ascii file containing the sources (see above).
+        hsize: int
+            Size of the sub-images in arcseconds (default: 10)
+        seeing: float
+            Seeing in arcseconds, used for the convolution (default: 0.5)
+        plot: bool
+            Plot images (default: False)
+
+        Returns
+        -------
+        offset, offpix: ndarray, ndarray
+            Offset in arcseconds and in pixels.
+
+        """
+        info = self._logger.info
+        catref = Table.read(catfile, format='ascii')
+        info('%d objects found in the catalog', len(catref))
+
+        bckg = self.background()
+        info('Background: %s (sigma: %s)', *bckg)
+        self.data -= bckg[0]
+
+        hdr = self.primary_header
+        field = hdr['OBJECT'].split(' ')[0]
+        info('Object: %s, Field: %s, Seeing: %s', hdr['OBJECT'], field,
+             hdr.get('ESO OCS SGS AG FWHMX AVG'))
+
+        hst = Image(reffile, copy=False)
+        hst.info()
+
+        self.unit = u.dimensionless_unscaled
+        hst.unit = u.dimensionless_unscaled
+
+        t = catref[(catref['field'] == field) & (catref['type'] == 'CEN')]
+        t.add_column(Column(np.zeros((len(t), 2)), name='offset_pix'))
+        t.add_column(Column(np.zeros((len(t), 2)), name='offset_arc'))
+        t.add_column(Column(np.zeros(len(t)), name='offset_peak'))
+        centers = zip(t['dec'], t['ra'])
+        info('%d centering sources found in catalog for field %s', len(t),
+             field)
+
+        if plot:
+            from ..gui import recenter as rec
+            rec.plot_muse_field(self, centers=centers)
+
+        for k, row in enumerate(t):
+            center = centers[k]
+            # extract list of subimages
+            musepix = self.wcs.sky2pix(center, nearest=True)[0]
+            info('Peak center %s -> muse pix: %s', center, musepix)
+            zmuse = self.subimage(center, hsize)
+
+            pa_hst = hst.get_rot()
+            pa_muse = self.get_rot()
+
+            # extract a larger window to get the convolution ok on the edge
+            if np.abs(pa_hst - pa_muse) > 1.e-3:
+                subima = hst.subimage(center, (hsize + 2*seeing) * 1.5)
+                subima = subima.rotate(pa_hst - pa_muse)
+                zhst = subima.subimage(center, hsize + 2*seeing)
+            else:
+                zhst = hst.subimage(center, hsize + 2*seeing)
+
+            if plot:
+                rec.plot_subimages(zmuse, zhst.subimage(center, hsize), center)
+
+            # Run the gaussian convolution
+            chst = zhst.fftconvolve_gauss(fwhm=(seeing, seeing))
+            # Rebin to muse spaxel size and window size
+            rhst = chst.resample(zmuse.shape, zmuse.get_start(),
+                                 zmuse.get_step(u.arcsec))
+
+            if plot:
+                rec.plot_convolved(zhst, chst, rhst)
+
+            # compute first autocorrelation center
+            auto = zmuse.correlate2d(zmuse)
+            autogauss = auto.gauss_fit(unit_center=None, unit_fwhm=None,
+                                       verbose=False)
+            # then crosscorrelation
+            xcorr = zmuse.correlate2d(rhst)
+            xcorrgauss = xcorr.gauss_fit(unit_center=None, unit_fwhm=None,
+                                         verbose=False)
+            # compute offset
+            offset = (np.array(xcorrgauss.center) - np.array(autogauss.center))
+            offsetarcsec = offset * zmuse.get_step(u.arcsec)
+            info('Offset pixels: %s', offset)
+            info('Offset arcsec: %s', offsetarcsec)
+            info('Offset Peak: %s', xcorrgauss.peak)
+            row['offset_pix'] = offset
+            row['offset_arc'] = offsetarcsec
+            row['offset_peak'] = xcorrgauss.peak
+
+            if plot:
+                rec.plot_correlation(auto, autogauss.center, xcorr,
+                                     xcorrgauss.center)
+
+        weight = np.tile(t['offset_peak'], (2, 1)).T
+        offpix = np.average(t['offset_pix'], weights=weight, axis=0)
+        offset = np.average(t['offset_arc'], weights=weight, axis=0)
+        info('Mean Offset: %s arcsec %s pixels', offset, offpix)
+
+        if plot:
+            info('plotting')
+            # apply offset to full MUSE image
+            wcs = self.wcs.copy()
+            wcs.set_crpix1(wcs.get_crpix1() + offpix[1])
+            wcs.set_crpix2(wcs.get_crpix2() + offpix[0])
+            offmuse = self.copy()
+            offmuse.set_wcs(wcs)
+
+            t = catref[(catref['field'] == field) &
+                       ((catref['type'] == 'CEN') | (catref['type'] == 'VIS'))]
+
+            for k, row in enumerate(t):
+                center = (t[k]['dec'], t[k]['ra'])
+                zhst = hst.subimage(center, hsize)
+                zmuse = self.subimage(center, hsize)
+                rec.plot_recentered(zmuse, zhst, center, offpix)
+                zoffmuse = offmuse.subimage(center, hsize)
+                rec.plot_subimages(zoffmuse, zhst, center)
+
+        return offset, offpix
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
@@ -4424,23 +4578,23 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
 
     Parameters
     ----------
-    shape : integer or (integer,integer)
+    shape : int or (int,int)
         Lengths of the image in Y and X with python notation: (ny,nx).
         (101,101) by default. If wcs object contains dimensions, shape is
         ignored and wcs dimensions are used.
     wcs : :class:`mpdaf.obj.WCS`
         World coordinates.
-    factor : integer
+    factor : int
         If factor<=1, gaussian value is computed in the center of each pixel.
         If factor>1, for each pixel, gaussian value is the sum of the gaussian
         values on the factor*factor pixels divided by the pixel area.
     gauss : :class:`mpdaf.obj.Gauss2D`
-        object that contains all Gaussian parameters.
-        If it is present, following parameters are not used.
+        Object that contains all Gaussian parameters. If it is present, the
+        following parameters are not used.
     center : (float,float)
-        Gaussian center (y_peak, x_peak).
-        If None the center of the image is used.
-        The unit is given by the unit_center parameter (degrees by default).
+        Gaussian center (y_peak, x_peak). If None the center of the image is
+        used. The unit is given by the unit_center parameter (degrees by
+        default).
     flux : float
         Integrated gaussian flux or gaussian peak value if peak is True.
     fwhm : (float,float)
@@ -4563,13 +4717,13 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
 
     Parameters
     ----------
-    shape : integer or (integer,integer)
+    shape : int or (int,int)
         Lengths of the image in Y and X with python notation: (ny,nx).
         (101,101) by default. If wcs object contains dimensions, shape is
         ignored and wcs dimensions are used.
     wcs : :class:`mpdaf.obj.WCS`
         World coordinates.
-    factor : integer
+    factor : int
         If factor<=1, moffat value is computed in the center of each pixel.
         If factor>1, for each pixel, moffat value is the sum
         of the moffat values on the factor*factor pixels divided
@@ -4589,7 +4743,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
         The unit is given by the parameter unit_fwhm (arcseconds by default)
     peak : boolean
         If true, flux contains a gaussian peak value.
-    n : integer
+    n : int
         Atmospheric scattering coefficient. 2 by default.
     rot : float
         Angle position in degree.
@@ -4700,7 +4854,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
         False: bilinear interpolation (uses :func:`scipy.interpolate.griddata`)
         True: spline interpolation (uses :func:`scipy.interpolate.bisplrep` and
         :func:`scipy.interpolate.bisplev`).
-    order : integer
+    order : int
         Polynomial order for spline interpolation (default 3)
     smooth : float
         Smoothing parameter for spline interpolation (default 0: no smoothing)
@@ -4867,7 +5021,7 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
 
     Parameters
     ----------
-    shape : integer or (integer,integer)
+    shape : int or (int,int)
         Lengths of the image in Y and X with python notation: (ny,nx).
         (101,101) by default. If wcs object contains dimensions, shape is
         ignored and wcs dimensions are used.
