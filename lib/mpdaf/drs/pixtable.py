@@ -1840,7 +1840,7 @@ class PixTable(object):
                                   ['pixtable',
                                    'file to mask out all bright objects',
                                    'wavelength step',
-                                   'max number of clippinp iterations',
+                                   'max number of clipping iterations',
                                    'lower clipping parameter',
                                    'upper clipping parameter',
                                    'clipping minimum number'])

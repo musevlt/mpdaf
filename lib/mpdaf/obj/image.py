@@ -3922,17 +3922,19 @@ class Image(DataArray):
         info('%d objects found in the catalog', len(catref))
 
         bckg = self.background()
-        info('Background: %s (sigma: %s)', *bckg)
+        info('Estimated background: %s (sigma: %s)', *bckg)
         self.data -= bckg[0]
 
         hdr = self.primary_header
         field = hdr['OBJECT'].split(' ')[0]
-        info('Object: %s, Field: %s, Seeing: %s', hdr['OBJECT'], field,
+        info('Object: %s, Field: %s, AG Seeing: %s', hdr['OBJECT'], field,
              hdr.get('ESO OCS SGS AG FWHMX AVG'))
 
         hst = Image(reffile, copy=False)
         hst.info()
 
+        # Remove units temporarily before it fails with HST images ...
+        orig_unit = self.unit
         self.unit = u.dimensionless_unscaled
         hst.unit = u.dimensionless_unscaled
 
@@ -3941,18 +3943,29 @@ class Image(DataArray):
         t.add_column(Column(np.zeros((len(t), 2)), name='offset_arc'))
         t.add_column(Column(np.zeros(len(t)), name='offset_peak'))
         centers = zip(t['dec'], t['ra'])
-        info('%d centering sources found in catalog for field %s', len(t),
-             field)
+        info('%d centering sources found in catalog for %s', len(t), field)
 
         if plot:
-            from ..gui import recenter as rec
-            rec.plot_muse_field(self, centers=centers)
+            def plot_with_cross(img, ax, center, cross_color='k',
+                                center_deg=True, **kwargs):
+                img.plot(ax=ax, **kwargs)
+                y, x = img.wcs.sky2pix(center)[0] if center_deg else center
+                ax.axhline(y, color=cross_color)
+                ax.axvline(x, color=cross_color)
+
+            fig, ax = plt.subplots(figsize=(5, 5))
+            self.plot(zscale=True, title='Background subtracted image')
+            for center in centers:
+                y, x = self.wcs.sky2pix(center)[0]
+                ax.axhline(y, color='k')
+                ax.axvline(x, color='k')
+            plt.show()
 
         for k, row in enumerate(t):
             center = centers[k]
             # extract list of subimages
-            musepix = self.wcs.sky2pix(center, nearest=True)[0]
-            info('Peak center %s -> muse pix: %s', center, musepix)
+            info('Peak center %s -> muse pix: %s', center,
+                 self.wcs.sky2pix(center, nearest=True)[0])
             zmuse = self.subimage(center, hsize)
 
             pa_hst = hst.get_rot()
@@ -3967,7 +3980,12 @@ class Image(DataArray):
                 zhst = hst.subimage(center, hsize + 2*seeing)
 
             if plot:
-                rec.plot_subimages(zmuse, zhst.subimage(center, hsize), center)
+                rhst = zhst.subimage(center, hsize)
+                fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+                plot_with_cross(zmuse, ax1, center, title='Low-res image')
+                plot_with_cross(rhst, ax2, center, title='High-res image')
+                plot_with_cross(rhst, ax3, center, zscale=True,
+                                title='High-res image (zscale)')
 
             # Run the gaussian convolution
             chst = zhst.fftconvolve_gauss(fwhm=(seeing, seeing))
@@ -3976,7 +3994,10 @@ class Image(DataArray):
                                  zmuse.get_step(u.arcsec))
 
             if plot:
-                rec.plot_convolved(zhst, chst, rhst)
+                fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+                zhst.plot(ax=ax1, title='High-resolution image')
+                chst.plot(ax=ax2, title='Convolved with the gaussian FWHM')
+                rhst.plot(ax=ax3, title='Resampled')
 
             # compute first autocorrelation center
             auto = zmuse.correlate2d(zmuse)
@@ -3997,8 +4018,12 @@ class Image(DataArray):
             row['offset_peak'] = xcorrgauss.peak
 
             if plot:
-                rec.plot_correlation(auto, autogauss.center, xcorr,
-                                     xcorrgauss.center)
+                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+                plot_with_cross(auto, ax1, autogauss.center, cross_color='w',
+                                center_deg=False, title='Auto-correlation')
+                plot_with_cross(xcorr, ax2, xcorrgauss.center, cross_color='w',
+                                center_deg=False, title='Cross-correlation')
+                plt.show()
 
         weight = np.tile(t['offset_peak'], (2, 1)).T
         offpix = np.average(t['offset_pix'], weights=weight, axis=0)
@@ -4006,7 +4031,6 @@ class Image(DataArray):
         info('Mean Offset: %s arcsec %s pixels', offset, offpix)
 
         if plot:
-            info('plotting')
             # apply offset to full MUSE image
             wcs = self.wcs.copy()
             wcs.set_crpix1(wcs.get_crpix1() + offpix[1])
@@ -4021,10 +4045,17 @@ class Image(DataArray):
                 center = (t[k]['dec'], t[k]['ra'])
                 zhst = hst.subimage(center, hsize)
                 zmuse = self.subimage(center, hsize)
-                rec.plot_recentered(zmuse, zhst, center, offpix)
                 zoffmuse = offmuse.subimage(center, hsize)
-                rec.plot_subimages(zoffmuse, zhst, center)
+                fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+                plot_with_cross(zmuse, ax1, center, cross_color='w',
+                                title='Original image')
+                plot_with_cross(zoffmuse, ax2, center, cross_color='w',
+                                title='With offset')
+                plot_with_cross(zhst, ax3, center, cross_color='w',
+                                title='High-res image')
+            plt.show()
 
+        self.unit = orig_unit
         return offset, offpix
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
