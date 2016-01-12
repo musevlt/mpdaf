@@ -4173,11 +4173,11 @@ class Image(DataArray):
         col = int(x + 0.5)
         row = int(y + 0.5)
         if col >= 0 and col < self.shape[0] and row >= 0 and row < self.shape[1]:
-            pixsky = self.wcs.pix2sky([col, row], unit=self._unit)
+            pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
             yc = pixsky[0][0]
             xc = pixsky[0][1]
             val = self.data.data[col, row]
-            return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, col, row, val)
+            return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
         else:
             return 'x=%1.4f, y=%1.4f' % (x, y)
 
