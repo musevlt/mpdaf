@@ -80,13 +80,13 @@ each side of the narrow-band images::
 The method :func:`mpdaf.sdetect.SourceList.write` could be used to  save all
 sources and the corresponding catalog  as FITS files::
 
-  >>> cont.write(path='cont')
+  >>> cont.write(path='cont', fmt='working')
 
 Is is also possible to create a :class:`mpdaf.sdetect.Catalog` object and save
 it as an ascii file::
 
   >>> from mpdaf.sdetect import Catalog
-  >>> cat = Catalog.from_sources(cont)
+  >>> cat = Catalog.from_sources(cont, fmt='working')
   >>> cat.write('continuum_lines_z.cat', format='ascii')
 
 

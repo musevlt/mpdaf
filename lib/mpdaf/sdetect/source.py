@@ -1834,6 +1834,8 @@ class SourceList(list):
             path where the catalog will be saved.
         overwrite : boolean
             Overwrite the catalog if it already exists
+        fmt : str 'working'|'default'
+            Format of the catalog. The format differs for the LINES table.
         """
         if not os.path.exists(path):
             raise IOError("Invalid path: {0}".format(path))
