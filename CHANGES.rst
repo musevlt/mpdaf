@@ -1,6 +1,6 @@
 
-v1.2-dev (unreleased)
----------------------
+v1.2 (13/01/2016)
+-----------------
 
 - Optimize ``Cube.subcube`` and use ``__getitem__`` in ``subcube``/``subimage``
   and other methods to speed up things (avoid reading the full cube/image).
