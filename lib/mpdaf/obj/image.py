@@ -521,24 +521,22 @@ class Image(DataArray):
                 # data
                 data = self.data[np.newaxis, :, :] * \
                     other.data[:, np.newaxis, np.newaxis]
+                # The shape of the resulting cube.
+                shape = (other.shape[0],self.shape[0],self.shape[1])
                 # variance
                 if self.var is None and other.var is None:
                     var = None
                 elif self.var is None:
-                    var = np.ones(res.shape) \
-                        * other.var[:, np.newaxis, np.newaxis] \
-                        * self.data.data * self.data.data
+                    var = other.var[:, np.newaxis, np.newaxis] \
+                        * np.resize(self.data.data**2, shape)
                 elif other.var is None:
-                    var = np.ones(res.shape) \
-                        * self.var[np.newaxis, :, :] \
-                        * other.data.data * other.data.data
+                    var = np.resize(self.var, shape) \
+                        * (other.data.data**2)[:, np.newaxis, np.newaxis]
                 else:
-                    var = np.ones(res.shape) \
-                        * other.var[:, np.newaxis, np.newaxis] \
-                        * self.data.data * self.data.data \
-                        + np.ones(res.shape) \
-                        * self.var[np.newaxis, :, :] \
-                        * other.data.data * other.data.data
+                    var = other.var[:, np.newaxis, np.newaxis] \
+                        * np.resize(self.data.data**2, shape) \
+                        + np.resize(self.var, shape) \
+                        * (other.data.data**2)[:, np.newaxis, np.newaxis]
 
                 from .cube import Cube
                 return Cube(wave=other.wave, wcs=self.wcs, data=data, var=var,
