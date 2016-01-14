@@ -1199,7 +1199,14 @@ class Spectrum(DataArray):
         if weight and self.var is not None:
             weights = 1.0 / subspe.var
             np.ma.fix_invalid(weights, copy=False, fill_value=0)
-            flux = (i2 - i1) * np.ma.average(subspe.data, weights=weights)
+
+            # How many unmasked pixels will be averaged?
+
+            nsum = np.ma.count(subspe.data)
+
+            # The weighted average multiplied by the number of unmasked pixels.
+
+            flux = nsum * np.ma.average(subspe.data, weights=weights)
         else:
             flux = subspe.data.sum()
         return flux
