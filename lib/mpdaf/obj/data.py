@@ -50,27 +50,27 @@ class DataArray(object):
 
     Attributes
     ----------
-    filename : str
+    :attr:`filename` : str
         FITS filename.
-    primary_header : :class:`astropy.io.fits.Header`
+    :attr:`primary_header` : :class:`astropy.io.fits.Header`
         FITS primary header instance.
-    wcs : :class:`mpdaf.obj.WCS`
+    :attr:`wcs` : :class:`mpdaf.obj.WCS`
         World coordinates.
-    wave : :class:`mpdaf.obj.WaveCoord`
+    :attr:`wave` : :class:`mpdaf.obj.WaveCoord`
         Wavelength coordinates
-    ndim : int
+    :attr:`ndim` : int
         Number of dimensions.
-    shape : tuple
-        Lengths of data (python notation (nz,ny,nx)).
-    data : np.ma.MaskedArray
+    :attr:`shape` : sequence
+        Lengths of data axes (python notation (nz,ny,nx)).
+    :attr:`data` : :class:`np.ma.MaskedArray`
         Masked array containing the cube pixel values.
-    data_header : :class:`astropy.io.fits.Header`
+    :attr:`data_header` : :class:`astropy.io.fits.Header`
         FITS data header instance.
-    unit : :class:`astropy.units.Unit`
+    :attr:`unit` : :class:`astropy.units.Unit`
         Physical units of the data values.
-    dtype : numpy.dtype
+    :attr:`dtype` : :class:`numpy.dtype`
         Type of the data (int, float, ...).
-    var : numpy.ndarray
+    :attr:`var` : :class:`numpy.ndarray`
         Array containing the variance.
 
     """
@@ -228,6 +228,7 @@ class DataArray(object):
 
     @property
     def ndim(self):
+        """ The number of dimensions in the data and variance arrays : `int` """
         if self._ndim is not None:
             return self._ndim
         elif self.data is not None:
@@ -235,6 +236,7 @@ class DataArray(object):
 
     @property
     def shape(self):
+        """ The lengths of each of the ``.ndim`` data axes. """
         if self._shape is not None:
             return self._shape
         elif self.data is not None:
@@ -242,6 +244,7 @@ class DataArray(object):
 
     @property
     def data(self):
+        """ A masked array of data values : :class:`numpy.ma.MaskedArray`. """
         if self._data is None and self.filename is not None:
             self._data = read_slice_from_fits(
                 self.filename, ext=self._data_ext, mask_ext='DQ',
@@ -264,6 +267,7 @@ class DataArray(object):
 
     @property
     def var(self):
+        """ Either ``None``, or a :class:`numpy.ndarray` containing the variances of each data value. This has the same shape as the data array. """
         if self._var is None and self._var_ext is not None and \
                 self.filename is not None:
             var = read_slice_from_fits(
@@ -288,6 +292,7 @@ class DataArray(object):
 
     @deprecated('Variance should now be set with the `.var` attribute')
     def set_var(self, var):
+        """Deprecated: The variance array can simply be assigned to the ``.var`` attribute"""
         self.var = var
 
     def copy(self):
