@@ -126,7 +126,7 @@ def generate_image(data=2.0, var=1.0, shape=None, unit=u.ct, wcs=None,
 
     return Image(data=data, var=var, wcs=wcs, unit=unit, copy=docopy)
 
-def generate_spectrum(data=None, var=None, shape=None, uwave=u.angstrom,
+def generate_spectrum(data=None, var=1.0, shape=None, uwave=u.angstrom,
                       crpix=2.0, cdelt=3.0, crval=0.5, wave=None, unit=u.ct,
                       copy=True):
 
