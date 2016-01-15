@@ -705,7 +705,7 @@ class DataArray(object):
             #  vs = (d[sqrt(x)]/dx)**2 * vx
             #     = (0.5 / sqrt(x))**2 * vx
             #     = 0.25 / x * vx.
-            out.var = 0.25 * self.var / self.data
+            out.var = 0.25 * self.var / self.data.data
         return out
 
     def abs(self, out=None):
