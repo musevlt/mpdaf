@@ -34,14 +34,14 @@ class DataArray(object):
     copy : bool
         If ``True`` (default), then the data and variance arrays are copied.
         Passed to :class:`np.ma.MaskedArray`.
-    dtype : numpy.dtype
+    dtype : :class:`numpy.dtype`
         Type of the data, default to ``float``.
         Passed to :class:`np.ma.MaskedArray`.
-    data : numpy.ndarray or list
+    data : :class:`numpy.ndarray` or list
         Data array, passed to :class:`np.ma.MaskedArray`.
-    var : numpy.ndarray or list
+    var : :class:`numpy.ndarray` or list
         Variance array, passed to :func:`np.array`.
-    mask : bool or numpy.ma.nomask or numpy.ndarray
+    mask : bool or :class:`numpy.ma.nomask` or :class:`numpy.ndarray`
         Mask used for the creation of the ``.data`` MaskedArray. If mask is
         False (default value), a mask array of the same size of the data array
         is created. To avoid creating an array, it is possible to use
@@ -61,9 +61,9 @@ class DataArray(object):
     :attr:`ndim` : int
         Number of dimensions.
     :attr:`shape` : sequence
-        Lengths of data axes (python notation (nz,ny,nx)).
+        Lengths of the data axes (python notation (nz,ny,nx)).
     :attr:`data` : :class:`np.ma.MaskedArray`
-        Masked array containing the cube pixel values.
+        Masked array containing the cube of pixel values.
     :attr:`data_header` : :class:`astropy.io.fits.Header`
         FITS data header instance.
     :attr:`unit` : :class:`astropy.units.Unit`
@@ -98,12 +98,14 @@ class DataArray(object):
         self.primary_header = primary_header or fits.Header()
 
         if kwargs.pop('shape', None) is not None:
-            warnings.warn('The shape parameter is no more used, it is derived '
+            warnings.warn('The shape parameter is no longer used. It is derived '
                           'from the data instead', MpdafWarning)
 
         if kwargs.pop('notnoise', None) is not None:
-            warnings.warn('The notnoise parameter is no more used, the '
-                          'variance wll be read if necessary', MpdafWarning)
+            warnings.warn('The notnoise parameter is no longer used. The '
+                          'variances wll be read if necessary.', MpdafWarning)
+
+        # Read the data from a FITS file?
 
         if filename is not None and data is None:
             if not is_valid_fits_file(filename):
@@ -117,6 +119,12 @@ class DataArray(object):
 
             # primary header
             self.primary_header = hdulist[0].header
+
+            # Find the hdu of the data. This is either the primary HDU
+            # or a DATA or SCI extension. Also see if there is an extension
+            # that contains variances. This is either a STAT extension,
+            # or the second of a tuple of extensions passed via the ext[]
+            # parameter.
 
             if len(hdulist) == 1:
                 # if the number of extension is 1,
@@ -139,6 +147,8 @@ class DataArray(object):
                 self._data_ext = ext
                 self._var_ext = None
 
+            # Record the data header.
+
             self.data_header = hdr = hdulist[self._data_ext].header
 
             try:
@@ -160,6 +170,9 @@ class DataArray(object):
                 raise IOError('Wrong dimension number, should be %s'
                               % self._ndim_required)
 
+            # Is this a derived class like Cube and Image that require
+            # WCS information?
+
             if self._has_wcs:
                 try:
                     self.wcs = WCS(hdr)  # WCS object from data header
@@ -169,7 +182,8 @@ class DataArray(object):
                     self._logger.warning(e)
                     self.wcs = WCS(hdr)
 
-            # Wavelength coordinates
+            # Get the wavelength coordinates.
+
             wave_ext = 1 if self._ndim_required == 1 else 3
             crpix = 'CRPIX{}'.format(wave_ext)
             crval = 'CRVAL{}'.format(wave_ext)
@@ -178,7 +192,13 @@ class DataArray(object):
 
             if close_hdu:
                 hdulist.close()
+
+        # There is no FITS file to read the data from.
+
         else:
+
+            # Use a specified numpy data array?
+
             if data is not None:
                 # By default, if mask=False create a mask array with False
                 # values. numpy.ma does it but with a np.resize/np.concatenate
@@ -190,8 +210,12 @@ class DataArray(object):
                                             copy=copy)
                 self._shape = self._data.shape
 
+            # Use a specified variance array?
+
             if var is not None:
                 self._var = np.array(var, dtype=dtype, copy=copy)
+
+        # If a WCS object was specified as an optional parameter, install it.
 
         wcs = kwargs.pop('wcs', None)
         if wcs is not None and wcs.naxis1 != 1 and wcs.naxis2 != 1:
@@ -202,13 +226,16 @@ class DataArray(object):
                         (wcs.naxis1 != self._shape[-1] or
                          wcs.naxis2 != self._shape[-2])):
                         self._logger.warning(
-                            'world coordinates and data have not the same '
-                            'dimensions: shape of WCS object is modified')
+                            'The world coordinates and data have different '
+                            'dimensions: Modifying the shape of the WCS object.')
                     self.wcs.naxis1 = self._shape[-1]
                     self.wcs.naxis2 = self._shape[-2]
             except:
                 self._logger.warning('world coordinates not copied',
                                      exc_info=True)
+
+        # If a wavelength coordinate object was specified as an
+        # optional parameter, install it.
 
         wave = kwargs.pop('wave', None)
         if wave is not None and wave.shape != 1:
@@ -218,9 +245,8 @@ class DataArray(object):
                     if wave.shape is not None and \
                             wave.shape != self._shape[0]:
                         self._logger.warning(
-                            'wavelength coordinates and data have not the '
-                            'same dimensions: shape of WaveCoord object is '
-                            'modified')
+                            'wavelength coordinates and data have different '
+                            'dimensions: Modifying the shape of the WaveCoord object')
                     self.wave.shape = self._shape[0]
             except:
                 self._logger.warning('wavelength solution not copied',
@@ -245,6 +271,11 @@ class DataArray(object):
     @property
     def data(self):
         """ A masked array of data values : :class:`numpy.ma.MaskedArray`. """
+
+        # The DataArray constructor postpones reading data from FITS files
+        # until they are first used. Read the data array here if not already
+        # read.
+
         if self._data is None and self.filename is not None:
             self._data = read_slice_from_fits(
                 self.filename, ext=self._data_ext, mask_ext='DQ',
@@ -268,6 +299,11 @@ class DataArray(object):
     @property
     def var(self):
         """ Either ``None``, or a :class:`numpy.ndarray` containing the variances of each data value. This has the same shape as the data array. """
+
+        # The DataArray constructor postpones reading data from FITS
+        # files until they are first used. On the first call to this
+        # function, read the variances if a suitable extension exists.
+
         if self._var is None and self._var_ext is not None and \
                 self.filename is not None:
             var = read_slice_from_fits(
@@ -285,7 +321,7 @@ class DataArray(object):
         if value is not None:
             value = np.asarray(value)
             if not np.array_equal(self.shape, value.shape):
-                raise ValueError('var and data have not the same dimensions.')
+                raise ValueError('var and data have different dimensions.')
         else:
             self._var_ext = None
         self._var = value
@@ -320,7 +356,7 @@ class DataArray(object):
 
         """
         if var is not None:
-            warnings.warn('The "var" parameter is no more used, use "var_init"'
+            warnings.warn('The "var" parameter is no longer used. Use "var_init"'
                           'instead.', MpdafWarning)
 
         return self.__class__(
@@ -363,10 +399,11 @@ class DataArray(object):
 
     @deprecated('Data should now be set with the `.data` attribute')
     def get_np_data(self):
+        """Deprecated: Set the .data attribute instead of calling this function."""
         return self.data
 
     def __le__(self, item):
-        """Mask data array where greater than a given value (<=).
+        """Mask data elements whose values are greater than a given value (<=).
 
         Parameters
         ----------
@@ -384,7 +421,7 @@ class DataArray(object):
         return result
 
     def __lt__(self, item):
-        """Mask data array where greater or equal than a given value (<).
+        """Mask data elements whose values are greater than or equal to a given value (<).
 
         Parameters
         ----------
@@ -402,7 +439,7 @@ class DataArray(object):
         return result
 
     def __ge__(self, item):
-        """Mask data array where less than a given value (>=).
+        """Mask data elements whose values are less than a given value (>=).
 
         Parameters
         ----------
@@ -420,7 +457,7 @@ class DataArray(object):
         return result
 
     def __gt__(self, item):
-        """Mask data array where less or equal than a given value (>).
+        """Mask data elements whose values are less than or equal to a given value (>).
 
         Parameters
         ----------
@@ -446,6 +483,10 @@ class DataArray(object):
         cube[:,:,:] = sub-cube
 
         """
+        # The DataArray constructor postpones reading data from FITS files
+        # until they are first used. Read the slice from the FITS file if
+        # the data array hasn't been read yet.
+
         if self._data is None and self.filename is not None:
             data = read_slice_from_fits(self.filename, item=item,
                                         ext=self._data_ext, mask_ext='DQ',
@@ -458,6 +499,11 @@ class DataArray(object):
                 data = ma.masked_invalid(data)
         else:
             data = self._data[item]  # data = self.data[item].copy()
+
+        # The DataArray constructor postpones reading variances from
+        # FITS files until they are first used. Read the slice of
+        # variances from the FITS file if the variance array hasn't
+        # been read yet.
 
         if self._var is None:
             if self.filename is not None:
@@ -477,6 +523,9 @@ class DataArray(object):
                 var = None
         else:
             var = self._var[item]  # copy
+
+        # Construct new WCS and wavelength coordinate information for
+        # the slice.
 
         wave = None
         wcs = None
@@ -512,7 +561,7 @@ class DataArray(object):
                 primary_header=fits.Header(self.primary_header))
 
     def get_wcs_header(self):
-        """Return a FITS header with the world coordinates from the wcs."""
+        """Return a FITS header containing coordinate descriptions."""
         if self.ndim == 1 and self.wave is not None:
             return self.wave.to_header()
         elif self.ndim == 2 and self.wcs is not None:
@@ -528,8 +577,8 @@ class DataArray(object):
         name : str
             Extension name, ``DATA`` by default.
         savemask : str
-            If `dq`, the mask array is saved in ``DQ`` extension.
-            If `nan`, masked data are replaced by nan in ``DATA`` extension.
+            If `dq`, the mask array is saved in a ``DQ`` extension.
+            If `nan`, masked data are replaced by nan in a ``DATA`` extension.
             If `none`, masked array is not saved.
 
         Returns
@@ -547,7 +596,7 @@ class DataArray(object):
             # if there are masked values in a non-float array.
             if not np.issubdtype(self.data.dtype, np.float):
                 raise ValueError('The .data array contains masked values but '
-                                 'its type does not allow to replace with '
+                                 'its type does not allow replacement with '
                                  'NaNs. You can either fill the array with '
                                  'another value or use another option for '
                                  'savemask.')
@@ -587,7 +636,7 @@ class DataArray(object):
         return fits.ImageHDU(name=name, data=self.var, header=header)
 
     def write(self, filename, savemask='dq'):
-        """Save the cube in a FITS file.
+        """Save the data to a FITS file.
 
         Parameters
         ----------
@@ -629,7 +678,7 @@ class DataArray(object):
         self.filename = filename
 
     def sqrt(self, out=None):
-        """Return a new object with the positive square-root of the data.
+        """Return a new object with positive data square-rooted, and negative data masked.
 
         Parameters
         ----------
@@ -677,7 +726,7 @@ class DataArray(object):
         self.data = np.ma.masked_invalid(self.data)
 
     def mask_variance(self, threshold):
-        """Mask pixels with a variance upper than threshold value.
+        """Mask pixels with a variance above a threshold value.
 
         Parameters
         ----------
@@ -691,12 +740,12 @@ class DataArray(object):
             self.data[self.var > threshold] = np.ma.masked
 
     def mask_selection(self, ksel):
-        """Mask pixels corresponding to the selection.
+        """Mask selected pixels.
 
         Parameters
         ----------
         ksel : output of np.where
-            elements depending on a condition
+            Elements depending on a condition
 
         """
         self.data[ksel] = np.ma.masked
