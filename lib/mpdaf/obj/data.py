@@ -695,8 +695,17 @@ class DataArray(object):
 
         out.data = np.ma.sqrt(self.data)
         out.unit = self.unit / u.Unit(np.sqrt(self.unit.scale))
+
+        # Modify the variances to account for the effect of the square root.
+
         if self.var is not None:
-            out.var = 3 * self.var / self.data.data ** 4
+            # For a value x, picked from a distribution of
+            # variance, vx, the expected variance of sqrt(x), is:
+            #
+            #  vs = (d[sqrt(x)]/dx)**2 * vx
+            #     = (0.5 / sqrt(x))**2 * vx
+            #     = 0.25 / x * vx.
+            out.var = 0.25 * self.var / self.data
         return out
 
     def abs(self, out=None):
