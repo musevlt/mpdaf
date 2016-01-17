@@ -598,3 +598,27 @@ def test_mask_variance():
 
     assert_array_equal(spec.data.mask,
                        np.logical_or(var < lower_lim, var > upper_lim))
+
+@attr(speed='fast')
+def test_mask_selection():
+    """DataArray class: Testing the mask_selection method"""
+
+    # Create a test spectrum with a ramp for the data array
+    # and all values below a specified limit masked.
+
+    n = 10
+    ramp = np.arange(n, dtype=float)
+    lower_lim = 1.5
+    spec = generate_spectrum(data=ramp, mask = ramp < lower_lim)
+
+    # Apply the mask_selection method to mask values above a different
+    # threshold.
+
+    upper_lim = 6.5
+    spec.mask_selection(np.where(ramp > upper_lim))
+
+    # Check that the resulting data mask is the union of the
+    # originally mask and the newly selected mask.
+
+    assert_array_equal(spec.data.mask,
+                       np.logical_or(ramp < lower_lim, ramp > upper_lim))
