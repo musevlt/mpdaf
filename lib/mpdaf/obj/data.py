@@ -682,7 +682,7 @@ class DataArray(object):
 
         Parameters
         ----------
-        out : :class:`mpdaf.obj.Image`, optional
+        out : :class:`mpdaf.obj.DataArray`, optional
             Array of the same shape as input, into which the output is placed.
             By default, a new array is created.
 
@@ -713,7 +713,7 @@ class DataArray(object):
 
         Parameters
         ----------
-        out : :class:`mpdaf.obj.Image`, optional
+        out : :class:`mpdaf.obj.DataArray`, optional
             Array of the same shape as input, into which the output is placed.
             By default, a new array is created.
 
