@@ -34,14 +34,16 @@ def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
     if step is not None:
         assert_array_equal(ima.get_step(), step)
 
-def generate_image(data=2.0, var=1.0, shape=None, unit=u.ct, wcs=None,
-                   copy=True):
+def generate_image(data=2.0, var=1.0, mask=None, shape=None,
+                   unit=u.ct, wcs=None, copy=True):
 
     """Generate a simple image for unit tests.
 
     The data array can either be specified explicitly, or its shape
     can be specified along with a constant value to assign to its
-    elements. Similarly for the variance array.
+    elements. Similarly for the variance and mask arrays. If one or
+    more of the data, var or mask array arguments are provided, their
+    shapes must match each other and the optional shape argument.
 
     Parameters
     ----------
@@ -52,6 +54,8 @@ def generate_image(data=2.0, var=1.0, shape=None, unit=u.ct, wcs=None,
         Either a 2D array to assign to the image's variance array, a float
         to assign to each element of the variance array, or None if no
         variance array is desired.
+    mask : Either a 3D boolean array to use to mask the data array, or
+           None, to indicate that all data values should be left unmasked.
     shape : tuple of 2 integers
         Either None, or the shape to give the data and variance arrays.
         If either data or var are arrays, this must match their shape.
@@ -80,7 +84,7 @@ def generate_image(data=2.0, var=1.0, shape=None, unit=u.ct, wcs=None,
     # specified shape, the shape of a specified data or var array, or
     # the default shape.
 
-    shape = shape or (data.shape if data.ndim > 0 else None) or (var.shape if var!=None and var.ndim > 0 else None) or (6, 5)
+    shape = shape or (data.shape if data.ndim > 0 else None) or (var.shape if var!=None and var.ndim > 0 else None) or (mask.shape if mask != None and mask.ndim > 0 else None) or (6, 5)
 
     # Check the shape denotes a image with at least 1 element.
 
@@ -117,6 +121,8 @@ def generate_image(data=2.0, var=1.0, shape=None, unit=u.ct, wcs=None,
         raise ValueError('Mismatch between shape and data arguments.')
     elif var!=None and not np.array_equal(shape, var.shape):
         raise ValueError('Mismatch between shape and var arguments.')
+    elif mask != None and not np.array_equal(shape, mask.shape):
+        raise ValueError('Mismatch between shape and mask arguments.')
 
     # Substitute default world-coordinates where not specified.
 
@@ -124,17 +130,20 @@ def generate_image(data=2.0, var=1.0, shape=None, unit=u.ct, wcs=None,
 
     # Create the image.
 
-    return Image(data=data, var=var, wcs=wcs, unit=unit, copy=docopy)
+    return Image(data=data, var=var, mask=mask, wcs=wcs, unit=unit,
+                 copy=docopy)
 
-def generate_spectrum(data=None, var=1.0, shape=None, uwave=u.angstrom,
-                      crpix=2.0, cdelt=3.0, crval=0.5, wave=None, unit=u.ct,
-                      copy=True):
+def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
+                      uwave=u.angstrom, crpix=2.0, cdelt=3.0,
+                      crval=0.5, wave=None, unit=u.ct, copy=True):
 
     """Generate a simple spectrum for unit tests.
 
     The data array can either be specified explicitly, or its shape
     can be specified along with a constant value to assign to its
-    elements. Similarly for the variance array.
+    elements. Similarly for the variance and mask arrays. If one or
+    more of the data, var or mask array arguments are provided, their
+    shapes must match each other and the optional shape argument.
 
     Parameters
     ----------
@@ -146,10 +155,12 @@ def generate_spectrum(data=None, var=1.0, shape=None, uwave=u.angstrom,
         Either a 1D array to assign to the spectrum's variance array,
         a float to assign to each element of the variance array,
         or None if no variance array is desired.
+    mask : Either a 3D boolean array to use to mask the data array, or
+           None, to indicate that all data values should be left unmasked.
     shape : int
         Either None, or the size to give the data and variance arrays.
-        If either data or var are arrays, this must match their shape.
-        If shape==None and neither data nor var are arrays, 10 is used.
+        If either data, var or mask are arrays, this must match their shape.
+        If shape==None and neither data, var, nor mask are arrays, 10 is used.
     uwave : :class:`astropy.units.Unit`
         The units to use for wavelengths.
     crpix : float
@@ -183,7 +194,7 @@ def generate_spectrum(data=None, var=1.0, shape=None, uwave=u.angstrom,
     # specified shape, the shape of a specified data or var array, or
     # the default shape.
 
-    shape = shape or (data.shape if data!=None and data.ndim > 0 else None) or (var.shape if var!=None and var.ndim > 0 else None) or 10
+    shape = shape or (data.shape if data!=None and data.ndim > 0 else None) or (var.shape if var!=None and var.ndim > 0 else None) or (mask.shape if mask != None and mask.ndim > 0 else None) or 10
 
     # To allow comparison with numpy.ndarray shapes, force shape to have
     # at least one dimension.
@@ -235,6 +246,8 @@ def generate_spectrum(data=None, var=1.0, shape=None, uwave=u.angstrom,
         raise ValueError('Mismatch between shape and data arguments.')
     elif var!=None and not np.array_equal(shape, var.shape):
         raise ValueError('Mismatch between shape and var arguments.')
+    elif mask != None and not np.array_equal(shape, mask.shape):
+        raise ValueError('Mismatch between shape and mask arguments.')
 
     # Determine the wavelength coordinates.
 
@@ -245,15 +258,18 @@ def generate_spectrum(data=None, var=1.0, shape=None, uwave=u.angstrom,
 
     # Create the spectrum.
 
-    return Spectrum(data=data, var=var, wave=wave, unit=unit, copy=docopy)
+    return Spectrum(data=data, var=var, mask=mask, wave=wave,
+                    unit=unit, copy=docopy)
 
-def generate_cube(data=2.3, var=1.0, shape=None, uwave=u.angstrom,
+def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
                   unit=u.ct, wcs=None, wave=None, copy=True):
     """Generate a simple cube for unit tests.
 
     The data array can either be specified explicitly, or its shape
     can be specified along with a constant value to assign to its
-    elements. Similarly for the variance array.
+    elements. Similarly for the variance and mask arrays. If one or
+    more of the data, var or mask array arguments are provided, their
+    shapes must match each other and the optional shape argument.
 
     Parameters
     ----------
@@ -264,6 +280,8 @@ def generate_cube(data=2.3, var=1.0, shape=None, uwave=u.angstrom,
         Either a 3D array to assign to the cube's variance array, a float
         to assign to each element of the variance array, or None if no
         variance array is desired.
+    mask : Either a 3D boolean array to use to mask the data array, or
+           None, to indicate that all data values should be left unmasked.
     shape : tuple of 3 integers
         Either None, or the shape to give the data and variance arrays.
         If either data or var are arrays, this must match their shape.
@@ -296,7 +314,7 @@ def generate_cube(data=2.3, var=1.0, shape=None, uwave=u.angstrom,
     # specified shape, the shape of a specified data or var array, or
     # the default shape.
 
-    shape = shape or (data.shape if data.ndim > 0 else None) or (var.shape if var != None and var.ndim > 0 else None) or (10, 6, 5)
+    shape = shape or (data.shape if data.ndim > 0 else None) or (var.shape if var != None and var.ndim > 0 else None) or (mask.shape if mask != None and mask.ndim > 0 else None) or (10, 6, 5)
 
     # Check the shape denotes a cube with at least 1 element.
 
@@ -327,12 +345,14 @@ def generate_cube(data=2.3, var=1.0, shape=None, uwave=u.angstrom,
     else:
         docopy = copy
 
-    # Check that the shapes of the data and var arguments are consistent.
+    # Check that the shapes of the data, var and mask arguments are consistent.
 
     if not np.array_equal(shape, data.shape):
         raise ValueError('Mismatch between shape and data arguments.')
-    elif var!=None and not np.array_equal(shape, var.shape):
+    elif var != None and not np.array_equal(shape, var.shape):
         raise ValueError('Mismatch between shape and var arguments.')
+    elif mask != None and not np.array_equal(shape, mask.shape):
+        raise ValueError('Mismatch between shape and mask arguments.')
 
     # Substitute default world-coordinates where not specified.
 
@@ -347,5 +367,5 @@ def generate_cube(data=2.3, var=1.0, shape=None, uwave=u.angstrom,
 
     # Create the cube.
 
-    return Cube(data=data, var=var, wave=wave, wcs=wcs, unit=unit,
+    return Cube(data=data, var=var, mask=mask, wave=wave, wcs=wcs, unit=unit,
                 copy=docopy)
