@@ -1233,12 +1233,11 @@ class PixTable(object):
         Parameters
         ----------
         filename : str
-            The FITS filename used to saves the resulted object.
+            The FITS filename used to save the resulted object.
         sky : (float, float, float, char)
             (y, x, size, shape) extract an aperture on the sky, defined by
             a center (y, x) in degrees/pixel, a shape ('C' for circular, 'S'
             for square) and size (radius or half side length) in arcsec/pixels.
-
         lbda : (float, float)
             (min, max) wavelength range in angstrom.
         ifu : int or list
@@ -1914,8 +1913,8 @@ class PixTable(object):
 
         result = np.empty_like(data, dtype=np.float64)
         stat_result = np.empty((1,), dtype=np.float64)
-        corr = np.ones(24 * 48 * 4, dtype=np.float64)  # zeros
-        npts = np.zeros(24 * 48 * 4, dtype=np.int32)
+        corr = np.full(24 * 48 * 4, np.nan, dtype=np.float64)
+        npts = np.zeros(24 * 48 * 4, dtype=np.int32) - 1
 
         libCmethods.mpdaf_slice_median(
             result, stat_result, corr, npts, ifu, sli, data, lbda,
@@ -2032,8 +2031,8 @@ class PixTable(object):
 
         result = np.empty_like(data, dtype=np.float64)
         result_stat = np.empty_like(data, dtype=np.float64)
-        corr = np.ones(24 * 48 * 4, dtype=np.float64)  # zeros
-        npts = np.zeros(24 * 48 * 4, dtype=np.int32)
+        corr = np.full(24 * 48 * 4, np.nan, dtype=np.float64)
+        npts = np.zeros(24 * 48 * 4, dtype=np.int32) - 1
 
         libCmethods.mpdaf_slice_median(
             result, result_stat, corr, npts, ifu, sli, data, lbda,
