@@ -147,7 +147,7 @@ class DataArray(object):
                 warnings.warn('No physical unit in the FITS header: missing '
                               'BUNIT keyword.', MpdafUnitsWarning)
             except Exception as e:
-                warnings.warn('Error parsing the BUNIT: ' + e.message,
+                warnings.warn('Error parsing the BUNIT: ' + str(e),
                               MpdafUnitsWarning)
 
             if 'FSCALE' in hdr:
