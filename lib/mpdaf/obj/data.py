@@ -1,3 +1,9 @@
+# Import the recommended python 2 -> 3 compatibility modules.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import logging
 import numpy as np
@@ -33,14 +39,14 @@ class DataArray(object):
         ``u.dimensionless_unscaled``.
     copy : bool
         If ``True`` (default), then the data and variance arrays are copied.
-        Passed to :class:`np.ma.MaskedArray`.
+        Passed to :class:`numpy.ma.MaskedArray`.
     dtype : :class:`numpy.dtype`
         Type of the data, default to ``float``.
-        Passed to :class:`np.ma.MaskedArray`.
+        Passed to :class:`numpy.ma.MaskedArray`.
     data : :class:`numpy.ndarray` or list
-        Data array, passed to :class:`np.ma.MaskedArray`.
+        Data array, passed to :class:`numpy.ma.MaskedArray`.
     var : :class:`numpy.ndarray` or list
-        Variance array, passed to :func:`np.array`.
+        Variance array, passed to :func:`numpy.array`.
     mask : bool or :class:`numpy.ma.nomask` or :class:`numpy.ndarray`
         Mask used for the creation of the ``.data`` MaskedArray. If mask is
         False (default value), a mask array of the same size of the data array
@@ -62,7 +68,7 @@ class DataArray(object):
         Number of dimensions.
     :attr:`shape` : sequence
         Lengths of the data axes (python notation (nz,ny,nx)).
-    :attr:`data` : :class:`np.ma.MaskedArray`
+    :attr:`data` : :class:`numpy.ma.MaskedArray`
         Masked array containing the cube of pixel values.
     :attr:`data_header` : :class:`astropy.io.fits.Header`
         FITS data header instance.
