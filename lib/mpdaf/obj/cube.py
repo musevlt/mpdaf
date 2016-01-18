@@ -208,37 +208,54 @@ class Cube(DataArray):
             self._logger.info('.ima: %s', ', '.join(self.ima.keys()))
 
     def resize(self):
-        """Resize the cube to have a minimum number of masked values."""
+        """Reduce the size of the cube to the smallest sub-cube that
+           keeps all unmasked pixels. This removes any margins around
+           the cube that only contain masked pixels. If all pixels are
+           masked in the input cube, the data and variance arrays are
+           deleted."""
+
         if self.data is not None:
+
+            # Get the indexes of all pixels that aren't masked.
+
             ksel = np.where(~self.data.mask)
-            item = (slice(ksel[0][0], ksel[0][-1] + 1, None),
-                    slice(ksel[1][0], ksel[1][-1] + 1, None),
-                    slice(ksel[2][0], ksel[2][-1] + 1, None))
+
+            # If all pixels are masked, simply delete the data
+            # and variance arrays.
+
+            if ksel[0].size == 0:
+                self.data = None
+                self.var = None
+                return
+
+            # Determine the ranges of indexes along each axis that
+            # encompass all of the unmasked pixels, and convert this
+            # to slice prescriptions for selecting the corresponding
+            # sub-cube.
+
+            item = (slice(min(ksel[0]), max(ksel[0]) + 1, None), # Z axis
+                    slice(min(ksel[1]), max(ksel[1]) + 1, None), # Y axis
+                    slice(min(ksel[2]), max(ksel[2]) + 1, None)) # X axis
+
+            # Extract the sub-cube selected above.
 
             self.data = self.data[item]
-            if is_int(item[0]):
-                if is_int(item[1]):
-                    self.data = self.data[np.newaxis, np.newaxis, :]
-                elif is_int(item[2]):
-                    self.data = self.data[np.newaxis, :, np.newaxis]
-                else:
-                    self.data = self.data[np.newaxis, :, :]
-            elif is_int(item[1]):
-                if is_int(item[2]):
-                    self.data = self.data[:, np.newaxis, np.newaxis]
-                else:
-                    self.data = self.data[:, np.newaxis, :]
-            elif is_int(item[2]):
-                self.data = self.data[:, :, np.newaxis]
+
+            # Do the same for the array of variances, if there is one.
 
             if self.var is not None:
                 self.var = self.var[item]
+
+            # Adjust the world-coordinates to match the image slice.
 
             try:
                 self.wcs = self.wcs[item[1], item[2]]
             except:
                 self.wcs = None
                 self._logger.warning("wcs not copied: wcs attribute is None")
+
+            # Adjust the wavelength coordinates to match the
+            # spectral slice.
 
             try:
                 self.wave = self.wave[item[0]]
