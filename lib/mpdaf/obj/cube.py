@@ -18,8 +18,24 @@ from ..tools import deprecated
 
 __all__ = ['iter_spe', 'iter_ima', 'Cube']
 
+# Define an iterator for iterating over all spectra in a cube.
 
 class iter_spe(object):
+
+    """An iterator for iterating over the spectra in a Cube object.
+
+    Parameters
+    ----------
+    cube : :class:`mpdaf.obj.Cube`
+       The cube that contains the spectra to be returned one after
+       another.
+    index : boolean
+       If index=False, only return a spectrum at each iteration.
+       If index=True, return both a spectrum and the position of that
+       spectrum in the image. The position is returned as a tuple
+       of image-array indexes along the axes (dec,ra).
+
+    """
 
     def __init__(self, cube, index=False):
         self.cube = cube
@@ -28,7 +44,7 @@ class iter_spe(object):
         self.index = index
 
     def next(self):
-        """Return the next spectrum."""
+        """Return the next spectrum from the cube."""
         if self.q == 0:
             self.p -= 1
             self.q = self.cube.shape[2]
@@ -46,6 +62,20 @@ class iter_spe(object):
 
 
 class iter_ima(object):
+
+    """An iterator for iterating over the images in a Cube object.
+
+    Parameters
+    ----------
+    cube : :class:`mpdaf.obj.Cube`
+       The cube that contains the spectra to be returned one after
+       another.
+    index : boolean
+       If index=False, only return an image at each iteration.
+       If index=True, return both an image and the spectral pixel
+       of that image in the cube.
+
+    """
 
     def __init__(self, cube, index=False):
         self.cube = cube
@@ -74,55 +104,67 @@ class Cube(DataArray):
     Parameters
     ----------
     filename : string
-        Possible FITS file name. None by default.
+        Optional FITS file name. ``None`` by default.
     ext : integer or (integer,integer) or string or (string,string)
-        Number/name of the data extension
-        or numbers/names of the data and variance extensions.
+        The optional number/name of the data extension
+        or the numbers/names of the data and variance extensions.
     wcs : :class:`mpdaf.obj.WCS`
-        World coordinates.
+        The world coordinates of the image pixels.
     wave : :class:`mpdaf.obj.WaveCoord`
-        Wavelength coordinates.
-    unit : astropy.units
-        Physical units of the data values.
-        u.dimensionless_unscaled by default.
-    data : float array
-        Array containing the pixel values of the cube. None by default.
+        The wavelength coordinates of the spectral pixels.
+    unit : :class:`astropy.units.Unit`
+        The physical units of the data values. Defaults to
+        ``u.dimensionless_unscaled``.
+    data : :class:`numpy.ndarray` or list
+        An optional array containing the values of each pixel in the
+        cube (``None`` by default). Where given, this array should be
+        3 dimensional, and the python ordering of its axes should be
+        (wavelength,declination,right-ascension).
     var : float array
-        Array containing the variance. None by default.
+        An optional array containing the variances of each pixel in the
+        cube (``None`` by default). Where given, this array should be
+        3 dimensional, and the python ordering of its axes should be
+        (wavelength,declination,right-ascension).
     ima : boolean
-        If true (default), image extension of the FITS file are loaded
-        in the .ima dictionary.
+        If true (default), any 2 dimensional IMAGE extensions that are
+        found in the FITS file will be loaded and stored in the
+        dictionary attribute, ``.ima``, indexed by their FITS extension
+        name.
     copy : boolean
         If true (default), then the data and variance arrays are copied.
-    dtype : numpy.dtype
-        Type of the data (integer, float)
+    dtype : :class:`numpy.dtype`
+        The type of the data (integer, float)
 
     Attributes
     ----------
-    filename : string
-        Possible FITS filename.
-    primary_header : pyfits.Header
-        FITS primary header instance.
-    wcs : :class:`mpdaf.obj.WCS`
-        World coordinates.
-    wave : :class:`mpdaf.obj.WaveCoord`
-        Wavelength coordinates
-    shape : tuple
-        Lengths of data (python notation (nz,ny,nx)).
-    data : masked array numpy.ma
-        Masked array containing the cube pixel values.
-    data_header : pyfits.Header
-        FITS data header instance.
-    unit : astropy.units
-        Physical units of the data values.
-    dtype : numpy.dtype
-        Type of the data (integer, float)
-    var : float array
-        Array containing the variance.
-    ima : dict{string,:class:`mpdaf.obj.Image`}
-        dictionary of images
+    :attr:`filename` : string
+        The name of the originating FITS file, if any. Otherwise ``None``.
+    :attr:`primary_header` : :class:`pyfits.Header`
+        The FITS primary header instance, if a FITS file was
+        provided. Otherwise ``None``.
+    :attr:`wcs` : :class:`mpdaf.obj.WCS`
+        The world coordinates of the image pixels.
+    :attr:`wave` : :class:`mpdaf.obj.WaveCoord`
+        The wavelength coordinates of the spectral pixels.
+    :attr:`shape` : tuple
+        The dimensions of the data axes (python axis ordering (nz,ny,nx)).
+    :attr:`data` : :class:`numpy.ma.MaskedArray`
+        A masked array containing the pixel values of the cube.
+    :attr:`data_header` : :class:`pyfits.Header`
+        The FITS header of the DATA extension.
+    :attr:`unit` : :class:`astropy.units`
+        The physical units of the data values.
+    :attr:`dtype` : :class:`numpy.dtype`
+        The type of the data (integer, float)
+    :attr:`var` : float array
+        An optional array containing the variance, or ``None``.
+    :attr:`ima` : dict{string,:class:`mpdaf.obj.Image`}
+        A dictionary of 2D images.
 
     """
+
+    # Tell the DataArray base class that cubes require 3 dimensional
+    # data arrays, image world coordinates and wavelength coordinates.
 
     _ndim_required = 3
     _has_wcs = True
@@ -131,9 +173,17 @@ class Cube(DataArray):
     def __init__(self, filename=None, ext=None, wcs=None, wave=None, ima=True,
                  unit=u.dimensionless_unscaled, data=None, var=None, copy=True,
                  dtype=float, **kwargs):
+
+        # Set up the DataArray base class.
+
         super(Cube, self).__init__(
             filename=filename, ext=ext, wcs=wcs, wave=wave, unit=unit,
             data=data, var=var, copy=copy, dtype=dtype, **kwargs)
+
+        # See if there are any 2-dimensional IMAGE extensions in the
+        # FITS file. If there are, load them into the self.ima
+        # dictionary, indexed by their extension names.
+
         self.ima = {}
         if filename is not None and ima:
             hdulist = pyfits.open(filename)
