@@ -9,6 +9,7 @@ from datetime import datetime
 from numpy import ma
 
 from .coords import WCS, WaveCoord
+from .objs import UnitMaskedArray
 from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
                      fix_unit_read, is_valid_fits_file, read_slice_from_fits,
                      copy_header)
@@ -505,6 +506,30 @@ class DataArray(object):
                 filename=self.filename,
                 data_header=fits.Header(self.data_header),
                 primary_header=fits.Header(self.primary_header))
+
+    def __setitem__(self, item, other):
+        """Set the corresponding part of data."""
+        if self.data is None:
+            raise ValueError('empty data array')
+
+        if isinstance(other, DataArray):
+            # FIXME: check only step or full wcs ?
+            if self._has_wave and other._has_wave \
+                    and not self.wave.isEqual(other.wave):
+                raise ValueError('Operation forbidden for cubes with different'
+                                 ' world coordinates in spectral direction')
+            if self._has_wcs and other._has_wcs \
+                    and not self.wcs.isEqual(other.wcs):
+                raise ValueError('Operation forbidden for cubes with different'
+                                 ' world coordinates in spatial directions')
+
+            if self.unit == other.unit:
+                self.data[item] = other.data
+            else:
+                self.data[item] = UnitMaskedArray(other.data, other.unit,
+                                                  self.unit)
+        else:
+            self.data[item] = other
 
     def get_wcs_header(self):
         """Return a FITS header with the world coordinates from the wcs."""

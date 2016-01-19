@@ -777,27 +777,6 @@ class Image(DataArray):
         else:
             return self.wcs.get_rot(unit)
 
-    def __setitem__(self, key, other):
-        """Set the corresponding part of data."""
-        # self.data[key] = other
-        if self.data is None:
-            raise ValueError('empty data array')
-        try:
-            self.data[key] = other
-        except:
-            # other is an image
-            if isinstance(other, Image):
-                if self.wcs is not None and other.wcs is not None \
-                        and (self.wcs.get_step() != other.wcs.get_step(unit=self.wcs.unit)).any():
-                    self._logger.warning("images with different steps")
-                if self.unit == other.unit:
-                    self.data[key] = other.data
-                else:
-                    self.data[key] = UnitMaskedArray(other.data, other.unit,
-                                                     self.unit)
-            else:
-                raise IOError('Operation forbidden')
-
     def set_wcs(self, wcs):
         """Set the world coordinates.
 

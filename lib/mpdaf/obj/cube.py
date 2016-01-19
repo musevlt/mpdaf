@@ -1075,35 +1075,6 @@ class Cube(DataArray):
         """
         return self.wcs.get_rot(unit)
 
-    def __setitem__(self, key, other):
-        """Set the corresponding part of data."""
-        if self.data is None:
-            raise ValueError('empty data array')
-
-        if not isinstance(other, DataArray):
-            try:
-                self.data[key] = other
-            except:
-                raise IOError('Operation forbidden')
-        else:
-            if other.ndim == 1 or other.ndim == 3:
-                if self.wave is not None and other.wave is not None \
-                        and not self.wave.isEqual(other.wave):
-                    raise IOError('Operation forbidden for cubes with '
-                                  'different world coordinates '
-                                  'in spectral direction')
-            if other.ndim == 2 or other.ndim == 3:
-                if self.wcs is not None and other.wcs is not None \
-                        and not self.wcs.isEqual(other.wcs):
-                    raise ValueError('Operation forbidden for cubes '
-                                     'with different world coordinates'
-                                     ' in spatial directions')
-            if self.unit == other.unit:
-                self.data[key] = other.data
-            else:
-                self.data[key] = UnitMaskedArray(other.data,
-                                                 other.unit, self.unit)
-
     def set_wcs(self, wcs=None, wave=None):
         """Set the world coordinates (spatial and/or spectral).
 
