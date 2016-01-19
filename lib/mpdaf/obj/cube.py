@@ -26,14 +26,14 @@ class iter_spe(object):
 
     Parameters
     ----------
-    cube : :class:`mpdaf.obj.Cube`
+    cube : mpdaf.obj.Cube
        The cube that contains the spectra to be returned one after
        another.
     index : boolean
        If index=False, only return a spectrum at each iteration.
        If index=True, return both a spectrum and the position of that
        spectrum in the image. The position is returned as a tuple
-       of image-array indexes along the axes (dec,ra).
+       of image-array indexes along the axes (y,x).
 
     """
 
@@ -67,7 +67,7 @@ class iter_ima(object):
 
     Parameters
     ----------
-    cube : :class:`mpdaf.obj.Cube`
+    cube : mpdaf.obj.Cube
        The cube that contains the spectra to be returned one after
        another.
     index : boolean
@@ -104,61 +104,61 @@ class Cube(DataArray):
     Parameters
     ----------
     filename : string
-        Optional FITS file name. ``None`` by default.
+        Optional FITS file name. None by default.
     ext : integer or (integer,integer) or string or (string,string)
         The optional number/name of the data extension
         or the numbers/names of the data and variance extensions.
-    wcs : :class:`mpdaf.obj.WCS`
+    wcs : mpdaf.obj.WCS
         The world coordinates of the image pixels.
-    wave : :class:`mpdaf.obj.WaveCoord`
+    wave : mpdaf.obj.WaveCoord
         The wavelength coordinates of the spectral pixels.
-    unit : :class:`astropy.units.Unit`
+    unit : astropy.units.Unit
         The physical units of the data values. Defaults to
-        ``u.dimensionless_unscaled``.
-    data : :class:`numpy.ndarray` or list
+        u.dimensionless_unscaled.
+    data : numpy.ndarray or list
         An optional array containing the values of each pixel in the
-        cube (``None`` by default). Where given, this array should be
+        cube (None by default). Where given, this array should be
         3 dimensional, and the python ordering of its axes should be
-        (wavelength,declination,right-ascension).
+        (wavelength,image_y,image_x).
     var : float array
         An optional array containing the variances of each pixel in the
-        cube (``None`` by default). Where given, this array should be
+        cube (None by default). Where given, this array should be
         3 dimensional, and the python ordering of its axes should be
-        (wavelength,declination,right-ascension).
+        (wavelength,image_y,image_x).
     ima : boolean
         If true (default), any 2 dimensional IMAGE extensions that are
         found in the FITS file will be loaded and stored in the
-        dictionary attribute, ``.ima``, indexed by their FITS extension
+        dictionary attribute, .ima, indexed by their FITS extension
         name.
     copy : boolean
         If true (default), then the data and variance arrays are copied.
-    dtype : :class:`numpy.dtype`
+    dtype : numpy.dtype
         The type of the data (integer, float)
 
     Attributes
     ----------
-    :attr:`filename` : string
-        The name of the originating FITS file, if any. Otherwise ``None``.
-    :attr:`primary_header` : :class:`pyfits.Header`
+    filename : string
+        The name of the originating FITS file, if any. Otherwise None.
+    primary_header : pyfits.Header
         The FITS primary header instance, if a FITS file was
-        provided. Otherwise ``None``.
-    :attr:`wcs` : :class:`mpdaf.obj.WCS`
+        provided. Otherwise None.
+    wcs : mpdaf.obj.WCS
         The world coordinates of the image pixels.
-    :attr:`wave` : :class:`mpdaf.obj.WaveCoord`
+    wave : mpdaf.obj.WaveCoord
         The wavelength coordinates of the spectral pixels.
-    :attr:`shape` : tuple
+    shape : tuple
         The dimensions of the data axes (python axis ordering (nz,ny,nx)).
-    :attr:`data` : :class:`numpy.ma.MaskedArray`
+    data : numpy.ma.MaskedArray
         A masked array containing the pixel values of the cube.
-    :attr:`data_header` : :class:`pyfits.Header`
+    data_header : pyfits.Header
         The FITS header of the DATA extension.
-    :attr:`unit` : :class:`astropy.units`
+    unit : astropy.units
         The physical units of the data values.
-    :attr:`dtype` : :class:`numpy.dtype`
+    dtype : numpy.dtype
         The type of the data (integer, float)
-    :attr:`var` : float array
-        An optional array containing the variance, or ``None``.
-    :attr:`ima` : dict{string,:class:`mpdaf.obj.Image`}
+    var : float array
+        An optional array containing the variance, or None.
+    ima : dict{string,mpdaf.obj.Image}
         A dictionary of 2D images.
 
     """
@@ -266,33 +266,37 @@ class Cube(DataArray):
 
     def mask(self, center, radius, lmin=None, lmax=None, inside=True,
              unit_center=u.deg, unit_radius=u.arcsec, unit_wave=u.angstrom):
-        """Mask values inside/outside the described region.
+        """Mask values inside or outside a specified region.
 
         Parameters
         ----------
         center : (float,float)
-            Center of the explored region.
+            The center of the region.
         radius : float or (float,float)
-            Radius defined the explored region.
-            If radius is float, it defined a circular region.
-            If radius is (float,float), it defined a rectangular region.
+            The radius of the region.
+            If radius is a float, it denotes the radius of a circular region.
+            If radius is (float,float), it denotes the width of a square region.
         lmin : float
-            minimum wavelength.
+            The minimum wavelength of the region.
         lmax : float
-            maximum wavelength.
+            The maximum wavelength of the region.
         inside : boolean
             If inside is True, pixels inside the described region are masked.
             If inside is False, pixels outside the described region are masked.
         unit_wave : astropy.units
-            Type of the wavelengths coordinates (Angstrom by default)
-            If None, inputs are in pixels
+            The units of the lmin and lmax wavelength coordinates
+            (Angstroms by default). If None, the units of the lmin and lmax
+            arguments are assumed to be pixels.
         unit_center : astropy.units
-            Type of the coordinates of the center (degrees by default)
-            If None, inputs are in pixels
+            The units of the coordinates of the center argument
+            (degrees by default).  If None, the units of the center
+            argument are assumed to be pixels.
         unit_radius : astropy.units
-            Radius unit (arcseconds by default). If None, inputs are in pixels.
+            The units of the radius argument (arcseconds by default).
+            If None, the units are assumed to be pixels.
 
         """
+
         center = np.array(center)
 
         if is_int(radius) or is_float(radius):
@@ -1176,9 +1180,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        wcs : :class:`mpdaf.obj.WCS`
+        wcs : mpdaf.obj.WCS
             World coordinates.
-        wave : :class:`mpdaf.obj.WaveCoord`
+        wave : mpdaf.obj.WaveCoord
             Wavelength coordinates.
 
         """
@@ -1206,11 +1210,11 @@ class Cube(DataArray):
         axis : None or int or tuple of ints
             Axis or axes along which a sum is performed:
 
-            - The default (``axis = None``) is perform a sum over all the
+            - The default (axis = None) is perform a sum over all the
               dimensions of the cube and returns a float.
-            - ``axis = 0`` is perform a sum over the wavelength dimension and
+            - axis = 0 is perform a sum over the wavelength dimension and
               returns an image.
-            - ``axis = (1,2)`` is perform a sum over the (X,Y) axes and returns
+            - axis = (1,2) is perform a sum over the (X,Y) axes and returns
               a spectrum.
 
             Other cases return None.
@@ -1366,11 +1370,11 @@ class Cube(DataArray):
         axis : None or int or tuple of ints
             Axis or axes along which a mean is performed.
 
-            - The default (``axis = None``) is perform a mean over all the
+            - The default (axis = None) is perform a mean over all the
               dimensions of the cube and returns a float.
-            - ``axis = 0`` is perform a mean over the wavelength dimension and
+            - axis = 0 is perform a mean over the wavelength dimension and
               returns an image.
-            - ``axis = (1,2)`` is perform a mean over the (X,Y) axes and
+            - axis = (1,2) is perform a mean over the (X,Y) axes and
               returns a spectrum.
 
             Other cases return None.
@@ -1413,11 +1417,11 @@ class Cube(DataArray):
         axis : None or int or tuple of ints
             Axis or axes along which a median is performed.
 
-            - The default (``axis = None``) is perform a median over all the
+            - The default (axis = None) is perform a median over all the
               dimensions of the cube and returns a float.
-            - ``axis = 0`` is perform a median over the wavelength dimension and
+            - axis = 0 is perform a median over the wavelength dimension and
               returns an image.
-            - ``axis = (1,2)`` is perform a median over the (X,Y) axes and
+            - axis = (1,2) is perform a median over the (X,Y) axes and
               returns a spectrum.
 
             Other cases return None.
@@ -1459,7 +1463,7 @@ class Cube(DataArray):
         coord : array
             array containing the sub-cube boundaries
             [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
-            (output of `mpdaf.obj.cube.get_range`)
+            (output of mpdaf.obj.cube.get_range)
         mask : boolean
             if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
         unit_wave : astropy.units
@@ -2103,7 +2107,7 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube`
+        out : mpdaf.obj.Cube
         """
         if is_int(factor):
             factor = (factor, factor, factor)
@@ -2161,12 +2165,12 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        f : function or :class:`mpdaf.obj.Spectrum` method
+        f : function or mpdaf.obj.Spectrum method
             Spectrum method or function that the first argument
             is a spectrum object.
         cpu : integer
             number of CPUs. It is also possible to set
-            the ``mpdaf.CPU`` global variable.
+            the mpdaf.CPU global variable.
         verbose : boolean
             if True, progression is printed.
         kargs : kargs
@@ -2174,8 +2178,8 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Spectrum`,
-        out : :class:`mpdaf.obj.Image` if f returns a number,
+        out : mpdaf.obj.Cube if f returns mpdaf.obj.Spectrum,
+        out : mpdaf.obj.Image if f returns a number,
         out : np.array(dtype=object) in others cases.
 
         """
@@ -2272,7 +2276,7 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        f : function or :class:`mpdaf.obj.Image` method
+        f : function or mpdaf.obj.Image method
             Image method or function that the first argument
             is a Image object. It should return an Image object.
         cpu : integer
@@ -2284,8 +2288,8 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube` if f returns :class:`mpdaf.obj.Image`,
-        out : :class:`mpdaf.obj.Spectrum` if f returns a number,
+        out : mpdaf.obj.Cube if f returns mpdaf.obj.Image,
+        out : mpdaf.obj.Spectrum if f returns a number,
         out : np.array(dtype=object) in others cases.
 
         """
@@ -2416,7 +2420,7 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : mpdaf.obj.Image
 
         """
         if unit_wave is None:
@@ -2470,7 +2474,7 @@ class Cube(DataArray):
         Parameters
         ----------
         center : (float,float)
-            Center (dec, ra) of the aperture.
+            Center (y, x) of the aperture.
         size : float
             The size to extract. It corresponds to the size along the delta
             axis and the image is square.
@@ -2486,7 +2490,7 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube`
+        out : mpdaf.obj.Cube
 
         """
         if size <= 0:
@@ -2560,7 +2564,7 @@ class Cube(DataArray):
         Parameters
         ----------
         center : (float,float)
-            Center (dec,ra) of the aperture.
+            Center of the aperture (y,x)
         radius : float
             Radius of the aperture. It corresponds to the radius
             along the delta axis and the image is square.
@@ -2573,7 +2577,7 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube`
+        out : mpdaf.obj.Cube
         """
         if radius > 0:
             if unit_center is not None:
@@ -2640,7 +2644,7 @@ class Cube(DataArray):
         Parameters
         ----------
         center : (float,float)
-            Center (dec,ra) of the aperture.
+            Center of the aperture (y,x).
         radius : float
             Radius of the aperture in arcsec.
             If None, spectrum at nearest pixel is returned
@@ -2653,7 +2657,7 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Spectrum`
+        out : mpdaf.obj.Spectrum
         """
         if radius > 0:
             cub = self.subcube_circle_aperture(center, radius,
