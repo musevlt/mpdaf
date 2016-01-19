@@ -22,61 +22,94 @@ from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
 
 class DataArray(object):
 
-    """Base class to handle arrays.
+    """The DataArray class is the parent of the mpdaf.obj.Cube,
+    mpdaf.obj.Image and mpdaf.obj.Spectrum classes. Its primary
+    purpose is to store pixel values in a masked numpy array. For
+    Cube objects this is a 3D array indexed in the order
+    [wavelength,image_y,image_x]. For Image objects it is a 2D
+    array indexed in the order [image_y,image_x]. For Spectrum
+    objects it is a 1D spectrum.
+
+    Image arrays hold flat 2D map-projections of the sky. The X and Y
+    axes of the image arrays are orthogonal on the sky at the tangent
+    point of the projection. When the rotation angle of the projection
+    on the sky is zero, the Y axis of the image arrays is along the
+    declination axis, and the X axis is perpendicular to this, with
+    the positive X axis pointing east.
+
+    The DataArray class has a number of optional features. There is
+    a .var member which can optionally hold an array of variances
+    for each value in the data array. For cubes and spectra, the
+    wavelengths of the spectral pixels can be specified in the
+    .wave member. For cubes and images, the world-coordinates of
+    the image pixels can be specified in the .wcs member.
+
+    When a DataArray object is constructed from a FITS file, the
+    name of the file and the file's primary header are recorded. If
+    the data are read from a FITS extension, the header of this
+    extension is also recorded. Alternatively, the primary header
+    and data header can be passed to the DataArray constructor.
+    Where FITS headers are neither provided, nor available in a
+    provided FITS file, generic headers are substituted.
+
+    Methods are provided for masking and unmasking pixels, and
+    performing basic arithmetic operations on pixels. Operations
+    that are specific to cubes or spectra or images are provided
+    elsewhere by derived classes.
 
     Parameters
     ----------
     filename : str
-        FITS file name, default to ``None``.
-    hdulist : :class:`astropy.fits.HDUList`
-        HDU list class, used instead of ``fits.open(filename)`` if not None,
+        FITS file name, default to None.
+    hdulist : astropy.fits.HDUList
+        HDU list class, used instead of fits.open(filename) if not None,
         to avoid opening the FITS file.
     ext : int or (int,int) or str or (str,str)
         Number/name of the data extension or numbers/names of the data and
         variance extensions.
-    unit : :class:`astropy.units.Unit`
+    unit : astropy.units.Unit
         Physical units of the data values, default to
-        ``u.dimensionless_unscaled``.
+        u.dimensionless_unscaled.
     copy : bool
-        If ``True`` (default), then the data and variance arrays are copied.
-        Passed to :class:`numpy.ma.MaskedArray`.
-    dtype : :class:`numpy.dtype`
-        Type of the data, default to ``float``.
-        Passed to :class:`numpy.ma.MaskedArray`.
-    data : :class:`numpy.ndarray` or list
-        Data array, passed to :class:`numpy.ma.MaskedArray`.
-    var : :class:`numpy.ndarray` or list
-        Variance array, passed to :func:`numpy.array`.
-    mask : bool or :class:`numpy.ma.nomask` or :class:`numpy.ndarray`
-        Mask used for the creation of the ``.data`` MaskedArray. If mask is
+        If True (default), then the data and variance arrays are copied.
+        Passed to numpy.ma.MaskedArray.
+    dtype : numpy.dtype
+        Type of the data, default to float.
+        Passed to numpy.ma.MaskedArray.
+    data : numpy.ndarray or list
+        Data array, passed to numpy.ma.MaskedArray.
+    var : numpy.ndarray or list
+        Variance array, passed to numpy.array().
+    mask : bool or numpy.ma.nomask or numpy.ndarray
+        Mask used for the creation of the .data MaskedArray. If mask is
         False (default value), a mask array of the same size of the data array
         is created. To avoid creating an array, it is possible to use
-        ``numpy.ma.nomask``, but in this case several methods will break if
+        numpy.ma.nomask, but in this case several methods will break if
         they use the mask.
 
     Attributes
     ----------
-    :attr:`filename` : str
+    filename : str
         FITS filename.
-    :attr:`primary_header` : :class:`astropy.io.fits.Header`
+    primary_header : astropy.io.fits.Header
         FITS primary header instance.
-    :attr:`wcs` : :class:`mpdaf.obj.WCS`
+    wcs : mpdaf.obj.WCS
         World coordinates.
-    :attr:`wave` : :class:`mpdaf.obj.WaveCoord`
+    wave : mpdaf.obj.WaveCoord
         Wavelength coordinates
-    :attr:`ndim` : int
+    ndim : int
         Number of dimensions.
-    :attr:`shape` : sequence
+    shape : sequence
         Lengths of the data axes (python notation (nz,ny,nx)).
-    :attr:`data` : :class:`numpy.ma.MaskedArray`
+    data : numpy.ma.MaskedArray
         Masked array containing the cube of pixel values.
-    :attr:`data_header` : :class:`astropy.io.fits.Header`
+    data_header : astropy.io.fits.Header
         FITS data header instance.
-    :attr:`unit` : :class:`astropy.units.Unit`
+    unit : astropy.units.Unit
         Physical units of the data values.
-    :attr:`dtype` : :class:`numpy.dtype`
+    dtype : numpy.dtype
         Type of the data (int, float, ...).
-    :attr:`var` : :class:`numpy.ndarray`
+    var : numpy.ndarray
         Array containing the variance.
 
     """
@@ -260,7 +293,7 @@ class DataArray(object):
 
     @property
     def ndim(self):
-        """ The number of dimensions in the data and variance arrays : `int` """
+        """ The number of dimensions in the data and variance arrays : int """
         if self._ndim is not None:
             return self._ndim
         elif self.data is not None:
@@ -268,7 +301,7 @@ class DataArray(object):
 
     @property
     def shape(self):
-        """ The lengths of each of the ``.ndim`` data axes. """
+        """ The lengths of each of the .ndim data axes. """
         if self._shape is not None:
             return self._shape
         elif self.data is not None:
@@ -276,7 +309,7 @@ class DataArray(object):
 
     @property
     def data(self):
-        """ A masked array of data values : :class:`numpy.ma.MaskedArray`. """
+        """ A masked array of data values : numpy.ma.MaskedArray. """
 
         # The DataArray constructor postpones reading data from FITS files
         # until they are first used. Read the data array here if not already
@@ -304,7 +337,8 @@ class DataArray(object):
 
     @property
     def var(self):
-        """ Either ``None``, or a :class:`numpy.ndarray` containing the variances of each data value. This has the same shape as the data array. """
+        """ Either None, or a numpy.ndarray containing the variances
+        of each data value. This has the same shape as the data array. """
 
         # The DataArray constructor postpones reading data from FITS
         # files until they are first used. On the first call to this
@@ -332,9 +366,11 @@ class DataArray(object):
             self._var_ext = None
         self._var = value
 
-    @deprecated('Variance should now be set with the `.var` attribute')
+    @deprecated('Variance should now be set with the .var attribute')
     def set_var(self, var):
-        """Deprecated: The variance array can simply be assigned to the ``.var`` attribute"""
+        """Deprecated: The variance array can simply be assigned to
+        the .var attribute"""
+
         self.var = var
 
     def copy(self):
@@ -351,14 +387,14 @@ class DataArray(object):
         Parameters
         ----------
         var : bool
-            **Deprecated**, replaced by ``var_init``.
+            **Deprecated**, replaced by var_init.
         data_init : function
             Function used to create the data array (takes the shape as
-            parameter). For example ``np.zeros`` or ``np.empty``. Default to
-            ``None`` which means that the ``data`` attribute is ``None``.
+            parameter). For example np.zeros or np.empty. Default to
+            None which means that the data attribute is None.
         var_init : function
-            Function used to create the data array, same as ``data_init``.
-            Default to ``None`` which set the ``var`` attribute to ``None``.
+            Function used to create the data array, same as data_init.
+            Default to None which set the var attribute to None.
 
         """
         if var is not None:
@@ -403,13 +439,16 @@ class DataArray(object):
             else:
                 self.wave.info()
 
-    @deprecated('Data should now be set with the `.data` attribute')
+    @deprecated('Data should now be set with the .data attribute')
     def get_np_data(self):
-        """Deprecated: Set the .data attribute instead of calling this function."""
+        """Deprecated: Set the .data attribute instead of calling
+        this function."""
+
         return self.data
 
     def __le__(self, item):
-        """Mask data elements whose values are greater than a given value (<=).
+        """Mask data elements whose values are greater than a
+           given value (<=).
 
         Parameters
         ----------
@@ -427,7 +466,8 @@ class DataArray(object):
         return result
 
     def __lt__(self, item):
-        """Mask data elements whose values are greater than or equal to a given value (<).
+        """Mask data elements whose values are greater than or equal
+        to a given value (<).
 
         Parameters
         ----------
@@ -463,7 +503,8 @@ class DataArray(object):
         return result
 
     def __gt__(self, item):
-        """Mask data elements whose values are less than or equal to a given value (>).
+        """Mask data elements whose values are less than or equal to a
+        given value (>).
 
         Parameters
         ----------
@@ -581,15 +622,15 @@ class DataArray(object):
         Parameters
         ----------
         name : str
-            Extension name, ``DATA`` by default.
+            Extension name, DATA by default.
         savemask : str
-            If `dq`, the mask array is saved in a ``DQ`` extension.
-            If `nan`, masked data are replaced by nan in a ``DATA`` extension.
-            If `none`, masked array is not saved.
+            If 'dq', the mask array is saved in a DQ extension.
+            If 'nan', masked data are replaced by nan in a DATA extension.
+            If 'none', masked array is not saved.
 
         Returns
         -------
-        out : :class:`astropy.io.fits.ImageHDU`
+        out : astropy.io.fits.ImageHDU
 
         """
         if self.data.dtype == np.float64:
@@ -620,11 +661,11 @@ class DataArray(object):
         Parameters
         ----------
         name : str
-            Extension name, ``STAT`` by default.
+            Extension name, STAT by default.
 
         Returns
         -------
-        out : :class:`astropy.io.fits.ImageHDU`
+        out : astropy.io.fits.ImageHDU
 
         """
         if self.var is None:
@@ -649,8 +690,8 @@ class DataArray(object):
         filename : str
             The FITS filename.
         savemask : str
-            If 'dq', the mask array is saved in ``DQ`` extension
-            If 'nan', masked data are replaced by nan in ``DATA`` extension.
+            If 'dq', the mask array is saved in DQ extension
+            If 'nan', masked data are replaced by nan in DATA extension.
             If 'none', masked array is not saved.
 
         """
@@ -684,11 +725,12 @@ class DataArray(object):
         self.filename = filename
 
     def sqrt(self, out=None):
-        """Return a new object with positive data square-rooted, and negative data masked.
+        """Return a new object with positive data square-rooted, and
+        negative data masked.
 
         Parameters
         ----------
-        out : :class:`mpdaf.obj.DataArray`, optional
+        out : mpdaf.obj.DataArray, optional
             Array of the same shape as input, into which the output is placed.
             By default, a new array is created.
 
@@ -719,7 +761,7 @@ class DataArray(object):
 
         Parameters
         ----------
-        out : :class:`mpdaf.obj.DataArray`, optional
+        out : mpdaf.obj.DataArray, optional
             Array of the same shape as input, into which the output is placed.
             By default, a new array is created.
 
