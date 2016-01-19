@@ -185,18 +185,8 @@ def wcs_from_header(hdr, naxis=None):
         hdr['CD3_3'] = hdr['CDELT3']
     if 'PC1_1' in hdr and 'CDELT3' in hdr and 'PC3_3' not in hdr:
         hdr['PC3_3'] = 1
-    try:
-        # WCS object from data header
-        return pywcs.WCS(hdr, naxis=naxis)
-    except ValueError as e:
-        # Workaround for https://github.com/astropy/astropy/issues/4089
-        logger = logging.getLogger(__name__)
-        logger.warning('Failed to create WCS object: "%s". Trying to fix the '
-                       'header', e)
-        for key in ('WAT0_001', 'WAT1_001', 'WAT2_001'):
-            if key in hdr:
-                del hdr[key]
-        return pywcs.WCS(hdr, naxis=naxis)
+    # WCS object from data header
+    return pywcs.WCS(hdr, naxis=naxis)
 
 
 class WCS(object):

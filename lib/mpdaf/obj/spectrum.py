@@ -659,25 +659,6 @@ class Spectrum(DataArray):
         else:
             return None
 
-    def __setitem__(self, key, other):
-        """Set the corresponding part of data."""
-        if self.data is None:
-            raise ValueError('empty data array')
-        try:
-            self.data[key] = other
-        except ValueError:
-            if isinstance(other, Spectrum):
-                if self.wave is not None and other.wave is not None and (
-                        self.wave.get_step() != other.wave.get_step(unit=self.wave.unit)):
-                    self._logger.warning("spectra with different steps")
-                if self.unit == other.unit:
-                    self.data[key] = other.data
-                else:
-                    self.data[key] = UnitMaskedArray(other.data, other.unit,
-                                                     self.unit)
-            else:
-                raise IOError('Operation forbidden')
-
     def set_wcs(self, wave):
         """Set the world coordinates.
 
