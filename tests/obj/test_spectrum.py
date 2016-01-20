@@ -27,7 +27,7 @@ def test_copy():
 @attr(speed='fast')
 def test_selectionOperator_Spectrum():
     """Spectrum class: testing operators > and < """
-    spectrum1 = generate_spectrum(cunit=u.nm)
+    spectrum1 = generate_spectrum(uwave=u.nm)
     spectrum2 = spectrum1 > 6
     nose.tools.assert_almost_equal(spectrum2.sum(), 24)
     spectrum2 = spectrum1 >= 6

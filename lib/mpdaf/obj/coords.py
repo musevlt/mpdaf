@@ -12,23 +12,39 @@ from ..tools import fix_unit_read
 
 
 def deg2sexa(x):
-    """Transform the values of n coordinates from degrees to sexagesimal.
+    """Transform one or more equatorial coordinate pairs from
+       degrees to sexagesimal strings.
 
     Parameters
     ----------
     x : float array
-        An (n,2) array of dec- and ra- coordinates in degrees.
+        Either a single coordinate in a 1D array like [dec,ra],
+        or a 2D array of multiple (dec,ra) coordinates, ordered like
+        [[dec1,ra1], [dec2,ra2], ...].  All coordinates must be in
+        degrees.
 
     Returns
     -------
-    out : (n,2) array of dec- and ra- coordinates in sexagesimal (string)
+    out : array of strings
+          The array of dec,ra coordinates as sexagesimal strings,
+          stored in an array of the same dimensions as the input
+          array. Declination values are written like
+          degrees:minutes:seconds. Right-ascension values are
+          written like hours:minutes:seconds.
 
     """
     x = np.array(x)
+
+    # Is this a single-dimensional array containing a single ra,dec
+    # coordinate like [ra,dec]?
+
     if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
         ra = deg2hms(x[1])
         dec = deg2dms(x[0])
         return np.array([dec, ra])
+
+    # Or is this a 2D array of multiple [ra,dec] coordinates?
+
     elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
         result = []
         for i in range(np.shape(x)[0]):
@@ -41,23 +57,38 @@ def deg2sexa(x):
 
 
 def sexa2deg(x):
-    """Transform the values of n coordinates from sexagesimal to degrees.
+    """Transform one or more equatorial coordinate pairs from
+       sexagesimal strings to decimal degrees.
 
     Parameters
     ----------
     x : string array
-        An (n,2) array of dec- and ra- coordinates in sexagesimal.
+        Either a single pair of coordinate strings in a 1D array like
+        [dec,ra], or a 2D array of multiple (dec,ra) coordinate
+        strings, ordered like [[dec1,ra1], [dec2,ra2], ...]. In each
+        coordinate pair, the declination string should be written like
+        degrees:minutes:seconds, and the right-ascension string should
+        be written like hours:minutes:seconds.
 
     Returns
     -------
-    out : (n,2) array of dec- and ra- coordinates in degrees.
+    out : array of numbers
+          The array of ra,dec coordinates in degrees, returned in an
+          array of the same dimensions as the input array.
 
     """
     x = np.array(x)
+
+    # Is this a single-dimensional array containing a single ra,dec
+    # coordinate like [ra,dec]?
+
     if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
         ra = hms2deg(x[1])
         dec = dms2deg(x[0])
         return np.array([dec, ra])
+
+    # Or is this a 2D array of multiple [ra,dec] coordinates?
+
     elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
         result = []
         for i in range(np.shape(x)[0]):
@@ -76,11 +107,13 @@ def deg2hms(x):
     Parameters
     ----------
     x : float
-        degree value.
+        The degree value to be written as a sexagesimal string.
 
     Returns
     -------
     out : string
+        The input angle written as a sexagesimal string, in the
+        form, hours:minutes:seconds.
 
     """
     ac = Angle(x, unit='degree')
@@ -89,17 +122,18 @@ def deg2hms(x):
 
 
 def hms2deg(x):
-    """Transform a string representation of the coordinate
-    as hours:minutes:seconds to a float degree value.
+    """Transform a string representation of a coordinate,
+    written as hours:minutes:seconds, to a float degree value.
 
     Parameters
     ----------
     x : string
-        hours:minutes:seconds
+        The input angle, written in the form, hours:minutes:seconds
 
     Returns
     -------
     out : float
+        The angle as a number of degrees.
 
     """
     ac = Angle(x, unit='hour')
@@ -109,17 +143,17 @@ def hms2deg(x):
 
 def deg2dms(x):
     """Transform a degree value to a string representation
-    of the coordinate as degrees:arcminutes:arcseconds.
+       of the coordinate, written as degrees:arcminutes:arcseconds.
 
     Parameters
     ----------
     x : float
-        degree value.
+        The degree value to be converted.
 
     Returns
     -------
     out : string
-
+        The input angle as a string, written as degrees:minutes:seconds.
     """
     ac = Angle(x, unit='degree')
     dms = ac.to_string(unit='degree', sep=':', pad=True)
@@ -127,17 +161,18 @@ def deg2dms(x):
 
 
 def dms2deg(x):
-    """Transform a string representation of the coordinate
-    as degrees:arcminutes:arcseconds to a float degree value.
+    """Transform a string representation of the coordinate,
+       written as degrees:arcminutes:arcseconds, to a float degree value.
 
     Parameters
     ----------
     x : string
-        degrees:arcminutes:arcseconds
+        The input angle written in the form, degrees:arcminutes:arcseconds
 
     Returns
     -------
     out : float
+        The input angle as a number of degrees.
 
     """
     ac = Angle(x, unit='degree')
@@ -156,34 +191,43 @@ def wcs_from_header(hdr, naxis=None):
 
 class WCS(object):
 
-    """WCS class manages world coordinates in spatial direction (pywcs package
-    is used). Python notation is used (dec,ra).
+    """WCS class manages the world coordinates of spatial axes, using the
+    pywcs package. Python ordering of the image axes is used, such
+    that when the coordinates of an image pixel are specified, they
+    are listed in the order (y,x). Note that when the rotation angle
+    on the sky is zero, the y axis of the image array is along the
+    direction of increasing declination, and the x axis is
+    perpendicular to this (at the reference pixel of the image), and
+    increases towards the east.
 
     Parameters
     ----------
     hdr : astropy.fits.CardList
-        A FITS header. If hdr is not equal to None, WCS object is created from
-        data header and other parameters are not used.
+        A FITS header. If hdr is not None, the WCS object
+        is created from the data header and all other parameters
+        which are passed to this constructor are ignored.
     crpix : float or (float,float)
-        Reference pixel coordinates.
+        The FITS array indexes of the reference pixel of the image.
+        Beware that the first pixel of the array is 1, not zero.
         If crpix is None and shape is None crpix = 1.0 and
         the reference point is the first pixel of the image.
         If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
         and the reference point is the center of the image.
     crval : float or (float,float)
-        Coordinates of the reference pixel (ref_dec,ref_ra).
+        The world coordinates of the reference pixel (ref_dec,ref_ra).
         (0.0,0.0) by default.
     cdelt : float or (float,float)
-        Sizes of one pixel (dDec,dRa). (1.0,1.0) by default.
+        The world-coordinate dimensions of one pixel (dDec,dRa).
+        (1.0,1.0) by default.
     deg : bool
         If True, world coordinates are in decimal degrees
         (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg').
         If False (by default), world coordinates are linear
         (CTYPE1=CTYPE2='LINEAR').
     rot : float
-        Rotation angle in degree.
+        The rotation angle in degrees.
     shape : integer or (integer,integer)
-        Dimensions. No mandatory.
+        The dimensions of the image (optional).
 
     Attributes
     ----------
@@ -195,6 +239,11 @@ class WCS(object):
     def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0),
                  cdelt=(1.0, 1.0), deg=False, rot=0, shape=None):
         self._logger = logging.getLogger(__name__)
+
+        # Initialize the WCS object from a FITS header?
+        # If so, also keep a record of the array dimensions of the
+        # image.
+
         if hdr is not None:
             self.wcs = wcs_from_header(hdr, naxis=2)
             try:
@@ -209,9 +258,18 @@ class WCS(object):
                     self.naxis2 = 0
             # bug if naxis=3
             # http://mail.scipy.org/pipermail/astropy/2011-April/001242.html
+
+        # If no FITS header is provided, initialize the WCS object from
+        # the other parameters of the constructor.
+
         else:
+
+            # Define a function that checks that 2D attributes are
+            # either a 2-element tuple of float or int, or a float or
+            # int scalar which is converted to a 2-element tuple.
+
             def check_attrs(val, types=(int, float)):
-                """check attribute dimensions."""
+                """Check attribute dimensions."""
                 if isinstance(val, types):
                     return (val, val)
                 elif len(val) > 2:
@@ -228,10 +286,14 @@ class WCS(object):
             if shape is not None:
                 shape = check_attrs(shape, types=int)
 
-            # create pywcs object
+            # Create a pywcs object.
+
             self.wcs = pywcs.WCS(naxis=2)
 
-            # reference pixel
+            # Get the FITS array indexes of the reference pixel.
+            # Beware that FITS array indexes are offset by 1 from
+            # python array indexes.
+
             if crpix is not None:
                 self.wcs.wcs.crpix = np.array([crpix[1], crpix[0]])
             elif shape is None:
@@ -239,7 +301,8 @@ class WCS(object):
             else:
                 self.wcs.wcs.crpix = (np.array([shape[1], shape[0]]) + 1) / 2.
 
-            # value of reference pixel
+            # Get the world coordinate value of reference pixel.
+
             self.wcs.wcs.crval = np.array([crval[1], crval[0]])
             if deg:  # in decimal degree
                 self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
@@ -250,11 +313,14 @@ class WCS(object):
                 self.wcs.wcs.cunit = ['pixel', 'pixel']
                 self.wcs.wcs.cd = np.array([[cdelt[1], 0], [0, cdelt[0]]])
 
-            # rotation
+            # Get the rotation angle and use it to rotate the
+            # coordinate transform matrix.
+
             self.wcs.rotateCD(-rot)
             self.wcs.wcs.set()
 
-            # dimensions
+            # Get the dimensions of the image array.
+
             if shape is not None:
                 self.naxis1 = shape[1]
                 self.naxis2 = shape[0]
@@ -263,7 +329,7 @@ class WCS(object):
                 self.naxis2 = 0
 
     def copy(self):
-        """Copy WCS object in a new one and returns it."""
+        """Return a copy of a WCS object."""
         out = WCS()
         out.wcs = self.wcs.deepcopy()
         out.naxis1 = self.naxis1
@@ -271,7 +337,7 @@ class WCS(object):
         return out
 
     def info(self):
-        """Print information."""
+        """Print information about a WCS object."""
         try:
             dy, dx = self.get_step(unit=u.arcsec)
             sizex = dx * self.naxis1  # ra
@@ -297,7 +363,7 @@ class WCS(object):
                 dy, dx, self.get_rot())
 
     def to_header(self):
-        """Generate a astropy.fits header object with the WCS information."""
+        """Generate an astropy.fits header object containing the WCS information."""
         has_cd = self.wcs.wcs.has_cd()
         hdr = self.wcs.to_header()
         if has_cd:
@@ -314,7 +380,7 @@ class WCS(object):
         return hdr
 
     def sky2pix(self, x, nearest=False, unit=None):
-        """Convert world coordinates (dec,ra) to pixel coordinates.
+        """Convert world coordinates (dec,ra) to image pixel indexes.
 
         If nearest=True; returns the nearest integer pixel.
 
@@ -326,11 +392,14 @@ class WCS(object):
             If nearest is True returns the nearest integer pixel
             in place of the decimal pixel.
         unit : astropy.units
-            type of the world coordinates
+            The units of the world coordinates
 
         Returns
         -------
-        out : (n,2) array of pixel coordinates.
+        out : (n,2) array of image pixel indexes. These are
+              python array indexes, ordered like (y,x) and with
+              0,0 denoting the upper left pixel of the image.
+
         """
         x = np.asarray(x, dtype=np.float64)
         if x.shape == (2,):
@@ -341,6 +410,9 @@ class WCS(object):
         if unit is not None:
             x[:, 1] = (x[:, 1] * unit).to(self.unit).value
             x[:, 0] = (x[:, 0] * unit).to(self.unit).value
+
+        # Tell world2pix to convert the world coordinates to
+        # zero-relative array indexes.
 
         ax, ay = self.wcs.wcs_world2pix(x[:, 1], x[:, 0], 0)
         res = np.array([ay, ax]).T
@@ -353,14 +425,16 @@ class WCS(object):
         return res
 
     def pix2sky(self, x, unit=None):
-        """Convert pixel coordinates to world coordinates.
+        """Convert image pixel indexes to world coordinates.
 
         Parameters
         ----------
         x : array
-            An (n,2) array of pixel coordinates (python notation).
+            An (n,2) array of image pixel indexes. These should be
+            python array indexes, ordered like (y,x) and with
+            0,0 denoting the upper left pixel of the image.
         unit : astropy.units
-            type of the world coordinates
+            The units of the world coordinates.
 
         Returns
         -------
@@ -373,6 +447,9 @@ class WCS(object):
         elif len(x.shape) != 2 or x.shape[1] != 2:
             raise IOError('invalid input coordinates for pix2sky')
 
+        # Tell world2pix to treat the pixel indexes as zero relative
+        # array indexes.
+
         ra, dec = self.wcs.wcs_pix2world(x[:, 1], x[:, 0], 0)
         if unit is not None:
             ra = (ra * self.unit).to(unit).value
@@ -381,7 +458,19 @@ class WCS(object):
         return np.array([dec, ra]).T
 
     def isEqual(self, other):
-        """Return True if other and self have the same attributes."""
+        """Return True if other and self have the same attributes.
+           Beware that if the two wcs objects have the same world
+           coordinate characteristics, but come from images of
+           different dimensions, the objects will be considered to
+           be different.
+
+        Parameters
+        ----------
+        other : WCS
+            The wcs object to be compared to self.
+
+        """
+
         if not isinstance(other, WCS):
             return False
 
@@ -397,7 +486,15 @@ class WCS(object):
                             rtol=0))
 
     def sameStep(self, other):
-        """Return True if other and self have the same steps."""
+        """Return True if other and self have the same pixel sizes.
+
+        Parameters
+        ----------
+        other : WCS
+            The wcs object to be compared to self.
+
+        """
+
         if not isinstance(other, WCS):
             return False
 
@@ -406,8 +503,15 @@ class WCS(object):
         return np.allclose(cdelt1, cdelt2, atol=1E-7, rtol=0)
 
     def __getitem__(self, item):
-        """Return the corresponding WCS."""
+        """Return a WCS object of a specified 2D slice"""
+
+        # The caller is expected to have specified a 2D slice,
+        # so there should be a tuple of two items.
+
         if isinstance(item, tuple) and len(item) == 2:
+
+            # See if a slice object was sent for the X axis.
+
             try:
                 if item[1].start is None:
                     imin = 0
@@ -425,9 +529,17 @@ class WCS(object):
                         imax = self.naxis1 + imax
                     if imax > self.naxis1:
                         imax = self.naxis1
+
+            # If a slice object wasn't sent, then maybe a single index
+            # was passed for the X axis. If so, select the specified
+            # single pixel.
+
             except:
                 imin = int(item[1])
                 imax = int(item[1] + 1)
+
+            # See if a slice object was sent for the Y axis.
+
             try:
                 if item[0].start is None:
                     jmin = 0
@@ -445,23 +557,42 @@ class WCS(object):
                         jmax = self.naxis2 + jmax
                         if jmax > self.naxis2:
                             jmax = self.naxis2
+
+            # If a slice object wasn't sent, then maybe a single index
+            # was passed for the Y axis. If so, select the specified
+            # single pixel.
+
             except:
                 jmin = int(item[0])
                 jmax = int(item[0] + 1)
 
+            # Offset the original coordinate reference pixel indexes
+            # to be relative to the top left corner of the selected
+            # sub-image.
+
             crpix = (self.wcs.wcs.crpix[0] - imin,
                      self.wcs.wcs.crpix[1] - jmin)
 
+            # Get a copy of the original WCS object.
+
             res = self.copy()
+
+            # Record the new coordinate reference pixel index and the
+            # reduced dimensions of the selected sub-image.
+
             res.wcs.wcs.crpix = np.array(crpix)
             res.naxis1 = int(imax - imin)
             res.naxis2 = int(jmax - jmin)
 
+            # Recompute the characteristics of the new WCS object.
+
             res.wcs.wcs.set()
+
+            # Return the sliced WCS object.
 
             return res
         else:
-            raise ValueError('Operation forbidden')
+            raise ValueError('Missing 2D slice indexes')
 
     def get_step(self, unit=None):
         """Return [dDec,dRa].

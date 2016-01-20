@@ -26,8 +26,8 @@ def test_copy():
 def test_arithmetricOperator():
     """Image class: testing arithmetic functions"""
     image1 = generate_image()
-    image2 = generate_image(scale=1, unit=u.Unit('2 ct'))
-    cube1 = generate_cube(scale=0.5, unit=u.Unit('2 ct'))
+    image2 = generate_image(data=1, unit=u.Unit('2 ct'))
+    cube1 = generate_cube(data=0.5, unit=u.Unit('2 ct'))
 
     for op in (add, sub, mul, div):
         image3 = op(image1, image2)
