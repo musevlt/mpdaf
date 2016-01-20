@@ -56,17 +56,17 @@ class CubeList(object):
         Parameters
         ----------
         files : list of strings
-                List of cubes fits filenames
+            List of cubes fits filenames
         scalelist: list of double
-                (optional) list of scales to be applied to each cube
+            (optional) list of scales to be applied to each cube
         """
         self._logger = logging.getLogger(__name__)
         self.files = files
         self.nfiles = len(files)
-        if (scalelist): 
-              self.scales = np.array(scalelist)
+        if scalelist:
+            self.scales = np.array(scalelist)
         else:
-              self.scales = np.ones(self.nfiles)
+            self.scales = np.ones(self.nfiles)
         self.cubes = [Cube(filename=f) for f in self.files]
         self._set_defaults()
         self.check_compatibility()
@@ -228,7 +228,7 @@ class CubeList(object):
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        kwargs = dict(expnb=expmap.max(), method='obj.cubelist.median')
+        kwargs = dict(expnb=np.nanmedian(expmap), method='obj.cubelist.median')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
         cube = self.save_combined_cube(data, **kwargs)
@@ -310,12 +310,13 @@ class CubeList(object):
         # setup argument types
         libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
             charptr, array_1d_double, array_1d_double, array_1d_int,
-            array_1d_double,array_1d_int, array_1d_int, ctypes.c_int, ctypes.c_double,
-            ctypes.c_double, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+            array_1d_double, array_1d_int, array_1d_int, ctypes.c_int,
+            ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int,
+            ctypes.c_int]
         # run C method
         libCmethods.mpdaf_merging_sigma_clipping(
-            c_char_p('\n'.join(self.files)), data, vardata, expmap, self.scales, 
-            select_pix, valid_pix, nmax, np.float64(nclip_low),
+            c_char_p('\n'.join(self.files)), data, vardata, expmap,
+            self.scales, select_pix, valid_pix, nmax, np.float64(nclip_low),
             np.float64(nclip_up), nstop, np.int32(var_mean), np.int32(mad))
 
         # no valid pixels
@@ -332,7 +333,7 @@ class CubeList(object):
                     ('nclip_up', nclip_up, 'upper clipping parameter'),
                     ('nstop', nstop, 'clipping minimum number'),
                     ('var', var, 'type of variance')]
-        kwargs = dict(expnb=expmap.max(), keywords=keywords,
+        kwargs = dict(expnb=np.nanmedian(expmap), keywords=keywords,
                       method='obj.cubelist.merging')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
@@ -366,7 +367,8 @@ class CubeList(object):
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        kwargs = dict(expnb=expmap.max(), method='obj.cubelist.pymedian')
+        kwargs = dict(expnb=np.nanmedian(expmap),
+                      method='obj.cubelist.pymedian')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
         cube = self.save_combined_cube(cube, **kwargs)
@@ -457,7 +459,7 @@ class CubeList(object):
                     ('nclip_low', nclip, 'lower clipping parameter'),
                     ('nclip_up', nclip, 'upper clipping parameter'),
                     ('var', var, 'type of variance')]
-        kwargs = dict(expnb=expmap.max(), object_name=object_name,
+        kwargs = dict(expnb=np.nanmedian(expmap), object_name=object_name,
                       keywords=keywords, method='obj.cubelist.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
