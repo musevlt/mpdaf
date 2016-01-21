@@ -89,6 +89,15 @@ it as an ascii file::
   >>> cat = Catalog.from_sources(cont, fmt='working')
   >>> cat.write('continuum_lines_z.cat', format='ascii')
 
+Finally it is possible to interact easily in topcat between the muselet catalog and a MUSE datacube opened in ds9. To do so 
+one has to select the "Activation Action" menu and put the following custom code:
+
+>>> exec("topcat_show_ds9",toString(RA),toString(DEC),toString(LBDA_OBS001))
+
+.. figure:: user_manual_muselet/topcat_muselet_catalogs.png
+
+The shell script topcat_show_ds9 (inspired by Benjamin Clement) is provided in the MPDAF distribution and should be should be in your path.
+
 
 Reference
 =========
