@@ -30,24 +30,25 @@ MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
   (spectrally) average of 5 wavelength planes in the cube (so 5x1.25 Angstroms
   wide). The continuum is estimated from 2 spectral medians of ~ 25 Angstroms
   each on the blue and red side of the narrow band region. The size of the
-  continuum region can be adjusted with the optionnal parameter delta (in
+  continuum region can be adjusted with the optional parameter delta (in
   number of wavelength planes, default=20).
 
   These narrow band images are created in the ``nb/`` directory. If not present
   it will be created.
 
-- STEP 2: MUSELET will run SExtractor using the default.sex, default.param,
-  default.conv and default.nnw parameter files in the current and ``nb/``
-  directory. If not present default parameter files are created.
+- STEP 2: MUSELET will run SExtractor using the ``default.sex``,
+  ``default.param``, ``default.conv`` and ``default.nnw`` parameter files in
+  the current and ``nb/`` directory. If not present default parameter files are
+  created.
 
 - STEP 3: The code will merge all SExtractor catalogs and will return separate
   emission lines linked with continuum objects from the rest.  For each of
   these catalog, MUSELET will estimate a redshift based on multiple emission
   lines. Emission lines are merged spatially to the same source based on the
   "radius" parameter (in pixels, default radius=4).  The redshifts are
-  estimated from emission line catalogs emlines (all emission lines) and
-  emlines_small (list of brightest emission lines). These files are 2 columns
-  (name and wavelength) and can be adjusted to one's needs.
+  estimated from emission line catalogs ``emlines`` (all emission lines) and
+  ``emlines_small`` (list of brightest emission lines). These files are
+  2 columns (name and wavelength) and can be adjusted to one's needs.
 
 The code will produce:
   - a :class:`mpdaf.sdetect.SourceList` containing continuum emission lines,
@@ -62,7 +63,7 @@ Requirements:
 Tutorials
 =========
 
-MUSELET is run through the following commands in mpdaf::
+MUSELET is run through the following commands in MPDAF::
 
   >>> from mpdaf.sdetect import muselet
   >>> cont, sing, raw = muselet('DATACUBE.fits')
@@ -77,7 +78,7 @@ each side of the narrow-band images::
 
   >>> cont, sing, raw = muselet('DATACUBE.fits',delta=15) #only 15 wavelength planes in continuum estimate
 
-The method :func:`mpdaf.sdetect.SourceList.write` could be used to  save all
+The method :func:`mpdaf.sdetect.SourceList.write` could be used to save all
 sources and the corresponding catalog  as FITS files::
 
   >>> cont.write(path='cont', fmt='working')
@@ -89,14 +90,16 @@ it as an ascii file::
   >>> cat = Catalog.from_sources(cont, fmt='working')
   >>> cat.write('continuum_lines_z.cat', format='ascii')
 
-Finally it is possible to interact easily in topcat between the muselet catalog and a MUSE datacube opened in ds9. To do so 
-one has to select the "Activation Action" menu and put the following custom code:
+Finally it is possible to interact easily in topcat between the muselet catalog
+and a MUSE datacube opened in ds9. To do so one has to select the "Activation
+Action" menu and put the following custom code:
 
 >>> exec("topcat_show_ds9",toString(RA),toString(DEC),toString(LBDA_OBS001))
 
 .. figure:: user_manual_muselet/topcat_muselet_catalogs.png
 
-The shell script topcat_show_ds9 (inspired by Benjamin Clement) is provided in the MPDAF distribution and should be should be in your path.
+The shell script ``topcat_show_ds9`` (inspired by Benjamin Clement) is
+installed with MPDAF and should be in your path.
 
 
 Reference
