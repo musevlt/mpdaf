@@ -90,7 +90,7 @@ class TestWCS(object):
         """WCS class: testing rotation"""
         wcs = WCS(crval=(0, 0), rot=20, shape=(5, 6))
         wcs.rotate(-20)
-        assert_array_equal(wcs.get_rot(), 0)
+        nose.tools.assert_almost_equal(wcs.get_rot(), 0)
 
     @attr(speed='fast')
     def test_resample(self):
