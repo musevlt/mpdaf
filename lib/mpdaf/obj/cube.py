@@ -2167,20 +2167,37 @@ class Cube(DataArray):
         if isinstance(f, types.MethodType):
             f = f.__name__
 
-        for sp, pos in iter_spe(self, index=True):
-            header = sp.wave.to_header()
-            processlist.append([pos, f, header,
-                                sp.data.data, sp.data.mask, sp.var,
-                                sp.unit, kargs])
+        data = self.data
+        var = self.var
+        header = self.wave.to_header()
+        pv, qv = np.meshgrid(range(self.shape[1]),
+                             range(self.shape[2]),
+                             sparse=False, indexing='ij')
+        pv = pv.ravel()
+        qv = qv.ravel()
+        if var is None:
+            for p,q in zip(pv, qv):
+                processlist.append([(p,q), f, header,
+                                    data.data[:,p,q],
+                                    data.mask[:,p,q],
+                                    None,
+                                    self.unit, kargs])
+        else:
+            for p,q in zip(pv, qv):
+                processlist.append([(p,q), f, header,
+                                    data.data[:,p,q],
+                                    data.mask[:,p,q],
+                                    var[:,p,q],
+                                    self.unit, kargs])
         num_tasks = len(processlist)
-
+        
         processresult = pool.imap_unordered(_process_spe, processlist)
         pool.close()
 
         if verbose:
             msg = "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
             self._logger.info(msg)
-
+ 
             while (True):
                 time.sleep(5)
                 completed = processresult._index
@@ -2194,7 +2211,7 @@ class Cube(DataArray):
                              float(num_tasks) * 100.0))
                 sys.stdout.write("\r\x1b[K" + output.__str__())
                 sys.stdout.flush()
-
+ 
         init = True
         for pos, dtype, out in processresult:
             p, q = pos
@@ -2205,7 +2222,7 @@ class Cube(DataArray):
                 spe = Spectrum(wave=wave, unit=unit,
                                data=data, var=var, copy=False)
                 spe.data.mask = mask
-
+ 
                 cshape = (data.shape[0], self.shape[1], self.shape[2])
                 if init:
                     if self.var is None:
@@ -2216,11 +2233,11 @@ class Cube(DataArray):
                                       data=np.zeros(cshape),
                                       var=np.zeros(cshape), unit=unit)
                     init = False
-
+ 
                 result.data_header = pyfits.Header(self.data_header)
                 result.primary_header = pyfits.Header(self.primary_header)
                 result[:, p, q] = spe
-
+ 
             else:
                 if is_float(out[0]) or is_int(out[0]):
                     # f returns a number -> iterator returns an image
@@ -2238,7 +2255,7 @@ class Cube(DataArray):
                                           dtype=type(out[0]))
                         init = False
                     result[p, q] = out[0]
-
+ 
         return result
 
     def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
@@ -2278,10 +2295,19 @@ class Cube(DataArray):
         if isinstance(f, types.MethodType):
             f = f.__name__
 
-        for ima, k in iter_ima(self, index=True):
-            header = ima.wcs.to_header()
-            processlist.append([k, f, header, ima.data.data, ima.data.mask,
-                                ima.var, ima.unit, kargs])
+        header = self.wcs.to_header()
+        data = self.data
+        var = self.var
+        if var is None:
+            for k in range(self.shape[0]):
+                processlist.append([k, f, header, data.data[k,:,:],
+                                    data.mask[k,:,:], None,
+                                    self.unit, kargs])
+        else:
+            for k in range(self.shape[0]):
+                processlist.append([k, f, header, data.data[k,:,:],
+                                    data.mask[k,:,:], var[k,:,:],
+                                    self.unit, kargs])
         num_tasks = len(processlist)
 
         processresult = pool.imap_unordered(_process_ima, processlist)

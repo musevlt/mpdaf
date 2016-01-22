@@ -98,7 +98,7 @@ def test_resize():
     nose.tools.assert_equal(cube1.shape[0], 9)
 
 
-# @attr(speed='fast')
+@attr(speed='fast')
 def test_multiprocess():
     """Cube class: tests multiprocess"""
     cube1 = generate_cube()
