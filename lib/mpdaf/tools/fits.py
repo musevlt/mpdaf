@@ -127,7 +127,7 @@ def copy_header(srchdr, dsthdr=None, exclude=(), unit=None):
             except:
                 logger.warning("%s not copied in data header", card.keyword)
 
-    if unit is not None and unit != u.dimensionless_unscaled:
+    if unit is not None:
         try:
             dsthdr['BUNIT'] = (unit.to_string('fits'), 'data unit type')
         except u.format.fits.UnitScaleError:
