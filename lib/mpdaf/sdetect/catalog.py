@@ -35,7 +35,7 @@ class Catalog(Table):
         if self.colnames.count('z') != 0:
             self.rename_column('z', 'Z')
         self.masked_invalid()
-        
+
     @classmethod
     def from_sources(cls, sources, fmt='default'):
         """Construct a catalog from a list of source objects.
@@ -69,13 +69,13 @@ class Catalog(Table):
         logger = logging.getLogger(__name__)
         # union of all headers keywords without mandatory FITS keywords
         h = sources[0].header
-        
+
         #d = dict(zip(h.keys(), [type(v) for v in h.values()]))
         d = dict(zip(h.keys(), [(type(c[1]),c[2]) for c in h.cards]))
         for source in sources[1:]:
             h = source.header
             d.update(dict(zip(h.keys(), [(type(c[1]),c[2]) for c in h.cards])))
-        
+
         excluded_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                                'AUTHOR']
         i = 1
@@ -86,7 +86,7 @@ class Catalog(Table):
         while 'HIST%03d' % i in d.keys():
             excluded_cards.append('HIST%03d' % i)
             i += 1
-            
+
         d = {key: value for key, value in d.items() if key not in excluded_cards}
         names_hdr = d.keys()
         tuple_hdr = d.values()
@@ -109,12 +109,12 @@ class Catalog(Table):
         index = names_hdr.index('CUBE')
         names_hdr.insert(5, names_hdr.pop(index))
         tuple_hdr.insert(5, tuple_hdr.pop(index))
-        
+
         dtype_hdr = [c[0] for c in tuple_hdr]
-        desc_hdr = [c[1][:c[1].find('u.')] if c[1].find('u.')!=-1 else c[1][:c[1].find('%')] if c[1].find('%')!=-1 else c[1] for c in tuple_hdr] 
+        desc_hdr = [c[1][:c[1].find('u.')] if c[1].find('u.')!=-1 else c[1][:c[1].find('%')] if c[1].find('%')!=-1 else c[1] for c in tuple_hdr]
         unit_hdr = [c[1][c[1].find('u.'):].split()[0][2:] if c[1].find('u.')!=-1 else None for c in tuple_hdr]
         format_hdr = [c[1][c[1].find('%'):].split()[0] if c[1].find('%')!=-1 else None for c in tuple_hdr]
-        
+
 
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
@@ -254,7 +254,7 @@ class Catalog(Table):
                     for typ in dtype_lines:
                         row += [INVALID[typ.type]]
                 else:
-                    
+
                     if fmt == 'default':
                         copy = source.lines['LINE'].data.data
                         for i in range(len(source.lines)):
@@ -354,7 +354,7 @@ class Catalog(Table):
         fmt : str 'working'|'default'
             Format of the catalog. The format differs for the LINES table.
         pattern : str
-            Pattern used to select the files, default to '*.fits'.
+            Pattern used to select the files, default to ``*.fits``.
 
         """
         logger = logging.getLogger(__name__)
