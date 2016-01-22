@@ -1310,7 +1310,7 @@ class Image(DataArray):
             threshold = background + 10 * std
 
         selec = self.data > threshold
-        selec.bill_value = False
+        selec.fill_value = False
         struct = self._struct(nstruct)
         selec = ndimage.binary_erosion(selec, structure=struct,
                                        iterations=niter)
