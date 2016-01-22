@@ -5,6 +5,7 @@ import numpy as np
 from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum
 from numpy.testing import assert_array_equal
 
+
 def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
 
     """Raise an assertion error if the characteristics of a given image
@@ -33,6 +34,7 @@ def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
         assert_array_equal(ima.get_end(), end)
     if step is not None:
         assert_array_equal(ima.get_step(), step)
+
 
 def generate_image(data=2.0, var=1.0, mask=None, shape=None,
                    unit=u.ct, wcs=None, copy=True):
@@ -77,14 +79,18 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
     # can check their dimensions.
 
     data = np.asarray(data)
-    if var != None:
+    if var is None:
         var = np.asarray(var)
 
     # Determine a shape for the data and var arrays. This is either a
     # specified shape, the shape of a specified data or var array, or
     # the default shape.
 
-    shape = shape or (data.shape if data.ndim > 0 else None) or (var.shape if var!=None and var.ndim > 0 else None) or (mask.shape if mask != None and mask.ndim > 0 else None) or (6, 5)
+    shape = (shape or
+             (data.shape if data.ndim > 0 else None) or
+             (var.shape if var is not None and var.ndim > 0 else None) or
+             (mask.shape if mask is not None and mask.ndim > 0 else None) or
+             (6, 5))
 
     # Check the shape denotes a image with at least 1 element.
 
@@ -102,7 +108,7 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
 
     # Don't create a variance array?
 
-    if var == None:
+    if var is None:
         pass
 
     # Create a variance array filled with a scalar value?
@@ -119,9 +125,9 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
 
     if not np.array_equal(shape, data.shape):
         raise ValueError('Mismatch between shape and data arguments.')
-    elif var!=None and not np.array_equal(shape, var.shape):
+    elif var is not None and not np.array_equal(shape, var.shape):
         raise ValueError('Mismatch between shape and var arguments.')
-    elif mask != None and not np.array_equal(shape, mask.shape):
+    elif mask is not None and not np.array_equal(shape, mask.shape):
         raise ValueError('Mismatch between shape and mask arguments.')
 
     # Substitute default world-coordinates where not specified.
@@ -132,6 +138,7 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
 
     return Image(data=data, var=var, mask=mask, wcs=wcs, unit=unit,
                  copy=docopy)
+
 
 def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
                       uwave=u.angstrom, crpix=2.0, cdelt=3.0,
@@ -185,16 +192,20 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
     # Convert the data and var arguments to ndarray's so that we
     # can check their dimensions.
 
-    if data != None:
+    if data is not None:
         data = np.asarray(data)
-    if var != None:
+    if var is not None:
         var = np.asarray(var)
 
     # Determine a shape for the data and var arrays. This is either a
     # specified shape, the shape of a specified data or var array, or
     # the default shape.
 
-    shape = shape or (data.shape if data!=None and data.ndim > 0 else None) or (var.shape if var!=None and var.ndim > 0 else None) or (mask.shape if mask != None and mask.ndim > 0 else None) or 10
+    shape = (shape or
+             (data.shape if data is not None and data.ndim > 0 else None) or
+             (var.shape if var is not None and var.ndim > 0 else None) or
+             (mask.shape if mask is not None and mask.ndim > 0 else None) or
+             10)
 
     # To allow comparison with numpy.ndarray shapes, force shape to have
     # at least one dimension.
@@ -211,7 +222,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
 
     # Substitute a default data array?
 
-    if data == None:
+    if data is None:
         data = np.arange(shape[0], dtype=np.float)
         data[0] = 0.5
 
@@ -227,7 +238,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
 
     # Don't create a variance array?
 
-    if var == None:
+    if var is None:
         pass
 
     # Create a variance array filled with a scalar value?
@@ -244,9 +255,9 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
 
     if not np.array_equal(shape, data.shape):
         raise ValueError('Mismatch between shape and data arguments.')
-    elif var!=None and not np.array_equal(shape, var.shape):
+    elif var is not None and not np.array_equal(shape, var.shape):
         raise ValueError('Mismatch between shape and var arguments.')
-    elif mask != None and not np.array_equal(shape, mask.shape):
+    elif mask is not None and not np.array_equal(shape, mask.shape):
         raise ValueError('Mismatch between shape and mask arguments.')
 
     # Determine the wavelength coordinates.
@@ -260,6 +271,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
 
     return Spectrum(data=data, var=var, mask=mask, wave=wave,
                     unit=unit, copy=docopy)
+
 
 def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
                   unit=u.ct, wcs=None, wave=None, copy=True):
@@ -307,14 +319,18 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
     # can check their dimensions.
 
     data = np.asarray(data)
-    if var != None:
+    if var is None:
         var = np.asarray(var)
 
     # Determine a shape for the data and var arrays. This is either a
     # specified shape, the shape of a specified data or var array, or
     # the default shape.
 
-    shape = shape or (data.shape if data.ndim > 0 else None) or (var.shape if var != None and var.ndim > 0 else None) or (mask.shape if mask != None and mask.ndim > 0 else None) or (10, 6, 5)
+    shape = (shape or
+             (data.shape if data.ndim > 0 else None) or
+             (var.shape if var is not None and var.ndim > 0 else None) or
+             (mask.shape if mask is not None and mask.ndim > 0 else None) or
+             (10, 6, 5))
 
     # Check the shape denotes a cube with at least 1 element.
 
@@ -332,7 +348,7 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
 
     # Don't create a variance array?
 
-    if var == None:
+    if var is None:
         pass
 
     # Create a variance array filled with a scalar value?
@@ -349,9 +365,9 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
 
     if not np.array_equal(shape, data.shape):
         raise ValueError('Mismatch between shape and data arguments.')
-    elif var != None and not np.array_equal(shape, var.shape):
+    elif var is not None and not np.array_equal(shape, var.shape):
         raise ValueError('Mismatch between shape and var arguments.')
-    elif mask != None and not np.array_equal(shape, mask.shape):
+    elif mask is not None and not np.array_equal(shape, mask.shape):
         raise ValueError('Mismatch between shape and mask arguments.')
 
     # Substitute default world-coordinates where not specified.
