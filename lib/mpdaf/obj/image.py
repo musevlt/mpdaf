@@ -10,8 +10,8 @@ import astropy.units as u
 from astropy.table import Table, Column
 from matplotlib.widgets import RectangleSelector
 from matplotlib.path import Path
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from scipy import interpolate, ndimage, signal, special
+from scipy import interpolate, signal
+from scipy import ndimage as ndi
 from scipy.optimize import leastsq
 
 from . import plt_norm, plt_zscale
@@ -702,9 +702,7 @@ class Image(DataArray):
         -------
         out : float array
         """
-        if self.wcs is None:
-            return None
-        else:
+        if self.wcs is not None:
             return self.wcs.get_step(unit)
 
     def get_range(self, unit=None):
@@ -719,9 +717,7 @@ class Image(DataArray):
         -------
         out : float array
         """
-        if self.wcs is None:
-            return None
-        else:
+        if self.wcs is not None:
             return self.wcs.get_range(unit)
 
     def get_start(self, unit=None):
@@ -736,9 +732,7 @@ class Image(DataArray):
         -------
         out : float array
         """
-        if self.wcs is None:
-            return None
-        else:
+        if self.wcs is not None:
             return self.wcs.get_start(unit)
 
     def get_end(self, unit=None):
@@ -753,9 +747,7 @@ class Image(DataArray):
         -------
         out : float array
         """
-        if self.wcs is None:
-            return None
-        else:
+        if self.wcs is not None:
             return self.wcs.get_end(unit)
 
     def get_rot(self, unit=u.deg):
@@ -770,9 +762,7 @@ class Image(DataArray):
         -------
         out : float
         """
-        if self.wcs is None:
-            return None
-        else:
+        if self.wcs is not None:
             return self.wcs.get_rot(unit)
 
     def set_wcs(self, wcs):
@@ -1108,8 +1098,8 @@ class Image(DataArray):
 
         if pivot is None:
             center_coord = self.wcs.pix2sky([np.array(self.shape) / 2. - 0.5])
-            mask_rot = ndimage.rotate(mask, -theta, reshape=reshape, order=0)
-            data_rot = ndimage.rotate(data, -theta, reshape=reshape, order=order)
+            mask_rot = ndi.rotate(mask, -theta, reshape=reshape, order=0)
+            data_rot = ndi.rotate(data, -theta, reshape=reshape, order=order)
 
             shape = np.array(data_rot.shape)
             crpix1 = shape[1] / 2. + 0.5
@@ -1119,10 +1109,10 @@ class Image(DataArray):
             padY = [self.shape[0] - pivot[1], pivot[1]]
 
             data_rot = np.pad(data, [padY, padX], 'constant')
-            data_rot = ndimage.rotate(data_rot, -theta, reshape=reshape, order=order)
+            data_rot = ndi.rotate(data_rot, -theta, reshape=reshape, order=order)
 
             mask_rot = np.pad(mask, [padY, padX], 'constant')
-            mask_rot = ndimage.rotate(mask_rot, -theta, reshape=reshape, order=0)
+            mask_rot = ndi.rotate(mask_rot, -theta, reshape=reshape, order=0)
 
             center_coord = self.wcs.pix2sky([pivot])
             shape = np.array(data_rot.shape)
@@ -1312,15 +1302,13 @@ class Image(DataArray):
         selec = self.data > threshold
         selec.fill_value = False
         struct = self._struct(nstruct)
-        selec = ndimage.binary_erosion(selec, structure=struct,
-                                       iterations=niter)
-        selec = ndimage.binary_dilation(selec, structure=struct,
-                                        iterations=niter)
-        selec = ndimage.binary_fill_holes(selec)
-        structure = ndimage.generate_binary_structure(2, 2)
-        label = ndimage.measurements.label(selec, structure)
-        pos = ndimage.measurements.center_of_mass(self.data, label[0],
-                                                  np.arange(label[1]) + 1)
+        selec = ndi.binary_erosion(selec, structure=struct, iterations=niter)
+        selec = ndi.binary_dilation(selec, structure=struct, iterations=niter)
+        selec = ndi.binary_fill_holes(selec)
+        structure = ndi.generate_binary_structure(2, 2)
+        label = ndi.measurements.label(selec, structure)
+        pos = ndi.measurements.center_of_mass(self.data, label[0],
+                                              np.arange(label[1]) + 1)
         return np.array(pos)
 
     def peak(self, center=None, radius=0, unit_center=u.deg,
@@ -1383,17 +1371,16 @@ class Image(DataArray):
             if np.shape(d)[0] == 0 or np.shape(d)[1] == 0:
                 raise ValueError('Coord area outside image limits')
 
-        ic, jc = ndimage.measurements.maximum_position(d)
+        ic, jc = ndi.measurements.maximum_position(d)
         if dpix == 0:
             di = 0
             dj = 0
         else:
             if background is None:
                 background = self.background()[0]
-            di, dj = ndimage.measurements.center_of_mass(
+            di, dj = ndi.measurements.center_of_mass(
                 d[max(0, ic - dpix):ic + dpix + 1,
-                  max(0, jc - dpix):jc + dpix + 1]
-                - background)
+                  max(0, jc - dpix):jc + dpix + 1] - background)
         ic = imin + max(0, ic - dpix) + di
         jc = jmin + max(0, jc - dpix) + dj
         [[dec, ra]] = self.wcs.pix2sky([[ic, jc]])
@@ -1409,7 +1396,8 @@ class Image(DataArray):
 
         return {'x': ra, 'y': dec, 'p': ic, 'q': jc, 'data': maxv}
 
-    def fwhm(self, center=None, radius=0, unit_center=u.deg, unit_radius=u.angstrom):
+    def fwhm(self, center=None, radius=0, unit_center=u.deg,
+             unit_radius=u.angstrom):
         """Compute the fwhm.
 
         Parameters
@@ -1471,7 +1459,8 @@ class Image(DataArray):
         unit_radius : astropy.units
             Radius unit. Arcseconds by default (use None for radius in pixels)
         frac : boolean
-            If frac is True, result is given relative to the total energy of the full image.
+            If frac is True, result is given relative to the total energy of
+            the full image.
         cont : float
             Continuum value.
 
@@ -3188,11 +3177,11 @@ class Image(DataArray):
         # 2015/08/25 (90f70a41)
         poffset = self.wcs.sky2pix(newstart, unit=unit_start)[0] / pstep
 
-        data = ndimage.affine_transform(data, pstep, poffset,
-                                        output_shape=newdim, order=order)
+        data = ndi.affine_transform(data, pstep, poffset,
+                                    output_shape=newdim, order=order)
 
-        newmask = ndimage.affine_transform(~self.data.mask, pstep, poffset,
-                                           output_shape=newdim, order=0)
+        newmask = ndi.affine_transform(~self.data.mask, pstep, poffset,
+                                       output_shape=newdim, order=0)
         mask = np.ma.make_mask(1 - newmask)
 
         if flux:
@@ -3254,10 +3243,10 @@ class Image(DataArray):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        self.data = np.ma.array(ndimage.gaussian_filter(data, sigma),
+        self.data = np.ma.array(ndi.gaussian_filter(data, sigma),
                                 mask=self.data.mask)
         if self.var is not None:
-            self.var = ndimage.gaussian_filter(self.var, sigma)
+            self.var = ndi.gaussian_filter(self.var, sigma)
 
     def gaussian_filter(self, sigma=3, interp='no'):
         """Return an image containing Gaussian filter applied to the current
@@ -3291,10 +3280,10 @@ class Image(DataArray):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        self.data = np.ma.array(ndimage.median_filter(data, size),
+        self.data = np.ma.array(ndi.median_filter(data, size),
                                 mask=self.data.mask)
         if self.var is not None:
-            self.var = ndimage.median_filter(self.var, size)
+            self.var = ndi.median_filter(self.var, size)
 
     def median_filter(self, size=3, interp='no'):
         """Return an image containing median filter applied to the current
@@ -3329,7 +3318,7 @@ class Image(DataArray):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        self.data = np.ma.array(ndimage.maximum_filter(data, size),
+        self.data = np.ma.array(ndi.maximum_filter(data, size),
                                 mask=self.data.mask)
 
     def maximum_filter(self, size=3, interp='no'):
@@ -3365,7 +3354,7 @@ class Image(DataArray):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        self.data = np.ma.array(ndimage.minimum_filter(data, size),
+        self.data = np.ma.array(ndi.minimum_filter(data, size),
                                 mask=self.data.mask)
 
     def minimum_filter(self, size=3, interp='no'):
@@ -3514,16 +3503,16 @@ class Image(DataArray):
         else:
             data = np.ma.filled(self.data, np.ma.median(self.data))
 
-        structure = ndimage.generate_binary_structure(shape[0], shape[1])
+        structure = ndi.generate_binary_structure(shape[0], shape[1])
         if median is not None:
-            data = np.ma.array(ndimage.median_filter(data, median),
+            data = np.ma.array(ndi.median_filter(data, median),
                                mask=self.data.mask)
-        expanded = ndimage.grey_dilation(data, (minsize, minsize))
+        expanded = ndi.grey_dilation(data, (minsize, minsize))
         ksel = np.where(expanded < background)
         expanded[ksel] = 0
 
-        lab = ndimage.measurements.label(expanded, structure)
-        slices = ndimage.measurements.find_objects(lab[0])
+        lab = ndi.measurements.label(expanded, structure)
+        slices = ndi.measurements.find_objects(lab[0])
 
         imalist = []
         for i in range(lab[1]):
@@ -4120,6 +4109,7 @@ class Image(DataArray):
                                 norm=norm, **kwargs)
 
             # create colorbar
+            from mpl_toolkits.axes_grid1 import make_axes_locatable
             divider = make_axes_locatable(ax)
             if colorbar == "h":
                 cax2 = divider.append_axes("top", size="5%", pad=0.2)
@@ -4681,6 +4671,8 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
 
     if factor > 1:
         if rot == 0:
+            from scipy import special
+
             X, Y = np.meshgrid(xrange(shape[0]), xrange(shape[1]))
             pixcrd_min = np.array(zip(X.ravel(), Y.ravel())) - 0.5
             # pixsky_min = wcs.pix2sky(pixcrd)

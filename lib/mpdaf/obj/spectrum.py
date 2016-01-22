@@ -7,7 +7,7 @@ import types
 import warnings
 
 import astropy.units as u
-from scipy import integrate, interpolate, signal, special
+from scipy import integrate, interpolate, signal
 from scipy.optimize import leastsq
 
 from . import ABmag_filters
@@ -2627,6 +2627,8 @@ class Spectrum(DataArray):
         unit : astropy.units
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
+        from scipy import special
+
         sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
         if unit is None:
             s = sigma
