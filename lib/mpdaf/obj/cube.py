@@ -20,6 +20,7 @@ __all__ = ['iter_spe', 'iter_ima', 'Cube']
 
 # Define an iterator for iterating over all spectra in a cube.
 
+
 class iter_spe(object):
 
     """An iterator for iterating over the spectra in a Cube object.
@@ -233,9 +234,9 @@ class Cube(DataArray):
             # to slice prescriptions for selecting the corresponding
             # sub-cube.
 
-            item = (slice(min(ksel[0]), max(ksel[0]) + 1, None), # Z axis
-                    slice(min(ksel[1]), max(ksel[1]) + 1, None), # Y axis
-                    slice(min(ksel[2]), max(ksel[2]) + 1, None)) # X axis
+            item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),  # Z axis
+                    slice(min(ksel[1]), max(ksel[1]) + 1, None),  # Y axis
+                    slice(min(ksel[2]), max(ksel[2]) + 1, None))  # X axis
 
             # Extract the sub-cube selected above.
 
@@ -2176,28 +2177,28 @@ class Cube(DataArray):
         pv = pv.ravel()
         qv = qv.ravel()
         if var is None:
-            for p,q in zip(pv, qv):
-                processlist.append([(p,q), f, header,
-                                    data.data[:,p,q],
-                                    data.mask[:,p,q],
+            for p, q in zip(pv, qv):
+                processlist.append([(p, q), f, header,
+                                    data.data[:, p, q],
+                                    data.mask[:, p, q],
                                     None,
                                     self.unit, kargs])
         else:
-            for p,q in zip(pv, qv):
-                processlist.append([(p,q), f, header,
-                                    data.data[:,p,q],
-                                    data.mask[:,p,q],
-                                    var[:,p,q],
+            for p, q in zip(pv, qv):
+                processlist.append([(p, q), f, header,
+                                    data.data[:, p, q],
+                                    data.mask[:, p, q],
+                                    var[:, p, q],
                                     self.unit, kargs])
         num_tasks = len(processlist)
-        
+
         processresult = pool.imap_unordered(_process_spe, processlist)
         pool.close()
 
         if verbose:
             msg = "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
             self._logger.info(msg)
- 
+
             while (True):
                 time.sleep(5)
                 completed = processresult._index
@@ -2211,7 +2212,7 @@ class Cube(DataArray):
                              float(num_tasks) * 100.0))
                 sys.stdout.write("\r\x1b[K" + output.__str__())
                 sys.stdout.flush()
- 
+
         init = True
         for pos, dtype, out in processresult:
             p, q = pos
@@ -2219,10 +2220,9 @@ class Cube(DataArray):
                 # f return a Spectrum -> iterator return a cube
                 header, data, mask, var, unit = out
                 wave = WaveCoord(header, shape=data.shape[0])
-                spe = Spectrum(wave=wave, unit=unit,
-                               data=data, var=var, copy=False)
-                spe.data.mask = mask
- 
+                spe = Spectrum(wave=wave, unit=unit, data=data, var=var,
+                               mask=mask, copy=False)
+
                 cshape = (data.shape[0], self.shape[1], self.shape[2])
                 if init:
                     if self.var is None:
@@ -2233,11 +2233,11 @@ class Cube(DataArray):
                                       data=np.zeros(cshape),
                                       var=np.zeros(cshape), unit=unit)
                     init = False
- 
+
                 result.data_header = pyfits.Header(self.data_header)
                 result.primary_header = pyfits.Header(self.primary_header)
                 result[:, p, q] = spe
- 
+
             else:
                 if is_float(out[0]) or is_int(out[0]):
                     # f returns a number -> iterator returns an image
@@ -2255,7 +2255,7 @@ class Cube(DataArray):
                                           dtype=type(out[0]))
                         init = False
                     result[p, q] = out[0]
- 
+
         return result
 
     def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
@@ -2300,13 +2300,13 @@ class Cube(DataArray):
         var = self.var
         if var is None:
             for k in range(self.shape[0]):
-                processlist.append([k, f, header, data.data[k,:,:],
-                                    data.mask[k,:,:], None,
+                processlist.append([k, f, header, data.data[k, :, :],
+                                    data.mask[k, :, :], None,
                                     self.unit, kargs])
         else:
             for k in range(self.shape[0]):
-                processlist.append([k, f, header, data.data[k,:,:],
-                                    data.mask[k,:,:], var[k,:,:],
+                processlist.append([k, f, header, data.data[k, :, :],
+                                    data.mask[k, :, :], var[k, :, :],
                                     self.unit, kargs])
         num_tasks = len(processlist)
 
@@ -2362,9 +2362,8 @@ class Cube(DataArray):
                 # f return a Spectrum -> iterator return a list of spectra
                 header, data, mask, var, unit = out
                 wave = WaveCoord(header, shape=data.shape[0])
-                spe = Spectrum(wave=wave, unit=unit,
-                               data=data, var=var, copy=False)
-                spe.data.mask = mask
+                spe = Spectrum(wave=wave, unit=unit, data=data, var=var,
+                               mask=mask, copy=False)
                 if init:
                     result = np.empty(self.shape[0], dtype=type(spe))
                     init = False
@@ -2604,8 +2603,6 @@ class Cube(DataArray):
             grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
                                (self.shape[0], imax - imin, jmax - jmin))
 
-
-
             subcub = self[:, imin:imax, jmin:jmax]
             var = None
             data[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = subcub.data
@@ -2625,12 +2622,11 @@ class Cube(DataArray):
             wcs.set_naxis1(size)
             wcs.set_naxis2(size)
 
-            cub = Cube(wcs=self.wcs[imin - i0:imin - i0 + size, jmin - j0:jmin - j0 + size],
-                       wave=self.wave, unit=self.unit, data=data, var=var)
-            cub.data.mask = mask
-            cub.data_header = pyfits.Header(self.data_header)
-            cub.primary_header = pyfits.Header(self.primary_header)
-            return cub
+            return Cube(wcs=self.wcs[imin - i0:imin - i0 + size,
+                                     jmin - j0:jmin - j0 + size],
+                        wave=self.wave, unit=self.unit, data=data, var=var,
+                        mask=mask, data_header=pyfits.Header(self.data_header),
+                        primary_header=pyfits.Header(self.primary_header))
         else:
             return None
 
@@ -2687,8 +2683,7 @@ def _process_spe(arglist):
     try:
         pos, f, header, data, mask, var, unit, kargs = arglist
         wave = WaveCoord(header, shape=data.shape[0])
-        spe = Spectrum(wave=wave, unit=unit, data=data, var=var)
-        spe.data.mask = mask
+        spe = Spectrum(wave=wave, unit=unit, data=data, var=var, mask=mask)
 
         if isinstance(f, types.FunctionType):
             out = f(spe, **kargs)
@@ -2711,16 +2706,12 @@ def _process_ima(arglist):
     try:
         k, f, header, data, mask, var, unit, kargs = arglist
         wcs = WCS(header, shape=data.shape)
-        obj = Image(wcs=wcs, unit=unit, data=data, var=var)
-        obj.data.mask = mask
+        obj = Image(wcs=wcs, unit=unit, data=data, var=var, mask=mask)
 
         if isinstance(f, types.FunctionType):
             out = f(obj, **kargs)
         else:
             out = getattr(obj, f)(**kargs)
-
-        del obj
-        del wcs
 
         if isinstance(out, Image):
             # f returns an image -> iterator returns a cube
