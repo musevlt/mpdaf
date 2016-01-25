@@ -553,6 +553,10 @@ class PixTable(object):
                         column = self.hdulist[name].data[ksel, 0]
                     else:
                         column = self.hdulist[1].data.field(name)[ksel]
+
+                if np.issubdtype(column.dtype, np.float):
+                    # Ensure that float values are converted to double
+                    column = column.astype(float)
                 return column
 
     def set_column(self, name, data, ksel=None):
@@ -1152,10 +1156,7 @@ class PixTable(object):
         -------
         out : PixTable
         """
-        # ksel = np.where(mask)
-        # nrows = len(ksel[0])
-        nrows = np.count_nonzero(mask)
-        if nrows == 0:
+        if np.count_nonzero(mask) == 0:
             return None
 
         hdr = self.primary_header.copy()
