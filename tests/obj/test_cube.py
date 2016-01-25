@@ -173,27 +173,41 @@ def test_truncate():
 
 @attr(speed='fast')
 def test_sum():
-    """Cube class: testing sum, mean and median methods"""
+    """Cube class: testing sum and mean methods"""
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
-    for i in range(10):
-        cube1.data[i, :, :] = i * np.ones((6, 5))
-    nose.tools.assert_equal(cube1.sum(), 6 * 5 * 45)
-    sum2 = cube1.sum(axis=0)
-    nose.tools.assert_equal(sum2.shape[0], 6)
-    nose.tools.assert_equal(sum2.shape[1], 5)
-
+    ind = np.arange(10)
+    refsum = ind.sum()
+    cube1.data = (ind[:, np.newaxis,  np.newaxis] *
+                  np.ones((6, 5))[np.newaxis, :, :])
+    nose.tools.assert_equal(cube1.sum(), 6 * 5 * refsum)
+    assert_array_equal(cube1.sum(axis=0).data, np.full((6, 5), refsum, float))
     weights = np.ones(shape=(10, 6, 5))
-    nose.tools.assert_equal(cube1.sum(weights=weights), 6 * 5 * 45)
+    nose.tools.assert_equal(cube1.sum(weights=weights), 6 * 5 * refsum)
 
     weights = np.ones(shape=(10, 6, 5)) * 2
-    nose.tools.assert_equal(cube1.sum(weights=weights), 6 * 5 * 45)
+    nose.tools.assert_equal(cube1.sum(weights=weights), 6 * 5 * refsum)
 
-    m = cube1.mean(axis=(1, 2))
-    for i in range(10):
-        nose.tools.assert_equal(m[i], i)
+    assert_array_equal(cube1.sum(axis=(1, 2)).data, ind * 6 * 5)
 
+
+@attr(speed='fast')
+def test_median():
+    """Cube class: testing median methods"""
+    cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
+    ind = np.arange(10)
+    median = np.median(ind)
+    cube1.data = (ind[:, np.newaxis,  np.newaxis] *
+                  np.ones((6, 5))[np.newaxis, :, :])
+
+    m = cube1.median()
+    nose.tools.assert_equal(m, median)
     m = cube1.median(axis=0)
-    nose.tools.assert_equal(m[3, 3], np.median(np.arange(10)))
+    nose.tools.assert_equal(m[3, 3], median)
+    m = cube1.median(axis=(1, 2))
+    assert_array_equal(m.data, ind)
+
+    with nose.tools.assert_raises(ValueError):
+        m = cube1.median(axis=-1)
 
 
 @attr(speed='fast')

@@ -1400,7 +1400,7 @@ class Cube(DataArray):
 
         """
         if axis is None:
-            return self.data.median()
+            return np.ma.median(self.data)
         elif axis == 0:
             # return an image
             data = np.ma.median(self.data, axis)
@@ -1412,7 +1412,7 @@ class Cube(DataArray):
                 var = None
             return Image(wcs=self.wcs, unit=self.unit, data=data, var=var,
                          copy=False)
-        elif axis == tuple([1, 2]):
+        elif axis == (1, 2):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
             if self.var is not None:
@@ -1425,7 +1425,7 @@ class Cube(DataArray):
             return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
                             copy=False)
         else:
-            return None
+            raise ValueError('Invalid axis argument')
 
     def truncate(self, coord, mask=True, unit_wave=u.angstrom, unit_wcs=u.deg):
         """ Truncates the cube and return a sub-cube.

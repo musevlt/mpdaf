@@ -79,7 +79,7 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
     # can check their dimensions.
 
     data = np.asarray(data)
-    if var is None:
+    if var is not None:
         var = np.asarray(var)
 
     # Determine a shape for the data and var arrays. This is either a
@@ -319,7 +319,7 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
     # can check their dimensions.
 
     data = np.asarray(data)
-    if var is None:
+    if var is not None:
         var = np.asarray(var)
 
     # Determine a shape for the data and var arrays. This is either a
