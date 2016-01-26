@@ -13,4 +13,6 @@ prune lib/mpdaf_user/galpak/web
 prune lib/mpdaf_user/galpak/build
 prune lib/mpdaf_user/galpak/tests
 
+prune lib/mpdaf/sdetect/origin
+
 global-exclude *.py[cod] __pycache__ *.so .directory _githash.py .git
