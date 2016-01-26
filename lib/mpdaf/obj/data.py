@@ -675,7 +675,7 @@ class DataArray(object):
             data = self.data.data
 
         hdr = copy_header(self.data_header, self.get_wcs_header(),
-                          exclude=('CD*', 'PC*'), unit=self.unit)
+                          exclude=('CD*', 'PC*', 'CDELT*'), unit=self.unit)
         return fits.ImageHDU(name=name, data=data, header=hdr)
 
     def get_stat_hdu(self, name='STAT', header=None):

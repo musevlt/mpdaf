@@ -367,16 +367,22 @@ class WCS(object):
         has_cd = self.wcs.wcs.has_cd()
         hdr = self.wcs.to_header()
         if has_cd:
-            for c in ['1_1', '1_2', '2_1', '2_2']:
+            for ci in range(1,3):
                 try:
-                    val = hdr['PC' + c]
-                    del hdr['PC' + c]
+                    cdelt =  hdr['CDELT%i'%ci]
+                    del hdr['CDELT%i'%ci]
                 except KeyError:
-                    if c == '1_1' or c == '2_2':
-                        val = 1.
-                    else:
-                        val = 0.
-                hdr['CD' + c] = val
+                    cdelt = 1
+                for cj in range(1,3):
+                    try:
+                        val = cdelt * hdr['PC%i_%i'%(ci, cj)]
+                        del hdr['PC%i_%i'%(ci, cj)]
+                    except KeyError:
+                        if ci==cj:
+                            val = 1.
+                        else:
+                            val = 0.
+                    hdr['CD%i_%i'%(ci, cj)] = val
         return hdr
 
     def sky2pix(self, x, nearest=False, unit=None):

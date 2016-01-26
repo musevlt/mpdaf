@@ -299,7 +299,7 @@ def test_write():
     nose.tools.assert_equal(hdr['NAXIS1'], cube.shape[2])
     nose.tools.assert_equal(hdr['NAXIS2'], cube.shape[1])
     nose.tools.assert_equal(hdr['NAXIS3'], cube.shape[0])
-    for key in ('CRPIX1', 'CRPIX2', 'CDELT1', 'CDELT2'):
+    for key in ('CRPIX1', 'CRPIX2'):
         nose.tools.assert_equal(hdr[key], 1.0)
 
 
