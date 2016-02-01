@@ -1029,13 +1029,11 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         if (z0 + longz + nb_ranges*long0) < cube_raw.shape[0]:
             intz1c = intz1 + nb_ranges*long0
             intz2c = intz2 + nb_ranges*long0
-            cube_controle = cube_raw[intz1c:intz2c, inty1:inty2, intx1:intx2]
-            cube_controle_plot = cube_raw[intz1c:intz2c, y01:y02, x01:x02]
         else:
             intz1c = intz1 - nb_ranges*long0
             intz2c = intz2 - nb_ranges*long0
-            cube_controle = cube_raw[intz1c:intz2c, inty1:inty2, intx1:intx2]
-            cube_controle_plot = cube_raw[intz1c:intz2c, y01:y02, x01:x02]
+        cube_controle = cube_raw[intz1c:intz2c, inty1:inty2, intx1:intx2]
+        cube_controle_plot = cube_raw[intz1c:intz2c, y01:y02, x01:x02]
     
         # (1/sqrt(2)) * difference of the 2 sububes
         diff_cube = (1./np.sqrt(2)) * (cube_test - cube_controle)
@@ -1051,7 +1049,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
     
         # Construction of the 3D atom corresponding to the spectral profile
         for k in range(long0):
-            z = k + z0 - longz - 1 # erreur ????
+            z = k + z0 - longz
             if z>=0 and z<cube_raw.shape[0]:
                 atom[k,:,:] = profil1[k] * PSF_Moffat[z,:,:]
 
