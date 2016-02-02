@@ -46,7 +46,7 @@ class Catalog(Table):
         * a column per header fits
         * two columns per magnitude band:
           [BAND] [BAND]_ERR
-        * two or three columns per redshfit:
+        * two or three columns per redshift:
            Z_[Z_DESC], Z_[Z_DESC]_ERR or
            Z_[Z_DESC], Z_[Z_DESC]_MIN and Z_[Z_DESC]_MAX
         * several columns per line.
@@ -70,14 +70,13 @@ class Catalog(Table):
         # union of all headers keywords without mandatory FITS keywords
         h = sources[0].header
 
-        #d = dict(zip(h.keys(), [type(v) for v in h.values()]))
-        d = dict(zip(h.keys(), [(type(c[1]),c[2]) for c in h.cards]))
+        d = dict(zip(h.keys(), [(type(c[1]), c[2]) for c in h.cards]))
         for source in sources[1:]:
             h = source.header
-            d.update(dict(zip(h.keys(), [(type(c[1]),c[2]) for c in h.cards])))
+            d.update(dict(zip(h.keys(), [(type(c[1]), c[2]) for c in h.cards])))
 
         excluded_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
-                               'AUTHOR']
+                          'AUTHOR']
         i = 1
         while 'COM%03d' % i in d.keys():
             excluded_cards.append('COM%03d' % i)
@@ -111,10 +110,9 @@ class Catalog(Table):
         tuple_hdr.insert(5, tuple_hdr.pop(index))
 
         dtype_hdr = [c[0] for c in tuple_hdr]
-        desc_hdr = [c[1][:c[1].find('u.')] if c[1].find('u.')!=-1 else c[1][:c[1].find('%')] if c[1].find('%')!=-1 else c[1] for c in tuple_hdr]
-        unit_hdr = [c[1][c[1].find('u.'):].split()[0][2:] if c[1].find('u.')!=-1 else None for c in tuple_hdr]
-        format_hdr = [c[1][c[1].find('%'):].split()[0] if c[1].find('%')!=-1 else None for c in tuple_hdr]
-
+        desc_hdr = [c[1][:c[1].find('u.')] if c[1].find('u.') != -1 else c[1][:c[1].find('%')] if c[1].find('%') != -1 else c[1] for c in tuple_hdr]
+        unit_hdr = [c[1][c[1].find('u.'):].split()[0][2:] if c[1].find('u.') != -1 else None for c in tuple_hdr]
+        format_hdr = [c[1][c[1].find('%'):].split()[0] if c[1].find('%') != -1 else None for c in tuple_hdr]
 
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
@@ -174,9 +172,9 @@ class Catalog(Table):
                             if not mask and line != 'None':
                                 try:
                                     float(line)
-                                    logger.warning('source %d: line labeled \"%s\" not loaded' %(source.ID, line))
+                                    logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
                                 except:
-                                    names_lines += ['%s_%s' % (line.replace('_',''), col) for col in colnames]
+                                    names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
 
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
@@ -258,7 +256,7 @@ class Catalog(Table):
                     if fmt == 'default':
                         copy = source.lines['LINE'].data.data
                         for i in range(len(source.lines)):
-                            source.lines['LINE'][i] = source.lines['LINE'][i].replace('_','')
+                            source.lines['LINE'][i] = source.lines['LINE'][i].replace('_', '')
                         for name, typ in zip(names_lines, dtype_lines):
                             colname = '_'.join(name.split('_')[1:])
                             line = name.split('_')[0]
@@ -333,7 +331,7 @@ class Catalog(Table):
                 t[name].description = 'Error in AB Magnitude'
             else:
                 t[name].description = 'AB Magnitude'
-        if len(llines)!=0:
+        if len(llines) != 0:
             for name, unit in zip(names_lines, units_lines):
                 t[name].unit = unit
                 if 'LBDA' in name or 'EQW' in name:

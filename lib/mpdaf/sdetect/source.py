@@ -193,24 +193,26 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
             os.path.basename(filename), ext, cls.__name__, e))
     return obj
 
+
 def _read_masked_table(hdulist, extname, **kwargs):
     """Read a masked Table from a FITS HDUList."""
     t = _read_ext(Table, hdulist, extname, masked=True)
     h = hdulist[extname].header
     for i in range(h['TFIELDS']):
         try:
-            t.columns[i].unit = h['TUNIT%d'%(i+1)]
+            t.columns[i].unit = h['TUNIT%d' % (i + 1)]
         except:
             pass
     return t
 
-#_read_masked_table = partial(_read_ext, Table, masked=True)
+# _read_masked_table = partial(_read_ext, Table, masked=True)
 _read_spectrum = partial(_read_mpdaf_obj, Spectrum)
 _read_image = partial(_read_mpdaf_obj, Image)
 _read_cube = partial(_read_mpdaf_obj, Cube)
 
 
 class Source(object):
+
     """This class contains a Source object.
 
     Attributes
@@ -244,12 +246,12 @@ class Source(object):
     def __init__(self, header, lines=None, mag=None, z=None,
                  spectra=None, images=None, cubes=None, tables=None):
         """Classic constructor."""
-        # FITS header
-        if not ('RA' in header and 'DEC' in header
-                and 'ID' in header and 'CUBE' in header
-                and 'ORIGIN' in header and 'ORIGIN_V' in header):
-            raise IOError('ID, RA, DEC, ORIGIN, ORIGIN_V and CUBE are '
-                          'mandatory parameters to create a Source object')
+        # Check required keywords in the FITS header
+        for key in ('RA', 'DEC', 'ID', 'CUBE', 'ORIGIN', 'ORIGIN_V'):
+            if key not in header:
+                raise IOError('{} keyword is mandatory to create a Source '
+                              'object'.format(key))
+
         self.header = header
         # Table LINES
         self.lines = lines
@@ -360,7 +362,7 @@ class Source(object):
                     lines[name].format = '.2f'
                 if 'FLUX' in name or 'FWHM' in name:
                     lines[name].format = '.1f'
-                
+
         mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in hdulist else None
         if mag is not None:
             for name in mag.colnames:
@@ -373,7 +375,7 @@ class Source(object):
                 elif name == 'MAG':
                     mag[name].format = '.3f'
                     mag[name].description = 'AB Magnitude'
-                
+
         z = _read_masked_table(hdulist, 'Z') if 'Z' in hdulist else None
         if z is not None:
             for name in z.colnames:
@@ -389,7 +391,7 @@ class Source(object):
                 elif name == 'Z_ERR':
                     z[name].format = '.4f'
                     z[name].description = 'Error of estimated redshift'
-                elif name=='Z':
+                elif name == 'Z':
                     z[name].format = '.4f'
                     z[name].description = 'Estimated redshift'
 
@@ -558,7 +560,7 @@ class Source(object):
     def info(self):
         """Print information."""
         excluded_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
-                               'AUTHOR']
+                          'AUTHOR']
         icom = 1
         while 'COM%03d' % icom in self.header:
             excluded_cards.append('COM%03d' % icom)
@@ -570,15 +572,17 @@ class Source(object):
         for card in self.header.cards:
             if card[0] not in excluded_cards:
                 self._logger.info(card)
+
         for i in range(1, icom):
-            #self._logger.info(self.header.cards['COM%03d' % i])
+            # self._logger.info(self.header.cards['COM%03d' % i])
             card = self.header.cards['COM%03d' % i]
-            self._logger.info(str('%s = %s / %s'%(card[0], card[1], card[2])))
+            self._logger.info('%s = %s / %s', card[0], card[1], card[2])
+
         for i in range(1, ihist):
-            #self._logger.info(self.header.cards['HIST%03d' % i])
+            # self._logger.info(self.header.cards['HIST%03d' % i])
             card = self.header.cards['HIST%03d' % i]
-            self._logger.info(str('%s = %s / %s'%(card[0], card[1], card[2])))
-        
+            self._logger.info('%s = %s / %s', card[0], card[1], card[2])
+
         if len(self.spectra) != 0 or \
            len(self.images) != 0 or \
            len(self.cubes) != 0 or \
@@ -739,9 +743,9 @@ class Source(object):
         if desc is None:
             desc = ''
         if unit is not None:
-            desc += ' u.%s'%(unit.to_string('fits'))
+            desc += ' u.%s' % (unit.to_string('fits'))
         if fmt is not None:
-            desc += ' %%%s'%fmt
+            desc += ' %%%s' % fmt
         self.header[key] = (value, desc)
 
     def remove_attr(self, key):
@@ -896,7 +900,7 @@ class Source(object):
                         typ = 'S20'
                     col = MaskedColumn(ma.masked_array(np.empty(nlines),
                                                        mask=np.ones(nlines)),
-                                       name=col, dtype=typ, unit=unit, 
+                                       name=col, dtype=typ, unit=unit,
                                        description=d, format=f)
                     self.lines.add_column(col)
 
@@ -981,7 +985,7 @@ class Source(object):
                 subima = image.subimage((self.dec, self.ra), size * 1.5, minsize=minsize,
                                         unit_center=u.deg, unit_size=unit_size)
                 uniq = np.unique(subima.data.data)
-                if ((uniq==0) | (uniq==1)).all():
+                if ((uniq == 0) | (uniq == 1)).all():
                     subima = subima.rotate(pa - pa_white, order=0)
                 else:
                     subima = subima.rotate(pa - pa_white)
@@ -1272,7 +1276,8 @@ class Source(object):
             self._logger.warning('add_seg_images method use the MUSE_WHITE '
                                  'image computed by add_white_image method')
 
-    @deprecated('add_mask method is deprecated, use find_sky_mask or find_union_mask or find_intersection_mask')
+    @deprecated('`add_masks` method is deprecated, use `find_sky_mask` or '
+                '`find_union_mask` or `find_intersection_mask`')
     def add_masks(self, tags=None):
         """Use the list of segmentation maps to compute the union mask and the
         intersection mask and the region where no object is detected in any
@@ -1308,13 +1313,13 @@ class Source(object):
 
         from ..sdetect.sea import mask_creation
         mask_creation(self, maps)
-        
+
     def find_sky_mask(self, seg_tags, sky_mask='MASK_SKY'):
         """Loop over all segmentation images and use the region where no object is
         detected in any segmentation map as our sky image.
-        
+
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
-    
+
         Parameters
         ----------
         seg_tags : list<string>
@@ -1333,13 +1338,12 @@ class Source(object):
                 raise IOError('segmentation maps have not the same dimensions')
         self.images[sky_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                       data=mask)
-        
 
     def find_union_mask(self, seg_tags, union_mask='MASK_UNION'):
         """Use the list of segmentation maps to compute the union mask.
-        
+
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
-        
+
         1- Select on each segmentation map the object at the centre of the map.
         (the algo supposes that each objects have different labels)
         2- compute the union of these selected objects
@@ -1359,17 +1363,17 @@ class Source(object):
                 maps[tag[4:]] = self.images[tag].data.data
             else:
                 maps[tag] = self.images[tag].data.data
-                
+
         from ..sdetect.sea import findCentralDetection, union
         r = findCentralDetection(maps, yc, xc, tolerance=3)
         self.images[union_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                         data=union(r['seg'].values()))
-        
+
     def find_intersection_mask(self, seg_tags, inter_mask='MASK_INTER'):
         """Use the list of segmentation maps to compute the instersection mask.
-        
+
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
-        
+
         1- Select on each segmentation map the object at the centre of the map.
         (the algo supposes that each objects have different labels)
         2- compute the intersection of these selected objects
@@ -1389,7 +1393,7 @@ class Source(object):
                 maps[tag[4:]] = self.images[tag].data.data
             else:
                 maps[tag] = self.images[tag].data.data
-                
+
         from ..sdetect.sea import findCentralDetection, intersection
         r = findCentralDetection(maps, yc, xc, tolerance=3)
         self.images[inter_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
@@ -1493,7 +1497,7 @@ class Source(object):
                     order=0, unit_start=u.deg,
                     unit_step=u.arcsec).data.data
         else:
-            raise IOError('key %s not present in the images dictionary'%obj_mask)
+            raise IOError('key %s not present in the images dictionary' % obj_mask)
 
         if skysub:
             if sky_mask in self.images:
@@ -1507,7 +1511,7 @@ class Source(object):
                         order=0, unit_start=u.deg,
                         unit_step=u.arcsec).data.data
             else:
-                raise IOError('key %s not present in the images dictionary'%sky_mask)
+                raise IOError('key %s not present in the images dictionary' % sky_mask)
 
             # Get the sky spectrum to subtract
             sky = subcub.sum(axis=(1, 2), weights=skymask)
@@ -1811,6 +1815,7 @@ class Source(object):
 
 
 class SourceList(list):
+
     """
         list< :class:`mpdaf.sdetect.Source` >
     """
