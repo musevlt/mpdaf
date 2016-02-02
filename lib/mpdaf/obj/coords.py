@@ -368,18 +368,13 @@ class WCS(object):
         hdr = self.wcs.to_header()
         if has_cd:
             for ci in range(1,3):
-                try:
-                    cdelt =  hdr['CDELT%i'%ci]
-                    del hdr['CDELT%i'%ci]
-                except KeyError:
-                    cdelt = 1
+                cdelt =  hdr.pop('CDELT%i'%ci, 1)
                 for cj in range(1,3):
                     try:
-                        val = cdelt * hdr['PC%i_%i'%(ci, cj)]
-                        del hdr['PC%i_%i'%(ci, cj)]
+                        val = cdelt * hdr.pop('PC%i_%i'%(ci, cj))
                     except KeyError:
                         if ci==cj:
-                            val = 1.
+                            val = cdelt
                         else:
                             val = 0.
                     hdr['CD%i_%i'%(ci, cj)] = val
