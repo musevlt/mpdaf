@@ -7,7 +7,9 @@ import numpy as np
 
 from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
+from numpy import ma
 from numpy.testing import assert_almost_equal, assert_array_equal
+from nose.tools import assert_equal
 from operator import add, sub, mul, div
 from tempfile import NamedTemporaryFile
 
@@ -23,7 +25,7 @@ def test_copy():
     cube1[0, 0, 0] = 1000
     nose.tools.assert_true(cube1.wcs.isEqual(cube2.wcs))
     nose.tools.assert_true(cube1.wave.isEqual(cube2.wave))
-    nose.tools.assert_equal(s, cube2.data.sum())
+    assert_equal(s, cube2.data.sum())
 
 
 @attr(speed='fast')
@@ -60,7 +62,7 @@ def test_get_Cube():
     """Cube class: tests getters"""
     cube1 = generate_cube()
     assert_array_equal(cube1[2, :, :].shape, (6, 5))
-    nose.tools.assert_equal(cube1[:, 2, 3].shape[0], 10)
+    assert_equal(cube1[:, 2, 3].shape[0], 10)
     assert_array_equal(cube1[1:7, 0:2, 0:3].shape, (6, 2, 3))
     assert_array_equal(cube1.get_lambda(1.2, 15.6).shape, (6, 6, 5))
     a = cube1[2:4, 0:2, 1:4]
@@ -95,7 +97,7 @@ def test_resize():
     cube1 = generate_cube()
     cube1.data.mask[0, :, :] = True
     cube1.resize()
-    nose.tools.assert_equal(cube1.shape[0], 9)
+    assert_equal(cube1.shape[0], 9)
 
 
 @attr(speed='fast')
@@ -105,47 +107,58 @@ def test_multiprocess():
 
     f = Image.sum
     list_spe = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=True, axis=0)
-    nose.tools.assert_equal(list_spe[8][1], cube1[8, :, :].sum(axis=0)[1])
+    assert_equal(list_spe[8][1], cube1[8, :, :].sum(axis=0)[1])
 
     f = Image.ee
     ee = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=True)
-    nose.tools.assert_equal(ee[1], cube1[1, :, :].ee())
+    assert_equal(ee[1], cube1[1, :, :].ee())
 
     f = Image.rotate
     cub2 = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=True, theta=20)
-    nose.tools.assert_equal(cub2[4, 3, 2], cube1[4, :, :].rotate(20)[3, 2])
+    assert_equal(cub2[4, 3, 2], cube1[4, :, :].rotate(20)[3, 2])
 
     f = Spectrum.mean
     out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=True)
-    nose.tools.assert_equal(out[2, 3], cube1[:, 2, 3].mean())
+    assert_equal(out[2, 3], cube1[:, 2, 3].mean())
 
     f = Spectrum.resample
     out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=True, step=1)
-    nose.tools.assert_equal(out[8, 3, 2], cube1[:, 3, 2].resample(step=1)[8])
+    assert_equal(out[8, 3, 2], cube1[:, 3, 2].resample(step=1)[8])
 
 
 @attr(speed='fast')
 def test_mask():
     """Cube class: testing mask functionalities"""
     cube = generate_cube()
+
+    cube.mask((2, 2), (1, 1), lmin=2, lmax=5, inside=True, unit_center=None,
+              unit_radius=None, unit_wave=None)
+    assert_equal(ma.count_masked(cube.data), 3*3*3)
+    cube.unmask()
+
     cube.mask((2, 2), (1, 1), lmin=2, lmax=5, inside=False, unit_center=None,
               unit_radius=None, unit_wave=None)
-    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 9 * 3)
+    assert_equal(np.prod(cube.shape) - ma.count_masked(cube.data),
+                 3*3*3)
     cube.unmask()
+
     wcs = WCS(deg=True)
     wave = WaveCoord(cunit=u.angstrom)
     cube = Cube(data=cube.data, wave=wave, wcs=wcs, copy=False)
     cube.mask(wcs.pix2sky([2, 2]), (3600, 3600), lmin=2, lmax=5, inside=False)
     nose.tools.assert_almost_equal(cube.sum(), 2.3 * 9 * 3)
     cube.unmask()
+
     cube.mask(wcs.pix2sky([2, 2]), 4000, lmin=2, lmax=5, inside=False)
     nose.tools.assert_almost_equal(cube.sum(), 2.3 * 5 * 3)
     cube.unmask()
+
     cube.mask_ellipse(wcs.pix2sky([2, 2]), (10000, 3000), 20, lmin=2, lmax=5,
                       inside=False)
     nose.tools.assert_almost_equal(cube.sum(), 2.3 * 7 * 3)
     ksel = np.where(cube.data.mask)
     cube.unmask()
+
     cube.mask_selection(ksel)
     nose.tools.assert_almost_equal(cube.sum(), 2.3 * 7 * 3)
 
@@ -153,6 +166,7 @@ def test_mask():
         cube.mask_variance(0.1)
 
     cube.unmask()
+
     cube.var = np.random.randn(*cube.shape)
     mask = cube.var > 0.1
     cube.mask_variance(0.1)
@@ -179,13 +193,13 @@ def test_sum():
     refsum = ind.sum()
     cube1.data = (ind[:, np.newaxis,  np.newaxis] *
                   np.ones((6, 5))[np.newaxis, :, :])
-    nose.tools.assert_equal(cube1.sum(), 6 * 5 * refsum)
+    assert_equal(cube1.sum(), 6 * 5 * refsum)
     assert_array_equal(cube1.sum(axis=0).data, np.full((6, 5), refsum, float))
     weights = np.ones(shape=(10, 6, 5))
-    nose.tools.assert_equal(cube1.sum(weights=weights), 6 * 5 * refsum)
+    assert_equal(cube1.sum(weights=weights), 6 * 5 * refsum)
 
     weights = np.ones(shape=(10, 6, 5)) * 2
-    nose.tools.assert_equal(cube1.sum(weights=weights), 6 * 5 * refsum)
+    assert_equal(cube1.sum(weights=weights), 6 * 5 * refsum)
 
     assert_array_equal(cube1.sum(axis=(1, 2)).data, ind * 6 * 5)
 
@@ -200,9 +214,9 @@ def test_median():
                   np.ones((6, 5))[np.newaxis, :, :])
 
     m = cube1.median()
-    nose.tools.assert_equal(m, median)
+    assert_equal(m, median)
     m = cube1.median(axis=0)
-    nose.tools.assert_equal(m[3, 3], median)
+    assert_equal(m[3, 3], median)
     m = cube1.median(axis=(1, 2))
     assert_array_equal(m.data, ind)
 
@@ -215,10 +229,10 @@ def test_rebin():
     """Cube class: testing rebin methods"""
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
     cube2 = cube1.rebin_mean(factor=2)
-    nose.tools.assert_equal(cube2[0, 0, 0], 1)
+    assert_equal(cube2[0, 0, 0], 1)
     assert_array_equal(cube2.get_start(), (1.5, 0.5, 0.5))
     cube2 = cube1.rebin_mean(factor=2, flux=True, margin='origin')
-    nose.tools.assert_equal(cube2[-1, -1, -1], 0.5)
+    assert_equal(cube2[-1, -1, -1], 0.5)
     assert_array_equal(cube2.get_start(), (1.5, 0.5, 0.5))
 
 
@@ -232,18 +246,18 @@ def test_get_image():
     cube1 = Cube(data=data, wave=wave, wcs=wcs)
     cube1[:, 2, 2].add_gaussian(5000, 1200, 20, unit=u.angstrom)
     ima = cube1.get_image(wave=(4800, 5200), is_sum=False, subtract_off=True)
-    nose.tools.assert_equal(ima[0, 0], 0)
+    assert_equal(ima[0, 0], 0)
     nose.tools.assert_almost_equal(ima[2, 2],
                                    cube1[934:1067, 2, 2].mean() - 2, 3)
     ima = cube1.get_image(wave=(4800, 5200), is_sum=False, subtract_off=False)
-    nose.tools.assert_equal(ima[0, 0], 2)
+    assert_equal(ima[0, 0], 2)
     nose.tools.assert_almost_equal(ima[2, 2], cube1[934:1067, 2, 2].mean(), 3)
     ima = cube1.get_image(wave=(4800, 5200), is_sum=True, subtract_off=True)
-    nose.tools.assert_equal(ima[0, 0], 0)
+    assert_equal(ima[0, 0], 0)
     nose.tools.assert_almost_equal(ima[2, 2], cube1[934:1067, 2, 2].sum() -
                                    cube1[934:1067, 0, 0].sum(), 3)
     ima = cube1.get_image(wave=(4800, 5200), is_sum=True, subtract_off=False)
-    nose.tools.assert_equal(ima[0, 0], cube1[934:1067, 0, 0].sum())
+    assert_equal(ima[0, 0], cube1[934:1067, 0, 0].sum())
     nose.tools.assert_almost_equal(ima[2, 2], cube1[934:1067, 2, 2].sum())
 
 
@@ -255,9 +269,10 @@ def test_subcube():
                           unit_center=None, unit_size=None)
     assert_array_equal(cube2.get_start(), (5, 1, 2))
     assert_array_equal(cube2.shape, (4, 2, 2))
+
     cube2 = cube1.subcube_circle_aperture(center=(2, 2.8), radius=1,
                                           unit_center=None, unit_radius=None)
-    nose.tools.assert_equal(cube2.data.mask[0, 0, 0], True)
+    assert_equal(cube2.data.mask[0, 0, 0], True)
     assert_array_equal(cube2.get_start(), (1, 1, 2))
     assert_array_equal(cube2.shape, (10, 2, 2))
 
@@ -268,8 +283,8 @@ def test_aperture():
     cube = generate_cube(data=1, wave=WaveCoord(crval=1))
     spe = cube.aperture(center=(2, 2.8), radius=1,
                         unit_center=None, unit_radius=None)
-    nose.tools.assert_equal(spe.shape[0], 10)
-    nose.tools.assert_equal(spe.get_start(), 1)
+    assert_equal(spe.shape[0], 10)
+    assert_equal(spe.get_start(), 1)
 
 
 @attr(speed='fast')
@@ -278,7 +293,7 @@ def test_write():
     unit = u.Unit('1e-20 erg/s/cm2/Angstrom')
     cube = generate_cube(data=1, wave=WaveCoord(crval=1, cunit=u.angstrom),
                          unit=unit)
-    cube.data[:, 0, 0] = np.ma.masked
+    cube.data[:, 0, 0] = ma.masked
     cube.var = np.ones_like(cube.data)
     fobj = NamedTemporaryFile()
     cube.write(fobj.name)
@@ -289,18 +304,18 @@ def test_write():
                        ['PRIMARY', 'DATA', 'STAT', 'DQ'])
 
     hdr = hdu[0].header
-    nose.tools.assert_equal(hdr['AUTHOR'], 'MPDAF')
+    assert_equal(hdr['AUTHOR'], 'MPDAF')
 
     hdr = hdu[1].header
-    nose.tools.assert_equal(hdr['EXTNAME'], 'DATA')
-    nose.tools.assert_equal(hdr['NAXIS'], 3)
-    nose.tools.assert_equal(u.Unit(hdr['BUNIT']), unit)
-    nose.tools.assert_equal(u.Unit(hdr['CUNIT3']), u.angstrom)
-    nose.tools.assert_equal(hdr['NAXIS1'], cube.shape[2])
-    nose.tools.assert_equal(hdr['NAXIS2'], cube.shape[1])
-    nose.tools.assert_equal(hdr['NAXIS3'], cube.shape[0])
+    assert_equal(hdr['EXTNAME'], 'DATA')
+    assert_equal(hdr['NAXIS'], 3)
+    assert_equal(u.Unit(hdr['BUNIT']), unit)
+    assert_equal(u.Unit(hdr['CUNIT3']), u.angstrom)
+    assert_equal(hdr['NAXIS1'], cube.shape[2])
+    assert_equal(hdr['NAXIS2'], cube.shape[1])
+    assert_equal(hdr['NAXIS3'], cube.shape[0])
     for key in ('CRPIX1', 'CRPIX2'):
-        nose.tools.assert_equal(hdr[key], 1.0)
+        assert_equal(hdr[key], 1.0)
 
 
 @attr(speed='fast')
@@ -312,24 +327,24 @@ def test_get_item():
 
     r = c[:, :2, :2]
     assert_array_equal(r.shape, (10, 2, 2))
-    nose.tools.assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
-    nose.tools.assert_equal(r.data_header['KEY'], c.data_header['KEY'])
+    assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
+    assert_equal(r.data_header['KEY'], c.data_header['KEY'])
     nose.tools.assert_true(isinstance(r, Cube))
     nose.tools.assert_true(r.wcs.isEqual(c.wcs[:2, :2]))
     nose.tools.assert_true(r.wave.isEqual(c.wave))
 
     r = c[0, :, :]
     assert_array_equal(r.shape, (6, 5))
-    nose.tools.assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
-    nose.tools.assert_equal(r.data_header['KEY'], c.data_header['KEY'])
+    assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
+    assert_equal(r.data_header['KEY'], c.data_header['KEY'])
     nose.tools.assert_true(isinstance(r, Image))
     nose.tools.assert_true(r.wcs.isEqual(c.wcs))
     nose.tools.assert_is_none(r.wave)
 
     r = c[:, 2, 2]
     assert_array_equal(r.shape, (10, ))
-    nose.tools.assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
-    nose.tools.assert_equal(r.data_header['KEY'], c.data_header['KEY'])
+    assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
+    assert_equal(r.data_header['KEY'], c.data_header['KEY'])
     nose.tools.assert_true(isinstance(r, Spectrum))
     nose.tools.assert_true(r.wave.isEqual(c.wave))
     nose.tools.assert_is_none(r.wcs)

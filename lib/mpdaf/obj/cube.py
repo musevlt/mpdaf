@@ -18,8 +18,6 @@ from ..tools import deprecated
 
 __all__ = ['iter_spe', 'iter_ima', 'Cube']
 
-# Define an iterator for iterating over all spectra in a cube.
-
 
 class iter_spe(object):
 
@@ -275,8 +273,8 @@ class Cube(DataArray):
             The center of the region.
         radius : float or (float,float)
             The radius of the region.
-            If radius is a float, it denotes the radius of a circular region.
-            If radius is (float,float), it denotes the width of a square region.
+            If radius is a scalar, it denotes the radius of a circular region.
+            If radius is a tuple, it denotes the width of a square region.
         lmin : float
             The minimum wavelength of the region.
         lmax : float
@@ -314,58 +312,41 @@ class Cube(DataArray):
         if unit_radius is not None:
             radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
             radius2 = radius[0] * radius[1]
+
         if lmin is None:
             lmin = 0
-        else:
-            if unit_wave is not None:
-                lmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
+        elif unit_wave is not None:
+            lmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
+
         if lmax is None:
             lmax = self.shape[0]
-        else:
-            if unit_wave is not None:
-                lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
+        elif unit_wave is not None:
+            lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
+        ny, nx = self.shape[1:]
         imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int),
-                                           [self.shape[1] - 1, self.shape[2] - 1]),
-                                [0, 0])
+                                           [ny - 1, nx - 1]), [0, 0])
         imax, jmax = np.maximum(np.minimum((center + radius + 0.5).astype(int),
-                                           [self.shape[1] - 1, self.shape[2] - 1]),
-                                [0, 0])
+                                           [ny - 1, nx - 1]), [0, 0])
         imax += 1
         jmax += 1
 
-        if inside and not circular:
-            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = 1
-        elif inside and circular:
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1],
-                               indexing='ij')
-            grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) < radius2,
-                               (lmax - lmin, imax - imin, jmax - jmin))
-            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
-                np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax],
-                              grid3d)
-        elif not inside and circular:
-            self.data.mask[:lmin, :, :] = 1
-            self.data.mask[lmax:, :, :] = 1
-            self.data.mask[:, :imin, :] = 1
-            self.data.mask[:, imax:, :] = 1
-            self.data.mask[:, :, :jmin] = 1
-            self.data.mask[:, :, jmax:] = 1
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1], indexing='ij')
-            grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
-                               (lmax - lmin, imax - imin, jmax - jmin))
-            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
-                np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax],
-                              grid3d)
+        mask = np.zeros(self.shape[1:], dtype=bool)
+        if circular:
+            xx = np.arange(imin, imax) - center[0]
+            yy = np.arange(jmin, jmax) - center[1]
+            grid = (xx[:, np.newaxis]**2 + yy[np.newaxis, :]**2) < radius2
+            mask[imin:imax, jmin:jmax] = grid
         else:
-            self.data.mask[:lmin, :, :] = 1
-            self.data.mask[lmax:, :, :] = 1
-            self.data.mask[:, :imin, :] = 1
-            self.data.mask[:, imax:, :] = 1
-            self.data.mask[:, :, :jmin] = 1
-            self.data.mask[:, :, jmax:] = 1
+            mask[imin:imax, jmin:jmax] = True
+
+        mask = mask[np.newaxis, :, :]
+        if inside:
+            self.data.mask[lmin:lmax, :, :] |= mask
+        else:
+            self.data.mask[:lmin, :, :] = True
+            self.data.mask[lmax:, :, :] = True
+            self.data.mask[lmin:lmax, :, :] |= ~mask
 
     def mask_ellipse(self, center, radius, posangle, lmin=None, lmax=None,
                      pix=False, inside=True, unit_center=u.deg,
@@ -2502,13 +2483,10 @@ class Cube(DataArray):
 
         size = int(size + 0.5)
         i, j = (center - radius + 0.5).astype(int)
-        imin, jmin = np.maximum(np.minimum(
-            [i, j], [self.shape[1] - 1, self.shape[2] - 1]),
-            [0, 0])
-        imax, jmax = np.maximum(np.minimum(
-            [i + size, j + size],
-            [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-
+        ny, nx = self.shape[1:]
+        imin, jmin = np.maximum(np.minimum([i, j], [ny - 1, nx - 1]), [0, 0])
+        imax, jmax = np.maximum(np.minimum([i + size, j + size],
+                                           [ny - 1, nx - 1]), [0, 0])
         i0, j0 = - np.minimum([i, j], [0, 0])
 
         slin = [slice(None), slice(imin, imax), slice(jmin, jmax)]
@@ -2555,6 +2533,7 @@ class Cube(DataArray):
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
                                 unit_radius=u.arcsec):
         """Extracts a sub-cube from an circle aperture of fixed radius.
+
         Pixels outside the circle are masked.
 
         Parameters
@@ -2575,60 +2554,14 @@ class Cube(DataArray):
         -------
         out : mpdaf.obj.Cube
         """
-        if radius > 0:
-            if unit_center is not None:
-                center = self.wcs.sky2pix(center, unit=unit_center)[0]
-            else:
-                center = np.array(center)
-            if unit_radius is not None:
-                radius = radius / np.abs(self.wcs.get_step(unit=unit_radius)[0])
-
-            radius2 = radius * radius
-            size = int(2 * radius + 0.5)
-            i, j = (center - radius + 0.5).astype(int)
-            imin, jmin = np.maximum(np.minimum(
-                [i, j], [self.shape[1] - 1, self.shape[2] - 1]),
-                [0, 0])
-            imax, jmax = np.maximum(np.minimum(
-                [i + size, j + size],
-                [self.shape[1] - 1, self.shape[2] - 1]), [0, 0])
-
-            i0, j0 = - np.minimum([i, j], [0, 0])
-
-            data = np.ones((self.shape[0], size, size)) * np.nan
-
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1],
-                               indexing='ij')
-            grid3d = np.resize((grid[0] ** 2 + grid[1] ** 2) > radius2,
-                               (self.shape[0], imax - imin, jmax - jmin))
-
-            subcub = self[:, imin:imax, jmin:jmax]
-            var = None
-            data[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = subcub.data
-            mask = np.ones((self.shape[0], size, size), dtype=np.bool)
-            mask[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = np.logical_or(
-                subcub.data.mask, grid3d)
-
-            if subcub.var is not None:
-                var = np.ones((self.shape[0], size, size)) * np.nan
-                var[:, i0:i0 + imax - imin, j0:j0 + jmax - jmin] = subcub.var
-            else:
-                var = None
-
-            wcs = self.wcs[imin:imax, jmin:jmax]
-            wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
-            wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
-            wcs.set_naxis1(size)
-            wcs.set_naxis2(size)
-
-            return Cube(wcs=self.wcs[imin - i0:imin - i0 + size,
-                                     jmin - j0:jmin - j0 + size],
-                        wave=self.wave, unit=self.unit, data=data, var=var,
-                        mask=mask, data_header=pyfits.Header(self.data_header),
-                        primary_header=pyfits.Header(self.primary_header))
-        else:
-            return None
+        subcub = self.subcube(center, radius*2, unit_center=unit_center,
+                              unit_size=unit_radius)
+        if unit_center is None:
+            center = np.array(center)
+            center -= (subcub.get_start() - self.get_start())[1:]
+        subcub.mask(center, radius, inside=False, unit_center=unit_center,
+                    unit_radius=unit_radius)
+        return subcub
 
     def aperture(self, center, radius, unit_center=u.deg,
                  unit_radius=u.arcsec):
