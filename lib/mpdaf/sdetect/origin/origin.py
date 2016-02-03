@@ -587,7 +587,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
             i = i+1
     
     # Set to the infinity the norm equal to 0
-    norm_profile[norm_profile==0] = np.inf
+    norm_profile[norm_profile<=0] = np.inf
     # T_GLR values with constraint  : cube_profile>0
     GLR = np.zeros((Nz, Ny, Nx, 2))
     GLR[:,:,:,0] = cube_profile/np.sqrt(norm_profile)
@@ -616,7 +616,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
                 norm_profile[:,y,x] = _centered(ret, s1)
                 i = i+1
                                                   
-        norm_profile[norm_profile==0] = np.inf
+        norm_profile[norm_profile<=0] = np.inf
         GLR[:,:,:,1] = cube_profile/np.sqrt(norm_profile)
         
         # maximum over the fourth dimension
