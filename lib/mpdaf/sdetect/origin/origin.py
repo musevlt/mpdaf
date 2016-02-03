@@ -909,7 +909,6 @@ def Compute_Connected_Voxel(cube_pval_final, threshold, neighboors):
     conn = (neighboors + 1)**(1/3.)
     s = morphology.generate_binary_structure(3, conn)
     labeled_cube, Ngp = measurements.label(cube_pval_final, structure=s)
-    #Pix = measurements.find_objects(labeled_array)
     # Maximum number of voxels in one group
     print '    %0.1fs'%(time.time()-t0)
     return labeled_cube, Ngp
@@ -951,32 +950,18 @@ def Compute_Referent_Voxel(correl, profile, cube_pval_correl,
     """
     print ' Compute_Referent_Voxel'
     t0 = time.time()
-    zpixRef = np.zeros(Ngp, dtype=np.int)
-    ypixRef = np.zeros(Ngp, dtype=np.int)
-    xpixRef = np.zeros(Ngp, dtype=np.int)
-    correl_max = np.zeros(Ngp)
-    profile_max = np.zeros(Ngp, dtype=np.int)
-    pvalC = np.zeros(Ngp)
-    pvalS = np.zeros(Ngp)
-    pvalF = np.zeros(Ngp)
-    for i in range(Ngp):
-        output = '\r%d/%d'%(i+1, Ngp)
-        sys.stdout.write("\r\x1b[K" + output.__str__())
-        sys.stdout.flush()
-        correl_gp = correl[labeled_cube==(i+1)]
-        maxi = np.amax(correl_gp)
-        ksel = np.where(correl==maxi)
-        z = ksel[0][0]
-        y = ksel[1][0]
-        x = ksel[2][0]
-        zpixRef[i] = z
-        ypixRef[i] = y
-        xpixRef[i] = x
-        correl_max[i] = maxi
-        profile_max[i] = profile[z,y,x]
-        pvalC[i] = cube_pval_correl[z,y,x]
-        pvalS[i] = cube_pval_channel[z,y,x]
-        pvalF[i] = cube_pval_final[z,y,x]
+    grp = measurements.find_objects(labeled_cube)
+    argmax = [np.argmax(correl[grp[i]]) for i in range(Ngp)]
+    correl_max = np.array([np.ravel(correl[grp[i]])[argmax[i]] for i in range(Ngp)])
+    z, y, x = np.meshgrid(range(correl.shape[0]), range(correl.shape[1]),
+                          range(correl.shape[2]), indexing='ij')
+    zpixRef = np.array([np.ravel(z[grp[i]])[argmax[i]] for i in range(Ngp)])
+    ypixRef = np.array([np.ravel(y[grp[i]])[argmax[i]] for i in range(Ngp)])
+    xpixRef = np.array([np.ravel(x[grp[i]])[argmax[i]] for i in range(Ngp)])
+    profile_max = profile[zpixRef, ypixRef, xpixRef]
+    pvalC = cube_pval_correl[zpixRef, ypixRef, xpixRef]
+    pvalS = cube_pval_channel[zpixRef, ypixRef, xpixRef]
+    pvalF = cube_pval_final[zpixRef, ypixRef, xpixRef]
     # Catalogue of referent pixels
     Cat_ref = Table([xpixRef, ypixRef, zpixRef, correl_max,
                      profile_max, pvalC, pvalS, pvalF],
