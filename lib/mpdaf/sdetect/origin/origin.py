@@ -28,6 +28,8 @@ from scipy import signal, stats, special
 from mpdaf.obj import Cube, Image, Spectrum
 from mpdaf.sdetect import Source
 
+from numpy.fft import rfftn, irfftn
+from scipy.signal.signaltools import _next_regular, _centered
 
 import time
 import sys
@@ -546,20 +548,43 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
 
     cube_profile = np.empty(shape)
     norm_profile = np.empty(shape)
+
+    s1 = np.array(cube_fsf.shape[0])
+    s2 = np.array(d_j.shape)
+    
+    shape = s1 + s2 - 1
+    fslice = tuple([slice(0, int(sz)) for sz in shape])
+    fshape = [_next_regular(int(d)) for d in shape]
+    
+    d_j_fft =  rfftn(d_j, fshape)
+    profile_square_fft = rfftn(profile_square, fshape)
+    
+    cube_fsf_fft = []
+    norm_fsf_fft = []    
+    for y in range(Ny):
+        for x in range(Nx):
+            cube_fsf_fft.append(rfftn(cube_fsf[:,y,x], fshape))
+            norm_fsf_fft.append(rfftn(norm_fsf[:,y,x], fshape))
+    
+    i = 0
     for y in range(Ny):
         for x in range(Nx):
             # Spectral convolution of the weighted data cube spreaded
             # by the FSF and the spectral profile : correlation between the
             # data and the 3D atom
-            cube_profile[:,y,x] = signal.fftconvolve(cube_fsf[:,y,x], d_j,
-                                                  mode = 'same')
+#            cube_profile[:,y,x] = signal.fftconvolve(cube_fsf[:,y,x], d_j,
+#                                                  mode = 'same')
+            ret = irfftn(cube_fsf_fft[i] * d_j_fft, fshape)[fslice].copy()
+            cube_profile[:,y,x] = _centered(ret, s1)
             # Spectral convolution between the spatial part of the norm of the
             # 3D atom and the spectral profile : The norm of the 3D atom
-            norm_profile[:,y,x] = signal.fftconvolve(norm_fsf[:,y,x],
-                                                  profile_square,
-                                                  mode = 'same')
-
-    del profile_square
+#            norm_profile[:,y,x] = signal.fftconvolve(norm_fsf[:,y,x],
+#                                                  profile_square,
+#                                                  mode = 'same')
+            ret = irfftn(norm_fsf_fft[i] *
+                         profile_square_fft, fshape)[fslice].copy()
+            norm_profile[:,y,x] = _centered(ret, s1)
+            i = i+1
     
     # Set to the infinity the norm equal to 0
     norm_profile[norm_profile==0] = np.inf
@@ -572,13 +597,25 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
         d_j = Dico[:,k]
         d_j = d_j - np.mean(d_j)
         profile_square = d_j**2
+        
+        d_j_fft =  rfftn(d_j, fshape)
+        profile_square_fft = rfftn(profile_square, fshape)
+        
+        i = 0
         for y in range(Ny):
             for x in range(Nx):
-                cube_profile[:,y,x] = signal.fftconvolve(cube_fsf[:,y,x], d_j,
-                                                  mode = 'same')
-                norm_profile[:,y,x] = signal.fftconvolve(norm_fsf[:,y,x],
-                                                  profile_square,
-                                                  mode = 'same')
+#                cube_profile[:,y,x] = signal.fftconvolve(cube_fsf[:,y,x], d_j,
+#                                                  mode = 'same')
+#                norm_profile[:,y,x] = signal.fftconvolve(norm_fsf[:,y,x],
+#                                                  profile_square,
+#                                                  mode = 'same')
+                ret = irfftn(cube_fsf_fft[i] * d_j_fft, fshape)[fslice].copy()
+                cube_profile[:,y,x] = _centered(ret, s1)
+                ret = irfftn(norm_fsf_fft[i] *
+                             profile_square_fft, fshape)[fslice].copy()
+                norm_profile[:,y,x] = _centered(ret, s1)
+                i = i+1
+                                                  
         norm_profile[norm_profile==0] = np.inf
         GLR[:,:,:,1] = cube_profile/np.sqrt(norm_profile)
         
