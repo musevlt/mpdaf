@@ -1539,10 +1539,10 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
         # Number of lines for this source
         nb_lines = len(E0)
         # To fulfill each line of the catalogue
-        n_S = num_source * np.ones(nb_lines)
+        n_S = np.resize(num_source, nb_lines)
         # Coordinates of the center of the circle
-        x_c = C0[0] * np.ones(nb_lines)
-        y_c = C0[1] * np.ones(nb_lines)
+        x_c = np.resize(C0[0], nb_lines)
+        y_c = np.resize(C0[1], nb_lines)
         # T_GLR values of the voxels in this group
         correl_temp  = E0['T_GLR']
         # Spatial positions of the voxels
@@ -1552,10 +1552,10 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
         x_centroid = np.sum(correl_temp*x_gp) / np.sum(correl_temp)
         y_centroid = np.sum(correl_temp*y_gp) / np.sum(correl_temp)
         # To fulfill each line of the catalogue
-        x_centroid = x_centroid * np.ones(nb_lines) 
-        y_centroid = y_centroid * np.ones(nb_lines)
+        x_centroid = np.resize(x_centroid, nb_lines) 
+        y_centroid = np.resize(y_centroid, nb_lines)
         # Number of lines for this source
-        nb_lines = nb_lines * np.ones(nb_lines, dtype=np.int)
+        nb_lines = np.resize(int(nb_lines), nb_lines)
         # New catalogue of detected emission lines merged in sources
         CatF0 = E0.copy()
         CatF0['ID'] = n_S
@@ -1636,7 +1636,7 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
         nb_line = len(CatF_temp)
         
         # Set the new number of lines for each group
-        CatF_temp['nb_lines'] = nb_line * np.ones(len(CatF_temp), dtype=np.int)
+        CatF_temp['nb_lines'] = np.resize(int(nb_line), len(CatF_temp))
         if len(CatF)==0:
             CatF = CatF_temp
         else:
@@ -1880,7 +1880,7 @@ if __name__ == '__main__':
                                                     step_arcsec)
 
     # Parameters for projection during PCA
-    list_r0  = r0*np.ones(NbSubcube**2)
+    list_r0  = np.resize(r0, NbSubcube**2)
     
     # mean of the fwhm of the FSF in pixel
     fwhm_fsf = np.mean(fwhm_arcsec)/step_arcsec
