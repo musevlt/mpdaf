@@ -2510,7 +2510,7 @@ class Cube(DataArray):
 
         subcub = self[slin]
         var = None
-        data = np.empty((nk, size, size))
+        data = np.ma.empty((nk, size, size))
         data[:] = np.nan
         data[slout] = subcub.data
 
