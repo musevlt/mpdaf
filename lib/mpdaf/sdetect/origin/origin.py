@@ -1235,53 +1235,48 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     Cat_est_line_raw = []
     Cat_est_line_std = []
     longxy = PSF_Moffat.shape[1]/2
+    
+    # Spatio-spectral grid
+    grid_x1 = np.maximum(0, Cat1_T['x'] - grid_dxy)
+    grid_x2 = np.minimum(Nx, Cat1_T['x'] + grid_dxy + 1)
+    grid_y1 = np.maximum(0, Cat1_T['y'] - grid_dxy)
+    grid_y2 = np.minimum(Ny, Cat1_T['y'] + grid_dxy + 1)
+    grid_z1 = np.maximum(0, Cat1_T['z'] - grid_dz)
+    grid_z2 = np.minimum(Nz, Cat1_T['z'] + grid_dz + 1)
+    
+    ngrid = (grid_x2 - grid_x1) *  (grid_y2 - grid_y1) * (grid_z2 - grid_z1)
+    
     # Loop on emission lines detected
-    it = 0
     nit = len(Cat1_T)
-    for x0, y0, z0 in zip(Cat1_T['x'], Cat1_T['y'], Cat1_T['z']):
-        it = it + 1
-        output = '\r%d/%d'%(it, nit)
+    for it in range(nit):
+        output = '\r%d/%d'%(it+1, nit)
         sys.stdout.write("\r\x1b[K" + output.__str__())
         sys.stdout.flush()
-        # x0, y0, z0: Coordinates of the voxel
-        # Spatio-spectral grid
-        grid_x1 = max(0, x0 - grid_dxy)
-        grid_x2 = min(Nx, x0 + grid_dxy + 1)
-        grid_y1 = max(0, y0 - grid_dxy)
-        grid_y2 = min(Ny, y0 + grid_dxy + 1)
-        grid_z1 = max(0, z0 - grid_dz)
-        grid_z2 = min(Nz, z0 + grid_dz + 1)
-        
         # initialization
-        ngrid = (grid_x2 - grid_x1) *  (grid_y2 - grid_y1) * (grid_z2 - grid_z1)
-        line_est_raw = np.zeros((ngrid, Nz))
-        line_est_std = np.zeros((ngrid, Nz))
-        residual = np.zeros(ngrid)
-        x_f = np.zeros(ngrid)
-        y_f = np.zeros(ngrid)
-        z_f = np.zeros(ngrid)
-        flux = np.zeros(ngrid)
+        line_est_raw = np.zeros((ngrid[it], Nz))
+        line_est_std = np.zeros((ngrid[it], Nz))
+        residual = np.zeros(ngrid[it])
+        flux = np.zeros(ngrid[it])
         
         # Estimation of a line on each voxel of the grid
-        n = 0
-        for z0t in range(grid_z1, grid_z2):
-            for y0t in range(grid_y1, grid_y2):
-                for x0t in range(grid_x1, grid_x2):
-                    x_f[n] = x0t
-                    y_f[n] = y0t
-                    z_f[n] = z0t
-                    f, res, lraw, lstd = Compute_Estim_Grid(x0t, y0t, z0t,
-                                                            grid_dxy,
-                                                            profile, Nx, Ny, Nz,
-                                                            sigma,
-                                                            cube_faint,
-                                                            PSF_Moffat, longxy,
-                                                            Dico)
-                    flux[n] = f
-                    residual[n] = res
-                    line_est_raw[n,:] = lraw
-                    line_est_std[n,:] = lstd
-                    n = n+1
+        z_f, y_f, x_f = np.meshgrid(range(grid_z1[it], grid_z2[it]),
+                                    range(grid_y1[it], grid_y2[it]),
+                                    range(grid_x1[it], grid_x2[it]),
+                                    indexing='ij')
+        z_f = z_f.ravel()
+        y_f = y_f.ravel()
+        x_f = x_f.ravel()
+        
+        for n in range(x_f.shape[0]):
+            f, res, lraw, lstd = Compute_Estim_Grid(x_f[n], y_f[n], z_f[n],
+                                                    grid_dxy, profile, Nx, Ny,
+                                                    Nz, sigma, cube_faint,
+                                                    PSF_Moffat, longxy, Dico)
+                              
+            flux[n] = f
+            residual[n] = res
+            line_est_raw[n,:] = lraw
+            line_est_std[n,:] = lstd
 
         # Take the estimated line with the minimum absolute value of the residual
         ind_n = np.argmin(np.abs(residual))
@@ -1357,7 +1352,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     Date  : Dec, 11 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    # Covariance for the pixel under test
+   # Covariance for the pixel under test
     sigmat = sigma[:,y0,x0]
     # spectral profile
     num_prof = profile[z0, y0, x0]
@@ -1390,26 +1385,26 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
                    grid_dxy+longxy: cube_faint.shape[2] + grid_dxy + longxy] \
                    = cube_faint
 
-    # Deconvolution 
-    for k in range(intz1, intz2):       
-        fsf = PSF_Moffat[k,:,:].flatten()
-        subcube = cube_faint_pad[k,
-                                 y0 + grid_dxy: y0 + 2*longxy + grid_dxy + 1,
-                                 x0 + grid_dxy: x0 + 2*longxy + grid_dxy + 1]
-        line_est[k] = np.inner(fsf, subcube.flatten()) \
-                      / np.inner(fsf, fsf)
+    # Deconvolution
+    x1 = x0 + grid_dxy
+    x2 = x0 + 2*longxy + grid_dxy + 1
+    y1 = y0 + grid_dxy
+    y2 = y0 + 2*longxy + grid_dxy + 1
+    line_est[intz1:intz2] = np.sum((PSF_Moffat[intz1:intz2,:,:]* \
+        cube_faint_pad[intz1:intz2, y1: y2, x1: x2]) ,axis=(1,2)) \
+        / np.sum((PSF_Moffat[intz1:intz2,:,:]* \
+        PSF_Moffat[intz1:intz2, :, :]) ,axis=(1,2))
 
     # Estimated line in data space  
     line_est_raw = line_est * np.sqrt(sigmat)
 
     # Atome 3D corresponding to the estimated line
     atom_est = np.zeros((long0, PSF_Moffat.shape[1], PSF_Moffat.shape[2]))
-    
-    for k in range(long0):
-            z = k + z0 - longz
-            if z>=0 and z<cube_raw.shape[0]:
-                atom_est[k,:,:] = line_est_raw[z] * PSF_Moffat[z,:,:]
-                
+    z1 = max(0, z0 - longz)
+    z2 = min(cube_raw.shape[0], long0 + z0 - longz)
+    atom_est[z1-z0+longz:z2-z0+longz,:,:] = \
+            line_est_raw[z1:z2, np.newaxis, np.newaxis] * PSF_Moffat[z1:z2,:,:]
+                                    
     x1 = np.abs(min(0, x0 - longxy))
     y1 = np.abs(min(0, y0 - longxy))
     z1 = np.abs(min(0, z0 - longz))
@@ -1422,7 +1417,6 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     # Norm of the 3D atom
     norm2_atom1 = np.inner(atom_est_std.flatten(), atom_est_std.flatten())
     # Estimated amplitude of the 3D atom
-    # = (cube_faint_t(:)'*atom_est_std(:))/norm2_atom1;
     alpha_est = np.inner(cube_faint_t.flatten(), atom_est_std.flatten()) / norm2_atom1
     # Estimated detected emitters
     atom_alpha_est = alpha_est * atom_est_std
