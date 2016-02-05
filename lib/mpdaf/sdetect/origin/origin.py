@@ -1070,28 +1070,20 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         atom = np.zeros((long0, PSF_Moffat.shape[1], PSF_Moffat.shape[2]))
     
         # Construction of the 3D atom corresponding to the spectral profile
-        for k in range(long0):
-            z = k + z0 - longz
-            if z>=0 and z<cube_raw.shape[0]:
-                atom[k,:,:] = profil1[k] * PSF_Moffat[z,:,:]
+        z1 = max(0, z0 - longz)
+        z2 = min(sigma.shape[0], long0 + z0 - longz)
+        atom[z1-z0+longz:z2-z0+longz,:,:] = profil1[z1-z0+longz:z2-z0+longz,
+                                                    np.newaxis, np.newaxis] \
+                                            * PSF_Moffat[z1:z2,:,:]
 
         # Normalization     
         atom = atom/np.sqrt(np.sum(atom**2))
         # Edges
         # The minimal coordinates corresponding to the spatio-spectral range
         # of the data cube
-        if (x0 - longxy) <= 0:
-            x1 = np.abs(x0 - longxy)
-        else:
-            x1 = 0
-        if (y0 - longxy) <= 0:
-            y1 = np.abs(y0 - longxy)
-        else:
-            y1 = 0
-        if (z0 - longz) <= 0:
-            z1 = np.abs(z0 - longz)
-        else:
-            z1 = 0
+        x1 = np.abs(min(0, x0 - longxy))
+        y1 = np.abs(min(0, y0 - longxy))
+        z1 = np.abs(min(0, z0 - longz))
     
         # Part of the atom corresponding to the spatio-spectral range of the
         # data cube
@@ -1401,7 +1393,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     # Atome 3D corresponding to the estimated line
     atom_est = np.zeros((long0, PSF_Moffat.shape[1], PSF_Moffat.shape[2]))
     z1 = max(0, z0 - longz)
-    z2 = min(cube_raw.shape[0], long0 + z0 - longz)
+    z2 = min(sigma.shape[0], long0 + z0 - longz)
     atom_est[z1-z0+longz:z2-z0+longz,:,:] = \
             line_est_raw[z1:z2, np.newaxis, np.newaxis] * PSF_Moffat[z1:z2,:,:]
                                     
