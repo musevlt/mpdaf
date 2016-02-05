@@ -1125,7 +1125,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
     col_t2 = Column(name='T2', data=T2)
     Cat1 = Cat0.copy()
     Cat1.add_columns([col_t1, col_t2])
-    print '    %0.2fs'%(time.time()-t0)
+    print '    %0.1fs'%(time.time()-t0)
     return Cat1
 
     
@@ -1813,6 +1813,8 @@ if __name__ == '__main__':
     # Detection                              #
     ##########################################
     
+    print 'Read the Data Cube'
+    t0 = time.time()
     # Read cube
     cube = Cube(filename)
     # Raw data cube
@@ -1831,6 +1833,7 @@ if __name__ == '__main__':
     sigma[np.isnan(sigma)] = np.inf
     # Weigthed data cube
     cube_std = cube_raw / np.sqrt(sigma)
+    print '    %0.1fs'%(time.time()-t0)
 
     #Dimensions
     Nz = cube_std.shape[0]
@@ -1987,5 +1990,9 @@ if __name__ == '__main__':
     sources = Construct_Object_Catalogue(CatF_radec, Cat_est_line_raw_T2,
                                          correl, wave,
                                          os.path.basename(filename))
+    
+    #save sources files
+    #sources.write('sources')
 
     plt.show()
+    
