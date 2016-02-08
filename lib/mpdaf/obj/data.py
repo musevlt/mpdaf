@@ -173,8 +173,8 @@ class DataArray(object):
                     self._data_ext = 'DATA'
                 elif 'SCI' in hdulist:
                     self._data_ext = 'SCI'
-                else:
-                    raise IOError('no DATA or SCI extension')
+                else:   # Use primary data array if no DATA or SCI extension
+                    self._data_ext = 0
 
                 if 'STAT' in hdulist:
                     self._var_ext = 'STAT'
