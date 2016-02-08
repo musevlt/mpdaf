@@ -191,53 +191,115 @@ def wcs_from_header(hdr, naxis=None):
 
 class WCS(object):
 
-    """WCS class manages the world coordinates of spatial axes, using the
-    pywcs package. Python ordering of the image axes is used, such
-    that when the coordinates of an image pixel are specified, they
-    are listed in the order (y,x). Note that when the rotation angle
-    on the sky is zero, the y axis of the image array is along the
-    direction of increasing declination, and the x axis is
-    perpendicular to this (at the reference pixel of the image), and
-    increases towards the east.
+    """The WCS class manages the world coordinates of the spatial axes of
+    MPDAF images, using the pywcs package.
+
+    Note that MPDAF images are stored in python arrays that are
+    indexed in [y,x] axis order. In general the axes of these arrays
+    are not along celestial axes such as right-ascension and
+    declination. They are cartesian axes of a flat map projection of
+    the sky around the observation center, and they may be rotated
+    away from the celestial axes. When their rotation angle is zero,
+    the Y axis is parallel to the declination axis. However the X axis
+    is only along the right ascension axis for observations at zero
+    declination.
+
+    Pixels in MPDAF images are not generally square on the sky. To
+    scale index offsets in the image to angular distances in the map
+    projection, the Y-axis and X-axis index offsets must be scaled by
+    different numbers. These numbers can be obtained by calling the
+    get_step() method, which returns the angular increments per pixel
+    along the Y and X axes of the array. The Y-axis increment is
+    always positive, but the X-axis increment is negative if east is
+    anti-clockwise of north when the X-axis pixels are plotted from
+    left to right,
+
+    The rotation angle of the map projection, relative to the sky, can
+    be obtained by calling the get_rot() method. This returns the
+    angle between celestial north and the Y axis of the image, in the
+    sense of an eastward rotation of celestial north from the Y-axis.
+
+    When the linearized coordinates of the map projection are
+    insufficient, the celestial coordinates of one or more pixels can
+    be queried by calling the pix2sky() method, which returns
+    coordinates in the [dec,ra] axis order. In the other direction,
+    the [y,x] indexes of the pixel of a given celestial coordinate can
+    be obtained by calling the sky2pix() method.
 
     Parameters
     ----------
     hdr : astropy.fits.CardList
-        A FITS header. If hdr is not None, the WCS object
-        is created from the data header and all other parameters
-        which are passed to this constructor are ignored.
+        A FITS header. If the hdr parameter is not None, the WCS
+        object is created from the data header, and the remaining
+        parameters are ignored.
     crpix : float or (float,float)
-        The FITS array indexes of the reference pixel of the image.
-        Beware that the first pixel of the array is 1, not zero.
-        If crpix is None and shape is None crpix = 1.0 and
-        the reference point is the first pixel of the image.
-        If crpix is None and shape is not None crpix = (shape + 1.0)/2.0
-        and the reference point is the center of the image.
+        The FITS array indexes of the reference pixel of the image,
+        given in the order (y,x). Note that the first pixel of the
+        FITS image is [1,1], whereas in the python image array it is
+        [0,0]. Thus to place the reference pixel at [ry,rx] in the
+        python image array would require crpix=(ry+1,rx+1).
+
+        If both crpix and shape are None, then crpix is given the
+        value (1.0,1.0) and the reference position is at index [0,0]
+        in the python array of the image.
+
+        If crpix is None and shape is not None, then crpix is set to
+        (shape + 1.0)/2.0, which places the reference point at the
+        center of the image.
     crval : float or (float,float)
-        The world coordinates of the reference pixel (ref_dec,ref_ra).
-        (0.0,0.0) by default.
+        The celestial coordinates of the reference pixel
+        (ref_dec,ref_ra). If this paramater is not provided, then
+        (0.0,0.0) is substituted.
     cdelt : float or (float,float)
-        The world-coordinate dimensions of one pixel (dDec,dRa).
-        (1.0,1.0) by default.
+        If the hdr and cd parameters are both None, then this argument
+        can be used to specify the pixel increments along the Y and X
+        axes of the image, respectively.  If this parameter is not
+        provided, (1.0,1.0) is substituted. Note that it is
+        conventional for cdelt[1] to be negative, such that east is
+        plotted towards the left when the image rotation angle is
+        zero.
     deg : bool
-        If True, world coordinates are in decimal degrees
+        If True, then cdelt and crval are in decimal degrees
         (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg').
-        If False (by default), world coordinates are linear
+        If False (the default), the celestial coordinates are linear
         (CTYPE1=CTYPE2='LINEAR').
     rot : float
-        The rotation angle in degrees.
+        If the hdr and cd paramters are both None, then this argument
+        can be used to specify a value for the rotation angle of the
+        image. This is the angle between celestial north and the Y
+        axis of the image, in the sense of an eastward rotation of
+        celestial north from the Y-axis.
+
+        Along with the cdelt parameter, the rot parameter is used to
+        construct a FITS CD rotation matrix. This is done as described
+        in equation 189 of Calabretta, M. R., and Greisen, E. W,
+        Astronomy & Astrophysics, 395, 1077-1122, 2002, where it
+        serves as the value of the CROTA term.
     shape : integer or (integer,integer)
-        The dimensions of the image (optional).
+        The dimensions of the image axes (optional). The dimensions
+        are given in python order (ny,nx).
+    cd : numpy.ndarray
+         This parameter can optionally be used to specify the FITS CD
+         rotation matrix. By default this parameter is None. However if
+         a matrix is provided and hdr is None, then it is used
+         instead of cdelt and rot, which are then ignored. The matrix
+         should be ordered like
+
+           cd = numpy.array([[CD1_1, CD1_2],
+                             [CD2_1, CD2_2]]),
+
+         where CDj_i are the names of the corresponding FITS keywords.
 
     Attributes
     ----------
     wcs : pywcs.WCS
-        World coordinates.
+        The underlying object that performs most of the world coordinate
+        conversions.
 
     """
 
     def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0),
-                 cdelt=(1.0, 1.0), deg=False, rot=0, shape=None):
+                 cdelt=(1.0, 1.0), deg=False, rot=0, shape=None, cd=None):
         self._logger = logging.getLogger(__name__)
 
         # Initialize the WCS object from a FITS header?
@@ -307,16 +369,33 @@ class WCS(object):
             if deg:  # in decimal degree
                 self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
                 self.wcs.wcs.cunit = ['deg', 'deg']
-                self.wcs.wcs.cd = np.array([[-cdelt[1], 0], [0, cdelt[0]]])
             else:   # in pixel or arcsec
                 self.wcs.wcs.ctype = ['LINEAR', 'LINEAR']
                 self.wcs.wcs.cunit = ['pixel', 'pixel']
-                self.wcs.wcs.cd = np.array([[cdelt[1], 0], [0, cdelt[0]]])
 
-            # Get the rotation angle and use it to rotate the
-            # coordinate transform matrix.
+            # If a CD rotation matrix has been provided by the caller,
+            # install it.
 
-            self.wcs.rotateCD(-rot)
+            if cd is not None and cd.shape[0] == 2 and cd.shape[1] == 2:
+                self.wcs.wcs.cd = cd
+
+            # If no CD matrix was provided, construct one from the
+            # cdelt and rot parameters, following the official
+            # prescription given by equation 189 of Calabretta, M. R.,
+            # and Greisen, E. W, Astronomy & Astrophysics, 395,
+            # 1077-1122, 2002.
+
+            else:
+                rho = np.deg2rad(rot)
+                sin_rho = np.sin(rho)
+                cos_rho = np.cos(rho)
+                self.wcs.wcs.cd = np.array([
+                    [cdelt[1] * cos_rho, -cdelt[0] * sin_rho],
+                    [cdelt[1] * sin_rho,  cdelt[0] * cos_rho]])
+
+            # Update the wcs object to accomodate the new value of
+            # the CD matrix.
+
             self.wcs.wcs.set()
 
             # Get the dimensions of the image array.
@@ -661,7 +740,7 @@ class WCS(object):
         return np.array([pixsky[0, 0], pixsky[0, 1]])
 
     def get_rot(self, unit=u.deg):
-        """Return the rotation angle.
+        """Return the rotation angle of the image relative to the sky.
 
         Parameters
         ----------
