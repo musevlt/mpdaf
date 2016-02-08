@@ -907,25 +907,56 @@ class WCS(object):
         return np.array([pixsky[0, 0], pixsky[0, 1]])
 
     def get_rot(self, unit=u.deg):
-        """Return the rotation angle of the image relative to the sky.
+
+        """Return the angle between celestial north and the Y
+        axis of the image, in the sense of an eastward rotation of
+        celestial north from the Y-axis.
+
+        Note that the rotation angle is defined in a flat
+        map-projection of the sky. It is what would be seen if
+        the pixels of the image were drawn with their pixel
+        widths scaled by the angular pixel increments returned
+        by the get_step() method.
 
         Parameters
         ----------
         unit : astropy.units
-            type of the angle coordinate, degree by default
+            The unit to give the returned angle (degrees by default).
+
+        Returns
+        -------
+        out : float
+            The angle between celestial north and the Y axis of
+            the image, in the sense of an eastward rotation of
+            celestial north from the Y-axis.
 
         """
-        try:
-            theta = np.arctan2(self.wcs.wcs.cd[1, 0], self.wcs.wcs.cd[1, 1])
-        except:
-            try:
-                pc = self.wcs.wcs.get_pc()
-                theta = np.arctan2(pc[1, 0], pc[1, 1])
-                # return np.rad2deg(np.arctan2(self.wcs.wcs.pc[1, 0], \
-                #                          self.wcs.wcs.pc[1, 1]))
-            except:
-                raise IOError('No standard WCS')
-        return (theta * u.rad).to(unit).value
+
+        # Get the coordinate transformation matrix.
+
+        cd = self.get_cd()
+
+        # Get the angular increments of pixels along the Y and X axes
+        # of the image.
+
+        step = self.get_step()
+
+        # Get the determinant of the coordinate transformation matrix.
+
+        cddet = np.linalg.det(cd)
+
+        # The angle of a northward vector from the origin can be
+        # calculated by first using the inverse of the CD matrix to
+        # calculate the equivalent vector in pixel indexes, then
+        # calculating the angle of this vector to the Y axis of
+        # the image array.
+
+        north = np.arctan2(-cd[0,1] * step[1] / cddet,
+                            cd[0,0] * step[0] / cddet)
+
+        # Return the angle with the specified units.
+
+        return (north * u.rad).to(unit).value
 
     def get_cd(self):
         """Return the CD matrix."""
