@@ -18,7 +18,7 @@ from scipy.optimize import leastsq
 from . import plt_norm, plt_zscale
 from .coords import WCS, WaveCoord
 from .data import DataArray, is_valid_fits_file
-from .objs import is_float, is_int, UnitArray, UnitMaskedArray
+from .objs import is_float, is_int, is_number, UnitArray, UnitMaskedArray
 from ..tools import deprecated
 
 
@@ -843,7 +843,7 @@ class Image(DataArray):
 
         """
         center = np.array(center)
-        if is_int(radius) or is_float(radius):
+        if is_number(radius):
             circular = True
             radius2 = radius * radius
             radius = (radius, radius)
@@ -1586,7 +1586,7 @@ class Image(DataArray):
             imin = 0
             jmin = 0
         else:
-            if is_int(radius) or is_float(radius):
+            if is_number(radius):
                 radius = (radius, radius)
 
             if unit_center is not None:
@@ -1659,7 +1659,7 @@ class Image(DataArray):
         if center is None or radius == 0:
             sigma = self.moments(unit=unit_radius)
         else:
-            if is_int(radius) or is_float(radius):
+            if is_number(radius):
                 radius = (radius, radius)
 
             if unit_center is not None:
@@ -1712,7 +1712,7 @@ class Image(DataArray):
             else:
                 return (self.data - cont).sum()
         else:
-            if is_int(radius) or is_float(radius):
+            if is_number(radius):
                 circular = True
                 radius2 = radius * radius
                 radius = (radius, radius)
