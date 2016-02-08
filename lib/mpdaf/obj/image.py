@@ -1124,12 +1124,10 @@ class Image(DataArray):
         self.wcs.rotate(theta)
 
     def _rotate(self, theta, interp='no', reshape=False, order=3, pivot=None):
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         mask = np.array(1 - self.data.mask, dtype=bool)
 
@@ -1751,6 +1749,35 @@ class Image(DataArray):
             data = self.data.data.__copy__()
             data[ksel] = self._interp(ksel, spline)
             return data
+
+    def _prepare_data(self, interp='no'):
+        """Return a copy of the data array in which masked values
+        have been filled, either with the median value of the image,
+        or by interpolating neighboring pixels.
+
+        Parameters
+        ----------
+        interp : 'no' | 'linear' | 'spline'
+            If 'no', replace masked data with the median image value.
+            If 'linear', replace masked values using a linear
+            interpolation between neighboring values.
+            if 'spline', replace masked values using a spline
+            interpolation between neighboring values.
+
+        Returns
+        -------
+        out : numpy.ndarray
+           A patched copy of the data array.
+
+        """
+
+        if interp == 'linear':
+            data = self._interp_data(spline=False)
+        elif interp == 'spline':
+            data = self._interp_data(spline=True)
+        else:
+            data = np.ma.filled(self.data, np.ma.median(self.data))
+        return data
 
     def moments(self, unit=u.arcsec):
         """Return [width_y, width_x] first moments of the 2D gaussian.
@@ -3191,12 +3218,9 @@ class Image(DataArray):
         newstart = np.array(newstart)
         newstep = np.array(newstep)
 
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         oldstep = self.wcs.get_step(unit=unit_step)
         pstep = newstep / oldstep
@@ -3273,12 +3297,10 @@ class Image(DataArray):
         return res
 
     def _gaussian_filter(self, sigma=3, interp='no'):
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         self.data = np.ma.array(ndi.gaussian_filter(data, sigma),
                                 mask=self.data.mask)
@@ -3310,12 +3332,10 @@ class Image(DataArray):
         return res
 
     def _median_filter(self, size=3, interp='no'):
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         self.data = np.ma.array(ndi.median_filter(data, size),
                                 mask=self.data.mask)
@@ -3348,12 +3368,10 @@ class Image(DataArray):
         return res
 
     def _maximum_filter(self, size=3, interp='no'):
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         self.data = np.ma.array(ndi.maximum_filter(data, size),
                                 mask=self.data.mask)
@@ -3384,12 +3402,10 @@ class Image(DataArray):
         return res
 
     def _minimum_filter(self, size=3, interp='no'):
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         self.data = np.ma.array(ndi.minimum_filter(data, size),
                                 mask=self.data.mask)
@@ -3533,12 +3549,10 @@ class Image(DataArray):
         out : List of Image objects.
 
         """
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         structure = ndi.generate_binary_structure(shape[0], shape[1])
         if median is not None:
@@ -3588,12 +3602,9 @@ class Image(DataArray):
                  if 'linear', linear interpolation of the masked values.
                  if 'spline', spline interpolation of the masked values.
         """
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         self.data = np.ma.array(np.random.normal(data, sigma),
                                 mask=self.data.mask)
@@ -3612,12 +3623,9 @@ class Image(DataArray):
                 if 'linear', linear interpolation of the masked values.
                 if 'spline', spline interpolation of the masked values.
         """
-        if interp == 'linear':
-            data = self._interp_data(spline=False)
-        elif interp == 'spline':
-            data = self._interp_data(spline=True)
-        else:
-            data = np.ma.filled(self.data, np.ma.median(self.data))
+        # Get a copy of the data array with masked values filled.
+
+        data = self._prepare_data(interp)
 
         self.data = np.ma.array(np.random.poisson(data).astype(float),
                                 mask=self.data.mask)
@@ -3660,12 +3668,9 @@ class Image(DataArray):
                 raise IOError('Operation forbidden for images '
                               'with different sizes')
 
-            if interp == 'linear':
-                data = self._interp_data(spline=False)
-            elif interp == 'spline':
-                data = self._interp_data(spline=True)
-            else:
-                data = np.ma.filled(self.data, np.ma.median(self.data))
+            # Get a copy of the data array with masked values filled.
+
+            data = self._prepare_data(interp)
 
             self.data = np.ma.array(signal.fftconvolve(data, other,
                                                        mode='same'),
@@ -3679,15 +3684,10 @@ class Image(DataArray):
                 raise IOError('Operation forbidden for images '
                               'with different sizes')
 
-            if interp == 'linear':
-                data = self._interp_data(spline=False)
-                other_data = other._interp_data(spline=False)
-            elif interp == 'spline':
-                data = self._interp_data(spline=True)
-                other_data = other._interp_data(spline=True)
-            else:
-                data = np.ma.filled(self.data, np.ma.median(self.data))
-                other_data = other.data.filled(np.ma.median(other.data))
+            # Get copies of the data arrays with masked values filled.
+
+            data = self._prepare_data(interp)
+            other_data = other._prepare_data(interp)
 
             if self.unit != other.unit:
                 other_data = UnitMaskedArray(other_data, other.unit, self.unit)
@@ -3838,12 +3838,10 @@ class Image(DataArray):
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
-            if interp == 'linear':
-                data = self._interp_data(spline=False)
-            elif interp == 'spline':
-                data = self._interp_data(spline=True)
-            else:
-                data = np.ma.filled(self.data, np.ma.median(self.data))
+
+            # Get a copy of the data array with masked values filled.
+
+            data = self._prepare_data(interp)
 
             res = self.copy()
             res.data = np.ma.array(signal.correlate2d(data, other, mode='same',
@@ -3854,15 +3852,11 @@ class Image(DataArray):
                                              boundary='symm')
             return res
         elif other.ndim == 2:
-            if interp == 'linear':
-                data = self._interp_data(spline=False)
-                other_data = other._interp_data(spline=False)
-            elif interp == 'spline':
-                data = self._interp_data(spline=True)
-                other_data = other._interp_data(spline=True)
-            else:
-                data = np.ma.filled(self.data, np.ma.median(self.data))
-                other_data = other.data.filled(np.ma.median(other.data))
+
+            # Get copies of the data arrays with masked values filled.
+
+            data = self._prepare_data(interp)
+            other_data = other._prepare_data(interp)
 
             if self.unit != other.unit:
                 other_data = UnitMaskedArray(other_data, other.unit, self.unit)
@@ -4967,12 +4961,9 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
     for ImaCol in ImaColList:
         ima, col, sat = ImaCol
 
-        if interp == 'linear':
-            data = ima._interp_data(spline=False)
-        elif interp == 'spline':
-            data = ima._interp_data(spline=True)
-        else:
-            data = np.ma.filled(ima.data, np.ma.median(ima.data))
+        # Get a copy of the data array with masked values filled.
+
+        data = ima._prepare_data(interp)
 
         if mode == 'lin':
             f = data
@@ -4993,12 +4984,11 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
     # first image
     ima, col, sat = ImaColList[0]
     p1 = PILima.new('RGB', (ima.shape[0], ima.shape[1]))
-    if interp == 'linear':
-        data = ima._interp_data(spline=False)
-    elif interp == 'spline':
-        data = ima._interp_data(spline=True)
-    else:
-        data = np.ma.filled(ima.data, np.ma.median(ima.data))
+
+    # Get a copy of the data array with masked values filled.
+
+    data = ima._prepare_data(interp)
+
     if mode == 'lin':
         f = data
     elif mode == 'sqrt':
@@ -5012,12 +5002,11 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
     for ImaCol in ImaColList[1:]:
         ima, col, sat = ImaCol
         p2 = PILima.new('RGB', (ima.shape[0], ima.shape[1]))
-        if interp == 'linear':
-            data = ima._interp_data(spline=False)
-        elif interp == 'spline':
-            data = ima._interp_data(spline=True)
-        else:
-            data = np.ma.filled(ima.data, np.ma.median(ima.data))
+
+        # Get a copy of the data array with masked values filled.
+
+        data = ima._prepare_data(interp)
+
         if mode == 'lin':
             f = data
         elif mode == 'sqrt':
