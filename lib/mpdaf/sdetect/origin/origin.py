@@ -1887,8 +1887,6 @@ if __name__ == '__main__':
     correl, profile = Correlation_GLR_test(cube_faint, sigma, PSF_Moffat, Dico)
 
     # p-values of correlation values
-    # Parameter set to 1 if we want to plot the results and associated folder
-    plot_dist = 0
     cube_pval_correl = Compute_pval_correl_zone(correl, intx, inty, NbSubcube,
                                                 Edge_xmin, Edge_xmax,
                                                 Edge_ymin, Edge_ymax,
