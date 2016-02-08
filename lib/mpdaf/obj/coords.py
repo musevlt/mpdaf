@@ -1259,93 +1259,37 @@ class WCS(object):
         self.wcs.wcs.set()
 
     def set_step(self, step, unit=None):
-        """Update the step in the CD matrix or in the PC matrix."""
+        """Change the pixel angular increments of the coordinate transform matrix."""
+
+        # Convert the increments to the internal units of the wcs
+        # object.
+
         if unit is not None:
             step[0] = (step[0] * unit).to(self.unit).value
             step[1] = (step[1] * unit).to(self.unit).value
 
-        theta = self.get_rot()
-        if np.abs(theta) > 1E-3:
-            self.rotate(-theta)
-        if self.is_deg():  # in decimal degree
-            self.wcs.wcs.cd = np.array([[-step[1], 0], [0, step[0]]])
-        else:   # in pixel or arcsec
-            self.wcs.wcs.cd = np.array([[step[1], 0], [0, step[0]]])
+        # Get the current values of the increments.
+
+        old_step = self.get_step()
+
+        # Calculate the ratio of the new step to the old one.
+
+        ratio = step / old_step
+
+        # Get the current CD matrix.
+
+        cd = self.get_cd()
+
+        # Scaling the 1st column of the CD matrix, scales the
+        # X-axis pixel sizes. Scaling the 2nd column scales the
+        # Y-axis pixel sizes.
+
+        self.wcs.wcs.cd = np.dot(cd, np.array([[ratio[1], 0.0],
+                                               [0.0, ratio[0]]]))
+
+        # Install the scaled CD matrix.
+
         self.wcs.wcs.set()
-        if np.abs(theta) > 1E-3:
-            self.rotate(theta)
-
-    def rotate(self, theta):
-        """Rotate WCS coordinates to new orientation given by theta.
-
-        Parameters
-        ----------
-        theta : float
-            Rotation in degree.
-        """
-        # rotation matrix of -theta
-        _theta = np.deg2rad(theta)
-        _mrot = np.zeros(shape=(2, 2), dtype=np.double)
-        _mrot[0] = (np.cos(_theta), -np.sin(_theta))
-        _mrot[1] = (np.sin(_theta), np.cos(_theta))
-        try:
-            new_cd = np.dot(self.wcs.wcs.cd, _mrot)
-            self.wcs.wcs.cd = new_cd
-            self.wcs.wcs.set()
-        except:
-            try:
-                # new_pc = np.dot(self.wcs.wcs.pc, _mrot)
-                new_pc = np.dot(self.wcs.wcs.get_pc(), _mrot)
-                self.wcs.wcs.pc = new_pc
-                self.wcs.wcs.set()
-            except:
-                raise StandardError("problem with wcs rotation")
-
-    def resample(self, step, start, unit=None):
-        """Resample to a new coordinate system.
-
-        Parameters
-        ----------
-        start : float or (float, float)
-            New positions (dec,ra) for the pixel (0,0).
-            If None, old position is used.
-        step : float or (float, float)
-            New step (ddec,dra).
-        unit : astropy.units
-            type of the world coordinates for the start and step parameters.
-
-        Returns
-        -------
-        out : WCS
-
-        """
-        if unit is not None:
-            step[0] = (step[0] * unit).to(self.unit).value
-            step[1] = (step[1] * unit).to(self.unit).value
-            if start is not None:
-                start[0] = (start[0] * unit).to(self.unit).value
-                start[1] = (start[1] * unit).to(self.unit).value
-
-        cdelt = self.get_step()
-        if start is None:
-            xc = 0
-            yc = 0
-            pixsky = self.pix2sky([xc, yc])
-            start = (pixsky[0][0] - 0.5 * cdelt[0] + 0.5 * step[0],
-                     pixsky[0][1] - 0.5 * cdelt[1] + 0.5 * step[1])
-
-        old_start = self.get_start()
-        res = self.copy()
-        res.set_crpix1(1.0)
-        res.set_crpix2(1.0)
-        res.set_crval1(start[1], unit=None)
-        res.set_crval2(start[0], unit=None)
-        res.set_step(step, unit=None)
-        res.naxis1 = int(np.ceil((self.naxis1 * cdelt[1] - start[1] +
-                                  old_start[1]) / step[1]))
-        res.naxis2 = int(np.ceil((self.naxis2 * cdelt[0] - start[0] +
-                                  old_start[0]) / step[0]))
-        return res
 
     def rebin(self, factor):
         """Rebin to a new coordinate system.
