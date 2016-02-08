@@ -1149,15 +1149,54 @@ class WCS(object):
         self.wcs.wcs.set()
 
     def set_naxis1(self, n):
-        """NAXIS1 setter (first dimension of an image)."""
+
+        """Set the dimension of the X-axis of the image.
+
+        This sets the dimension of axis 1 of the python data array
+        that holds the image (ie. data.shape[1])
+
+        Parameters
+        ----------
+        n : int
+           The new dimension to give the X-axis.
+
+        """
         self.naxis1 = n
 
     def set_naxis2(self, n):
-        """NAXIS2 setter (second dimension of an image)."""
+        """Set the dimension of the Y-axis of the image.
+
+        This sets the dimension of axis 0 of the python data array
+        that holds the image (ie. data.shape[0])
+
+        Parameters
+        ----------
+        n : int
+           The new dimension to give the Y-axis.
+
+        """
         self.naxis2 = n
 
     def set_crpix1(self, x):
-        """CRPIX1 setter (reference pixel on the first axis)."""
+        """Set the value of the FITS CRPIX1 parameter, which sets the
+        reference pixel index along the X-axis of the image.
+
+        This is a floating point value which can denote a position
+        between pixels. It is specified with the FITS indexing
+        convention, where FITS pixel 1 is equivalent to pixel 0 in
+        python arrays. In general subtract 1 from x to get the
+        corresponding floating-point pixel index along axis 1 of the
+        image array.  In cases where x is an integer, the
+        corresponding row in the python data array that contains the
+        image is data[:,x-1].
+
+        Parameters
+        ----------
+        x : float
+            The index of the reference pixel along the X axis.
+
+        """
+
         self.wcs.wcs.crpix[0] = x
         self.wcs.wcs.set()
 
