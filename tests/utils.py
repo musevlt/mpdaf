@@ -56,7 +56,8 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
         Either a 2D array to assign to the image's variance array, a float
         to assign to each element of the variance array, or None if no
         variance array is desired.
-    mask : Either a 3D boolean array to use to mask the data array, or
+    mask : Either a 2D boolean array to use to mask the data array, a
+           boolean value to assign to each element of the mask array, or
            None, to indicate that all data values should be left unmasked.
     shape : tuple of 2 integers
         Either None, or the shape to give the data and variance arrays.
@@ -67,7 +68,7 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
     wcs   : :class:`mpdaf.obj.WCS`
         The world coordinates of image pixels.
     copy  : boolean
-        If true (default), the data and variance arrays are copied.
+        If true (default), the data, variance and mask arrays are copied.
 
     """
 
@@ -81,6 +82,8 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
     data = np.asarray(data)
     if var is not None:
         var = np.asarray(var)
+    if mask is  not None:
+        mask = np.asarray(mask, dtype=bool)
 
     # Determine a shape for the data and var arrays. This is either a
     # specified shape, the shape of a specified data or var array, or
@@ -117,6 +120,21 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
         var = var * np.ones(shape)
 
     # Use a specified variance array, and heed the caller's copy argument.
+
+    else:
+        docopy = copy
+
+    # Don't create a mask array?
+
+    if mask == None:
+        pass
+
+    # Create a variance array filled with a scalar value?
+
+    elif mask.ndim == 0:
+        mask = np.logical_and(np.ones(shape), mask)
+
+    # Use a specified mask array, and heed the caller's copy argument.
 
     else:
         docopy = copy
@@ -162,7 +180,8 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
         Either a 1D array to assign to the spectrum's variance array,
         a float to assign to each element of the variance array,
         or None if no variance array is desired.
-    mask : Either a 3D boolean array to use to mask the data array, or
+    mask : Either a 1D boolean array to use to mask the data array, a
+           boolean value to assign to each element of the mask array, or
            None, to indicate that all data values should be left unmasked.
     shape : int
         Either None, or the size to give the data and variance arrays.
@@ -181,7 +200,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
     unit  : :class:`astropy.units.Unit`
         The units of the data.
     copy  : boolean
-        If true (default), the data and variance arrays are copied.
+        If true (default), the data, variance and mask arrays are copied.
 
     """
 
@@ -196,7 +215,9 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
         data = np.asarray(data)
     if var is not None:
         var = np.asarray(var)
-
+    if mask is not None:
+        mask = np.asarray(mask, dtype=bool)
+        
     # Determine a shape for the data and var arrays. This is either a
     # specified shape, the shape of a specified data or var array, or
     # the default shape.
@@ -251,6 +272,21 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
     else:
         docopy = copy
 
+    # Don't create a mask array?
+
+    if mask == None:
+        pass
+
+    # Create a variance array filled with a scalar value?
+
+    elif mask.ndim == 0:
+        mask = np.logical_and(np.ones(shape), mask)
+
+    # Use a specified mask array, and heed the caller's copy argument.
+
+    else:
+        docopy = copy
+
     # Check that the shapes of the data and var arguments are consistent.
 
     if not np.array_equal(shape, data.shape):
@@ -292,7 +328,8 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
         Either a 3D array to assign to the cube's variance array, a float
         to assign to each element of the variance array, or None if no
         variance array is desired.
-    mask : Either a 3D boolean array to use to mask the data array, or
+    mask : Either a 3D boolean array to use to mask the data array, a
+           boolean value to assign to each element of the mask array, or
            None, to indicate that all data values should be left unmasked.
     shape : tuple of 3 integers
         Either None, or the shape to give the data and variance arrays.
@@ -307,7 +344,7 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
     wave  : :class:`mpdaf.obj.WaveCoord`
         The wavelength coordinates of spectral pixels.
     copy  : boolean
-        If true (default), the data and variance arrays are copied.
+        If true (default), the data, variance and mask arrays are copied.
 
     """
 
@@ -321,6 +358,8 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
     data = np.asarray(data)
     if var is not None:
         var = np.asarray(var)
+    if mask is not None:
+        mask = np.asarray(mask, dtype=bool)
 
     # Determine a shape for the data and var arrays. This is either a
     # specified shape, the shape of a specified data or var array, or
@@ -357,6 +396,21 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
         var = var * np.ones(shape)
 
     # Use a specified variance array, and heed the caller's copy argument.
+
+    else:
+        docopy = copy
+
+    # Don't create a mask array?
+
+    if mask == None:
+        pass
+
+    # Create a variance array filled with a scalar value?
+
+    elif mask.ndim == 0:
+        mask = np.logical_and(np.ones(shape), mask)
+
+    # Use a specified mask array, and heed the caller's copy argument.
 
     else:
         docopy = copy
