@@ -10,8 +10,9 @@ import astropy.units as u
 from astropy.table import Table, Column
 from matplotlib.widgets import RectangleSelector
 from matplotlib.path import Path
-from scipy import interpolate, signal
-from scipy import ndimage as ndi
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy import interpolate, ndimage, signal, special
+from scipy.ndimage.interpolation import affine_transform
 from scipy.optimize import leastsq
 
 from . import plt_norm, plt_zscale
@@ -1113,97 +1114,299 @@ class Image(DataArray):
         else:
             return None
 
-    def rotate_wcs(self, theta):
-        """Rotate WCS coordinates to new orientation given by theta (in place).
+    def _rotate(self, theta=0.0, flux=False, interp='no', cutoff=0.25):
+        """Rotate the image in the sense of a rotation from north to east.
+
+        Uses :func:`scipy.ndimage.affine_transform`.
 
         Parameters
         ----------
         theta : float
-            Rotation in degree.
-        """
-        self.wcs.rotate(theta)
-
-    def _rotate(self, theta, interp='no', reshape=False, order=3, pivot=None):
-
-        # Get a copy of the data array with masked values filled.
-
-        data = self._prepare_data(interp)
-
-        mask = np.array(1 - self.data.mask, dtype=bool)
-
-        if pivot is None:
-            center_coord = self.wcs.pix2sky([np.array(self.shape) / 2. - 0.5])
-            mask_rot = ndi.rotate(mask, -theta, reshape=reshape, order=0)
-            data_rot = ndi.rotate(data, -theta, reshape=reshape, order=order)
-
-            shape = np.array(data_rot.shape)
-            crpix1 = shape[1] / 2. + 0.5
-            crpix2 = shape[0] / 2. + 0.5
-        else:
-            padX = [self.shape[1] - pivot[0], pivot[0]]
-            padY = [self.shape[0] - pivot[1], pivot[1]]
-
-            data_rot = np.pad(data, [padY, padX], 'constant')
-            data_rot = ndi.rotate(data_rot, -theta, reshape=reshape, order=order)
-
-            mask_rot = np.pad(mask, [padY, padX], 'constant')
-            mask_rot = ndi.rotate(mask_rot, -theta, reshape=reshape, order=0)
-
-            center_coord = self.wcs.pix2sky([pivot])
-            shape = np.array(data_rot.shape)
-
-            if reshape is False:
-                data_rot = data_rot[padY[0]: -padY[1], padX[0]: -padX[1]]
-                mask_rot = mask_rot[padY[0]: -padY[1], padX[0]: -padX[1]]
-                crpix1 = shape[1] / 2. + 0.5 - padX[0]
-                crpix2 = shape[0] / 2. + 0.5 - padY[0]
-            else:
-                crpix1 = shape[1] / 2. + 0.5
-                crpix2 = shape[0] / 2. + 0.5
-
-        mask_ma = np.ma.make_mask(1 - mask_rot)
-        self.data = np.ma.array(data_rot, mask=mask_ma)
-
-        try:
-            self.wcs.set_naxis1(self.shape[1])
-            self.wcs.set_naxis2(self.shape[0])
-            self.wcs.set_crpix1(crpix1)
-            self.wcs.set_crpix2(crpix2)
-            self.wcs.set_crval1(center_coord[0][1])
-            self.wcs.set_crval2(center_coord[0][0])
-            self.wcs.rotate(-theta)
-        except:
-            self.wcs = None
-
-        if reshape:
-            self.resize()
-
-    def rotate(self, theta, interp='no', reshape=False, order=3, pivot=None,
-               unit=u.deg):
-        """Rotate the image using spline interpolation
-
-        Uses :func:`scipy.ndimage.rotate`.
-
-        Parameters
-        ----------
-        theta : float
-            Rotation in degrees.
+            Optional angle to rotate the image, in degrees. Positive
+            angles denote a rotation from north to east.
+        flux : boolean
+            If True, the flux of each pixel is multiplied by the ratio
+            of the areas of the rotated and input pixels. For images
+            whose units are flux per pixel, this keeps the total flux
+            in an area is unchanged.
         interp : 'no' | 'linear' | 'spline'
-            if 'no', data median value replaced masked values.
-            if 'linear', linear interpolation of the masked values.
-            if 'spline', spline interpolation of the masked values.
-        reshape : boolean
-            if reshape is true, the output image is adapted
-            so that the input image is contained completely in the output.
-            Default is False.
-        order : int in the range 0-5.
-            The order of the spline interpolation that is used by the rotation
-            Default is 3
-        pivot : (double, double)
-            rotation center
-            if None, rotation will be done around the center of the image.
-        unit : astropy.units
-            type of the pivot coordinates (degrees by default)
+            If 'no', replace masked data with the median value of the
+            image. This is the default.
+            If 'linear', replace masked values using a linear
+            interpolation between neighboring values.
+            if 'spline', replace masked values using a spline
+            interpolation between neighboring values.
+        cutoff : float
+            After rotation, if the interpolated value of a pixel
+            has an integrated contribution of this many masked pixels,
+            mask the pixel.
+
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
+
+        """
+
+        # Wrap the rotation angle into the range +/- 180 degrees,
+        # and convert it to radians.
+
+        angle = np.deg2rad(theta - 360.0 * np.floor(theta / 360.0 + 0.5))
+
+        # Create a rotation matrix for the specified angle. Note that
+        # this is designed to multiply a column vector ordered with
+        # the X axis above the Y axis, to make it compatible with the
+        # fortran ordering of the WCS CD matrix.
+
+        mrot = np.array([[np.cos(angle), -np.sin(angle)],
+                         [np.sin(angle),  np.cos(angle)]])
+
+        # Get the current pixel size.
+
+        oldstep = self.wcs.get_step()
+
+        # Determine the maximum frequencies that the current image
+        # array can sample along the X and Y axes.
+
+        oldfx = 0.5 / oldstep[1]
+        oldfy = 0.5 / oldstep[0]
+
+        # The above frequency bounds define a rectangle in the Fourier
+        # plane. Rotate neighboring corners of this rectangle to
+        # determine the maximum frequencies that need to be sampled
+        # along the X and Y axes of the rotated image.
+
+        fxy = np.dot(mrot, np.array([[oldfx,  oldfx],   # |X1|, |X2|
+                                     [oldfy, -oldfy]])) # |Y1|  |Y2|
+        newfx = max(abs(fxy[0,:]))
+        newfy = max(abs(fxy[1,:]))
+
+        # Compute the pixel increments of the rotated image.
+
+        newstep = np.array([0.5 / newfy * np.sign(oldstep[0]),
+                            0.5 / newfx * np.sign(oldstep[1])])
+
+        # Get the coordinate reference pixel of the input image,
+        # arranged as a column vector in python (Y,X) order.
+
+        oldcrpix = np.array([[self.wcs.get_crpix2()],
+                             [self.wcs.get_crpix1()]])
+
+        # Create a matrix for scaling a column vector in (X,Y)
+        # axis order, by the current X-axis and Y-axis pixel
+        # increments.
+
+        oldscale = np.array([[oldstep[1], 0.0  ],
+                             [0.0       , oldstep[0]]])
+
+        # Create a similar matrix that would scale a column vector in
+        # (X,Y) axis order by the rotated X-axis and Y-axis pixel
+        # increments.
+
+        newscale = np.array([[newstep[1], 0.0  ],
+                             [0.0       , newstep[0]]])
+
+        # Get the current WCS coordinate transformation matrix (which
+        # transforms pixel coordinates to intermediate sky
+        # coordinates).
+
+        oldcd = self.wcs.get_cd()
+
+        # Derive a new WCS coordinate transformation matrix for
+        # transforming pixel indexes in the rotated image to
+        # intermediate sky coordinates.  Read from left to right, the
+        # following statement scales pixel indexes in the rotated
+        # image to projected sky coordinates, then rotates these
+        # coordinates, then divides them by the current pixel scale to
+        # yield the corresponding indexes of the input image, then
+        # feeds these to the current CD matrix to be transformed to
+        # convert them to intermediate sky coordinates.
+
+        newcd = np.dot(oldcd, np.dot(np.linalg.inv(oldscale),
+                                     np.dot(mrot, newscale)))
+
+        # To fill the pixels of the output image we need a coordinate
+        # transformation matrix to transform pixel indexes of the
+        # rotated image back to pixel indexes of the input image. To
+        # do this, we apply the new CD matrix to convert the rotated
+        # indexes to intermediate sky coordinates, then apply the
+        # inverse of the old CD matrix, to convert these back to
+        # indexes of the original image.
+
+        wcs_remap = np.dot(np.linalg.inv(oldcd), newcd)
+
+        # The above matrix was computed from the WCS CD matrix, which
+        # is designed to multiply a column vector in FORTRAN (X,Y)
+        # axis order. Rearrange it to the equivalent matrix for
+        # multiplying a column vector in python (Y,X) axis order.
+
+        new2old = np.array([[wcs_remap[1,1], wcs_remap[1,0]],
+                            [wcs_remap[0,1], wcs_remap[0,0]]])
+
+        # Also compute the inverse of this, so that we can convert
+        # from input image indexes to rotated image indexes.
+
+        old2new = np.linalg.inv(new2old)
+
+        # Determine where the corners of the input image end up in the
+        # output image with CRPIX set to [0,0].
+
+        corners = np.array(
+            [[0, 0, self.shape[0]-1, self.shape[0]-1],  # Y indexes
+             [0, self.shape[1]-1, 0, self.shape[1]-1]], # X indexes
+            dtype=np.float)
+        pix = np.dot(old2new, (corners - oldcrpix))
+
+        # Get the ranges of indexes occupied by the input image in the
+        # rotated image.
+
+        ymin = min(pix[0,:])
+        ymax = max(pix[0,:])
+        xmin = min(pix[1,:])
+        xmax = max(pix[1,:])
+
+        # Calculate the indexes of the coordinate reference pixel of
+        # the rotated image, such that pixel [xmin,ymin] is moved to
+        # array index [0,0]. Use (Y,X) axis ordering.
+
+        newcrpix = np.array([[-ymin], [-xmin]])
+
+        # Calculate the dimensions of the output image in (Y,X) order.
+        # The dimensions are ymax-ymin+1 rounded up, and xmax-xmin+1
+        # rounded up.
+
+        newdims = np.array([int(ymax - ymin + 1.5),
+                            int(xmax - xmin + 1.5)])
+
+        # The affine_transform() function calculates the pixel index
+        # of the input image that corresponds to a given pixel index
+        # of the rotated image, as follows:
+        #
+        #  oldpixel = new2old * newpixel + offset
+        #
+        # The coordinate reference pixels of the rotated and input
+        # images must refer to the same position on the sky, so:
+        #
+        #  oldcrpix = new2old * newcrpix + offset
+        #
+        # Thus the value of 'offset' has to be:
+        #
+        #  offset = oldcrpix - new2old * newcrpix
+
+        offset = oldcrpix - np.dot(new2old, newcrpix)
+
+        # Get a copy of the current image array with masked values filled.
+
+        newdata = self._prepare_data(interp)
+
+        # For each pixel of the rotated image, use the new2old affine
+        # transformation matrix to determine where that pixel
+        # originates in the input image, then interpolate a value from
+        # the pixels of the input image surrounding that point.
+
+        newdata = affine_transform(newdata, matrix=new2old,
+                                   offset=offset.flatten(), cval=0.0,
+                                   output_shape=newdims, output=np.float,
+                                   order=1, prefilter=False)
+
+        # Zero the current data array and then fill its masked pixels
+        # with floating point 1.0s, so that we can rotate this in the
+        # the same way as the data to see where the masked areas end
+        # up.
+
+        self.data.data[:,:] = 0.0
+        newmask = np.ma.filled(self.data, 1.0)
+
+        # Rotate the array of 1s that represent masked pixels, and fill
+        # corners that weren't mapped from the input array with 1s, so
+        # that we end up flagging them too.
+
+        newmask = affine_transform(newmask, matrix=new2old,
+                                   offset=offset.flatten(), cval=1.0,
+                                   output_shape=newdims, output=np.float,
+                                   order=1, prefilter=False)
+
+        # Create new boolean mask in which all pixels that had an
+        # integrated contribution of more than 'cutoff' originally
+        # masked pixels are masked.
+
+        newmask = np.greater(newmask, cutoff)
+
+        # If the image has an associated array of variances, rotate it too.
+
+        if self.var is not None:
+            newvar = affine_transform(self.var, matrix=new2old,
+                                   offset=offset.flatten(), cval=0.0,
+                                   output_shape=newdims, output=np.float,
+                                   order=1, prefilter=False)
+        else:
+            newvar = None
+
+        # Compute the number of old pixel areas per new pixel.
+        n = newstep.prod() / oldstep.prod()
+
+        # Scale the flux per pixel by the multiplicative increase in the
+        # area of a pixel?
+
+        if flux:
+
+            # Scale the pixel fluxes by the increase in the area.
+
+            newdata *= n
+
+            # Each output pixel is the sum of n input pixels. The
+            # variance of a sum of n samples of variance v is n*v.
+
+            if newvar is not None:
+                newvar *= n
+
+        # When not scaling fluxes by pixel area, each output pixel is
+        # the mean of n input pixels. The variance of a mean of n
+        # samples of variance v is v/n.
+
+        else:
+            if newvar is not None:
+                newvar /= n
+
+        # Install the rotated data array, mask and variances.
+
+        self.data = np.ma.array(data=newdata, mask=newmask)
+        self.var = newvar
+
+        # Install the new world-coordinate transformation matrix, along
+        # with the new reference pixel.
+
+        self.wcs.set_cd(newcd)
+        self.wcs.set_naxis1(newdims[1])
+        self.wcs.set_naxis2(newdims[0])
+        self.wcs.set_crpix1(newcrpix[1])
+        self.wcs.set_crpix2(newcrpix[0])
+
+    def rotate(self, theta=0.0, flux=False, interp='no', cutoff=0.25):
+        """Rotate the image using affine transforms and spline interpolation
+
+        Uses :func:`scipy.ndimage.affine_transform`.
+
+        Parameters
+        ----------
+        theta : float
+            Optional angle to rotate the image, in degrees. Positive
+            angles denote a rotation from north to east.
+        flux : boolean
+            If True, the flux of each pixel is multiplied by the ratio
+            of the areas of the rotated and input pixels. For images
+            whose units are flux per pixel, this keeps the total flux
+            in an area is unchanged.
+        interp : 'no' | 'linear' | 'spline'
+            If 'no', replace masked data with the median value of the
+            image. This is the default.
+            If 'linear', replace masked values using a linear
+            interpolation between neighboring values.
+            if 'spline', replace masked values using a spline
+            interpolation between neighboring values.
+        cutoff : float
+            After rotation, if the interpolated value of a pixel
+            has an integrated contribution of this many masked pixels,
+            mask the pixel.
 
         Returns
         -------
@@ -1211,9 +1414,7 @@ class Image(DataArray):
 
         """
         res = self.copy()
-        if pivot is not None and unit is not None:
-            pivot = self.wcs.sky2pix([np.array(pivot)], nearest=True, unit=unit)[0]
-        res._rotate(theta, interp, reshape, order, pivot)
+        res._rotate(theta, flux, interp, cutoff)
         return res
 
     def sum(self, axis=None):
