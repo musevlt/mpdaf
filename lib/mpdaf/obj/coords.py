@@ -592,7 +592,7 @@ class WCS(object):
         return np.allclose(steps1, steps2, atol=1E-7, rtol=0)
 
     def __getitem__(self, item):
-        """Return a WCS object of a specified 2D slice"""
+        """Return a WCS object of a 2D slice"""
 
         # The caller is expected to have specified a 2D slice,
         # so there should be a tuple of two items.
@@ -601,7 +601,12 @@ class WCS(object):
 
             # See if a slice object was sent for the X axis.
 
-            try:
+            if isinstance(item[1], slice):
+
+                # If a start index was provided, limit it to the extent of
+                # the x-axis. If no start index was provided, default to
+                # zero.
+
                 if item[1].start is None:
                     imin = 0
                 else:
@@ -610,6 +615,10 @@ class WCS(object):
                         imin = self.naxis1 + imin
                     if imin > self.naxis1:
                         imin = self.naxis1
+
+                # If a stop index was provided, limit it to the extent of the
+                # X axis. Otherwise substitute the size of the X-axis.
+
                 if item[1].stop is None:
                     imax = self.naxis1
                 else:
@@ -619,17 +628,28 @@ class WCS(object):
                     if imax > self.naxis1:
                         imax = self.naxis1
 
+                # If a step was provided and it isn't 1, complain
+                # because we can't accomodate gaps between pixels.
+
+                if item[1].step is not None and item[1].step != 1:
+                    raise ValueError('Index steps are not supported')
+
             # If a slice object wasn't sent, then maybe a single index
             # was passed for the X axis. If so, select the specified
             # single pixel.
 
-            except:
+            else:
                 imin = int(item[1])
                 imax = int(item[1] + 1)
 
             # See if a slice object was sent for the Y axis.
 
-            try:
+            if isinstance(item[0], slice):
+
+                # If a start index was provided, limit it to the extent of
+                # the y-axis. If no start index was provided, default to
+                # zero.
+
                 if item[0].start is None:
                     jmin = 0
                 else:
@@ -638,6 +658,10 @@ class WCS(object):
                         jmin = self.naxis2 + jmin
                     if jmin > self.naxis2:
                         jmin = self.naxis2
+
+                # If a stop index was provided, limit it to the extent of the
+                # Y axis. Otherwise substitute the size of the Y-axis.
+
                 if item[0].stop is None:
                     jmax = self.naxis2
                 else:
@@ -647,17 +671,24 @@ class WCS(object):
                         if jmax > self.naxis2:
                             jmax = self.naxis2
 
+                # If an index step was provided and it isn't 1, reject
+                # the call, because we can't accomodate gaps between selected
+                # pixels.
+
+                if item[1].step is not None and item[1].step != 1:
+                    raise ValueError('Index steps are not supported')
+
             # If a slice object wasn't sent, then maybe a single index
             # was passed for the Y axis. If so, select the specified
             # single pixel.
 
-            except:
+            else:
                 jmin = int(item[0])
                 jmax = int(item[0] + 1)
 
-            # Offset the original coordinate reference pixel indexes
-            # to be relative to the top left corner of the selected
-            # sub-image.
+            # Compute the array indexes of the coordinate reference
+            # pixel in the sliced array. Note that this can indicate a
+            # pixel outside the slice.
 
             crpix = (self.wcs.wcs.crpix[0] - imin,
                      self.wcs.wcs.crpix[1] - jmin)
