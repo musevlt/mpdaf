@@ -715,28 +715,115 @@ class WCS(object):
             raise ValueError('Missing 2D slice indexes')
 
     def get_step(self, unit=None):
-        """Return [dDec,dRa].
+        """Return the angular increments of pixels along the Y and X axes
+           of the image array.
+
+        In MPDAF, images are a regular grid of square pixels on a flat
+        projection of the celestial sphere. The get_step() method
+        returns the angular width and height of these pixels on the
+        sky, with signs that indicate whether the angle increases or
+        decreases as one steps along the corresponding array axis. To
+        keep plots consistent, regardless of the rotation angle of the
+        image on the sky, the returned height is always positive, but
+        the returned width is negative if a plot of the image with
+        pixel 0,0 at the bottom left would place east anticlockwise of
+        north, and positive otherwise.
 
         Parameters
         ----------
         unit : astropy.units
-            type of the world coordinates
+            The angular units of the returned values.
+
+        Returns
+        -------
+        out : numpy.ndarray
+           (dy,dx). These are the angular increments of pixels along
+           the Y and X axes of the image. The returned values are
+           either in the unit specified by the 'unit' input parameter,
+           or in the unit specified by the self.unit property.
 
         """
-        try:
-            dy, dx = np.sqrt(np.sum(self.wcs.wcs.cd ** 2, axis=1))[::-1]
-        except:
-            try:
-                cdelt = self.wcs.wcs.get_cdelt()
-                pc = self.wcs.wcs.get_pc()
-                dx = cdelt[0] * np.sqrt(pc[0, 0] ** 2 + pc[0, 1] ** 2)
-                dy = cdelt[1] * np.sqrt(pc[1, 0] ** 2 + pc[1, 1] ** 2)
-            except:
-                raise IOError('No standard WCS')
 
-        if unit:
+        # Get the FITS coordinate conversion matrix.
+
+        cd = self.get_cd()
+
+        # The pixel dimensions are determined as follows. First note
+        # that the coordinate transformation matrix looks as follows:
+        #
+        #    |r| = |M[0,0], M[0,1]| |col - get_crpix1()|
+        #    |d|   |M[1,0], M[1,1]| |row - get_crpix2()|
+        #
+        # In this equation [col,row] are the indexes of a pixel in the
+        # image array and [r,d] are the coordinates of this pixel on a
+        # flat map-projection of the sky. If the celestial coordinates
+        # of the observation are right ascension and declination, then d
+        # is parallel to declination, and r is perpendicular to this,
+        # pointing east. When the column index is incremented by 1, the
+        # above equation indicates that r and d change by:
+        #
+        #    col_dr = M[0,0]   col_dd = M[1,0]
+        #
+        # The length of the vector from (0,0) to (col_dr,col_dd) is
+        # the angular width of pixels along the X axis.
+        #
+        #    dx = sqrt(M[0,0]^2 + M[1,1]^2)
+        #
+        # Similarly, when the row index is incremented by 1, r and d
+        # change by:
+        #
+        #    row_dr = M[0,1]   row_dd = M[1,1]
+        #
+        # The length of the vector from (0,0) to (row_dr,row_dd) is
+        # the angular width of pixels along the Y axis.
+        #
+        #    dy = sqrt(M[0,1]^2 + M[1,1]^2)
+        #
+        # Calculate the width and height of the pixels as described above.
+
+        dx = np.sqrt(cd[0,0]**2 + cd[1,0]**2)
+        dy = np.sqrt(cd[0,1]**2 + cd[1,1]**2)
+
+        # To decide what sign to give the step in X, we need to know
+        # whether east is clockwise or anticlockwise of north when the
+        # image is plotted with pixel 0,0 at the bottom left of the
+        # plot. The angle of a northward vector from the origin can be
+        # calculated by first using the inverse of the CD matrix to
+        # calculate the equivalent vector in pixel indexes, then
+        # calculating the angle of this vector to the Y axis of the
+        # image array. Start by calculating the determinant of the CD
+        # matrix.
+
+        cddet = np.linalg.det(cd)
+
+        # Calculate the rotation angle of a unit northward vector
+        # clockwise of the Y axis.
+
+        north = np.arctan2(-cd[0,1]/cddet, cd[0,0]/cddet)
+
+        # Calculate the rotation angle of a unit eastward vector
+        # clockwise of the Y axis.
+
+        east = np.arctan2(cd[1,1]/cddet, -cd[1,0]/cddet)
+
+        # Wrap the difference east-north into the range -pi to pi radians.
+
+        delta = Angle((east - north) * u.rad).wrap_at(np.pi*u.rad).value
+
+        # If east is anticlockwise of north make the X-axis pixel increment
+        # negative.
+
+        if delta < 0.0:
+            dx *= -1.0
+
+        # Convert from degrees to the requested angular units.
+
+        if unit is not None:
             dx = (dx * self.unit).to(unit).value
             dy = (dy * self.unit).to(unit).value
+
+        # Return the axis increments in python array-indexing order.
+
         return np.array([dy, dx])
 
     def get_range(self, unit=None):
