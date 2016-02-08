@@ -460,7 +460,7 @@ class WCS(object):
         return hdr
 
     def sky2pix(self, x, nearest=False, unit=None):
-        """Convert world coordinates (dec,ra) to image pixel indexes.
+        """Convert world coordinates (dec,ra) to image pixel indexes (y,x).
 
         If nearest=True; returns the nearest integer pixel.
 
@@ -478,7 +478,7 @@ class WCS(object):
         -------
         out : (n,2) array of image pixel indexes. These are
               python array indexes, ordered like (y,x) and with
-              0,0 denoting the upper left pixel of the image.
+              0,0 denoting the lower left pixel of the image.
 
         """
         x = np.asarray(x, dtype=np.float64)
@@ -505,14 +505,14 @@ class WCS(object):
         return res
 
     def pix2sky(self, x, unit=None):
-        """Convert image pixel indexes to world coordinates.
+        """Convert image pixel indexes (y,x) to world coordinates (dec,ra)
 
         Parameters
         ----------
         x : array
             An (n,2) array of image pixel indexes. These should be
             python array indexes, ordered like (y,x) and with
-            0,0 denoting the upper left pixel of the image.
+            0,0 denoting the lower left pixel of the image.
         unit : astropy.units
             The units of the world coordinates.
 
@@ -539,15 +539,20 @@ class WCS(object):
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes.
-           Beware that if the two wcs objects have the same world
-           coordinate characteristics, but come from images of
-           different dimensions, the objects will be considered to
-           be different.
+        Beware that if the two wcs objects have the same world
+        coordinate characteristics, but come from images of
+        different dimensions, the objects will be considered
+        different.
 
         Parameters
         ----------
         other : WCS
             The wcs object to be compared to self.
+
+        Returns
+        -------
+        out : boolean
+            True if the two WCS objects have the same attributes.
 
         """
 
@@ -571,16 +576,20 @@ class WCS(object):
         Parameters
         ----------
         other : WCS
-            The wcs object to be compared to self.
+            The wcs object to compare to self.
 
+        Returns
+        -------
+        out : boolean
+            True if the two arrays of axis step increments are equal.
         """
 
         if not isinstance(other, WCS):
             return False
 
-        cdelt1 = self.get_step()
-        cdelt2 = other.get_step(unit=self.unit)
-        return np.allclose(cdelt1, cdelt2, atol=1E-7, rtol=0)
+        steps1 = self.get_step()
+        steps2 = other.get_step(unit=self.unit)
+        return np.allclose(steps1, steps2, atol=1E-7, rtol=0)
 
     def __getitem__(self, item):
         """Return a WCS object of a specified 2D slice"""
@@ -714,12 +723,21 @@ class WCS(object):
         return np.vstack([pixsky.min(axis=0), pixsky.max(axis=0)])
 
     def get_start(self, unit=None):
-        """Return [dec,ra] corresponding to pixel (0,0).
+        """Return the [dec,ra] coordinates of pixel (0,0).
 
         Parameters
         ----------
         unit : astropy.units
-            type of the world coordinates
+            The angular units of the returned coordinates.
+
+        Returns
+        -------
+        out : numpy.ndarray
+           The equatorial coordinate of pixel [0,0], ordered as:
+           [dec,ra]. If a value was given to the optional 'unit'
+           argument, the angular unit specified there will be used for
+           the return value. Otherwise the unit stored in the
+           self.unit property will be used.
 
         """
         pixcrd = [[0, 0]]
@@ -727,12 +745,21 @@ class WCS(object):
         return np.array([pixsky[0, 0], pixsky[0, 1]])
 
     def get_end(self, unit=None):
-        """Return [dec,ra] corresponding to pixel (-1,-1).
+        """Return the [dec,ra] coordinates of pixel (-1,-1).
 
         Parameters
         ----------
         unit : astropy.units
-            type of the world coordinates
+            The angular units of the returned coordinates.
+
+        Returns
+        -------
+        out : numpy.ndarray
+           The equatorial coordinate of pixel [-1,-1], ordered as,
+           [dec,ra]. If a value was given to the optional 'unit'
+           argument, the angular unit specified there will be used for
+           the return value. Otherwise the unit stored in the
+           self.unit property will be used.
 
         """
         pixcrd = [[self.naxis2 - 1, self.naxis1 - 1]]
@@ -778,28 +805,98 @@ class WCS(object):
                 raise IOError('No standard WCS')
 
     def get_naxis1(self):
-        """NAXIS1 getter (first dimension of an image)."""
+        """Return the value of the FITS NAXIS1 parameter.
+
+        NAXIS1 holds the dimension of the X-axis of the image. In the
+        data-array of an MPDAF Image object, this is the dimension of
+        axis 1 of the python array that contains the image. If im is
+        an mpdaf.obj.Image object, then im.shape[1] is equivalent to
+        im.wcs.get_naxis1().
+
+        Returns
+        -------
+        out : int
+           The value of the FITS NAXIS1 parameter.
+
+        """
         return self.naxis1
 
     def get_naxis2(self):
-        """NAXIS2 getter (second dimension of an image)."""
+        """Return the value of the FITS NAXIS2 parameter.
+
+        NAXIS2 holds the dimension of the Y-axis of the image. In the
+        data-array of an MPDAF Image object, this is the dimension of
+        axis 0 of the python array that contains the image. If im is
+        an mpdaf.obj.Image object, then im.shape[0] is equivalent to
+        im.wcs.get_naxis2().
+
+        Returns
+        -------
+        out : int
+           The value of the FITS NAXIS2 parameter.
+
+        """
         return self.naxis2
 
     def get_crpix1(self):
-        """CRPIX1 getter (reference pixel on the first axis)."""
+        """Return the value of the FITS CRPIX1 parameter.
+
+        CRPIX1 contains the index of the reference position of
+        the image along the X-axis of the image. Beware that
+        this is a FITS array index, which is 1 greater than the
+        corresponding python array index. For example, a crpix
+        value of 1 denotes a python array index of 0. The
+        reference pixel index is a floating point value that
+        can indicate a position between two pixels. It can also
+        indicate an index that is outside the bounds of the
+        array.
+
+        Returns
+        -------
+        out : float
+           The value of the FITS CRPIX1 parameter.
+
+        """
         return self.wcs.wcs.crpix[0]
 
     def get_crpix2(self):
-        """CRPIX2 getter (reference pixel on the second axis)."""
+        """Return the value of the FITS CRPIX2 parameter.
+
+        CRPIX2 contains the index of the reference position of
+        the image along the Y-axis of the image. Beware that
+        this is a FITS array index, which is 1 greater than the
+        corresponding python array index. For example, a crpix
+        value of 1 denotes a python array index of 0. The
+        reference pixel index is a floating point value that
+        can indicate a position between two pixels. It can also
+        indicate an index that is outside the bounds of the
+        array.
+
+        Returns
+        -------
+        out : float
+           The value of the FITS CRPIX2 parameter.
+
+        """
         return self.wcs.wcs.crpix[1]
 
     def get_crval1(self, unit=None):
-        """CRVAL1 getter (value of the reference pixel on the first axis).
+        """Return the value of the FITS CRVAL1 parameter.
+
+        CRVAL1 contains the coordinate reference value of the first
+        image axis (eg. right-ascension).
 
         Parameters
         ----------
         unit : astropy.units
-            type of the world coordinates
+            The angular units to give the return value.
+
+        Returns
+        -------
+        out : float
+           The value of CRVAL1 in the specified angular units. If the
+           units are not given, then the unit in the self.unit
+           property is used.
 
         """
         if unit is None:
@@ -808,12 +905,22 @@ class WCS(object):
             return (self.wcs.wcs.crval[0] * self.unit).to(unit).value
 
     def get_crval2(self, unit=None):
-        """CRVAL2 getter (value of the reference pixel on the second axis).
+        """Return the value of the FITS CRVAL2 parameter.
+
+        CRVAL2 contains the coordinate reference value of the second
+        image axis (eg. declination).
 
         Parameters
         ----------
         unit : astropy.units
-            type of the world coordinates
+            The angular units to give the return value.
+
+        Returns
+        -------
+        out : float
+           The value of CRVAL2 in the specified angular units. If the
+           units are not given, then the unit in the self.unit
+           property is used.
 
         """
         if unit is None:
@@ -823,6 +930,15 @@ class WCS(object):
 
     @property
     def unit(self):
+        """Return the default angular unit used for sky coordinates.
+
+        Returns
+        -------
+        out : astropy.units
+           The unit to use for coordinate angles.
+
+        """
+
         if self.wcs.wcs.cunit[0] != self.wcs.wcs.cunit[1]:
             self._logger.warning('different units on x- and y-axes')
         return self.wcs.wcs.cunit[0]
@@ -840,20 +956,40 @@ class WCS(object):
         self.wcs.wcs.crpix[0] = x
         self.wcs.wcs.set()
 
-    def set_crpix2(self, x):
-        """CRPIX2 setter (reference pixel on the second axis)."""
-        self.wcs.wcs.crpix[1] = x
+    def set_crpix2(self, y):
+        """Set the value of the FITS CRPIX1 parameter, which sets the
+        reference pixel index along the Y-axis of the image.
+
+        This is a floating point value which can denote a position
+        between pixels. It is specified with the FITS indexing
+        convention, where FITS pixel 1 is equivalent to pixel 0 in
+        python arrays. In general subtract 1 from y to get the
+        corresponding floating-point pixel index along axis 0 of the
+        image array.  In cases where y is an integer, the
+        corresponding column in the python data array that contains
+        the image is data[y-1,:].
+
+        Parameters
+        ----------
+        y : float
+            The index of the reference pixel along the Y axis.
+        """
+
+        self.wcs.wcs.crpix[1] = y
         self.wcs.wcs.set()
 
     def set_crval1(self, x, unit=None):
-        """CRVAL1 setter (value of the reference pixel on the first axis).
+
+        """Set the value of the CRVAL1 keyword, which indicates the coordinate
+        reference value along the first image axis (eg. right
+        ascension).
 
         Parameters
         ----------
         x : float
-            Value of the reference pixel on the first axis
+            The value of the reference pixel on the first axis.
         unit : astropy.units
-            type of the world coordinates
+            The angular units of the world coordinates.
 
         """
         if unit is None:
@@ -868,9 +1004,9 @@ class WCS(object):
         Parameters
         ----------
         x : float
-            Value of the reference pixel on the second axis
+            The value of the reference pixel on the second axis.
         unit : astropy.units
-            type of the world coordinates
+            The angular units of the world coordinates.
         """
         if unit is None:
             self.wcs.wcs.crval[1] = x
@@ -970,6 +1106,9 @@ class WCS(object):
     def rebin(self, factor):
         """Rebin to a new coordinate system.
 
+        This is a helper function for the Image.rebin_mean() and
+        Image.rebin_median() functions.
+
         Parameters
         ----------
         factor : (integer,integer)
@@ -1021,8 +1160,8 @@ class WCS(object):
             return True
 
     def to_cube_header(self, wave):
-        """Generate a astropy.fits header object with the WCS information and
-        the wavelength information."""
+        """Generate an astropy.fits header object with WCS information and
+        wavelength information."""
         hdr = self.to_header()
         if wave is not None:
             hdr.update(wave.to_header(naxis=3, use_cd='CD1_1' in hdr))
