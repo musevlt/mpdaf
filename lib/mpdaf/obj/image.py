@@ -2871,9 +2871,11 @@ class Image(DataArray):
             Factor in y and x.  Python notation: (ny,nx)
 
         """
-        assert not np.sometrue(np.mod(self.shape[0], factor[0]))
-        assert not np.sometrue(np.mod(self.shape[1], factor[1]))
-        # new size is an integer multiple of the original size
+        assert np.mod(self.shape[0], factor[0]) == 0
+        assert np.mod(self.shape[1], factor[1]) == 0
+
+        # The new size is an integer multiple of the original size
+
         shape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
         self.data = self.data.reshape(
             shape[0], factor[0], shape[1], factor[1]).sum(1).sum(2)\
@@ -2886,41 +2888,66 @@ class Image(DataArray):
         self.wcs = self.wcs.rebin(factor)
 
     def _rebin_mean(self, factor, margin='center'):
-        """Shrink the size of the image by factor.
+        """Shrink the pixel dimensions of the image by an integer factor.
 
         Parameters
         ----------
         factor : int or (int,int)
             Factor in y and x. Python notation: (ny,nx).
+            The dimensions of the output image will be
+            shape[0]/ny (rounded up), and shape[1]/nx (rounded up).
         margin : 'center' or 'origin'
-            This parameters is used if new size is not an integer multiple of
-            the original size. In 'center' case, pixels will be added on the
-            left and on the right, on the bottom and of the top of the image.
-            In 'origin'case, pixels will be added on (n+1) line/column.
+            This parameter is used if the new size of an axis is not
+            an integer divisor of the original size.
+
+            In the 'center' case, one pixel will be added to the start
+            and end of the affected axis in the output image.
+
+            In the 'origin' case, one pixel will be added to the end
+            of the affected axis in the output image.
 
         """
+
+        # Use the same factor for both dimensions?
+
         if is_int(factor):
             factor = (factor, factor)
+        factor = np.asarray(factor, dtype=np.int)
+
+        # The divisors must be in the range 1 to shape-1.
+
         if factor[0] <= 1 or factor[0] >= self.shape[0] \
                 or factor[1] <= 1 or factor[1] >= self.shape[1]:
-            raise ValueError('factor must be in ]1,shape[')
-        if not np.sometrue(np.mod(self.shape[0], factor[0])) \
-                and not np.sometrue(np.mod(self.shape[1], factor[1])):
-            # new size is an integer multiple of the original size
+            raise ValueError('The factor must be from 1 to shape.')
+
+        # Compute the number of pixels by which each axis dimension
+        # exceeds being an integer multiple of the requested reduction
+        # factor.
+
+        n = np.mod(self.shape, factor)
+
+        # Are the existing axes both integer multiples of the
+        # corresponding division factors?
+
+        if n[0]==0 and n[1]==0:
             self._rebin_mean_(factor)
             return None
-        elif not np.sometrue(np.mod(self.shape[0], factor[0])):
-            newshape1 = self.shape[1] / factor[1]
-            n1 = self.shape[1] - newshape1 * factor[1]
-            if margin == 'origin' or n1 == 1:
-                ima = self[:, :-n1]
+
+        # Is just the Y dimension an integer multiple of its division factor?
+
+        elif n[0] == 0:
+
+            # Add an extra pixel to the end of the X axis of the output image?
+
+            if margin == 'origin' or n[1] == 1:
+                ima = self[:, :-n[1]]
                 ima._rebin_mean_(factor)
                 newshape = (ima.shape[0], ima.shape[1] + 1)
                 data = np.empty(newshape)
                 mask = np.empty(newshape, dtype=bool)
                 data[:, 0:-1] = ima.data
                 mask[:, 0:-1] = ima.data.mask
-                d = self.data[:, -n1:].sum(axis=1)\
+                d = self.data[:, -n[1]:].sum(axis=1)\
                     .reshape(ima.shape[0], factor[0]).sum(1) \
                     / factor[0] / factor[1]
                 data[:, -1] = d.data
@@ -2929,14 +2956,14 @@ class Image(DataArray):
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[:, 0:-1] = ima.var
-                    var[:, -1] = self.var[:, -n1:].sum(axis=1)\
+                    var[:, -1] = self.var[:, -n[1]:].sum(axis=1)\
                         .reshape(ima.shape[0], factor[0]).sum(1)\
                         / factor[0] / factor[0] / factor[1] / factor[1]
                 wcs = ima.wcs
                 wcs.naxis1 = wcs.naxis1 + 1
             else:
-                n_left = n1 / 2
-                n_right = self.shape[1] - n1 + n_left
+                n_left = n[1] / 2
+                n_right = self.shape[1] - n[1] + n_left
                 ima = self[:, n_left:n_right]
                 ima._rebin_mean_(factor)
                 newshape = (ima.shape[0], ima.shape[1] + 2)
@@ -2967,18 +2994,19 @@ class Image(DataArray):
                 wcs = ima.wcs
                 wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
                 wcs.set_naxis1(wcs.naxis1 + 2)
-        elif not np.sometrue(np.mod(self.shape[1], factor[1])):
-            newshape0 = self.shape[0] / factor[0]
-            n0 = self.shape[0] - newshape0 * factor[0]
-            if margin == 'origin' or n0 == 1:
-                ima = self[:-n0, :]
+
+        # Is just the X dimension an integer multiple of its division factor?
+
+        elif n[1] == 0:
+            if margin == 'origin' or n[0] == 1:
+                ima = self[:-n[0], :]
                 ima._rebin_mean_(factor)
                 newshape = (ima.shape[0] + 1, ima.shape[1])
                 data = np.empty(newshape)
                 mask = np.empty(newshape, dtype=bool)
                 data[0:-1, :] = ima.data
                 mask[0:-1, :] = ima.data.mask
-                d = self.data[-n0:, :].sum(axis=0)\
+                d = self.data[-n[0]:, :].sum(axis=0)\
                     .reshape(ima.shape[1], factor[1]).sum(1) \
                     / factor[0] / factor[1]
                 data[-1, :] = d.data
@@ -2987,14 +3015,14 @@ class Image(DataArray):
                 if self.var is not None:
                     var = np.empty(newshape)
                     var[0:-1, :] = ima.var
-                    var[-1, :] = self.var[-n0:, :].sum(axis=0)\
+                    var[-1, :] = self.var[-n[0]:, :].sum(axis=0)\
                         .reshape(ima.shape[1], factor[1]).sum(1) \
                         / factor[0] / factor[1]
                 wcs = ima.wcs
                 wcs.naxis2 = wcs.naxis2 + 1
             else:
-                n_left = n0 / 2
-                n_right = self.shape[0] - n0 + n_left
+                n_left = n[0] / 2
+                n_right = self.shape[0] - n[0] + n_left
                 ima = self[n_left:n_right, :]
                 ima._rebin_mean_(factor)
                 newshape = (ima.shape[0] + 2, ima.shape[1])
@@ -3025,10 +3053,10 @@ class Image(DataArray):
                 wcs = ima.wcs
                 wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
                 wcs.set_naxis2(wcs.naxis2 + 2)
+
+        # Is neither axis an integer multiple of its division factor?
+
         else:
-            factor = np.array(factor)
-            newshape = self.shape / factor
-            n = self.shape - newshape * factor
             if n[0] == 1 and n[1] == 1:
                 margin = 'origin'
             if margin == 'center':
@@ -3360,38 +3388,54 @@ class Image(DataArray):
         out : :class:`mpdaf.obj.Image`
 
         """
+
+        # Use the same factor for both dimensions?
+
         if is_int(factor):
             factor = (factor, factor)
+        factor = np.asarray(factor, dtype=np.int)
+
+        # The divisors must be in the range 1 to shape-1.
+
         if factor[0] <= 1 or factor[0] >= self.shape[0] \
                 or factor[1] <= 1 or factor[1] >= self.shape[1]:
-            raise ValueError('factor must be in ]1,shape[')
-            return None
-        if not np.sometrue(np.mod(self.shape[0], factor[0])) \
-                and not np.sometrue(np.mod(self.shape[1], factor[1])):
-            # new size is an integer multiple of the original size
+            raise ValueError('The factor must be from 1 to shape.')
+
+        # Compute the number of pixels by which each axis dimension
+        # exceeds being an integer multiple of the requested reduction
+        # factor.
+
+        n = np.mod(self.shape, factor)
+
+        # Are the existing axes both integer multiples of the
+        # corresponding division factors?
+
+        if n[0]==0 and n[1]==0:
             res = self.copy()
-        elif not np.sometrue(np.mod(self.shape[0], factor[0])):
-            newshape1 = self.shape[1] / factor[1]
-            n1 = self.shape[1] - newshape1 * factor[1]
-            if margin == 'origin' or n1 == 1:
-                res = self[:, :-n1]
+
+        # Is just the Y dimension an integer multiple of its division factor?
+
+        elif n[0] == 0:
+            if margin == 'origin' or n[1] == 1:
+                res = self[:, :-n[1]]
             else:
-                n_left = n1 / 2
-                n_right = self.shape[1] - n1 + n_left
+                n_left = n[1] / 2
+                n_right = self.shape[1] - n[1] + n_left
                 res = self[:, n_left:n_right]
-        elif not np.sometrue(np.mod(self.shape[1], factor[1])):
-            newshape0 = self.shape[0] / factor[0]
-            n0 = self.shape[0] - newshape0 * factor[0]
-            if margin == 'origin' or n0 == 1:
-                res = self[:-n0, :]
+
+        # Is just the X dimension an integer multiple of its division factor?
+
+        elif n[1] == 0:
+            if margin == 'origin' or n[0] == 1:
+                res = self[:-n[0], :]
             else:
-                n_left = n0 / 2
-                n_right = self.shape[0] - n0 + n_left
+                n_left = n[0] / 2
+                n_right = self.shape[0] - n[0] + n_left
                 res = self[n_left:n_right, :]
+
+        # Is neither axis an integer multiple of its division factor?
+
         else:
-            factor = np.array(factor)
-            newshape = self.shape / factor
-            n = self.shape - newshape * factor
             if n[0] == 1 and n[1] == 1:
                 margin = 'origin'
             if margin == 'center':
