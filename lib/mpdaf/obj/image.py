@@ -3406,100 +3406,282 @@ class Image(DataArray):
         res._rebin_median_(factor)
         return res
 
-    def _resample(self, newdim, newstart, newstep, flux=False, order=3,
-                  interp='no', unit_start=u.deg, unit_step=u.arcsec):
+    def _resample(self, newdim, newstart, newstep, flux=False, order=1,
+                  interp='no', unit_start=u.deg, unit_step=u.arcsec,
+                  cutoff=0.25):
+
+        # Create a shape that has the same dimension for both axes?
 
         if is_int(newdim):
             newdim = (newdim, newdim)
+        newdim = np.asarray(newdim, dtype=np.int)
+
+        # If no preference has been given for the sky coordinate of
+        # pixel [0,0], substitute the existing position of this pixel.
 
         if newstart is None:
             newstart = self.wcs.get_start(unit=unit_start)
-        elif is_int(newstart) or is_float(newstart):
-            newstart = (newstart, newstart)
 
-        if is_int(newstep) or is_float(newstep):
-            newstep = (newstep, newstep)
+        # Ensure that newstart is an array of values that have the
+        # same units as the WCS object.
 
-        newdim = np.array(newdim)
-        newstart = np.array(newstart)
-        newstep = np.array(newstep)
+        newstart = (np.asarray(newstart, dtype=np.float)
+                    * unit_start).to(self.wcs.unit).value
+
+        # Get the current index increments of the 2 axes.
+
+        oldstep = self.wcs.get_step()
+
+        # Use a common step-size for both axes? If so, give them
+        # the same size, but with signs matching the current
+        # pixel increments.
+
+        if is_number(newstep):
+            size = abs(newstep)
+            newstep = (size*np.sign(oldstep[0]), size*np.sign(oldstep[1]))
+
+        # Ensure that newstep is an array of values that have the
+        # same units as the WCS object.
+
+        newstep = (np.asarray(newstep, dtype=np.float)
+                   * unit_step).to(self.wcs.unit).value
 
         # Get a copy of the data array with masked values filled.
 
         data = self._prepare_data(interp)
 
-        oldstep = self.wcs.get_step(unit=unit_step)
-        pstep = newstep / oldstep
+        # If the pixel increments along either axis are being
+        # increased, then low-pass filter the data along that axis to
+        # prevent aliasing in the resampled data.
 
-        # Before 2015/12/11: + 0.5 in old grid - 0.5 in new grid
-        # pixNewstart = self.wcs.sky2pix(newstart, unit=unit_start)[0]
-        # offset_oldpix = 0.5 + pixNewstart - 0.5 * pstep
-        # poffset = offset_oldpix / pstep
+        data = _antialias_filter_image(data, oldstep, newstep)
 
-        # Before 2015/09/04 (8ee439c1): + 0.5 in old grid
-        # poffset = (self.wcs.sky2pix(newstart, unit=unit_start)[0] + 0.5) / pstep
+        # For each pixel in the output image, the affine_transform
+        # function calculates the index of the equivalent pixel in the
+        # input image, and interpolates a value of the output pixel
+        # from the surrounding pixels of the input image. It calculates
+        # the input index from the output index as follows:
+        #
+        #   oldpixel = new2old * newpixel + offset
+        #
+        # where new2old is a 2x2 affine transform matrix designed to
+        # multiply a column vector in axis order (Y,X). In our case
+        # the matrix is:
+        #
+        #  new2old = |newstep[0]/oldstep[0],          0           |
+        #            |          0          , newstep[1]/oldstep[0]|
+        #
+        # This scales an output index by newstep to calculate the
+        # corresponding angular offset of that pixel from the origin
+        # of the output array, then divides this by oldstep to compute
+        # the equivalent index offset in the input array.
 
-        # After tests with a gaussian image and HST header, the best precision
-        # is obtained without +/- 0.5. It seems this was also used before
-        # 2015/08/25 (90f70a41)
-        poffset = self.wcs.sky2pix(newstart, unit=unit_start)[0] / pstep
+        new2old = np.array([[newstep[0] / oldstep[0], 0],
+                            [0, newstep[1] / oldstep[1]]])
 
-        data = ndi.affine_transform(data, pstep, poffset,
-                                    output_shape=newdim, order=order)
+        # Also work out the inverse, so that we can convert from
+        # pixels in the current image to the equivalent pixel of the
+        # resampled image.
 
-        newmask = ndi.affine_transform(~self.data.mask, pstep, poffset,
-                                       output_shape=newdim, order=0)
-        mask = np.ma.make_mask(1 - newmask)
+        old2new = np.linalg.inv(new2old)
+
+        # We have been asked to locate sky position 'newstart' at
+        # pixel [0,0] of the resampled array, so when the above equation
+        # is applied to this pixel, we get the following:
+        #
+        #   sky2pix(newstart) = new2old * [0,0] + offset
+        #
+        # Thus the appropriate value for the offset parameter of
+        # affine_transform() is:
+        #
+        #   offset=sky2pix(newstart)
+
+        offset = self.wcs.sky2pix(newstart, unit=unit_start)[0]
+        offset = offset[np.newaxis,:].T   # Make it a column vector
+
+        # For each pixel of the output image, map its index to the
+        # equivalent index of the input image and interpolate a value
+        # for the new pixel from there.
+
+        data = ndimage.affine_transform(data, new2old, offset.flatten(),
+                                        output_shape=newdim, order=order,
+                                        prefilter=order >= 3)
+
+        # Zero the current data array and then fill its masked pixels
+        # with floating point 1.0s, so that we can rotate this in the
+        # the same way as the data to see where the masked areas end
+        # up.
+
+        self.data.data[:,:] = 0.0
+        mask = np.ma.filled(self.data, 1.0)
+
+        # Rotate the array of 1s that represent masked pixels, and fill
+        # corners that weren't mapped from the input array with 1s, so
+        # that we end up flagging them too.
+
+        mask = affine_transform(mask, new2old, offset.flatten(), cval=1.0,
+                                output_shape=newdim, output=np.float)
+
+        # Create new boolean mask in which all pixels that had an
+        # integrated contribution of more than 'cutoff' originally
+        # masked pixels are masked.
+
+        mask = np.greater(mask, cutoff)
+
+        # Also repeat the procedure for the array of variances, if any.
+
+        if self.var is not None:
+            var = ndimage.affine_transform(self.var, new2old, offset.flatten(),
+                                           output_shape=newdim, order=order,
+                                           prefilter=order >= 3)
+        else:
+            var = None
+
+        # Compute the number of old pixel areas per new pixel.
+
+        n = newstep.prod() / oldstep.prod()
+
+        # Scale the flux per pixel by the multiplicative increase in the
+        # area of a pixel?
 
         if flux:
-            data *= newstep.prod() / oldstep.prod()
 
-        step = (newstep * unit_step).to(unit_start).value
-        self.wcs = self.wcs.resample(step, start=newstart, unit=unit_start)
-        self.wcs.naxis1 = newdim[1]
-        self.wcs.naxis2 = newdim[0]
+            # Scale the pixel fluxes by the increase in the area.
+
+            data *= n
+
+            # Each output pixel is the sum of n input pixels. The
+            # variance of a sum of n samples of variance v is n*v.
+
+            if var is not None:
+                var *= n
+
+        # If we haven't been asked to scale the fluxes by the increase
+        # in the area of a pixel, then each output pixel is the mean
+        # of n input pixels. The variance of a mean of n samples of
+        # variance v is v/n.
+
+        else:
+            if var is not None:
+                var /= n
+
+        # Install the resampled data, mask and variance arrays.
+
         self.data = np.ma.array(data, mask=mask)
-        self.var = None
+        self.var = var
+
+        # Get the coordinate reference pixel of the input image,
+        # arranged as a column vector in python (Y,X) order.
+
+        oldcrpix = np.array([[self.wcs.get_crpix2()],
+                             [self.wcs.get_crpix1()]])
+
+        # Compute the updated value of the coordinate reference pixel
+        # in (Y,X) axis order.
+
+        newcrpix = np.dot(old2new, (oldcrpix - offset))
+
+        # Update the world-coordinate description object.
+
+        self.wcs.set_step(newstep)
+        self.wcs.set_naxis1(newdim[1])
+        self.wcs.set_naxis2(newdim[0])
+        self.wcs.set_crpix1(newcrpix[1])
+        self.wcs.set_crpix2(newcrpix[0])
 
     def resample(self, newdim, newstart, newstep, flux=False,
-                 order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
-        """Return resampled image to a new coordinate system.
+                 order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
+                 cutoff=0.25):
+        """Resample an image to change its resolution and its origin.
+
+        This function can be used to decrease or increase the resolution
+        of an image. It can also be used to shift the contents of an
+        image to place a specific (dec,ra) position at pixel [0,0].
+        Finally, it can be used to flip the direction of one or both
+        of the image axes. The resampled copy of the image is
+        returned.
+
+        When this function is used to resample an image to a lower
+        resolution, a low-pass anti-aliasing filter is applied before
+        resampling, to remove all spatial frequencies below half the
+        new sampling rate. This is required to satisfy the Nyquist
+        sampling constraint. It prevents high spatial-frequency noise
+        and other features from being aliased to lower frequency
+        artefacts in the resampled image, and its averaging property
+        is what produces the expected increase in the signal to noise
+        ratio of smoothing to a lower resolution.
 
         Uses :func:`scipy.ndimage.affine_transform`.
 
         Parameters
         ----------
         newdim : int or (int,int)
-            New dimensions. Python notation: (ny,nx)
-        newstart : float or (float, float)
-            New positions (y,x) for the pixel (0,0).
-            If None, old position is used.
+            The desired new dimensions. Python notation: (ny,nx)
+        newstart : (float, float)
+            The sky position (dec,ra) to place at pixel [0,0].
+            If None, the existing position is retained.
         newstep : float or (float, float)
-            New step (dy,dx).
+            The increments in the angle on the sky from one pixel to
+            the next, given as either one increment for both image
+            axes, or two numbers (dy,dx) for the Y and X axes
+            respectively.
+
+            Note that it is conventional for dy to be positive and dx
+            negative, so that when the image is plotted, east appears
+            anticlockwise of north.
+
+            If either of the signs of the two newstep numbers is
+            different from the step size of the original image
+            (queryable with image.wcs.get_step()), then the image will
+            be reflected about that axis. In this case be careful to
+            choose the value of the newstart argument carefully, or
+            the sampled part of the image may be reflected out of the
+            image array.
+
+            If only one number is given for newstep then both axes
+            are given the same resolution, but the signs of the
+            increments will be kept the same as the pixel increments
+            of the original image.
         flux : boolean
-            if flux is True, the flux is conserved.
+            If True, the flux of each pixel is multiplied by the ratio
+            of the areas of the resampled and original pixels. For images
+            whose units are flux per pixel, this keeps the total flux
+            in an area unchanged.
         order : int
-            The order of the spline interpolation, default is 3.
-            The order has to be in the range 0-5.
+            The order of the spline interpolation. This can take any
+            value from 0-5. The default is 1 (linear interpolation).
+            When this function is used to lower the resolution of
+            an image, the low-pass anti-aliasing filter that is applied,
+            makes linear interpolation sufficient.
+            Conversely, when this function is used to increase the
+            image resolution, order=3 might be useful. Higher
+            orders than this will tend to introduce ringing artefacts.
         interp : 'no' | 'linear' | 'spline'
-            if 'no', data median value replaced masked values.
-            if 'linear', linear interpolation of the masked values.
-            if 'spline', spline interpolation of the masked values.
+            If 'no', replace masked data with the median image value.
+            If 'linear', replace masked values using a linear
+            interpolation between neighboring values.
+            if 'spline', replace masked values using a spline
+            interpolation between neighboring values.
         unit_start : astropy.units
-            type of the newstart coordinates.  Degrees by default.
+            The units of the newstart coordinates.  Degrees by default.
         unit_step : astropy.units
-            step unit.  Arcseconds by default.
+            The units of newstep.  Arcseconds by default.
+        cutoff : float
+            After resampling, if the interpolated value of a pixel
+            has an integrated contribution of this many masked pixels,
+            mask the pixel.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
+            The resampled image is returned.
 
         """
         res = self.copy()
         # pb rotation
         res._resample(newdim, newstart, newstep, flux=flux, order=order,
                       interp=interp, unit_start=unit_start,
-                      unit_step=unit_step)
+                      unit_step=unit_step, cutoff=cutoff)
         return res
 
     def _gaussian_filter(self, sigma=3, interp='no'):
@@ -5291,3 +5473,121 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
         data[imin:imax, jmin:jmax] = np.array(
             (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
     return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)
+
+def _antialias_filter_image(data, oldstep, newstep):
+
+    """ Apply an anti-aliasing prefilter to an image to prepare
+    it for subsampling.
+
+    Parameters
+    ----------
+    data : np.ndimage
+        The 2D image to be filtered.
+    oldstep: float or (float, float)
+        The cell size of the input image. This can be a single
+        number for both the X and Y axes, or it can be two
+        numbers in an iterable, ordered like (ystep,xstep)
+    newstep: float or (float, float)
+        The cell size of the output image. This can be a single
+        number for both the X and Y axes, or it can be two
+        numbers in an iterable, ordered like (ystep,xstep)
+    Returns
+    -------
+    out : np.ndimage
+        The filtered version of the input image.
+    """
+
+    # Convert oldstep into a numpy array of two float elements.
+
+    if is_number(oldstep):
+        oldstep = (oldstep, oldstep)
+    oldstep = abs(np.asarray(oldstep, dtype=np.float))
+
+    # Convert newstep into a numpy array of two float elements.
+
+    if is_number(newstep):
+        newstep = (newstep, newstep)
+    newstep = abs(np.asarray(newstep, dtype=np.float))
+
+    # Anti-aliasing is only needed when pixel sizes are being
+    # increased, so return the data array unchanged when pixel sizes
+    # are being decreased or not being changed at all.
+
+    if np.all(newstep <= oldstep):
+        return data
+
+    # Get the dimensions of the image to be filtered.
+
+    nya = data.shape[0]
+    nxa = data.shape[1]
+
+    # Get the dimensions that the resampled image would have if
+    # the entire image were resampled to have a cell size of
+    # newstep. Round this down to an integer by using the //
+    # operator.
+
+    nyb = (oldstep[1] * nya) // newstep[1]
+    nxb = (oldstep[0] * nxa) // newstep[0]
+
+    # The window function should have an odd number of elements,
+    # so that it has a central element of unity that multiplies
+    # the zero frequency component of the image. To ensure this,
+    # round the above dimensions down to even numbers.
+
+    nxw = nxb if nxb % 2 == 0 else nxb-1
+    nyw = nyb if nyb % 2 == 0 else nyb-1
+
+    # Obtain the FFT of the input image.
+
+    fft = np.fft.rfft2(data)
+
+    # When the Y-axis pixel size is being increased, apply an Y
+    # axis window function to the FFT to suppress aliasing in the
+    # Y direction.
+
+    if nyw < nya:
+
+        y_window = np.blackman(nyw)
+
+        # Multiply the positive Y-axis frequencies by the positive
+        # frequency side of the window, transposed to a column vector.
+
+        fft[0:nyw//2,:] *= y_window[np.newaxis,nyw//2:].T
+
+        # Multiply the negative Y-axis frequencies by the negative
+        # frequency side of the window, transposed to a column vector.
+
+        fft[nya-nyw//2:nya,:] *= y_window[np.newaxis,nyw:nyw//2-1:-1].T
+
+        # Zero all pixels along the Y-axis that lie outside the window.
+
+        fft[nyw//2:nya-nyw//2,:] = 0.0+0.0j
+
+    # When the X-axis pixel size is being increased, apply an X
+    # axis window function to the FFT to suppress aliasing in the
+    # X direction.
+
+    if nxw < nxa:
+
+        # Get Blackman window functions for the X and Y directions.
+
+        x_window = np.blackman(nxw)
+
+        # Multiply the positive X-axis frequencies by the positive
+        # frequency side of the window.
+
+        fft[:,0:nxw//2] *= x_window[nxw//2:]
+
+        # Note that there aren't any negative X-axis frequencies to
+        # window, because we are using a real-only FFT which only
+        # computes the positive frequencies.
+
+        # Zero all pixels along the X-axis that lie outside the window.
+
+        fft[:,nxw//2:] = 0.0+0.0j
+
+    # Perform an inverse Fourier transform to get the filtered image
+
+    data = np.fft.irfft2(fft)
+
+    return data
