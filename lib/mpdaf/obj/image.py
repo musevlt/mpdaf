@@ -724,16 +724,35 @@ class Image(DataArray):
             return self.wcs.get_step(unit)
 
     def get_range(self, unit=None):
-        """Return [ [y_min,x_min], [y_max,x_max] ].
+        """Return the minimum and maximum right-ascensions and declinations
+        in the image array.
+
+        Specifically a list is returned with the following contents:
+
+         [dec_min, ra_min, dec_max, ra_max]
+
+        Note that if the Y axis of the image is not parallel to the
+        declination axis, then the 4 returned values will all come
+        from different corners of the image. In particular, note that
+        this means that the coordinates [dec_min,ra_min] and
+        [dec_max,ra_max] will only coincide with pixels in the image
+        if the Y axis is aligned with the declination axis. Otherwise
+        they will be outside the bounds of the image.
 
         Parameters
         ----------
         unit : astropy.units
-            type of the world coordinates
+            The units of the returned angles.
 
         Returns
         -------
-        out : float array
+        out : numpy.ndarray
+           The range of right ascensions and declinations, arranged as
+           [dec_min, ra_min, dec_max, ra_max]. The returned values are
+           either in the units specified in the 'unit' input parameter,
+           or in the units stored in the self.unit property.
+
+
         """
         if self.wcs is not None:
             return self.wcs.get_range(unit)
