@@ -3842,10 +3842,10 @@ class Image(DataArray):
         if self_rot != ima_rot:
             if ima.wcs.get_cd()[0, 0] * self.wcs.get_cd()[0, 0] < 0:
                 theta = 180 - self_rot + ima_rot
-                ima = ima.rotate(theta, reshape=True)
+                ima = ima.rotate(theta)
             else:
                 theta = -self_rot + ima_rot
-                ima = ima.rotate(theta, reshape=True)
+                ima = ima.rotate(theta)
 
         unit = ima.wcs.unit
         self_cdelt = self.wcs.get_step(unit=unit)
