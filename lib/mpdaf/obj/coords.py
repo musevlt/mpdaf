@@ -1122,6 +1122,32 @@ class WCS(object):
             self._logger.warning('different units on x- and y-axes')
         return self.wcs.wcs.cunit[0]
 
+    def set_cd(self, cd):
+        """Install a new coordinate transform matrix.
+
+        This is a 2x2 matrix that is used to convert from the row and
+        column indexes of a pixel in the image array to a coordinate
+        within a flat map-projection of the celestial sphere. It is
+        formerly described in the FITS standard. The matrix
+        should be ordered like
+
+           cd = numpy.array([[CD1_1, CD1_2],
+                             [CD2_1, CD2_2]]),
+
+         where CDj_i are the names of the corresponding FITS
+         keywords.
+
+        Parameters
+        ----------
+        cd : numpy.ndimage
+            The 2x2 coordinate conversion matrix, with its elements
+            ordered for multiplying a column vector in FITS (x,y)
+            axis order.
+
+        """
+        self.wcs.wcs.cd = cd
+        self.wcs.wcs.set()
+
     def set_naxis1(self, n):
         """NAXIS1 setter (first dimension of an image)."""
         self.naxis1 = n
