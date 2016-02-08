@@ -9,7 +9,7 @@ from numpy.testing import assert_almost_equal, assert_array_equal
 from operator import add, sub, mul, div
 from ..utils import (assert_image_equal, generate_image, generate_cube,
                      generate_spectrum)
-
+import time
 
 @attr(speed='fast')
 def test_copy():
@@ -94,19 +94,16 @@ def test_get():
 @attr(speed='fast')
 def test_resize():
     """Image class: testing resize method"""
-    image1 = generate_image()
-    mask = np.ones((6, 5), dtype=bool)
-    data = image1.data.data
-    data[2:4, 1:4] = 8
-    mask[2:4, 1:4] = 0
-    image1.data = np.ma.MaskedArray(data, mask=mask)
+    image1 = generate_image(shape=(6,5), data=2.0, var=0.5, mask=True)
+    image1.data.data[2:4, 1:4] = 8
+    image1.data.mask[2:4, 1:4] = 0
     image1.resize()
     assert_image_equal(image1, shape=(2, 3), start=(2, 1), end=(3, 3))
     nose.tools.assert_equal(image1.sum(), 2 * 3 * 8)
-    nose.tools.assert_equal(image1.get_range()[0][0], image1.get_start()[0])
-    nose.tools.assert_equal(image1.get_range()[0][1], image1.get_start()[1])
-    nose.tools.assert_equal(image1.get_range()[1][0], image1.get_end()[0])
-    nose.tools.assert_equal(image1.get_range()[1][1], image1.get_end()[1])
+    nose.tools.assert_equal(image1.get_range()[0], image1.get_start()[0])
+    nose.tools.assert_equal(image1.get_range()[1], image1.get_start()[1])
+    nose.tools.assert_equal(image1.get_range()[2], image1.get_end()[0])
+    nose.tools.assert_equal(image1.get_range()[3], image1.get_end()[1])
     nose.tools.assert_equal(image1.get_rot(), 0)
 
 
@@ -220,23 +217,53 @@ def test_peak():
 
 @attr(speed='fast')
 def test_rotate():
-    """Image class: testing rotation."""
+    """Image class: testing rotation"""
+
     ima = Image("data/obj/a370II.fits")
+
+    # Get the maximum of the image.
+
+    peak = ima.data.max()
+
+    # Choose an arbitrary pixel in the unrotated image.
+
+    oldy = ima.shape[0] // 4
+    oldx = ima.shape[1] // 4
+
+    # Get the sky coordinates of the chosen pixel.
+
+    (dec, ra) = ima.wcs.pix2sky([oldy, oldx])[0]
+
+    # Set a 3x3 square of pixels in the input image to a large value
+    # that we can later distinguish from other pixels in the rotated
+    # image. We set a square rather than a single pixel to ensure that
+    # the output pixel is interpolated from identically valued pixels
+    # on either side of it from the input image.
+
+    test_value = 10 * peak
+    ima.data[oldy-1:oldy+2, oldx-1:oldx+2] = test_value
+
+    # Get a rotated copy of the image.
+
     ima2 = ima.rotate(30)
 
-    _theta = -30 * np.pi / 180.
-    _mrot = np.zeros(shape=(2, 2), dtype=np.double)
-    _mrot[0] = (np.cos(_theta), np.sin(_theta))
-    _mrot[1] = (-np.sin(_theta), np.cos(_theta))
+    # See where the coordinate matrix of the rotated image says that
+    # the above sky coordinate should now be found after the rotation.
 
-    center = (np.array([ima.shape[0], ima.shape[1]]) + 1) / 2. - 1
-    pixel = np.array([910, 1176])
-    r = np.dot(pixel - center, _mrot)
-    r[0] = r[0] + center[0]
-    r[1] = r[1] + center[1]
-    nose.tools.assert_almost_equal(ima.wcs.pix2sky(pixel)[0][0], ima2.wcs.pix2sky(r)[0][0])
-    nose.tools.assert_almost_equal(ima.wcs.pix2sky(pixel)[0][1], ima2.wcs.pix2sky(r)[0][1])
+    (newy, newx) = ima2.wcs.sky2pix([dec, ra])[0]
 
+    # Check that the value of the nearest pixel to the rotated location
+    # holds the test value that we wrote to the image before rotation.
+
+    nose.tools.assert_almost_equal(ima2.data[int(newy+0.5),int(newx+0.5)],
+                                   test_value, places=6)
+
+    # If both the WCS and the image were rotated wrongly in the same
+    # way, then the above test will incrorrectly claim that the
+    # rotation worked, so now check that the WCS was rotated correctly.
+
+    np.testing.assert_allclose(ima2.wcs.get_rot() - ima.wcs.get_rot(), 30.0,
+                               atol=0.1, rtol=0)
 
 @attr(speed='fast')
 def test_inside():
