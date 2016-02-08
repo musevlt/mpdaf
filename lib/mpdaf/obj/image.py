@@ -3309,30 +3309,35 @@ class Image(DataArray):
         res._rebin_mean(factor, margin)
         return res
 
-    def _med_(self, p, q, pfactor, qfactor):
-        return np.ma.median(self.data[p * pfactor:(p + 1) * pfactor,
-                                      q * qfactor:(q + 1) * qfactor])
-
     def _rebin_median_(self, factor):
         """Shrink the size of the image by factor. New size is an integer
-        multiple of the original size.
+        submultiple of the original size.
 
         Parameters
         ----------
         factor : (int,int)
             Factor in y and x.  Python notation: (ny,nx)
         """
-        assert not np.sometrue(np.mod(self.shape[0], factor[0]))
-        assert not np.sometrue(np.mod(self.shape[1], factor[1]))
-        # new size is an integer multiple of the original size
+        assert np.mod(self.shape[0], factor[0]) == 0
+        assert np.mod(self.shape[1], factor[1]) == 0
+
+        # The new size is an integer multiple of the original size
+
         shape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
-        Nq, Np = np.meshgrid(xrange(shape[1]), xrange(shape[0]))
-        vfunc = np.vectorize(self._med_)
-        data = vfunc(Np, Nq, factor[0], factor[1])
-        mask = self.data.mask.reshape(shape[0], factor[0],
-                                      shape[1], factor[1])\
-            .sum(1).sum(2) / factor[0] / factor[1]
-        self.data = np.ma.array(data, mask=mask)
+
+        # Note that the original implementation used np.vectorize(),
+        # rather than a loop, but this couldn't cope with returning
+        # masked values.
+
+        data = np.ma.empty(shape)
+        xfactor = factor[1]
+        yfactor = factor[0]
+        for x in range(shape[1]):
+            for y in range(shape[0]):
+                data[y,x] = np.ma.median(
+                    self.data[y * yfactor:(y + 1) * yfactor,
+                              x * xfactor:(x + 1) * xfactor])
+        self.data = data
         self.var = None
         self.wcs = self.wcs.rebin(factor)
 
