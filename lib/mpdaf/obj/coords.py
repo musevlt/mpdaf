@@ -827,18 +827,40 @@ class WCS(object):
         return np.array([dy, dx])
 
     def get_range(self, unit=None):
-        """Return [ [dec_min,ra_min], [dec_max,ra_max] ]
+
+        """Return the minimum and maximum right-ascensions and declinations
+        in the image array.
+
+        Specifically a list is returned with the following contents:
+
+         [dec_min, ra_min, dec_max, ra_max]
+
+        Note that if the Y axis of the image is not parallel to the
+        declination axis, then the 4 returned values will all come
+        from different corners of the image. In particular, note that
+        this means that the coordinates [dec_min,ra_min] and
+        [dec_max,ra_max] will only coincide with pixels in the image
+        if the Y axis is aligned with the declination axis. Otherwise
+        they will be outside the bounds of the image.
 
         Parameters
         ----------
         unit : astropy.units
-            type of the world coordinates
+            The units of the returned angles.
+
+        Returns
+        -------
+        out : numpy.ndarray
+           The range of right ascensions and declinations, arranged as
+           [dec_min, ra_min, dec_max, ra_max]. The returned values are
+           either in the units specified in the 'unit' input parameter,
+           or in the units stored in the self.unit property.
 
         """
         pixcrd = [[0, 0], [self.naxis2 - 1, 0], [0, self.naxis1 - 1],
                   [self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd, unit=unit)
-        return np.vstack([pixsky.min(axis=0), pixsky.max(axis=0)])
+        return np.hstack([pixsky.min(axis=0), pixsky.max(axis=0)])
 
     def get_start(self, unit=None):
         """Return the [dec,ra] coordinates of pixel (0,0).
