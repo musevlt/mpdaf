@@ -959,21 +959,29 @@ class WCS(object):
         return (north * u.rad).to(unit).value
 
     def get_cd(self):
-        """Return the CD matrix."""
-        try:
-            return self.wcs.wcs.cd
-        except:
-            try:
-                # cd = self.wcs.wcs.pc
-                # cd[0,:] *= self.wcs.wcs.cdelt[0]
-                # cd[1,:] *= self.wcs.wcs.cdelt[1]
-                cdelt = self.wcs.wcs.get_cdelt()
-                cd = self.wcs.wcs.get_pc().__copy__()
-                cd[0, :] *= cdelt[0]
-                cd[1, :] *= cdelt[1]
-                return cd
-            except:
-                raise IOError('No standard WCS')
+        """Return the coordinate conversion matrix (CD). This is a 2x2 matrix
+           that can be used to convert from the column and row indexes
+           of a pixel in the image array to a coordinate within a flat
+           map-projection of the celestial sphere. For example, if the
+           celestial coordinates of the observation are
+           right-ascension and declination, and r and d denote their
+           gnonomic TAN projection onto a flat plane, then a pixel at row
+           and column [col,row] has [r,d] coordinates given by:
+
+           (r,d) = np.dot(get_cd(), (col - get_crpix1(), row - get_crpix2())
+
+        Returns
+        -------
+        out : nump.ndarray
+           A 2D array containing the coordinate transformation matrix,
+           arranged such that the elements described in the FITS
+           standard are arranged as follows:
+
+              [[CD_11, CD_12]
+               [CD_21, CD_22]]
+
+        """
+        return self.wcs.pixel_scale_matrix
 
     def get_naxis1(self):
         """Return the value of the FITS NAXIS1 parameter.
