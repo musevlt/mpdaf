@@ -258,30 +258,48 @@ class Image(DataArray):
             copy=copy, dtype=dtype, **kwargs)
 
     def resize(self):
-        """Resizes the image to have a minimum number of masked values."""
+        """Crops the image to remove any margins that are completely masked."""
+
         if self.data is not None:
-            ksel = np.where(~self.data.mask)
-            item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),
-                    slice(min(ksel[1]), max(ksel[1]) + 1, None))
+
+            # How many columns and rows are there in the image?
+
+            nrow = self.data.shape[0]
+            ncol = self.data.shape[1]
+
+            # Get the indexes of rows with at least one unmasked pixel.
+
+            used_rows = np.where(np.ma.count_masked(self.data,1) < ncol)[0]
+
+            # Get the indexes of columns with at least one unmasked pixel.
+
+            used_cols = np.where(np.ma.count_masked(self.data,0) < nrow)[0]
+
+            # Create a 2D slice that encloses all used rows and
+            # columns. If there are no umasked elements, then arrange
+            # to keep the first masked element, so that we are always
+            # left with valid 2D array.
+
+            if len(used_rows) > 0 and len(used_cols) > 0:
+                item = (slice(min(used_rows), max(used_rows) + 1, None),
+                        slice(min(used_cols), max(used_cols) + 1, None))
+            else:
+                item = (slice(0,1,None),slice(0,1,None))
+
+            # Extract the above 2D slice.
 
             self.data = self.data[item]
-            if is_int(item[0]):
-                self.data = self.data[np.newaxis, :]
-            elif is_int(item[1]):
-                self.data = self.data[:, np.newaxis]
-
             if self.var is not None:
                 self.var = self.var[item]
-                if is_int(item[0]):
-                    self.var = self.var[np.newaxis, :]
-                elif is_int(item[1]):
-                    self.var = self.var[:, np.newaxis]
+
+            # Shift the reference pixel of the world coordinate information
+            # to account for any change to the array indexes.
 
             try:
                 self.wcs = self.wcs[item[0], item[1]]
             except:
                 self.wcs = None
-                self._logger.warning("wcs not copied")
+                self._logger.warning("Wcs not copied")
 
     def __add__(self, other):
         """Operator +.
