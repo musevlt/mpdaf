@@ -85,24 +85,6 @@ class TestWCS(object):
         wcs2.set_crval2(-2, unit=2 * u.pix)
         assert_array_equal(wcs2.get_crval2(), -4.0)
 
-    @attr(speed='fast')
-    def test_rotation(self):
-        """WCS class: testing rotation"""
-        wcs = WCS(crval=(0, 0), rot=20, shape=(5, 6))
-        wcs.rotate(-20)
-        nose.tools.assert_almost_equal(wcs.get_rot(), 0)
-
-    @attr(speed='fast')
-    def test_resample(self):
-        """WCS class: testing resampling method"""
-        wcs = WCS(crval=(0, 0), rot=20, shape=(5, 6), crpix=(1, 1))
-        wcs2 = wcs.resample(start=[1, 0.5], step=[0.25, 0.25])
-        assert_array_equal(wcs2.get_step(), [0.25, 0.25])
-        assert_array_equal(wcs2.get_start(), [1.0, 0.5])
-        assert_array_equal(wcs2.naxis1, 22)
-        assert_array_equal(wcs2.naxis2, 16)
-
-
 class TestWaveCoord(object):
 
     @attr(speed='fast')
