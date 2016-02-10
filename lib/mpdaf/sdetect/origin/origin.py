@@ -1682,6 +1682,31 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename):
     Date  : Dec, 16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    """
+    Function to create the final catlogue of sources with their parameters
+
+    Parameters
+    ----------
+    Cat              : Catalogue of parameters of detected emission lines:
+                       ID x_circle y_circle x_centroid y_centroid nb_lines 
+                       x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual
+                       flux num_line RA DEC
+    Cat_est_line_raw : list of arrays
+                       Catalogue of estimated lines
+    correl            : array
+                        Cube of T_GLR values
+    wave              : mpdaf.obj.WaveCoord
+                        Spectral coordinates
+    filename          : string
+                        Name of the cube
+
+    Returns
+    -------
+    sources : list of mpdaf.sdetect.Source
+              List of sources
+              
+    Date : Dec, 16 2015
+    """
     print 'Construct_Object_Catalogue'
     t0 = time.time()
     sources = []
@@ -1695,15 +1720,22 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename):
     fmt = ['.2f','.2f','.1f','.1f','.1e','.1e','.1e','.1f','.1f','d']
 
     step_wave = wave.get_step(unit=u.angstrom)
+    origin = ('ORIGIN', 'V1.1', os.path.basename(filename))
+    
+    cube = Cube(filename)
+    
     for i in np.unique(Cat['ID']):
         # Source = group
         E = Cat[Cat['ID']==i]
-        origin = ('ORIGIN', 'V1.1', filename)
         src = Source.from_data(i, E['RA'][0], E['DEC'][0], origin)
         src.add_attr('x', E['x_centroid'][0], desc='x position in pixel',
                      unit=u.pix, fmt='d')
         src.add_attr('y', E['y_centroid'][0], desc='y position in pixel',
                      unit=u.pix, fmt='d')
+                     
+        src.add_white_image(cube)
+        src.add_cube(cube, 'MUSE_CUBE')
+        
         # Lines of this group
         wave_pix = E['z']
         GLR = E['T_GLR']
@@ -1740,11 +1772,19 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename):
             src.spectra['LINE{:04d}'.format(j+1)] = sp
             sp = Spectrum(wave=wave[z1:z2], data=c)
             src.spectra['CORR{:04d}'.format(j+1)] = sp
+            src.add_narrow_band_image_lbdaobs(cube,
+                                              'NB_LINE{:04d}'.format(j+1),
+                                              w, width=2*profil_FWHM, 
+                                              is_sum=True, subtract_off=True)
+            
+        
+
+#    for key in hstlist.keys():
+#        src.add_image(hstlist[key],'HST_'+key, rotate=True)
            
         sources.append(src)
     print '    %0.1fs'%(time.time()-t0)
     return sources
-
 
 
 if __name__ == '__main__':
