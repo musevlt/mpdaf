@@ -179,7 +179,7 @@ class Catalog(Table):
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
                 dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
-                units_lines = [unit['_'.join(name.split('_')[1:])] for name in names_lines]
+                units_lines = [unit['_'.join(name.split('_')[1:])] for name in names_lines]    
             elif fmt == 'working':
                 lmax = max(llines)
                 d = {}
@@ -252,8 +252,7 @@ class Catalog(Table):
                     for typ in dtype_lines:
                         row += [INVALID[typ.type]]
                 else:
-
-                    if fmt == 'default':
+                    if fmt == 'default' and 'LINE' in source.lines.colnames:
                         copy = source.lines['LINE'].data.data
                         for i in range(len(source.lines)):
                             source.lines['LINE'][i] = source.lines['LINE'][i].replace('_', '')
