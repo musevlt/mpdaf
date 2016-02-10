@@ -2449,11 +2449,15 @@ class Cube(DataArray):
             unit = 'pix'
         else:
             unit = str(unit_wave)
+        if self.filename is None:
+            f = ''
+        else:
+            f = os.path.basename(self.filename)
         add_mpdaf_method_keywords(ima.primary_header,
                                   "cube.get_image",
                                   ['cube', 'lbda1', 'lbda2', 'is_sum', 'subtract_off',
                                    'margin', 'fband'],
-                                  [os.path.basename(self.filename), l1, l2,
+                                  [f, l1, l2,
                                    is_sum, subtract_off, margin, fband],
                                   ['cube',
                                    'min wavelength (%s)'%str(unit),
@@ -2549,7 +2553,8 @@ class Cube(DataArray):
         return Cube(wcs=wcs, wave=wave, unit=self.unit, copy=False,
                     data=np.ma.masked_invalid(data), var=var,
                     data_header=pyfits.Header(self.data_header),
-                    primary_header=pyfits.Header(self.primary_header))
+                    primary_header=pyfits.Header(self.primary_header),
+                    filename=self.filename)
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
                                 unit_radius=u.arcsec):
