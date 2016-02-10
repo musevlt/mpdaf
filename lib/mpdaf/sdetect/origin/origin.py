@@ -1071,7 +1071,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
     
         # Construction of the 3D atom corresponding to the spectral profile
         z1 = max(0, z0 - longz)
-        z2 = min(sigma.shape[0], long0 + z0 - longz)
+        z2 = min(cube_raw.shape[0], long0 + z0 - longz)
         atom[z1-z0+longz:z2-z0+longz,:,:] = profil1[z1-z0+longz:z2-z0+longz,
                                                     np.newaxis, np.newaxis] \
                                             * PSF_Moffat[z1:z2,:,:]
