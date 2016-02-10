@@ -2,6 +2,7 @@
 
 import multiprocessing
 import numpy as np
+import os.path
 import sys
 import time
 import types
@@ -15,6 +16,7 @@ from .image import Image
 from .objs import is_float, is_int, UnitArray, UnitMaskedArray
 from .spectrum import Spectrum
 from ..tools import deprecated
+from ..tools.fits import add_mpdaf_method_keywords
 
 __all__ = ['iter_spe', 'iter_ima', 'Cube']
 
@@ -2441,6 +2443,25 @@ class Cube(DataArray):
             ima.data -= off_im.data
             if ima.var is not None:
                 ima.var += off_im.var
+                
+        #add input in header
+        if unit_wave is None:
+            unit = 'pix'
+        else:
+            unit = str(unit_wave)
+        add_mpdaf_method_keywords(ima.primary_header,
+                                  "cube.get_image",
+                                  ['cube', 'lbda1', 'lbda2', 'is_sum', 'subtract_off',
+                                   'margin', 'fband'],
+                                  [os.path.basename(self.filename), l1, l2,
+                                   is_sum, subtract_off, margin, fband],
+                                  ['cube',
+                                   'min wavelength (%s)'%str(unit),
+                                   'max wavelength (%s)'%str(unit),
+                                   'sum/average',
+                                   'subtracting off nearby data',
+                                   'off-band margin',
+                                   'off_band size'])
 
         return ima
 
