@@ -9,6 +9,7 @@ from numpy.testing import assert_almost_equal, assert_array_equal
 from operator import add, sub, mul, div
 from ..utils import (assert_image_equal, generate_image, generate_cube,
                      generate_spectrum)
+import scipy.ndimage as ndi
 import time
 
 @attr(speed='fast')
@@ -219,51 +220,130 @@ def test_peak():
 def test_rotate():
     """Image class: testing rotation"""
 
-    ima = Image("data/obj/a370II.fits")
+    # Read a test image.
+
+    before = Image("data/obj/a370II.fits")
 
     # Get the maximum of the image.
 
-    peak = ima.data.max()
+    peak = before.data.max()
 
-    # Choose an arbitrary pixel in the unrotated image.
+    # Choose a few test pixels at different locations in the input
+    # image.
 
-    oldy = ima.shape[0] // 4
-    oldx = ima.shape[1] // 4
+    old_pixels = np.array([
+        [before.shape[0] // 4,     before.shape[1] // 4],
+        [before.shape[0] // 4,     (3*before.shape[1]) // 4],
+        [(3*before.shape[0]) // 4, before.shape[1] // 4],
+        [(3*before.shape[0]) // 4, (3*before.shape[1]) // 4],
+        [before.shape[0] // 2,     before.shape[1] // 2]])
 
-    # Get the sky coordinates of the chosen pixel.
+    # Get the sky coordinates of the test pixels.
 
-    (dec, ra) = ima.wcs.pix2sky([oldy, oldx])[0]
+    coords = before.wcs.pix2sky(old_pixels)
 
-    # Set a 3x3 square of pixels in the input image to a large value
-    # that we can later distinguish from other pixels in the rotated
-    # image. We set a square rather than a single pixel to ensure that
-    # the output pixel is interpolated from identically valued pixels
-    # on either side of it from the input image.
+    # Set 3x3 squares of pixels around each of the test pixels
+    # in the input image to a large value that we can later
+    # distinguish from other pixels in the rotated image. We
+    # set a square rather than a single pixel to ensure that
+    # the output pixel is interpolated from identically valued
+    # pixels on either side of it in the input image.
 
     test_value = 10 * peak
-    ima.data[oldy-1:oldy+2, oldx-1:oldx+2] = test_value
+    for pixel in old_pixels:
+        py = pixel[0]
+        px = pixel[1]
+        before.data[py-1:py+2, px-1:px+2] = test_value
 
     # Get a rotated copy of the image.
 
-    ima2 = ima.rotate(30)
+    after = before.rotate(30)
 
-    # See where the coordinate matrix of the rotated image says that
-    # the above sky coordinate should now be found after the rotation.
+    # See in which pixels the coordinate matrix of the rotated
+    # image says that the test sky coordinates should now be found
+    # after the rotation.
 
-    (newy, newx) = ima2.wcs.sky2pix([dec, ra])[0]
+    new_pixels = np.asarray(np.rint(after.wcs.sky2pix(coords)), dtype=int)
 
-    # Check that the value of the nearest pixel to the rotated location
-    # holds the test value that we wrote to the image before rotation.
+    # Check that the values of the nearest pixels to the rotated
+    # locations hold the test value that we wrote to the image before
+    # rotation.
 
-    nose.tools.assert_almost_equal(ima2.data[int(newy+0.5),int(newx+0.5)],
-                                   test_value, places=6)
+    for pixel in new_pixels:
+        py = pixel[0]
+        px = pixel[1]
+        nose.tools.assert_almost_equal(after.data[py,px], test_value, places=6)
 
     # If both the WCS and the image were rotated wrongly in the same
     # way, then the above test will incrorrectly claim that the
     # rotation worked, so now check that the WCS was rotated correctly.
 
-    np.testing.assert_allclose(ima2.wcs.get_rot() - ima.wcs.get_rot(), 30.0,
-                               atol=0.1, rtol=0)
+    np.testing.assert_allclose(after.wcs.get_rot() - before.wcs.get_rot(), 30.0)
+
+@attr(speed='fast')
+def test_resample():
+    """Image class: Testing the resample method"""
+
+    # Read a test image.
+
+    before = Image("data/obj/a370II.fits")
+
+    # What scale factors shall we multiply the input step size by?
+
+    xfactor = 3.5
+    yfactor = 4.3
+
+    # Get the maximum of the input image.
+
+    peak = before.data.max()
+
+    # Choose a few test pixels at different locations in the input
+    # image.
+
+    old_pixels = np.array([
+        [before.shape[0] // 4,     before.shape[1] // 4],
+        [before.shape[0] // 4,     (3*before.shape[1]) // 4],
+        [(3*before.shape[0]) // 4, before.shape[1] // 4],
+        [(3*before.shape[0]) // 4, (3*before.shape[1]) // 4],
+        [before.shape[0] // 2,     before.shape[1] // 2]])
+
+    # Get the sky coordinates of the test pixels.
+
+    coords = before.wcs.pix2sky(old_pixels)
+
+    # Assign a large value to each of the above test pixels, so that
+    # we can distinguish the smoothed version of it in the output
+    # image.
+
+    test_value = 2 * peak
+    for pixel in old_pixels:
+        py = pixel[0]
+        px = pixel[1]
+        before.data[py, px] = test_value
+
+    # Resample the image.
+
+    newstep = np.array(
+        [before.wcs.get_step(unit=u.arcsec)[0]*yfactor,
+         before.wcs.get_step(unit=u.arcsec)[1]*xfactor])
+    after = before.resample(newdim=before.shape, newstart=None,
+                            newstep=newstep, flux=False)
+
+    # See in which pixels the coordinate matrix of the rotated
+    # image says that the test sky coordinates should now be found
+    # after the rotation.
+
+    new_pixels = np.asarray(np.rint(after.wcs.sky2pix(coords)), dtype=int)
+
+    # Check that the first image moments of the resampled test pixels
+    # are at the expected places.
+
+    pad = 10
+    for pixel in new_pixels:
+        py = pixel[0]
+        px = pixel[1]
+        offset = ndi.center_of_mass(after.data[py-pad:py+pad+1, px-pad:px+pad+1])
+        np.testing.assert_allclose(offset, np.array([pad,pad]), rtol=0, atol=0.1)
 
 @attr(speed='fast')
 def test_inside():
