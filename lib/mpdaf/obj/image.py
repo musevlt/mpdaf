@@ -1190,10 +1190,12 @@ class Image(DataArray):
                             0.5 / newfx * np.sign(oldstep[1])])
 
         # Get the coordinate reference pixel of the input image,
-        # arranged as a column vector in python (Y,X) order.
+        # arranged as a column vector in python (Y,X) order. Note that
+        # crpix contains FITS pixel indexes which are 1 greater than
+        # the corresponding python pixel indexes.
 
-        oldcrpix = np.array([[self.wcs.get_crpix2()],
-                             [self.wcs.get_crpix1()]])
+        oldcrpix = np.array([[self.wcs.get_crpix2() - 1],
+                             [self.wcs.get_crpix1() - 1]])
 
         # Create a matrix for scaling a column vector in (X,Y)
         # axis order, by the current X-axis and Y-axis pixel
@@ -1402,8 +1404,13 @@ class Image(DataArray):
         self.wcs.set_cd(newcd)
         self.wcs.set_naxis1(newdims[1])
         self.wcs.set_naxis2(newdims[0])
-        self.wcs.set_crpix1(newcrpix[1])
-        self.wcs.set_crpix2(newcrpix[0])
+
+        # Record the new value of the coordinate reference pixel,
+        # being careful to convert from python 0-relative pixel
+        # indexes to FITS 1-relative pixel indexes.
+
+        self.wcs.set_crpix1(newcrpix[1] + 1)
+        self.wcs.set_crpix2(newcrpix[0] + 1)
 
     def rotate(self, theta=0.0, flux=False, interp='no', cutoff=0.25):
         """Rotate the image using affine transforms and spline interpolation
@@ -3493,8 +3500,9 @@ class Image(DataArray):
         # Ensure that newstart is an array of values that have the
         # same units as the WCS object.
 
-        newstart = (np.asarray(newstart, dtype=np.float)
-                    * unit_start).to(self.wcs.unit).value
+        if unit_start is not None:
+            newstart = (np.asarray(newstart, dtype=np.float)
+                        * unit_start).to(self.wcs.unit).value
 
         # Get the current index increments of the 2 axes.
 
@@ -3511,8 +3519,11 @@ class Image(DataArray):
         # Ensure that newstep is an array of values that have the
         # same units as the WCS object.
 
-        newstep = (np.asarray(newstep, dtype=np.float)
-                   * unit_step).to(self.wcs.unit).value
+        if unit_step is not None:
+            newstep = (np.asarray(newstep, dtype=np.float)
+                       * unit_step).to(self.wcs.unit).value
+        else:
+            newstep = np.asarray(newstep, dtype=np.float)
 
         # Get a copy of the data array with masked values filled.
 
@@ -3639,10 +3650,12 @@ class Image(DataArray):
         self.var = var
 
         # Get the coordinate reference pixel of the input image,
-        # arranged as a column vector in python (Y,X) order.
+        # arranged as a column vector in python (Y,X) order. Note that
+        # crpix contains FITS pixel indexes which are 1 greater than
+        # the corresponding python pixel indexes.
 
-        oldcrpix = np.array([[self.wcs.get_crpix2()],
-                             [self.wcs.get_crpix1()]])
+        oldcrpix = np.array([[self.wcs.get_crpix2() - 1],
+                             [self.wcs.get_crpix1() - 1]])
 
         # Compute the updated value of the coordinate reference pixel
         # in (Y,X) axis order.
@@ -3654,8 +3667,13 @@ class Image(DataArray):
         self.wcs.set_step(newstep)
         self.wcs.set_naxis1(newdim[1])
         self.wcs.set_naxis2(newdim[0])
-        self.wcs.set_crpix1(newcrpix[1])
-        self.wcs.set_crpix2(newcrpix[0])
+
+        # Record the new value of the coordinate reference pixel,
+        # being careful to convert from python 0-relative pixel
+        # indexes to FITS 1-relative pixel indexes.
+
+        self.wcs.set_crpix1(newcrpix[1] + 1)
+        self.wcs.set_crpix2(newcrpix[0] + 1)
 
     def resample(self, newdim, newstart, newstep, flux=False,
                  order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
