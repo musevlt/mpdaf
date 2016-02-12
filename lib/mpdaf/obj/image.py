@@ -258,7 +258,11 @@ class Image(DataArray):
             filename=filename, ext=ext, wcs=wcs, unit=unit, data=data, var=var,
             copy=copy, dtype=dtype, **kwargs)
 
+    @deprecated('The resize method is deprecated. Please use crop instead.')
     def resize(self):
+        return self.crop()
+
+    def crop(self):
         """Crops the image to remove any margins that are completely masked."""
 
         if self.data is not None:
