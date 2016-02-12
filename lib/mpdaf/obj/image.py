@@ -1224,6 +1224,26 @@ class Image(DataArray):
         newcd = np.dot(oldcd, np.dot(np.linalg.inv(oldscale),
                                      np.dot(mrot, newscale)))
 
+        # Where should north end up after we have rotated the image?
+
+        sky_angle = self.wcs.get_rot(unit=u.rad) + angle
+
+        # Create a rotation matrix that multiplies the sky by the
+        # above angle.
+
+        sinq = np.sin(sky_angle)
+        cosq = np.cos(sky_angle)
+        sky_rot = np.array([[cosq, -sinq],
+                            [sinq,  cosq]])
+
+        # Compute the coordinate transformation matrix that will
+        # pertain to the output image. We can interpolate to any grid,
+        # so take the opportunity to zero any shear terms that were in
+        # the original CD matrix, and just create a CD matrix that
+        # rotates and scales the sky.
+
+        newcd = np.dot(sky_rot, newscale)
+
         # To fill the pixels of the output image we need a coordinate
         # transformation matrix to transform pixel indexes of the
         # rotated image back to pixel indexes of the input image. To
