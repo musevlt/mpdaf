@@ -1036,7 +1036,7 @@ class Image(DataArray):
             test_y = np.logical_or(y < y_min, y > y_max)
             test = np.logical_or(test_x, test_y)
             self.data.mask = np.logical_or(self.data.mask, test)
-            self.resize()
+            self.crop()
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg):
         """Return truncated image.
