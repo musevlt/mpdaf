@@ -1072,20 +1072,37 @@ class Cube(DataArray):
         return step
 
     def get_range(self, unit_wave=None, unit_wcs=None):
-        """Return [ [lbda_min,y_min,x_min], [lbda_max,y_max,x_max] ].
+        """Return the range of wavelengths, declinations and right ascensions
+        in the cube.
+
+        The minimum and maximum coordinates are returned as an array
+        in the following order:
+
+          [lbda_min, dec_min, ra_min, lbda_max, dec_max, ra_max]
+
+        Note that when the rotation angle of the image on the sky is
+        not zero, dec_min, ra_min, dec_max and ra_max are not at the
+        corners of the image.
 
         Parameters
         ----------
         unit_wave : astropy.units
-            wavelengths unit.
+            The wavelengths units.
         unit_wcs : astropy.units
-            world coordinates unit.
+            The angular units of the returned sky coordinates.
+
+        Returns
+        -------
+        out : numpy.ndarray
+           The range of right ascensions declinations and wavelengths,
+           arranged as [lbda_min, dec_min, ra_min, lbda_max, dec_max, ra_max].
 
         """
-        r = np.empty((2, 3))
-        r[:, 0] = self.wave.get_range(unit_wave)
-        r[:, 1:] = self.wcs.get_range(unit_wcs)
-        return r
+
+        wcs_range = self.wcs.get_range(unit_wcs)
+        wave_range = self.wave.get_range(unit_wave)
+        return np.array([wave_range[0], wcs_range[0], wcs_range[1],
+                         wave_range[1], wcs_range[2], wcs_range[3]])
 
     def get_start(self, unit_wave=None, unit_wcs=None):
         """Return [lbda,y,x] corresponding to pixel (0,0,0).
@@ -1399,7 +1416,7 @@ class Cube(DataArray):
         ----------
         coord : array
             array containing the sub-cube boundaries
-            [[lbda_min,y_min,x_min], [lbda_max,y_max,x_max]]
+            [lbda_min,y_min,x_min,lbda_max,y_max,x_max]
             (output of mpdaf.obj.cube.get_range)
         mask : boolean
             if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
@@ -1409,12 +1426,12 @@ class Cube(DataArray):
             world coordinates unit.  If None, inputs are in pixels
 
         """
-        lmin = coord[0][0]
-        y_min = coord[0][1]
-        x_min = coord[0][2]
-        lmax = coord[1][0]
-        y_max = coord[1][1]
-        x_max = coord[1][2]
+        lmin  = coord[0]
+        y_min = coord[1]
+        x_min = coord[2]
+        lmax  = coord[3]
+        y_max = coord[4]
+        x_max = coord[5]
 
         skycrd = [[y_min, x_min], [y_min, x_max],
                   [y_max, x_min], [y_max, x_max]]

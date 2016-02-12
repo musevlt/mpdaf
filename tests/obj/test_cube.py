@@ -177,7 +177,7 @@ def test_mask():
 def test_truncate():
     """Cube class: testing truncation"""
     cube1 = generate_cube(data=2, wave=WaveCoord(crval=1))
-    coord = [[2, 0, 1], [5, 1, 3]]
+    coord = [2, 0, 1, 5, 1, 3]
     cube2 = cube1.truncate(coord, unit_wcs=cube1.wcs.unit,
                            unit_wave=cube1.wave.unit)
     assert_array_equal(cube2.shape, (4, 2, 3))
