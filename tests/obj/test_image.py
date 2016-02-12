@@ -93,12 +93,12 @@ def test_get():
 
 
 @attr(speed='fast')
-def test_resize():
-    """Image class: testing resize method"""
+def test_crop():
+    """Image class: testing crop method"""
     image1 = generate_image(shape=(6,5), data=2.0, var=0.5, mask=True)
     image1.data.data[2:4, 1:4] = 8
     image1.data.mask[2:4, 1:4] = 0
-    image1.resize()
+    image1.crop()
     assert_image_equal(image1, shape=(2, 3), start=(2, 1), end=(3, 3))
     nose.tools.assert_equal(image1.sum(), 2 * 3 * 8)
     nose.tools.assert_equal(image1.get_range()[0], image1.get_start()[0])
