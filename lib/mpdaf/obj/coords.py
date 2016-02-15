@@ -981,7 +981,21 @@ class WCS(object):
                [CD_21, CD_22]]
 
         """
-        return self.wcs.pixel_scale_matrix
+
+        # The documentation for astropy.wcs.Wcsprm indicates that
+        # get_cdelt() and get_pc() work:
+        #
+        # "even when the header specifies the linear transformation
+        #  matrix in one of the alternative CDi_ja or CROTAia
+        #  forms. This is useful when you want access to the linear
+        #  transformation matrix, but don't care how it was specified
+        #  in the header."
+        #
+        # So to ensure that get_cd() always returns the current CD
+        # matrix, get CDELT and PC and convert them to the equivalent
+        # CD matrix.
+
+        return np.dot(np.diag(self.wcs.wcs.get_cdelt()), self.wcs.wcs.get_pc())
 
     def get_naxis1(self):
         """Return the value of the FITS NAXIS1 parameter.
