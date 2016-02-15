@@ -1379,19 +1379,13 @@ class Image(DataArray):
 
             newdata *= n
 
-            # Each output pixel is the sum of n input pixels. The
-            # variance of a sum of n samples of variance v is n*v.
+            # Each output pixel is an interpolation between the
+            # nearest neighboring pixels, so the variance is unchanged
+            # by resampling. Scaling the pixel values by n, however,
+            # increases the variances by n**2.
 
             if newvar is not None:
-                newvar *= n
-
-        # When not scaling fluxes by pixel area, each output pixel is
-        # the mean of n input pixels. The variance of a mean of n
-        # samples of variance v is v/n.
-
-        else:
-            if newvar is not None:
-                newvar /= n
+                newvar *= n**2
 
         # Install the rotated data array, mask and variances.
 
