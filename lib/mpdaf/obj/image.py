@@ -3581,16 +3581,14 @@ class Image(DataArray):
                                         prefilter=order >= 3)
 
         # Zero the current data array and then fill its masked pixels
-        # with floating point 1.0s, so that we can rotate this in the
-        # the same way as the data to see where the masked areas end
-        # up.
+        # with floating point 1.0s, so that we can resample this in
+        # the the same way as the data to see where the masked areas
+        # end up.
 
         self.data.data[:,:] = 0.0
         mask = np.ma.filled(self.data, 1.0)
 
-        # Rotate the array of 1s that represent masked pixels, and fill
-        # corners that weren't mapped from the input array with 1s, so
-        # that we end up flagging them too.
+        # Resample the array of 1s that represent masked pixels.
 
         mask = affine_transform(mask, new2old, offset.flatten(), cval=1.0,
                                 output_shape=newdim, output=np.float)
