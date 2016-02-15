@@ -5608,21 +5608,32 @@ def _antialias_filter_image(data, oldstep, newstep):
     nya = data.shape[0]
     nxa = data.shape[1]
 
-    # Get the dimensions that the resampled image would have if
-    # the entire image were resampled to have a cell size of
-    # newstep. Round this down to an integer by using the //
-    # operator.
+    # If newstep[1] is in degrees, then the pixel interval of that
+    # size along the X axis can correctly sample spatial frequencies
+    # of up to 1/(2*newstep[1]) cycles per degree along the X-axis. We
+    # need a window function for the X-axis that will cut-off all
+    # frequencies in the FFT above that frequency. The pixel width of
+    # the FFT is 1/(nxa*oldstep[1]), so we need the window to go
+    # to zero at pixel nx, relative to the FFT origin, where
+    # nx/(nxa*oldstep[1]) = 1/(2*newstep[1]). This gives:
+    #
+    #  nx = (nxa * oldstep[1]) / (2*newstep[1])
+    #
+    # We want a window function that is symmetric with nx+1+nx pixels
+    # in width (nx window function pixels that multiply negative
+    # frequency pixels, 1 pixel at the center that is unity and
+    # multiplies the origin pixel of the FFT, and nx pixels that
+    # multiply positive frequency pixels. So we need a window function
+    # of width:
+    #
+    #  wx = (nxa*oldstep[1])/newstep[1] + 1
+    #
+    # To ensure that this is odd, we divide the first part by 2, using
+    # integer division, and multiply it back up by 2 to yield an even
+    # number.
 
-    nyb = (oldstep[1] * nya) // newstep[1]
-    nxb = (oldstep[0] * nxa) // newstep[0]
-
-    # The window function should have an odd number of elements,
-    # so that it has a central element of unity that multiplies
-    # the zero frequency component of the image. To ensure this,
-    # round the above dimensions down to even numbers.
-
-    nxw = nxb if nxb % 2 == 0 else nxb-1
-    nyw = nyb if nyb % 2 == 0 else nyb-1
+    nyw = 2 * ((oldstep[1] * nya) // (2*newstep[1])) + 1
+    nxw = 2 * ((oldstep[0] * nxa) // (2*newstep[0])) + 1
 
     # Obtain the FFT of the input image.
 
@@ -5639,16 +5650,17 @@ def _antialias_filter_image(data, oldstep, newstep):
         # Multiply the positive Y-axis frequencies by the positive
         # frequency side of the window, transposed to a column vector.
 
-        fft[0:nyw//2,:] *= y_window[np.newaxis,nyw//2:].T
+        fft[0:nyw//2+1,:] *= y_window[np.newaxis,nyw//2:].T
 
-        # Multiply the negative Y-axis frequencies by the negative
-        # frequency side of the window, transposed to a column vector.
+        # Multiply the negative Y-axis frequencies (not including
+        # zero, which was multiplied above) by the pixels 1 and above
+        # of the window, transposed to a column vector.
 
-        fft[nya-nyw//2:nya,:] *= y_window[np.newaxis,nyw:nyw//2-1:-1].T
+        fft[nya-nyw//2:nya,:] *= y_window[np.newaxis,1:nyw//2+1].T
 
         # Zero all pixels along the Y-axis that lie outside the window.
 
-        fft[nyw//2:nya-nyw//2,:] = 0.0+0.0j
+        fft[nyw//2+1:nya-nyw//2,:] = 0.0+0.0j
 
     # When the X-axis pixel size is being increased, apply an X
     # axis window function to the FFT to suppress aliasing in the
@@ -5663,15 +5675,15 @@ def _antialias_filter_image(data, oldstep, newstep):
         # Multiply the positive X-axis frequencies by the positive
         # frequency side of the window.
 
-        fft[:,0:nxw//2] *= x_window[nxw//2:]
+        fft[:,0:nxw//2+1] *= x_window[nxw//2:]
 
         # Note that there aren't any negative X-axis frequencies to
         # window, because we are using a real-only FFT which only
         # computes the positive frequencies.
-
+        #
         # Zero all pixels along the X-axis that lie outside the window.
 
-        fft[:,nxw//2:] = 0.0+0.0j
+        fft[:,nxw//2+1:] = 0.0+0.0j
 
     # Perform an inverse Fourier transform to get the filtered image
 
