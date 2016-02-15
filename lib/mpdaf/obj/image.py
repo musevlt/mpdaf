@@ -3616,9 +3616,15 @@ class Image(DataArray):
         else:
             var = None
 
-        # Compute the number of old pixel areas per new pixel.
+        # Compute the absolute changes in the size of the pixels
+        # along the X and Y axes.
 
-        n = newstep.prod() / oldstep.prod()
+        xs = abs(newstep[1] / oldstep[1])
+        ys = abs(newstep[0] / oldstep[0])
+
+        # Compute the number of input pixels per output pixel.
+
+        n = xs * ys
 
         # Scale the flux per pixel by the multiplicative increase in the
         # area of a pixel?
@@ -3629,20 +3635,49 @@ class Image(DataArray):
 
             data *= n
 
-            # Each output pixel is the sum of n input pixels. The
-            # variance of a sum of n samples of variance v is n*v.
+            # The variances of the output pixels depend on whether an
+            # anti-aliasing filter was applied, as follows.
+            #
+            # 1. An anti-aliasing filter is applied before resampling
+            #    when increasing the pixel size. This filter
+            #    effectively averages together n neighboring
+            #    pixels. The affine_transform() samples these averages
+            #    when it interpolates the output pixel values, so the
+            #    output pixels are effectively the average of n
+            #    independent pixels of the input image. Multiplying
+            #    these pixel values by n, then turns each output pixel
+            #    value into the sum of n pixels.  The variance of a
+            #    sum of n samples of variance v, is n*v.
+            # 2. No anti-aliasing filter is applied when decreasing
+            #    the pixel size, so in this case affine_transform()
+            #    samples raw pixel values.  The variances of these
+            #    output pixels are thus identical to those of the
+            #    input pixels. If we then multiply this by n, then the
+            #    variance of each output pixel is n**2 times the
+            #    variance of the input pixels.
+            # 3. If the pixel sizes along one axis are increased,
+            #    while those of the other axis are decreased, then we
+            #    have a mix of the above two cases.
 
             if var is not None:
-                var *= n
+
+                # Scale the variance according to the prescription described
+                # above.
+
+                var *= (xs if xs > 1.0 else xs**2) * (ys if ys > 1.0 else ys**2)
 
         # If we haven't been asked to scale the fluxes by the increase
-        # in the area of a pixel, then each output pixel is the mean
-        # of n input pixels. The variance of a mean of n samples of
-        # variance v is v/n.
+        # in the area of a pixel, the effect on the variances are as
+        # explained above, but without the flux scaling. If
+        # anti-aliasing was applied to both axes, then each output
+        # pixel is effectively the average of n input pixels, and the
+        # variance of a mean of n samples of variance v is v/n. If no
+        # anti-aliasing was applied, then there is no change to the
+        # variance.
 
         else:
-            if var is not None:
-                var /= n
+            if var is not None and (xs > 1.0 or ys > 1.0):
+                var *= (1/xs if xs > 1.0 else 1.0) * (1/ys if ys > 1.0 else 1.0)
 
         # Install the resampled data, mask and variance arrays.
 
