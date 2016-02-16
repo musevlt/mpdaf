@@ -295,7 +295,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         if fullvar is None:
             fullvar = Image('inv_variance.fits')
 
-        cleanlimit = clean * np.median(fullvar.data)
+        cleanlimit = clean * np.ma.median(fullvar.data)
 
         logger.info("muselet - cleaning below inverse variance " + str(cleanlimit))
 
