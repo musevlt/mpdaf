@@ -3896,7 +3896,7 @@ class Image(DataArray):
         """
 
         res = self.copy()
-        res.align_with_image(other, flux)
+        res._align_with_image(other, flux)
         return res
 
     def _gaussian_filter(self, sigma=3, interp='no'):
