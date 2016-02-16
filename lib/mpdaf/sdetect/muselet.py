@@ -189,6 +189,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             outnbcube = np.empty(c.shape, dtype=np.float32)
 
         f2 = open("nb/dosex", 'w')
+
+        
         for k in range(2, size1 - 3):
             sys.stdout.write("Narrow band:%d/%d" % (k, size1 - 3) + "\r")
             leftmin = max(0, k - 2 - delta)
@@ -197,17 +199,17 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             rightmax = min(size1, k + 3 + delta)
             imslice = np.ma.average(c.data[k - 2:k + 3, :, :], weights=fwcube / mvar[k - 2:k + 3, :, :], axis=0)
             if(leftmax == 1):
-                contleft = c.data.data[0, :, :]
+                contleft = c.data[0, :, :]
             elif(leftmax > leftmin + 1):
-                contleft = np.median(c.data.data[leftmin:leftmax, :, :], axis=0)
+                contleft = np.ma.median(c.data[leftmin:leftmax, :, :], axis=0)
             elif(rightmax == size1):
-                contleft = c.data.data[-1, :, :]
+                contleft = c.data[-1, :, :]
             else:
-                contleft = c.data.data[0, :, :]
+                contleft = c.data[0, :, :]
             if(rightmax > rightmin):
-                contright = np.median(c.data.data[rightmin:rightmax, :, :], axis=0)
+                contright = np.ma.median(c.data[rightmin:rightmax, :, :], axis=0)
             else:
-                contright = c.data.data[0, :, :]
+                contright = c.data[0, :, :]
             sizeleft = leftmax - leftmin
             sizeright = rightmax - rightmin
             contmean = (sizeleft * contleft + sizeright * contright) / (sizeleft + sizeright)
