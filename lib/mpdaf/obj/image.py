@@ -3475,8 +3475,8 @@ class Image(DataArray):
         res._rebin_median_(factor)
         return res
 
-    def _resample(self, newdim, newstart, newstep, flux=False, order=1,
-                  interp='no', unit_start=u.deg, unit_step=u.arcsec,
+    def _resample(self, newdim, refpos, refpix, newstep, flux=False, order=1,
+                  interp='no', unit_pos=u.deg, unit_step=u.arcsec,
                   cutoff=0.25):
 
         # Create a shape that has the same dimension for both axes?
@@ -3485,18 +3485,39 @@ class Image(DataArray):
             newdim = (newdim, newdim)
         newdim = np.asarray(newdim, dtype=np.int)
 
-        # If no preference has been given for the sky coordinate of
-        # pixel [0,0], substitute the existing position of this pixel.
+        # If neither refpos nor refpix have values, substitute values
+        # that will place the current sky position of the bottom left
+        # corner of the image at the bottom left corner of the output
+        # image.
 
-        if newstart is None:
-            newstart = self.wcs.get_start(unit=unit_start)
+        if refpos is None and refpix is None:
 
-        # Ensure that newstart is an array of values that have the
-        # same units as the WCS object.
+            # Use the pixel index of the bottom left corner of the image.
 
-        if unit_start is not None:
-            newstart = (np.asarray(newstart, dtype=np.float)
-                        * unit_start).to(self.wcs.unit).value
+            refpix = np.array([-0.5, -0.5])
+            refpos = self.wcs.pix2sky(refpix)
+
+        # Were refpos and refpix both given values?
+
+        elif refpos is not None and refpix is not None:
+
+            # If necessary convert refpos to a numpy array and convert
+            # it's units to the current WCS units.
+
+            if unit_pos is not None:
+                refpos = (np.asarray(refpos, dtype=np.float)
+                          * unit_pos).to(self.wcs.unit).value
+            else:
+                refpos = np.asarray(refpos, dtype=np.float)
+
+            # If necessary convert refpix to a floating point numpy array.
+
+            refpix = np.asarray(refpix, dtype=np.float)
+
+        # Complain if just one of refpos and refpix is None.
+
+        else:
+            raise ValueError('The refpos and refpix arguments should both be None or both have values.')
 
         # Get the current index increments of the 2 axes.
 
@@ -3558,19 +3579,25 @@ class Image(DataArray):
 
         old2new = np.linalg.inv(new2old)
 
-        # We have been asked to locate sky position 'newstart' at
-        # pixel [0,0] of the resampled array, so when the above equation
-        # is applied to this pixel, we get the following:
+        # We have been asked to locate sky position 'refpos' at pixel
+        # 'refpix' of the resampled array. Reproducing the equation
+        # from above:
         #
-        #   sky2pix(newstart) = new2old * [0,0] + offset
+        #  oldpixel = new2old * newpixel + offset
+        #
+        # In this case oldpixel is the pixel index of the input array
+        # where the sky position 'refpos' is currently located, and
+        # newpixel is refpix.
+        #
+        #   sky2pix(refpos) = new2old * refpix + offset
         #
         # Thus the appropriate value for the offset parameter of
         # affine_transform() is:
         #
-        #   offset=sky2pix(newstart)
+        #   offset = sky2pix(refpos) - new2old * refpix
 
-        offset = self.wcs.sky2pix(newstart, unit=unit_start)[0]
-        offset = offset[np.newaxis,:].T   # Make it a column vector
+        offset = (self.wcs.sky2pix(refpos).T[:,:1]
+                  - np.dot(new2old, refpix[np.newaxis,:].T))
 
         # For each pixel of the output image, map its index to the
         # equivalent index of the input image and interpolate a value
@@ -3702,8 +3729,8 @@ class Image(DataArray):
         self.wcs.set_crpix1(newcrpix[1] + 1)
         self.wcs.set_crpix2(newcrpix[0] + 1)
 
-    def resample(self, newdim, newstart, newstep, flux=False,
-                 order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
+    def resample(self, newdim, refpos, refpix, newstep, flux=False,
+                 order=1, interp='no', unit_pos=u.deg, unit_step=u.arcsec,
                  cutoff=0.25):
         """Resample an image to change its resolution and its origin.
 
@@ -3720,9 +3747,9 @@ class Image(DataArray):
         new sampling rate. This is required to satisfy the Nyquist
         sampling constraint. It prevents high spatial-frequency noise
         and other features from being aliased to lower frequency
-        artefacts in the resampled image, and its averaging property
-        is what produces the expected increase in the signal to noise
-        ratio of smoothing to a lower resolution.
+        artefacts in the resampled image. Its averaging property is
+        responsible for the increase in the signal to noise ratio when
+        one smooths to a lower resolution.
 
         Uses :func:`scipy.ndimage.affine_transform`.
 
@@ -3730,9 +3757,25 @@ class Image(DataArray):
         ----------
         newdim : int or (int,int)
             The desired new dimensions. Python notation: (ny,nx)
-        newstart : (float, float)
-            The sky position (dec,ra) to place at pixel [0,0].
-            If None, the existing position is retained.
+        refpos : (float, float)
+            The sky position (dec,ra) to place at the pixel specified
+            by the refpix argument.
+
+            If refpix and refpos are both None, the sky position at
+            the bottom corner of the input image is placed at the
+            bottom left corner of the output image. Note that refpix
+            and refpos must either both have values or both be None.
+        refpix : (float, float)
+            The [Y, X] indexes of the output pixel where the sky
+            position, refpos, should be placed. Y and X are
+            interpreted as floating point indexes, where integer
+            values indicate pixel centers and integer values +/- 0.5
+            indicate the edges of pixels.
+
+            If refpix and refpos are both None, the sky position at
+            the bottom corner of the input image is placed at the
+            bottom left corner of the output image. Note that refpix
+            and refpos must either both have values or both be None.
         newstep : float or (float, float)
             The increments in the angle on the sky from one pixel to
             the next, given as either one increment for both image
@@ -3775,8 +3818,8 @@ class Image(DataArray):
             interpolation between neighboring values.
             if 'spline', replace masked values using a spline
             interpolation between neighboring values.
-        unit_start : astropy.units
-            The units of the newstart coordinates.  Degrees by default.
+        unit_pos : astropy.units
+            The units of the refpos coordinates.  Degrees by default.
         unit_step : astropy.units
             The units of newstep.  Arcseconds by default.
         cutoff : float
@@ -3791,9 +3834,8 @@ class Image(DataArray):
 
         """
         res = self.copy()
-        # pb rotation
-        res._resample(newdim, newstart, newstep, flux=flux, order=order,
-                      interp=interp, unit_start=unit_start,
+        res._resample(newdim, refpos, refpix, newstep, flux=flux, order=order,
+                      interp=interp, unit_pos=unit_pos,
                       unit_step=unit_step, cutoff=cutoff)
         return res
 
@@ -3979,8 +4021,8 @@ class Image(DataArray):
             except:
                 newdim = np.array(0.5 + ima.shape / factor, dtype=np.int)
                 newstart = self.wcs.get_start(unit=unit)
-                ima = ima.resample(newdim, newstart, self_cdelt, flux=True,
-                                   unit_step=unit, unit_start=unit)
+                ima = ima.resample(newdim, newstart, [0,0], self_cdelt,
+                                   flux=True, unit_step=unit, unit_pos=unit)
 
         # here ima and self have the same step and the same rotation
 
@@ -5096,8 +5138,8 @@ class Image(DataArray):
     @deprecated('rebin method is deprecated: use resample instead')
     def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
-        return self.resample(newdim, newstart, newstep, flux,
-                             order, interp, unit_start, unit_step)
+        return self.resample(newdim, newstart, [0,0], newstep, flux,
+                             order, interp, unit_pos, unit_step)
 
 
 def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
