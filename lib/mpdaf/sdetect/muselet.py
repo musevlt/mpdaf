@@ -132,7 +132,8 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
         logger.info("muselet - Opening: " + cubename)
         c = Cube(cubename, copy=False, dtype=np.float32)
 
-        mvar = np.ma.masked_invalid(c.var)
+        mvar = c.var
+        mvar[np.isnan(mvar)] = np.inf
         c._var = None
 
         imsum = c[0, :, :]
