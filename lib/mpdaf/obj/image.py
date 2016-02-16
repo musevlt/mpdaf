@@ -3839,6 +3839,66 @@ class Image(DataArray):
                       unit_step=unit_step, cutoff=cutoff)
         return res
 
+    def _align_with_image(self, other, flux=False):
+
+        # Rotate the image to have the same orientation as the other
+        # image. Note that the rotate function has a side effect of
+        # correcting the image for shear terms in the CD matrix, so we
+        # perform this step even if no rotation is otherwise needed.
+
+        self._rotate(other.wcs.get_rot() - self.wcs.get_rot(), flux)
+
+        # Get the pixel index and Dec,Ra coordinate at the center of
+        # the image that we are aligning with.
+
+        centerpix = np.asarray(other.shape) / 2.0
+        centersky = other.wcs.pix2sky(centerpix)[0]
+
+        # Re-sample the rotated image to have the same step size,
+        # offset and number of pixels as the image that we are
+        # aligning it with.
+
+        self._resample(other.shape, centersky, centerpix,
+                       other.wcs.get_step(unit=u.deg), flux, unit_step=u.deg)
+
+
+    def align_with_image(self, other, flux=False):
+        """Resample the image to give it the same orientation, position,
+        resolution and size as a given image.
+
+        The image is first rotated to give it the same orientation on
+        the sky as the other image. The resampling process also
+        eliminates any shear terms from the original image, so that
+        its pixels can be correctly drawn on a rectangular grid.
+
+        Secondly the image is resampled. This changes its resolution,
+        shifts the image such that the same points on the sky appear
+        in the same pixels as in the other image, and changes the
+        dimensions of the image array to match that of the other
+        image.
+
+        The rotation and resampling processes are performed as
+        separate steps because the anti-aliasing filter that needs to
+        be applied if the resampling step reduces the resolution, is
+        difficult to implement before the axes have been rotated to
+        the final orientation.
+
+        Parameters
+        ----------
+        other : mpdaf.obj.Image
+            The image to be aligned with.
+        flux : boolean
+            If True, the flux of each pixel is multiplied by the ratio
+            of the areas of the resampled and original pixels. For images
+            whose units are flux per pixel, this keeps the total flux
+            in an area unchanged.
+
+        """
+
+        res = self.copy()
+        res.align_with_image(other, flux)
+        return res
+
     def _gaussian_filter(self, sigma=3, interp='no'):
 
         # Get a copy of the data array with masked values filled.
