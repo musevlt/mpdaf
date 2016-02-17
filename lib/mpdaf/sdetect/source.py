@@ -85,13 +85,10 @@ def matchlines(nlines, wl, z, eml):
         (list of wavelengths, errors)
 
     """
-    jfound = np.zeros(nlines, dtype=np.int)
     lbdas = np.array(eml.keys())
-    error = 0
-    for i in range(nlines):
-        # finds closest emline to this line
-        jfound[i] = np.argmin((wl[i] / (1 + z) - lbdas) ** 2.0)
-        error += (wl[i] / (1 + z) - lbdas[jfound[i]]) ** 2.0
+    a = (wl[:, np.newaxis] / (1 + z) - lbdas[np.newaxis, :]) ** 2.0
+    jfound = np.argmin(a, axis=1)
+    error = np.diag(a[:,jfound]).sum()
     error = np.sqrt(error / nlines)
     if((nlines >= 2)and(jfound[0] == jfound[1])):
         error = 15.
