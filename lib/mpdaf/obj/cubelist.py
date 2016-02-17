@@ -17,6 +17,16 @@ from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
 __all__ = ['CubeList', 'CubeMosaic']
 
+# List of keywords that will be copied to the combined cube
+KEYWORDS_TO_COPY = (
+    'ORIGIN', 'TELESCOP', 'INSTRUME', 'RA', 'DEC', 'EQUINOX', 'RADECSYS',
+    'EXPTIME', 'MJD-OBS', 'DATE-OBS', 'PI-COI', 'OBSERVER', 'OBJECT',
+    'ESO INS DROT POSANG', 'ESO INS MODE', 'ESO DET READ CURID',
+    'ESO INS TEMP11 VAL', 'ESO OBS ID', 'ESO OBS NAME', 'ESO OBS START',
+    'ESO TEL AIRM END', 'ESO TEL AIRM START', 'ESO TEL AMBI FWHM END',
+    'ESO TEL AMBI FWHM START'
+)
+
 
 class CubeList(object):
 
@@ -27,24 +37,24 @@ class CubeList(object):
 
     Parameters
     ----------
-    files : list of strings
-            List of cubes fits filenames
+    files : list of str
+        List of cubes fits filenames
 
     Attributes
     ----------
-    files  : list of strings
+    files : list of str
         List of cubes fits filenames
     nfiles : integer
         Number of files.
     scales : list of doubles
         List of scales
-    shape  : array of 3 integers)
+    shape : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
-    wcs    : :class:`mpdaf.obj.WCS`
+    wcs : :class:`mpdaf.obj.WCS`
         World coordinates.
-    wave   : :class:`mpdaf.obj.WaveCoord`
+    wave : :class:`mpdaf.obj.WaveCoord`
         Wavelength coordinates
-    unit   : string
+    unit : str
         Possible data unit type. None by default.
     """
 
@@ -55,9 +65,9 @@ class CubeList(object):
 
         Parameters
         ----------
-        files : list of strings
+        files : list of str
             List of cubes fits filenames
-        scalelist: list of double
+        scalelist: list of float
             (optional) list of scales to be applied to each cube
         """
         self._logger = logging.getLogger(__name__)
@@ -155,15 +165,7 @@ class CubeList(object):
                  dtype=data.dtype, unit=unit or self.unit, mask=np.ma.nomask)
 
         hdr = c.primary_header
-        copy_keywords(
-            self.cubes[0].primary_header, hdr,
-            ('ORIGIN', 'TELESCOP', 'INSTRUME', 'RA', 'DEC', 'EQUINOX',
-             'RADECSYS', 'EXPTIME', 'MJD-OBS', 'DATE-OBS', 'PI-COI',
-             'OBSERVER', 'OBJECT', 'ESO INS DROT POSANG', 'ESO INS MODE',
-             'ESO DET READ CURID', 'ESO INS TEMP11 VAL', 'ESO OBS ID',
-             'ESO OBS NAME', 'ESO OBS START', 'ESO TEL AIRM END',
-             'ESO TEL AIRM START', 'ESO TEL AMBI FWHM END',
-             'ESO TEL AMBI FWHM START'))
+        copy_keywords(self.cubes[0].primary_header, hdr, KEYWORDS_TO_COPY)
 
         if expnb is not None and 'EXPTIME' in hdr:
             hdr['EXPTIME'] = hdr['EXPTIME'] * expnb
@@ -195,13 +197,14 @@ class CubeList(object):
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, Table
-              cube, expmap, statpix
+            cube, expmap, statpix
 
-              - ``cube`` will contain the merged cube
-              - ``expmap`` will contain an exposure map data cube which counts
-                the number of exposures used for the combination of each pixel.
-              - ``statpix`` is a table that will give the number of Nan pixels
-                pixels per exposures (columns are FILENAME and NPIX_NAN)
+            - ``cube`` will contain the merged cube
+            - ``expmap`` will contain an exposure map data cube which counts
+              the number of exposures used for the combination of each pixel.
+            - ``statpix`` is a table that will give the number of Nan pixels
+              pixels per exposures (columns are FILENAME and NPIX_NAN)
+
         """
         # load the library, using numpy mechanisms
         path = os.path.dirname(__file__)[:-4]
@@ -240,40 +243,40 @@ class CubeList(object):
         Parameters
         ----------
         nmax  : integer
-                maximum number of clipping iterations
+            maximum number of clipping iterations
         nclip : float or (float,float)
-                Number of sigma at which to clip.
-                Single clipping parameter or lower / upper clipping parameters.
+            Number of sigma at which to clip.
+            Single clipping parameter or lower / upper clipping parameters.
         nstop : integer
-                If the number of not rejected pixels is less
-                than this number, the clipping iterations stop.
-        var   : string
-                ``propagate``, ``stat_mean``, ``stat_one``
+            If the number of not rejected pixels is less
+            than this number, the clipping iterations stop.
+        var   : str
+            ``propagate``, ``stat_mean``, ``stat_one``
 
-                - ``propagate``: the variance is the sum of the variances
-                  of the N individual exposures divided by N**2.
-                - ``stat_mean``: the variance of each combined pixel
-                  is computed as the variance derived from the comparison
-                  of the N individual exposures divided N-1.
-                - ``stat_one``: the variance of each combined pixel is
-                  computed as the variance derived from the comparison
-                  of the N individual exposures.
+            - ``propagate``: the variance is the sum of the variances
+              of the N individual exposures divided by N**2.
+            - ``stat_mean``: the variance of each combined pixel
+              is computed as the variance derived from the comparison
+              of the N individual exposures divided N-1.
+            - ``stat_one``: the variance of each combined pixel is
+              computed as the variance derived from the comparison
+              of the N individual exposures.
 
-        mad   : boolean
-                use MAD (median absolute deviation) statistics for
-                sigma-clipping
+        mad : boolean
+            Use MAD (median absolute deviation) statistics for sigma-clipping
 
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, astropy.table
-              cube, expmap, statpix
+            cube, expmap, statpix
 
-              - ``cube`` will contain the merged cube
-              - ``expmap`` will contain an exposure map data cube which counts
-                the number of exposures used for the combination of each pixel.
-              - ``statpix`` is a table that will give the number of Nan pixels
-                and rejected pixels per exposures (columns are FILENAME,
-                NPIX_NAN and NPIX_REJECTED)
+            - ``cube`` will contain the merged cube
+            - ``expmap`` will contain an exposure map data cube which counts
+              the number of exposures used for the combination of each pixel.
+            - ``statpix`` is a table that will give the number of Nan pixels
+              and rejected pixels per exposures (columns are FILENAME,
+              NPIX_NAN and NPIX_REJECTED)
+
         """
         if is_int(nclip) or is_float(nclip):
             nclip_low = nclip
@@ -477,27 +480,28 @@ class CubeMosaic(CubeList):
     values from the ``CRPIX`` keywords will be used as offsets to put a cube
     inside the combined cube.
 
-    This class inherits from :class:`mpdaf.obj.Cube`.
+    This class inherits from :class:`mpdaf.obj.CubeList`.
 
     Parameters
     ----------
-    files : list of strings
-            List of cubes fits filenames
+    files : list of str
+        List of cubes fits filenames
 
     Attributes
     ----------
-    files  : list of strings
+    files : list of str
         List of cubes fits filenames
     nfiles : integer
         Number of files.
-    shape  : array of 3 integers)
+    shape : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
-    wcs    : :class:`mpdaf.obj.WCS`
+    wcs : :class:`mpdaf.obj.WCS`
         World coordinates.
-    wave   : :class:`mpdaf.obj.WaveCoord`
+    wave : :class:`mpdaf.obj.WaveCoord`
         Wavelength coordinates
-    unit   : string
+    unit : str
         Possible data unit type. None by default.
+
     """
 
     checkers = ('check_dim', 'check_wcs')
@@ -507,15 +511,15 @@ class CubeMosaic(CubeList):
 
         Parameters
         ----------
-        files : list of strings
+        files : list of str
             List of cubes fits filenames.
         output_wcs : str
             Path to a cube FITS file, this cube is used to define the output
             cube: shape, WCS and unit are needed, it must have the same WCS
             grid as the input cubes.
         """
-        self.out = Cube(output_wcs)
         super(CubeMosaic, self).__init__(files)
+        self.out = Cube(output_wcs)
 
     def __getitem__(self, item):
         raise ValueError('Operation forbidden')
@@ -539,6 +543,7 @@ class CubeMosaic(CubeList):
         cdelt1 = wcs.get_step()
         cunit = wcs.unit
         rot = wcs.get_rot()
+        logger = self._logger
 
         for f, cube in zip(self.files, self.cubes):
             cw = cube.wcs
@@ -548,22 +553,20 @@ class CubeMosaic(CubeList):
                      allclose(cdelt1, cw.get_step(unit=cunit)),
                      allclose(rot, cw.get_rot())]
             if not all(valid):
-                msg = 'all cubes have not same spatial coordinates'
-                self._logger.warning(msg)
-                self._logger.info(valid)
-                self._logger.info(self.files[0])
+                logger.warning('all cubes have not same spatial coordinates')
+                logger.info(valid)
+                logger.info(self.files[0])
                 self.wcs.info()
-                self._logger.info(f)
+                logger.info(f)
                 cube.wcs.info()
                 return False
 
         for f, cube in zip(self.files, self.cubes):
             if not cube.wave.isEqual(self.wave):
-                msg = 'all cubes have not same spectral coordinates'
-                self._logger.warning(msg)
-                self._logger.info(self.files[0])
+                logger.warning('all cubes have not same spectral coordinates')
+                logger.info(self.files[0])
                 self.wave.info()
-                self._logger.info(f)
+                logger.info(f)
                 cube.wave.info()
                 return False
         return True
