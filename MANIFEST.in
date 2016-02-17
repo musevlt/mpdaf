@@ -8,10 +8,6 @@ graft tests
 graft data/obj
 
 prune lib/mpdaf.egg-info
-prune lib/mpdaf_user/galpak/data
-prune lib/mpdaf_user/galpak/web
-prune lib/mpdaf_user/galpak/build
-prune lib/mpdaf_user/galpak/tests
 
 prune lib/mpdaf/sdetect/origin
 
