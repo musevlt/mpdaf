@@ -5725,11 +5725,10 @@ def _antialias_filter_image(data, oldstep, newstep):
         newstep = (newstep, newstep)
     newstep = abs(np.asarray(newstep, dtype=np.float))
 
-    # Anti-aliasing is only needed when pixel sizes are being
-    # increased, so return the data array unchanged when pixel sizes
-    # are being decreased or not being changed at all.
+    # Return the data array unchanged when pixel sizes are being
+    # decreased.
 
-    if np.all(newstep <= oldstep):
+    if np.all(newstep < oldstep):
         return data
 
     # Get the dimensions of the image to be filtered.
@@ -5743,26 +5742,29 @@ def _antialias_filter_image(data, oldstep, newstep):
     # need a window function for the X-axis that will cut-off all
     # frequencies in the FFT above that frequency. The pixel width of
     # the FFT is 1/(nxa*oldstep[1]), so we need the window to go
-    # to zero at pixel nx, relative to the FFT origin, where
-    # nx/(nxa*oldstep[1]) = 1/(2*newstep[1]). This gives:
+    # to zero at pixel ix, relative to the FFT origin, where
+    # ix/(nxa*oldstep[1]) = 1/(2*newstep[1]). This gives:
     #
-    #  nx = (nxa * oldstep[1]) / (2*newstep[1])
+    #  ix = (nxa * oldstep[1]) / (2*newstep[1])
     #
-    # We want a window function that is symmetric with nx+1+nx pixels
-    # in width (nx window function pixels that multiply negative
-    # frequency pixels, 1 pixel at the center that is unity and
-    # multiplies the origin pixel of the FFT, and nx pixels that
-    # multiply positive frequency pixels. So we need a window function
-    # of width:
+    # We want a window function that is symmetric with (ix-1)+1+(ix-1)
+    # pixels in width (ix window function pixels on either side of the
+    # origin, including one with value unity at the origin. So we need
+    # a window function of width:
     #
-    #  wx = (nxa*oldstep[1])/newstep[1] + 1
-    #
-    # To ensure that this is odd, we divide the first part by 2, using
-    # integer division, and multiply it back up by 2 to yield an even
-    # number.
+    #  wx = (nxa*oldstep[1]) / newstep[1]
 
-    nyw = 2 * ((oldstep[1] * nya) // (2*newstep[1])) + 1
-    nxw = 2 * ((oldstep[0] * nxa) // (2*newstep[0])) + 1
+    nxw = max(int((oldstep[1] * nxa) / newstep[1]), 1)
+    nyw = max(int((oldstep[0] * nya) / newstep[0]), 1)
+
+    # Round even widths down to odd numbers. Only windows with odd
+    # numbers of pixels have a central value of unity and a symmetric
+    # number of pixels on either side of this.
+
+    if nxw % 2 == 0:
+        nxw -= 1
+    if nyw % 2 == 0:
+        nyw -= 1
 
     # Obtain the FFT of the input image.
 
@@ -5772,7 +5774,7 @@ def _antialias_filter_image(data, oldstep, newstep):
     # axis window function to the FFT to suppress aliasing in the
     # Y direction.
 
-    if nyw < nya:
+    if nyw <= nya:
 
         y_window = np.blackman(nyw)
 
@@ -5795,7 +5797,7 @@ def _antialias_filter_image(data, oldstep, newstep):
     # axis window function to the FFT to suppress aliasing in the
     # X direction.
 
-    if nxw < nxa:
+    if nxw <= nxa:
 
         # Get Blackman window functions for the X and Y directions.
 
