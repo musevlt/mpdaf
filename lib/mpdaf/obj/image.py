@@ -4081,7 +4081,7 @@ class Image(DataArray):
             except:
                 newdim = np.array(0.5 + ima.shape / factor, dtype=np.int)
                 newstart = self.wcs.get_start(unit=unit)
-                ima = ima.resample(newdim, newstart, [0,0], self_cdelt,
+                ima = ima.resample(newdim, newstart, (0, 0), self_cdelt,
                                    flux=True, unit_step=unit, unit_pos=unit)
 
         # here ima and self have the same step and the same rotation
@@ -4591,7 +4591,7 @@ class Image(DataArray):
             # Run the gaussian convolution
             chst = zhst.fftconvolve_gauss(fwhm=(seeing, seeing))
             # Rebin to muse spaxel size and window size
-            rhst = chst.resample(zmuse.shape, zmuse.get_start(),
+            rhst = chst.resample(zmuse.shape, zmuse.get_start(), (0, 0),
                                  zmuse.get_step(u.arcsec))
 
             if plot:
@@ -5198,8 +5198,8 @@ class Image(DataArray):
     @deprecated('rebin method is deprecated: use resample instead')
     def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
-        return self.resample(newdim, newstart, [0,0], newstep, flux,
-                             order, interp, unit_pos, unit_step)
+        return self.resample(newdim, newstart, (0, 0), newstep, flux,
+                             order, interp, unit_start, unit_step)
 
 
 def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
