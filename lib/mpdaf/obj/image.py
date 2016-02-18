@@ -5725,10 +5725,10 @@ def _antialias_filter_image(data, oldstep, newstep):
         newstep = (newstep, newstep)
     newstep = abs(np.asarray(newstep, dtype=np.float))
 
-    # Return the data array unchanged when pixel sizes are being
-    # decreased.
+    # Return the data array unchanged when pixel sizes are either
+    # being decreased or left the same size.
 
-    if np.all(newstep < oldstep):
+    if np.all(newstep < oldstep) or np.allclose(newstep, oldstep):
         return data
 
     # Get the dimensions of the image to be filtered.
