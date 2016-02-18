@@ -292,6 +292,20 @@ class DataArray(object):
                 self._logger.warning('wavelength solution not copied',
                                      exc_info=True)
 
+    @classmethod
+    def from_obj(cls, obj, data=None, var=None, copy=False):
+        """Create a new object from another one, copying its attributes."""
+        data = obj.data if data is None else data
+        var = obj.var if var is None else var
+        kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
+                      dtype=obj.dtype, copy=copy, data_header=obj.data_header,
+                      primary_header=obj.primary_header)
+        if cls._has_wcs:
+            kwargs['wcs'] = obj.wcs
+        if cls._has_wave:
+            kwargs['wave'] = obj.wave
+        return cls(**kwargs)
+
     @property
     def ndim(self):
         """ The number of dimensions in the data and variance arrays : int """
