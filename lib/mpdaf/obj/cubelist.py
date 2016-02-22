@@ -518,8 +518,8 @@ class CubeMosaic(CubeList):
             cube: shape, WCS and unit are needed, it must have the same WCS
             grid as the input cubes.
         """
-        super(CubeMosaic, self).__init__(files)
         self.out = Cube(output_wcs)
+        super(CubeMosaic, self).__init__(files)
 
     def __getitem__(self, item):
         raise ValueError('Operation forbidden')
