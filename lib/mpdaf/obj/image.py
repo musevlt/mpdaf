@@ -14,6 +14,7 @@ from scipy import interpolate, signal
 from scipy import ndimage as ndi
 from scipy.ndimage.interpolation import affine_transform
 from scipy.optimize import leastsq
+from scipy.stats import threshold
 
 from . import plt_norm, plt_zscale
 from .coords import WCS, WaveCoord
@@ -3839,7 +3840,12 @@ class Image(DataArray):
                       unit_step=unit_step, cutoff=cutoff)
         return res
 
-    def _align_with_image(self, other, flux=False):
+    def __align_with_image(self, other, flux=False):
+
+        # Do nothing if the images are already aligned.
+
+        if self.wcs.isEqual(other.wcs):
+            return
 
         # Rotate the image to have the same orientation as the other
         # image. Note that the rotate function has a side effect of
@@ -3862,7 +3868,7 @@ class Image(DataArray):
                        other.wcs.get_step(unit=u.deg), flux, unit_step=u.deg)
 
 
-    def align_with_image(self, other, flux=False):
+    def align_with_image(self, other, flux=False, copy=True):
         """Resample the image to give it the same orientation, position,
         resolution and size as a given image.
 
@@ -3892,12 +3898,162 @@ class Image(DataArray):
             of the areas of the resampled and original pixels. For images
             whose units are flux per pixel, this keeps the total flux
             in an area unchanged.
+        copy : boolean
+            If True, return a copy of self that has been aligned.
+            Otherwise return self after aligning it.
 
         """
 
-        res = self.copy()
-        res._align_with_image(other, flux)
+        res = self.copy() if copy else self
+        res.__align_with_image(other, flux)
         return res
+
+    def estimate_coordinate_offset(self, ref, nsigma=0.25):
+        """Given a reference image of the sky that is expected to
+        overlap with the current image, attempt to fit for any offset
+        between the sky coordinate system of the current image and
+        that of the reference image. The returned value is designed to
+        be added to the coordinate reference pixel values of self.wcs.
+
+        This function performs the following steps:
+
+        1. The align_with_image() method is called to resample the
+           reference image onto the same coordinate grid as the
+           current image.
+
+        2. The two images are then cross-correlated, after zeroing all
+           background values in the images below nsigma standard
+           deviations above the mean.
+
+        3. The peak in the auto-correlation image is found and its
+           sub-pixel position is estimated by a simple quadratic
+           interpolation. This position, relative to the center of the
+           auto-correlation image, gives the average position offset
+           between similar features in the two images.
+
+        Parameters
+        ----------
+        ref : mpdaf.obj.Image
+            The image of the sky that is to be used as the coordinate
+            reference. The sky coverage of this image should overlap
+            with that of self. Ideally the resolution of this image
+            should be at least as good as the resolution of self.
+        nsigma : float
+            Only values that exceed this many standard deviations
+            above the mean of each image will be used.
+
+        Returns
+        -------
+        out : float,float
+            The pixel offsets that would need to be added to the
+            coordinate reference pixel values, crpix2 and crpix1, of
+            self.wcs to make the features in self line up with those
+            in the reference image.
+
+        """
+
+        # Resample the reference sky image onto the same coordinate
+        # grid as our image.
+
+        ref = ref.align_with_image(self)
+
+        # Get copies of the image arrays with masked pixels filled
+        # with the median values of the images.
+
+        sdata = self._prepare_data()
+        rdata = ref._prepare_data()
+
+        # When we cross-correlate the images, any constant or noisy
+        # background will bias the result towards the origin of the
+        # correlation, so remove most of the noisy background by
+        # zeroing all values that are less than nsigma standard
+        # deviations above the mean.
+
+        sdata = threshold(sdata,
+                          threshmin = sdata.mean() + nsigma * sdata.std())
+        rdata = threshold(rdata,
+                          threshmin = rdata.mean() + nsigma * rdata.std())
+
+        # Cross correlate our image with the reference image, by
+        # convolving our image with an axis-reversed version of the
+        # reference image. Use mode="same" to only keep the inner half
+        # of the array. We don't expect the peak to be outside this
+        # area, and this avoids edge effects where there is incomplete
+        # data.
+
+        cc = signal.fftconvolve(sdata, rdata[::-1,::-1], mode="same")
+
+        # Find the position of the maximum value in the correlation image.
+
+        py,px = np.unravel_index(np.argmax(cc), cc.shape)
+
+        # Quadratically interpolate a more precise peak position from three
+        # points along the X and Y axes, centered on the position found above.
+
+        py = py - 1 + _find_quadratic_peak(cc[py-1 : py+2, px])
+        px = px - 1 + _find_quadratic_peak(cc[py, px-1 : px+2])
+
+        # Compute the offset of the peak relative to the central pixel
+        # of the correlation image. This yields the offset between the
+        # two images.
+
+        dy = py - float(cc.shape[0]//2)
+        dx = px - float(cc.shape[1]//2)
+
+        return dy,dx
+
+    def adjust_coordinates(self, ref, nsigma=0.25, copy=True):
+        """Given a reference image of the sky that is expected to
+        overlap with the current image, attempt to fit for any offset
+        between the sky coordinate system of the current image and
+        that of the reference image. Apply this offset to the
+        coordinates of the current image, to bring it into line with
+        the reference image.
+
+        This function calls self.estimate_coordinate_offset() to
+        fit for the offset between the coordinate systems of the
+        two images, then adjusts the coordinate reference pixel of
+        the current image to bring its coordinates into line with
+        those of the reference image.
+
+        Parameters
+        ----------
+        ref : mpdaf.obj.Image
+            The image of the sky that is to be used as the coordinate
+            reference. The sky coverage of this image should overlap
+            with that of self. Ideally the resolution of this image
+            should be at least as good as the resolution of self.
+        nsigma : float
+            Only values that exceed this many standard deviations
+            above the mean of each image will be used.
+        copy : boolean
+            If True, return a copy of self that has been corrected.
+            Otherwise return self after correcting its coordinates.
+
+        Returns
+        -------
+        out : mpdaf.obj.Image
+            A version of self in which the sky coordinates have been
+            shifted to match those of the reference image.
+
+        """
+
+        res = self.copy() if copy else self
+        res.__adjust_coordinates(ref, nsigma=nsigma)
+        return res
+
+    def __adjust_coordinates(self, ref, nsigma=0.25):
+
+        # Determine the pixel offset of features in the current
+        # image relative to features in the reference image.
+
+        dy,dx = self.estimate_coordinate_offset(ref, nsigma)
+
+        # Offset the WCS of the current image by the pixel shift found
+        # above.
+
+        self.wcs.set_crpix1(self.wcs.get_crpix1() + dx)
+        self.wcs.set_crpix2(self.wcs.get_crpix2() + dy)
 
     def _gaussian_filter(self, sigma=3, interp='no'):
 
@@ -5821,3 +5977,44 @@ def _antialias_filter_image(data, oldstep, newstep):
     data = np.fft.irfft2(fft)
 
     return data
+
+def _find_quadratic_peak(y):
+    """Given an array of 3 numbers in which the first and last numbers are
+    less than the central number, determine the array index at which a
+    quadratic curve through the 3 points reaches its peak value.
+
+    Parameters
+    ----------
+    y  : float,float,float
+      The values of the curve at x=0,1,2 respectively. Note that y[1]
+      must be greater than both y[0] and y[2]. Otherwise +/- infinity
+      will be returned.
+
+    Returns
+    -------
+    xpeak : float
+      The floating point array index of the peak of the quadratic. This
+      will always be in the range 0.0 to 2.0, provided that y[0]<y[1] and
+      y[2]<y[1].
+
+    """
+
+    # Given the three equations:
+    #
+    #  a * x0**2 + b * x0 + c = y0
+    #  a * x1**2 + b * x1 + c = y1
+    #  a * x2**2 + b * x2 + c = y2
+    #
+    # a, b, and c are given by:
+    #
+    #  a =  0.5 * y0 - y1 + 0.5 * y2
+    #  b = -1.5 * y0 + 2.0 * y1 - 0.5 * y2
+    #  c = y0
+
+    a = 0.5 * y[0] - y[1] + 0.5 * y[2]
+    b = -1.5 * y[0] + 2.0 * y[1] - 0.5 * y[2]
+
+    # Quadratic curves peak at:  x = -b / (2*a)
+
+    return -b / (2 * a)
+
