@@ -3908,7 +3908,7 @@ class Image(DataArray):
         res.__align_with_image(other, flux)
         return res
 
-    def estimate_coordinate_offset(self, ref, nsigma=0.25):
+    def estimate_coordinate_offset(self, ref, nsigma=1.0):
         """Given a reference image of the sky that is expected to
         overlap with the current image, attempt to fit for any offset
         between the sky coordinate system of the current image and
@@ -3957,11 +3957,27 @@ class Image(DataArray):
 
         ref = ref.align_with_image(self)
 
-        # Get copies of the image arrays with masked pixels filled
+        # Before cross-correlating the images we need to make sure
+        # that any areas that are masked in one image are also masked
+        # in the other. Otherwise if one image has a very bright
+        # source in an area that is masked in the other, then this
+        # will produce false correlations.
+        #
+        # First get the union of the masked areas of the two images.
+
+        mask = np.ma.mask_or(self.data.mask, ref.data.mask)
+
+        # Place both image arrays into masked array containers that
+        # share the above mask.
+
+        sdata = np.ma.array(data=self.data.data, mask=mask)
+        rdata = np.ma.array(data=ref.data.data, mask=mask)
+
+        # Get copies of the above arrays with masked pixels filled
         # with the median values of the images.
 
-        sdata = self._prepare_data()
-        rdata = ref._prepare_data()
+        sdata = np.ma.filled(sdata, np.ma.median(sdata))
+        rdata = np.ma.filled(rdata, np.ma.median(rdata))
 
         # When we cross-correlate the images, any constant or noisy
         # background will bias the result towards the origin of the
@@ -4002,7 +4018,7 @@ class Image(DataArray):
 
         return dy,dx
 
-    def adjust_coordinates(self, ref, nsigma=0.25, copy=True):
+    def adjust_coordinates(self, ref, nsigma=1.0, copy=True):
         """Given a reference image of the sky that is expected to
         overlap with the current image, attempt to fit for any offset
         between the sky coordinate system of the current image and
@@ -4042,7 +4058,7 @@ class Image(DataArray):
         res.__adjust_coordinates(ref, nsigma=nsigma)
         return res
 
-    def __adjust_coordinates(self, ref, nsigma=0.25):
+    def __adjust_coordinates(self, ref, nsigma=1.0):
 
         # Determine the pixel offset of features in the current
         # image relative to features in the reference image.
