@@ -25,10 +25,10 @@ def colored(text, color):
     return COLOR_SEQ.format(color, text, RESET_SEQ)
 
 
-def setup_logging(level=logging.DEBUG, color=False,
+def setup_logging(name='mpdaf', level=logging.DEBUG, color=False,
                   fmt='[%(levelname)s] %(message)s'):
     """Setup logging to stdout."""
-    logger = logging.getLogger('mpdaf')
+    logger = logging.getLogger(name)
     logger.handlers = []
     logger.setLevel(level)
 
@@ -43,10 +43,10 @@ def setup_logging(level=logging.DEBUG, color=False,
     logger.addHandler(steam_handler)
 
 
-def setup_logfile(level=logging.DEBUG, logfile='mpdaf.log'):
+def setup_logfile(name='mpdaf', level=logging.DEBUG, logfile='mpdaf.log'):
     """Setup logging to file."""
     from logging.handlers import RotatingFileHandler
-    logger = logging.getLogger('mpdaf')
+    logger = logging.getLogger(name)
     formatter = logging.Formatter(
         '%(asctime)s [%(levelname)s] {%(name)s:%(lineno)d} %(message)s')
     file_handler = RotatingFileHandler(logfile, 'a', 1000000, 1)
