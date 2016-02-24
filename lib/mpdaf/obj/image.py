@@ -3990,6 +3990,14 @@ class Image(DataArray):
         rdata = threshold(rdata,
                           threshmin = rdata.mean() + nsigma * rdata.std())
 
+        # Sometimes a bright artefact or a bright star with
+        # appreciable proper motion biases the correlation. To avoid
+        # this take the log of the thresholded data to prevent very
+        # bright features from dominating the correlation.
+
+        sdata = np.log(1.0+sdata)
+        rdata = np.log(1.0+rdata)
+
         # Cross correlate our image with the reference image, by
         # convolving our image with an axis-reversed version of the
         # reference image. Use mode="same" to only keep the inner half
