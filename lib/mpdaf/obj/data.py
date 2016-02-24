@@ -136,8 +136,8 @@ class DataArray(object):
         self.primary_header = primary_header or fits.Header()
 
         if kwargs.pop('shape', None) is not None:
-            warnings.warn('The shape parameter is no longer used. It is derived '
-                          'from the data instead', MpdafWarning)
+            warnings.warn('The shape parameter is no longer used. It is '
+                          'derived from the data instead', MpdafWarning)
 
         if kwargs.pop('notnoise', None) is not None:
             warnings.warn('The notnoise parameter is no longer used. The '
@@ -254,9 +254,9 @@ class DataArray(object):
                 self._var = np.array(var, dtype=dtype, copy=copy)
 
         # If a WCS object was specified as an optional parameter, install it.
-
         wcs = kwargs.pop('wcs', None)
-        if wcs is not None and wcs.naxis1 != 1 and wcs.naxis2 != 1:
+        if self._has_wcs and wcs is not None and wcs.naxis1 != 1 and \
+                wcs.naxis2 != 1:
             try:
                 self.wcs = wcs.copy()
                 if self._shape is not None:
@@ -265,7 +265,8 @@ class DataArray(object):
                          wcs.naxis2 != self._shape[-2])):
                         self._logger.warning(
                             'The world coordinates and data have different '
-                            'dimensions: Modifying the shape of the WCS object.')
+                            'dimensions: Modifying the shape of the WCS '
+                            'object')
                     self.wcs.naxis1 = self._shape[-1]
                     self.wcs.naxis2 = self._shape[-2]
             except:
@@ -274,9 +275,8 @@ class DataArray(object):
 
         # If a wavelength coordinate object was specified as an
         # optional parameter, install it.
-
         wave = kwargs.pop('wave', None)
-        if wave is not None and wave.shape != 1:
+        if self._has_wave and wave is not None and wave.shape != 1:
             try:
                 self.wave = wave.copy()
                 if self._shape is not None:
@@ -284,7 +284,8 @@ class DataArray(object):
                             wave.shape != self._shape[0]:
                         self._logger.warning(
                             'wavelength coordinates and data have different '
-                            'dimensions: Modifying the shape of the WaveCoord object')
+                            'dimensions: Modifying the shape of the WaveCoord '
+                            'object')
                     self.wave.shape = self._shape[0]
             except:
                 self._logger.warning('wavelength solution not copied',
@@ -404,8 +405,8 @@ class DataArray(object):
 
         """
         if var is not None:
-            warnings.warn('The "var" parameter is no longer used. Use "var_init"'
-                          'instead.', MpdafWarning)
+            warnings.warn('The "var" parameter is no longer used. Use '
+                          '"var_init"instead.', MpdafWarning)
 
         return self.__class__(
             unit=self.unit, dtype=None, copy=False,
@@ -682,7 +683,10 @@ class DataArray(object):
             data = self.data.data
 
         hdr = copy_header(self.data_header, self.get_wcs_header(),
-                          exclude=('CD*', 'PC*', 'CDELT*'), unit=self.unit)
+                          exclude=('CD*', 'PC*', 'CDELT*', 'CRPIX*', 'CRVAL*',
+                                   'CSYER*', 'CTYPE*', 'CUNIT*', 'NAXIS*',
+                                   'RADESYS', 'LATPOLE', 'LONPOLE'),
+                          unit=self.unit)
         return fits.ImageHDU(name=name, data=data, header=hdr)
 
     def get_stat_hdu(self, name='STAT', header=None):
