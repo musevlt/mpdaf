@@ -372,6 +372,13 @@ class DataArray(object):
 
         self.var = var
 
+    @property
+    def masked_var(self):
+        """Return a MaskedArray for the variance with the data mask."""
+        var = ma.masked_invalid(self.var, copy=False)
+        var[self.data.mask] = ma.masked
+        return var
+
     def copy(self):
         """Return a copy of the object."""
         return self.__class__(
