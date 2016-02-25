@@ -172,14 +172,14 @@ def test_gauss_fit():
 
 
 @attr(speed='fast')
-def test_resize():
+def test_crop():
     """Spectrum class: testing resize method"""
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
     spe.mask(lmax=5000, unit=unit)
     spe.mask(lmin=6500, unit=unit)
-    spe.resize()
+    spe.crop()
     nose.tools.assert_equal(int((6500 - 5000) / spe.get_step(unit=unit)),
                             spe.shape[0])
 
