@@ -329,7 +329,7 @@ def test_resample():
     newstep = np.array(
         [before.wcs.get_step(unit=u.arcsec)[0]*yfactor,
          before.wcs.get_step(unit=u.arcsec)[1]*xfactor])
-    after = before.resample(newdim=before.shape, newstart=None,
+    after = before.resample(newdim=before.shape, refpos=None, refpix=None,
                             newstep=newstep, flux=False)
 
     # See in which pixels the coordinate matrix of the rotated
