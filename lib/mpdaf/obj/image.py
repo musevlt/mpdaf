@@ -1218,19 +1218,6 @@ class Image(DataArray):
 
         oldcd = self.wcs.get_cd()
 
-        # Derive a new WCS coordinate transformation matrix for
-        # transforming pixel indexes in the rotated image to
-        # intermediate sky coordinates.  Read from left to right, the
-        # following statement scales pixel indexes in the rotated
-        # image to projected sky coordinates, then rotates these
-        # coordinates, then divides them by the current pixel scale to
-        # yield the corresponding indexes of the input image, then
-        # feeds these to the current CD matrix to be transformed to
-        # convert them to intermediate sky coordinates.
-
-        newcd = np.dot(oldcd, np.dot(np.linalg.inv(oldscale),
-                                     np.dot(mrot, newscale)))
-
         # Where should north end up after we have rotated the image?
 
         sky_angle = self.wcs.get_rot(unit=u.rad) + angle
