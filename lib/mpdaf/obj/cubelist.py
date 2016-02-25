@@ -153,7 +153,7 @@ class CubeList(object):
             getattr(self, checker)()
 
     def save_combined_cube(self, data, var=None, method='', keywords=None,
-                           expnb=None, object_name=None, unit=None):
+                           expnb=None, unit=None, header=None):
         self._logger.info('Creating combined cube object')
 
         if data.ndim != 3:
@@ -170,9 +170,12 @@ class CubeList(object):
         if expnb is not None and 'EXPTIME' in hdr:
             hdr['EXPTIME'] = hdr['EXPTIME'] * expnb
 
-        if object_name is not None:
-            c.primary_header['OBJECT'] = object_name
-            c.data_header['OBJECT'] = object_name
+        if header is not None:
+            c.primary_header.update(header)
+
+        # For MuseWise ?
+        if 'OBJECT' in c.primary_header:
+            c.data_header['OBJECT'] = c.primary_header['OBJECT']
         elif 'OBJECT' in self.cubes[0].data_header:
             c.data_header['OBJECT'] = self.cubes[0].data_header['OBJECT']
 
@@ -191,7 +194,7 @@ class CubeList(object):
             hdr['comment'] = '- ' + os.path.basename(f)
         return c
 
-    def median(self):
+    def median(self, header=None):
         """Combines cubes in a single data cube using median.
 
         Returns
@@ -231,13 +234,15 @@ class CubeList(object):
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        kwargs = dict(expnb=np.nanmedian(expmap), method='obj.cubelist.median')
+        kwargs = dict(expnb=np.nanmedian(expmap), method='obj.cubelist.median',
+                      header=header)
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
         cube = self.save_combined_cube(data, **kwargs)
         return cube, expmap, stat_pix
 
-    def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate', mad=False):
+    def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate', mad=False,
+                header=None):
         """combines cubes in a single data cube using sigma clipped mean.
 
         Parameters
@@ -337,13 +342,13 @@ class CubeList(object):
                     ('nstop', nstop, 'clipping minimum number'),
                     ('var', var, 'type of variance')]
         kwargs = dict(expnb=np.nanmedian(expmap), keywords=keywords,
-                      method='obj.cubelist.merging')
+                      header=header, method='obj.cubelist.merging')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
         cube = self.save_combined_cube(data, var=vardata, **kwargs)
         return cube, expmap, statpix
 
-    def pymedian(self):
+    def pymedian(self, header=None):
         try:
             import fitsio
         except ImportError:
@@ -370,7 +375,7 @@ class CubeList(object):
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        kwargs = dict(expnb=np.nanmedian(expmap),
+        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
                       method='obj.cubelist.pymedian')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
@@ -378,7 +383,7 @@ class CubeList(object):
         return cube, expmap, stat_pix
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
-                  object_name=None):
+                  header=None):
         try:
             import fitsio
         except ImportError:
@@ -462,7 +467,7 @@ class CubeList(object):
                     ('nclip_low', nclip, 'lower clipping parameter'),
                     ('nclip_up', nclip, 'upper clipping parameter'),
                     ('var', var, 'type of variance')]
-        kwargs = dict(expnb=np.nanmedian(expmap), object_name=object_name,
+        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
                       keywords=keywords, method='obj.cubelist.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
@@ -578,7 +583,7 @@ class CubeMosaic(CubeList):
             'Cubes must have the same spectral range.')
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
-                  object_name=None):
+                  header=None):
         try:
             import fitsio
         except ImportError:
@@ -670,7 +675,7 @@ class CubeMosaic(CubeList):
                     ('nclip_low', nclip, 'lower clipping parameter'),
                     ('nclip_up', nclip, 'upper clipping parameter'),
                     ('var', var, 'type of variance')]
-        kwargs = dict(expnb=np.nanmedian(expmap), object_name=object_name,
+        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
                       keywords=keywords, method='obj.cubemosaic.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
