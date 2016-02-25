@@ -92,11 +92,11 @@ def test_iter_spe():
 
 
 @attr(speed='fast')
-def test_resize():
-    """Cube class: tests resize method."""
+def test_crop():
+    """Cube class: tests the crop method."""
     cube1 = generate_cube()
     cube1.data.mask[0, :, :] = True
-    cube1.resize()
+    cube1.crop()
     assert_equal(cube1.shape[0], 9)
 
 
