@@ -1438,7 +1438,7 @@ class Cube(DataArray):
             world coordinates unit.  If None, inputs are in pixels
 
         """
-        lmin, ymin, x_min, lmax, ymax, x_max = coord
+        lmin, ymin, xmin, lmax, ymax, xmax = coord
 
         skycrd = [[ymin, xmin], [ymin, xmax],
                   [ymax, xmin], [ymax, xmax]]
@@ -1501,7 +1501,7 @@ class Cube(DataArray):
             test = np.logical_or(test_x, test_y)
             res.data.mask = np.logical_or(res.data.mask,
                                           np.tile(test, [res.shape[0], 1, 1]))
-            res.resize()
+            res.crop()
 
         return res
 
