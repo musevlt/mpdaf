@@ -267,7 +267,7 @@ class Cube(DataArray):
             self.wcs = self.wcs[item[1], item[2]]
         except:
             self.wcs = None
-            self._logger.warning("Wcs not copied: wcs attribute is None"
+            self._logger.warning("Wcs not copied: wcs attribute is None")
 
         # Adjust the wavelength coordinates to match the spectral slice.
 
