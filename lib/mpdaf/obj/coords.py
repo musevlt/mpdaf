@@ -1073,40 +1073,6 @@ class WCS(object):
 
         return np.dot(np.diag(self.wcs.wcs.get_cdelt()), self.wcs.wcs.get_pc())
 
-    def get_naxis1(self):
-        """Return the value of the FITS NAXIS1 parameter.
-
-        NAXIS1 holds the dimension of the X-axis of the image. In the
-        data-array of an MPDAF Image object, this is the dimension of
-        axis 1 of the python array that contains the image. If im is
-        an mpdaf.obj.Image object, then im.shape[1] is equivalent to
-        im.wcs.get_naxis1().
-
-        Returns
-        -------
-        out : int
-           The value of the FITS NAXIS1 parameter.
-
-        """
-        return self.naxis1
-
-    def get_naxis2(self):
-        """Return the value of the FITS NAXIS2 parameter.
-
-        NAXIS2 holds the dimension of the Y-axis of the image. In the
-        data-array of an MPDAF Image object, this is the dimension of
-        axis 0 of the python array that contains the image. If im is
-        an mpdaf.obj.Image object, then im.shape[0] is equivalent to
-        im.wcs.get_naxis2().
-
-        Returns
-        -------
-        out : int
-           The value of the FITS NAXIS2 parameter.
-
-        """
-        return self.naxis2
-
     def get_crpix1(self):
         """Return the value of the FITS CRPIX1 parameter.
 
