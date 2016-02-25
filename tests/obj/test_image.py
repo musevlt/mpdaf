@@ -101,10 +101,13 @@ def test_crop():
     image1.crop()
     assert_image_equal(image1, shape=(2, 3), start=(2, 1), end=(3, 3))
     nose.tools.assert_equal(image1.sum(), 2 * 3 * 8)
-    nose.tools.assert_equal(image1.get_range()[0], image1.get_start()[0])
-    nose.tools.assert_equal(image1.get_range()[1], image1.get_start()[1])
-    nose.tools.assert_equal(image1.get_range()[2], image1.get_end()[0])
-    nose.tools.assert_equal(image1.get_range()[3], image1.get_end()[1])
+    rng = image1.get_range()
+    start = image1.get_start()
+    end = image1.get_end()
+    nose.tools.assert_equal(rng[0], start[0])
+    nose.tools.assert_equal(rng[1], start[1])
+    nose.tools.assert_equal(rng[2], end[0])
+    nose.tools.assert_equal(rng[3], end[1])
     nose.tools.assert_equal(image1.get_rot(), 0)
 
 
