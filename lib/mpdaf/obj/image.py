@@ -270,8 +270,7 @@ class Image(DataArray):
 
             # How many columns and rows are there in the image?
 
-            nrow = self.data.shape[0]
-            ncol = self.data.shape[1]
+            nrow, ncol = self.data.shape
 
             # Get the indexes of rows with at least one unmasked pixel.
 
