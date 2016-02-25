@@ -209,62 +209,74 @@ class Cube(DataArray):
         if len(self.ima) > 0:
             self._logger.info('.ima: %s', ', '.join(self.ima.keys()))
 
+    @deprecated('The resize method is deprecated. Please use crop instead.')
     def resize(self):
+        return self.crop()
+
+    def crop(self):
         """Reduce the size of the cube to the smallest sub-cube that
            keeps all unmasked pixels. This removes any margins around
            the cube that only contain masked pixels. If all pixels are
-           masked in the input cube, the data and variance arrays are
-           deleted."""
+           masked in the input cube, a single masked pixel is kept."""
 
-        if self.data is not None:
+        if self.data is None:
+            return
 
-            # Get the indexes of all pixels that aren't masked.
+        # How many spectral layers, image columns and rows are there
+        # in the image?
 
-            ksel = np.where(~self.data.mask)
+        nspec, nrow, ncol = self.data.shape
 
-            # If all pixels are masked, simply delete the data
-            # and variance arrays.
+        # Get the indexes of layers with at least one unmasked pixel.
 
-            if ksel[0].size == 0:
-                self.data = None
-                self.var = None
-                return
+        used_spec = np.where(
+            np.ma.count_masked(self.data,1).sum(1) < nrow * ncol)[0]
 
-            # Determine the ranges of indexes along each axis that
-            # encompass all of the unmasked pixels, and convert this
-            # to slice prescriptions for selecting the corresponding
-            # sub-cube.
+        # Get the indexes of rows with at least one unmasked pixel.
 
-            item = (slice(min(ksel[0]), max(ksel[0]) + 1, None),  # Z axis
-                    slice(min(ksel[1]), max(ksel[1]) + 1, None),  # Y axis
-                    slice(min(ksel[2]), max(ksel[2]) + 1, None))  # X axis
+        used_rows = np.where(
+            np.ma.count_masked(self.data,0).sum(1) < nspec * ncol)[0]
 
-            # Extract the sub-cube selected above.
+        # Get the indexes of columns with at least one unmasked pixel.
 
-            self.data = self.data[item]
+        used_cols = np.where(
+            np.ma.count_masked(self.data,0).sum(0) < nspec * nrow)[0]
 
-            # Do the same for the array of variances, if there is one.
+        # Create a 3D slice that encloses all used rows and
+        # columns. If there are no umasked elements, then arrange
+        # to keep the first masked element, so that we are always
+        # left with valid 3D array.
 
-            if self.var is not None:
-                self.var = self.var[item]
+        if len(used_spec) > 0 and len(used_rows) > 0 and len(used_cols) > 0:
+            item = (slice(min(used_spec), max(used_spec) + 1, None),
+                    slice(min(used_rows), max(used_rows) + 1, None),
+                    slice(min(used_cols), max(used_cols) + 1, None))
+        else:
+            item = (slice(0,1,None), slice(0,1,None), slice(0,1,None))
 
-            # Adjust the world-coordinates to match the image slice.
+        # Extract the above 3D slice.
 
-            try:
-                self.wcs = self.wcs[item[1], item[2]]
-            except:
-                self.wcs = None
-                self._logger.warning("wcs not copied: wcs attribute is None")
+        self.data = self.data[item]
+        if self.var is not None:
+            self.var = self.var[item]
 
-            # Adjust the wavelength coordinates to match the
-            # spectral slice.
+        # Shift the reference pixel of the world coordinate information
+        # to account for any change to the image array indexes.
 
-            try:
-                self.wave = self.wave[item[0]]
-            except:
-                self.wave = None
-                self._logger.warning("wavelength solution not copied: "
-                                     "wave attribute is None")
+        try:
+            self.wcs = self.wcs[item[1], item[2]]
+        except:
+            self.wcs = None
+            self._logger.warning("Wcs not copied: wcs attribute is None"
+
+        # Adjust the wavelength coordinates to match the spectral slice.
+
+        try:
+            self.wave = self.wave[item[0]]
+        except:
+            self.wave = None
+            self._logger.warning("Wavelength solution not copied: "
+                                 "wave attribute is None")
 
     def mask(self, center, radius, lmin=None, lmax=None, inside=True,
              unit_center=u.deg, unit_radius=u.arcsec, unit_wave=u.angstrom):
