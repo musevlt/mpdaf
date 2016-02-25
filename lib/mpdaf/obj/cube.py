@@ -1426,15 +1426,10 @@ class Cube(DataArray):
             world coordinates unit.  If None, inputs are in pixels
 
         """
-        lmin  = coord[0]
-        y_min = coord[1]
-        x_min = coord[2]
-        lmax  = coord[3]
-        y_max = coord[4]
-        x_max = coord[5]
+        lmin, ymin, x_min, lmax, ymax, x_max = coord
 
-        skycrd = [[y_min, x_min], [y_min, x_max],
-                  [y_max, x_min], [y_max, x_max]]
+        skycrd = [[ymin, xmin], [ymin, xmax],
+                  [ymax, xmin], [ymax, xmax]]
         if unit_wcs is None:
             pixcrd = np.array(skycrd)
         else:
@@ -1489,8 +1484,8 @@ class Cube(DataArray):
                 skycrd = np.array(res.wcs.pix2sky(pixcrd, unit=unit_wcs))
             x = skycrd[:, 1].reshape(shape)
             y = skycrd[:, 0].reshape(shape)
-            test_x = np.logical_or(x < x_min, x > x_max)
-            test_y = np.logical_or(y < y_min, y > y_max)
+            test_x = np.logical_or(x < xmin, x > xmax)
+            test_y = np.logical_or(y < ymin, y > ymax)
             test = np.logical_or(test_x, test_y)
             res.data.mask = np.logical_or(res.data.mask,
                                           np.tile(test, [res.shape[0], 1, 1]))
