@@ -453,7 +453,7 @@ class WCS(object):
 
     Attributes
     ----------
-    wcs : pywcs.WCS
+    wcs : astropy.wcs.WCS
         The underlying object that performs most of the world coordinate
         conversions.
 
@@ -712,7 +712,7 @@ class WCS(object):
 
         Returns
         -------
-        out : boolean
+        out : bool
             True if the two WCS objects have the same attributes.
 
         """
@@ -741,7 +741,7 @@ class WCS(object):
 
         Returns
         -------
-        out : boolean
+        out : bool
             True if the two arrays of axis step increments are equal.
         """
 
