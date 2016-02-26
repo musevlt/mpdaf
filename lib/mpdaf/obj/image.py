@@ -4049,10 +4049,10 @@ class Image(DataArray):
         """
 
         res = self.copy() if copy else self
-        res.__adjust_coordinates(ref, nsigma=nsigma)
+        res._adjust_coordinates(ref, nsigma=nsigma)
         return res
 
-    def __adjust_coordinates(self, ref, nsigma=1.0):
+    def _adjust_coordinates(self, ref, nsigma=1.0):
 
         # Determine the pixel offset of features in the current
         # image relative to features in the reference image.
