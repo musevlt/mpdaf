@@ -3826,7 +3826,7 @@ class Image(DataArray):
                       unit_step=unit_step, cutoff=cutoff)
         return res
 
-    def __align_with_image(self, other, flux=False):
+    def _align_with_image(self, other, flux=False):
 
         # Do nothing if the images are already aligned.
 
@@ -3891,7 +3891,7 @@ class Image(DataArray):
         """
 
         res = self.copy() if copy else self
-        res.__align_with_image(other, flux)
+        res._align_with_image(other, flux)
         return res
 
     def estimate_coordinate_offset(self, ref, nsigma=1.0):
