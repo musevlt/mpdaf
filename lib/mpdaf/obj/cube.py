@@ -215,9 +215,15 @@ class Cube(DataArray):
 
     def crop(self):
         """Reduce the size of the cube to the smallest sub-cube that
-           keeps all unmasked pixels. This removes any margins around
-           the cube that only contain masked pixels. If all pixels are
-           masked in the input cube, a single masked pixel is kept."""
+        keeps all unmasked pixels. This removes any margins around
+        the cube that only contain masked pixels. If all pixels are
+        masked in the input cube, a single masked pixel is kept.
+
+        Returns
+        -------
+        out  :  (slice, slice, slice)
+            The slices that were used to extract the returned sub-cube.
+        """
 
         if self.data is None:
             return
@@ -277,6 +283,7 @@ class Cube(DataArray):
             self.wave = None
             self._logger.warning("Wavelength solution not copied: "
                                  "wave attribute is None")
+        return item
 
     def mask(self, center, radius, lmin=None, lmax=None, inside=True,
              unit_center=u.deg, unit_radius=u.arcsec, unit_wave=u.angstrom):

@@ -264,7 +264,13 @@ class Image(DataArray):
         return self.crop()
 
     def crop(self):
-        """Crops the image to remove any margins that are completely masked."""
+        """Crops the image to remove any margins that are completely masked.
+
+        Returns
+        -------
+        out  :  (slice,slice)
+            The slices that were used to extract the returned sub-image.
+        """
 
         if self.data is not None:
 
@@ -305,6 +311,8 @@ class Image(DataArray):
             except:
                 self.wcs = None
                 self._logger.warning("Wcs not copied")
+
+            return item
 
     def __add__(self, other):
         """Operator +.

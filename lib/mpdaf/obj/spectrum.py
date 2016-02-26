@@ -148,7 +148,13 @@ class Spectrum(DataArray):
         return self.crop()
 
     def crop(self):
-        """Remove any completely masked margins from each end of the spectrum."""
+        """Remove any completely masked margins from each end of the spectrum.
+
+        Returns
+        -------
+        out  :  slice
+            The slice that was used to extract the returned spectrum.
+        """
 
         if self.data is None or np.ma.count_masked(self.data) == 0:
             return
@@ -174,6 +180,8 @@ class Spectrum(DataArray):
         except:
             self.wave = None
             self._logger.warning("wavelength solution not copied")
+
+        return item
 
     def __add__(self, other):
         """Operator +.
