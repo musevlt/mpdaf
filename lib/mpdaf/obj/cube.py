@@ -2402,7 +2402,7 @@ class Cube(DataArray):
             k2 = self.shape[0] - 1
 
         msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2 + 1)
-        self._logger.info(msg)
+        self._logger.debug(msg)
         if is_sum:
             ima = self[k1:k2 + 1, :, :].sum(axis=0)
         else:
