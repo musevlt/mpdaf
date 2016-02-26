@@ -36,7 +36,7 @@ library flags. Note that on MAC OS, OpenMP is not used by default because
 clang doesn't support OpenMP. To force it, the ``USEOPENMP`` environment variable
 can be set to anything except an empty string::
 
-    sudo USEOPENMP=1 CC=<local path of gcc> python setup.py build
+    USEOPENMP=1 CC=<local path of gcc> python setup.py install
 
 Unit tests
 ----------
