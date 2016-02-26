@@ -206,7 +206,7 @@ def image_angle_from_cd(cd, unit=u.deg):
 
     Parameters
     ----------
-    cd : numpy.ndimage
+    cd : numpy.narray
         The 2x2 coordinate conversion matrix, with its elements
         ordered for multiplying a column vector in FITS (x,y) axis
         order.
@@ -262,7 +262,7 @@ def image_steps_from_cd(cd):
 
     Parameters
     ----------
-    cd : numpy.ndimage
+    cd : numpy.ndarray
         The 2x2 coordinate conversion matrix, with its elements
         ordered for multiplying a column vector in FITS (x,y) axis
         order.
@@ -1061,6 +1061,7 @@ class WCS(object):
         # The documentation for astropy.wcs.Wcsprm indicates that
         # get_cdelt() and get_pc() work:
         #
+
         # "even when the header specifies the linear transformation
         #  matrix in one of the alternative CDi_ja or CROTAia
         #  forms. This is useful when you want access to the linear
@@ -1069,7 +1070,9 @@ class WCS(object):
         #
         # So to ensure that get_cd() always returns the current CD
         # matrix, get CDELT and PC and convert them to the equivalent
-        # CD matrix.
+        # CD matrix. Note that self.wcs.wcs.piximg_matrix is not used
+        # because sometimes pywcs doesn't create it when a WCS object
+        # is not initialized from a FITS header.
 
         return np.dot(np.diag(self.wcs.wcs.get_cdelt()), self.wcs.wcs.get_pc())
 
@@ -1195,7 +1198,7 @@ class WCS(object):
 
         Parameters
         ----------
-        cd : numpy.ndimage
+        cd : numpy.ndarray
             The 2x2 coordinate conversion matrix, with its elements
             ordered for multiplying a column vector in FITS (x,y)
             axis order.
