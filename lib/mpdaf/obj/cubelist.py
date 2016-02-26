@@ -17,6 +17,16 @@ from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
 __all__ = ['CubeList', 'CubeMosaic']
 
+# List of keywords that will be copied to the combined cube
+KEYWORDS_TO_COPY = (
+    'ORIGIN', 'TELESCOP', 'INSTRUME', 'RA', 'DEC', 'EQUINOX', 'RADECSYS',
+    'EXPTIME', 'MJD-OBS', 'DATE-OBS', 'PI-COI', 'OBSERVER', 'OBJECT',
+    'ESO INS DROT POSANG', 'ESO INS MODE', 'ESO DET READ CURID',
+    'ESO INS TEMP11 VAL', 'ESO OBS ID', 'ESO OBS NAME', 'ESO OBS START',
+    'ESO TEL AIRM END', 'ESO TEL AIRM START', 'ESO TEL AMBI FWHM END',
+    'ESO TEL AMBI FWHM START'
+)
+
 
 class CubeList(object):
 
@@ -27,24 +37,24 @@ class CubeList(object):
 
     Parameters
     ----------
-    files : list of strings
-            List of cubes fits filenames
+    files : list of str
+        List of cubes fits filenames
 
     Attributes
     ----------
-    files  : list of strings
+    files : list of str
         List of cubes fits filenames
     nfiles : integer
         Number of files.
     scales : list of doubles
         List of scales
-    shape  : array of 3 integers)
+    shape : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
-    wcs    : :class:`mpdaf.obj.WCS`
+    wcs : :class:`mpdaf.obj.WCS`
         World coordinates.
-    wave   : :class:`mpdaf.obj.WaveCoord`
+    wave : :class:`mpdaf.obj.WaveCoord`
         Wavelength coordinates
-    unit   : string
+    unit : str
         Possible data unit type. None by default.
     """
 
@@ -55,9 +65,9 @@ class CubeList(object):
 
         Parameters
         ----------
-        files : list of strings
+        files : list of str
             List of cubes fits filenames
-        scalelist: list of double
+        scalelist: list of float
             (optional) list of scales to be applied to each cube
         """
         self._logger = logging.getLogger(__name__)
@@ -143,7 +153,7 @@ class CubeList(object):
             getattr(self, checker)()
 
     def save_combined_cube(self, data, var=None, method='', keywords=None,
-                           expnb=None, object_name=None, unit=None):
+                           expnb=None, unit=None, header=None):
         self._logger.info('Creating combined cube object')
 
         if data.ndim != 3:
@@ -155,22 +165,17 @@ class CubeList(object):
                  dtype=data.dtype, unit=unit or self.unit, mask=np.ma.nomask)
 
         hdr = c.primary_header
-        copy_keywords(
-            self.cubes[0].primary_header, hdr,
-            ('ORIGIN', 'TELESCOP', 'INSTRUME', 'RA', 'DEC', 'EQUINOX',
-             'RADECSYS', 'EXPTIME', 'MJD-OBS', 'DATE-OBS', 'PI-COI',
-             'OBSERVER', 'OBJECT', 'ESO INS DROT POSANG', 'ESO INS MODE',
-             'ESO DET READ CURID', 'ESO INS TEMP11 VAL', 'ESO OBS ID',
-             'ESO OBS NAME', 'ESO OBS START', 'ESO TEL AIRM END',
-             'ESO TEL AIRM START', 'ESO TEL AMBI FWHM END',
-             'ESO TEL AMBI FWHM START'))
+        copy_keywords(self.cubes[0].primary_header, hdr, KEYWORDS_TO_COPY)
 
         if expnb is not None and 'EXPTIME' in hdr:
             hdr['EXPTIME'] = hdr['EXPTIME'] * expnb
 
-        if object_name is not None:
-            c.primary_header['OBJECT'] = object_name
-            c.data_header['OBJECT'] = object_name
+        if header is not None:
+            c.primary_header.update(header)
+
+        # For MuseWise ?
+        if 'OBJECT' in c.primary_header:
+            c.data_header['OBJECT'] = c.primary_header['OBJECT']
         elif 'OBJECT' in self.cubes[0].data_header:
             c.data_header['OBJECT'] = self.cubes[0].data_header['OBJECT']
 
@@ -189,19 +194,20 @@ class CubeList(object):
             hdr['comment'] = '- ' + os.path.basename(f)
         return c
 
-    def median(self):
+    def median(self, header=None):
         """Combines cubes in a single data cube using median.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, Table
-              cube, expmap, statpix
+            cube, expmap, statpix
 
-              - ``cube`` will contain the merged cube
-              - ``expmap`` will contain an exposure map data cube which counts
-                the number of exposures used for the combination of each pixel.
-              - ``statpix`` is a table that will give the number of Nan pixels
-                pixels per exposures (columns are FILENAME and NPIX_NAN)
+            - ``cube`` will contain the merged cube
+            - ``expmap`` will contain an exposure map data cube which counts
+              the number of exposures used for the combination of each pixel.
+            - ``statpix`` is a table that will give the number of Nan pixels
+              pixels per exposures (columns are FILENAME and NPIX_NAN)
+
         """
         # load the library, using numpy mechanisms
         path = os.path.dirname(__file__)[:-4]
@@ -228,52 +234,54 @@ class CubeList(object):
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        kwargs = dict(expnb=np.nanmedian(expmap), method='obj.cubelist.median')
+        kwargs = dict(expnb=np.nanmedian(expmap), method='obj.cubelist.median',
+                      header=header)
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
         cube = self.save_combined_cube(data, **kwargs)
         return cube, expmap, stat_pix
 
-    def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate', mad=False):
+    def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate', mad=False,
+                header=None):
         """combines cubes in a single data cube using sigma clipped mean.
 
         Parameters
         ----------
         nmax  : integer
-                maximum number of clipping iterations
+            maximum number of clipping iterations
         nclip : float or (float,float)
-                Number of sigma at which to clip.
-                Single clipping parameter or lower / upper clipping parameters.
+            Number of sigma at which to clip.
+            Single clipping parameter or lower / upper clipping parameters.
         nstop : integer
-                If the number of not rejected pixels is less
-                than this number, the clipping iterations stop.
-        var   : string
-                ``propagate``, ``stat_mean``, ``stat_one``
+            If the number of not rejected pixels is less
+            than this number, the clipping iterations stop.
+        var   : str
+            ``propagate``, ``stat_mean``, ``stat_one``
 
-                - ``propagate``: the variance is the sum of the variances
-                  of the N individual exposures divided by N**2.
-                - ``stat_mean``: the variance of each combined pixel
-                  is computed as the variance derived from the comparison
-                  of the N individual exposures divided N-1.
-                - ``stat_one``: the variance of each combined pixel is
-                  computed as the variance derived from the comparison
-                  of the N individual exposures.
+            - ``propagate``: the variance is the sum of the variances
+              of the N individual exposures divided by N**2.
+            - ``stat_mean``: the variance of each combined pixel
+              is computed as the variance derived from the comparison
+              of the N individual exposures divided N-1.
+            - ``stat_one``: the variance of each combined pixel is
+              computed as the variance derived from the comparison
+              of the N individual exposures.
 
-        mad   : boolean
-                use MAD (median absolute deviation) statistics for
-                sigma-clipping
+        mad : boolean
+            Use MAD (median absolute deviation) statistics for sigma-clipping
 
         Returns
         -------
         out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, astropy.table
-              cube, expmap, statpix
+            cube, expmap, statpix
 
-              - ``cube`` will contain the merged cube
-              - ``expmap`` will contain an exposure map data cube which counts
-                the number of exposures used for the combination of each pixel.
-              - ``statpix`` is a table that will give the number of Nan pixels
-                and rejected pixels per exposures (columns are FILENAME,
-                NPIX_NAN and NPIX_REJECTED)
+            - ``cube`` will contain the merged cube
+            - ``expmap`` will contain an exposure map data cube which counts
+              the number of exposures used for the combination of each pixel.
+            - ``statpix`` is a table that will give the number of Nan pixels
+              and rejected pixels per exposures (columns are FILENAME,
+              NPIX_NAN and NPIX_REJECTED)
+
         """
         if is_int(nclip) or is_float(nclip):
             nclip_low = nclip
@@ -334,13 +342,13 @@ class CubeList(object):
                     ('nstop', nstop, 'clipping minimum number'),
                     ('var', var, 'type of variance')]
         kwargs = dict(expnb=np.nanmedian(expmap), keywords=keywords,
-                      method='obj.cubelist.merging')
+                      header=header, method='obj.cubelist.merging')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
         cube = self.save_combined_cube(data, var=vardata, **kwargs)
         return cube, expmap, statpix
 
-    def pymedian(self):
+    def pymedian(self, header=None):
         try:
             import fitsio
         except ImportError:
@@ -367,7 +375,7 @@ class CubeList(object):
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        kwargs = dict(expnb=np.nanmedian(expmap),
+        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
                       method='obj.cubelist.pymedian')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
@@ -375,7 +383,7 @@ class CubeList(object):
         return cube, expmap, stat_pix
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
-                  object_name=None):
+                  header=None):
         try:
             import fitsio
         except ImportError:
@@ -459,7 +467,7 @@ class CubeList(object):
                     ('nclip_low', nclip, 'lower clipping parameter'),
                     ('nclip_up', nclip, 'upper clipping parameter'),
                     ('var', var, 'type of variance')]
-        kwargs = dict(expnb=np.nanmedian(expmap), object_name=object_name,
+        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
                       keywords=keywords, method='obj.cubelist.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
@@ -477,27 +485,28 @@ class CubeMosaic(CubeList):
     values from the ``CRPIX`` keywords will be used as offsets to put a cube
     inside the combined cube.
 
-    This class inherits from :class:`mpdaf.obj.Cube`.
+    This class inherits from :class:`mpdaf.obj.CubeList`.
 
     Parameters
     ----------
-    files : list of strings
-            List of cubes fits filenames
+    files : list of str
+        List of cubes fits filenames
 
     Attributes
     ----------
-    files  : list of strings
+    files : list of str
         List of cubes fits filenames
     nfiles : integer
         Number of files.
-    shape  : array of 3 integers)
+    shape : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
-    wcs    : :class:`mpdaf.obj.WCS`
+    wcs : :class:`mpdaf.obj.WCS`
         World coordinates.
-    wave   : :class:`mpdaf.obj.WaveCoord`
+    wave : :class:`mpdaf.obj.WaveCoord`
         Wavelength coordinates
-    unit   : string
+    unit : str
         Possible data unit type. None by default.
+
     """
 
     checkers = ('check_dim', 'check_wcs')
@@ -507,7 +516,7 @@ class CubeMosaic(CubeList):
 
         Parameters
         ----------
-        files : list of strings
+        files : list of str
             List of cubes fits filenames.
         output_wcs : str
             Path to a cube FITS file, this cube is used to define the output
@@ -539,6 +548,7 @@ class CubeMosaic(CubeList):
         cdelt1 = wcs.get_step()
         cunit = wcs.unit
         rot = wcs.get_rot()
+        logger = self._logger
 
         for f, cube in zip(self.files, self.cubes):
             cw = cube.wcs
@@ -548,22 +558,20 @@ class CubeMosaic(CubeList):
                      allclose(cdelt1, cw.get_step(unit=cunit)),
                      allclose(rot, cw.get_rot())]
             if not all(valid):
-                msg = 'all cubes have not same spatial coordinates'
-                self._logger.warning(msg)
-                self._logger.info(valid)
-                self._logger.info(self.files[0])
+                logger.warning('all cubes have not same spatial coordinates')
+                logger.info(valid)
+                logger.info(self.files[0])
                 self.wcs.info()
-                self._logger.info(f)
+                logger.info(f)
                 cube.wcs.info()
                 return False
 
         for f, cube in zip(self.files, self.cubes):
             if not cube.wave.isEqual(self.wave):
-                msg = 'all cubes have not same spectral coordinates'
-                self._logger.warning(msg)
-                self._logger.info(self.files[0])
+                logger.warning('all cubes have not same spectral coordinates')
+                logger.info(self.files[0])
                 self.wave.info()
-                self._logger.info(f)
+                logger.info(f)
                 cube.wave.info()
                 return False
         return True
@@ -575,7 +583,7 @@ class CubeMosaic(CubeList):
             'Cubes must have the same spectral range.')
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
-                  object_name=None):
+                  header=None):
         try:
             import fitsio
         except ImportError:
@@ -667,7 +675,7 @@ class CubeMosaic(CubeList):
                     ('nclip_low', nclip, 'lower clipping parameter'),
                     ('nclip_up', nclip, 'upper clipping parameter'),
                     ('var', var, 'type of variance')]
-        kwargs = dict(expnb=np.nanmedian(expmap), object_name=object_name,
+        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
                       keywords=keywords, method='obj.cubemosaic.pymerging')
         cube = self.save_combined_cube(cube, var=vardata, **kwargs)
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,

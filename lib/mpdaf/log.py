@@ -55,6 +55,12 @@ def setup_logfile(name='mpdaf', level=logging.DEBUG, logfile='mpdaf.log'):
     logger.addHandler(file_handler)
 
 
+def clear_loggers(name='mpdaf'):
+    """Remove all handlers for a given logger."""
+    logger = logging.getLogger(name)
+    logger.handlers = []
+
+
 class ColoredFormatter(logging.Formatter):
     def format(self, record):
         level = record.levelname

@@ -1,5 +1,6 @@
 """cube.py manages Cube objects."""
 
+import astropy.units as u
 import multiprocessing
 import numpy as np
 import os.path
@@ -7,8 +8,8 @@ import sys
 import time
 import types
 
-import astropy.units as u
 from astropy.io import fits as pyfits
+from numpy import ma
 
 from .coords import WCS, WaveCoord
 from .data import DataArray
@@ -1187,32 +1188,26 @@ class Cube(DataArray):
         """
         if weights is not None:
             w = np.array(weights, dtype=np.float)
+            excmsg = 'Incorrect dimensions for the weights (%s) (it must be (%s))'
+
             if len(w.shape) == 3:
-                if (w.shape[0] != self.shape[0] or
-                        w.shape[1] != self.shape[1] or
-                        w.shape[2] != self.shape[2]):
-                    raise IOError('Incorrect dimensions for the weights (%i,%i,%i) (it must be (%i,%i,%i)) '
-                                  % (w.shape[0], w.shape[1], w.shape[2],
-                                     self.shape[0], self.shape[1], self.shape[2]))
+                if not np.array_equal(w.shape, self.shape):
+                    raise IOError(excmsg % (w.shape, self.shape))
             elif len(w.shape) == 2:
-                if w.shape[0] != self.shape[1] or \
-                   w.shape[1] != self.shape[2]:
-                    raise IOError('Incorrect dimensions for the weights (%i,%i) (it must be (%i,%i)) '
-                                  % (w.shape[0], w.shape[1], self.shape[1], self.shape[2]))
+                if w.shape[0] != self.shape[1] or w.shape[1] != self.shape[2]:
+                    raise IOError(excmsg % (w.shape, self.shape[1:]))
                 else:
                     w = np.tile(w, (self.shape[0], 1, 1))
             elif len(w.shape) == 1:
                 if w.shape[0] != self.shape[0]:
-                    raise IOError('Incorrect dimensions for the weights (%i) (it must be (%i))'
-                                  % (w.shape[0], self.shape[0]))
+                    raise IOError(excmsg % (w.shape[0], self.shape[0]))
                 else:
                     w = np.ones_like(self.data.data) * w[:, np.newaxis, np.newaxis]
             else:
-                raise IOError('Incorrect dimensions for the weights (it must be (%i,%i,%i)) '
-                              % (self.shape[0], self.shape[1], self.shape[2]))
+                raise IOError(excmsg % (None, self.shape))
 
             # weights mask
-            wmask = np.ma.masked_where(self.data.mask, np.ma.masked_where(w == 0, w))
+            wmask = ma.masked_where(self.data.mask, ma.masked_where(w == 0, w))
 
         if axis is None:
             if weights is None:
@@ -1220,50 +1215,45 @@ class Cube(DataArray):
             else:
                 data = self.data * w
                 npix = np.sum(~self.data.mask)
-                data = np.ma.sum(data) / npix
+                data = ma.sum(data) / npix
                 # flux conservation
                 orig_data = self.data * ~wmask.mask
-                orig_data = np.ma.sum(orig_data)
+                orig_data = ma.sum(orig_data)
                 rr = data / orig_data
-                med_rr = np.ma.median(rr)
+                med_rr = ma.median(rr)
                 if med_rr > 0:
                     data /= med_rr
                 return data
         elif axis == 0:
             # return an image
             if weights is None:
-                data = np.ma.sum(self.data, 0)
+                data = ma.sum(self.data, 0)
                 if self.var is not None:
-                    var = np.ma.masked_where(self.data.mask,
-                                             np.ma.masked_invalid(self.var))
-                    var = np.ma.sum(var, 0).filled(np.NaN)
+                    var = ma.sum(self.masked_var, 0).filled(np.NaN)
                 else:
                     var = None
             else:
                 data = self.data * w
                 npix = np.sum(~self.data.mask, axis)
-                data = np.ma.sum(data, axis) / npix
+                data = ma.sum(data, axis) / npix
                 orig_data = self.data * ~wmask.mask
-                orig_data = np.ma.sum(orig_data, axis)
+                orig_data = ma.sum(orig_data, axis)
                 rr = data / orig_data
-                med_rr = np.ma.median(rr)
+                med_rr = ma.median(rr)
                 if med_rr > 0:
                     data /= med_rr
                 if self.var is not None:
-                    var = self.var * w
-                    var = np.ma.masked_where(self.data.mask,
-                                             np.ma.masked_invalid(var))
-                    var = np.ma.sum(var, axis) / npix
-                    dspec = np.ma.sqrt(var)
+                    var = ma.sum(self.masked_var * w, axis) / npix
+                    dspec = ma.sqrt(var)
                     if med_rr > 0:
                         dspec /= med_rr
                     orig_var = self.var * ~wmask.mask
-                    orig_var = np.ma.masked_where(self.data.mask,
-                                                  np.ma.masked_invalid(orig_var))
-                    orig_var = np.ma.sum(orig_var, axis)
-                    sn_orig = orig_data / np.ma.sqrt(orig_var)
+                    orig_var = ma.masked_where(self.data.mask,
+                                               ma.masked_invalid(orig_var))
+                    orig_var = ma.sum(orig_var, axis)
+                    sn_orig = orig_data / ma.sqrt(orig_var)
                     sn_now = data / dspec
-                    sn_ratio = np.ma.median(sn_orig / sn_now)
+                    sn_ratio = ma.median(sn_orig / sn_now)
                     dspec /= sn_ratio
                     var = dspec * dspec
                     var = var.filled(np.NaN)
@@ -1274,38 +1264,33 @@ class Cube(DataArray):
         elif axis == tuple([1, 2]):
             # return a spectrum
             if weights is None:
-                data = np.ma.sum(np.ma.sum(self.data, axis=1), axis=1)
+                data = ma.sum(ma.sum(self.data, axis=1), axis=1)
                 if self.var is not None:
-                    var = np.ma.masked_where(self.data.mask,
-                                             np.ma.masked_invalid(self.var))
-                    var = np.ma.sum(np.ma.sum(var, axis=1), axis=1).filled(np.NaN)
+                    var = ma.sum(ma.sum(self.masked_var, axis=1), axis=1).filled(np.NaN)
                 else:
                     var = None
             else:
                 data = self.data * w
                 npix = np.sum(np.sum(~self.data.mask, axis=1), axis=1)
-                data = np.ma.sum(np.ma.sum(data, axis=1), axis=1) / npix
+                data = ma.sum(ma.sum(data, axis=1), axis=1) / npix
                 orig_data = self.data * ~wmask.mask
-                orig_data = np.ma.sum(np.ma.sum(orig_data, axis=1), axis=1)
+                orig_data = ma.sum(ma.sum(orig_data, axis=1), axis=1)
                 rr = data / orig_data
-                med_rr = np.ma.median(rr)
+                med_rr = ma.median(rr)
                 if med_rr > 0:
                     data /= med_rr
                 if self.var is not None:
-                    var = self.var * w
-                    var = np.ma.masked_where(self.data.mask,
-                                             np.ma.masked_invalid(var))
-                    var = np.ma.sum(np.ma.sum(var, axis=1), axis=1) / npix
-                    dspec = np.ma.sqrt(var)
+                    var = ma.sum(ma.sum(self.masked_var * w, axis=1), axis=1) / npix
+                    dspec = ma.sqrt(var)
                     if med_rr > 0:
                         dspec /= med_rr
                     orig_var = self.var * ~wmask.mask
-                    orig_var = np.ma.masked_where(self.data.mask,
-                                                  np.ma.masked_invalid(orig_var))
-                    orig_var = np.ma.sum(np.ma.sum(orig_var, axis=1), axis=1)
-                    sn_orig = orig_data / np.ma.sqrt(orig_var)
+                    orig_var = ma.masked_where(self.data.mask,
+                                               ma.masked_invalid(orig_var))
+                    orig_var = ma.sum(ma.sum(orig_var, axis=1), axis=1)
+                    sn_orig = orig_data / ma.sqrt(orig_var)
                     sn_now = data / dspec
-                    sn_ratio = np.ma.median(sn_orig / sn_now)
+                    sn_ratio = ma.median(sn_orig / sn_now)
                     dspec /= sn_ratio
                     var = dspec * dspec
                     var = var.filled(np.NaN)
@@ -1339,23 +1324,20 @@ class Cube(DataArray):
             return self.data.mean()
         elif axis == 0:
             # return an image
-            data = np.ma.mean(self.data, axis)
+            data = ma.mean(self.data, axis)
             if self.var is not None:
-                var = np.ma.sum(np.ma.masked_where(self.data.mask, self.var), axis).filled(np.NaN) \
-                    / np.sum(~self.data.mask, axis)**2
-                #var = np.ma.mean(np.ma.masked_invalid(self.var), axis).filled(np.NaN)
+                var = (ma.sum(self.masked_var, axis).filled(np.NaN) /
+                       ma.count(self.data, axis) ** 2)
             else:
                 var = None
             return Image(wcs=self.wcs, unit=self.unit, data=data, var=var,
                          copy=False)
         elif axis == tuple([1, 2]):
             # return a spectrum
-            data = np.ma.sum(np.ma.sum(self.data, axis=1), axis=1) / \
-                np.sum(np.sum(~self.data.mask, axis=1), axis=1)
+            data = (ma.sum(ma.sum(self.data, axis=1), axis=1) /
+                    np.sum(np.sum(~self.data.mask, axis=1), axis=1))
             if self.var is not None:
-                var = np.ma.sum(np.ma.sum(np.ma.masked_where(self.data.mask,
-                                                             self.var),
-                                          axis=1), axis=1).filled(np.NaN) \
+                var = ma.sum(ma.sum(self.masked_var, axis=1), axis=1).filled(np.NaN) \
                     / np.sum(np.sum(~self.data.mask, axis=1), axis=1)**2
             else:
                 var = None
@@ -2443,7 +2425,7 @@ class Cube(DataArray):
             ima.data -= off_im.data
             if ima.var is not None:
                 ima.var += off_im.var
-                
+
         #add input in header
         if unit_wave is None:
             unit = 'pix'

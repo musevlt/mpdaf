@@ -3389,7 +3389,7 @@ class Image(DataArray):
         Parameters
         ----------
         other : Image
-                Second image to add.
+            Second image to add.
         """
         if not isinstance(other, Image):
             raise IOError('Operation forbidden')
@@ -4064,7 +4064,6 @@ class Image(DataArray):
         if ax is None:
             ax = plt.gca()
 
-        f = self.data
         xunit = yunit = 'pixel'
         xlabel = 'q (%s)' % xunit
         ylabel = 'p (%s)' % yunit
@@ -4072,13 +4071,13 @@ class Image(DataArray):
         if self.shape[1] == 1:
             # plot a column
             yaxis = np.arange(self.shape[0], dtype=np.float)
-            ax.plot(yaxis, f)
+            ax.plot(yaxis, self.data)
             xlabel = 'p (%s)' % yunit
             ylabel = self.unit
         elif self.shape[0] == 1:
             # plot a line
             xaxis = np.arange(self.shape[1], dtype=np.float)
-            ax.plot(xaxis, f)
+            ax.plot(xaxis, self.data)
             ylabel = self.unit
         else:
             if zscale:
@@ -4100,13 +4099,13 @@ class Image(DataArray):
 
                 normalpha = mpl.colors.Normalize(wght.min(), wght.max())
 
-                img_array = plt.get_cmap('jet')(norm(f))
+                img_array = plt.get_cmap('jet')(norm(self.data))
                 img_array[:, :, 3] = 1 - normalpha(wght) / 2
                 cax = ax.imshow(img_array, interpolation='nearest',
                                 origin='lower', norm=norm, **kwargs)
             else:
-                cax = ax.imshow(f, interpolation='nearest', origin='lower',
-                                norm=norm, **kwargs)
+                cax = ax.imshow(self.data, interpolation='nearest',
+                                origin='lower', norm=norm, **kwargs)
 
             # create colorbar
             from mpl_toolkits.axes_grid1 import make_axes_locatable

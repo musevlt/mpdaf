@@ -14,7 +14,7 @@ import tempfile
 import numpy as np
 from astropy.io import fits
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
-from numpy.testing import assert_array_equal, assert_almost_equal, assert_allclose
+from numpy.testing import assert_array_equal, assert_allclose
 from os.path import join
 
 from ..utils import generate_image, generate_cube, generate_spectrum
@@ -61,8 +61,6 @@ def test_copy():
     cube1 = DataArray(data=np.arange(5 * 4 * 3).reshape(5, 4, 3), wave=wave,
                       wcs=wcs)
     cube2 = cube1.copy()
-    nose.tools.assert_true(cube1.wcs.isEqual(cube2.wcs))
-    nose.tools.assert_true(cube1.wave.isEqual(cube2.wave))
     assert_allclose(cube1.data, cube2.data)
 
 
