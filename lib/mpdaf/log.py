@@ -43,12 +43,13 @@ def setup_logging(name='mpdaf', level=logging.DEBUG, color=False,
     logger.addHandler(steam_handler)
 
 
-def setup_logfile(name='mpdaf', level=logging.DEBUG, logfile='mpdaf.log'):
+def setup_logfile(name='mpdaf', level=logging.DEBUG, logfile='mpdaf.log',
+                  fmt='%(asctime)s [%(levelname)s] {%(name)s:%(lineno)d} '
+                      '%(message)s'):
     """Setup logging to file."""
     from logging.handlers import RotatingFileHandler
     logger = logging.getLogger(name)
-    formatter = logging.Formatter(
-        '%(asctime)s [%(levelname)s] {%(name)s:%(lineno)d} %(message)s')
+    formatter = logging.Formatter(fmt)
     file_handler = RotatingFileHandler(logfile, 'a', 1000000, 1)
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
