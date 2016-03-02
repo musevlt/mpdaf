@@ -344,7 +344,7 @@ class Source(object):
         ----------
         filename : string
             FITS filename
-        ext : list of String
+        ext : string or list of string
               Names of the FITS extensions that will be loaded in the source object.
               Regular expression accepted.
         """
@@ -358,7 +358,12 @@ class Source(object):
         if ext is None:
             extnames = [h.name for h in hdulist[1:]]
         else:
-            extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
+            if type(ext)==str:
+                extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
+            else:
+                extnames = []
+                for e in ext:
+                    extnames += [h.name for h in hdulist[1:] if re.findall(e, h.name)]
 
         lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in extnames
                  else None)
