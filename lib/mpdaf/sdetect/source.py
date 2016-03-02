@@ -4,6 +4,7 @@ import glob
 import logging
 import numpy as np
 import os.path
+import re
 import shutil
 import warnings
 
@@ -336,13 +337,16 @@ class Source(object):
         return cls(header, lines, mag, z, spectra, images, cubes, tables)
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, ext=None):
         """Source constructor from a FITS file.
 
         Parameters
         ----------
         filename : string
             FITS filename
+        ext : list of String
+              Names of the FITS extensions that will be loaded in the source object.
+              Regular expression accepted.
         """
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
@@ -350,8 +354,13 @@ class Source(object):
         images = {}
         cubes = {}
         tables = {}
+        
+        if ext is None:
+            extnames = [h.name for h in hdulist[1:]]
+        else:
+            extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
 
-        lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in hdulist
+        lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in extnames
                  else None)
         if lines is not None:
             for name in lines.colnames:
@@ -360,7 +369,7 @@ class Source(object):
                 if 'FLUX' in name or 'FWHM' in name:
                     lines[name].format = '.1f'
 
-        mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in hdulist else None
+        mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in extnames else None
         if mag is not None:
             for name in mag.colnames:
                 mag[name].unit = 'unitless'
@@ -373,7 +382,7 @@ class Source(object):
                     mag[name].format = '.3f'
                     mag[name].description = 'AB Magnitude'
 
-        z = _read_masked_table(hdulist, 'Z') if 'Z' in hdulist else None
+        z = _read_masked_table(hdulist, 'Z') if 'Z' in extnames else None
         if z is not None:
             for name in z.colnames:
                 z[name].unit = 'unitless'
@@ -399,26 +408,27 @@ class Source(object):
                     raise IOError('%s: Extension %d without EXTNAME' % (
                         os.path.basename(filename), i))
 
-                start = extname[:3]
-                end = extname[-4:]
-
-                if end == 'STAT':
-                    continue
-                elif end == 'DATA':
-                    name = extname[4:-5]
-                    stat_ext = '%s_%s_STAT' % (start, name)
-                    if stat_ext in hdulist:
-                        ext = (extname, stat_ext)
-                    else:
-                        ext = extname
-                    if start == 'SPE':
-                        spectra[name] = _read_spectrum(hdulist, ext)
-                    elif start == 'IMA':
-                        images[name] = _read_image(hdulist, ext)
-                    elif start == 'CUB':
-                        cubes[name] = _read_cube(hdulist, ext, ima=False)
-                elif start == 'TAB':
-                    tables[extname[4:]] = _read_masked_table(hdulist, extname)
+                if extname in extnames:
+                    start = extname[:3]
+                    end = extname[-4:]
+    
+                    if end == 'STAT':
+                        continue
+                    elif end == 'DATA':
+                        name = extname[4:-5]
+                        stat_ext = '%s_%s_STAT' % (start, name)
+                        if stat_ext in hdulist:
+                            ext = (extname, stat_ext)
+                        else:
+                            ext = extname
+                        if start == 'SPE':
+                            spectra[name] = _read_spectrum(hdulist, ext)
+                        elif start == 'IMA':
+                            images[name] = _read_image(hdulist, ext)
+                        elif start == 'CUB':
+                            cubes[name] = _read_cube(hdulist, ext, ima=False)
+                    elif start == 'TAB':
+                        tables[extname[4:]] = _read_masked_table(hdulist, extname)
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
