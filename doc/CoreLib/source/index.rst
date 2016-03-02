@@ -40,7 +40,6 @@ Contents
    muse
    tools
    sdetect
-   dvper_manual
    api
    changelog
 

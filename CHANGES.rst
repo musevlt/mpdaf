@@ -1,56 +1,59 @@
 v1.3.dev (17/01/2016)
 ---------------------
 
-- remove submodules *ZAP* and *GALPAK*.
+- Remove submodules *ZAP* and *GALPAK*.
 
-  - *ZAP* is now publicly available `here <https://github.com/ktsoto/zap>`_
-  - *GALPAK* is available `here <http://galpak.irap.omp.eu/downloads.html>`_
+  - `ZAP <https://github.com/ktsoto/zap>`_ is now publicly available.
+  - `GALPAK <http://galpak.irap.omp.eu/downloads.html>`_ is also publicly
+    available.
 
-  
-- update *MUSELET* function:
+- Update *MUSELET* function:
 
   - optimize matchlines function
   - split the main function in several functions
   - remove numpy warning
   - use a numpy array and not a masked array for the weights arra
   - use masked median of inv_variance
-  
-  
-- *ORIGIN* detectiOn and extRactIon of Galaxy emIssion liNes
-    
-    This software has been developped by Carole Clastres under the supervision of David Mary (Lagrange institute, University of Nice) and ported to python by Laure Piqueras (CRAL). The project is funded by the ERC MUSICOS (Roland Bacon, CRAL).
-    
-    Test version. ``Origin.py`` must be run as script for the moment.
-    It is not installed as a mpdaf package.
 
-    
+- Add *ORIGIN*: *detectiOn and extRactIon of Galaxy emIssion liNes*
+
+  This software has been developped by Carole Clastres under the supervision of
+  David Mary (Lagrange institute, University of Nice) and ported to Python by
+  Laure Piqueras (CRAL). The project is funded by the ERC MUSICOS (Roland
+  Bacon, CRAL).
+
+  Test version. ``Origin.py`` must be run as script for the moment.
+  It is not installed as a mpdaf package.
+
 - ``Cube.get_image``: add input param in the fits header
 - Correct bug in ``Catalog.from_sources``
 - Propagate mask in ``Cube.subcube``
 - Refactor ``Cube.subcube_circle_aperture`` to use ``Cube.subcube()`` and ``Cube.mask()``
 - Tell which keyword is missing when creating a source.
-- Correct error in WCS when both CDELT1 and CD1_1
+- Correct error in WCS when both ``CDELT1`` and ``CD1_1``.
 - Fix ``Cube.median`` without axis and enhance tests.
 - Convert pixable values to double to avoid precision errors.
-    
-    This avoids discrepancies between _get_pos_sky and _get_pos_sky_numexpr (numexpr
-    seems to use double precision by default) and probably also with other methods.
-  
-- Allow to overwrite BUNIT for data without unit.
-- Fix EXPTIME of combined cubes when cubes overlap (using a median of the exposure map give a more realistic estimate).
-- A few improvements to comments and docstrings.
-- Fixed the computation of slices in Cube.resize().
-- Added future imports for python2/3 compatibility
-- Fix initial value for subtract_slice_median correction.
-    
-    This value was set to 1 which seems wrong for an additive correction. To
-    emphasize the fact that some combination of slices and quadrants are not valid,
-    and allow to filter these values later, this commit changes the init value for
-    the count to -1, and the correction to NaN.
 
-- Correct Spectrum.sum() for masked arrays with variances.
+  This avoids discrepancies between ``_get_pos_sky`` and
+  ``_get_pos_sky_numexpr`` (numexpr seems to use double precision by default)
+  and probably also with other methods.
+
+- Allow to overwrite ``BUNIT`` for data without unit.
+- Fix ``EXPTIME`` of combined cubes when cubes overlap (using a median of the
+  exposure map give a more realistic estimate).
+- A few improvements to comments and docstrings.
+- Fixed the computation of slices in ``Cube.resize()``.
+- Added future imports for python2/3 compatibility
+- Fix initial value for ``subtract_slice_median`` correction.
+
+  This value was set to 1 which seems wrong for an additive correction. To
+  emphasize the fact that some combination of slices and quadrants are not
+  valid, and allow to filter these values later, this commit changes the init
+  value for the count to -1, and the correction to NaN.
+
+- Correct ``Spectrum.sum()`` for masked arrays with variances.
 - Fix the handling of variances when mutliplying an image by a spectrum.
-- Add an introduction to the documentation of the DataArray Class.
+- Add an introduction to the documentation of the ``DataArray`` class.
 
 
 v1.2 (13/01/2016)
