@@ -666,21 +666,23 @@ class DataArray(object):
         """
         if self.data.dtype == np.float64:
             # Force data to be stored in float instead of double
-            self.data = self.data.astype(np.float32)
+            data = self.data.astype(np.float32)
+        else:
+            data = self.data
 
         # create DATA extension
-        if savemask == 'nan' and ma.count_masked(self.data) > 0:
+        if savemask == 'nan' and ma.count_masked(data) > 0:
             # NaNs can be used only for float arrays, so we raise an exception
             # if there are masked values in a non-float array.
-            if not np.issubdtype(self.data.dtype, np.float):
+            if not np.issubdtype(data.dtype, np.float):
                 raise ValueError('The .data array contains masked values but '
                                  'its type does not allow replacement with '
                                  'NaNs. You can either fill the array with '
                                  'another value or use another option for '
                                  'savemask.')
-            data = self.data.filled(fill_value=np.nan)
+            data = data.filled(fill_value=np.nan)
         else:
-            data = self.data.data
+            data = data.data
 
         hdr = copy_header(self.data_header, self.get_wcs_header(),
                           exclude=('CD*', 'PC*', 'CDELT*', 'CRPIX*', 'CRVAL*',
@@ -706,7 +708,10 @@ class DataArray(object):
             return None
 
         if self.var.dtype == np.float64:
-            self.var = self.var.astype(np.float32)
+            # Force var to be stored in float instead of double
+            var = self.var.astype(np.float32)
+        else:
+            var = self.var
 
         # world coordinates
         if header is None:
@@ -714,7 +719,7 @@ class DataArray(object):
 
         header = copy_header(self.data_header, header,
                              exclude=('CD*', 'PC*'), unit=self.unit**2)
-        return fits.ImageHDU(name=name, data=self.var, header=header)
+        return fits.ImageHDU(name=name, data=var, header=header)
 
     def write(self, filename, savemask='dq'):
         """Save the data to a FITS file.
