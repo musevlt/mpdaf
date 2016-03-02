@@ -722,19 +722,67 @@ class Image(DataArray):
             return other.__div__(self)
 
     def get_step(self, unit=None):
-        """Return the image steps [dy, dx].
+        """Return the angular height and width of a pixel along the
+        Y and X axes of the image array.
+
+        In MPDAF, images are sampled on a regular grid of square
+        pixels that represent a flat projection of the celestial
+        sphere. The get_step() method returns the angular width and
+        height of these pixels on the sky.
+
+        See also get_axis_increments().
 
         Parameters
         ----------
         unit : astropy.units
-            type of the world coordinates
+            The angular units of the returned values.
 
         Returns
         -------
-        out : float array
+        out : numpy.ndarray
+           (dy,dx). These are the angular height and width of pixels
+           along the Y and X axes of the image. The returned values are
+           either in the unit specified by the 'unit' input parameter,
+           or in the unit specified by the self.unit property.
         """
+
         if self.wcs is not None:
             return self.wcs.get_step(unit)
+
+    def get_axis_increments(self, unit=None):
+        """Return the displacements on the sky that result from
+        incrementing the array indexes of the image by one along the Y
+        and X axes, respectively.
+
+        In MPDAF, images are sampled on a regular grid of square
+        pixels that represent a flat projection of the celestial
+        sphere. The get_axis_increments() method returns the angular
+        width and height of these pixels on the sky, with signs that
+        indicate whether the angle increases or decreases as one
+        increments the array indexes. To keep plots consistent,
+        regardless of the rotation angle of the image on the sky, the
+        returned height is always positive, but the returned width is
+        negative if a plot of the image with pixel 0,0 at the bottom
+        left would place east anticlockwise of north, and positive
+        otherwise.
+
+        Parameters
+        ----------
+        unit : astropy.units
+            The angular units of the returned values.
+
+        Returns
+        -------
+        out : numpy.ndarray
+           (dy,dx). These are the angular increments of pixels along
+           the Y and X axes of the image. The returned values are
+           either in the unit specified by the 'unit' input parameter,
+           or in the unit specified by the self.unit property.
+
+        """
+
+        if self.wcs is not None:
+            return self.wcs.get_axis_increments(unit)
 
     def get_range(self, unit=None):
         """Return the minimum and maximum right-ascensions and declinations
@@ -866,7 +914,7 @@ class Image(DataArray):
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
         if unit_radius is not None:
-            radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+            radius = radius / self.wcs.get_step(unit=unit_radius)
             radius2 = radius[0] * radius[1]
 
         imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int),
@@ -930,7 +978,7 @@ class Image(DataArray):
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
         if unit_radius is not None:
-            radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+            radius = radius / self.wcs.get_step(unit=unit_radius)
 
         maxradius = max(radius[0], radius[1])
 
@@ -1108,7 +1156,7 @@ class Image(DataArray):
             else:
                 center = np.array(center)
             if unit_size is not None:
-                step0 = np.abs(self.wcs.get_step(unit=unit_size)[0])
+                step0 = self.wcs.get_step(unit=unit_size)[0]
                 size = size / step0
                 minsize = minsize / step0
             radius = np.array(size) / 2.
@@ -1174,7 +1222,7 @@ class Image(DataArray):
 
         # Get the current pixel size.
 
-        oldstep = self.wcs.get_step()
+        oldstep = self.wcs.get_axis_increments()
 
         # Determine the maximum frequencies that the current image
         # array can sample along the X and Y axes.
@@ -1612,7 +1660,7 @@ class Image(DataArray):
             if unit_center is not None:
                 center = self.wcs.sky2pix(center, unit=unit_center)[0]
             if unit_radius is not None:
-                radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+                radius = radius / self.wcs.get_step(unit=unit_radius)
 
             imin = center[0] - radius[0]
             if imin < 0:
@@ -1685,7 +1733,7 @@ class Image(DataArray):
             if unit_center is not None:
                 center = self.wcs.sky2pix(center, unit=unit_center)[0]
             if unit_radius is not None:
-                radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+                radius = radius / self.wcs.get_step(unit=unit_radius)
 
             imin = max(0, center[0] - radius[0])
             imax = min(center[0] + radius[0] + 1, self.shape[0])
@@ -1742,7 +1790,7 @@ class Image(DataArray):
             if unit_center is not None:
                 center = self.wcs.sky2pix(center, unit=unit_center)[0]
             if unit_radius is not None:
-                radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+                radius = radius / self.wcs.get_step(unit=unit_radius)
                 radius2 = radius[0] * radius[1]
 
             imin = max(0, center[0] - radius[0])
@@ -2028,8 +2076,8 @@ class Image(DataArray):
         mom = np.array([width_p, width_q])
         if unit is not None:
             dy, dx = self.wcs.get_step(unit=unit)
-            mom[0] = mom[0] * np.abs(dy)
-            mom[1] = mom[1] * np.abs(dx)
+            mom[0] = mom[0] * dy
+            mom[1] = mom[1] * dx
         return mom
 
     def gauss_fit(self, pos_min=None, pos_max=None, center=None, flux=None,
@@ -2156,7 +2204,7 @@ class Image(DataArray):
         else:
             if unit_fwhm is not None:
                 fwhm = np.array(fwhm)
-                fwhm = fwhm / np.abs(self.wcs.get_step(unit=unit_fwhm))
+                fwhm = fwhm / self.wcs.get_step(unit=unit_fwhm)
             width = np.array(fwhm) / (2. * np.sqrt(2. * np.log(2.0)))
 
         # initial gaussian integrated flux
@@ -2380,15 +2428,15 @@ class Image(DataArray):
             # Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
 
-            err_center = np.array([err_p_peak, err_q_peak]) * np.abs(self.wcs.get_step(unit=unit_center))
+            err_center = np.array([err_p_peak, err_q_peak]) * self.wcs.get_step(unit=unit_center)
         else:
             center = (p_peak, q_peak)
             err_center = (err_p_peak, err_q_peak)
 
         if unit_fwhm is not None:
             step = self.wcs.get_step(unit=unit_fwhm)
-            fwhm = np.array([p_fwhm, q_fwhm]) * np.abs(step)
-            err_fwhm = np.array([err_p_fwhm, err_q_fwhm]) * np.abs(step)
+            fwhm = np.array([p_fwhm, q_fwhm]) * step
+            err_fwhm = np.array([err_p_fwhm, err_q_fwhm]) * step
         else:
             fwhm = (p_fwhm, q_fwhm)
             err_fwhm = (err_p_fwhm, err_q_fwhm)
@@ -2549,7 +2597,7 @@ class Image(DataArray):
             fwhm = width * 2. * np.sqrt(2. * np.log(2.0))
         else:
             if unit_fwhm is not None:
-                fwhm = np.array(fwhm) / np.abs(self.wcs.get_step(unit=unit_fwhm))
+                fwhm = np.array(fwhm) / self.wcs.get_step(unit=unit_fwhm)
             else:
                 fwhm = np.array(fwhm)
 
@@ -2861,10 +2909,10 @@ class Image(DataArray):
         else:
             # Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
-            err_center = np.array([err_p_peak, err_q_peak]) * np.abs(self.wcs.get_step(unit=unit_center))
+            err_center = np.array([err_p_peak, err_q_peak]) * self.wcs.get_step(unit=unit_center)
 
         if unit_fwhm is not None:
-            step0 = np.abs(self.wcs.get_step(unit=unit_fwhm)[0])
+            step0 = self.wcs.get_step(unit=unit_fwhm)[0]
             a = a * step0
             err_a = err_a * step0
             fwhm = fwhm * step0
@@ -3048,7 +3096,7 @@ class Image(DataArray):
 
         # Get the current index increments of the 2 axes.
 
-        oldstep = self.wcs.get_step()
+        oldstep = self.wcs.get_axis_increments()
 
         # Use a common step-size for both axes? If so, give them
         # the same size, but with signs matching the current
@@ -3245,7 +3293,7 @@ class Image(DataArray):
 
         # Update the world-coordinate description object.
 
-        self.wcs.set_step(newstep)
+        self.wcs.set_axis_increments(newstep)
         self.wcs.set_naxis1(newdim[1])
         self.wcs.set_naxis2(newdim[0])
 
@@ -3315,11 +3363,11 @@ class Image(DataArray):
 
             If either of the signs of the two newstep numbers is
             different from the step size of the original image
-            (queryable with image.wcs.get_step()), then the image will
-            be reflected about that axis. In this case be careful to
-            choose the value of the newstart argument carefully, or
-            the sampled part of the image may be reflected out of the
-            image array.
+            (queryable with image.get_axis_increments()), then the
+            image will be reflected about that axis. In this case be
+            careful to choose the value of the newstart argument
+            carefully, or the sampled part of the image may be
+            reflected out of the image array.
 
             If only one number is given for newstep then both axes
             are given the same resolution, but the signs of the
@@ -3386,12 +3434,13 @@ class Image(DataArray):
         centerpix = np.asarray(other.shape) / 2.0
         centersky = other.wcs.pix2sky(centerpix)[0]
 
-        # Re-sample the rotated image to have the same step size,
-        # offset and number of pixels as the image that we are
-        # aligning it with.
+        # Re-sample the rotated image to have the same axis
+        # increments, offset and number of pixels as the image that we
+        # are aligning it with.
 
         self._resample(other.shape, centersky, centerpix,
-                       other.wcs.get_step(unit=u.deg), flux, unit_step=u.deg)
+                       other.wcs.get_axis_increments(unit=u.deg),
+                       flux, unit_step=u.deg)
 
 
     def align_with_image(self, other, flux=False, copy=True):
@@ -4982,7 +5031,7 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
             center = wcs.sky2pix(center, unit=unit_center)[0]
 
     if unit_fwhm is not None:
-        fwhm = np.array(fwhm) / np.abs(wcs.get_step(unit=unit_fwhm))
+        fwhm = np.array(fwhm) / wcs.get_step(unit=unit_fwhm)
 
     data = np.empty(shape=shape, dtype=float)
 
@@ -5127,7 +5176,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
     e = fwhm[0] / fwhm[1]
 
     if unit_fwhm is not None:
-        a = a / np.abs(wcs.get_step(unit=unit_fwhm)[0])
+        a = a / wcs.get_step(unit=unit_fwhm)[0]
 
     if peak:
         I = flux
@@ -5384,7 +5433,7 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
     data = np.zeros(shape)
     for y, x, r in objects:
         center = wcs.sky2pix([y, x], unit=u.deg)[0]
-        r = np.array(r) / np.abs(wcs.get_step(unit=u.arcsec))
+        r = np.array(r) / wcs.get_step(unit=u.arcsec)
         r2 = r[0] * r[1]
         imin = max(0, center[0] - r[0])
         imax = min(center[0] + r[0] + 1, shape[0])

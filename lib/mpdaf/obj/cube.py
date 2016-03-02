@@ -332,7 +332,7 @@ class Cube(DataArray):
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
         if unit_radius is not None:
-            radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+            radius = radius / self.wcs.get_step(unit=unit_radius)
             radius2 = radius[0] * radius[1]
 
         if lmin is None:
@@ -408,7 +408,7 @@ class Cube(DataArray):
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
         if unit_radius is not None:
-            radius = radius / np.abs(self.wcs.get_step(unit=unit_radius))
+            radius = radius / self.wcs.get_step(unit=unit_radius)
         if lmin is None:
             lmin = 0
         else:
@@ -2516,7 +2516,7 @@ class Cube(DataArray):
         else:
             center = np.array(center)
         if unit_size is not None:
-            size = size / np.abs(self.wcs.get_step(unit=unit_size)[0])
+            size = size / self.wcs.get_step(unit=unit_size)[0]
         radius = size / 2.
 
         size = int(size + 0.5)

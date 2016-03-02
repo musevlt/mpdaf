@@ -198,7 +198,7 @@ def image_angle_from_cd(cd, unit=u.deg):
     Note that the rotation angle is defined in a flat map-projection
     of the sky. It is what would be seen if the pixels of the image
     were drawn with their pixel widths scaled by the angular pixel
-    increments returned by the image_steps_from_cd() method.
+    increments returned by the axis_increments_from_cd() method.
 
     If the CD matrix was derived from the archaic CROTA and CDELT FITS
     keywords, then the angle returned by this function is equal to
@@ -225,7 +225,7 @@ def image_angle_from_cd(cd, unit=u.deg):
     # Get the angular increments of pixels along the Y and X axes
     # of the image.
 
-    step = image_steps_from_cd(cd)
+    step = axis_increments_from_cd(cd)
 
     # Get the determinant of the coordinate transformation matrix.
 
@@ -244,7 +244,7 @@ def image_angle_from_cd(cd, unit=u.deg):
 
     return (north * u.rad).to(unit).value
 
-def image_steps_from_cd(cd):
+def axis_increments_from_cd(cd):
     """Return the angular increments of pixels along the Y and X axes
     of an image array whose coordinates are described by a specified
     FITS CD matrix.
@@ -876,19 +876,98 @@ class WCS(object):
             raise ValueError('Missing 2D slice indexes')
 
     def get_step(self, unit=None):
-        """Return the angular increments of pixels along the Y and X axes
-           of the image array.
+        """Return the angular height and width of a pixel along the
+        Y and X axes of the image array.
 
-        In MPDAF, images are a regular grid of square pixels on a flat
-        projection of the celestial sphere. The get_step() method
-        returns the angular width and height of these pixels on the
-        sky, with signs that indicate whether the angle increases or
-        decreases as one steps along the corresponding array axis. To
-        keep plots consistent, regardless of the rotation angle of the
-        image on the sky, the returned height is always positive, but
-        the returned width is negative if a plot of the image with
-        pixel 0,0 at the bottom left would place east anticlockwise of
-        north, and positive otherwise.
+        In MPDAF, images are sampled on a regular grid of square
+        pixels that represent a flat projection of the celestial
+        sphere. The get_step() method returns the angular width and
+        height of these pixels on the sky.
+
+        See also get_axis_increments().
+
+        Parameters
+        ----------
+        unit : astropy.units
+            The angular units of the returned values.
+
+        Returns
+        -------
+        out : numpy.ndarray
+           (dy,dx). These are the angular height and width of pixels
+           along the Y and X axes of the image. The returned values are
+           either in the unit specified by the 'unit' input parameter,
+           or in the unit specified by the self.unit property.
+
+        """
+
+        # Get the FITS coordinate conversion matrix.
+
+        cd = self.get_cd()
+
+        # The pixel dimensions are determined as follows. First note
+        # that the coordinate transformation matrix looks as follows:
+        #
+        #    |r| = |M[0,0], M[0,1]| |col - get_crpix1()|
+        #    |d|   |M[1,0], M[1,1]| |row - get_crpix2()|
+        #
+        # In this equation [col,row] are the indexes of a pixel in the
+        # image array and [r,d] are the coordinates of this pixel on a
+        # flat map-projection of the sky. If the celestial coordinates
+        # of the observation are right ascension and declination, then d
+        # is parallel to declination, and r is perpendicular to this,
+        # pointing east. When the column index is incremented by 1, the
+        # above equation indicates that r and d change by:
+        #
+        #    col_dr = M[0,0]   col_dd = M[1,0]
+        #
+        # The length of the vector from (0,0) to (col_dr,col_dd) is
+        # the angular width of pixels along the X axis.
+        #
+        #    dx = sqrt(M[0,0]^2 + M[1,1]^2)
+        #
+        # Similarly, when the row index is incremented by 1, r and d
+        # change by:
+        #
+        #    row_dr = M[0,1]   row_dd = M[1,1]
+        #
+        # The length of the vector from (0,0) to (row_dr,row_dd) is
+        # the angular width of pixels along the Y axis.
+        #
+        #    dy = sqrt(M[0,1]^2 + M[1,1]^2)
+        #
+        # Calculate the width and height of the pixels as described above.
+
+        dx = np.sqrt(cd[0,0]**2 + cd[1,0]**2)
+        dy = np.sqrt(cd[0,1]**2 + cd[1,1]**2)
+
+        # Place the height and width in an array.
+
+        steps = np.array([dy, dx])
+
+        # Convert to a requested angular unit?
+
+        if unit is not None:
+            steps = (steps * self.unit).to(unit).value
+
+        return steps
+
+    def get_axis_increments(self, unit=None):
+        """Return the displacements on the sky that result from
+        incrementing the array indexes of the image by one along the Y
+        and X axes, respectively.
+
+        In MPDAF, images are sampled on a regular grid of square
+        pixels that represent a flat projection of the celestial
+        sphere. The get_axis_increments() method returns the angular
+        width and height of these pixels on the sky, with signs that
+        indicate whether the angle increases or decreases as one
+        increments the array indexes. To keep plots consistent,
+        regardless of the rotation angle of the image on the sky, the
+        returned height is always positive, but the returned width is
+        negative if a plot of the image with pixel 0,0 at the bottom
+        left would place east anticlockwise of north, and positive
+        otherwise.
 
         Parameters
         ----------
@@ -909,16 +988,16 @@ class WCS(object):
 
         cd = self.get_cd()
 
-        # Get the axis steps that are configured by the CD matrix.
+        # Get the axis increments that are configured by the CD matrix.
 
-        steps = image_steps_from_cd(cd)
+        increments = axis_increments_from_cd(cd)
 
         # Convert to the requested angular units?
 
         if unit is not None:
-            steps = (steps * self.unit).to(unit).value
+            increments = (increments * self.unit).to(unit).value
 
-        return steps
+        return increments
 
     def get_range(self, unit=None):
 
@@ -1219,7 +1298,7 @@ class WCS(object):
             self.wcs.wcs.cd = cd
         elif self.wcs.wcs.has_crota(): # CROTA + CDELT
             self.wcs.wcs.crota = image_angle_from_cd(cd, u.deg)
-            self.wcs.wcs.cdelt = image_steps_from_cd(cd, u.deg)[::-1]
+            self.wcs.wcs.cdelt = axis_increments_from_cd(cd, u.deg)[::-1]
 
         self.wcs.wcs.set()
 
@@ -1334,20 +1413,41 @@ class WCS(object):
         self.wcs.wcs.set()
 
     def set_step(self, step, unit=None):
-        """Change the pixel angular increments of the coordinate transform matrix."""
+        """Set the height and width of pixels on the sky.
 
-        # Convert the increments to the internal units of the wcs
-        # object.
+        In MPDAF, images are sampled on a regular grid of square
+        pixels that represent a flat projection of the celestial
+        sphere. The set_step() method changes the angular
+        width and height of these pixels on the sky.
+
+        Parameters
+        ----------
+        step : numpy.ndarray
+           (h,w). These are the desired angular height and width of pixels
+           along the Y and X axes of the image. These should
+           either be in the unit specified by the 'unit' input parameter,
+           or, if unit=None, in the unit specified by the self.unit
+           property.
+        unit : astropy.units
+            The angular units of the specified increments.
+
+        """
+
+        # Ensure that the height and width are stored in a numpy
+        # array, and that they are both positive.
+
+        step = abs(np.asarray(step))
+
+        # Convert the height and width to the internal units of the wcs object.
 
         if unit is not None:
-            step[0] = (step[0] * unit).to(self.unit).value
-            step[1] = (step[1] * unit).to(self.unit).value
+            step = (step * unit).to(self.unit).value
 
-        # Get the current values of the increments.
+        # Get the current values of the pixel height and pixel width.
 
         old_step = self.get_step()
 
-        # Calculate the ratio of the new step to the old one.
+        # Calculate the ratio of the new increments to the old one.
 
         ratio = step / old_step
 
@@ -1362,7 +1462,70 @@ class WCS(object):
         self.wcs.wcs.cd = np.dot(cd, np.array([[ratio[1], 0.0],
                                                [0.0, ratio[0]]]))
 
-        # Install the scaled CD matrix.
+        # Install the rescaled CD matrix.
+
+        self.wcs.wcs.set()
+
+    def set_axis_increments(self, increments, unit=None):
+        """Set the displacements on the sky that result from
+        incrementing the array indexes of the image by one along the Y
+        and X axes, respectively.
+
+        In MPDAF, images are sampled on a regular grid of square
+        pixels that represent a flat projection of the celestial
+        sphere. The set_axis_increments() method changes the angular
+        width and height of these pixels on the sky, with signs that
+        indicate whether the angle increases or decreases as one
+        increments the array indexes. To keep plots consistent,
+        regardless of the rotation angle of the image on the sky, the
+        height should always be positive, and the width should be
+        negative if a plot of the image with pixel 0,0 at the bottom
+        left would place east anticlockwise of north, and positive
+        otherwise.
+
+        Parameters
+        ----------
+        increments : numpy.ndarray
+           (dy,dx). These are the desired angular increments of pixels
+           along the Y and X axes of the image. These should
+           either be in the unit specified by the 'unit' input parameter,
+           or, if unit=None, in the unit specified by the self.unit
+           property.
+        unit : astropy.units
+            The angular units of the specified increments.
+
+        """
+
+        # Ensure that the increments are stored in a numpy array.
+
+        increments = np.asarray(increments)
+
+        # Convert the increments to the internal units of the wcs
+        # object.
+
+        if unit is not None:
+            increments = (increments * unit).to(self.unit).value
+
+        # Get the current CD matrix.
+
+        cd = self.get_cd()
+
+        # Get the current values of the increments.
+
+        old_increments = axis_increments_from_cd(cd)
+
+        # Calculate the ratio of the new increments to the old one.
+
+        ratio = increments / old_increments
+
+        # Scaling the 1st column of the CD matrix, scales the
+        # X-axis pixel sizes. Scaling the 2nd column scales the
+        # Y-axis pixel sizes.
+
+        self.wcs.wcs.cd = np.dot(cd, np.array([[ratio[1], 0.0],
+                                               [0.0, ratio[0]]]))
+
+        # Install the rescaled CD matrix.
 
         self.wcs.wcs.set()
 

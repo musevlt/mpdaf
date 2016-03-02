@@ -319,8 +319,8 @@ def test_resample():
     # Resample the image.
 
     newstep = np.array(
-        [before.wcs.get_step(unit=u.arcsec)[0]*yfactor,
-         before.wcs.get_step(unit=u.arcsec)[1]*xfactor])
+        [before.get_axis_increments(unit=u.arcsec)[0]*yfactor,
+         before.get_axis_increments(unit=u.arcsec)[1]*xfactor])
     after = before.resample(newdim=before.shape, refpos=None, refpix=None,
                             newstep=newstep, flux=False)
 
