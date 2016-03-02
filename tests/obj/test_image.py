@@ -100,14 +100,6 @@ def test_crop():
     image1.data.mask[2:4, 1:4] = 0
     image1.crop()
     assert_image_equal(image1, shape=(2, 3), start=(2, 1), end=(3, 3))
-    nose.tools.assert_equal(image1.sum(), 2 * 3 * 8)
-    rng = image1.get_range()
-    start = image1.get_start()
-    end = image1.get_end()
-    nose.tools.assert_equal(rng[0], start[0])
-    nose.tools.assert_equal(rng[1], start[1])
-    nose.tools.assert_equal(rng[2], end[0])
-    nose.tools.assert_equal(rng[3], end[1])
     nose.tools.assert_equal(image1.get_rot(), 0)
 
 
@@ -384,21 +376,54 @@ def test_ee():
 def test_rebin_mean():
     """Image class: testing rebin methods."""
     wcs = WCS(crval=(0, 0))
-    data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(data=data, wcs=wcs)
-    image1.mask((2, 2), (1, 1), inside=False, unit_center=None, unit_radius=None)
+    data = np.arange(30).reshape(6,5)
+    image1 = Image(data=data, wcs=wcs, var=np.ones(data.shape)*0.5)
+    image1.mask((2, 2), (1, 1), inside=False, unit_center=None,
+                unit_radius=None)
+
+    # The test data array looks as follows:
+    #
+    # ---- ---- ---- ---- ----
+    # ----  6.0  7.0  8.0 ----
+    # ---- 11.0 12.0 13.0 ----
+    # ---- 16.0 17.0 18.0 ----
+    # ---- ---- ---- ---- ----
+    # ---- ---- ---- ---- ----
+    #
+    # Where ---- signifies a masked value.
+    #
+    # After reducing both dimensions by a factor of 2, we should
+    # get a data array of the following 6 means of 4 pixels each:
+    #
+    #  ---- ---- => 6/1         ---- ---- => (7+8)/2
+    #  ----  6.0                 7.0  8.0
+    #
+    #  ---- 11.0 => (11+16)/2   12.0 13.0 => (12+13+17+18)/4
+    #  ---- 16.0                17.0 18.0
+    #
+    #  ---- ---- => ----        ---- ---- => ----
+    #  ---- ----                ---- ----
+
+    expected = np.ma.array(
+        data=[[ 6.0,   7.5], [13.5,    15], [0.0,  0.0]],
+        mask=[[False,False], [False,False], [True,True]])
     image2 = image1.rebin_mean(2)
-    nose.tools.assert_equal(image2[0, 0], 0.5)
-    nose.tools.assert_equal(image2[1, 1], 2)
+    nose.tools.assert_true(np.ma.allclose(image2.data, expected))
+
+    # The variances of the original pixels were all 0.5, so taking the
+    # mean of N of these should give the mean a variance of 0.5/N.
+    # Given the number of pixels averaged in each of the above means,
+    # we thus expect the variance array to look as follows.
+
+    expected = np.ma.array(data=[[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]],
+                           mask=[[False,False], [False,False], [True,True]])
+    nose.tools.assert_true(np.ma.allclose(image2.var, expected))
+
+    # Check the WCS information.
+
     start = image2.get_start()
     nose.tools.assert_equal(start[0], 0.5)
     nose.tools.assert_equal(start[1], 0.5)
-    image2 = image1.rebin_median(2)
-    nose.tools.assert_equal(image2[0, 0], 2)
-    nose.tools.assert_equal(image2[1, 1], 2)
-
-# TODO test_resample: pb rotation
-
 
 @attr(speed='fast')
 def test_add():

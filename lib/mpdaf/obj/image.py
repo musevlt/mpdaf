@@ -2881,52 +2881,7 @@ class Image(DataArray):
             moffat.ima = ima
         return moffat
 
-    def _rebin_mean_(self, factor):
-        """Shrink the size of the image by factor. New size is an integer
-        multiple of the original size.
-
-        Parameters
-        ----------
-        factor : (int,int)
-            Factor in y and x.  Python notation: (ny,nx)
-
-        """
-        assert np.mod(self.shape[0], factor[0]) == 0
-        assert np.mod(self.shape[1], factor[1]) == 0
-
-        # The new size is an integer multiple of the original size
-
-        shape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
-        self.data = self.data.reshape(
-            shape[0], factor[0], shape[1], factor[1]).sum(1).sum(2)\
-            / (factor[0] * factor[1])
-        if self.var is not None:
-            self.var = self.var.reshape(
-                shape[0], factor[0], shape[1], factor[1])\
-                .sum(1).sum(2) / (
-                    factor[0] * factor[1] * factor[0] * factor[1])
-        self.wcs = self.wcs.rebin(factor)
-
     def _rebin_mean(self, factor, margin='center'):
-        """Shrink the pixel dimensions of the image by an integer factor.
-
-        Parameters
-        ----------
-        factor : int or (int,int)
-            Factor in y and x. Python notation: (ny,nx).
-            The dimensions of the output image will be
-            shape[0]/ny (rounded up), and shape[1]/nx (rounded up).
-        margin : 'center' or 'origin'
-            This parameter is used if the new size of an axis is not
-            an integer divisor of the original size.
-
-            In the 'center' case, one pixel will be added to the start
-            and end of the affected axis in the output image.
-
-            In the 'origin' case, one pixel will be added to the end
-            of the affected axis in the output image.
-
-        """
 
         # Use the same factor for both dimensions?
 
@@ -2941,398 +2896,84 @@ class Image(DataArray):
             raise ValueError('The factor must be from 1 to shape.')
 
         # Compute the number of pixels by which each axis dimension
-        # exceeds being an integer multiple of the requested reduction
-        # factor.
+        # exceeds being an integer multiple of its reduction factor.
 
-        n = np.mod(self.shape, factor)
+        n = np.asarray(np.mod(self.shape, factor), dtype=int)
 
-        # Are the existing axes both integer multiples of the
-        # corresponding division factors?
+        # If necessary, compute the 2D slice needed to truncate the
+        # image dimesions to be integer multiples of the axis
+        # reduction factors.
 
-        if n[0]==0 and n[1]==0:
-            self._rebin_mean_(factor)
-            return None
+        if n[0] != 0 or n[1] != 0:
 
-        # Is just the Y dimension an integer multiple of its division factor?
+            slices=[None,None]
 
-        elif n[0] == 0:
+            # Truncate the Y axis?
 
-            # Add an extra pixel to the end of the X axis of the output image?
+            if n[0] != 0:
+                nstart = 0 if (margin == 'origin' or n[0] == 1) else n[0] // 2
+                slices[0] = slice(nstart, self.shape[0] - n[0] + nstart)
 
-            if margin == 'origin' or n[1] == 1:
-                ima = self[:, :-n[1]]
-                ima._rebin_mean_(factor)
-                newshape = (ima.shape[0], ima.shape[1] + 1)
-                data = np.empty(newshape)
-                mask = np.empty(newshape, dtype=bool)
-                data[:, 0:-1] = ima.data
-                mask[:, 0:-1] = ima.data.mask
-                d = self.data[:, -n[1]:].sum(axis=1)\
-                    .reshape(ima.shape[0], factor[0]).sum(1) \
-                    / factor[0] / factor[1]
-                data[:, -1] = d.data
-                mask[:, -1] = d.mask
-                var = None
-                if self.var is not None:
-                    var = np.empty(newshape)
-                    var[:, 0:-1] = ima.var
-                    var[:, -1] = self.var[:, -n[1]:].sum(axis=1)\
-                        .reshape(ima.shape[0], factor[0]).sum(1)\
-                        / factor[0] / factor[0] / factor[1] / factor[1]
-                wcs = ima.wcs
-                wcs.naxis1 = wcs.naxis1 + 1
-            else:
-                n_left = n[1] / 2
-                n_right = self.shape[1] - n[1] + n_left
-                ima = self[:, n_left:n_right]
-                ima._rebin_mean_(factor)
-                newshape = (ima.shape[0], ima.shape[1] + 2)
-                data = np.empty(newshape)
-                mask = np.empty(newshape, dtype=bool)
-                data[:, 1:-1] = ima.data
-                mask[:, 1:-1] = ima.data.mask
-                d = self.data[:, 0:n_left].sum(axis=1)\
-                    .reshape(ima.shape[0], factor[0]).sum(1) \
-                    / factor[0] / factor[1]
-                data[:, 0] = d.data
-                mask[:, 0] = d.mask
-                d = self.data[:, n_right:].sum(axis=1)\
-                    .reshape(ima.shape[0], factor[0]).sum(1)\
-                    / factor[0] / factor[1]
-                data[:, -1] = d.data
-                mask[:, -1] = d.mask
-                var = None
-                if self.var is not None:
-                    var = np.empty(newshape)
-                    var[:, 1:-1] = ima.var
-                    var[:, 0] = self.var[:, 0:n_left].sum(axis=1)\
-                        .reshape(ima.shape[0], factor[0]).sum(1) \
-                        / factor[0] / factor[1] / factor[0] / factor[1]
-                    var[:, -1] = self.var[:, n_right:].sum(axis=1)\
-                        .reshape(ima.shape[0], factor[0]).sum(1) \
-                        / factor[0] / factor[1] / factor[0] / factor[1]
-                wcs = ima.wcs
-                wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
-                wcs.set_naxis1(wcs.naxis1 + 2)
+            # Truncate the X axis?
 
-        # Is just the X dimension an integer multiple of its division factor?
+            if n[1] != 0:
+                nstart = 0 if (margin == 'origin' or n[1] == 1) else n[1] // 2
+                slices[1] = slice(nstart, self.shape[1] - n[1] + nstart)
 
-        elif n[1] == 0:
-            if margin == 'origin' or n[0] == 1:
-                ima = self[:-n[0], :]
-                ima._rebin_mean_(factor)
-                newshape = (ima.shape[0] + 1, ima.shape[1])
-                data = np.empty(newshape)
-                mask = np.empty(newshape, dtype=bool)
-                data[0:-1, :] = ima.data
-                mask[0:-1, :] = ima.data.mask
-                d = self.data[-n[0]:, :].sum(axis=0)\
-                    .reshape(ima.shape[1], factor[1]).sum(1) \
-                    / factor[0] / factor[1]
-                data[-1, :] = d.data
-                mask[-1, :] = d.mask
-                var = None
-                if self.var is not None:
-                    var = np.empty(newshape)
-                    var[0:-1, :] = ima.var
-                    var[-1, :] = self.var[-n[0]:, :].sum(axis=0)\
-                        .reshape(ima.shape[1], factor[1]).sum(1) \
-                        / factor[0] / factor[1]
-                wcs = ima.wcs
-                wcs.naxis2 = wcs.naxis2 + 1
-            else:
-                n_left = n[0] / 2
-                n_right = self.shape[0] - n[0] + n_left
-                ima = self[n_left:n_right, :]
-                ima._rebin_mean_(factor)
-                newshape = (ima.shape[0] + 2, ima.shape[1])
-                data = np.empty(newshape)
-                mask = np.empty(newshape, dtype=bool)
-                data[1:-1, :] = ima.data
-                mask[1:-1, :] = ima.data.mask
-                d = self.data[0:n_left, :].sum(axis=0)\
-                    .reshape(ima.shape[1], factor[1]).sum(1)\
-                    / factor[0] / factor[1]
-                data[0, :] = d.data
-                mask[0, :] = d.mask
-                d = self.data[n_right:, :].sum(axis=0)\
-                    .reshape(ima.shape[1], factor[1]).sum(1) \
-                    / factor[0] / factor[1]
-                data[-1, :] = d.data
-                mask[-1, :] = d.mask
-                var = None
-                if self.var is not None:
-                    var = np.empty(newshape)
-                    var[1:-1, :] = ima.var
-                    var[0, :] = self.var[0:n_left, :].sum(axis=0)\
-                        .reshape(ima.shape[1], factor[1]).sum(1) \
-                        / factor[0] / factor[1] / factor[0] / factor[1]
-                    var[-1, :] = self.var[n_right:, :].sum(axis=0)\
-                        .reshape(ima.shape[1], factor[1]).sum(1) \
-                        / factor[0] / factor[1] / factor[0] / factor[1]
-                wcs = ima.wcs
-                wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                wcs.set_naxis2(wcs.naxis2 + 2)
+            # Substitute an all-inclusive slice for non-truncated axes.
 
-        # Is neither axis an integer multiple of its division factor?
+            if slices[0] is None:
+                slices[0] = slice(0, self.shape[0])
+            if slices[1] is None:
+                slices[1] = slice(0, self.shape[1])
 
-        else:
-            if n[0] == 1 and n[1] == 1:
-                margin = 'origin'
-            if margin == 'center':
-                n_left = n / 2
-                n_right = self.shape - n + n_left
-                ima = self[n_left[0]:n_right[0], n_left[1]:n_right[1]]
-                ima._rebin_mean_(factor)
-                if n_left[0] != 0 and n_left[1] != 0:
-                    newshape = (ima.shape[0] + 2, ima.shape[1] + 2)
-                    data = np.empty(newshape)
-                    mask = np.empty(newshape, dtype=bool)
-                    data[1:-1, 1:-1] = ima.data
-                    mask[1:-1, 1:-1] = ima.data.mask
-                    data[0, 0] = self.data[0:n_left[0], 0:n_left[1]].sum() \
-                        / factor[0] / factor[1]
-                    mask[0, 0] = \
-                        self.data.mask[0:n_left[0], 0:n_left[1]].any()
-                    data[0, -1] = self.data[0:n_left[0], n_right[1]:].sum() \
-                        / factor[0] / factor[1]
-                    mask[0, -1] = \
-                        self.data.mask[0:n_left[0], n_right[1]:].any()
-                    data[-1, 0] = self.data[n_right[0]:, 0:n_left[1]].sum() \
-                        / factor[0] / factor[1]
-                    mask[-1, 0] = \
-                        self.data.mask[n_right[0]:, 0:n_left[1]].any()
-                    data[-1, -1] = self.data[n_right[0]:, n_right[1]:].sum() \
-                        / factor[0] / factor[1]
-                    mask[-1, -1] = \
-                        self.data.mask[n_right[0]:, n_right[1]:].any()
-                    d = self.data[0:n_left[0], n_left[1]:n_right[1]]\
-                        .sum(axis=0).reshape(ima.shape[1], factor[1]).sum(1) \
-                        / factor[0] / factor[1]
-                    data[0, 1:-1] = d.data
-                    mask[0, 1:-1] = d.mask
-                    d = self.data[n_right[0]:, n_left[1]:n_right[1]]\
-                        .sum(axis=0).reshape(ima.shape[1], factor[1]).sum(1) \
-                        / factor[0] / factor[1]
-                    data[-1, 1:-1] = d.data
-                    mask[-1, 1:-1] = d.mask
-                    d = self.data[n_left[0]:n_right[0], 0:n_left[1]]\
-                        .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
-                        / factor[0] / factor[1]
-                    data[1:-1, 0] = d.data
-                    mask[1:-1, 0] = d.mask
-                    d = self.data[n_left[0]:n_right[0], n_right[1]:]\
-                        .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
-                        / factor[0] / factor[1]
-                    data[1:-1, -1] = d.data
-                    mask[1:-1, -1] = d.mask
-                    var = None
-                    if self.var is not None:
-                        var = np.empty(newshape)
-                        var[1:-1, 1:-1] = ima.var
-                        var[0, 0] = self.var[0:n_left[0], 0:n_left[1]].sum() \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[0, -1] = self.var[0:n_left[0], n_right[1]:].sum() \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[-1, 0] = self.var[n_right[0]:, 0:n_left[1]].sum() \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[-1, -1] = self.var[n_right[0]:, n_right[1]:].sum() \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[0, 1:-1] = \
-                            self.var[0:n_left[0], n_left[1]:n_right[1]]\
-                            .sum(axis=0).reshape(ima.shape[1], factor[1]).sum(1) \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[-1, 1:-1] = \
-                            self.var[n_right[0]:, n_left[1]:n_right[1]]\
-                            .sum(axis=0).reshape(ima.shape[1], factor[1]).sum(1) \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[1:-1, 0] = \
-                            self.var[n_left[0]:n_right[0], 0:n_left[1]]\
-                            .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[1:-1, -1] = \
-                            self.var[n_left[0]:n_right[0], n_right[1]:]\
-                            .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                    wcs = ima.wcs
-                    wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
-                    wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                    wcs.set_naxis1(wcs.naxis1 + 2)
-                    wcs.set_naxis2(wcs.naxis2 + 2)
-                elif n_left[0] == 0:
-                    newshape = (ima.shape[0] + 1, ima.shape[1] + 2)
-                    data = np.empty(newshape)
-                    mask = np.empty(newshape, dtype=bool)
-                    data[0:-1, 1:-1] = ima.data
-                    mask[0:-1, 1:-1] = ima.data.mask
+            # Slice the data and variance arrays.
 
-                    data[0, 0] = self.data[0, 0:n_left[1]].sum() \
-                        / factor[0] / factor[1]
-                    mask[0, 0] = self.data.mask[0, 0:n_left[1]].any()
-                    data[0, -1] = self.data[0, n_right[1]:].sum()\
-                        / factor[0] / factor[1]
-                    mask[0, -1] = self.data.mask[0, n_right[1]:].any()
-                    data[-1, 0] = self.data[n_right[0]:, 0:n_left[1]].sum()\
-                        / factor[0] / factor[1]
-                    mask[-1, 0] = self.data.mask[n_right[0]:, 0:n_left[1]].any()
-                    data[-1, -1] = self.data[n_right[0]:, n_right[1]:].sum()\
-                        / factor[0] / factor[1]
-                    mask[-1, -1] = \
-                        self.data.mask[n_right[0]:, n_right[1]:].any()
-                    d = self.data[n_right[0]:, n_left[1]:n_right[1]]\
-                        .sum(axis=0).reshape(ima.shape[1], factor[1]).sum(1)\
-                        / factor[0] / factor[1]
-                    data[-1, 1:-1] = d.data
-                    mask[-1, 1:-1] = d.mask
-                    d = self.data[0:n_right[0], 0:n_left[1]].sum(axis=1)\
-                        .reshape(ima.shape[0], factor[0]).sum(1)\
-                        / factor[0] / factor[1]
-                    data[0:-1, 0] = d.data
-                    mask[0:-1, 0] = d.mask
-                    d = self.data[0:n_right[0], n_right[1]:].sum(axis=1)\
-                        .reshape(ima.shape[0], factor[0]).sum(1) \
-                        / factor[0] / factor[1]
-                    data[0:-1, -1] = d.data
-                    mask[0:-1, -1] = d.mask
-                    var = None
-                    if self.var is not None:
-                        var = np.empty(newshape)
-                        var[0:-1, 1:-1] = ima.var
-                        var[0, 0] = self.var[0, 0:n_left[1]].sum() \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[0, -1] = self.var[0, n_right[1]:].sum() \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[-1, 0] = self.var[n_right[0]:, 0:n_left[1]].sum()\
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[-1, -1] = self.var[n_right[0]:, n_right[1]:].sum()\
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[-1, 1:-1] = \
-                            self.var[n_right[0]:, n_left[1]:n_right[1]]\
-                            .sum(axis=0).reshape(ima.shape[1], factor[1]).sum(1) \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[0:-1, 0] = \
-                            self.var[0:n_right[0], 0:n_left[1]]\
-                            .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
-                        var[0:-1, -1] = \
-                            self.var[0:n_right[0], n_right[1]:]\
-                            .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
-                            / factor[0] / factor[1] / factor[0] / factor[1]
+            self.data = self.data[slices[0],slices[1]]
+            if self.var is not None:
+                self.var = self.var[slices[0],slices[1]]
 
-                    wcs = ima.wcs
-                    wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + 1)
-                    wcs.set_naxis1(wcs.naxis1 + 2)
-                    wcs.set_naxis2(wcs.naxis2 + 1)
-                else:
-                    newshape = (ima.shape[0] + 2, ima.shape[1] + 1)
-                    data = np.empty(newshape)
-                    mask = np.empty(newshape, dtype=bool)
-                    data[1:-1, 0:-1] = ima.data
-                    mask[1:-1, 0:-1] = ima.data.mask
+            # Update the world coordinates to match the truncated
+            # array.
 
-                    data[0, 0] = self.data[0:n_left[0], 0].sum() \
-                        / factor[0] / factor[1]
-                    mask[0, 0] = self.data.mask[0:n_left[0], 0].any()
-                    data[0, -1] = self.data[0:n_left[0], n_right[1]:].sum() \
-                        / factor[0] / factor[1]
-                    mask[0, -1] = \
-                        self.data.mask[0:n_left[0], n_right[1]:].any()
-                    data[-1, 0] = self.data[n_right[0]:, 0].sum() \
-                        / factor[0] / factor[1]
-                    mask[-1, 0] = self.data.mask[n_right[0]:, 0].any()
-                    data[-1, -1] = self.data[n_right[0]:, n_right[1]:].sum() \
-                        / factor[0] / factor[1]
-                    mask[-1, -1] = \
-                        self.data.mask[n_right[0]:, n_right[1]:].any()
-                    d = self.data[0:n_left[0], 0:n_right[1]].sum(axis=0)\
-                        .reshape(ima.shape[1], factor[1]).sum(1) \
-                        / factor[0] / factor[1]
-                    data[0, 0:-1] = d.data
-                    mask[0, 0:-1] = d.mask
-                    d = self.data[n_right[0]:, 0:n_right[1]].sum(axis=0)\
-                        .reshape(ima.shape[1], factor[1]).sum(1) \
-                        / factor[0] / factor[1]
-                    data[-1, 0:-1] = d.data
-                    mask[-1, 0:-1] = d.mask
-                    d = self.data[n_left[0]:n_right[0], n_right[1]:]\
-                        .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
-                        / factor[0] / factor[1]
-                    data[1:-1, -1] = d.data
-                    mask[1:-1, -1] = d.mask
+            self.wcs = self.wcs[slices[0],slices[1]]
 
-                    var = None
-                    if self.var is not None:
-                        var = np.empty(newshape)
-                        var[1:-1, 0:-1] = ima.var
-                        var[0, 0] = self.var[0:n_left[0], 0].sum() \
-                            / factor[0] / factor[1]
-                        var[0, -1] = \
-                            self.var[0:n_left[0], n_right[1]:].sum() \
-                            / factor[0] / factor[1]
-                        var[-1, 0] = self.var[n_right[0]:, 0].sum() \
-                            / factor[0] / factor[1]
-                        var[-1, -1] = \
-                            self.var[n_right[0]:, n_right[1]:].sum() \
-                            / factor[0] / factor[1]
-                        var[0, 0:-1] = \
-                            self.var[0:n_left[0], 0:n_right[1]].sum(axis=0)\
-                            .reshape(ima.shape[1], factor[1]).sum(1) \
-                            / factor[0] / factor[1]
-                        var[-1, 0:-1] = self.var[n_right[0]:, 0:n_right[1]]\
-                            .sum(axis=0).reshape(ima.shape[1], factor[1]).sum(1) \
-                            / factor[0] / factor[1]
-                        var[1:-1, -1] = \
-                            self.var[n_left[0]:n_right[0], n_right[1]:]\
-                            .sum(axis=1).reshape(ima.shape[0], factor[0]).sum(1) \
-                            / factor[0] / factor[1]
-                    wcs = ima.wcs
-                    wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + 1)
-                    wcs.set_naxis1(wcs.naxis1 + 1)
-                    wcs.set_naxis2(wcs.naxis2 + 2)
-            elif margin == 'origin':
-                n_right = self.shape - n
-                ima = self[0:n_right[0], 0:n_right[1]]
-                ima._rebin_mean_(factor)
-                newshape = (ima.shape[0] + 1, ima.shape[1] + 1)
-                data = np.empty(newshape)
-                mask = np.empty(newshape, dtype=bool)
-                data[0:-1, 0:-1] = ima.data
-                mask[0:-1, 0:-1] = ima.data.mask
-                d = self.data[n_right[0]:, 0:n_right[1]].sum(axis=0)\
-                    .reshape(ima.shape[1], factor[1]).sum(1) \
-                    / factor[0] / factor[1]
-                data[-1, 0:-1] = d.data
-                mask[-1, 0:-1] = d.mask
-                d = self.data[0:n_right[0], n_right[1]:].sum(axis=1)\
-                    .reshape(ima.shape[0], factor[0]).sum(1) \
-                    / factor[0] / factor[1]
-                data[0:-1, -1] = d.data
-                mask[0:-1, -1] = d.mask
-                data[-1, -1] = self.data[n_right[0]:, n_right[1]:].sum() \
-                    / factor[0] / factor[1]
-                mask[-1, -1] = self.data.mask[n_right[0]:, n_right[1]:].any()
-                var = None
-                if self.var is not None:
-                    var = np.empty(newshape)
-                    var[0:-1, 0:-1] = ima.var
-                    var[-1, 0:-1] = \
-                        self.var[n_right[0]:, 0:n_right[1]].sum(axis=0)\
-                        .reshape(ima.shape[1], factor[1]).sum(1) \
-                        / factor[0] / factor[1] / factor[0] / factor[1]
-                    var[0:-1, -1] = \
-                        self.var[0:n_right[0], n_right[1]:].sum(axis=1)\
-                        .reshape(ima.shape[0], factor[0]).sum(1) \
-                        / factor[0] / factor[1] / factor[0] / factor[1]
-                    var[-1, -1] = self.var[n_right[0]:, n_right[1]:]\
-                        .sum() / factor[0] / factor[1] / factor[0] / factor[1]
-                wcs = ima.wcs
-                wcs.naxis1 = wcs.naxis1 + 1
-                wcs.naxis2 = wcs.naxis2 + 1
-            else:
-                raise ValueError('margin must be center|origin')
-        self.wcs = wcs
-        self.data = np.ma.array(data, mask=mask)
-        self.var = var
+        # At this point the image dimensions are integer multiples of
+        # the reduction factors. What is the shape of the output image?
+
+        newshape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
+
+        # Compute the number of unmasked pixels of the input image
+        # that will contribute to each mean pixel in the output image.
+
+        unmasked = self.data.reshape(newshape[0], factor[0], newshape[1], factor[1]).count(1).sum(2)
+
+        # Reduce the size of the data array by taking the mean of
+        # successive groups of 'factor[0] x factor[1]' pixels. Note
+        # that the following uses np.ma.mean(), which takes account of
+        # masked pixels.
+
+        self.data = self.data.reshape(
+            newshape[0], factor[0], newshape[1], factor[1]).mean(1).mean(2)
+
+        # The treatment of the variance array is complicated by the
+        # possibility of masked pixels in the data array. A sum of N
+        # data pixels p[i] of variance v[i] has a variance of
+        # sum(v[i] / N^2), where N^2 is the number of unmasked pixels
+        # in that particular sum.
+
+        if self.var is not None:
+            self.var = self.var.reshape(newshape[0], factor[0], newshape[1], factor[1]).sum(1).sum(2) / unmasked**2
+
+        # Any pixels in the output array that come from zero unmasked
+        # pixels of the input array should be masked.
+
+        self.data.mask = unmasked < 1
+
+        # Update the world-coordinate information.
+
+        self.wcs = self.wcs.rebin(factor)
+
 
     def rebin_mean(self, factor, margin='center'):
         """Return an image that shrinks the size of the current image by
@@ -3357,118 +2998,9 @@ class Image(DataArray):
         res._rebin_mean(factor, margin)
         return res
 
-    def _rebin_median_(self, factor):
-        """Shrink the size of the image by factor. New size is an integer
-        submultiple of the original size.
-
-        Parameters
-        ----------
-        factor : (int,int)
-            Factor in y and x.  Python notation: (ny,nx)
-        """
-        assert np.mod(self.shape[0], factor[0]) == 0
-        assert np.mod(self.shape[1], factor[1]) == 0
-
-        # The new size is an integer multiple of the original size
-
-        shape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
-
-        # Note that the original implementation used np.vectorize(),
-        # rather than a loop, but this couldn't cope with returning
-        # masked values.
-
-        data = np.ma.empty(shape)
-        xfactor = factor[1]
-        yfactor = factor[0]
-        for x in range(shape[1]):
-            for y in range(shape[0]):
-                data[y,x] = np.ma.median(
-                    self.data[y * yfactor:(y + 1) * yfactor,
-                              x * xfactor:(x + 1) * xfactor])
-        self.data = data
-        self.var = None
-        self.wcs = self.wcs.rebin(factor)
-
+    @deprecated('rebin_median method is deprecated: use rebin_mean instead')
     def rebin_median(self, factor, margin='center'):
-        """Shrink the size of the image by factor. Median values are used.
-
-        Parameters
-        ----------
-        factor : int or (int,int)
-            Factor in y and x. Python notation: (ny,nx).
-        margin : 'center' or 'origin'
-            This parameters is used if new size is not an integer multiple of
-            the original size.  In 'center' case, image is truncated on the
-            left and on the right, on the bottom and of the top of the image.
-            In 'origin'case, image is truncated at the end along each
-            direction.
-
-        Returns
-        -------
-        out : :class:`mpdaf.obj.Image`
-
-        """
-
-        # Use the same factor for both dimensions?
-
-        if is_int(factor):
-            factor = (factor, factor)
-        factor = np.asarray(factor, dtype=np.int)
-
-        # The divisors must be in the range 1 to shape-1.
-
-        if factor[0] <= 1 or factor[0] >= self.shape[0] \
-                or factor[1] <= 1 or factor[1] >= self.shape[1]:
-            raise ValueError('The factor must be from 1 to shape.')
-
-        # Compute the number of pixels by which each axis dimension
-        # exceeds being an integer multiple of the requested reduction
-        # factor.
-
-        n = np.mod(self.shape, factor)
-
-        # Are the existing axes both integer multiples of the
-        # corresponding division factors?
-
-        if n[0]==0 and n[1]==0:
-            res = self.copy()
-
-        # Is just the Y dimension an integer multiple of its division factor?
-
-        elif n[0] == 0:
-            if margin == 'origin' or n[1] == 1:
-                res = self[:, :-n[1]]
-            else:
-                n_left = n[1] / 2
-                n_right = self.shape[1] - n[1] + n_left
-                res = self[:, n_left:n_right]
-
-        # Is just the X dimension an integer multiple of its division factor?
-
-        elif n[1] == 0:
-            if margin == 'origin' or n[0] == 1:
-                res = self[:-n[0], :]
-            else:
-                n_left = n[0] / 2
-                n_right = self.shape[0] - n[0] + n_left
-                res = self[n_left:n_right, :]
-
-        # Is neither axis an integer multiple of its division factor?
-
-        else:
-            if n[0] == 1 and n[1] == 1:
-                margin = 'origin'
-            if margin == 'center':
-                n_left = n / 2
-                n_right = self.shape - n + n_left
-                res = self[n_left[0]:n_right[0], n_left[1]:n_right[1]]
-            elif margin == 'origin':
-                n_right = self.shape - n
-                res = self[0:n_right[0], 0:n_right[1]]
-            else:
-                raise ValueError('margin must be center|origin')
-        res._rebin_median_(factor)
-        return res
+        return self.rebin_mean(factor, margin)
 
     def _resample(self, newdim, refpos, refpix, newstep, flux=False, order=1,
                   interp='no', unit_pos=u.deg, unit_step=u.arcsec,
