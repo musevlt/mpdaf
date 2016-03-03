@@ -854,7 +854,8 @@ class Source(object):
             else:
                 self.mag.add_row([band, m, errm])
 
-    def add_line(self, cols, values, units=None, desc=None, fmt=None, match=None):
+    def add_line(self, cols, values, units=None, desc=None, fmt=None,
+                 match=None):
         """Add a line to the lines table.
 
         Parameters
@@ -869,9 +870,10 @@ class Source(object):
                Description of each column
         fmt : list<string>
                Fromat of each column.
-        match : (string,float/integer/string)
-            Tuple (key,value) that gives the key to match the added line with
-            an existing line.  eg ('LINE','LYALPHA1216')
+        match : (string, float/integer/string, bool)
+            Tuple (key, value, False/True) that gives the key to match the added line with
+            an existing line.  eg ('LINE','LYALPHA1216', True)
+            If the boolean is True, the line will be added even if it is not matched.
         """
         if self.lines is None:
             types = []
@@ -917,7 +919,11 @@ class Source(object):
                     self.lines.add_column(col)
 
             if match is not None:
-                matchkey, matchval = match
+                if len(match) == 2:
+                    matchkey, matchval = match
+                    add_if_not_matched = False
+                else:
+                    matchkey, matchval, add_if_not_matched = match
 
             if match is not None and matchkey in self.lines.colnames:
                 l = np.argwhere(self.lines[matchkey] == matchval)
@@ -927,19 +933,23 @@ class Source(object):
                             self.lines[col][l] = val
                         else:
                             self.lines[col][l] = (val * unit).to(self.lines[col].unit).value
-            else:
-                # add new row
-                ncol = len(self.lines.colnames)
-                row = [None] * ncol
-                mask = np.ones(ncol)
-                for col, val, unit in zip(cols, values, units):
-                    i = self.lines.colnames.index(col)
-                    if unit is None or unit == self.lines[col].unit:
-                        row[i] = val
-                    else:
-                        row[i] = (val * unit).to(self.lines[col].unit).value
-                    mask[i] = 0
-                self.lines.add_row(row, mask=mask)
+                    return
+                else:
+                    if not add_if_not_matched:
+                        return
+                        
+            # add new row
+            ncol = len(self.lines.colnames)
+            row = [None] * ncol
+            mask = np.ones(ncol)
+            for col, val, unit in zip(cols, values, units):
+                i = self.lines.colnames.index(col)
+                if unit is None or unit == self.lines[col].unit:
+                    row[i] = val
+                else:
+                    row[i] = (val * unit).to(self.lines[col].unit).value
+                mask[i] = 0
+            self.lines.add_row(row, mask=mask)
 
     def add_image(self, image, name, size=None, minsize=2.0,
                   unit_size=u.arcsec, rotate=False):
