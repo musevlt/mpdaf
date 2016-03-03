@@ -369,11 +369,11 @@ class WCS(object):
     scale index offsets in the image to angular distances in the map
     projection, the Y-axis and X-axis index offsets must be scaled by
     different numbers. These numbers can be obtained by calling the
-    get_step() method, which returns the angular increments per pixel
-    along the Y and X axes of the array. The Y-axis increment is
-    always positive, but the X-axis increment is negative if east is
-    anti-clockwise of north when the X-axis pixels are plotted from
-    left to right,
+    get_axis_increments() method, which returns the angular increment
+    per pixel increment along the Y and X axes of the array. The
+    Y-axis increment is always positive, but the X-axis increment is
+    negative if east is anti-clockwise of north when the X-axis pixels
+    are plotted from left to right,
 
     The rotation angle of the map projection, relative to the sky, can
     be obtained by calling the get_rot() method. This returns the
@@ -1089,7 +1089,7 @@ class WCS(object):
         map-projection of the sky. It is what would be seen if
         the pixels of the image were drawn with their pixel
         widths scaled by the angular pixel increments returned
-        by the get_step() method.
+        by the get_axis_increments() method.
 
         Parameters
         ----------
