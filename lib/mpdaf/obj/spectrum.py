@@ -1052,7 +1052,12 @@ class Spectrum(DataArray):
                     integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
                     / newwave.get_step(unit)
 
-            if self.var is not None and not notnoise:
+        if self.var is not None and not notnoise:
+            dmin = np.min(self.var)
+            dmax = np.max(self.var)
+            if dmin == dmax:
+                self.var = np.ones(newshape, dtype=np.float) * dmin
+            else:
                 f = lambda x: self.var[int(self.wave.pixel(x, unit=unit) + 0.5)]
                 var = np.empty(newshape, dtype=np.float)
                 for i in range(newshape):
@@ -1060,8 +1065,8 @@ class Spectrum(DataArray):
                         integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
                         / newwave.get_step(unit)
                 self.var = var
-            else:
-                self.var = None
+        else:
+            self.var = None
 
         self.data = np.ma.masked_invalid(self.data)
         self.wave = newwave
