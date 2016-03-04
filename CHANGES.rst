@@ -3,7 +3,10 @@ New Features
 
 * The Image.resample() method now applies an anti-aliasing filter to
   prevent aliasing and to increase the signal to noise ratio when
-  re-sampling to lower resolutions.
+  re-sampling to lower resolutions. It is also more flexible in the
+  positioning of the sky in the re-sampled image, and the pixel
+  increments are now signed, so that the sense of the image axes can
+  be specified as well as their resolutions.
 
 * There is a new method called Image.align_with_image(). This
   resamples the image of the object to give it the same orientation,
@@ -31,19 +34,25 @@ Breaking changes
 ~~~~~~~~~~~~~~~~
 
 * The rewritten Image.rotate() function (see below) no longer has an
-  optional reshape option, because this function now pre-allocates the
-  array of the rotated image with the optimal final size. The optional
-  interpolation 'order' argument has also been removed, because the
-  optimal interpolation is set by the function.
+  optional reshape option. This is because this function now
+  pre-allocates the array of the rotated image with the optimal final
+  size. The optional interpolation 'order' argument has also been
+  removed, because the optimal interpolation is already set by the
+  function.
 
-* The re-written Image.resample() function (see below) no longer has
-  a newstart argument. In place of this there are now two arguments,
+* The re-written Image.resample() function (see below) no longer has a
+  newstart argument. In place of this there are now two arguments,
   called refpos and refpix. These allow the positioning of the image
   to be specified by a sky position and the pixel index at which that
   position should be located in the image array. This is more flexible
-  than the newstart argument. The default behavior when refpos and
-  refpix are both specified as None, is the same as when the older
-  newstart argument was specified as None.
+  than the old newstart argument. When refpos and refpix are both
+  specified as None, the default behavior is the same as when the
+  older newstart argument was specified as None. The newstep argument
+  has also been renamed, newinc, because it now expects signed pixel
+  increments, rather than just heights and widths, such that the sense
+  of the axes can be specified as well as their resolution. To support
+  these new arguments, the unit_step and unit_start arguments have
+  been renamed unit_inc and unit_pos.
 
 * The resize() methods of Cube, Image and Spectrum have been renamed
   crop() to better indicate their purpose.

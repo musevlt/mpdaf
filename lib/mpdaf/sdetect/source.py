@@ -1509,10 +1509,11 @@ class Source(object):
             else:
                 object_mask = ima.resample(
                     newdim=(subcub.shape[1], subcub.shape[2]),
-                    newstart=subcub.wcs.get_start(unit=u.deg),
-                    newstep=subcub.wcs.get_step(unit=u.arcsec),
-                    order=0, unit_start=u.deg,
-                    unit_step=u.arcsec).data.data
+                    refpos=subcub.wcs.get_start(unit=u.deg),
+                    refpix=(0.0,0.0),
+                    newinc=subcub.wcs.get_axis_increments(unit=u.arcsec),
+                    order=0, unit_pos=u.deg,
+                    unit_inc=u.arcsec).data.data
         else:
             raise IOError('key %s not present in the images dictionary' % obj_mask)
 
@@ -1523,10 +1524,11 @@ class Source(object):
                 else:
                     skymask = self.images[sky_mask].resample(
                         newdim=(subcub.shape[1], subcub.shape[2]),
-                        newstart=subcub.wcs.get_start(unit=u.deg),
-                        newstep=subcub.wcs.get_step(unit=u.arcsec),
-                        order=0, unit_start=u.deg,
-                        unit_step=u.arcsec).data.data
+                        refpos=subcub.wcs.get_start(unit=u.deg),
+                        refpix=(0.0,0.0),
+                        newinc=subcub.wcs.get_axis_increments(unit=u.arcsec),
+                        order=0, unit_pos=u.deg,
+                        unit_inc=u.arcsec).data.data
             else:
                 raise IOError('key %s not present in the images dictionary' % sky_mask)
 

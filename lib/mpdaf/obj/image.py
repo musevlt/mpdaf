@@ -3050,8 +3050,8 @@ class Image(DataArray):
     def rebin_median(self, factor, margin='center'):
         return self.rebin_mean(factor, margin)
 
-    def _resample(self, newdim, refpos, refpix, newstep, flux=False, order=1,
-                  interp='no', unit_pos=u.deg, unit_step=u.arcsec,
+    def _resample(self, newdim, refpos, refpix, newinc, flux=False, order=1,
+                  interp='no', unit_pos=u.deg, unit_inc=u.arcsec,
                   cutoff=0.25):
 
         # Create a shape that has the same dimension for both axes?
@@ -3096,34 +3096,34 @@ class Image(DataArray):
 
         # Get the current index increments of the 2 axes.
 
-        oldstep = self.wcs.get_axis_increments()
+        oldinc = self.wcs.get_axis_increments()
 
-        # Use a common step-size for both axes? If so, give them
+        # Use a common increment for both axes? If so, give them
         # the same size, but with signs matching the current
         # pixel increments.
 
-        if is_number(newstep):
-            size = abs(newstep)
-            newstep = (size*np.sign(oldstep[0]), size*np.sign(oldstep[1]))
+        if is_number(newinc):
+            size = abs(newinc)
+            newinc = (size*np.sign(oldinc[0]), size*np.sign(oldinc[1]))
 
-        # Ensure that newstep is an array of values that have the
+        # Ensure that newinc is an array of values that have the
         # same units as the WCS object.
 
-        if unit_step is not None:
-            newstep = (np.asarray(newstep, dtype=np.float)
-                       * unit_step).to(self.wcs.unit).value
+        if unit_inc is not None:
+            newinc = (np.asarray(newinc, dtype=np.float)
+                      * unit_inc).to(self.wcs.unit).value
         else:
-            newstep = np.asarray(newstep, dtype=np.float)
+            newinc = np.asarray(newinc, dtype=np.float)
 
         # Get a copy of the data array with masked values filled.
 
         data = self._prepare_data(interp)
 
-        # If the pixel increments along either axis are being
+        # If the angular pixel increments along either axis are being
         # increased, then low-pass filter the data along that axis to
         # prevent aliasing in the resampled data.
 
-        data = _antialias_filter_image(data, oldstep, newstep)
+        data = _antialias_filter_image(data, oldinc, newinc)
 
         # For each pixel in the output image, the affine_transform
         # function calculates the index of the equivalent pixel in the
@@ -3137,16 +3137,16 @@ class Image(DataArray):
         # multiply a column vector in axis order (Y,X). In our case
         # the matrix is:
         #
-        #  new2old = |newstep[0]/oldstep[0],          0           |
-        #            |          0          , newstep[1]/oldstep[0]|
+        #  new2old = |newinc[0]/oldinc[0],          0           |
+        #            |          0          , newinc[1]/oldinc[0]|
         #
-        # This scales an output index by newstep to calculate the
+        # This scales an output index by newinc to calculate the
         # corresponding angular offset of that pixel from the origin
-        # of the output array, then divides this by oldstep to compute
+        # of the output array, then divides this by oldinc to compute
         # the equivalent index offset in the input array.
 
-        new2old = np.array([[newstep[0] / oldstep[0], 0],
-                            [0, newstep[1] / oldstep[1]]])
+        new2old = np.array([[newinc[0] / oldinc[0], 0],
+                            [0, newinc[1] / oldinc[1]]])
 
         # Also work out the inverse, so that we can convert from
         # pixels in the current image to the equivalent pixel of the
@@ -3213,8 +3213,8 @@ class Image(DataArray):
         # Compute the absolute changes in the size of the pixels
         # along the X and Y axes.
 
-        xs = abs(newstep[1] / oldstep[1])
-        ys = abs(newstep[0] / oldstep[0])
+        xs = abs(newinc[1] / oldinc[1])
+        ys = abs(newinc[0] / oldinc[0])
 
         # Compute the number of input pixels per output pixel.
 
@@ -3293,7 +3293,7 @@ class Image(DataArray):
 
         # Update the world-coordinate description object.
 
-        self.wcs.set_axis_increments(newstep)
+        self.wcs.set_axis_increments(newinc)
         self.wcs.set_naxis1(newdim[1])
         self.wcs.set_naxis2(newdim[0])
 
@@ -3304,8 +3304,8 @@ class Image(DataArray):
         self.wcs.set_crpix1(newcrpix[1] + 1)
         self.wcs.set_crpix2(newcrpix[0] + 1)
 
-    def resample(self, newdim, refpos, refpix, newstep, flux=False,
-                 order=1, interp='no', unit_pos=u.deg, unit_step=u.arcsec,
+    def resample(self, newdim, refpos, refpix, newinc, flux=False,
+                 order=1, interp='no', unit_pos=u.deg, unit_inc=u.arcsec,
                  cutoff=0.25):
         """Resample an image to change its resolution and its origin.
 
@@ -3351,7 +3351,7 @@ class Image(DataArray):
             the bottom corner of the input image is placed at the
             bottom left corner of the output image. Note that refpix
             and refpos must either both have values or both be None.
-        newstep : float or (float, float)
+        newinc : float or (float, float)
             The increments in the angle on the sky from one pixel to
             the next, given as either one increment for both image
             axes, or two numbers (dy,dx) for the Y and X axes
@@ -3361,15 +3361,15 @@ class Image(DataArray):
             negative, so that when the image is plotted, east appears
             anticlockwise of north.
 
-            If either of the signs of the two newstep numbers is
-            different from the step size of the original image
+            If either of the signs of the two newinc numbers is
+            different from the increment of the original image
             (queryable with image.get_axis_increments()), then the
             image will be reflected about that axis. In this case be
             careful to choose the value of the newstart argument
             carefully, or the sampled part of the image may be
             reflected out of the image array.
 
-            If only one number is given for newstep then both axes
+            If only one number is given for newinc then both axes
             are given the same resolution, but the signs of the
             increments will be kept the same as the pixel increments
             of the original image.
@@ -3395,8 +3395,8 @@ class Image(DataArray):
             interpolation between neighboring values.
         unit_pos : astropy.units
             The units of the refpos coordinates.  Degrees by default.
-        unit_step : astropy.units
-            The units of newstep.  Arcseconds by default.
+        unit_inc : astropy.units
+            The units of newinc.  Arcseconds by default.
         cutoff : float
             After resampling, if the interpolated value of a pixel
             has an integrated contribution of this many masked pixels,
@@ -3409,9 +3409,9 @@ class Image(DataArray):
 
         """
         res = self.copy()
-        res._resample(newdim, refpos, refpix, newstep, flux=flux, order=order,
+        res._resample(newdim, refpos, refpix, newinc, flux=flux, order=order,
                       interp=interp, unit_pos=unit_pos,
-                      unit_step=unit_step, cutoff=cutoff)
+                      unit_inc=unit_inc, cutoff=cutoff)
         return res
 
     def _align_with_image(self, other, flux=False):
@@ -3440,7 +3440,7 @@ class Image(DataArray):
 
         self._resample(other.shape, centersky, centerpix,
                        other.wcs.get_axis_increments(unit=u.deg),
-                       flux, unit_step=u.deg)
+                       flux, unit_inc=u.deg)
 
 
     def align_with_image(self, other, flux=False, copy=True):
@@ -3836,8 +3836,9 @@ class Image(DataArray):
             except:
                 newdim = np.array(0.5 + ima.shape / factor, dtype=np.int)
                 newstart = self.wcs.get_start(unit=unit)
-                ima = ima.resample(newdim, newstart, (0, 0), self_cdelt,
-                                   flux=True, unit_step=unit, unit_pos=unit)
+                ima = ima.resample(newdim, newstart, (0, 0),
+                                   self.get_axis_increments(),
+                                   flux=True, unit_inc=unit, unit_pos=unit)
 
         # here ima and self have the same step and the same rotation
 
@@ -4347,7 +4348,7 @@ class Image(DataArray):
             chst = zhst.fftconvolve_gauss(fwhm=(seeing, seeing))
             # Rebin to muse spaxel size and window size
             rhst = chst.resample(zmuse.shape, zmuse.get_start(), (0, 0),
-                                 zmuse.get_step(u.arcsec))
+                                 zmuse.get_axis_increments(u.arcsec))
 
             if plot:
                 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
@@ -4953,8 +4954,8 @@ class Image(DataArray):
     @deprecated('rebin method is deprecated: use resample instead')
     def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
-        return self.resample(newdim, newstart, (0, 0), newstep, flux,
-                             order, interp, unit_start, unit_step)
+        return self.resample(newdim, newstart, (0, 0), [newstep[0],-newstep[1]],
+                             flux, order, interp, unit_start, unit_step)
 
 
 def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
