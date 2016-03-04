@@ -128,6 +128,7 @@ class DataArray(object):
         self._data_ext = None
         self._var = None
         self._var_ext = None
+        self._mask = None
         self._ndim = None
         self._shape = None
         self.wcs = None
@@ -157,7 +158,6 @@ class DataArray(object):
             else:
                 close_hdu = False
 
-            # primary header
             self.primary_header = hdulist[0].header
 
             # Find the hdu of the data. This is either the primary HDU
@@ -165,7 +165,6 @@ class DataArray(object):
             # that contains variances. This is either a STAT extension,
             # or the second of a tuple of extensions passed via the ext[]
             # parameter.
-
             if len(hdulist) == 1:
                 # if the number of extension is 1,
                 # we just read the data from the primary header
@@ -190,7 +189,6 @@ class DataArray(object):
                 self._var_ext = None
 
             # Record the data header.
-
             self.data_header = hdr = hdulist[self._data_ext].header
 
             try:
@@ -214,7 +212,6 @@ class DataArray(object):
 
             # Is this a derived class like Cube and Image that require
             # WCS information?
-
             if self._has_wcs:
                 try:
                     self.wcs = WCS(hdr)  # WCS object from data header
@@ -225,7 +222,6 @@ class DataArray(object):
                     self.wcs = WCS(hdr)
 
             # Get the wavelength coordinates.
-
             wave_ext = 1 if self._ndim_required == 1 else 3
             crpix = 'CRPIX{}'.format(wave_ext)
             crval = 'CRVAL{}'.format(wave_ext)
@@ -236,26 +232,24 @@ class DataArray(object):
                 hdulist.close()
 
         # There is no FITS file to read the data from.
-
         else:
-
             # Use a specified numpy data array?
-
             if data is not None:
-                # By default, if mask=False create a mask array with False
-                # values. numpy.ma does it but with a np.resize/np.concatenate
-                # which cause a huge memory peak, so a workaround is to create
-                # the mask here.
-                if mask is False:
-                    mask = np.zeros(data.shape, dtype=bool)
-                self._data = ma.MaskedArray(data, mask=mask, dtype=dtype,
-                                            copy=copy)
-                self._shape = self._data.shape
+                if isinstance(data, ma.MaskedArray):
+                    self.data = np.array(data.data, dtype=dtype, copy=copy)
+                    mask = data.mask
+                else:
+                    self.data = np.array(data, dtype=dtype, copy=copy)
+
+                if mask is None or mask is True or mask is False or \
+                        mask is ma.nomask:
+                    self.mask = mask
+                else:
+                    self.mask = np.array(mask, dtype=bool, copy=copy)
 
             # Use a specified variance array?
-
             if var is not None:
-                self._var = np.array(var, dtype=dtype, copy=copy)
+                self.var = np.array(var, dtype=dtype, copy=copy)
 
         # If a WCS object was specified as an optional parameter, install it.
         wcs = kwargs.pop('wcs', None)
@@ -338,29 +332,35 @@ class DataArray(object):
 
     @property
     def data(self):
-        """ A masked array of data values : numpy.ma.MaskedArray. """
+        """ A masked array of data values : numpy.ma.MaskedArray.
 
-        # The DataArray constructor postpones reading data from FITS files
-        # until they are first used. Read the data array here if not already
-        # read.
+        The DataArray constructor postpones reading data from FITS files until
+        they are first used. Read the data array here if not already read.
 
+        """
         if self._data is None and self.filename is not None:
-            self._data = read_slice_from_fits(
+            data = read_slice_from_fits(
                 self.filename, ext=self._data_ext, mask_ext='DQ',
                 dtype=self.dtype)
-
-            # Mask an array where invalid values occur (NaNs or infs).
-            if ma.is_masked(self._data):
-                self._data.mask |= ~(np.isfinite(self._data.data))
+            if isinstance(data, ma.MaskedArray):
+                self._data = data.data
+                self._mask = data.mask | ~(np.isfinite(data.data))
             else:
-                self._data = ma.masked_invalid(self._data)
+                self._data = data
+                self._mask = ~(np.isfinite(data))
             self._shape = self._data.shape
+            self._ndim = self._data.ndim
 
-        return self._data
+        return ma.MaskedArray(self._data, mask=self.mask, copy=False)
 
     @data.setter
     def data(self, value):
-        self._data = ma.MaskedArray(value)
+        if isinstance(value, ma.MaskedArray):
+            self._data = value.data
+            self._mask = value.mask
+        else:
+            self._data = value
+            self._mask = ~(np.isfinite(value))
         self._shape = self._data.shape
         self._ndim = self._data.ndim
 
@@ -382,6 +382,7 @@ class DataArray(object):
             if not np.array_equal(var.shape, self.data.shape):
                 raise IOError('Number of points in STAT not equal to DATA')
             self._var = var
+            self._mask |= ~(np.isfinite(var))
 
         return self._var
 
@@ -391,23 +392,44 @@ class DataArray(object):
             value = np.asarray(value)
             if not np.array_equal(self.shape, value.shape):
                 raise ValueError('var and data have different dimensions.')
+            self._mask |= ~(np.isfinite(value))
         else:
             self._var_ext = None
         self._var = value
+
+    @property
+    def masked_var(self):
+        """Return a MaskedArray for the variance with the data mask."""
+        return ma.MaskedArray(self.var, mask=self.mask, copy=False)
 
     @deprecated('Variance should now be set with the .var attribute')
     def set_var(self, var):
         """Deprecated: The variance array can simply be assigned to
         the .var attribute"""
-
         self.var = var
 
     @property
-    def masked_var(self):
-        """Return a MaskedArray for the variance with the data mask."""
-        var = ma.masked_invalid(self.var, copy=False)
-        var[self.data.mask] = ma.masked
-        return var
+    def mask(self):
+        return self._mask
+
+    @mask.setter
+    def mask(self, value):
+        # By default, if mask=False create a mask array with False values.
+        # numpy.ma does it but with a np.resize/np.concatenate which cause a
+        # huge memory peak, so a workaround is to create the mask here.
+        if value is None:
+            self._mask = np.zeros(self.shape, dtype=bool)
+        elif value is False:
+            self._mask = np.zeros(self.shape, dtype=bool)
+        elif value is True:
+            self._mask = np.ones(self.shape, dtype=bool)
+        elif value is ma.nomask:
+            self._mask = value
+        else:
+            self._mask = np.asarray(value, dtype=bool)
+            # TODO: combine masks or overwrite ?
+            # if self._mask is not None and self._mask is not ma.nomask:
+            #     self._mask |= value
 
     def copy(self):
         """Return a copy of the object."""
@@ -585,7 +607,7 @@ class DataArray(object):
                 # Store the data array if the full data has been read
                 self._data = data
         else:
-            data = self._data[item]  # data = self.data[item].copy()
+            data = self.data[item]  # data = self.data[item].copy()
 
         # The DataArray constructor postpones reading variances from
         # FITS files until they are first used. Read the slice of
@@ -613,7 +635,7 @@ class DataArray(object):
             else:
                 var = None
         else:
-            var = self._var[item]  # copy
+            var = self.var[item]  # copy
 
         # Construct new WCS and wavelength coordinate information for
         # the slice.
@@ -668,12 +690,16 @@ class DataArray(object):
                                  ' world coordinates in spatial directions')
 
             if self.unit == other.unit:
-                self.data[item] = other.data
+                other = other.data
             else:
-                self.data[item] = UnitMaskedArray(other.data, other.unit,
-                                                  self.unit)
+                other = UnitMaskedArray(other.data, other.unit, self.unit)
+
+        if isinstance(other, ma.MaskedArray):
+            self._data[item] = other.data
+            self._mask[item] = other.mask
         else:
-            self.data[item] = other
+            self._data[item] = other
+            self._mask[item] = ~(np.isfinite(other))
 
     def get_wcs_header(self):
         """Return a FITS header containing coordinate descriptions."""

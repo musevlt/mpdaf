@@ -87,8 +87,8 @@ def test_clone():
     cube2 = cube1.clone()
     nose.tools.assert_true(cube1.wcs.isEqual(cube2.wcs))
     nose.tools.assert_true(cube1.wave.isEqual(cube2.wave))
-    nose.tools.assert_true(cube2.data is None)
-    nose.tools.assert_true(cube2.var is None)
+    nose.tools.assert_true(cube2._data is None)
+    nose.tools.assert_true(cube2._var is None)
 
 
 @attr(speed='fast')
