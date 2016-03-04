@@ -318,11 +318,11 @@ def test_resample():
 
     # Resample the image.
 
-    newinc = np.array(
-        [before.get_axis_increments(unit=u.arcsec)[0]*yfactor,
-         before.get_axis_increments(unit=u.arcsec)[1]*xfactor])
-    after = before.resample(newdim=before.shape, refpos=None, refpix=None,
-                            newinc=newinc, flux=False)
+    newstep = np.array(
+        [before.get_step(unit=u.arcsec)[0]*yfactor,
+         before.get_step(unit=u.arcsec)[1]*xfactor])
+    after = before.resample(newdim=before.shape, newstart=None,
+                            newstep=newstep, flux=False)
 
     # See in which pixels the coordinate matrix of the rotated
     # image says that the test sky coordinates should now be found

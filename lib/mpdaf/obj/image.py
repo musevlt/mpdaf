@@ -3050,9 +3050,224 @@ class Image(DataArray):
     def rebin_median(self, factor, margin='center'):
         return self.rebin_mean(factor, margin)
 
-    def _resample(self, newdim, refpos, refpix, newinc, flux=False, order=1,
-                  interp='no', unit_pos=u.deg, unit_inc=u.arcsec,
-                  cutoff=0.25):
+    def resample(self, newdim, newstart, newstep, flux=False,
+                 order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
+                 copy=True):
+
+        """Resample an image of the sky to select its angular resolution and
+        to specify which sky position appears at the center of pixel [0,0].
+
+        This function is a simplified interface to the regrid()
+        function, which it calls with the following arguments.
+
+         regrid(newdim, newstart, [0.0, 0.0], [abs(newstep[0]),-abs(newstep[1])]
+                flux=flux, order=order, interp=interp, unit_pos=unit_start,
+                unit_inc=unit_step, copy=copy)
+
+        When this function is used to resample an image to a lower
+        resolution, a low-pass anti-aliasing filter is applied to the
+        image before it is resampled, to remove all spatial frequencies
+        below half the new sampling rate. This is required to satisfy
+        the Nyquist sampling constraint. It prevents high
+        spatial-frequency noise and edges from being folded into lower
+        frequency artefacts in the resampled image. The removal of
+        this noise improves the signal to noise ratio of the resampled
+        image.
+
+        Parameters
+        ----------
+        newdim : int or (int,int)
+            The desired new dimensions. Python notation: (ny,nx)
+        newstart : float or (float, float)
+            The sky position (dec,ra) that should appear at the center
+            of pixel [0,0].
+
+            If None, the value of self.get_start() is substituted,
+            so that the sky position that appears at the center of pixel
+            [0,0] is unchanged by the resampling operation.
+        newstep : float or (float, float)
+            The desired angular size of the image pixels on the sky.
+            The size is expressed as either one number to request
+            square pixels on the sky with that width and height, or
+            two numbers that specify the height and width of
+            rectangular pixels on the sky. In the latter case, the two
+            numbers are the size along the Y axis of the image array
+            followed by the size along the X axis.
+        flux : bool
+            If True, the flux of each pixel is multiplied by the ratio
+            of the areas of the resampled and original pixels. For images
+            whose units are flux per pixel, this keeps the total flux
+            in an area unchanged.
+        order : int
+            The order of the spline interpolation. This can take any
+            value from 0-5. The default is 1 (linear interpolation).
+            When this function is used to lower the resolution of
+            an image, the low-pass anti-aliasing filter that is applied,
+            makes linear interpolation sufficient.
+            Conversely, when this function is used to increase the
+            image resolution, order=3 might be useful. Higher
+            orders than this will tend to introduce ringing artefacts.
+        interp : 'no' | 'linear' | 'spline'
+            If 'no', replace masked data with the median image value.
+            If 'linear', replace masked values using a linear
+            interpolation between neighboring values.
+            if 'spline', replace masked values using a spline
+            interpolation between neighboring values.
+        unit_start : astropy.units
+            The angular units of the newstart coordinates. Degrees by default.
+        unit_step : astropy.units
+            The angular units of the step argument. Arcseconds by default.
+        copy : bool
+            If True, return a resampled copy of the image (the default).
+            If False, resample the original image in place, and return that.
+
+        Returns
+        -------
+        out : mpdaf.obj.Image
+           The resampled image.
+
+        """
+
+        # Convert newstep to the newinc argument used by regrid().
+
+        if is_number(newstep):
+            newinc = abs(newstep)
+        else:
+            newinc = [abs(newstep[0]), -abs(newstep[1])]
+
+        # Convert newstart to the refpos,refpix arguments expected by regrid().
+
+        if newstart is None:
+            refpos = None
+            refpix = None
+        else:
+            refpos = newstart
+            refpix = [0.0, 0.0]
+
+        # Delegate the resampling task.
+
+        return self.regrid(newdim, refpos, refpix, newinc, flux=flux,
+                           order=order, interp=interp, unit_pos=unit_start,
+                           unit_inc=unit_step, copy=copy)
+
+    def regrid(self, newdim, refpos, refpix, newinc, flux=False, order=1,
+               interp='no', unit_pos=u.deg, unit_inc=u.arcsec, copy=True,
+               cutoff=0.25):
+
+        """Resample an image of the sky to select its angular resolution,
+        to specify the position of the sky in the image array, and
+        optionally to reflect one or more of its axes.
+
+        This function can be used to decrease or increase the
+        resolution of an image. It can also shift the contents of an
+        image to place a specific (dec,ra) position at a specific
+        fractional pixel position.  Finally, it can be used to invert
+        the direction of one or both of the array axes on the sky.
+
+        When this function is used to resample an image to a lower
+        resolution, a low-pass anti-aliasing filter is applied to the
+        image before it is resampled, to remove all spatial
+        frequencies below half the new sampling rate. This is required
+        to satisfy the Nyquist sampling constraint. It prevents high
+        spatial-frequency noise and edges from being aliased to lower
+        frequency artefacts in the resampled image. The removal of
+        this noise improves the signal to noise ratio of the resampled
+        image.
+
+        Parameters
+        ----------
+        newdim : int or (int,int)
+            The desired new dimensions. Python notation: (ny,nx)
+        refpos : (float, float)
+            The sky position (dec,ra) to place at the pixel specified
+            by the refpix argument.
+
+            If refpix and refpos are both None, the sky position at
+            the bottom corner of the input image is placed at the
+            bottom left corner of the output image. Note that refpix
+            and refpos must either both be given values, or both
+            be None.
+        refpix : (float, float)
+            The [Y, X] indexes of the output pixel where the sky
+            position, refpos, should be placed. Y and X are
+            interpreted as floating point indexes, where integer
+            values indicate pixel centers and integer values +/- 0.5
+            indicate the edges of pixels.
+
+            If refpix and refpos are both None, the sky position at
+            the bottom corner of the input image is placed at the
+            bottom left corner of the output image. Note that refpix
+            and refpos must either both be given values, or both
+            be None.
+        newinc : float or (float, float)
+            The signed increments of the angle on the sky from one
+            pixel to the next, given as either a single increment for
+            both image axes, or two numbers (dy,dx) for the Y and X
+            axes respectively.
+
+            The signs of these increments are interpreted as described
+            in the documentation of the Image.get_axis_increments()
+            function. In particular, note that dy is typically
+            positive and dx is usually negative, such that when the
+            image is plotted, east appears anticlockwise of north, and
+            east is towards the left of the plot when the image
+            rotation angle is zero.
+
+            If either of the signs of the two newinc numbers is
+            different from the sign of the increments of the original
+            image (queryable with image.get_axis_increments()), then
+            the image will be reflected about that axis. In this case
+            the value of the refpix argument should be chosen with
+            care, because otherwise the sampled part of the image may
+            end up being reflected outside the limits of the image
+            array, and the result will be a blank image.
+
+            If only one number is given for newinc then both axes
+            are given the same resolution, but the signs of the
+            increments are kept the same as the pixel increments
+            of the original image.
+        flux : bool
+            If True, the flux of each pixel is multiplied by the ratio
+            of the areas of the resampled and original pixels. For images
+            whose units are flux per pixel, this keeps the total flux
+            in an area unchanged.
+        order : int
+            The order of the spline interpolation. This can take any
+            value from 0-5. The default is 1 (linear interpolation).
+            When this function is used to lower the resolution of
+            an image, the low-pass anti-aliasing filter that is applied,
+            makes linear interpolation sufficient.
+            Conversely, when this function is used to increase the
+            image resolution, order=3 might be useful. Higher
+            orders than this will tend to introduce ringing artefacts.
+        interp : 'no' | 'linear' | 'spline'
+            If 'no', replace masked data with the median image value.
+            If 'linear', replace masked values using a linear
+            interpolation between neighboring values.
+            if 'spline', replace masked values using a spline
+            interpolation between neighboring values.
+        unit_pos : astropy.units
+            The units of the refpos coordinates.  Degrees by default.
+        unit_inc : astropy.units
+            The units of newinc.  Arcseconds by default.
+        copy : bool
+            If True, return a resampled copy of the image. This is the default.
+            If False, resample the original image in place, and return that.
+        cutoff : float
+            After resampling, if the interpolated value of a pixel
+            has an integrated contribution of this many masked pixels,
+            mask the pixel.
+
+        Returns
+        -------
+        out : :class:`mpdaf.obj.Image`
+            The resampled image is returned.
+
+        """
+
+        # Should we resample a copy of the image, or the image itself?
+
+        image = self.copy() if copy else self
 
         # Create a shape that has the same dimension for both axes?
 
@@ -3070,7 +3285,7 @@ class Image(DataArray):
             # Use the pixel index of the bottom left corner of the image.
 
             refpix = np.array([-0.5, -0.5])
-            refpos = self.wcs.pix2sky(refpix)
+            refpos = image.wcs.pix2sky(refpix)
 
         # Were refpos and refpix both given values?
 
@@ -3081,7 +3296,7 @@ class Image(DataArray):
 
             if unit_pos is not None:
                 refpos = (np.asarray(refpos, dtype=np.float)
-                          * unit_pos).to(self.wcs.unit).value
+                          * unit_pos).to(image.wcs.unit).value
             else:
                 refpos = np.asarray(refpos, dtype=np.float)
 
@@ -3096,7 +3311,7 @@ class Image(DataArray):
 
         # Get the current index increments of the 2 axes.
 
-        oldinc = self.wcs.get_axis_increments()
+        oldinc = image.wcs.get_axis_increments()
 
         # Use a common increment for both axes? If so, give them
         # the same size, but with signs matching the current
@@ -3111,13 +3326,13 @@ class Image(DataArray):
 
         if unit_inc is not None:
             newinc = (np.asarray(newinc, dtype=np.float)
-                      * unit_inc).to(self.wcs.unit).value
+                      * unit_inc).to(image.wcs.unit).value
         else:
             newinc = np.asarray(newinc, dtype=np.float)
 
         # Get a copy of the data array with masked values filled.
 
-        data = self._prepare_data(interp)
+        data = image._prepare_data(interp)
 
         # If the angular pixel increments along either axis are being
         # increased, then low-pass filter the data along that axis to
@@ -3171,7 +3386,7 @@ class Image(DataArray):
         #
         #   offset = sky2pix(refpos) - new2old * refpix
 
-        offset = (self.wcs.sky2pix(refpos).T[:,:1]
+        offset = (image.wcs.sky2pix(refpos).T[:,:1]
                   - np.dot(new2old, refpix[np.newaxis,:].T))
 
         # For each pixel of the output image, map its index to the
@@ -3187,8 +3402,8 @@ class Image(DataArray):
         # the the same way as the data to see where the masked areas
         # end up.
 
-        self.data.data[:,:] = 0.0
-        mask = np.ma.filled(self.data, 1.0)
+        image.data.data[:,:] = 0.0
+        mask = np.ma.filled(image.data, 1.0)
 
         # Resample the array of 1s that represent masked pixels.
 
@@ -3203,10 +3418,11 @@ class Image(DataArray):
 
         # Also repeat the procedure for the array of variances, if any.
 
-        if self.var is not None:
-            var = affine_transform(self.var, new2old, offset.flatten(),
-                                           output_shape=newdim, order=order,
-                                           prefilter=order >= 3)
+        if image.var is not None:
+            var = affine_transform(image.var, new2old, offset.flatten(),
+                                   output_shape=newdim, order=order,
+                                   prefilter=order >= 3)
+            
         else:
             var = None
 
@@ -3275,16 +3491,16 @@ class Image(DataArray):
 
         # Install the resampled data, mask and variance arrays.
 
-        self.data = np.ma.array(data, mask=mask)
-        self.var = var
+        image.data = np.ma.array(data, mask=mask)
+        image.var = var
 
         # Get the coordinate reference pixel of the input image,
         # arranged as a column vector in python (Y,X) order. Note that
         # crpix contains FITS pixel indexes which are 1 greater than
         # the corresponding python pixel indexes.
 
-        oldcrpix = np.array([[self.wcs.get_crpix2() - 1],
-                             [self.wcs.get_crpix1() - 1]])
+        oldcrpix = np.array([[image.wcs.get_crpix2() - 1],
+                             [image.wcs.get_crpix1() - 1]])
 
         # Compute the updated value of the coordinate reference pixel
         # in (Y,X) axis order.
@@ -3293,126 +3509,18 @@ class Image(DataArray):
 
         # Update the world-coordinate description object.
 
-        self.wcs.set_axis_increments(newinc)
-        self.wcs.set_naxis1(newdim[1])
-        self.wcs.set_naxis2(newdim[0])
+        image.wcs.set_axis_increments(newinc)
+        image.wcs.set_naxis1(newdim[1])
+        image.wcs.set_naxis2(newdim[0])
 
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel
         # indexes to FITS 1-relative pixel indexes.
 
-        self.wcs.set_crpix1(newcrpix[1] + 1)
-        self.wcs.set_crpix2(newcrpix[0] + 1)
+        image.wcs.set_crpix1(newcrpix[1] + 1)
+        image.wcs.set_crpix2(newcrpix[0] + 1)
 
-    def resample(self, newdim, refpos, refpix, newinc, flux=False,
-                 order=1, interp='no', unit_pos=u.deg, unit_inc=u.arcsec,
-                 cutoff=0.25):
-        """Resample an image to change its resolution and its origin.
-
-        This function can be used to decrease or increase the resolution
-        of an image. It can also be used to shift the contents of an
-        image to place a specific (dec,ra) position at pixel [0,0].
-        Finally, it can be used to flip the direction of one or both
-        of the image axes. The resampled copy of the image is
-        returned.
-
-        When this function is used to resample an image to a lower
-        resolution, a low-pass anti-aliasing filter is applied before
-        resampling, to remove all spatial frequencies below half the
-        new sampling rate. This is required to satisfy the Nyquist
-        sampling constraint. It prevents high spatial-frequency noise
-        and other features from being aliased to lower frequency
-        artefacts in the resampled image. Its averaging property is
-        responsible for the increase in the signal to noise ratio when
-        one smooths to a lower resolution.
-
-        Uses :func:`scipy.ndimage.affine_transform`.
-
-        Parameters
-        ----------
-        newdim : int or (int,int)
-            The desired new dimensions. Python notation: (ny,nx)
-        refpos : (float, float)
-            The sky position (dec,ra) to place at the pixel specified
-            by the refpix argument.
-
-            If refpix and refpos are both None, the sky position at
-            the bottom corner of the input image is placed at the
-            bottom left corner of the output image. Note that refpix
-            and refpos must either both have values or both be None.
-        refpix : (float, float)
-            The [Y, X] indexes of the output pixel where the sky
-            position, refpos, should be placed. Y and X are
-            interpreted as floating point indexes, where integer
-            values indicate pixel centers and integer values +/- 0.5
-            indicate the edges of pixels.
-
-            If refpix and refpos are both None, the sky position at
-            the bottom corner of the input image is placed at the
-            bottom left corner of the output image. Note that refpix
-            and refpos must either both have values or both be None.
-        newinc : float or (float, float)
-            The increments in the angle on the sky from one pixel to
-            the next, given as either one increment for both image
-            axes, or two numbers (dy,dx) for the Y and X axes
-            respectively.
-
-            Note that it is conventional for dy to be positive and dx
-            negative, so that when the image is plotted, east appears
-            anticlockwise of north.
-
-            If either of the signs of the two newinc numbers is
-            different from the increment of the original image
-            (queryable with image.get_axis_increments()), then the
-            image will be reflected about that axis. In this case be
-            careful to choose the value of the newstart argument
-            carefully, or the sampled part of the image may be
-            reflected out of the image array.
-
-            If only one number is given for newinc then both axes
-            are given the same resolution, but the signs of the
-            increments will be kept the same as the pixel increments
-            of the original image.
-        flux : boolean
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the resampled and original pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area unchanged.
-        order : int
-            The order of the spline interpolation. This can take any
-            value from 0-5. The default is 1 (linear interpolation).
-            When this function is used to lower the resolution of
-            an image, the low-pass anti-aliasing filter that is applied,
-            makes linear interpolation sufficient.
-            Conversely, when this function is used to increase the
-            image resolution, order=3 might be useful. Higher
-            orders than this will tend to introduce ringing artefacts.
-        interp : 'no' | 'linear' | 'spline'
-            If 'no', replace masked data with the median image value.
-            If 'linear', replace masked values using a linear
-            interpolation between neighboring values.
-            if 'spline', replace masked values using a spline
-            interpolation between neighboring values.
-        unit_pos : astropy.units
-            The units of the refpos coordinates.  Degrees by default.
-        unit_inc : astropy.units
-            The units of newinc.  Arcseconds by default.
-        cutoff : float
-            After resampling, if the interpolated value of a pixel
-            has an integrated contribution of this many masked pixels,
-            mask the pixel.
-
-        Returns
-        -------
-        out : :class:`mpdaf.obj.Image`
-            The resampled image is returned.
-
-        """
-        res = self.copy()
-        res._resample(newdim, refpos, refpix, newinc, flux=flux, order=order,
-                      interp=interp, unit_pos=unit_pos,
-                      unit_inc=unit_inc, cutoff=cutoff)
-        return res
+        return image
 
     def _align_with_image(self, other, flux=False):
 
@@ -3438,9 +3546,9 @@ class Image(DataArray):
         # increments, offset and number of pixels as the image that we
         # are aligning it with.
 
-        self._resample(other.shape, centersky, centerpix,
-                       other.wcs.get_axis_increments(unit=u.deg),
-                       flux, unit_inc=u.deg)
+        self.regrid(other.shape, centersky, centerpix,
+                    other.wcs.get_axis_increments(unit=u.deg),
+                    flux, unit_inc=u.deg, copy=False)
 
 
     def align_with_image(self, other, flux=False, copy=True):
@@ -3836,9 +3944,8 @@ class Image(DataArray):
             except:
                 newdim = np.array(0.5 + ima.shape / factor, dtype=np.int)
                 newstart = self.wcs.get_start(unit=unit)
-                ima = ima.resample(newdim, newstart, (0, 0),
-                                   self.get_axis_increments(),
-                                   flux=True, unit_inc=unit, unit_pos=unit)
+                ima = ima.resample(newdim, newstart, self_cdelt, flux=True,
+                                   unit_step=unit, unit_start=unit)
 
         # here ima and self have the same step and the same rotation
 
@@ -4347,8 +4454,8 @@ class Image(DataArray):
             # Run the gaussian convolution
             chst = zhst.fftconvolve_gauss(fwhm=(seeing, seeing))
             # Rebin to muse spaxel size and window size
-            rhst = chst.resample(zmuse.shape, zmuse.get_start(), (0, 0),
-                                 zmuse.get_axis_increments(u.arcsec))
+            rhst = chst.resample(zmuse.shape, zmuse.get_start(),
+                                 zmuse.get_step(u.arcsec))
 
             if plot:
                 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
@@ -4433,7 +4540,7 @@ class Image(DataArray):
         vmax : float
                 Maximum pixel value to use for the scaling.
                 If None, vmax is set to max of data.
-        zscale : boolean
+        zscale : bool
                 If true, vmin and vmax are computed
                 using the IRAF zscale algorithm.
         colorbar : boolean
@@ -4947,15 +5054,15 @@ class Image(DataArray):
             fig = plt.gcf()
             fig.canvas.stop_event_loop_default()
 
-    @deprecated('rebin_factor method is deprecated: use rebin_mean instead')
+    @deprecated('The rebin_factor method is deprecated: Use rebin_mean instead')
     def rebin_factor(self, factor, margin='center'):
         return self.rebin_mean(factor, margin)
 
-    @deprecated('rebin method is deprecated: use resample instead')
+    @deprecated('The rebin method is deprecated: Use resample or regrid instead')
     def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
-        return self.resample(newdim, newstart, (0, 0), [newstep[0],-newstep[1]],
-                             flux, order, interp, unit_start, unit_step)
+        return self.resample(newdim, newstart, newstep, flux,
+                             order, interp, unit_start, unit_step)
 
 
 def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
@@ -5617,4 +5724,3 @@ def _find_quadratic_peak(y):
     # Quadratic curves peak at:  x = -b / (2*a)
 
     return -b / (2 * a)
-
