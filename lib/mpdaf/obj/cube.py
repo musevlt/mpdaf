@@ -213,8 +213,9 @@ class Cube(DataArray):
     def resize(self):
         return self.crop()
 
-    def mask(self, center, radius, lmin=None, lmax=None, inside=True,
-             unit_center=u.deg, unit_radius=u.arcsec, unit_wave=u.angstrom):
+    def mask_region(self, center, radius, lmin=None, lmax=None, inside=True,
+                    unit_center=u.deg, unit_radius=u.arcsec,
+                    unit_wave=u.angstrom):
         """Mask values inside or outside a specified region.
 
         Parameters
@@ -2519,8 +2520,8 @@ class Cube(DataArray):
         if unit_center is None:
             center = np.array(center)
             center -= (subcub.get_start() - self.get_start())[1:]
-        subcub.mask(center, radius, inside=False, unit_center=unit_center,
-                    unit_radius=unit_radius)
+        subcub.mask_region(center, radius, inside=False,
+                           unit_center=unit_center, unit_radius=unit_radius)
         return subcub
 
     def aperture(self, center, radius, unit_center=u.deg,

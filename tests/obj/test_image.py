@@ -160,15 +160,16 @@ def test_mask():
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
     image1 = Image(data=data, wcs=wcs)
-    image1.mask((2, 2), (1, 1), inside=False, unit_center=None, unit_radius=None)
+    image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
+                       unit_radius=None)
     nose.tools.assert_equal(image1.sum(), 2 * 9)
     image1.unmask()
     wcs = WCS(deg=True)
     image1 = Image(data=data, wcs=wcs)
-    image1.mask(wcs.pix2sky([2, 2]), (3600, 3600), inside=False)
+    image1.mask_region(wcs.pix2sky([2, 2]), (3600, 3600), inside=False)
     nose.tools.assert_equal(image1.sum(), 2 * 9)
     image1.unmask()
-    image1.mask(wcs.pix2sky([2, 2]), 4000, inside=False)
+    image1.mask_region(wcs.pix2sky([2, 2]), 4000, inside=False)
     nose.tools.assert_equal(image1.sum(), 2 * 5)
     image1.unmask()
     image1.mask_ellipse(wcs.pix2sky([2, 2]), (10000, 3000), 20, inside=False)
@@ -363,14 +364,17 @@ def test_ee():
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
     image1 = Image(data=data, wcs=wcs)
-    image1.mask((2, 2), (1, 1), inside=False, unit_center=None, unit_radius=None)
+    image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
+                       unit_radius=None)
     nose.tools.assert_equal(image1.ee(), 9 * 2)
     ee = image1.ee(center=(2, 2), unit_center=None, radius=1, unit_radius=None)
     nose.tools.assert_equal(ee, 4 * 2)
-    r, eer = image1.eer_curve(center=(2, 2), unit_center=None, unit_radius=None, cont=0)
+    r, eer = image1.eer_curve(center=(2, 2), unit_center=None,
+                              unit_radius=None, cont=0)
     nose.tools.assert_equal(r[1], 1.0)
     nose.tools.assert_equal(eer[1], 1.0)
-    size = image1.ee_size(center=(2, 2), unit_center=None, unit_size=None, cont=0)
+    size = image1.ee_size(center=(2, 2), unit_center=None, unit_size=None,
+                          cont=0)
     nose.tools.assert_almost_equal(size[0], 1.775)
 
 
@@ -380,7 +384,7 @@ def test_rebin_mean():
     wcs = WCS(crval=(0, 0))
     data = np.arange(30).reshape(6, 5)
     image1 = Image(data=data, wcs=wcs, var=np.ones(data.shape) * 0.5)
-    image1.mask((2, 2), (1, 1), inside=False, unit_center=None,
+    image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
                 unit_radius=None)
 
     # The test data array looks as follows:

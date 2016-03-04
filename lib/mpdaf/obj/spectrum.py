@@ -663,7 +663,7 @@ class Spectrum(DataArray):
         self.wave = wave.copy()
         self.wave.shape = self.shape
 
-    def mask(self, lmin=None, lmax=None, inside=True, unit=u.angstrom):
+    def mask_region(self, lmin=None, lmax=None, inside=True, unit=u.angstrom):
         """Mask the spectrum inside/outside [lmin,lmax].
 
         Parameters

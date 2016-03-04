@@ -131,13 +131,13 @@ def test_mask():
     """Cube class: testing mask functionalities"""
     cube = generate_cube()
 
-    cube.mask((2, 2), (1, 1), lmin=2, lmax=5, inside=True, unit_center=None,
-              unit_radius=None, unit_wave=None)
+    cube.mask_region((2, 2), (1, 1), lmin=2, lmax=5, inside=True,
+                     unit_center=None, unit_radius=None, unit_wave=None)
     assert_equal(ma.count_masked(cube.data), 3*3*3)
     cube.unmask()
 
-    cube.mask((2, 2), (1, 1), lmin=2, lmax=5, inside=False, unit_center=None,
-              unit_radius=None, unit_wave=None)
+    cube.mask_region((2, 2), (1, 1), lmin=2, lmax=5, inside=False,
+                     unit_center=None, unit_radius=None, unit_wave=None)
     assert_equal(np.prod(cube.shape) - ma.count_masked(cube.data),
                  3*3*3)
     cube.unmask()
@@ -145,11 +145,12 @@ def test_mask():
     wcs = WCS(deg=True)
     wave = WaveCoord(cunit=u.angstrom)
     cube = Cube(data=cube.data, wave=wave, wcs=wcs, copy=False)
-    cube.mask(wcs.pix2sky([2, 2]), (3600, 3600), lmin=2, lmax=5, inside=False)
+    cube.mask_region(wcs.pix2sky([2, 2]), (3600, 3600), lmin=2, lmax=5,
+                     inside=False)
     nose.tools.assert_almost_equal(cube.sum(), 2.3 * 9 * 3)
     cube.unmask()
 
-    cube.mask(wcs.pix2sky([2, 2]), 4000, lmin=2, lmax=5, inside=False)
+    cube.mask_region(wcs.pix2sky([2, 2]), 4000, lmin=2, lmax=5, inside=False)
     nose.tools.assert_almost_equal(cube.sum(), 2.3 * 5 * 3)
     cube.unmask()
 

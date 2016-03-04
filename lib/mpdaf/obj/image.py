@@ -844,8 +844,8 @@ class Image(DataArray):
             self._logger.warning('world coordinates and data have not '
                                  'the same dimensions')
 
-    def mask(self, center, radius, unit_center=u.deg, unit_radius=u.arcsec,
-             inside=True):
+    def mask_region(self, center, radius, unit_center=u.deg,
+                    unit_radius=u.arcsec, inside=True):
         """Mask values inside/outside the described region.
 
         Parameters

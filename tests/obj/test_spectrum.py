@@ -177,8 +177,8 @@ def test_crop():
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
-    spe.mask(lmax=5000, unit=unit)
-    spe.mask(lmin=6500, unit=unit)
+    spe.mask_region(lmax=5000, unit=unit)
+    spe.mask_region(lmin=6500, unit=unit)
     spe.crop()
     nose.tools.assert_equal(int((6500 - 5000) / spe.get_step(unit=unit)),
                             spe.shape[0])
@@ -282,12 +282,12 @@ def test_interpolation():
     uspnovar = spnovar.wave.unit
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     uspvar = spvar.wave.unit
-    spvar.mask(5575, 5585, unit=uspvar)
-    spvar.mask(6296, 6312, unit=uspvar)
-    spvar.mask(6351, 6375, unit=uspvar)
-    spnovar.mask(5575, 5585, unit=uspnovar)
-    spnovar.mask(6296, 6312, unit=uspnovar)
-    spnovar.mask(6351, 6375, unit=uspnovar)
+    spvar.mask_region(5575, 5585, unit=uspvar)
+    spvar.mask_region(6296, 6312, unit=uspvar)
+    spvar.mask_region(6351, 6375, unit=uspvar)
+    spnovar.mask_region(5575, 5585, unit=uspnovar)
+    spnovar.mask_region(6296, 6312, unit=uspnovar)
+    spnovar.mask_region(6351, 6375, unit=uspnovar)
     spm1 = spvar.copy()
     spm1.interp_mask()
     spm2 = spvar.copy()
