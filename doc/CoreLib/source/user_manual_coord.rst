@@ -154,4 +154,8 @@ References
 
 :func:`mpdaf.obj.WaveCoord.to_header` generates a pyfits header object with the WCS information.
 
-:func:`mpdaf.obj.WaveCoord.set_crpix` - CRPIX1 setter.
+:func:`mpdaf.obj.WaveCoord.set_crpix` - CRPIX setter.
+
+:func:`mpdaf.obj.WaveCoord.set_crval` - CRVAL setter.
+
+:func:`mpdaf.obj.WaveCoord.set_step` - Step setter.
