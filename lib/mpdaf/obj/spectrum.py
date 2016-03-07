@@ -2749,7 +2749,7 @@ class Spectrum(DataArray):
 
     def plot(self, max=None, title=None, noise=False, snr=False,
              lmin=None, lmax=None, ax=None, stretch='linear', unit=u.angstrom,
-             **kwargs):
+             noise_kwargs=None, **kwargs):
         """Plot the spectrum. By default, drawstyle is 'steps-mid'.
 
         Parameters
@@ -2767,11 +2767,14 @@ class Spectrum(DataArray):
         lmax : float
             Maximum wavelength.
         ax : matplotlib.Axes
-            the Axes instance in which the spectrum is drawn
+            The Axes instance in which the spectrum is drawn.
         unit : astropy.units
-            type of the wavelength coordinates
-        kwargs : matplotlib.lines.Line2D
-            kwargs can be used to set line properties: line label (for auto
+            Unit of the wavelength coordinates.
+        noise_kwargs : dict
+            Properties for the noise plot (if ``noise=True``). Default to
+            ``color='0.75', facecolor='0.75', alpha=0.5``.
+        kwargs : dict
+            kwargs can be used to set plot properties: line label (for auto
             legends), linewidth, anitialising, marker face color, etc.
         """
 
@@ -2781,48 +2784,52 @@ class Spectrum(DataArray):
         if lmin is not None or lmax is not None:
             res = self.copy()
             res.truncate(lmin, lmax, unit)
-            x = res.wave.coord(unit=unit)
         else:
             res = self
-            try:
-                x = res.wave.coord(unit=unit)
-            except u.UnitConversionError:
-                unit = res.wave.unit
-                x = res.wave.coord(unit=unit)
 
-        f = res.data
+        try:
+            x = res.wave.coord(unit=unit)
+        except u.UnitConversionError:
+            unit = res.wave.unit
+            x = res.wave.coord(unit=unit)
+
+        data = res.data
         if res.var is None:
             noise = False
             snr = False
         if snr:
-            f /= np.sqrt(res.var)
+            data /= np.sqrt(res.var)
         if max is not None:
-            f = f * max / f.max()
+            data = data * max / data.max()
 
         # default plot arguments
         kwargs.setdefault('drawstyle', 'steps-mid')
 
         if stretch == 'linear':
-            ax.plot(x, f, **kwargs)
+            ax.plot(x, data, **kwargs)
         elif stretch == 'log':
-            ax.semilogy(x, f, **kwargs)
+            ax.semilogy(x, data, **kwargs)
         else:
             raise ValueError("Unknow stretch '{}'".format(stretch))
 
         if noise:
-            ax.fill_between(x, f + np.sqrt(res.var),
-                            f - np.sqrt(res.var),
-                            color='0.75', facecolor='0.75', alpha=0.5)
+            sigma = np.sqrt(res.var)
+            noisekw = dict(color='0.75', facecolor='0.75', alpha=0.5)
+            if noise_kwargs is not None:
+                noisekw.update(noise_kwargs)
+            ax.fill_between(x, data + sigma, data - sigma, **noisekw)
+
         if title is not None:
             ax.set_title(title)
         if unit is not None:
             ax.set_xlabel(r'$\lambda$ (%s)' % unit)
         if res.unit is not None:
             ax.set_ylabel(res.unit)
+
         self._fig = plt.get_current_fig_manager()
         self._unit = unit
         plt.connect('motion_notify_event', self._on_move)
-        self._plot_id = len(plt.gca().lines) - 1
+        self._plot_id = len(ax.lines) - 1
 
     def log_plot(self, max=None, title=None, noise=False, snr=False,
                  lmin=None, lmax=None, ax=None, unit=u.angstrom,
