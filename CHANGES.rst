@@ -3,13 +3,23 @@ New Features
 
 * The Image.resample() method now applies an anti-aliasing filter to
   prevent aliasing and to increase the signal to noise ratio when
-  re-sampling to lower resolutions.
+  re-sampling to lower resolutions. This function now has an optional
+  copy argument, which can be used to request that the input image be
+  re-sampled in-place, rather than a copy of it.
 
 * There is a new method called Image.regrid(), which is similar to
   Image.resample(), but it is more flexible in the positioning of the
   sky in the re-sampled image, and it accepts signed pixel increments,
-  such that the direction on the sky that the array axes increase can
-  be specified as well as their resolutions.
+  such that the directional sense of the image axes on the sky can be
+  specified as well as their resolutions.
+
+* The Image.rotate() method now works correctly on images whose pixels
+  have different angular sizes along the X and Y axes. This includes
+  optionally adjusting the pixel sizes of the image to avoid
+  under-sampling the image when rotating higher resolution axes onto
+  lower resolution axes. This function now has an optional copy
+  argument, which can be used to request that the input image be
+  rotated in-place, rather than a copy of it.
 
 * There is a new method called Image.align_with_image(). This
   resamples the image of the object to give it the same orientation,
@@ -20,36 +30,28 @@ New Features
   and X axes.
 
 * There is a new method called Image.estimate_coordinate_offset().
-  This uses a carefully constrained full-image auto-correlation to
-  measure the average offsets between the world coordinates of common
-  astronomical features in the current image and a reference
-  image. This was written primarily to determine the coordinate
-  offsets between MUSE images and HST reference images.
+  This uses a full-image auto-correlation to measure the average
+  offsets between the world coordinates of common astronomical
+  features in two images. This was written primarily to determine
+  coordinate offsets between MUSE images and HST reference images.
 
 * There is a new method called Image.adjust_coordinates(), which uses
   Image.estimate_coordinate_offset() to determine the world coordinate
-  offsets between the image of the object and a reference image, then
-  applies this shift to the reference pixel index of the image, so
-  that the two images line up when plotted versus Ra and Dec.
+  offsets between an image and a reference image, then applies this
+  shift to the reference pixel index of the image, so that the two
+  images line up when plotted versus Ra and Dec.
 
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
 
-* The rewritten Image.rotate() function (see below) no longer has an
-  optional reshape option. This is because this function now
-  pre-allocates the array of the rotated image with the optimal final
-  size. The optional interpolation 'order' argument has also been
-  removed, because the optimal interpolation is already set by the
-  function.
-
 * The resize() methods of Cube, Image and Spectrum have been renamed
   crop() to better indicate their purpose.
 
 * The Image.rebin_median() method has been removed because its effect
-  on image statistics couldn't be characterized to allow the
-  computation of variances, and because it didn't seem scientifically
-  useful.
+  on the variances couldn't be computed, and because it didn't seem
+  scientifically useful, and the median_filter method seems more
+  appropriate for those wishing to use a median to remove bad pixels.
 
 * The WCS.get_naxis1() and WCS.get_naxis2() methods have been removed,
   because the underlying WCS.naxis1 and WCS.naxis2 values can be
@@ -57,6 +59,13 @@ Breaking changes
 
 Summary of significant changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* The variance arrays of the Data, Image, Cube and Spectrum objects
+  are now masked arrays that share the mask array of the data
+  array. Previously the arrays of variances were just numpy arrays
+  which didn't take account of the mask of the data array. This change
+  should quietly fix any code that assumed that masked pixels in the
+  data array were also masked in the variance array.
 
 * The Image.rebin_mean() method has been simplified to make it more
   maintainable. Its calculations of the mean values of the pixels in
@@ -118,9 +127,11 @@ Summary of significant changes
   re-sampled to lower resolution.
 
 * The Image.rotate() method has been re-written to work correctly with
-  non-square pixels and to interpret rotation angles on the sky in the
-  same way as the WCS.get_rot() function. It also now resamples the
-  input image to avoid the rotated image being under-sampled.
+  non-square pixels and to interpret the rotation angle in the same
+  way as the revised WCS.get_rot() function. It also optionally
+  adjusts pixel sizes to avoid the rotated image being under or
+  over-sampled. It does this by default, except when asked not to
+  reshape the image array, although.
 
 * The WCS.rotate() method has been removed, because the revised
   Image.rotate() method corrects the coordinate transformation itself.
