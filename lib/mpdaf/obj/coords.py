@@ -218,7 +218,8 @@ def image_angle_from_cd(cd, unit=u.deg):
     out : float
         The angle between celestial north and the Y axis of the image,
         in the sense of an eastward rotation of celestial north from
-        the Y-axis.
+        the Y-axis. The angle is returned in the range -180 to 180
+        degrees (or the equivalent for the specified unit).
 
     """
 
@@ -538,7 +539,7 @@ class WCS(object):
             # install it.
 
             if cd is not None and cd.shape[0] == 2 and cd.shape[1] == 2:
-                self.wcs.wcs.cd = cd
+                self.set_cd(cd)
 
             # If no CD matrix was provided, construct one from the
             # cdelt and rot parameters, following the official
@@ -550,9 +551,9 @@ class WCS(object):
                 rho = np.deg2rad(rot)
                 sin_rho = np.sin(rho)
                 cos_rho = np.cos(rho)
-                self.wcs.wcs.cd = np.array([
+                self.set_cd(np.array([
                     [cdelt[1] * cos_rho, -cdelt[0] * sin_rho],
-                    [cdelt[1] * sin_rho,  cdelt[0] * cos_rho]])
+                    [cdelt[1] * sin_rho,  cdelt[0] * cos_rho]]))
 
             # Update the wcs object to accomodate the new value of
             # the CD matrix.
@@ -1459,12 +1460,8 @@ class WCS(object):
         # X-axis pixel sizes. Scaling the 2nd column scales the
         # Y-axis pixel sizes.
 
-        self.wcs.wcs.cd = np.dot(cd, np.array([[ratio[1], 0.0],
-                                               [0.0, ratio[0]]]))
-
-        # Install the rescaled CD matrix.
-
-        self.wcs.wcs.set()
+        self.set_cd(np.dot(cd, np.array([[ratio[1], 0.0],
+                                         [0.0, ratio[0]]])))
 
     def set_axis_increments(self, increments, unit=None):
         """Set the displacements on the sky that result from
@@ -1522,18 +1519,13 @@ class WCS(object):
         # X-axis pixel sizes. Scaling the 2nd column scales the
         # Y-axis pixel sizes.
 
-        self.wcs.wcs.cd = np.dot(cd, np.array([[ratio[1], 0.0],
-                                               [0.0, ratio[0]]]))
-
-        # Install the rescaled CD matrix.
-
-        self.wcs.wcs.set()
+        self.set_cd(np.dot(cd, np.array([[ratio[1], 0.0],
+                                         [0.0, ratio[0]]])))
 
     def rebin(self, factor):
         """Rebin to a new coordinate system.
 
-        This is a helper function for the Image.rebin_mean() and
-        Image.rebin_median() functions.
+        This is a helper function for the Image.rebin_mean() function.
 
         Parameters
         ----------
@@ -1544,34 +1536,31 @@ class WCS(object):
         -------
         out : WCS
         """
+
+        # Make the changes to a copy of the current WCS object.
+
         res = self.copy()
-        factor = np.array(factor)
 
-        try:
-            cd = res.wcs.wcs.cd
-            cd[0, :] *= factor[1]
-            cd[1, :] *= factor[0]
-            res.wcs.wcs.cd = cd
-        except:
-            try:
-                cdelt = res.wcs.wcs.cdelt
-                cdelt[0] *= factor[1]
-                cdelt[1] *= factor[0]
-                res.wcs.wcs.cdelt = cdelt
-            except:
-                raise StandardError("problem in wcs rebinning")
-        res.wcs.wcs.set()
-        old_cdelt = self.get_step()
-        cdelt = res.get_step()
+        # Record the increased pixel sizes.
 
-        crpix = res.wcs.wcs.crpix
-        crpix[0] = (crpix[0] * old_cdelt[1] - old_cdelt[1] / 2.0 +
-                    cdelt[1] / 2.0) / cdelt[1]
-        crpix[1] = (crpix[1] * old_cdelt[0] - old_cdelt[0] / 2.0 +
-                    cdelt[0] / 2.0) / cdelt[0]
-        res.wcs.wcs.crpix = crpix
-        res.naxis1 = res.naxis1 / factor[1]
-        res.naxis2 = res.naxis2 / factor[0]
+        res.set_step(self.get_step() * np.asarray(factor))
+
+        # Compute the new coordinate reference pixel, noting that for
+        # the FITS crpix value, the center of the first pixel is
+        # defined to be 1, not 0. The original crpix index denotes a
+        # pixel that is (crpix-0.5) of the original pixel widths from
+        # the start of the first pixel of the original array. This
+        # corresponds to (crpix-0.5)/factor new pixel widths from the
+        # start of the first pixel, so this has a pixel index of
+        # (oldcrpix-0.5)/factor+0.5 in the rebinned array.
+
+        res.wcs.wcs.crpix[0] = (res.wcs.wcs.crpix[0] - 0.5) / factor[1] + 0.5
+        res.wcs.wcs.crpix[1] = (res.wcs.wcs.crpix[1] - 0.5) / factor[0] + 0.5
+
+        # Record the new dimensions of the image.
+
+        res.naxis1 = res.naxis1 // factor[1]
+        res.naxis2 = res.naxis2 // factor[0]
         res.wcs.wcs.set()
 
         return res
