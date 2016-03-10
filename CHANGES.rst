@@ -7,19 +7,21 @@ New Features
   copy argument, which can be used to request that the input image be
   re-sampled in-place, rather than a copy of it.
 
-* There is a new method called Image.regrid(), which is similar to
-  Image.resample(), but it is more flexible in the positioning of the
-  sky in the re-sampled image, and it accepts signed pixel increments,
-  such that the directional sense of the image axes on the sky can be
+* There is a new method called Image.regrid(). This is similar to
+  Image.resample(). However it is more flexible in the positioning of
+  the sky in the re-sampled image, and it accepts signed pixel
+  increments, such that the directional sense of the axes can be
   specified as well as their resolutions.
 
 * The Image.rotate() method now works correctly on images whose pixels
   have different angular sizes along the X and Y axes. This includes
   optionally adjusting the pixel sizes of the image to avoid
   under-sampling the image when rotating higher resolution axes onto
-  lower resolution axes. This function now has an optional copy
-  argument, which can be used to request that the input image be
-  rotated in-place, rather than a copy of it.
+  lower resolution axes.
+
+* The Image.rotate() method now has an optional copy argument, which
+  can be used to request that the input image be rotated in-place,
+  rather than a copy of it.
 
 * There is a new method called Image.align_with_image(). This
   resamples the image of the object to give it the same orientation,
@@ -41,7 +43,6 @@ New Features
   shift to the reference pixel index of the image, so that the two
   images line up when plotted versus Ra and Dec.
 
-
 Breaking changes
 ~~~~~~~~~~~~~~~~
 
@@ -50,12 +51,28 @@ Breaking changes
 
 * The Image.rebin_median() method has been removed because its effect
   on the variances couldn't be computed, and because it didn't seem
-  scientifically useful, and the median_filter method seems more
-  appropriate for those wishing to use a median to remove bad pixels.
+  scientifically useful. The Image.median_filter() method seems more
+  appropriate for those wishing to remove bad pixels.
 
 * The WCS.get_naxis1() and WCS.get_naxis2() methods have been removed,
   because the underlying WCS.naxis1 and WCS.naxis2 values can be
   queried directly.
+
+* Position angles of astronomical features on the sky are
+  conventionally specified relative to north, with a rotation from
+  north to east being considered a positive angle. However MPDAF's
+  get_rot() has been returning the clockwise angle of north relative
+  to the pixel grid of the image. Since East is usually plotted
+  towards the left in astronomical images, this had the opposite sign
+  to the convention. For images with non-square pixels, the angle also
+  differed in magnitude. The updated versions of image.get_rot() and
+  image.rotate() resolve this discrepancy, so any software that has
+  been using these functions may see changes.
+
+* The return value of the get_range() methods of Cube, Image
+  and DataArray have been changed to a flat array, rather than
+  an array of two coordinate tuples that only denoted image corners
+  for non-rotated images.
 
 Summary of significant changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,26 +129,26 @@ Summary of significant changes
   discarded.
 
 * There is a new method called Image.regrid(). This is similar to
-  Image.resample(), but it is more flexible in the positioning of the
-  sky in the re-sampled image, and it accepts signed pixel increments,
-  such that the sense of the image axes can be specified as well as
-  their resolutions.
+  Image.resample(). However it is more flexible in the positioning of
+  the sky in the re-sampled image, and it accepts signed pixel
+  increments, such that the directional senses of the image axes can
+  be specified as well as their resolutions.
 
 * The WCS.resample() method has been removed, because the revised
   Image.resample() method corrects the coordinate transformation
   itself.
 
-* A new method called _antialias_filter_image() has been added in
-  image.py. This is used by the re-written Image.resample() method
-  to apply an antialiasing filter to an image that is about to be
-  re-sampled to lower resolution.
+* A new private method called _antialias_filter_image() has been added
+  in image.py. This is used by the re-written Image.resample() method
+  to apply an antialiasing filter to an image before re-sampling it to
+  a lower resolution.
 
 * The Image.rotate() method has been re-written to work correctly with
   non-square pixels and to interpret the rotation angle in the same
   way as the revised WCS.get_rot() function. It also optionally
   adjusts pixel sizes to avoid the rotated image being under or
-  over-sampled. It does this by default, except when asked not to
-  reshape the image array, although.
+  over-sampled. It doesn't do this if either the reshape option is
+  false, or the new regrid option is False.
 
 * The WCS.rotate() method has been removed, because the revised
   Image.rotate() method corrects the coordinate transformation itself.
@@ -166,14 +183,12 @@ Summary of significant changes
   typical MUSE FITS files.
 
 * The WCS initializer now accepts a cd argument, which may be used to
-  set the coordinate transformation directly, instead of via
-  values for the obsolescent CDELT1,CDELT2,CROTA FITS keywords.
+  set the coordinate transformation directly.
 
-* When a WCS object is initialized via the cdelt1,cdelt2 and rot
-  sub-set of object-initialization parameters, the
-  corresponding coordinate transformation matrix is now calculated in
-  the way recommended in equation 189 of FITS paper *II*
-  (Calabretta, M. R. & Greisen, E. W. 2002 paper II, A&A, 395,
+* When an WCS object is initialized via its cdelt1,cdelt2 and rot
+  parameters, the corresponding coordinate transformation matrix is
+  now calculated in the way recommended in equation 189 of FITS paper
+  *II* (Calabretta, M. R. & Greisen, E. W. 2002 paper II, A&A, 395,
   1077-1122).
 
 * Documentation has been added and revised for many methods and
@@ -189,7 +204,7 @@ Summary of significant changes
   the un-flagged sub-cube/sub-image along all axes. This will have
   produced incorrect results in the past.
 
-* Many new unit test functions have been written, and many others have
+* Many unit-test functions have been written, and many others have
   been updated.
 
 * The functions that generate unit-test data now include mask arrays
@@ -198,8 +213,8 @@ Summary of significant changes
 
 * The variance calculation of DataArray.sqrt() has been corrected.
 
-* In the Spectrum.sum() method, the weighted mean average of the
-  spectral pixels was being multiplied by the total number of pixels
+* In the sum() method of Spectrum, the weighted mean of the spectral
+  pixels was being multiplied by the total number of input pixels
   instead of the number of unmasked pixels. This will have resulted in
   sums that were too small wherever there were masked spectral pixels.
 
