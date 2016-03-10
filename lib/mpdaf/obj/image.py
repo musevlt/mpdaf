@@ -3164,7 +3164,7 @@ class Image(DataArray):
 
     def resample(self, newdim, newstart, newstep, flux=False,
                  order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
-                 copy=True):
+                 antialias=True, copy=True):
 
         """Resample an image of the sky to select its angular resolution and
         to specify which sky position appears at the center of pixel [0,0].
@@ -3229,6 +3229,16 @@ class Image(DataArray):
             The angular units of the newstart coordinates. Degrees by default.
         unit_step : astropy.units
             The angular units of the step argument. Arcseconds by default.
+        antialias : bool
+            By default, when the resolution of an image axis is about
+            to be reduced, a low pass filter is first applied to suppress
+            high spatial frequencies that can not be represented by the
+            reduced sampling interval. If this is not done, high-frequency
+            noise and sharp edges get folded back to lower frequencies,
+            where they increase the noise level of the image and introduce
+            ringing artefacts next to sharp edges, such as CCD saturation
+            spikes. This filtering can be disabled by passing False to
+            the antialias argument.
         copy : bool
             If True, return a resampled copy of the image (the default).
             If False, resample the original image in place, and return that.
@@ -3260,11 +3270,11 @@ class Image(DataArray):
 
         return self.regrid(newdim, refpos, refpix, newinc, flux=flux,
                            order=order, interp=interp, unit_pos=unit_start,
-                           unit_inc=unit_step, copy=copy)
+                           unit_inc=unit_step, antialias=antialias, copy=copy)
 
     def regrid(self, newdim, refpos, refpix, newinc, flux=False, order=1,
-               interp='no', unit_pos=u.deg, unit_inc=u.arcsec, copy=True,
-               cutoff=0.25):
+               interp='no', unit_pos=u.deg, unit_inc=u.arcsec, antialias=True,
+               copy=True, cutoff=0.25):
 
         """Resample an image of the sky to select its angular resolution,
         to specify the position of the sky in the image array, and
@@ -3362,6 +3372,16 @@ class Image(DataArray):
             The units of the refpos coordinates.  Degrees by default.
         unit_inc : astropy.units
             The units of newinc.  Arcseconds by default.
+        antialias : bool
+            By default, when the resolution of an image axis is about
+            to be reduced, a low pass filter is first applied to suppress
+            high spatial frequencies that can not be represented by the
+            reduced sampling interval. If this is not done, high-frequency
+            noise and sharp edges get folded back to lower frequencies,
+            where they increase the noise level of the image and introduce
+            ringing artefacts next to sharp edges, such as CCD saturation
+            spikes. This filtering can be disabled by passing False to
+            the antialias argument.
         copy : bool
             If True, return a resampled copy of the image. This is the default.
             If False, resample the original image in place, and return that.
@@ -3450,8 +3470,11 @@ class Image(DataArray):
         # increased, then low-pass filter the data along that axis to
         # prevent aliasing in the resampled data.
 
-        data, newfmax = _antialias_filter_image(
-            data, abs(oldinc), abs(newinc), self.get_spatial_fmax())
+        if antialias:
+            data, newfmax = _antialias_filter_image(
+                data, abs(oldinc), abs(newinc), self.get_spatial_fmax())
+        else:
+            newfmax = 0.5 / abs(newinc)
 
         # If the spatial frequency band-limits of the image have been
         # reduced by the changes in the Y and X sampling intervals,
@@ -3593,7 +3616,7 @@ class Image(DataArray):
                 # Scale the variance according to the prescription described
                 # above.
 
-                var *= (xs if xs > 1.0 else xs**2) * (ys if ys > 1.0 else ys**2)
+                var *= (xs if xs > 1.0 and antialias else xs**2) * (ys if ys > 1.0 and antialias else ys**2)
 
         # If we haven't been asked to scale the fluxes by the increase
         # in the area of a pixel, the effect on the variances are as
@@ -3606,7 +3629,7 @@ class Image(DataArray):
 
         else:
             if var is not None and (xs > 1.0 or ys > 1.0):
-                var *= (1/xs if xs > 1.0 else 1.0) * (1/ys if ys > 1.0 else 1.0)
+                var *= (1/xs if xs > 1.0 and antialias else 1.0) * (1/ys if ys > 1.0 and antialias else 1.0)
 
         # Install the resampled data, mask and variance arrays.
 

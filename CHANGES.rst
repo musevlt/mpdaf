@@ -1,11 +1,14 @@
 New Features
 ------------
 
-* The Image.resample() method now applies an anti-aliasing filter to
-  prevent aliasing and to increase the signal to noise ratio when
-  re-sampling to lower resolutions. This function now has an optional
-  copy argument, which can be used to request that the input image be
-  re-sampled in-place, rather than a copy of it.
+* By default the Image.resample() method now applies an anti-aliasing
+  filter when asked to lower the resolution of an image. This
+  suppresses aliasing artifacts and increases the signal to noise
+  ratio by removing noise at high spatial frequencies that would
+  otherwise be folded back into the image. This new feature can be
+  disabled by setting the antialias argument to False. An optional
+  copy argument has also been added which can be used to request that
+  the input image be re-sampled in-place, rather than a copy of it.
 
 * There is a new method called Image.regrid(). This is similar to
   Image.resample(). However it is more flexible in the positioning of
