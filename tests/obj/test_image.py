@@ -252,7 +252,7 @@ def test_rotate():
 
     # Get a rotated copy of the image.
 
-    after = before.rotate(30)
+    after = before.rotate(30, reshape=True, regrid=True)
 
     # See in which pixels the coordinate matrix of the rotated
     # image says that the test sky coordinates should now be found
