@@ -190,10 +190,10 @@ def wcs_from_header(hdr, naxis=None):
 
 def image_angle_from_cd(cd, unit=u.deg):
 
-    """Return the angle between celestial north and the Y axis of an image
-    whose coordinates are described by a specified FITS CD matrix. The
-    angle is in the sense of an eastward rotation of celestial north
-    from the Y-axis.
+    """Return the rotation angle of the image, defined such that a
+    rotation angle of zero aligns north along the positive Y axis, and
+    a positive rotation angle rotates north away from the Y axis, in
+    the sense of a rotation from north to east.
 
     Note that the rotation angle is defined in a flat map-projection
     of the sky. It is what would be seen if the pixels of the image
@@ -251,15 +251,15 @@ def axis_increments_from_cd(cd):
     FITS CD matrix.
 
     In MPDAF, images are a regular grid of square pixels on a flat
-    projection of the celestial sphere. The get_step() method
-    returns the angular width and height of these pixels on the
-    sky, with signs that indicate whether the angle increases or
-    decreases as one steps along the corresponding array axis. To
-    keep plots consistent, regardless of the rotation angle of the
-    image on the sky, the returned height is always positive, but
-    the returned width is negative if a plot of the image with
-    pixel 0,0 at the bottom left would place east anticlockwise of
-    north, and positive otherwise.
+    projection of the celestial sphere. This function returns the
+    angular width and height of these pixels on the sky, with signs
+    that indicate whether the angle increases or decreases as one
+    steps along the corresponding array axis. To keep plots
+    consistent, regardless of the rotation angle of the image on the
+    sky, the returned height is always positive, but the returned
+    width is negative if a plot of the image with pixel 0,0 at the
+    bottom left would place east anticlockwise of north, and positive
+    otherwise.
 
     Parameters
     ----------
@@ -1082,9 +1082,10 @@ class WCS(object):
 
     def get_rot(self, unit=u.deg):
 
-        """Return the angle between celestial north and the Y
-        axis of the image, in the sense of an eastward rotation of
-        celestial north from the Y-axis.
+        """Return the rotation angle of the image, defined such that a
+        rotation angle of zero aligns north along the positive Y axis,
+        and a positive rotation angle rotates north away from the Y
+        axis, in the sense of a rotation from north to east.
 
         Note that the rotation angle is defined in a flat
         map-projection of the sky. It is what would be seen if
