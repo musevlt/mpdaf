@@ -158,8 +158,6 @@ class DataArray(object):
             else:
                 close_hdu = False
 
-            self.primary_header = hdulist[0].header
-
             # Find the hdu of the data. This is either the primary HDU
             # or a DATA or SCI extension. Also see if there is an extension
             # that contains variances. This is either a STAT extension,
@@ -188,7 +186,7 @@ class DataArray(object):
                 self._data_ext = ext
                 self._var_ext = None
 
-            # Record the data header.
+            self.primary_header = hdulist[0].header
             self.data_header = hdr = hdulist[self._data_ext].header
 
             try:
@@ -227,7 +225,6 @@ class DataArray(object):
             if close_hdu:
                 hdulist.close()
 
-        # There is no FITS file to read the data from.
         else:
             # Use a specified numpy data array?
             if data is not None:
@@ -423,9 +420,11 @@ class DataArray(object):
         # By default, if mask=False create a mask array with False values.
         # numpy.ma does it but with a np.resize/np.concatenate which cause a
         # huge memory peak, so a workaround is to create the mask here.
-        if value is None:
-            self._mask = np.zeros(self.shape, dtype=bool)
-        elif value is False:
+        # Also we force the creation of a mask array because currently many
+        # method in MPDAF expect that the mask is an array and will not work
+        # with np.ma.nomask. But nomask can still be used explicitly for
+        # specific cases.
+        if value is None or value is False:
             self._mask = np.zeros(self.shape, dtype=bool)
         elif value is True:
             self._mask = np.ones(self.shape, dtype=bool)
@@ -597,7 +596,6 @@ class DataArray(object):
         # The DataArray constructor postpones reading data from FITS files
         # until they are first used. Read the slice from the FITS file if
         # the data array hasn't been read yet.
-
         if self._data is None and self.filename is not None:
             data = read_slice_from_fits(self.filename, item=item,
                                         ext=self._data_ext, mask_ext='DQ',
@@ -613,13 +611,15 @@ class DataArray(object):
                 # Store the data array if the full data has been read
                 self._data = data
         else:
-            data = self.data[item]  # data = self.data[item].copy()
+            data = self.data[item]
+
+        if data.ndim == 0:
+            return data
 
         # The DataArray constructor postpones reading variances from
         # FITS files until they are first used. Read the slice of
         # variances from the FITS file if the variance array hasn't
         # been read yet.
-
         if self._var is None:
             if self.filename is not None:
                 if self._var_ext is None:
@@ -641,11 +641,13 @@ class DataArray(object):
             else:
                 var = None
         else:
-            var = self.var[item]  # copy
+            var = self.var[item]
 
-        # Construct new WCS and wavelength coordinate information for
-        # the slice.
+        if var is not None:
+            # Combine data and var masks
+            data.mask |= ~(np.isfinite(var))
 
+        # Construct new WCS and wavelength coordinate information for the slice
         wave = None
         wcs = None
         if self.ndim == 3 and isinstance(item, (list, tuple)) and \
@@ -670,14 +672,10 @@ class DataArray(object):
             except:
                 wave = None
 
-        if data.shape == ():
-            return data
-        else:
-            return self.__class__(
-                data=data, unit=self.unit, var=var, wcs=wcs, wave=wave,  # copy
-                filename=self.filename,
-                data_header=fits.Header(self.data_header),
-                primary_header=fits.Header(self.primary_header))
+        return self.__class__(
+            data=data, unit=self.unit, var=var, wcs=wcs, wave=wave,
+            filename=self.filename, data_header=fits.Header(self.data_header),
+            primary_header=fits.Header(self.primary_header))
 
     def __setitem__(self, item, other):
         """Set the corresponding part of data."""
@@ -887,7 +885,7 @@ class DataArray(object):
 
     def unmask(self):
         """Unmask the data (just invalid data (nan,inf) are masked)."""
-        self.data.mask = False
+        self.mask = False
         self.data = np.ma.masked_invalid(self.data)
 
     def mask_variance(self, threshold):
@@ -901,8 +899,7 @@ class DataArray(object):
         """
         if self.var is None:
             raise ValueError('Operation forbidden without variance extension.')
-        else:
-            self.data[self.var > threshold] = np.ma.masked
+        self.data[self.var > threshold] = np.ma.masked
 
     def mask_selection(self, ksel):
         """Mask selected pixels.
