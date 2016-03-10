@@ -240,6 +240,7 @@ class Image(DataArray):
 
     _ndim_required = 2
     _has_wcs = True
+    _spflims = None
 
     def __init__(self, filename=None, ext=None, wcs=None, data=None, var=None,
                  unit=u.dimensionless_unscaled, copy=True, dtype=float,
@@ -849,17 +850,31 @@ class Image(DataArray):
             return self.wcs.get_end(unit)
 
     def get_rot(self, unit=u.deg):
-        """Return the angle of rotation.
+        """Return the rotation angle of the image, defined such that a
+        rotation angle of zero aligns north along the positive Y axis,
+        and a positive rotation angle rotates north away from the Y
+        axis, in the sense of a rotation from north to east.
+
+        Note that the rotation angle is defined in a flat
+        map-projection of the sky. It is what would be seen if
+        the pixels of the image were drawn with their pixel
+        widths scaled by the angular pixel increments returned
+        by the get_axis_increments() method.
 
         Parameters
         ----------
         unit : astropy.units
-            type of the angle coordinate, degree by default
+            The unit to give the returned angle (degrees by default).
 
         Returns
         -------
         out : float
+            The angle between celestial north and the Y axis of
+            the image, in the sense of an eastward rotation of
+            celestial north from the Y-axis.
+
         """
+
         if self.wcs is not None:
             return self.wcs.get_rot(unit)
 
@@ -1174,43 +1189,22 @@ class Image(DataArray):
         else:
             return None
 
-    def _rotate(self, theta=0.0, flux=False, interp='no', cutoff=0.25):
-        """Rotate the image in the sense of a rotation from north to east.
+    def _rotate(self, theta=0.0, interp='no', reshape=False, order=1,
+                pivot=None, unit=u.deg, regrid=None, flux=False, cutoff=0.25):
 
-        Uses :func:`scipy.ndimage.affine_transform`.
+        # In general it isn't possible to both anchor a point in the
+        # image while reshaping the image so that it fits.
 
-        Parameters
-        ----------
-        theta : float
-            Optional angle to rotate the image, in degrees. Positive
-            angles denote a rotation from north to east.
-        flux : boolean
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the rotated and input pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area is unchanged.
-        interp : 'no' | 'linear' | 'spline'
-            If 'no', replace masked data with the median value of the
-            image. This is the default.
-            If 'linear', replace masked values using a linear
-            interpolation between neighboring values.
-            if 'spline', replace masked values using a spline
-            interpolation between neighboring values.
-        cutoff : float
-            After rotation, if the interpolated value of a pixel
-            has an integrated contribution of this many masked pixels,
-            mask the pixel.
+        if reshape and pivot is not None:
+            raise ValueError("The pivot and reshape options can't be combined")
 
-        Returns
-        -------
-        out : :class:`mpdaf.obj.Image`
+        # Turn off the sampling filter when orders of less than 2 are selected.
 
-        """
+        prefilter = order > 1
 
-        # Wrap the rotation angle into the range +/- 180 degrees,
-        # and convert it to radians.
+        # Convert the rotation angle to radians.
 
-        angle = np.deg2rad(theta - 360.0 * np.floor(theta / 360.0 + 0.5))
+        angle = (theta * unit).to(u.rad).value
 
         # Create a rotation matrix for the specified angle. Note that
         # this is designed to multiply a column vector ordered with
@@ -1220,30 +1214,44 @@ class Image(DataArray):
         mrot = np.array([[np.cos(angle), -np.sin(angle)],
                          [np.sin(angle),  np.cos(angle)]])
 
+        # Get the current rotation angle of the image in radians.
+
+        oldrot = self.wcs.get_rot(unit=u.rad)
+
+        # Where should north end up after we have rotated the image?
+
+        newrot = oldrot + angle
+
         # Get the current pixel size.
 
-        oldstep = self.wcs.get_axis_increments()
+        oldinc = self.wcs.get_axis_increments()
 
-        # Determine the maximum frequencies that the current image
-        # array can sample along the X and Y axes.
+        # If no value has been specified for the regrid option, regrid
+        # unless asked not to reshape the array.
 
-        oldfx = 0.5 / oldstep[1]
-        oldfy = 0.5 / oldstep[0]
+        if regrid is None:
+            regrid = reshape
 
-        # The above frequency bounds define a rectangle in the Fourier
-        # plane. Rotate neighboring corners of this rectangle to
-        # determine the maximum frequencies that need to be sampled
-        # along the X and Y axes of the rotated image.
+        # Have we been asked to adjust pixel dimensions to avoid undersampling
+        # and oversampling?
 
-        fxy = np.dot(mrot, np.array([[oldfx,  oldfx],   # |X1|, |X2|
-                                     [oldfy, -oldfy]])) # |Y1|  |Y2|
-        newfx = max(abs(fxy[0,:]))
-        newfy = max(abs(fxy[1,:]))
+        if regrid:
 
-        # Compute the pixel increments of the rotated image.
+            # Determine the spatial frequencies that need to be sampled
+            # along the rotated Y and X axes.
 
-        newstep = np.array([0.5 / newfy * np.sign(oldstep[0]),
-                            0.5 / newfx * np.sign(oldstep[1])])
+            newfmax = self.get_spatial_fmax(np.rad2deg(newrot))
+
+            # Calculate the pixel increments along the X and Y axes
+            # that will be needed to adequately sample these
+            # frequencies.
+
+            newinc = 0.5 / newfmax * np.sign(oldinc)
+
+        # Keep pixel sizes fixed?
+
+        else:
+            newinc = oldinc
 
         # Get the coordinate reference pixel of the input image,
         # arranged as a column vector in python (Y,X) order. Note that
@@ -1253,19 +1261,12 @@ class Image(DataArray):
         oldcrpix = np.array([[self.wcs.get_crpix2() - 1],
                              [self.wcs.get_crpix1() - 1]])
 
-        # Create a matrix for scaling a column vector in (X,Y)
-        # axis order, by the current X-axis and Y-axis pixel
-        # increments.
-
-        oldscale = np.array([[oldstep[1], 0.0  ],
-                             [0.0       , oldstep[0]]])
-
         # Create a similar matrix that would scale a column vector in
         # (X,Y) axis order by the rotated X-axis and Y-axis pixel
         # increments.
 
-        newscale = np.array([[newstep[1], 0.0  ],
-                             [0.0       , newstep[0]]])
+        newscale = np.array([[newinc[1], 0.0  ],
+                             [0.0       , newinc[0]]])
 
         # Get the current WCS coordinate transformation matrix (which
         # transforms pixel coordinates to intermediate sky
@@ -1273,17 +1274,13 @@ class Image(DataArray):
 
         oldcd = self.wcs.get_cd()
 
-        # Where should north end up after we have rotated the image?
-
-        sky_angle = self.wcs.get_rot(unit=u.rad) + angle
-
         # Create a rotation matrix that multiplies the sky by the
         # above angle.
 
-        sinq = np.sin(sky_angle)
-        cosq = np.cos(sky_angle)
-        sky_rot = np.array([[cosq, -sinq],
-                            [sinq,  cosq]])
+        sinq = np.sin(newrot)
+        cosq = np.cos(newrot)
+        sky_mrot = np.array([[cosq, -sinq],
+                             [sinq,  cosq]])
 
         # Compute the coordinate transformation matrix that will
         # pertain to the output image. We can interpolate to any grid,
@@ -1291,7 +1288,7 @@ class Image(DataArray):
         # the original CD matrix, and just create a CD matrix that
         # rotates and scales the sky.
 
-        newcd = np.dot(sky_rot, newscale)
+        newcd = np.dot(sky_mrot, newscale)
 
         # To fill the pixels of the output image we need a coordinate
         # transformation matrix to transform pixel indexes of the
@@ -1316,35 +1313,73 @@ class Image(DataArray):
 
         old2new = np.linalg.inv(new2old)
 
-        # Determine where the corners of the input image end up in the
-        # output image with CRPIX set to [0,0].
+        # Have we been asked to reshape the image array to just encompass
+        # the rotated image?
 
-        corners = np.array(
-            [[0, 0, self.shape[0]-1, self.shape[0]-1],  # Y indexes
-             [0, self.shape[1]-1, 0, self.shape[1]-1]], # X indexes
-            dtype=np.float)
-        pix = np.dot(old2new, (corners - oldcrpix))
+        if reshape:
 
-        # Get the ranges of indexes occupied by the input image in the
-        # rotated image.
+            # Determine where the corners of the input image end up in the
+            # output image with CRPIX set to [0,0].
 
-        ymin = min(pix[0,:])
-        ymax = max(pix[0,:])
-        xmin = min(pix[1,:])
-        xmax = max(pix[1,:])
+            corners = np.array(
+                [[0, 0, self.shape[0]-1, self.shape[0]-1],  # Y indexes
+                 [0, self.shape[1]-1, 0, self.shape[1]-1]], # X indexes
+                dtype=np.float)
+            pix = np.dot(old2new, (corners - oldcrpix))
 
-        # Calculate the indexes of the coordinate reference pixel of
-        # the rotated image, such that pixel [xmin,ymin] is moved to
-        # array index [0,0]. Use (Y,X) axis ordering.
+            # Get the ranges of indexes occupied by the input image in the
+            # rotated image.
 
-        newcrpix = np.array([[-ymin], [-xmin]])
+            ymin = min(pix[0,:])
+            ymax = max(pix[0,:])
+            xmin = min(pix[1,:])
+            xmax = max(pix[1,:])
 
-        # Calculate the dimensions of the output image in (Y,X) order.
-        # The dimensions are ymax-ymin+1 rounded up, and xmax-xmin+1
-        # rounded up.
+            # Calculate the indexes of the coordinate reference pixel of
+            # the rotated image, such that pixel [xmin,ymin] is moved to
+            # array index [0,0]. Use (Y,X) axis ordering.
 
-        newdims = np.array([int(ymax - ymin + 1.5),
-                            int(xmax - xmin + 1.5)])
+            newcrpix = np.array([[-ymin], [-xmin]])
+
+            # Calculate the dimensions of the output image in (Y,X) order.
+            # The dimensions are ymax-ymin+1 rounded up, and xmax-xmin+1
+            # rounded up.
+
+            newdims = np.array([int(ymax - ymin + 1.5),
+                                int(xmax - xmin + 1.5)])
+
+        # If not asked to reshape the image array, keep the image
+        # dimensions the same, and choose the reference pixel such
+        # that the rotation appears to occur around a specified pixel,
+        # or the central pixel of the image.
+
+        else:
+
+            newdims = np.asarray(self.shape)
+
+            # If no pivot pixel has been specified, substitute the
+            # central pixel of the input image.
+
+            if pivot is None:
+                pivot = np.asarray(self.shape, dtype=np.float) / 2.0
+            else:
+                pivot = np.asarray(pivot, dtype=np.float)
+
+            # Convert the pivot indexes to a column vector.
+
+            pivot = pivot[np.newaxis,:].T
+
+            # If the new coordinate reference pixel were zero, where
+            # would the pivot pixel end up if we rotated the image
+            # around oldcrpix?
+
+            pix = np.dot(old2new, (pivot - oldcrpix))
+
+            # Calculate the indexes of the coordinate reference pixel of
+            # the rotated image, such that pixel pix is moved to
+            # pivot. Use (Y,X) axis ordering.
+
+            newcrpix = pivot - pix
 
         # The affine_transform() function calculates the pixel index
         # of the input image that corresponds to a given pixel index
@@ -1375,7 +1410,7 @@ class Image(DataArray):
         newdata = affine_transform(newdata, matrix=new2old,
                                    offset=offset.flatten(), cval=0.0,
                                    output_shape=newdims, output=np.float,
-                                   order=1, prefilter=False)
+                                   order=order, prefilter=prefilter)
 
         # Zero the current data array and then fill its masked pixels
         # with floating point 1.0s, so that we can rotate this in the
@@ -1392,7 +1427,7 @@ class Image(DataArray):
         newmask = affine_transform(newmask, matrix=new2old,
                                    offset=offset.flatten(), cval=1.0,
                                    output_shape=newdims, output=np.float,
-                                   order=1, prefilter=False)
+                                   order=order, prefilter=prefilter)
 
         # Create new boolean mask in which all pixels that had an
         # integrated contribution of more than 'cutoff' originally
@@ -1404,31 +1439,35 @@ class Image(DataArray):
 
         if self.var is not None:
             newvar = affine_transform(self.var, matrix=new2old,
-                                   offset=offset.flatten(), cval=0.0,
-                                   output_shape=newdims, output=np.float,
-                                   order=1, prefilter=False)
+                                      offset=offset.flatten(), cval=0.0,
+                                      output_shape=newdims, output=np.float,
+                                      order=order, prefilter=prefilter)
         else:
             newvar = None
 
-        # Compute the number of old pixel areas per new pixel.
-        n = newstep.prod() / oldstep.prod()
+        # Compute the number of old pixel areas per new pixel, if the
+        # pixel dimensions have been changed.
 
-        # Scale the flux per pixel by the multiplicative increase in the
-        # area of a pixel?
+        if regrid:
 
-        if flux:
+            n = newinc.prod() / oldinc.prod()
 
-            # Scale the pixel fluxes by the increase in the area.
+            # Scale the flux per pixel by the multiplicative increase in the
+            # area of a pixel?
 
-            newdata *= n
+            if flux:
 
-            # Each output pixel is an interpolation between the
-            # nearest neighboring pixels, so the variance is unchanged
-            # by resampling. Scaling the pixel values by n, however,
-            # increases the variances by n**2.
+                # Scale the pixel fluxes by the increase in the area.
 
-            if newvar is not None:
-                newvar *= n**2
+                newdata *= n
+
+                # Each output pixel is an interpolation between the
+                # nearest neighboring pixels, so the variance is unchanged
+                # by resampling. Scaling the pixel values by n, however,
+                # increases the variances by n**2.
+
+                if newvar is not None:
+                    newvar *= n**2
 
         # Install the rotated data array, mask and variances.
 
@@ -1449,21 +1488,33 @@ class Image(DataArray):
         self.wcs.set_crpix1(newcrpix[1] + 1)
         self.wcs.set_crpix2(newcrpix[0] + 1)
 
-    def rotate(self, theta=0.0, flux=False, interp='no', cutoff=0.25):
-        """Rotate the image using affine transforms and spline interpolation
+        # If allowed to reshape the array, crop away any entirely
+        # masked margins.
+
+        if reshape:
+            self.crop()
+
+    def rotate(self, theta=0.0, interp='no', reshape=False, order=1,
+               pivot=None, unit=u.deg, regrid=None, flux=False, cutoff=0.25,
+               copy=True):
+
+        """Rotate the sky within an image in the sense of a rotation from
+        north to east.
+
+        For example if the image rotation angle that is currently
+        returned by image.get_rot() is zero, image.rotate(10.0) will
+        rotate the northward direction of the image 10 degrees
+        eastward of where it was, and self.get_rot() will thereafter
+        return 10.0.
 
         Uses :func:`scipy.ndimage.affine_transform`.
 
         Parameters
         ----------
         theta : float
-            Optional angle to rotate the image, in degrees. Positive
-            angles denote a rotation from north to east.
-        flux : boolean
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the rotated and input pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area is unchanged.
+            The angle to rotate the image (degrees). Positive
+            angles rotate features in the image in the sense of a
+            rotation from north to east.
         interp : 'no' | 'linear' | 'spline'
             If 'no', replace masked data with the median value of the
             image. This is the default.
@@ -1471,18 +1522,74 @@ class Image(DataArray):
             interpolation between neighboring values.
             if 'spline', replace masked values using a spline
             interpolation between neighboring values.
+        reshape : bool
+            If True, the size of the output image array is adjusted
+            so that the input image is contained completely in the
+            output. The default is False.
+        order : int
+            The order of the prefilter that is applied by the affine
+            transform function. Prefiltering is not really needed for
+            band-limited images, but this option is retained for
+            backwards compatibility with an older version of the
+            image.rotate method. In general orders > 1 tend to
+            generate ringing at sharp edges, such as those of CCD
+            saturation spikes, so this argument is best left with
+            its default value of 1.
+        pivot : float,float or None
+            When the reshape option is True, or the pivot argument is
+            None, the image is rotated around its center.
+            Alternatively, when the reshape option is False, the pivot
+            argument can be used to indicate which pixel index [y,x]
+            the image will be rotated around. Integer pixel indexes
+            specify the centers of pixels. Non-integer values can be
+            used to indicate positions between pixel centers.
+
+            On the sky, the rotation always occurs around the
+            coordinate reference position of the observation. However
+            the rotated sky is then mapped onto the pixel array of the
+            image in such a way as to keep the sky position of the
+            pivot pixel at the same place. This makes the image appear
+            to rotate around that pixel.
+        unit : astropy.units
+            The angular units of the rotation angle, theta.
+        regrid : bool
+            When this option is True, the pixel sizes along each axis
+            are adjusted to avoid undersampling or oversampling any
+            direction in the original image that would otherwise be
+            rotated onto a lower or higher resolution axis. This is
+            particularly important for images whose pixels have
+            different angular dimensions along the X and Y axes, but
+            it can also be important for images with square pixels,
+            because the diagonal of an image with square pixels has
+            higher resolution than the axes of that image.
+
+            If this option is left with its default value of None,
+            then it is given the value of the reshape option.
+        flux : boolean
+            When this argument is True and the regrid option is also True,
+            the flux of each pixel is multiplied by the ratio
+            of the areas of the pixels in the output and input images.
+            For images whose units are flux per pixel, this keeps the
+            total flux of an area is unchanged.
         cutoff : float
             After rotation, if the interpolated value of a pixel
             has an integrated contribution of this many masked pixels,
             mask the pixel.
+        copy : bool
+            If True, return a rotated copy of the image (the default).
+            If False, rotate the original image in place, and return that.
 
         Returns
         -------
         out : :class:`mpdaf.obj.Image`
 
         """
-        res = self.copy()
-        res._rotate(theta, flux, interp, cutoff)
+        # Should we rotate a copy of the image, or the image itself?
+
+        res = self.copy() if copy else self
+        res._rotate(theta=theta, interp=interp, reshape=reshape, order=order,
+                    pivot=pivot, unit=unit, regrid=regrid, flux=flux,
+                    cutoff=cutoff)
         return res
 
     def sum(self, axis=None):
@@ -3022,6 +3129,11 @@ class Image(DataArray):
 
         self.wcs = self.wcs.rebin(factor)
 
+        # If the spatial frequency band-limits of the image have been
+        # reduced by the changes in the Y and X sampling intervals,
+        # record this.
+
+        self.update_spatial_fmax(0.5 / self.wcs.get_step())
 
     def rebin_mean(self, factor, margin='center'):
         """Return an image that shrinks the size of the current image by
@@ -3338,7 +3450,14 @@ class Image(DataArray):
         # increased, then low-pass filter the data along that axis to
         # prevent aliasing in the resampled data.
 
-        data = _antialias_filter_image(data, oldinc, newinc)
+        data, newfmax = _antialias_filter_image(
+            data, abs(oldinc), abs(newinc), self.get_spatial_fmax())
+
+        # If the spatial frequency band-limits of the image have been
+        # reduced by the changes in the Y and X sampling intervals,
+        # record this.
+
+        self.update_spatial_fmax(newfmax)
 
         # For each pixel in the output image, the affine_transform
         # function calculates the index of the equivalent pixel in the
@@ -3534,7 +3653,8 @@ class Image(DataArray):
         # correcting the image for shear terms in the CD matrix, so we
         # perform this step even if no rotation is otherwise needed.
 
-        self._rotate(other.wcs.get_rot() - self.wcs.get_rot(), flux)
+        self._rotate(other.wcs.get_rot() - self.wcs.get_rot(), reshape=True,
+                     regrid=True, flux=flux)
 
         # Get the pixel index and Dec,Ra coordinate at the center of
         # the image that we are aligning with.
@@ -5064,11 +5184,159 @@ class Image(DataArray):
         return self.resample(newdim, newstart, newstep, flux,
                              order, interp, unit_start, unit_step)
 
+    def get_spatial_fmax(self, rot=None):
+        """Return the spatial-frequency band-limits of the image along
+        the Y and X axes.
+
+        See the documentation of set_spatial_fmax() for an explanation
+        of what the band-limits are used for.
+
+        If no band limits have been specified yet, this function has the
+        side-effect of setting them to the band-limits dictated by the
+        sampling interval of the image array. Specifically, an X axis
+        with a sampling interval of dx can sample spatial frequencies of
+        up to 0.5/dx cycles per unit of dx without aliasing.
+
+        Parameters
+        ----------
+        rot : float or None
+            Either None, to request band-limits that pertain to the
+            Y and X axes of the current image without any rotation,
+            or, if the band-limits pertain to a rotated version of
+            the image, the rotation angle of its Y axis westward of north
+            (degrees). This is defined such that if image.wcs.get_rot()
+            is passed to this function, the band limits for the Y and
+            X axes of the current image axes will be returned.
+
+        Returns
+        -------
+        out : np.ndarray
+            The spatial-frequency band-limits of the image along
+            the Y and X axes of the image in cycles per self.wcs.unit.
+
+        """
+
+        # If no image angle was provided, get the current rotation angle.
+
+        if rot is None:
+            rot = self.wcs.get_rot()
+
+        # If no band-limits have been specified, initialize them to the
+        # limits currently dictated by the sampling intervals of the image.
+
+        if self._spflims is None:
+            self.set_spatial_fmax(0.5 / self.get_step(), self.wcs.get_rot())
+
+        # Return the frequency limits that pertain to the specified
+        # rotation angle.
+
+        return self._spflims.get_fmax(rot)
+
+    def update_spatial_fmax(self, newfmax, rot=None):
+        """Update the spatial-frequency band-limits recorded for the
+        current image.
+
+        See the documentation of set_spatial_fmax() for an explanation
+        of what the band-limits are used for.
+
+        If either of the new limits is less than an existing
+        band-limit, and the rotation angle of the new limits is
+        the same as the angle of the recorded limits, then the smaller
+        limits replace the originals.
+
+        If either of the new limits is smaller than the existing
+        limits, but the rotation angle for the new limits differs from
+        the recorded limits, then both of the original limits are
+        discarded and replaced by the new ones at the specified angle.
+
+        Parameters
+        ----------
+        newfmax : numpy.ndarray
+            The frequency limits along the Y and X axes, respectively,
+            specified in cycles per the angular unit in self.wcs.unit.
+        rot : float or None
+            Either None, to specify band-limits that pertain to the Y
+            and X axes of the current image without any rotation, or,
+            if the band-limits pertain to a rotated version of the
+            image, the rotation angle of its Y axis westward of north
+            (degrees). This is defined such that if
+            image.wcs.get_rot() is passed to this function, the
+            band-limit newfmax[0] will be along the Y axis of the
+            image and newfmax[1] will be along its X axis.
+
+        """
+
+        # If no image rotation angle was specified, assume the
+        # current angle.
+
+        if rot is None:
+            rot = self.wcs.get_rot()
+
+        # If no band-limits have been set yet, record the new limits.
+
+        if self._spflims is None:
+            self.set_spatial_fmax(newfmax, rot)
+        else:
+
+            # Get the existing spatial-frequency band limits at the
+            # specified angle.
+
+            oldfmax = self._spflims.get_fmax(rot)
+
+            # Are either of the new limits smaller than the old ones?
+
+            if np.any(newfmax < oldfmax):
+
+                # If the rotation angle of the recorded limits is the
+                # same as the rotation angle of the new limits, keep
+                # existing axis limits that are smaller than the new
+                # limits.
+
+                if np.isclose(rot, self._spflims.rot):
+                    newfmax = np.minimum(newfmax, oldfmax)
+
+                # Record the new limits.
+
+                self.set_spatial_fmax(newfmax, rot)
+
+    def set_spatial_fmax(self, newfmax=None, rot=None):
+        """Specify the spatial-frequency band-limits of the image along
+        the Y and X axis. This function completely replaces any existing
+        band-limits. See also update_spatial_fmax().
+
+        The recorded limits are used to avoid redundantly performing
+        anti-aliasing measures such as low-pass filtering an image
+        before resampling to a lower resolution, or decreasing pixel
+        sizes before rotating high resolution axes onto low resolution
+        axes.
+
+        Parameters
+        ----------
+        newfmax : numpy.ndarray
+            The new frequency limits along the Y and X axes or a
+            band-limiting ellipse, specified in cycles per the angular
+            unit in self.wcs.unit.
+        rot : float or None
+            Either None, to specify band-limits that pertain to the Y
+            and X axes of the current image without any rotation, or,
+            if the band-limits pertain to a rotated version of the
+            image, the rotation angle of its Y axis westward of north
+            (degrees). This is defined such that if
+            image.wcs.get_rot() is passed to this function, the
+            band-limit newfmax[0] will be along the Y axis of the
+            image and newfmax[1] will be along its X axis.
+
+        """
+
+        if rot is None:
+            rot = self.wcs.get_rot()
+        self._spflims = SpatialFrequencyLimits(newfmax, rot)
 
 def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
                 center=None, flux=1., fwhm=(1., 1.), peak=False, rot=0.,
                 cont=0, unit_center=u.deg, unit_fwhm=u.arcsec,
                 unit=u.dimensionless_unscaled):
+
     """Create a new image from a 2D gaussian.
 
     Parameters
@@ -5553,7 +5821,7 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
             (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
     return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)
 
-def _antialias_filter_image(data, oldstep, newstep):
+def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
 
     """ Apply an anti-aliasing prefilter to an image to prepare
     it for subsampling.
@@ -5570,10 +5838,21 @@ def _antialias_filter_image(data, oldstep, newstep):
         The cell size of the output image. This can be a single
         number for both the X and Y axes, or it can be two
         numbers in an iterable, ordered like (ystep,xstep)
+    oldfmax : float,float or None
+        When an image has previously been filtered, this
+        argument can be used to indicate the frequency cutoffs
+        that were applied at that time along the Y and X axes,
+        respectively, in units of cycles per the unit of oldstep
+        and newstep. Image axes that have already been sufficiently
+        filtered will then not be refiltered redundantly. If no
+        band-limits have previously been established, pass this
+        argument as None.
     Returns
     -------
-    out : np.ndimage
-        The filtered version of the input image.
+    out : numpy.ndarray, numpy.ndarray
+        The filtered version of the 2D input image, followed by
+        a 2-element array that contains the new band-limits
+        along the Y and X axes, respectively.
     """
 
     # Convert oldstep into a numpy array of two float elements.
@@ -5588,16 +5867,35 @@ def _antialias_filter_image(data, oldstep, newstep):
         newstep = (newstep, newstep)
     newstep = abs(np.asarray(newstep, dtype=np.float))
 
-    # Return the data array unchanged when pixel sizes are either
-    # being decreased or left the same size.
+    # If no band-limits have been specified, substitute the
+    # band-limits dictated by the current sampling interval.
 
-    if np.all(newstep < oldstep) or np.allclose(newstep, oldstep):
-        return data
+    if oldfmax is None:
+        oldfmax = 0.5 / oldstep
+    else:
+        oldfmax = np.minimum(oldfmax, 0.5 / oldstep)
+
+    # Calculate the maximum frequencies that will be sampled by
+    # the new pixel sizes along the Y and X axes.
+
+    newfmax = 0.5 / newstep
 
     # Get the dimensions of the image to be filtered.
 
-    nya = data.shape[0]
-    nxa = data.shape[1]
+    nya, nxa = data.shape
+
+    # Which axes need to be filtered?
+
+    filter_axes = newfmax < oldfmax
+
+    # Return the original image if neither axis needs filtering.
+
+    if np.all(filter_axes):
+        return data, oldfmax
+
+    # Obtain the FFT of the input image.
+
+    fft = np.fft.rfft2(data)
 
     # If newstep[1] is in degrees, then the pixel interval of that
     # size along the X axis can correctly sample spatial frequencies
@@ -5616,28 +5914,18 @@ def _antialias_filter_image(data, oldstep, newstep):
     # a window function of width:
     #
     #  wx = (nxa*oldstep[1]) / newstep[1]
+    #
+    # In practice we round wx down down to the nearest odd number, so
+    # that the window function is symmetric either side of a central
+    # value of unity.
+    #
+    # Start by filtering the Y axis if needed.
 
-    nxw = max(int((oldstep[1] * nxa) / newstep[1]), 1)
-    nyw = max(int((oldstep[0] * nya) / newstep[0]), 1)
+    if filter_axis[0]:
 
-    # Round even widths down to odd numbers. Only windows with odd
-    # numbers of pixels have a central value of unity and a symmetric
-    # number of pixels on either side of this.
-
-    if nxw % 2 == 0:
-        nxw -= 1
-    if nyw % 2 == 0:
-        nyw -= 1
-
-    # Obtain the FFT of the input image.
-
-    fft = np.fft.rfft2(data)
-
-    # When the Y-axis pixel size is being increased, apply an Y
-    # axis window function to the FFT to suppress aliasing in the
-    # Y direction.
-
-    if nyw <= nya:
+        nyw = max(int((oldstep[0] * nya) / newstep[0]), 1)
+        if nyw % 2 == 0:
+            nyw -= 1
 
         y_window = np.blackman(nyw)
 
@@ -5656,11 +5944,13 @@ def _antialias_filter_image(data, oldstep, newstep):
 
         fft[nyw//2+1:nya-nyw//2,:] = 0.0+0.0j
 
-    # When the X-axis pixel size is being increased, apply an X
-    # axis window function to the FFT to suppress aliasing in the
-    # X direction.
+    # Filter the X axis?
 
-    if nxw <= nxa:
+    if filter_axes[1]:
+
+        nxw = max(int((oldstep[1] * nxa) / newstep[1]), 1)
+        if nxw % 2 == 0:
+            nxw -= 1
 
         # Get Blackman window functions for the X and Y directions.
 
@@ -5683,7 +5973,7 @@ def _antialias_filter_image(data, oldstep, newstep):
 
     data = np.fft.irfft2(fft)
 
-    return data
+    return data, np.where(filter_axes, newfmax, oldfmax)
 
 def _find_quadratic_peak(y):
     """Given an array of 3 numbers in which the first and last numbers are
@@ -5724,3 +6014,150 @@ def _find_quadratic_peak(y):
     # Quadratic curves peak at:  x = -b / (2*a)
 
     return -b / (2 * a)
+
+class SpatialFrequencyLimits(object):
+
+    """The Image class uses an object of this class to keep track of the
+    spatial frequency limits of the current image, such that before
+    resampling an image it can see if anything needs to be done to
+    avoid undersampling and generating aliasing artefacts in the
+    output image.
+
+    The band-limits are recorded as an ellipse. Most telescopes have
+    circularly symmetric PSFs and thus circularly symmetric
+    spatial-frequency band limits, but this spatial-frequency profile
+    may become elliptical if an image is resampled to have a lower
+    resolution along one axis.
+
+    The ellipse is defined in its own X,Y coordinate system as
+    follows:
+
+      xe(t)=xs*cos(t)    ye(t)=ys*sin(t)
+
+    The ye axis of the ellipse is at self.rot degrees west of
+    north in the image. For the Y axis of a coordinate system
+    where Y is rot degrees west of north, the ellipse thus has
+    to be rotated by psi=(rot - self.rot) degrees anticlockwise
+    to calculate the X and Y values of the ellipse in that
+    coordinate system
+
+      |x(t)| = |cos(psi), -sin(psi)| |xe(t)|
+      |y(t)|   |sin(psi),  cos(psi)| |ye(t)|
+
+    Parameters
+    ----------
+    fmax : float, float
+        The frequency limits along the Y-axis and X-axis of an
+        elliptically shaped band-limit (eg. cycles per degree).
+    rot : float
+        The rotation angle of the Y axis of the ellipse westward of
+        north (degrees). This is defined such that if
+        image.wcs.get_rot() is passed to this function, the Y axis of
+        the ellipse will be aligned with the Y axis of the image.
+
+    """
+
+    def __init__(self, fmax, rot):
+
+        # Store the Y and X axes of the band-limiting ellipse.
+
+        self.fmax = np.asarray(fmax, dtype=np.float)
+
+        # Record the rotation angle in degrees of the ellipse, after
+        # wrapping the angle into the range -180 to 180, to make it
+        # easy to compare with angles returned by wcs.get_rot().
+
+        self.rot = rot - 360.0 * np.floor(rot / 360.0 + 0.5)
+
+    def get_fmax(self, rot):
+
+        """Return the spatial-frequency band-limits along a Y axis that is
+        'rot' degrees west of north, and an X axis that is 90 degrees
+        away from this Y axis in the sense of a rotation from north to east.
+
+        Parameters
+        ----------
+        rot : float
+           The angle of the target Y axis west of north (degrees).
+
+        Returns
+        -------
+        out : np.ndarray()
+           The maximum spatial frequencies along the Y and X axes at
+           rotation angle rot, in the same units as were used to
+           initialize the object.
+
+        """
+
+        # Extract the Y and X axis radii of the ellipse.
+
+        ys, xs = self.fmax
+
+        # Compute the rotation angle of the ellipse in radians.
+
+        psi = np.deg2rad(rot - self.rot)
+
+        # Precalculate sin and cos of the ellipse rotation angle.
+
+        cos_psi = np.cos(psi)
+        sin_psi = np.sin(psi)
+
+        # Calculate the ellipse phases where the X and Y coordinates
+        # of the ellipse locus are maximized. These equations come from
+        # calculating d[x(t)]/dt=0 and d[y(t)]/dt=0 using the definitions
+        # of x(t) and y(t) that are shown in the class documentation.
+
+        t_xmax = np.arctan2(-ys*sin_psi, xs*cos_psi)
+        t_ymax = np.arctan2(ys*cos_psi, xs*sin_psi)
+
+        # Get the maximum X and Y coordinates of the rotated ellipse.
+
+        xmax = xs*np.cos(t_xmax)*cos_psi - ys*np.sin(t_xmax)*sin_psi
+        ymax = xs*np.cos(t_ymax)*sin_psi + ys*np.sin(t_ymax)*cos_psi
+
+        return np.array([ymax, xmax], dtype=np.float)
+
+    def ellipse_locus(t, rot):
+        """Return the Y,X coordinates of the band-limiting ellipse
+        at ellipse phase t.
+
+        Parameters
+        ----------
+        t : float
+            The elliptical phase at which the calculate the
+            coordinates (radians).
+        rot : float
+            The rotation angle of the Y axis of the ellipse west
+            of north (degrees).
+
+        Returns
+        -------
+        out : np.ndarray
+            The Y and X coordinates of the band-limiting ellipse.
+        """
+
+        # Extract the Y and X axis radii of the ellipse.
+
+        ys, xs = self.fmax
+
+        # Compute the rotation angle of the ellipse in radians.
+
+        psi = np.deg2rad(rot - self.rot)
+
+        # Precalculate sin and cos of the ellipse rotation angle.
+
+        cos_psi = np.cos(psi)
+        sin_psi = np.sin(psi)
+
+        # Precalculate sin and cos of the phase of the ellipse.
+
+        cos_t = np.cos(t)
+        sin_t = np.sin(t)
+
+        # Calculate the locus of the ellipse at phase t, using
+        # the equations shown in the class documentation.
+
+        x = xs*cos_t*cos_psi - ys*sin_t*sin_psi
+        y = xs*cos_t*sin_psi + ys*sin_t*cos_psi
+
+        return np.array([y,x], dtype=np.float)
