@@ -204,11 +204,7 @@ class DataArray(object):
                 self.unit *= u.Unit(hdr['FSCALE'])
 
             self._shape = hdulist[self._data_ext].data.shape
-            self._ndim = hdr['NAXIS']
-            if self._ndim_required is not None and \
-                    hdr['NAXIS'] != self._ndim_required:
-                raise IOError('Wrong dimension number, should be %s'
-                              % self._ndim_required)
+            self.ndim = hdr['NAXIS']
 
             # Is this a derived class like Cube and Image that require
             # WCS information?
@@ -322,6 +318,13 @@ class DataArray(object):
         elif self.data is not None:
             return self.data.ndim
 
+    @ndim.setter
+    def ndim(self, value):
+        if self._ndim_required is not None and value != self._ndim_required:
+            raise ValueError('Wrong dimension number, should be {}, got {}'
+                             .format(self._ndim_required, value))
+        self._ndim = value
+
     @property
     def shape(self):
         """ The lengths of each of the .ndim data axes. """
@@ -349,7 +352,7 @@ class DataArray(object):
                 self._data = data
                 self._mask = ~(np.isfinite(data))
             self._shape = self._data.shape
-            self._ndim = self._data.ndim
+            self.ndim = self._data.ndim
 
         return ma.MaskedArray(self._data, mask=self.mask, copy=False)
 
@@ -362,6 +365,9 @@ class DataArray(object):
             self._data = value
             self._mask = ~(np.isfinite(value))
         self._shape = self._data.shape
+        # FIXME: This should be self.ndim to check to number of dimensions, but
+        # currently we have some code (__getitem__) that creates temporarily an
+        # object with a wrong ndim.
         self._ndim = self._data.ndim
 
     @property
