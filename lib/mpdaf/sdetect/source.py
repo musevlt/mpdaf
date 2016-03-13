@@ -1176,11 +1176,9 @@ class Source(object):
 
         if z > 0:
             if eml is None:
-                all_lines = np.array([1216, 1909, 3727, 4861, 5007,
-                                      6563, 6724])
-                all_tags = np.array(['LYALPHA1216', 'CIII]1909', '[OII]3727',
-                                     'HBETA4861', '[OIII]5007', 'HALPHA6563',
-                                     '[SII]6724'])
+                all_lines = np.array([1216, 1908, 3727, 4863, 5007, 6564])
+                all_tags = np.array(['LYALPHA', 'SUMCIII1907', 'SUMOII3726',
+                                     'HBETA', 'OIII5007', 'HALPHA'])                 
             else:
                 all_lines = np.array(eml.keys())
                 all_tags = np.array(eml.values())
@@ -1195,9 +1193,9 @@ class Source(object):
                 tags = all_tags[useful]
                 for l1, l2, tag in zip(lambda_ranges[0, :],
                                        lambda_ranges[1, :], tags):
-                    self._logger.debug('Generate narrow band image for MUSE_%s'
+                    self._logger.debug('Generate narrow band image for NB_%s'
                                       ' with z=%s', tag, z[0])
-                    self.images['MUSE_' + tag] = subcub.get_image(
+                    self.images['NB_' + tag] = subcub.get_image(
                         wave=(l1, l2), is_sum=is_sum,
                         subtract_off=subtract_off, margin=margin,
                         fband=fband, unit_wave=u.angstrom)
