@@ -1253,6 +1253,28 @@ class WaveCoord(object):
         if unit is not None:
             step = (step * self.unit).to(unit).value
         return step
+    
+    def set_step(self, x, unit=None):
+        """Return the step in wavelength.
+
+        Parameters
+        ----------
+        x : float
+            Step value
+        unit : astropy.units
+            type of the wavelength coordinates
+        """
+        if unit is not None:
+            step = (x * unit).to(self.unit).value
+        else:
+            step = x
+        
+        if self.wcs.wcs.has_cd():
+            self.wcs.wcs.cd[0][0] = step
+        else:
+            pc = self.wcs.wcs.get_pc()[0, 0]
+            self.wcs.wcs.cdelt[0] = step / pc
+        self.wcs.wcs.set()
 
     def get_start(self, unit=None):
         """Return the value of the first pixel.
@@ -1298,7 +1320,7 @@ class WaveCoord(object):
         return self.wcs.wcs.crpix[0]
 
     def set_crpix(self, x):
-        """CRPIX1 setter (reference pixel on the first axis)."""
+        """CRPIX setter (reference pixel on the wavelength axis)."""
         self.wcs.wcs.crpix[0] = x
         self.wcs.wcs.set()
 
@@ -1307,8 +1329,6 @@ class WaveCoord(object):
 
         Parameters
         ----------
-        x : float
-            value of the reference pixel on the wavelength axis
         unit : astropy.units
             type of the wavelength coordinates
 
@@ -1317,6 +1337,22 @@ class WaveCoord(object):
             return self.wcs.wcs.crval[0]
         else:
             return (self.wcs.wcs.crval[0] * self.unit).to(unit).value
+        
+    def set_crval(self, x, unit=None):
+        """CRVAL getter (value of the reference pixel on the wavelength axis).
+
+        Parameters
+        ----------
+        x : float
+            value of the reference pixel on the wavelength axis
+        unit : astropy.units
+            type of the wavelength coordinates
+        """
+        if unit is None:
+            self.wcs.wcs.crval[0] = x
+        else:
+            self.wcs.wcs.crval[0] = (x * unit).to(self.unit).value
+        self.wcs.wcs.set()
 
     def get_ctype(self):
         """Return the type of wavelength coordinates."""
