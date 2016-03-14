@@ -369,7 +369,7 @@ class Image(DataArray):
                     res.data = self.data + UnitMaskedArray(
                         other.data, other.unit, self.unit)
                 # variance
-                if res.var is not None:
+                if other.var is not None:
                     if self.var is None:
                         if other.unit == self.unit:
                             res.var = other.var
