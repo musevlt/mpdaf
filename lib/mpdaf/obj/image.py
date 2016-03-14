@@ -472,11 +472,10 @@ class Image(DataArray):
                 res = other.copy()
                 # data
                 if other.unit == self.unit:
-                    res.data = self.data[np.newaxis, :, :] - other.data
+                    res.data = self.data - other.data
                 else:
-                    res.data = UnitMaskedArray(self.data[np.newaxis, :, :],
-                                               self.unit, other.unit) \
-                        - other.data
+                    res.data = UnitMaskedArray(self.data, self.unit,
+                                               other.unit) - other.data
 
                 # variance
                 if self.var is not None:
