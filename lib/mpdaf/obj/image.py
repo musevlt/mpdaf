@@ -327,14 +327,15 @@ class Image(DataArray):
         Parameters
         ----------
         other : number or Image or Cube object.
-            If x is Image: Dimensions and world coordinates must be the same.
-            If x is Cube: The last two dimensions of the cube must be equal
-            to the image dimensions.
-            World coordinates in spatial directions must be the same.
+            When 'other' is an Image, the dimensions and world coordinates
+            must match.
+            When 'other' is a Cube, the last two dimensions of the cube
+            array must equal the image dimensions, and the spatial world
+            coordinates must match.
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image` or :class:`mpdaf.obj.Cube`
+        out : mpdaf.obj.Image or mpdaf.obj.Cube
 
         """
         if self.data is None:
@@ -404,15 +405,15 @@ class Image(DataArray):
         Parameters
         ----------
         other : number or Image or Cube object.
-            x is Image: Dimensions and world coordinates must be the same.
-
-            x is Cube: The last two dimensions of the cube must be equal
-            to the image dimensions.
-            World coordinates in spatial directions must be the same.
+            When 'other' is an Image, the dimensions and world coordinates
+            must match.
+            When 'other' is a Cube, the last two dimensions of the cube
+            array must equal the image dimensions, and the spatial world
+            coordinates must match.
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image` or :class:`mpdaf.obj.Cube`
+        out : mpdaf.obj.Image or mpdaf.obj.Cube
 
         """
         if self.data is None:
@@ -522,15 +523,15 @@ class Image(DataArray):
         Parameters
         ----------
         other : number or Spectrum or Image or Cube object.
-            x is Image: Dimensions and world coordinates must be the same.
-
-            x is Cube: The last two dimensions of the cube must be equal
-            to the image dimensions.
-            World coordinates in spatial directions must be the same.
+            When 'other' is an Image, the dimensions and world coordinates
+            must match.
+            When 'other' is a Cube, the last two dimensions of the cube
+            array must equal the image dimensions, and the spatial world
+            coordinates must match.
 
         Returns
         -------
-        out : Spectrum or Image or Cube object.
+        out : mpdaf.obj.Spectrum or mpdaf.obj.Image or mpdaf.obj.Cube object.
         """
         if self.data is None:
             raise ValueError('empty data array')
@@ -618,16 +619,16 @@ class Image(DataArray):
 
         Parameters
         ----------
-        other : number or Image or Cube object.
-            x is Image: Dimensions and world coordinates must be the same.
-
-            x is Cube: The last two dimensions of the cube must
-            be equal to the image dimensions.
-            World coordinates in spatial directions must be the same.
+        other : number or Spectrum or Image or Cube object.
+            When 'other' is an Image, the dimensions and world coordinates
+            must match.
+            When 'other' is a Cube, the last two dimensions of the cube
+            array must equal the image dimensions, and the spatial world
+            coordinates must match.
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image` or :class:`mpdaf.obj.Cube`
+        out : mpdaf.obj.Image or mpdaf.obj.Cube
 
         """
         if self.data is None:
