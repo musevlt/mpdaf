@@ -2,8 +2,7 @@
 
 # Import the recommended python 2 -> 3 compatibility modules.
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division
 
 import nose.tools
 from nose.plugins.attrib import attr
@@ -51,6 +50,23 @@ def test_from_ndarray():
     d = DataArray(data=data)
     nose.tools.assert_tuple_equal(d.shape, data.shape)
     assert_allclose(d.data, data)
+
+
+@attr(speed='fast')
+def test_from_obj():
+    """DataArray class: Testing initialization from an object"""
+    d = DataArray(data=np.arange(10), var=np.ones(10))
+    c = Cube.new_from_obj(d)
+    nose.tools.assert_tuple_equal(c.shape, d.shape)
+    nose.tools.assert_true(np.may_share_memory(c.data, d.data))
+    assert_array_equal(c.data, d.data)
+    assert_array_equal(c.var, d.var)
+
+    data = np.zeros(10)
+    c = Cube.new_from_obj(d, data=data, copy=True)
+    nose.tools.assert_false(np.may_share_memory(c.data, data))
+    assert_array_equal(c.data, data)
+    assert_array_equal(c.var, d.var)
 
 
 @attr(speed='fast')
