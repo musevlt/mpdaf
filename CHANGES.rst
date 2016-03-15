@@ -1,3 +1,199 @@
+New Features
+------------
+
+* The Image.resample() method now applies an anti-aliasing filter to
+  prevent aliasing and to increase the signal to noise ratio when
+  re-sampling to lower resolutions.
+
+* There is a new method called Image.align_with_image(). This
+  resamples the image of the object to give it the same orientation,
+  position, resolution and size as another image.
+
+* There is a new method called WCS.get_axis_increments(), which
+  returns the displacements on the sky per pixel increment along the Y
+  and X axes.
+
+* There is a new method called Image.estimate_coordinate_offset().
+  This uses a carefully constrained full-image auto-correlation to
+  measure the average offsets between the world coordinates of common
+  astronomical features in the current image and a reference
+  image. This was written primarily to determine the coordinate
+  offsets between MUSE images and HST reference images.
+
+* There is a new method called Image.adjust_coordinates(), which uses
+  Image.estimate_coordinate_offset() to determine the world coordinate
+  offsets between the image of the object and a reference image, then
+  applies this shift to the reference pixel index of the image, so
+  that the two images line up when plotted versus Ra and Dec.
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+* The rewritten Image.rotate() function (see below) no longer has an
+  optional reshape option, because this function now pre-allocates the
+  array of the rotated image with the optimal final size. The optional
+  interpolation 'order' argument has also been removed, because the
+  optimal interpolation is set by the function.
+
+* The re-written Image.resample() function (see below) no longer has
+  a newstart argument. In place of this there are now two arguments,
+  called refpos and refpix. These allow the positioning of the image
+  to be specified by a sky position and the pixel index at which that
+  position should be located in the image array. This is more flexible
+  than the newstart argument. The default behavior when refpos and
+  refpix are both specified as None, is the same as when the older
+  newstart argument was specified as None.
+
+* The resize() methods of Cube, Image and Spectrum have been renamed
+  crop() to better indicate their purpose.
+
+* The Image.rebin_median() method has been removed because its effect
+  on image statistics couldn't be characterized to allow the
+  computation of variances, and because it didn't seem scientifically
+  useful.
+
+* The WCS.get_naxis1() and WCS.get_naxis2() methods have been removed,
+  because the underlying WCS.naxis1 and WCS.naxis2 values can be
+  queried directly.
+
+Summary of significant changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* The Image.rebin_mean() method has been simplified to make it more
+  maintainable. Its calculations of the mean values of the pixels in
+  each bin have also been updated to properly account for masked
+  pixels.  Previously it computed means by dividing sums of pixel
+  values by the total number of pixels. Now it divides them by the
+  number of unmasked pixels. In images with masked pixels this will
+  have resulted in smaller pixel values than expected. The
+  simplification to this function was to effectively truncate the
+  input image to be an integer multiple of the re-binning reduction
+  factor, rather than computing partially sampled output pixels for
+  the edge of the re-binned image. The result is that some output
+  images will have one pixel less along X and/or Y than before.
+
+* The crop() methods of Cube,Image and Spectrum now return the tuple
+  of slices that were used to crop the data array.
+
+* The following new methods have been added. They are described more
+  fully in the New Features section above.
+
+    Image.align_with_image()
+       Re-sample images onto the same world coordinate grid. 
+
+    Image.estimate_coordinate_offset()
+       Measure the offset between the world coordinates of common
+       astronomical features in two images of the sky.
+
+    Image.adjust_coordinates()
+       Correct the world coordinates of one image to match those of
+       a reference image.
+
+* The Image.rebin_median() method has been removed. This function
+  re-binned images to lower resolution by taking the medians of
+  consecutive groups of pixels. This is not a statistically well
+  defined operation, so there was no way to update it to calculate
+  corresponding variances.
+
+* The Image.resample() method has been re-written to apply an
+  anti-alias filter before re-sampling. This not only prevents
+  aliasing but also increases the signal-to-noise ratio when
+  re-sampling to lower resolutions, as would normally be expected. In
+  images with variance information, variances are computed for the
+  re-sampled image, whereas variance information was previously
+  discarded. To place a given sky pixel at pixel 0,0 the coordinate
+  reference pixel of the image is now changed instead of the
+  coordinate reference value.
+
+* The WCS.resample() method has been removed, because the revised
+  Image.resample() method corrects the coordinate transformation
+  itself.
+
+* A new method called _antialias_filter_image() has been added in
+  image.py. This is used by the re-written Image.resample() method
+  to apply an antialiasing filter to an image that is about to be
+  re-sampled to lower resolution.
+
+* The Image.rotate() method has been re-written to work correctly with
+  non-square pixels and to interpret rotation angles on the sky in the
+  same way as the WCS.get_rot() function. It also now resamples the
+  input image to avoid the rotated image being under-sampled.
+
+* The WCS.rotate() method has been removed, because the revised
+  Image.rotate() method corrects the coordinate transformation itself.
+
+* The return value of the get_range() methods of Cube, Image
+  and DataArray have been changed to a flat array, rather than
+  an array of two coordinate tuples that only denoted image corners
+  for non-rotated images.
+
+* There is a new method called WCS.get_axis_increments(), which
+  returns the signed displacements on the sky per pixel increment
+  along the Y and X axes.
+
+* There is also a new method called WCS.set_axis_increments(). This
+  is used internally to update the signed displacements on the sky per
+  pixel along the Y and X axes after re-sampling etc.
+
+* The angle returned by WCS.get_rot() has been corrected to always
+  return the angle between north and the Y axis of the image, in the
+  sense of a rotation of north eastwards of Y. The previous version of
+  the function didn't take account of the X and Y dimensions of
+  pixels, or the signs of the axis increments per pixel.
+
+* The WCS.set_step() method now changes the pixel scaling correctly
+  for all FITS files. The previous version, which worked for MUSE FITS
+  files, failed on FITS files whose coordinate transform matrix
+  included any shear terms.
+
+* A couple of issues have been resolved in WCS.get_step(). Incorrect
+  values were returned for FITS files with pixels that were
+  rectangular on the sky, rather than square. This didn't affect
+  typical MUSE FITS files.
+
+* The WCS initializer now accepts a cd argument, which may be used to
+  set the coordinate transformation directly, instead of via
+  values for the obsolescent CDELT1,CDELT2,CROTA FITS keywords.
+
+* When a WCS object is initialized via the cdelt1,cdelt2 and rot
+  sub-set of object-initialization parameters, the
+  corresponding coordinate transformation matrix is now calculated in
+  the way recommended in equation 189 of FITS paper *II*
+  (Calabretta, M. R. & Greisen, E. W. 2002 paper II, A&A, 395,
+  1077-1122).
+
+* Documentation has been added and revised for many methods and
+  classes.
+
+* The Cube and Image resize() methods have been re-written to make them
+  much faster and use much less memory. They have also been renamed
+  as crop().
+
+* An incorrect assumption has been fixed in the Cube and Image resize()
+  methods; namely that the first and last tuples of array indexes
+  returned by np.where() denoted the minimum and maximum indexes of
+  the un-flagged sub-cube/sub-image along all axes. This will have
+  produced incorrect results in the past.
+
+* Many new unit test functions have been written, and many others have
+  been updated.
+
+* The functions that generate unit-test data now include mask arrays
+  and variance arrays, which weren't previously well tested by the
+  unit tests.
+
+* The variance calculation of DataArray.sqrt() has been corrected.
+
+* In the Spectrum.sum() method, the weighted mean average of the
+  spectral pixels was being multiplied by the total number of pixels
+  instead of the number of unmasked pixels. This will have resulted in
+  sums that were too small wherever there were masked spectral pixels.
+
+* A couple of problems have been fixed in the code that multiplies an
+  image by a spectrum. The original code didn't handle variances
+  correctly and crashed due to a non-existent variable.
+
 v1.3.dev (17/01/2016)
 ---------------------
 
