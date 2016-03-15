@@ -1036,7 +1036,7 @@ class Cube(DataArray):
                 cls = Spectrum
             elif obj.ndim == 2:
                 cls = Image
-            return cls.new_from_obj(self)
+            return cls.new_from_obj(obj)
         else:
             return obj
 
