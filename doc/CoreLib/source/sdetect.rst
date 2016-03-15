@@ -15,7 +15,7 @@ Contents:
    
    user_manual_source
    user_manual_catalog
-   user_manual_focus
    user_manual_muselet
+   user_manual_origin
 
 

@@ -65,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'MPDAF CoreLib'
-copyright = u'2013-2015, L. Piqueras'
+copyright = u'2013-2016, CRAL'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

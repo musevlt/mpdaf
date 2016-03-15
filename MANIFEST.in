@@ -9,6 +9,4 @@ graft data/obj
 
 prune lib/mpdaf.egg-info
 
-prune lib/mpdaf/sdetect/origin
-
 global-exclude *.py[cod] __pycache__ *.so .directory _githash.py .git
