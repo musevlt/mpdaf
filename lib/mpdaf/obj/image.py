@@ -10,15 +10,15 @@ import astropy.units as u
 from astropy.table import Table, Column
 from matplotlib.widgets import RectangleSelector
 from matplotlib.path import Path
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from scipy import interpolate, ndimage, signal, special
+from scipy import interpolate, signal
+from scipy import ndimage as ndi
 from scipy.ndimage.interpolation import affine_transform
 from scipy.optimize import leastsq
 
 from . import plt_norm, plt_zscale
 from .coords import WCS, WaveCoord
 from .data import DataArray, is_valid_fits_file
-from .objs import is_float, is_int, is_number, UnitArray, UnitMaskedArray
+from .objs import is_int, is_number, UnitArray, UnitMaskedArray
 from ..tools import deprecated
 
 
@@ -3547,7 +3547,7 @@ class Image(DataArray):
         # equivalent index of the input image and interpolate a value
         # for the new pixel from there.
 
-        data = ndimage.affine_transform(data, new2old, offset.flatten(),
+        data = affine_transform(data, new2old, offset.flatten(),
                                         output_shape=newdim, order=order,
                                         prefilter=order >= 3)
 
@@ -3575,7 +3575,7 @@ class Image(DataArray):
         # Also repeat the procedure for the array of variances, if any.
 
         if self.var is not None:
-            var = ndimage.affine_transform(self.var, new2old, offset.flatten(),
+            var = affine_transform(self.var, new2old, offset.flatten(),
                                            output_shape=newdim, order=order,
                                            prefilter=order >= 3)
         else:
@@ -3738,6 +3738,7 @@ class Image(DataArray):
                                 mask=self.data.mask)
         if self.var is not None:
             self.var = ndi.gaussian_filter(self.var, sigma)
+            
 
     def gaussian_filter(self, sigma=3, interp='no'):
         """Return an image containing Gaussian filter applied to the current
