@@ -1036,7 +1036,7 @@ class Cube(DataArray):
                 cls = Spectrum
             elif obj.ndim == 2:
                 cls = Image
-            return cls.from_obj(self)
+            return cls.new_from_obj(self)
         else:
             return obj
 
@@ -1292,7 +1292,7 @@ class Cube(DataArray):
                     var = var.filled(np.NaN)
                 else:
                     var = None
-            return Image.from_obj(self, data=data, var=var)
+            return Image.new_from_obj(self, data=data, var=var)
         elif axis == tuple([1, 2]):
             # return a spectrum
             if weights is None:
@@ -1362,7 +1362,7 @@ class Cube(DataArray):
                        ma.count(self.data, axis) ** 2)
             else:
                 var = None
-            return Image.from_obj(self, data=data, var=var)
+            return Image.new_from_obj(self, data=data, var=var)
         elif axis == tuple([1, 2]):
             # return a spectrum
             data = (ma.sum(ma.sum(self.data, axis=1), axis=1) /
@@ -1372,7 +1372,7 @@ class Cube(DataArray):
                     / np.sum(np.sum(~self.data.mask, axis=1), axis=1)**2
             else:
                 var = None
-            return Spectrum.from_obj(self, data=data, var=var)
+            return Spectrum.new_from_obj(self, data=data, var=var)
         else:
             return None
 
@@ -1405,7 +1405,7 @@ class Cube(DataArray):
                 var = np.ma.median(var, axis).filled(np.NaN)
             else:
                 var = None
-            return Image.from_obj(self, data=data, var=var)
+            return Image.new_from_obj(self, data=data, var=var)
         elif axis == (1, 2):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)

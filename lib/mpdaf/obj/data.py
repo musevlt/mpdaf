@@ -293,7 +293,7 @@ class DataArray(object):
                                      exc_info=True)
 
     @classmethod
-    def from_obj(cls, obj, data=None, var=None, copy=False):
+    def new_from_obj(cls, obj, data=None, var=None, copy=False):
         """Create a new object from another one, copying its attributes."""
         data = obj.data if data is None else data
         var = obj.var if var is None else var
