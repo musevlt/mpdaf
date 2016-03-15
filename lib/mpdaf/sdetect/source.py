@@ -1099,7 +1099,7 @@ class Source(object):
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
 
-        Narrow-band images are saved in ``self.images['MUSE_']``.
+        Narrow-band images are saved in ``self.images['NB_']``.
 
         Parameters
         ----------
@@ -1114,11 +1114,10 @@ class Source(object):
             value is the name of the line.
             if None, the following catalog is used::
 
-                eml = {1216 : 'LYALPHA1216', 1909: 'CIII]1909',
-                        3727: '[OII]3727', 4861: 'HBETA4861' ,
-                        5007: '[OIII]5007', 6563: 'HALPHA6563',
-                        6724 : '[SII]6724'}
-
+                eml = {1216 : 'LYALPHA', 1908: 'SUMCIII1907',
+                        3727: 'SUMOII3726', 4863: 'HBETA' ,
+                        5007: 'OIII5007', 6564: 'HALPHA'}
+                        
         size : float
             The total size to extract. It corresponds to the size along the
             delta axis and the image is square. If None, the size of the white
@@ -1204,8 +1203,6 @@ class Source(object):
                                       unit_size=u.arcsec, width=8, is_sum=False,
                                       subtract_off=True, margin=10., fband=3.):
         """Create narrow band image around an observed wavelength value.
-
-        Narrow-band images are saved in self.images['MUSE_*'].
 
         Parameters
         ----------
@@ -1432,8 +1429,8 @@ class Source(object):
         self.tables[name] = tab
 
     def extract_spectra(self, cube, obj_mask='MASK_UNION', sky_mask='MASK_SKY',
-                        tags_to_try=['MUSE_WHITE', 'MUSE_LYALPHA1216',
-                                     'MUSE_HALPHA6563', 'MUSE_[OII]3727'],
+                        tags_to_try=['MUSE_WHITE', 'NB_LYALPHA',
+                                     'NB_HALPHA', 'NB_SUMOII3726'],
                         skysub=True, psf=None, lbda=None, unit_wave=u.angstrom):
         """Extract spectra from the MUSE data cube and from a list of
         narrow-band images (to define spectrum extraction apertures).
