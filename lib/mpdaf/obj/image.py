@@ -5936,7 +5936,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
     #
     # Start by filtering the Y axis if needed.
 
-    if filter_axis[0]:
+    if filter_axes[0]:
 
         nyw = max(int((oldstep[0] * nya) / newstep[0]), 1)
         if nyw % 2 == 0:
@@ -6132,7 +6132,7 @@ class SpatialFrequencyLimits(object):
 
         return np.array([ymax, xmax], dtype=np.float)
 
-    def ellipse_locus(t, rot):
+    def ellipse_locus(self, t, rot):
         """Return the Y,X coordinates of the band-limiting ellipse
         at ellipse phase t.
 
