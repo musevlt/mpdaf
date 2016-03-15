@@ -294,7 +294,18 @@ class DataArray(object):
 
     @classmethod
     def new_from_obj(cls, obj, data=None, var=None, copy=False):
-        """Create a new object from another one, copying its attributes."""
+        """Create a new object from another one, copying its attributes.
+
+        Parameters
+        ----------
+        data : ndarray-like
+            Optional data array, otherwise ``obj.data`` is used.
+        var : ndarray-like
+            Optional variance array, otherwise ``obj.var`` is used.
+        copy : bool
+            Copy the data and variance if True (default False).
+
+        """
         data = obj.data if data is None else data
         var = obj.var if var is None else var
         kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
