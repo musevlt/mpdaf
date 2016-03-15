@@ -1206,14 +1206,6 @@ class Image(DataArray):
 
         angle = (theta * unit).to(u.rad).value
 
-        # Create a rotation matrix for the specified angle. Note that
-        # this is designed to multiply a column vector ordered with
-        # the X axis above the Y axis, to make it compatible with the
-        # fortran ordering of the WCS CD matrix.
-
-        mrot = np.array([[np.cos(angle), -np.sin(angle)],
-                         [np.sin(angle),  np.cos(angle)]])
-
         # Get the current rotation angle of the image in radians.
 
         oldrot = self.wcs.get_rot(unit=u.rad)
