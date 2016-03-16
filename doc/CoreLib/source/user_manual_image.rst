@@ -164,8 +164,6 @@ Transformation
 
 :func:`mpdaf.obj.Image.rebin_mean <mpdaf.obj.Image.rebin_mean>` shrinks the size of the image by factor (mean values are used).
 
-:func:`mpdaf.obj.Image.rebin_median <mpdaf.obj.Image.rebin_median>` shrinks the size of the image by factor (median values are used).
-
 :func:`mpdaf.obj.Image.resample <mpdaf.obj.Image.resample>` resamples the image to a new coordinate system.
 
 :func:`mpdaf.obj.Image.segment <mpdaf.obj.Image.segment>` segments the image in a number of smaller images.

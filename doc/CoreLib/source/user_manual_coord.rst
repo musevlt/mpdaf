@@ -3,13 +3,13 @@ Interface for world coordinates
 
 
     WCS class manages world coordinates in spatial direction (2-dimensions WCS object of pywcs package is used).
-    
+
     WaveCoord class manages world coordinates in spectral direction (1-dimension WCS object of pywcs package is used).
 
     deg2sexa and sexa2deg methods transforms coordinates from degree/sexagesimal to sexagesimal/degree.
-    
+
     Note that by convention python reverse x,y indices : (dec,ra) order is used.
-    
+
 
 Degree / sexagesimal conversion
 ===============================
@@ -78,10 +78,6 @@ References
 
 :func:`mpdaf.obj.WCS.get_cd` returns the CD matrix.
 
-:func:`mpdaf.obj.WCS.get_naxis1` - NAXIS1 getter.
-
-:func:`mpdaf.obj.WCS.get_naxis2` - NAXIS2 getter.
-
 :func:`mpdaf.obj.WCS.get_crpix1` - CRPIX1 getter.
 
 :func:`mpdaf.obj.WCS.get_crpix2` - CRPIX2 getter.
@@ -89,7 +85,7 @@ References
 :func:`mpdaf.obj.WCS.get_crval1` - CRVAL1 getter.
 
 :func:`mpdaf.obj.WCS.get_crval2` - CRVAL2 getter.
-    
+
 :func:`mpdaf.obj.WCS.set_naxis1` - NAXIS1 setter.
 
 :func:`mpdaf.obj.WCS.set_naxis2` - NAXIS2 setter.
@@ -103,10 +99,6 @@ References
 :func:`mpdaf.obj.WCS.set_crval2` - CRVAL2 setter.
 
 :func:`mpdaf.obj.WCS.set_step` updates the steps in the CD matrix or in the PC matrix.
-
-:func:`mpdaf.obj.WCS.rotate` rotates WCS coordinates to a new orientation.
-
-:func:`mpdaf.obj.WCS.resample` resamples to a new coordinate system.
 
 :func:`mpdaf.obj.WCS.rebin` applies a factor to the coordinate system.
 
