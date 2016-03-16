@@ -1,296 +1,212 @@
+v1.3.dev (xx/xx/2016)
+---------------------
+
 New Features
-------------
+~~~~~~~~~~~~
 
-* By default the Image.resample() method now applies an anti-aliasing
-  filter when asked to lower the resolution of an image. This
-  suppresses aliasing artifacts and increases the signal to noise
-  ratio by removing noise at high spatial frequencies that would
-  otherwise be folded back into the image. This new feature can be
-  disabled by setting the antialias argument to False. An optional
-  copy argument has also been added which can be used to request that
-  the input image be re-sampled in-place, rather than a copy of it.
+* ``Image.resample()``: now applies by default an anti-aliasing filter when
+  asked to lower the resolution of an image. This suppresses aliasing artifacts
+  and increases the signal to noise ratio by removing noise at high spatial
+  frequencies that would otherwise be folded back into the image. This new
+  feature can be disabled by setting ``antialias=False``. An optional copy
+  argument has also been added which can be used to request that the input
+  image be re-sampled in-place, rather than a copy of it. The variance is now
+  computed for the re-sampled image, which was not the case before.
 
-* There is a new method called Image.regrid(). This is similar to
-  Image.resample(). However it is more flexible in the positioning of
-  the sky in the re-sampled image, and it accepts signed pixel
-  increments, such that the directional sense of the axes can be
-  specified as well as their resolutions.
+* ``Image.regrid()``: **new method** similar to ``Image.resample()``, but more
+  flexible in the positioning of the sky in the re-sampled image, and it
+  accepts signed pixel increments, such that the directional sense of the axes
+  can be specified as well as their resolutions. ``resample`` now uses
+  ``regrid`` and was conserved for compatibility reasons.
 
-* The Image.rotate() method now works correctly on images whose pixels
-  have different angular sizes along the X and Y axes. This includes
-  optionally adjusting the pixel sizes of the image to avoid
-  under-sampling the image when rotating higher resolution axes onto
-  lower resolution axes.
+* ``Image.rebin_mean()`` method has been simplified to make it more
+  maintainable. Its calculations of the mean values of the pixels in each bin
+  have also been updated to properly account for masked pixels.  Previously it
+  computed means by dividing sums of pixel values by the total number of
+  pixels. Now it divides them by the number of unmasked pixels. In images with
+  masked pixels this will have resulted in smaller pixel values than expected.
+  The simplification to this function was to effectively truncate the input
+  image to be an integer multiple of the re-binning reduction factor, rather
+  than computing partially sampled output pixels for the edge of the re-binned
+  image. The result is that some output images will have one pixel less along
+  X and/or Y than before.
 
-* The Image.rotate() method now has an optional copy argument, which
-  can be used to request that the input image be rotated in-place,
-  rather than a copy of it.
+* ``Image.rotate()``: now works correctly on images whose pixels have different
+  angular sizes along the X and Y axes. This includes optionally adjusting the
+  pixel sizes of the image to avoid under-sampling the image when rotating
+  higher resolution axes onto lower resolution axes.  It also has an optional
+  copy argument, which can be used to request that the input image be rotated
+  in-place.
 
-* There is a new method called Image.align_with_image(). This
-  resamples the image of the object to give it the same orientation,
-  position, resolution and size as another image.
+* ``Image.align_with_image()``: **new method** to resample the image of the
+  object to give it the same orientation, position, resolution and size as
+  another image.
 
-* There is a new method called WCS.get_axis_increments(), which
-  returns the displacements on the sky per pixel increment along the Y
-  and X axes.
+* ``Image.estimate_coordinate_offset()``: **new method** which uses
+  a full-image auto-correlation to measure the average offsets between the
+  world coordinates of common astronomical features in two images. This was
+  written primarily to determine coordinate offsets between MUSE images and HST
+  reference images.
 
-* There is a new method called Image.estimate_coordinate_offset().
-  This uses a full-image auto-correlation to measure the average
-  offsets between the world coordinates of common astronomical
-  features in two images. This was written primarily to determine
-  coordinate offsets between MUSE images and HST reference images.
+* ``Image.adjust_coordinates()``: **new method** which uses
+  ``Image.estimate_coordinate_offset()`` to determine the world coordinate
+  offsets between an image and a reference image, then applies this shift to
+  the reference pixel index of the image, so that the two images line up when
+  plotted versus Ra and Dec.
 
-* There is a new method called Image.adjust_coordinates(), which uses
-  Image.estimate_coordinate_offset() to determine the world coordinate
-  offsets between an image and a reference image, then applies this
-  shift to the reference pixel index of the image, so that the two
-  images line up when plotted versus Ra and Dec.
+* ``WCS.get_axis_increments()``: **new method** which returns the displacements
+  on the sky per pixel increment along the Y and X axes. There is also a new
+  method ``WCS.set_axis_increments()`` to update the signed displacements on
+  the sky.
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
 
-* The resize() methods of Cube, Image and Spectrum have been renamed
-  crop() to better indicate their purpose.
-
-* The Image.rebin_median() method has been removed because its effect
-  on the variances couldn't be computed, and because it didn't seem
-  scientifically useful. The Image.median_filter() method seems more
-  appropriate for those wishing to remove bad pixels.
-
-* The WCS.get_naxis1() and WCS.get_naxis2() methods have been removed,
-  because the underlying WCS.naxis1 and WCS.naxis2 values can be
-  queried directly.
-
-* Position angles of astronomical features on the sky are
-  conventionally specified relative to north, with a rotation from
-  north to east being considered a positive angle. However MPDAF's
-  get_rot() has been returning the clockwise angle of north relative
-  to the pixel grid of the image. Since East is usually plotted
-  towards the left in astronomical images, this had the opposite sign
-  to the convention. For images with non-square pixels, the angle also
-  differed in magnitude. The updated versions of image.get_rot() and
-  image.rotate() resolve this discrepancy, so any software that has
-  been using these functions may see changes.
-
-* The return value of the get_range() methods of Cube, Image
-  and DataArray have been changed to a flat array, rather than
-  an array of two coordinate tuples that only denoted image corners
-  for non-rotated images.
-
-Summary of significant changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* The variance arrays of the Data, Image, Cube and Spectrum objects
-  are now masked arrays that share the mask array of the data
-  array. Previously the arrays of variances were just numpy arrays
-  which didn't take account of the mask of the data array. This change
-  should quietly fix any code that assumed that masked pixels in the
-  data array were also masked in the variance array.
-
-* The Image.rebin_mean() method has been simplified to make it more
-  maintainable. Its calculations of the mean values of the pixels in
-  each bin have also been updated to properly account for masked
-  pixels.  Previously it computed means by dividing sums of pixel
-  values by the total number of pixels. Now it divides them by the
-  number of unmasked pixels. In images with masked pixels this will
-  have resulted in smaller pixel values than expected. The
-  simplification to this function was to effectively truncate the
-  input image to be an integer multiple of the re-binning reduction
-  factor, rather than computing partially sampled output pixels for
-  the edge of the re-binned image. The result is that some output
-  images will have one pixel less along X and/or Y than before.
-
-* The crop() methods of Cube,Image and Spectrum now return the tuple
-  of slices that were used to crop the data array.
-
-* The following new methods have been added. They are described more
-  fully in the New Features section above.
-
-    Image.align_with_image()
-       Re-sample images onto the same world coordinate grid. 
-
-    Image.estimate_coordinate_offset()
-       Measure the offset between the world coordinates of common
-       astronomical features in two images of the sky.
-
-    Image.adjust_coordinates()
-       Correct the world coordinates of one image to match those of
-       a reference image.
-
-* The Image.rebin_median() method has been removed. This function
-  re-binned images to lower resolution by taking the medians of
-  consecutive groups of pixels. This is not a statistically well
-  defined operation, so there was no way to update it to calculate
-  corresponding variances.
-
-* The Image.resample() method has been re-written to apply an
-  anti-alias filter before re-sampling. This not only prevents
-  aliasing but also increases the signal-to-noise ratio when
-  re-sampling to lower resolutions, as would normally be expected. In
-  images with variance information, variances are computed for the
-  re-sampled image, whereas variance information was previously
-  discarded.
-
-* There is a new method called Image.regrid(). This is similar to
-  Image.resample(). However it is more flexible in the positioning of
-  the sky in the re-sampled image, and it accepts signed pixel
-  increments, such that the directional senses of the image axes can
-  be specified as well as their resolutions.
-
-* The WCS.resample() method has been removed, because the revised
-  Image.resample() method corrects the coordinate transformation
-  itself.
-
-* A new private method called _antialias_filter_image() has been added
-  in image.py. This is used by the re-written Image.resample() method
-  to apply an antialiasing filter to an image before re-sampling it to
-  a lower resolution.
-
-* The Image.rotate() method has been re-written to work correctly with
-  non-square pixels and to interpret the rotation angle in the same
-  way as the revised WCS.get_rot() function. It also optionally
-  adjusts pixel sizes to avoid the rotated image being under or
-  over-sampled. It doesn't do this if either the reshape option is
-  false, or the new regrid option is False.
-
-* The WCS.rotate() method has been removed, because the revised
-  Image.rotate() method corrects the coordinate transformation itself.
-
-* The return value of the get_range() methods of Cube, Image
-  and DataArray have been changed to a flat array, rather than
-  an array of two coordinate tuples that only denoted image corners
-  for non-rotated images.
-
-* There is a new method called WCS.get_axis_increments(), which
-  returns the signed displacements on the sky per pixel increment
-  along the Y and X axes.
-
-* There is also a new method called WCS.set_axis_increments(). This
-  is used internally to update the signed displacements on the sky per
-  pixel along the Y and X axes after re-sampling etc.
-
-* The angle returned by WCS.get_rot() has been corrected to always
-  return the angle between north and the Y axis of the image, in the
-  sense of a rotation of north eastwards of Y. The previous version of
-  the function didn't take account of the X and Y dimensions of
-  pixels, or the signs of the axis increments per pixel.
-
-* The WCS.set_step() method now changes the pixel scaling correctly
-  for all FITS files. The previous version, which worked for MUSE FITS
-  files, failed on FITS files whose coordinate transform matrix
-  included any shear terms.
-
-* A couple of issues have been resolved in WCS.get_step(). Incorrect
-  values were returned for FITS files with pixels that were
-  rectangular on the sky, rather than square. This didn't affect
-  typical MUSE FITS files.
-
-* The WCS initializer now accepts a cd argument, which may be used to
-  set the coordinate transformation directly.
-
-* When an WCS object is initialized via its cdelt1,cdelt2 and rot
-  parameters, the corresponding coordinate transformation matrix is
-  now calculated in the way recommended in equation 189 of FITS paper
-  *II* (Calabretta, M. R. & Greisen, E. W. 2002 paper II, A&A, 395,
-  1077-1122).
-
-* Documentation has been added and revised for many methods and
-  classes.
-
-* The Cube and Image resize() methods have been re-written to make them
-  much faster and use much less memory. They have also been renamed
-  as crop().
-
-* An incorrect assumption has been fixed in the Cube and Image resize()
-  methods; namely that the first and last tuples of array indexes
-  returned by np.where() denoted the minimum and maximum indexes of
-  the un-flagged sub-cube/sub-image along all axes. This will have
-  produced incorrect results in the past.
-
-* Many unit-test functions have been written, and many others have
-  been updated.
-
-* The functions that generate unit-test data now include mask arrays
-  and variance arrays, which weren't previously well tested by the
-  unit tests.
-
-* The variance calculation of DataArray.sqrt() has been corrected.
-
-* In the sum() method of Spectrum, the weighted mean of the spectral
-  pixels was being multiplied by the total number of input pixels
-  instead of the number of unmasked pixels. This will have resulted in
-  sums that were too small wherever there were masked spectral pixels.
-
-* A couple of problems have been fixed in the code that multiplies an
-  image by a spectrum. The original code didn't handle variances
-  correctly and crashed due to a non-existent variable.
-
-v1.3.dev (17/01/2016)
----------------------
-
-- Remove submodules *ZAP* and *GALPAK*.
+* Remove submodules *ZAP* and *GALPAK*.
 
   - `ZAP <https://github.com/ktsoto/zap>`_ is now publicly available.
   - `GALPAK <http://galpak.irap.omp.eu/downloads.html>`_ is also publicly
     available.
 
-- Update *MUSELET* function:
+* The ``resize()`` methods of Cube, Image and Spectrum have been renamed
+  ``crop()`` to better indicate their purpose. The new methods are also faster
+  and use less memory, and return the list of slices that have been used to
+  crop the data.
 
-  - optimize matchlines function
-  - split the main function in several functions
-  - remove numpy warning
-  - use a numpy array and not a masked array for the weights arra
-  - use masked median of inv_variance
+* ``Image.rebin_median()`` has been removed because its effect on the variances
+  couldn't be computed, and because it didn't seem scientifically useful. The
+  ``Image.median_filter()`` method seems more appropriate for those wishing to
+  remove bad pixels.
 
-- Add *ORIGIN*: *detectiOn and extRactIon of Galaxy emIssion liNes*
+* Position angles of astronomical features on the sky are conventionally
+  specified relative to north, with a rotation from north to east being
+  considered a positive angle. However MPDAF's ``get_rot()`` has been returning
+  the clockwise angle of north relative to the pixel grid of the image. Since
+  East is usually plotted towards the left in astronomical images, this had the
+  opposite sign to the convention. For images with non-square pixels, the angle
+  also differed in magnitude.  ``WCS.get_rot()`` has been corrected to always
+  return the angle between north and the Y axis of the image, in the sense of
+  a rotation of north eastwards of Y.  The updated versions of
+  ``Image.get_rot()`` and ``Image.rotate()`` resolve this discrepancy, so any
+  software that has been using these functions may see changes.
 
-  This software has been developped by Carole Clastres under the supervision of
-  David Mary (Lagrange institute, University of Nice) and ported to Python by
-  Laure Piqueras (CRAL). The project is funded by the ERC MUSICOS (Roland
-  Bacon, CRAL).
+* The return value of the ``get_range()`` methods of Cube, Image and DataArray
+  have been changed to a flat array, rather than an array of two coordinate
+  tuples that only denoted image corners for non-rotated images.
 
-  Test version. ``Origin.py`` must be run as script for the moment.
-  It is not installed as a mpdaf package.
+* ``WCS.get_naxis1()`` and ``WCS.get_naxis2()`` have been removed, because the
+  underlying ``WCS.naxis1`` and ``WCS.naxis2`` values can be queried directly.
 
-- ``Cube.get_image``: add input param in the fits header
-- Correct bug in ``Catalog.from_sources``
-- Propagate mask in ``Cube.subcube``
-- Refactor ``Cube.subcube_circle_aperture`` to use ``Cube.subcube()`` and ``Cube.mask()``
-- Tell which keyword is missing when creating a source.
-- Correct error in WCS when both ``CDELT1`` and ``CD1_1``.
-- Fix ``Cube.median`` without axis and enhance tests.
-- Convert pixable values to double to avoid precision errors.
+* ``WCS.resample()`` and ``WCS.rotate()`` methods has been removed, because
+  they are no more needed by the equivalent methods in ``Image``.
 
-  This avoids discrepancies between ``_get_pos_sky`` and
-  ``_get_pos_sky_numexpr`` (numexpr seems to use double precision by default)
-  and probably also with other methods.
+WCS
+~~~
 
-- Allow to overwrite ``BUNIT`` for data without unit.
-- Fix ``EXPTIME`` of combined cubes when cubes overlap (using a median of the
+* When an ``WCS`` object is initialized via its cdelt1, cdelt2 and rot
+  parameters, the corresponding coordinate transformation matrix is now
+  calculated in the way recommended in equation 189 of FITS paper *II*
+  (Calabretta, M. R. & Greisen, E. W. 2002 paper II, A&A, 395, 1077-1122).
+
+* The ``WCS`` initializer now accepts a ``cd`` argument, which may be used to
+  set the coordinate transformation directly.
+
+* ``WCS.set_step()`` now changes the pixel scaling correctly for all FITS
+  files. The previous version, which worked for MUSE FITS files, failed on FITS
+  files whose coordinate transform matrix included any shear terms.
+
+* A couple of issues have been resolved in ``WCS.get_step()``. Incorrect values
+  were returned for FITS files with pixels that were rectangular on the sky,
+  rather than square. This didn't affect typical MUSE FITS files.
+
+* Don't write WCS headers with both ``CDELT1`` and ``CD1_1``.
+
+Data classes (Cube, Image, Spectrum)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* The variance calculation of ``DataArray.sqrt()`` has been corrected.
+
+* Fix ``Cube.median`` when used with ``axis=None``.
+
+* ``Cube.get_image``: add input param in the FITS header.
+
+* Propagate mask in ``Cube.subcube``.
+
+* Refactor ``Cube.subcube_circle_aperture`` to use ``Cube.subcube()`` and
+  ``Cube.mask()``
+
+* Allow to overwrite ``BUNIT`` for data without unit.
+
+* Fix ``EXPTIME`` of combined cubes when cubes overlap (using a median of the
   exposure map give a more realistic estimate).
-- A few improvements to comments and docstrings.
-- Fixed the computation of slices in ``Cube.resize()``.
-- Added future imports for python2/3 compatibility
-- Fix initial value for ``subtract_slice_median`` correction.
 
-  This value was set to 1 which seems wrong for an additive correction. To
-  emphasize the fact that some combination of slices and quadrants are not
-  valid, and allow to filter these values later, this commit changes the init
-  value for the count to -1, and the correction to NaN.
+* In ``Spectrum.sum()`` the weighted mean of the spectral pixels was being
+  multiplied by the total number of input pixels instead of the number of
+  unmasked pixels. This will have resulted in sums that were too small wherever
+  there were masked spectral pixels.
 
-- Correct ``Spectrum.sum()`` for masked arrays with variances.
-- Fix the handling of variances when mutliplying an image by a spectrum.
-- Add an introduction to the documentation of the ``DataArray`` class.
+* A couple of problems have been fixed in the code that multiplies an
+  image by a spectrum. The original code didn't handle variances
+  correctly and crashed due to a non-existent variable.
+
+Pixtable
+~~~~~~~~
+
+* Convert pixtable values to double to avoid precision errors.  This avoids
+  discrepancies between ``_get_pos_sky`` and ``_get_pos_sky_numexpr`` (numexpr
+  seems to use double precision by default) and probably also with other
+  methods.
+
+* Fix initial value for ``subtract_slice_median`` correction.  This value was
+  set to 1 which seems wrong for an additive correction. To emphasize the fact
+  that some combination of slices and quadrants are not valid, and allow to
+  filter these values later, this commit changes the init value for the count
+  to -1, and the correction to NaN.
+
+Sources
+~~~~~~~
+
+* Correct bug in ``Catalog.from_sources``
+
+* Tell which keyword is missing when creating a source.
+
+Muselet
+~~~~~~~
+
+* Optimize ``matchlines`` function
+
+* Split the main function in several functions
+
+* Remove Numpy warning
+
+* Use a Numpy array and not a masked array for the weights arra
+
+* Use masked median of inv_variance
+
+Origin
+~~~~~~
+
+Add *ORIGIN*: *detectiOn and extRactIon of Galaxy emIssion liNes*
+
+This software has been developed by Carole Clastres under the supervision of
+David Mary (Lagrange institute, University of Nice) and ported to Python by
+Laure Piqueras (CRAL). The project is funded by the ERC MUSICOS (Roland
+Bacon, CRAL).
+
+.. warning::
+
+   This is a test version. ``Origin.py`` must be run as script for the moment.
+   It is not installed as a MPDAF package.
 
 
 v1.2 (13/01/2016)
 -----------------
 
-- Optimize ``Cube.subcube`` and use ``__getitem__`` in ``subcube``/``subimage``
+* Optimize ``Cube.subcube`` and use ``__getitem__`` in ``subcube``/``subimage``
   and other methods to speed up things (avoid reading the full cube/image).
-- Add missing units in image methods.
-- Fill data with NaNs only for float arrays, otherwise raise exception.
-- Use a new ``MpdafUnitsWarning`` to allow filtering the unit warnings. It can
+* Add missing units in image methods.
+* Fill data with NaNs only for float arrays, otherwise raise exception.
+* Use a new ``MpdafUnitsWarning`` to allow filtering the unit warnings. It can
   be used this way::
 
       # filter only MPDAF's warnings
@@ -301,57 +217,57 @@ v1.2 (13/01/2016)
       import astropy.units as u
       warnings.simplefilter('ignore', category=u.UnitsWarning)
 
-- CUNIT FITS keyword: patch to read ``mum`` as micron.
-- Correct ``cube.get_step`` that returned nothing.
-- Use setuptools for the ``setup.py``:
+* CUNIT FITS keyword: patch to read ``mum`` as micron.
+* Correct ``cube.get_step`` that returned nothing.
+* Use setuptools for the ``setup.py``:
 
   - Allow to use develop mode (``python setup.py develop``).
   - Install dependencies automatically.
   - Use optional dependencies.
 
-- Remove unmaintained submodules: *quickViz* and *fsf*. *quickViz* is still
+* Remove unmaintained submodules: *quickViz* and *fsf*. *quickViz* is still
   available `here <http://lsiit-miv.u-strasbg.fr/paseo/cubevisualization.php>`_
   but maybe not compatible with the latest Aladin version.
-- Remove the ``displaypixtable`` module.
-- Avoid a huge memory peak when creating masked arrays with ``mask=True``.
-- Add some tools to print execution times.
-- Added scaling option in ``Cubelist.combine()``.
-- Fix ``cube.var = None`` to remove the variance part of the Cube.
-- Revert ZAP version to the same as before 1.2b1 (was updated by mistake).
-- Add a new method ``Image.find_wcs_offsets`` to find the WCS offset with a
+* Remove the ``displaypixtable`` module.
+* Avoid a huge memory peak when creating masked arrays with ``mask=True``.
+* Add some tools to print execution times.
+* Added scaling option in ``Cubelist.combine()``.
+* Fix ``cube.var = None`` to remove the variance part of the Cube.
+* Revert ZAP version to the same as before 1.2b1 (was updated by mistake).
+* Add a new method ``Image.find_wcs_offsets`` to find the WCS offset with a
   reference image.
 
 PixTable
 ~~~~~~~~
 
-- Use ``CRVAL1/CRVAL2`` instead of ``RA/DEC`` as reference point for positioned
+* Use ``CRVAL1/CRVAL2`` instead of ``RA/DEC`` as reference point for positioned
   pixtables.
-- Remove ``cos(delta)`` correction for positioned pixtables.
-- Use directly the binary mask in ``extract_from_mask``.
-- Allow to use a boolean mask for pixtable selections.
+* Remove ``cos(delta)`` correction for positioned pixtables.
+* Use directly the binary mask in ``extract_from_mask``.
+* Allow to use a boolean mask for pixtable selections.
 
 Sources
 ~~~~~~~
 
-- ``Source.add_image``: the order of the rotation is set to 0 in case of an
+* ``Source.add_image``: the order of the rotation is set to 0 in case of an
   image of 0 and 1.
-- Add methods to manage a history in the sources headers.
-- Use ``savemask='none'`` for MASK and SEG extensions.
-- Correct bug in ``source.write`` when a column has no unit.
-- Allow to pass the lambda range and wave unit to ``Source.extract_spectra``.
-- Correct bug in Catalog initialization due to units.
-- ``Catalog.from_sources``: update the default format.
-- Split ``Source.add_masks`` in 3 methods: ``find_sky_mask``,
+* Add methods to manage a history in the sources headers.
+* Use ``savemask='none'`` for MASK and SEG extensions.
+* Correct bug in ``source.write`` when a column has no unit.
+* Allow to pass the lambda range and wave unit to ``Source.extract_spectra``.
+* Correct bug in Catalog initialization due to units.
+* ``Catalog.from_sources``: update the default format.
+* Split ``Source.add_masks`` in 3 methods: ``find_sky_mask``,
   ``find_union_mask`` and ``find_intersection_mask``.
-- Isolate comments and history in source information.
+* Isolate comments and history in source information.
 
 Muselet
 ~~~~~~~
 
-- Limit the memory usage.
-- Added option to clean detections on skylines.
-- Added exposure map cube.
-- Remove automatic narrow-band images cleaning in muselet.
+* Limit the memory usage.
+* Added option to clean detections on skylines.
+* Added exposure map cube.
+* Remove automatic narrow-band images cleaning in muselet.
 
 v1.2b1 (05/11/2015)
 -------------------
