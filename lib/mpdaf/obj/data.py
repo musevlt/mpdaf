@@ -622,6 +622,26 @@ class DataArray(object):
             primary_header=self.primary_header.copy()
         )
 
+    def __repr__(self):
+        fmt = """\
+<{}(shape={}, unit={},
+    data={},
+    var={}
+"""
+        args = []
+        if self._has_wcs:
+            fmt += "    wcs={}\n"
+            args.append(repr(self.wcs))
+        if self._has_wave:
+            fmt += "    wave={}\n"
+            args.append(repr(self.wave))
+        fmt += ")>"
+        data = self.data[0] if self.ndim == 3 else self.data
+        var = self.var[0] if self.ndim == 3 else self.var
+        return fmt.format(self.__class__.__name__, self.shape,
+                          self.unit.to_string(), np.array_repr(data),
+                          np.array_repr(var), *args)
+
     def info(self):
         """Print information."""
         log = self._logger.info

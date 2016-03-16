@@ -609,6 +609,9 @@ class WCS(object):
         out.wcs = self.wcs.deepcopy()
         return out
 
+    def __repr__(self):
+        return repr(self.wcs)
+
     def info(self):
         """Print information about a WCS object."""
         try:
@@ -1617,6 +1620,9 @@ class WaveCoord(object):
         out = WaveCoord(shape=self.shape, cunit=self.unit)
         out.wcs = self.wcs.deepcopy()
         return out
+
+    def __repr__(self):
+        return repr(self.wcs)
 
     def info(self, unit=None):
         """Print information."""
