@@ -126,7 +126,7 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
 
     # Don't create a mask array?
 
-    if mask == None:
+    if mask is None:
         pass
 
     # Create a variance array filled with a scalar value?
@@ -274,7 +274,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
 
     # Don't create a mask array?
 
-    if mask == None:
+    if mask is None:
         pass
 
     # Create a variance array filled with a scalar value?
@@ -402,7 +402,7 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
 
     # Don't create a mask array?
 
-    if mask == None:
+    if mask is None:
         pass
 
     # Create a variance array filled with a scalar value?
