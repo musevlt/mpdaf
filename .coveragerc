@@ -3,6 +3,7 @@ show_missing = false
 exclude_lines =
     pragma: no cover
     def __repr__
+    def info
     raise AssertionError
     raise NotImplementedError
     if __name__ == .__main__.:
