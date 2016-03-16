@@ -1008,9 +1008,9 @@ class Source(object):
                                         unit_center=u.deg, unit_size=unit_size)
                 uniq = np.unique(subima.data.data)
                 if ((uniq == 0) | (uniq == 1)).all():
-                    subima = subima.rotate(pa - pa_white, order=0)
+                    subima = subima.rotate(pa_white - pa, order=0)
                 else:
-                    subima = subima.rotate(pa - pa_white)
+                    subima = subima.rotate(pa_white - pa)
                 subima = subima.subimage((self.dec, self.ra), size, minsize=minsize,
                                          unit_center=u.deg, unit_size=unit_size)
             else:
