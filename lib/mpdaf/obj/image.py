@@ -3099,6 +3099,9 @@ class Image(DataArray):
         # successive groups of 'factor[0] x factor[1]' pixels. Note
         # that the following uses np.ma.mean(), which takes account of
         # masked pixels.
+        
+        if self.var is not None:
+            var = self.masked_var.copy()
 
         self.data = self.data.reshape(
             newshape[0], factor[0], newshape[1], factor[1]).mean(1).mean(2)
@@ -3110,7 +3113,7 @@ class Image(DataArray):
         # in that particular sum.
 
         if self.var is not None:
-            self.var = self.var.reshape(newshape[0], factor[0], newshape[1], factor[1]).sum(1).sum(2) / unmasked**2
+            self.var = (var.reshape(newshape[0], factor[0], newshape[1], factor[1]).sum(1).sum(2) / unmasked**2).data
 
         # Any pixels in the output array that come from zero unmasked
         # pixels of the input array should be masked.

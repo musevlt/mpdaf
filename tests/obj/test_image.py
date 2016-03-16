@@ -415,9 +415,11 @@ def test_rebin_mean():
     # Given the number of pixels averaged in each of the above means,
     # we thus expect the variance array to look as follows.
 
-    expected = np.ma.array(data=[[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]],
-                           mask=[[False,False], [False,False], [True,True]])
-    nose.tools.assert_true(np.ma.allclose(image2.var, expected))
+#     expected = np.ma.array(data=[[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]],
+#                            mask=[[False,False], [False,False], [True,True]])
+#     nose.tools.assert_true(np.ma.allclose(image2.var, expected))
+    expected = np.array([[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]])
+    nose.tools.assert_true(np.allclose(image2.var, expected))
 
     # Check the WCS information.
 
