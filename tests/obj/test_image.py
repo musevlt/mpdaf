@@ -5,12 +5,12 @@ from nose.plugins.attrib import attr
 import astropy.units as u
 import numpy as np
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
-from numpy.testing import assert_almost_equal, assert_array_equal
+from numpy.testing import assert_almost_equal
 from operator import add, sub, mul, div
 from ..utils import (assert_image_equal, generate_image, generate_cube,
                      generate_spectrum)
 import scipy.ndimage as ndi
-import time
+
 
 @attr(speed='fast')
 def test_copy():
@@ -95,7 +95,7 @@ def test_get():
 @attr(speed='fast')
 def test_crop():
     """Image class: testing crop method"""
-    image1 = generate_image(shape=(6,5), data=2.0, var=0.5, mask=True)
+    image1 = generate_image(shape=(6, 5), data=2.0, var=0.5, mask=True)
     image1.data.data[2:4, 1:4] = 8
     image1.data.mask[2:4, 1:4] = 0
     image1.crop()
@@ -227,11 +227,11 @@ def test_rotate():
     # image.
 
     old_pixels = np.array([
-        [before.shape[0] // 4,     before.shape[1] // 4],
-        [before.shape[0] // 4,     (3*before.shape[1]) // 4],
-        [(3*before.shape[0]) // 4, before.shape[1] // 4],
-        [(3*before.shape[0]) // 4, (3*before.shape[1]) // 4],
-        [before.shape[0] // 2,     before.shape[1] // 2]])
+        [before.shape[0] // 4, before.shape[1] // 4],
+        [before.shape[0] // 4, (3 * before.shape[1]) // 4],
+        [(3 * before.shape[0]) // 4, before.shape[1] // 4],
+        [(3 * before.shape[0]) // 4, (3 * before.shape[1]) // 4],
+        [before.shape[0] // 2, before.shape[1] // 2]])
 
     # Get the sky coordinates of the test pixels.
 
@@ -248,7 +248,7 @@ def test_rotate():
     for pixel in old_pixels:
         py = pixel[0]
         px = pixel[1]
-        before.data[py-1:py+2, px-1:px+2] = test_value
+        before.data[py - 1:py + 2, px - 1:px + 2] = test_value
 
     # Get a rotated copy of the image.
 
@@ -267,13 +267,14 @@ def test_rotate():
     for pixel in new_pixels:
         py = pixel[0]
         px = pixel[1]
-        nose.tools.assert_almost_equal(after.data[py,px], test_value, places=6)
+        nose.tools.assert_almost_equal(after.data[py, px], test_value, places=6)
 
     # If both the WCS and the image were rotated wrongly in the same
     # way, then the above test will incrorrectly claim that the
     # rotation worked, so now check that the WCS was rotated correctly.
 
     np.testing.assert_allclose(after.wcs.get_rot() - before.wcs.get_rot(), 30.0)
+
 
 @attr(speed='fast')
 def test_resample():
@@ -296,11 +297,11 @@ def test_resample():
     # image.
 
     old_pixels = np.array([
-        [before.shape[0] // 4,     before.shape[1] // 4],
-        [before.shape[0] // 4,     (3*before.shape[1]) // 4],
-        [(3*before.shape[0]) // 4, before.shape[1] // 4],
-        [(3*before.shape[0]) // 4, (3*before.shape[1]) // 4],
-        [before.shape[0] // 2,     before.shape[1] // 2]])
+        [before.shape[0] // 4, before.shape[1] // 4],
+        [before.shape[0] // 4, (3 * before.shape[1]) // 4],
+        [(3 * before.shape[0]) // 4, before.shape[1] // 4],
+        [(3 * before.shape[0]) // 4, (3 * before.shape[1]) // 4],
+        [before.shape[0] // 2, before.shape[1] // 2]])
 
     # Get the sky coordinates of the test pixels.
 
@@ -319,8 +320,8 @@ def test_resample():
     # Resample the image.
 
     newstep = np.array(
-        [before.get_step(unit=u.arcsec)[0]*yfactor,
-         before.get_step(unit=u.arcsec)[1]*xfactor])
+        [before.get_step(unit=u.arcsec)[0] * yfactor,
+         before.get_step(unit=u.arcsec)[1] * xfactor])
     after = before.resample(newdim=before.shape, newstart=None,
                             newstep=newstep, flux=False)
 
@@ -337,8 +338,9 @@ def test_resample():
     for pixel in new_pixels:
         py = pixel[0]
         px = pixel[1]
-        offset = ndi.center_of_mass(after.data[py-pad:py+pad+1, px-pad:px+pad+1])
-        np.testing.assert_allclose(offset, np.array([pad,pad]), rtol=0, atol=0.1)
+        offset = ndi.center_of_mass(after.data[py - pad:py + pad + 1, px - pad:px + pad + 1])
+        np.testing.assert_allclose(offset, np.array([pad, pad]), rtol=0, atol=0.1)
+
 
 @attr(speed='fast')
 def test_inside():
@@ -376,8 +378,8 @@ def test_ee():
 def test_rebin_mean():
     """Image class: testing rebin methods."""
     wcs = WCS(crval=(0, 0))
-    data = np.arange(30).reshape(6,5)
-    image1 = Image(data=data, wcs=wcs, var=np.ones(data.shape)*0.5)
+    data = np.arange(30).reshape(6, 5)
+    image1 = Image(data=data, wcs=wcs, var=np.ones(data.shape) * 0.5)
     image1.mask((2, 2), (1, 1), inside=False, unit_center=None,
                 unit_radius=None)
 
@@ -405,8 +407,8 @@ def test_rebin_mean():
     #  ---- ----                ---- ----
 
     expected = np.ma.array(
-        data=[[ 6.0,   7.5], [13.5,    15], [0.0,  0.0]],
-        mask=[[False,False], [False,False], [True,True]])
+        data=[[6.0, 7.5], [13.5, 15], [0.0, 0.0]],
+        mask=[[False, False], [False, False], [True, True]])
     image2 = image1.rebin_mean(2)
     nose.tools.assert_true(np.ma.allclose(image2.data, expected))
 
@@ -418,7 +420,7 @@ def test_rebin_mean():
 #     expected = np.ma.array(data=[[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]],
 #                            mask=[[False,False], [False,False], [True,True]])
 #     nose.tools.assert_true(np.ma.allclose(image2.var, expected))
-    expected = np.array([[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]])
+    expected = np.array([[0.5, 0.25], [0.25, 0.125], [0.0, 0.0]])
     nose.tools.assert_true(np.allclose(image2.var, expected))
 
     # Check the WCS information.
@@ -426,6 +428,7 @@ def test_rebin_mean():
     start = image2.get_start()
     nose.tools.assert_equal(start[0], 0.5)
     nose.tools.assert_equal(start[1], 0.5)
+
 
 @attr(speed='fast')
 def test_add():
