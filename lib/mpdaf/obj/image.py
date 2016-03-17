@@ -3029,6 +3029,8 @@ class Image(DataArray):
         return moffat
 
     def _rebin_mean(self, factor, margin='center'):
+        if margin not in ('center', 'origin'):
+            raise ValueError('Unknown margin parameter: %s' % margin)
 
         # Use the same factor for both dimensions?
 
