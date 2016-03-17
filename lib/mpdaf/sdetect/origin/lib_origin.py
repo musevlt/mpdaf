@@ -1661,7 +1661,7 @@ def Add_radec_to_Cat(Cat, wcs):
     #print '    %0.1fs'%(time.time()-t0)
     return Cat_radec
     
-def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename, fwhm_profiles):
+def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_profiles):
     """Function to create the final catalogue of sources with their parameters
 
     Parameters
@@ -1670,7 +1670,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename, fw
                        ID x_circle y_circle x_centroid y_centroid nb_lines 
                        x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual
                        flux num_line RA DEC
-    Cat_est_line_raw : list of arrays
+    Cat_est_line     : list of spectra
                        Catalogue of estimated lines
     correl            : array
                         Cube of T_GLR values
@@ -1689,31 +1689,6 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename, fw
     Date  : Dec, 16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    """
-    Function to create the final catlogue of sources with their parameters
-
-    Parameters
-    ----------
-    Cat              : Catalogue of parameters of detected emission lines:
-                       ID x_circle y_circle x_centroid y_centroid nb_lines 
-                       x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual
-                       flux num_line RA DEC
-    Cat_est_line_raw : list of arrays
-                       Catalogue of estimated lines
-    correl            : array
-                        Cube of T_GLR values
-    wave              : mpdaf.obj.WaveCoord
-                        Spectral coordinates
-    filename          : string
-                        Name of the cube
-
-    Returns
-    -------
-    sources : list of mpdaf.sdetect.Source
-              List of sources
-              
-    Date : Dec, 16 2015
-    """
     #print 'Construct_Object_Catalogue'
     #t0 = time.time()
     sources = []
@@ -1731,6 +1706,8 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename, fw
     
     cube = Cube(filename)
     
+    maxmap = Image(data=np.amax(correl, axis=0), wcs=cube.wcs)
+    
     for i in np.unique(Cat['ID']):
         # Source = group
         E = Cat[Cat['ID']==i]
@@ -1742,6 +1719,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename, fw
                      
         src.add_white_image(cube)
         src.add_cube(cube, 'MUSE_CUBE')
+        src.add_image(maxmap, 'MAXMAP')
         
         # Lines of this group
         wave_pix = E['z']
@@ -1756,11 +1734,12 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename, fw
         # Number of lines in this group
         nb_lines = E['nb_lines'][0]
         for j in range(nb_lines):
-            ksel = np.where(Cat_est_line_raw[E['num_line'][j]] != 0)
+            sp_est = Cat_est_line[E['num_line'][j]]
+            ksel = np.where(sp_est.data.data != 0)
             z1 = ksel[0][0]
             z2 = ksel[0][-1]+1
             # Estimated line
-            sp = Cat_est_line_raw[E['num_line'][j]][z1:z2]
+            sp = sp_est[z1:z2]
             # Wavelength in angstrom of estimated line
             #wave_ang = wave.coord(ksel[0], unit=u.angstrom)
             # T_GLR centered around this line
@@ -1774,7 +1753,6 @@ def Construct_Object_Catalogue(Cat, Cat_est_line_raw, correl, wave, filename, fw
             vals = [w, profil_FWHM, flux, GLR[j], pvalC[j], pvalS[j],
                     pvalF[j], T1[j], T2[j], profile_num]
             src.add_line(cols, vals, units, desc, fmt)
-            sp = Spectrum(wave=wave[z1:z2], data=sp)
             src.spectra['LINE{:04d}'.format(j+1)] = sp
             sp = Spectrum(wave=wave[z1:z2], data=c)
             src.spectra['CORR{:04d}'.format(j+1)] = sp

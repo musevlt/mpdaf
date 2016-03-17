@@ -35,7 +35,7 @@ Specifically, an ORIGIN object O consist of:
 +-----------------+-----------------------------------------------+
 | O.cube_raw      | Raw data                                      |
 +-----------------+-----------------------------------------------+
-| O.sigma         | Covariance                                    |
+| O.var           | Variance                                      |
 +-----------------+-----------------------------------------------+
 | O.Nx            | Number of columns                             |
 +-----------------+-----------------------------------------------+
@@ -270,13 +270,14 @@ creates a list of :class:`mpdaf.sdetect.Source` objects::
  >>> sources = my_origin.get_sources(Cat4, Cat_est_line, correl)
  
 A source corresponds to a group on detected emission lines and contains:
-- the spatial position in world coordinates,
-- the estimated spectrum of each detected emission line,
-- the spectrum of correlation of each detected emission line,
-- the observed wavelength of each detected emission line,
-- P-values of GLR test statistics for each detected emission line,
-- narrow band test values for each detected emission line,
-- the corresponding index of the profile.
+ - the spatial position in world coordinates,
+ - the 2D map of maximum of the T_GLR values (*MAXMAP*),
+ - the estimated spectrum of each detected emission line (*LINExxxx*),
+ - the spectrum of correlation of each detected emission line (*CORRxxxx*),
+ - the observed wavelength of each detected emission line,
+ - P-values of GLR test statistics for each detected emission line,
+ - narrow band test values for each detected emission line,
+ - the corresponding index of the profile.
  
 For example, the first source of the list::
 
@@ -290,12 +291,12 @@ For example, the first source of the list::
  [INFO] X       =                 41.0 / x position in pixel u.pix %d                   
  [INFO] Y       =    68.93860664672712 / y position in pixel u.pix %d                   
 
- [INFO] spectra['LINE0006'],21 elements (8656.25-8681.25 A) .data  
- [INFO] spectra['LINE0004'],21 elements (7917.50-7942.50 A) .data  
- [INFO] spectra['LINE0005'],25 elements (8177.50-8207.50 A) .data  
- [INFO] spectra['LINE0002'],29 elements (7431.25-7466.25 A) .data  
- [INFO] spectra['LINE0003'],21 elements (7755.00-7780.00 A) .data  
- [INFO] spectra['LINE0001'],17 elements (8816.25-8836.25 A) .data  
+ [INFO] spectra['LINE0006'],21 elements (8656.25-8681.25 A) .data .var 
+ [INFO] spectra['LINE0004'],21 elements (7917.50-7942.50 A) .data .var 
+ [INFO] spectra['LINE0005'],25 elements (8177.50-8207.50 A) .data .var 
+ [INFO] spectra['LINE0002'],29 elements (7431.25-7466.25 A) .data .var 
+ [INFO] spectra['LINE0003'],21 elements (7755.00-7780.00 A) .data .var 
+ [INFO] spectra['LINE0001'],17 elements (8816.25-8836.25 A) .data .var 
  [INFO] spectra['CORR0002'],29 elements (7431.25-7466.25 A) .data  
  [INFO] spectra['CORR0003'],21 elements (7755.00-7780.00 A) .data  
  [INFO] spectra['CORR0001'],17 elements (8816.25-8836.25 A) .data  
@@ -309,6 +310,7 @@ For example, the first source of the list::
  [INFO] images['NB_LINE0003'] 25 X 25 .data .var rot=-0.0 deg
  [INFO] images['NB_LINE0001'] 25 X 25 .data .var rot=-0.0 deg
  [INFO] images['MUSE_WHITE'] 25 X 25 .data .var rot=-0.0 deg
+ [INFO] images['MAXMAP'] 24 X 25 .data  rot=-0.0 deg
  [INFO] cubes['MUSE_CUBE'] 3681 X 25 X 25 .data .var rot=-0.0 deg
 
  [INFO] lines
@@ -321,3 +323,4 @@ For example, the first source of the list::
  [INFO]  7930.00     3.16          47.5 13.3 1.4e-13 9.1e-01 7.6e-14 -7.7  4.0    1
  [INFO]  8192.50     3.82         -12.3 19.1 1.2e-94 2.9e-01 2.1e-94 -2.2 10.5    2
  [INFO]  8668.75     3.16          75.8 14.5 5.6e-16 9.1e-01 3.0e-16 14.1 30.6    1
+

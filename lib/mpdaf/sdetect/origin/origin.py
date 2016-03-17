@@ -50,7 +50,7 @@ class ORIGIN(object):
                     Cube FITS file name.
         cube_raw  : array (Nz, Ny, Nx)
                     Raw data.
-        sigma     : array (Nz, Ny, Nx)
+        var     : array (Nz, Ny, Nx)
                     Covariance.
         Nx        : integer
                     Number of columns
@@ -119,7 +119,7 @@ class ORIGIN(object):
                       Maximum limits along the y-axis in pixel
                       of the data cube taken to compute p-values
         profiles    : array (Size_profile, N_profile)
-                      Dictionary of spectral profiles to test
+                      Dictionary of spectral profiles
                       If None, a default dictionary of 20 profiles is used.
         FWHM_profiles : array (N_profile)
                         FWHM of the profiles in pixels.
@@ -139,8 +139,8 @@ class ORIGIN(object):
         # Raw data cube
         # Set to 0 the Nan
         self.cube_raw = cub.data.filled(fill_value=0)
-        # Covariance Sigma
-        self.sigma = cub.var
+        # variance
+        self.var = cub.var
         # RA-DEC coordinates
         self.wcs = cub.wcs
         # spectral coordinates
@@ -152,7 +152,7 @@ class ORIGIN(object):
         del cub
 
         # Set to Inf the Nana
-        self.sigma[np.isnan(self.sigma)] = np.inf
+        self.var[np.isnan(self.var)] = np.inf
 
         self.NbSubcube = NbSubcube
         
@@ -238,7 +238,7 @@ class ORIGIN(object):
                      (representing the continuum)
         """
         # Weigthed data cube
-        cube_std = self.cube_raw / np.sqrt(self.sigma)
+        cube_std = self.cube_raw / np.sqrt(self.var)
         # Compute PCA results
         self._logger.info('ORIGIN - Compute the PCA on each zone')
         A, V, eig_val, nx, ny, nz = Compute_PCA_SubCube(self.NbSubcube,
@@ -291,7 +291,7 @@ class ORIGIN(object):
         """
         # TGLR computing (normalized correlations)
         self._logger.info('ORIGIN - Compute the GLR test')
-        correl, profile = Correlation_GLR_test(cube_faint.data.data, self.sigma,
+        correl, profile = Correlation_GLR_test(cube_faint.data.data, self.var,
                                                self.PSF, self.profiles)
         correl = Cube(data=correl, wave=self.wave, wcs=self.wcs,
                           mask=np.ma.nomask)
@@ -502,7 +502,7 @@ class ORIGIN(object):
         """ 
         self._logger.info('ORIGIN - Lines estimation')
         Cat2_T, Cat_est_line_raw_T, Cat_est_line_std_T = \
-        Estimation_Line(Cat1_T, profile.data.data, self.Nx, self.Ny, self.Nz, self.sigma, cube_faint.data.data,
+        Estimation_Line(Cat1_T, profile.data.data, self.Nx, self.Ny, self.Nz, self.var, cube_faint.data.data,
                     grid_dxy, grid_dz, self.PSF, self.profiles)
         Cat_est_line = []
         for data, var in zip(Cat_est_line_raw_T, Cat_est_line_std_T):
@@ -593,8 +593,7 @@ class ORIGIN(object):
     
         # list of source objects
         self._logger.info('ORIGIN - Create the list of sources')
-        Cat_est_line_raw = [spe.data.data for spe in Cat_est_line]
-        sources = Construct_Object_Catalogue(CatF_radec, Cat_est_line_raw,
+        sources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
                                          correl.data.data, self.wave,
                                          os.path.basename(self.filename),
                                          self.FWHM_profiles)
