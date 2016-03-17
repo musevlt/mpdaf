@@ -147,42 +147,6 @@ class Spectrum(DataArray):
     def resize(self):
         return self.crop()
 
-    def crop(self):
-        """Remove any completely masked margins from each end of the spectrum.
-
-        Returns
-        -------
-        out  :  slice
-            The slice that was used to extract the returned spectrum.
-        """
-
-        if self.data is None or np.ma.count_masked(self.data) == 0:
-            return
-
-        # Get the indexes of all unmasked pixels.
-
-        ksel = np.where(~self.data.mask)[0]
-
-        # Make a slice between the first and last unmasked pixel.
-
-        item = slice(ksel[0], ksel[-1] + 1, None)
-
-        # Select the sub-array indicated by the slice.
-
-        self.data = self.data[item]
-        if self.var is not None:
-            self.var = self.var[item]
-
-        # Adjust the wavelength coordinates to match the spectral slice.
-
-        try:
-            self.wave = self.wave[item]
-        except:
-            self.wave = None
-            self._logger.warning("wavelength solution not copied")
-
-        return item
-
     def __add__(self, other):
         """Operator +.
 

@@ -264,57 +264,6 @@ class Image(DataArray):
     def resize(self):
         return self.crop()
 
-    def crop(self):
-        """Crops the image to remove any margins that are completely masked.
-
-        Returns
-        -------
-        out  :  (slice,slice)
-            The slices that were used to extract the returned sub-image.
-        """
-
-        if self.data is not None:
-
-            # How many columns and rows are there in the image?
-
-            nrow, ncol = self.data.shape
-
-            # Get the indexes of rows with at least one unmasked pixel.
-
-            used_rows = np.where(np.ma.count_masked(self.data,1) < ncol)[0]
-
-            # Get the indexes of columns with at least one unmasked pixel.
-
-            used_cols = np.where(np.ma.count_masked(self.data,0) < nrow)[0]
-
-            # Create a 2D slice that encloses all used rows and
-            # columns. If there are no umasked elements, then arrange
-            # to keep the first masked element, so that we are always
-            # left with valid 2D array.
-
-            if len(used_rows) > 0 and len(used_cols) > 0:
-                item = (slice(min(used_rows), max(used_rows) + 1, None),
-                        slice(min(used_cols), max(used_cols) + 1, None))
-            else:
-                item = (slice(0,1,None),slice(0,1,None))
-
-            # Extract the above 2D slice.
-
-            self.data = self.data[item]
-            if self.var is not None:
-                self.var = self.var[item]
-
-            # Shift the reference pixel of the world coordinate information
-            # to account for any change to the array indexes.
-
-            try:
-                self.wcs = self.wcs[item[0], item[1]]
-            except:
-                self.wcs = None
-                self._logger.warning("Wcs not copied")
-
-            return item
-
     def __add__(self, other):
         """Operator +.
 
@@ -3101,7 +3050,7 @@ class Image(DataArray):
         # successive groups of 'factor[0] x factor[1]' pixels. Note
         # that the following uses np.ma.mean(), which takes account of
         # masked pixels.
-        
+
         if self.var is not None:
             var = self.masked_var.copy()
 
@@ -3561,7 +3510,7 @@ class Image(DataArray):
             var = affine_transform(image.var, new2old, offset.flatten(),
                                    output_shape=newdim, order=order,
                                    prefilter=order >= 3)
-            
+
         else:
             var = None
 
@@ -3689,7 +3638,6 @@ class Image(DataArray):
         self.regrid(other.shape, centersky, centerpix,
                     other.wcs.get_axis_increments(unit=u.deg),
                     flux, unit_inc=u.deg, copy=False)
-
 
     def align_with_image(self, other, flux=False, copy=True):
         """Resample the image to give it the same orientation, position,
@@ -3912,7 +3860,6 @@ class Image(DataArray):
                                 mask=self.data.mask)
         if self.var is not None:
             self.var = ndi.gaussian_filter(self.var, sigma)
-            
 
     def gaussian_filter(self, sigma=3, interp='no'):
         """Return an image containing Gaussian filter applied to the current

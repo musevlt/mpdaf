@@ -174,8 +174,9 @@ class DataArray(object):
                 elif 'SCI' in hdulist:
                     self._data_ext = 'SCI'
                 else:   # Use primary data array if no DATA or SCI extension
-                    raise IOError('no DATA or SCI extension\n',
-                                  ' Please use ext parameter to open others extensions.')
+                    raise IOError('No DATA or SCI extension found.\n'
+                                  'Please use the `ext` parameter to specify '
+                                  'which extension must be loaded.')
 
                 if 'STAT' in hdulist:
                     self._var_ext = 'STAT'
@@ -871,3 +872,70 @@ class DataArray(object):
 
         """
         self.data[ksel] = np.ma.masked
+
+    def crop(self):
+        """Reduce the size of the array to the smallest sub-array that
+        keeps all unmasked pixels.
+
+        This removes any margins around the array that only contain masked
+        pixels. If all pixels are masked in the input cube, the data and
+        variance arrays are deleted.
+
+        Returns
+        -------
+        item : list of slices
+            The slices that were used to extract the sub-array.
+
+        """
+        if self.data is None:
+            return
+
+        nmasked = ma.count_masked(self.data)
+        if nmasked == 0:
+            return
+        elif nmasked == np.prod(self.shape):
+            # If all pixels are masked, simply delete data and variance
+            self._data = None
+            self._var = None
+            return
+
+        # Determine the ranges of indexes along each axis that encompass all of
+        # the unmasked pixels, and convert this to slice prescriptions for
+        # selecting the corresponding sub-array.
+        dimensions = list(range(self.ndim))
+        item = []
+        for dim in dimensions:
+            other_dims = dimensions[:]
+            other_dims.remove(dim)
+            mask = np.apply_over_axes(np.logical_and.reduce, self.data.mask,
+                                      other_dims).ravel()
+            ksel = np.where(~mask)[0]
+            item.append(slice(ksel[0], ksel[-1] + 1, None))
+
+        self.data = self.data[item]
+
+        if self.var is not None:
+            self.var = self.var[item]
+
+        # Adjust the world-coordinates to match the image slice.
+        if self._has_wcs:
+            try:
+                if self.ndim == 2:
+                    self.wcs = self.wcs[item]
+                else:
+                    self.wcs = self.wcs[item[1:]]
+            except:
+                self.wcs = None
+                self._logger.warning('wcs not copied, attribute set to None',
+                                     exc_info=True)
+
+        # Adjust the wavelength coordinates to match the spectral slice.
+        if self._has_wave:
+            try:
+                self.wave = self.wave[item[0]]
+            except:
+                self.wave = None
+                self._logger.warning('wavelength solution not copied: '
+                                     'attribute set to None', exc_info=True)
+
+        return item
