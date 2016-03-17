@@ -82,7 +82,7 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
     data = np.asarray(data)
     if var is not None:
         var = np.asarray(var)
-    if mask is  not None:
+    if mask is not None:
         mask = np.asarray(mask, dtype=bool)
 
     # Determine a shape for the data and var arrays. This is either a
@@ -127,7 +127,7 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
     # Don't create a mask array?
 
     if mask is None:
-        pass
+        mask = np.zeros(shape, dtype=bool)
 
     # Create a variance array filled with a scalar value?
 
@@ -155,7 +155,7 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
     # Create the image.
 
     return Image(data=data, var=var, mask=mask, wcs=wcs, unit=unit,
-                 copy=docopy)
+                 copy=docopy, dtype=None)
 
 
 def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
@@ -217,7 +217,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
         var = np.asarray(var)
     if mask is not None:
         mask = np.asarray(mask, dtype=bool)
-        
+
     # Determine a shape for the data and var arrays. This is either a
     # specified shape, the shape of a specified data or var array, or
     # the default shape.
@@ -275,7 +275,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
     # Don't create a mask array?
 
     if mask is None:
-        pass
+        mask = np.zeros(shape, dtype=bool)
 
     # Create a variance array filled with a scalar value?
 
@@ -306,7 +306,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
     # Create the spectrum.
 
     return Spectrum(data=data, var=var, mask=mask, wave=wave,
-                    unit=unit, copy=docopy)
+                    unit=unit, copy=docopy, dtype=None)
 
 
 def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
@@ -403,7 +403,7 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
     # Don't create a mask array?
 
     if mask is None:
-        pass
+        mask = np.zeros(shape, dtype=bool)
 
     # Create a variance array filled with a scalar value?
 
@@ -438,4 +438,4 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
     # Create the cube.
 
     return Cube(data=data, var=var, mask=mask, wave=wave, wcs=wcs, unit=unit,
-                copy=docopy)
+                copy=docopy, dtype=None)
