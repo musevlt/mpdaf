@@ -188,8 +188,8 @@ def wcs_from_header(hdr, naxis=None):
     # WCS object from data header
     return pywcs.WCS(hdr, naxis=naxis)
 
-def image_angle_from_cd(cd, unit=u.deg):
 
+def image_angle_from_cd(cd, unit=u.deg):
     """Return the rotation angle of the image, defined such that a
     rotation angle of zero aligns north along the positive Y axis, and
     a positive rotation angle rotates north away from the Y axis, in
@@ -238,12 +238,13 @@ def image_angle_from_cd(cd, unit=u.deg):
     # calculating the angle of this vector to the Y axis of
     # the image array.
 
-    north = np.arctan2(-cd[0,1] * step[1] / cddet,
-                        cd[0,0] * step[0] / cddet)
+    north = np.arctan2(-cd[0, 1] * step[1] / cddet,
+                       cd[0, 0] * step[0] / cddet)
 
     # Return the angle with the specified units.
 
     return (north * u.rad).to(unit).value
+
 
 def axis_increments_from_cd(cd):
     """Return the angular increments of pixels along the Y and X axes
@@ -312,8 +313,8 @@ def axis_increments_from_cd(cd):
     #
     # Calculate the width and height of the pixels as described above.
 
-    dx = np.sqrt(cd[0,0]**2 + cd[1,0]**2)
-    dy = np.sqrt(cd[0,1]**2 + cd[1,1]**2)
+    dx = np.sqrt(cd[0, 0]**2 + cd[1, 0]**2)
+    dy = np.sqrt(cd[0, 1]**2 + cd[1, 1]**2)
 
     # To decide what sign to give the step in X, we need to know
     # whether east is clockwise or anticlockwise of north when the
@@ -330,16 +331,16 @@ def axis_increments_from_cd(cd):
     # Calculate the rotation angle of a unit northward vector
     # clockwise of the Y axis.
 
-    north = np.arctan2(-cd[0,1]/cddet, cd[0,0]/cddet)
+    north = np.arctan2(-cd[0, 1] / cddet, cd[0, 0] / cddet)
 
     # Calculate the rotation angle of a unit eastward vector
     # clockwise of the Y axis.
 
-    east = np.arctan2(cd[1,1]/cddet, -cd[1,0]/cddet)
+    east = np.arctan2(cd[1, 1] / cddet, -cd[1, 0] / cddet)
 
     # Wrap the difference east-north into the range -pi to pi radians.
 
-    delta = Angle((east - north) * u.rad).wrap_at(np.pi*u.rad).value
+    delta = Angle((east - north) * u.rad).wrap_at(np.pi * u.rad).value
 
     # If east is anticlockwise of north make the X-axis pixel increment
     # negative.
@@ -350,6 +351,7 @@ def axis_increments_from_cd(cd):
     # Return the axis increments in python array-indexing order.
 
     return np.array([dy, dx])
+
 
 class WCS(object):
 
@@ -553,7 +555,7 @@ class WCS(object):
                 cos_rho = np.cos(rho)
                 self.set_cd(np.array([
                     [cdelt[1] * cos_rho, -cdelt[0] * sin_rho],
-                    [cdelt[1] * sin_rho,  cdelt[0] * cos_rho]]))
+                    [cdelt[1] * sin_rho, cdelt[0] * cos_rho]]))
 
             # Update the wcs object to accomodate the new value of
             # the CD matrix.
@@ -604,21 +606,23 @@ class WCS(object):
                 dy, dx, self.get_rot())
 
     def to_header(self):
-        """Generate an astropy.fits header object containing the WCS information."""
+        """Generate an astropy.fits header object containing the WCS
+        information.
+        """
         has_cd = self.wcs.wcs.has_cd()
         hdr = self.wcs.to_header()
         if has_cd:
-            for ci in range(1,3):
-                cdelt =  hdr.pop('CDELT%i'%ci, 1)
-                for cj in range(1,3):
+            for ci in range(1, 3):
+                cdelt = hdr.pop('CDELT%i' % ci, 1)
+                for cj in range(1, 3):
                     try:
-                        val = cdelt * hdr.pop('PC%i_%i'%(ci, cj))
+                        val = cdelt * hdr.pop('PC%i_%i' % (ci, cj))
                     except KeyError:
-                        if ci==cj:
+                        if ci == cj:
                             val = cdelt
                         else:
                             val = 0.
-                    hdr['CD%i_%i'%(ci, cj)] = val
+                    hdr['CD%i_%i' % (ci, cj)] = val
         return hdr
 
     def sky2pix(self, x, nearest=False, unit=None):
@@ -756,125 +760,100 @@ class WCS(object):
     def __getitem__(self, item):
         """Return a WCS object of a 2D slice"""
 
-        # The caller is expected to have specified a 2D slice,
-        # so there should be a tuple of two items.
+        if not isinstance(item, (tuple, list)) or len(item) != 2:
+            raise ValueError('Invalid index, a 2D slice is expected')
 
-        if isinstance(item, tuple) and len(item) == 2:
+        # See if a slice object was sent for the X axis.
+        if isinstance(item[1], slice):
+            # If a start index was provided, limit it to the extent of
+            # the x-axis. If no start index was provided, default to
+            # zero.
+            if item[1].start is None:
+                imin = 0
+            else:
+                imin = int(item[1].start)
+                if imin < 0:
+                    imin = self.naxis1 + imin
+                if imin > self.naxis1:
+                    imin = self.naxis1
 
-            # See if a slice object was sent for the X axis.
-
-            if isinstance(item[1], slice):
-
-                # If a start index was provided, limit it to the extent of
-                # the x-axis. If no start index was provided, default to
-                # zero.
-
-                if item[1].start is None:
-                    imin = 0
-                else:
-                    imin = int(item[1].start)
-                    if imin < 0:
-                        imin = self.naxis1 + imin
-                    if imin > self.naxis1:
-                        imin = self.naxis1
-
-                # If a stop index was provided, limit it to the extent of the
-                # X axis. Otherwise substitute the size of the X-axis.
-
-                if item[1].stop is None:
+            # If a stop index was provided, limit it to the extent of the
+            # X axis. Otherwise substitute the size of the X-axis.
+            if item[1].stop is None:
+                imax = self.naxis1
+            else:
+                imax = int(item[1].stop)
+                if imax < 0:
+                    imax = self.naxis1 + imax
+                if imax > self.naxis1:
                     imax = self.naxis1
-                else:
-                    imax = int(item[1].stop)
-                    if imax < 0:
-                        imax = self.naxis1 + imax
-                    if imax > self.naxis1:
-                        imax = self.naxis1
 
-                # If a step was provided and it isn't 1, complain
-                # because we can't accomodate gaps between pixels.
+            # If a step was provided and it isn't 1, complain
+            # because we can't accomodate gaps between pixels.
+            if item[1].step is not None and item[1].step != 1:
+                raise ValueError('Index steps are not supported')
 
-                if item[1].step is not None and item[1].step != 1:
-                    raise ValueError('Index steps are not supported')
-
+        else:
             # If a slice object wasn't sent, then maybe a single index
             # was passed for the X axis. If so, select the specified
             # single pixel.
+            imin = int(item[1])
+            imax = int(item[1] + 1)
 
+        # See if a slice object was sent for the Y axis.
+        if isinstance(item[0], slice):
+            # If a start index was provided, limit it to the extent of
+            # the y-axis. If no start index was provided, default to
+            # zero.
+            if item[0].start is None:
+                jmin = 0
             else:
-                imin = int(item[1])
-                imax = int(item[1] + 1)
+                jmin = int(item[0].start)
+                if jmin < 0:
+                    jmin = self.naxis2 + jmin
+                if jmin > self.naxis2:
+                    jmin = self.naxis2
 
-            # See if a slice object was sent for the Y axis.
+            # If a stop index was provided, limit it to the extent of the
+            # Y axis. Otherwise substitute the size of the Y-axis.
+            if item[0].stop is None:
+                jmax = self.naxis2
+            else:
+                jmax = int(item[0].stop)
+                if jmax < 0:
+                    jmax = self.naxis2 + jmax
+                    if jmax > self.naxis2:
+                        jmax = self.naxis2
 
-            if isinstance(item[0], slice):
+            # If an index step was provided and it isn't 1, reject
+            # the call, because we can't accomodate gaps between selected
+            # pixels.
+            if item[1].step is not None and item[1].step != 1:
+                raise ValueError('Index steps are not supported')
 
-                # If a start index was provided, limit it to the extent of
-                # the y-axis. If no start index was provided, default to
-                # zero.
-
-                if item[0].start is None:
-                    jmin = 0
-                else:
-                    jmin = int(item[0].start)
-                    if jmin < 0:
-                        jmin = self.naxis2 + jmin
-                    if jmin > self.naxis2:
-                        jmin = self.naxis2
-
-                # If a stop index was provided, limit it to the extent of the
-                # Y axis. Otherwise substitute the size of the Y-axis.
-
-                if item[0].stop is None:
-                    jmax = self.naxis2
-                else:
-                    jmax = int(item[0].stop)
-                    if jmax < 0:
-                        jmax = self.naxis2 + jmax
-                        if jmax > self.naxis2:
-                            jmax = self.naxis2
-
-                # If an index step was provided and it isn't 1, reject
-                # the call, because we can't accomodate gaps between selected
-                # pixels.
-
-                if item[1].step is not None and item[1].step != 1:
-                    raise ValueError('Index steps are not supported')
-
+        else:
             # If a slice object wasn't sent, then maybe a single index
             # was passed for the Y axis. If so, select the specified
             # single pixel.
+            jmin = int(item[0])
+            jmax = int(item[0] + 1)
 
-            else:
-                jmin = int(item[0])
-                jmax = int(item[0] + 1)
+        # Compute the array indexes of the coordinate reference
+        # pixel in the sliced array. Note that this can indicate a
+        # pixel outside the slice.
+        crpix = (self.wcs.wcs.crpix[0] - imin, self.wcs.wcs.crpix[1] - jmin)
 
-            # Compute the array indexes of the coordinate reference
-            # pixel in the sliced array. Note that this can indicate a
-            # pixel outside the slice.
+        # Get a copy of the original WCS object.
+        res = self.copy()
 
-            crpix = (self.wcs.wcs.crpix[0] - imin,
-                     self.wcs.wcs.crpix[1] - jmin)
+        # Record the new coordinate reference pixel index and the
+        # reduced dimensions of the selected sub-image.
+        res.wcs.wcs.crpix = np.array(crpix)
+        res.naxis1 = int(imax - imin)
+        res.naxis2 = int(jmax - jmin)
+        res.wcs.wcs.set()
 
-            # Get a copy of the original WCS object.
-
-            res = self.copy()
-
-            # Record the new coordinate reference pixel index and the
-            # reduced dimensions of the selected sub-image.
-
-            res.wcs.wcs.crpix = np.array(crpix)
-            res.naxis1 = int(imax - imin)
-            res.naxis2 = int(jmax - jmin)
-
-            # Recompute the characteristics of the new WCS object.
-
-            res.wcs.wcs.set()
-
-            # Return the sliced WCS object.
-
-            return res
-        else:
-            raise ValueError('Missing 2D slice indexes')
+        return res
 
     def get_step(self, unit=None):
         """Return the angular height and width of a pixel along the
@@ -939,8 +918,8 @@ class WCS(object):
         #
         # Calculate the width and height of the pixels as described above.
 
-        dx = np.sqrt(cd[0,0]**2 + cd[1,0]**2)
-        dy = np.sqrt(cd[0,1]**2 + cd[1,1]**2)
+        dx = np.sqrt(cd[0, 0]**2 + cd[1, 0]**2)
+        dy = np.sqrt(cd[0, 1]**2 + cd[1, 1]**2)
 
         # Place the height and width in an array.
 
@@ -1001,7 +980,6 @@ class WCS(object):
         return increments
 
     def get_range(self, unit=None):
-
         """Return the minimum and maximum right-ascensions and declinations
         in the image array.
 
@@ -1081,7 +1059,6 @@ class WCS(object):
         return np.array([pixsky[0, 0], pixsky[0, 1]])
 
     def get_rot(self, unit=u.deg):
-
         """Return the rotation angle of the image, defined such that a
         rotation angle of zero aligns north along the positive Y axis,
         and a positive rotation angle rotates north away from the Y
@@ -1295,17 +1272,16 @@ class WCS(object):
 
         if self.wcs.wcs.has_pc():      # PC matrix + CDELT
             self.wcs.wcs.pc = cd
-            self.wcs.wcs.cdelt = np.array([1.0,1.0])
+            self.wcs.wcs.cdelt = np.array([1.0, 1.0])
         elif self.wcs.wcs.has_cd():    # CD matrix
             self.wcs.wcs.cd = cd
-        elif self.wcs.wcs.has_crota(): # CROTA + CDELT
+        elif self.wcs.wcs.has_crota():  # CROTA + CDELT
             self.wcs.wcs.crota = image_angle_from_cd(cd, u.deg)
             self.wcs.wcs.cdelt = axis_increments_from_cd(cd, u.deg)[::-1]
 
         self.wcs.wcs.set()
 
     def set_naxis1(self, n):
-
         """Set the dimension of the X-axis of the image.
 
         This sets the dimension of axis 1 of the python data array
@@ -1379,7 +1355,6 @@ class WCS(object):
         self.wcs.wcs.set()
 
     def set_crval1(self, x, unit=None):
-
         """Set the value of the CRVAL1 keyword, which indicates the coordinate
         reference value along the first image axis (eg. right
         ascension).
@@ -1887,7 +1862,7 @@ class WaveCoord(object):
         if unit is not None:
             step = (step * self.unit).to(unit).value
         return step
-    
+
     def set_step(self, x, unit=None):
         """Return the step in wavelength.
 
@@ -1902,7 +1877,7 @@ class WaveCoord(object):
             step = (x * unit).to(self.unit).value
         else:
             step = x
-        
+
         if self.wcs.wcs.has_cd():
             self.wcs.wcs.cd[0][0] = step
         else:
@@ -1971,7 +1946,7 @@ class WaveCoord(object):
             return self.wcs.wcs.crval[0]
         else:
             return (self.wcs.wcs.crval[0] * self.unit).to(unit).value
-        
+
     def set_crval(self, x, unit=None):
         """CRVAL getter (value of the reference pixel on the wavelength axis).
 
