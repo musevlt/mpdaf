@@ -1036,10 +1036,7 @@ class Cube(DataArray):
                 cls = Spectrum
             elif obj.ndim == 2:
                 cls = Image
-            return cls(filename=obj.filename, data=obj.data, unit=obj.unit,
-                       var=obj.var, wcs=obj.wcs, dtype=obj.dtype, copy=False,
-                       wave=obj.wave, primary_header=obj.primary_header,
-                       data_header=obj.data_header)
+            return cls.new_from_obj(obj)
         else:
             return obj
 
@@ -1295,8 +1292,7 @@ class Cube(DataArray):
                     var = var.filled(np.NaN)
                 else:
                     var = None
-            return Image(wcs=self.wcs, unit=self.unit, data=data, var=var,
-                         copy=False)
+            return Image.new_from_obj(self, data=data, var=var)
         elif axis == tuple([1, 2]):
             # return a spectrum
             if weights is None:
@@ -1366,8 +1362,7 @@ class Cube(DataArray):
                        ma.count(self.data, axis) ** 2)
             else:
                 var = None
-            return Image(wcs=self.wcs, unit=self.unit, data=data, var=var,
-                         copy=False)
+            return Image.new_from_obj(self, data=data, var=var)
         elif axis == tuple([1, 2]):
             # return a spectrum
             data = (ma.sum(ma.sum(self.data, axis=1), axis=1) /
@@ -1377,8 +1372,7 @@ class Cube(DataArray):
                     / np.sum(np.sum(~self.data.mask, axis=1), axis=1)**2
             else:
                 var = None
-            return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
-                            copy=False)
+            return Spectrum.new_from_obj(self, data=data, var=var)
         else:
             return None
 
@@ -1411,8 +1405,7 @@ class Cube(DataArray):
                 var = np.ma.median(var, axis).filled(np.NaN)
             else:
                 var = None
-            return Image(wcs=self.wcs, unit=self.unit, data=data, var=var,
-                         copy=False)
+            return Image.new_from_obj(self, data=data, var=var)
         elif axis == (1, 2):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
@@ -2457,7 +2450,7 @@ class Cube(DataArray):
             if ima.var is not None:
                 ima.var += off_im.var
 
-        #add input in header
+        # add input in header
         if unit_wave is None:
             unit = 'pix'
         else:
@@ -2468,13 +2461,13 @@ class Cube(DataArray):
             f = os.path.basename(self.filename)
         add_mpdaf_method_keywords(ima.primary_header,
                                   "cube.get_image",
-                                  ['cube', 'lbda1', 'lbda2', 'is_sum', 'subtract_off',
-                                   'margin', 'fband'],
+                                  ['cube', 'lbda1', 'lbda2', 'is_sum',
+                                   'subtract_off', 'margin', 'fband'],
                                   [f, l1, l2,
                                    is_sum, subtract_off, margin, fband],
                                   ['cube',
-                                   'min wavelength (%s)'%str(unit),
-                                   'max wavelength (%s)'%str(unit),
+                                   'min wavelength (%s)' % str(unit),
+                                   'max wavelength (%s)' % str(unit),
                                    'sum/average',
                                    'subtracting off nearby data',
                                    'off-band margin',
@@ -2593,7 +2586,7 @@ class Cube(DataArray):
         -------
         out : mpdaf.obj.Cube
         """
-        subcub = self.subcube(center, radius*2, unit_center=unit_center,
+        subcub = self.subcube(center, radius * 2, unit_center=unit_center,
                               unit_size=unit_radius)
         if unit_center is None:
             center = np.array(center)
