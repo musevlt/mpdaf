@@ -195,8 +195,9 @@ Bacon, CRAL).
 
 .. warning::
 
-   This is a test version. ``Origin.py`` must be run as script for the moment.
-   It is not installed as a MPDAF package.
+   This is a prototype version.
+   
+   The *FOCUS* class has been removed (forerunner of *ORIGIN*).
 
 
 v1.2 (13/01/2016)
