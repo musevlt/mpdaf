@@ -37,7 +37,6 @@ from __future__ import print_function
 import os
 import subprocess
 import sys
-import shutil
 
 # Bootstrap setuptools if not available
 import ez_setup
@@ -75,16 +74,6 @@ except OSError:
 else:
     print('Found pkg-config {}'.format(out))
     del out
-
-# rm old focus directory
-try:
-    import mpdaf
-    d = mpdaf.__path__[0]+'/sdetect/focus'
-    if os.path.exists(d):
-        shutil.rmtree('build')
-        shutil.rmtree(mpdaf.__path__[0]+'/sdetect/focus')
-except:
-    pass
 
 # Generate version.py
 __version__ = None
