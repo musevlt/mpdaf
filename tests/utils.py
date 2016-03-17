@@ -5,6 +5,8 @@ import numpy as np
 from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum
 from numpy.testing import assert_array_equal
 
+DEFAULT_SHAPE = (10, 6, 5)
+
 
 def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
 
@@ -36,9 +38,91 @@ def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
         assert_array_equal(ima.get_step(), step)
 
 
+def _generate_test_data(data=2.3, var=1.0, mask=None, shape=None, unit=u.ct,
+                        uwave=u.angstrom, wcs=None, wave=None, copy=True,
+                        ndim=None, crpix=2.0, cdelt=3.0, crval=0.5):
+
+    # Determine a shape for the data and var arrays. This is either a
+    # specified shape, the shape of a specified data or var array, or
+    # the default shape.
+
+    if shape is None:
+        if isinstance(data, np.ndarray):
+            shape = data.shape
+            ndim = data.ndim
+        elif isinstance(var, np.ndarray):
+            shape = var.shape
+            ndim = var.ndim
+        elif isinstance(mask, np.ndarray):
+            shape = mask.shape
+            ndim = mask.ndim
+        elif ndim is not None:
+            if ndim == 1:
+                shape = DEFAULT_SHAPE[0]
+            elif ndim == 2:
+                shape = DEFAULT_SHAPE[1:]
+            elif ndim == 3:
+                shape = DEFAULT_SHAPE
+        else:
+            raise ValueError('Missing shape/ndim specification')
+
+    if np.isscalar(shape):
+        shape = (shape,)
+
+    if len(shape) != ndim:
+        raise ValueError('shape does not match the number of dimensions')
+
+    # Convert the data and var arguments to ndarray's
+    if data is None:
+        if ndim == 1:
+            # Special case for spectra ...
+            data = np.arange(shape[0], dtype=np.float)
+            data[0] = 0.5
+    elif np.isscalar(data):
+        data = data * np.ones(shape, dtype=type(data))
+    elif data is not None:
+        data = np.array(data, copy=copy)
+        np.testing.assert_equal(shape, data.shape)
+
+    if np.isscalar(var):
+        var = var * np.ones(shape, dtype=type(var))
+    elif var is not None:
+        var = np.array(var, copy=copy)
+        np.testing.assert_equal(shape, var.shape)
+
+    if mask is None:
+        mask = False
+
+    if not np.isscalar(mask):
+        mask = np.array(mask, copy=copy, dtype=bool)
+        np.testing.assert_equal(shape, mask.shape)
+
+    # Substitute default world-coordinates where not specified.
+    if ndim == 2:
+        wcs = wcs or WCS(crval=(0, 0), crpix=1.0, shape=shape)
+    elif ndim == 3:
+        wcs = wcs or WCS(crval=(0, 0), crpix=1.0, shape=shape[1:])
+
+    # Substitute default wavelength-coordinates where not specified.
+    if ndim in (1, 3):
+        wave = wave or WaveCoord(crpix=crpix, cdelt=cdelt, crval=crval,
+                                 shape=shape[0], cunit=uwave)
+        if wave.shape is None:
+            wave.shape = shape[0]
+
+    if ndim == 1:
+        cls = Spectrum
+    elif ndim == 2:
+        cls = Image
+    elif ndim == 3:
+        cls = Cube
+
+    return cls(data=data, var=var, mask=mask, wave=wave, wcs=wcs,
+               unit=unit, copy=copy, dtype=None)
+
+
 def generate_image(data=2.0, var=1.0, mask=None, shape=None,
                    unit=u.ct, wcs=None, copy=True):
-
     """Generate a simple image for unit tests.
 
     The data array can either be specified explicitly, or its shape
@@ -72,90 +156,8 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
 
     """
 
-    # Ignore the copy argument until we know we've been given arrays.
-
-    docopy = False
-
-    # Convert the data and var arguments to ndarray's so that we
-    # can check their dimensions.
-
-    data = np.asarray(data)
-    if var is not None:
-        var = np.asarray(var)
-    if mask is not None:
-        mask = np.asarray(mask, dtype=bool)
-
-    # Determine a shape for the data and var arrays. This is either a
-    # specified shape, the shape of a specified data or var array, or
-    # the default shape.
-
-    shape = (shape or
-             (data.shape if data.ndim > 0 else None) or
-             (var.shape if var is not None and var.ndim > 0 else None) or
-             (mask.shape if mask is not None and mask.ndim > 0 else None) or
-             (6, 5))
-
-    # Check the shape denotes a image with at least 1 element.
-
-    if len(shape) != 2:
-        raise ValueError('The image must have 2 dimensions.')
-    elif np.prod(shape) < 1:
-        raise ValueError('The image must have at least one pixel.')
-
-    # Create data and var arrays from scalar values where specified.
-
-    if data.ndim == 0:
-        data = data * np.ones(shape)
-    else:
-        docopy = copy
-
-    # Don't create a variance array?
-
-    if var is None:
-        pass
-
-    # Create a variance array filled with a scalar value?
-
-    elif var.ndim == 0:
-        var = var * np.ones(shape)
-
-    # Use a specified variance array, and heed the caller's copy argument.
-
-    else:
-        docopy = copy
-
-    # Don't create a mask array?
-
-    if mask is None:
-        mask = np.zeros(shape, dtype=bool)
-
-    # Create a variance array filled with a scalar value?
-
-    elif mask.ndim == 0:
-        mask = np.logical_and(np.ones(shape), mask)
-
-    # Use a specified mask array, and heed the caller's copy argument.
-
-    else:
-        docopy = copy
-
-    # Check that the shapes of the data and var arguments are consistent.
-
-    if not np.array_equal(shape, data.shape):
-        raise ValueError('Mismatch between shape and data arguments.')
-    elif var is not None and not np.array_equal(shape, var.shape):
-        raise ValueError('Mismatch between shape and var arguments.')
-    elif mask is not None and not np.array_equal(shape, mask.shape):
-        raise ValueError('Mismatch between shape and mask arguments.')
-
-    # Substitute default world-coordinates where not specified.
-
-    wcs = wcs or WCS(crval=(0, 0), crpix=1.0, shape=shape)
-
-    # Create the image.
-
-    return Image(data=data, var=var, mask=mask, wcs=wcs, unit=unit,
-                 copy=docopy, dtype=None)
+    return _generate_test_data(data=data, var=var, mask=mask, shape=shape,
+                               unit=unit, wcs=wcs, copy=copy, ndim=2)
 
 
 def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
@@ -203,110 +205,9 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
         If true (default), the data, variance and mask arrays are copied.
 
     """
-
-    # Ignore the copy argument until we know we've been given arrays.
-
-    docopy = False
-
-    # Convert the data and var arguments to ndarray's so that we
-    # can check their dimensions.
-
-    if data is not None:
-        data = np.asarray(data)
-    if var is not None:
-        var = np.asarray(var)
-    if mask is not None:
-        mask = np.asarray(mask, dtype=bool)
-
-    # Determine a shape for the data and var arrays. This is either a
-    # specified shape, the shape of a specified data or var array, or
-    # the default shape.
-
-    shape = (shape or
-             (data.shape if data is not None and data.ndim > 0 else None) or
-             (var.shape if var is not None and var.ndim > 0 else None) or
-             (mask.shape if mask is not None and mask.ndim > 0 else None) or
-             10)
-
-    # To allow comparison with numpy.ndarray shapes, force shape to have
-    # at least one dimension.
-
-    if np.asarray(shape).ndim == 0:
-        shape = (shape,)
-
-    # Check the shape denotes a spectrum with at least 1 element.
-
-    if len(shape) > 1:
-        raise ValueError('The spectrum must have 1 dimension.')
-    elif np.prod(shape) < 1:
-        raise ValueError('The spectrum must have at least one pixel.')
-
-    # Substitute a default data array?
-
-    if data is None:
-        data = np.arange(shape[0], dtype=np.float)
-        data[0] = 0.5
-
-    # Create a data array filled with a scalar value?
-
-    elif data.ndim == 0:
-        data = data * np.ones(shape)
-
-    # Use a specified data array, and heed the caller's copy argument.
-
-    else:
-        docopy = copy
-
-    # Don't create a variance array?
-
-    if var is None:
-        pass
-
-    # Create a variance array filled with a scalar value?
-
-    elif var.ndim == 0:
-        var = var * np.ones(shape)
-
-    # Use a specified variance array, and heed the caller's copy argument.
-
-    else:
-        docopy = copy
-
-    # Don't create a mask array?
-
-    if mask is None:
-        mask = np.zeros(shape, dtype=bool)
-
-    # Create a variance array filled with a scalar value?
-
-    elif mask.ndim == 0:
-        mask = np.logical_and(np.ones(shape), mask)
-
-    # Use a specified mask array, and heed the caller's copy argument.
-
-    else:
-        docopy = copy
-
-    # Check that the shapes of the data and var arguments are consistent.
-
-    if not np.array_equal(shape, data.shape):
-        raise ValueError('Mismatch between shape and data arguments.')
-    elif var is not None and not np.array_equal(shape, var.shape):
-        raise ValueError('Mismatch between shape and var arguments.')
-    elif mask is not None and not np.array_equal(shape, mask.shape):
-        raise ValueError('Mismatch between shape and mask arguments.')
-
-    # Determine the wavelength coordinates.
-
-    wave = wave or WaveCoord(crpix=crpix, cdelt=cdelt, crval=crval,
-                             shape=shape[0], cunit=uwave)
-    if wave.shape is None:
-        wave.shape = shape[0]
-
-    # Create the spectrum.
-
-    return Spectrum(data=data, var=var, mask=mask, wave=wave,
-                    unit=unit, copy=docopy, dtype=None)
+    return _generate_test_data(data=data, var=var, mask=mask, shape=shape,
+                               uwave=uwave, wave=wave, copy=copy, ndim=1,
+                               crpix=crpix, cdelt=cdelt, crval=crval)
 
 
 def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
@@ -347,95 +248,6 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
         If true (default), the data, variance and mask arrays are copied.
 
     """
-
-    # Ignore the copy argument until we know we've been given arrays.
-
-    docopy = False
-
-    # Convert the data and var arguments to ndarray's so that we
-    # can check their dimensions.
-
-    data = np.asarray(data)
-    if var is not None:
-        var = np.asarray(var)
-    if mask is not None:
-        mask = np.asarray(mask, dtype=bool)
-
-    # Determine a shape for the data and var arrays. This is either a
-    # specified shape, the shape of a specified data or var array, or
-    # the default shape.
-
-    shape = (shape or
-             (data.shape if data.ndim > 0 else None) or
-             (var.shape if var is not None and var.ndim > 0 else None) or
-             (mask.shape if mask is not None and mask.ndim > 0 else None) or
-             (10, 6, 5))
-
-    # Check the shape denotes a cube with at least 1 element.
-
-    if len(shape) != 3:
-        raise ValueError('The cube must have 3 dimensions.')
-    elif np.prod(shape) < 1:
-        raise ValueError('The cube must have at least one pixel.')
-
-    # Create data and var arrays from scalar values where specified.
-
-    if data.ndim == 0:
-        data = data * np.ones(shape)
-    else:
-        docopy = copy
-
-    # Don't create a variance array?
-
-    if var is None:
-        pass
-
-    # Create a variance array filled with a scalar value?
-
-    elif var.ndim == 0:
-        var = var * np.ones(shape)
-
-    # Use a specified variance array, and heed the caller's copy argument.
-
-    else:
-        docopy = copy
-
-    # Don't create a mask array?
-
-    if mask is None:
-        mask = np.zeros(shape, dtype=bool)
-
-    # Create a variance array filled with a scalar value?
-
-    elif mask.ndim == 0:
-        mask = np.logical_and(np.ones(shape), mask)
-
-    # Use a specified mask array, and heed the caller's copy argument.
-
-    else:
-        docopy = copy
-
-    # Check that the shapes of the data, var and mask arguments are consistent.
-
-    if not np.array_equal(shape, data.shape):
-        raise ValueError('Mismatch between shape and data arguments.')
-    elif var is not None and not np.array_equal(shape, var.shape):
-        raise ValueError('Mismatch between shape and var arguments.')
-    elif mask is not None and not np.array_equal(shape, mask.shape):
-        raise ValueError('Mismatch between shape and mask arguments.')
-
-    # Substitute default world-coordinates where not specified.
-
-    wcs = wcs or WCS(crval=(0, 0), crpix=1.0, shape=shape[1:])
-
-    # Substitute default wavelength-coordinates where not specified.
-
-    wave = wave or WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, shape=shape[0],
-                             cunit=uwave)
-    if wave.shape is None:
-        wave.shape = shape[0]
-
-    # Create the cube.
-
-    return Cube(data=data, var=var, mask=mask, wave=wave, wcs=wcs, unit=unit,
-                copy=docopy, dtype=None)
+    return _generate_test_data(data=data, var=var, mask=mask, shape=shape,
+                               unit=unit, uwave=uwave, wcs=wcs, wave=wave,
+                               copy=copy, ndim=3)
