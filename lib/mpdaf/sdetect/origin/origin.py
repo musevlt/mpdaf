@@ -46,46 +46,46 @@ class ORIGIN(object):
 
         Attributes
         ----------
-        filename  : string
-                    Cube FITS file name.
-        cube_raw  : array (Nz, Ny, Nx)
-                    Raw data.
-        var     : array (Nz, Ny, Nx)
-                    Covariance.
-        Nx        : integer
-                    Number of columns
-        Ny        : integer
-                    Number of rows
-        Nz        : int
-                    Number of spectral channels
-        wcs       : mpdaf.obj.WCS
-                    RA-DEC coordinates.
-        wave      : mpdaf.obj.WaveCoord
-                    Spectral coordinates.
-        intx      : array
-                    Limits in pixels of the columns for each zone
-        inty      : array
-                    Limits in pixels of the rows for each zone
-        Edge_xmin   : int
-                      Minimum limits along the x-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_xmax   : int
-                      Maximum limits along the x-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_ymin   : int
-                      Minimum limits along the y-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_ymax   : int
-                      Maximum limits along the y-axis in pixel
-                      of the data cube taken to compute p-values
-        profiles  : array
-                    Dictionary of spectral profiles to test
+        filename      : string
+                        Cube FITS file name.
+        cube_raw      : array (Nz, Ny, Nx)
+                        Raw data.
+        var           : array (Nz, Ny, Nx)
+                        Covariance.
+        Nx            : integer
+                        Number of columns
+        Ny            : integer
+                        Number of rows
+        Nz            : int
+                        Number of spectral channels
+        wcs           : mpdaf.obj.WCS
+                        RA-DEC coordinates.
+        wave          : mpdaf.obj.WaveCoord
+                        Spectral coordinates.
+        intx          : array
+                        Limits in pixels of the columns for each zone
+        inty          : array
+                        Limits in pixels of the rows for each zone
+        Edge_xmin     : int
+                        Minimum limits along the x-axis in pixel
+                        of the data cube taken to compute p-values
+        Edge_xmax     : int
+                        Maximum limits along the x-axis in pixel
+                        of the data cube taken to compute p-values
+        Edge_ymin     : int
+                        Minimum limits along the y-axis in pixel
+                        of the data cube taken to compute p-values
+        Edge_ymax     : int
+                        Maximum limits along the y-axis in pixel
+                        of the data cube taken to compute p-values
+        profiles      : array
+                        Dictionary of spectral profiles to test
         FWHM_profiles : array
                         FWHM of the profiles in pixels.
-        PSF       : array (Nz, Nfsf, Nfsf)
-                    MUSE PSF
-        FWHM_PSF  : float
-                    Mean of the fwhm of the PSF in pixel
+        PSF           : array (Nz, Nfsf, Nfsf)
+                        MUSE PSF
+        FWHM_PSF      : float
+                        Mean of the fwhm of the PSF in pixel
     """
 
     def __init__(self, cube, NbSubcube, Edge_xmin=None, Edge_xmax=None,

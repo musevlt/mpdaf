@@ -8,6 +8,7 @@
 import os
 import re
 import sphinx_rtd_theme
+import sys; sys.setrecursionlimit(1500)
 
 # -- General configuration ----------------------------------------------------
 

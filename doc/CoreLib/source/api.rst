@@ -11,11 +11,11 @@ Contents:
    coord
    cube
    data
-   focus
    gauss1d
    gauss2d
    image
    moffat2d
+   origin
    pixtable
    pixtablemask
    psf
