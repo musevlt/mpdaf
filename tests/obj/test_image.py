@@ -8,7 +8,7 @@ from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import assert_almost_equal
 from operator import add, sub, mul, div
 from ..utils import (assert_image_equal, generate_image, generate_cube,
-                     generate_spectrum)
+                     generate_spectrum, assert_masked_allclose)
 import scipy.ndimage as ndi
 
 
@@ -95,11 +95,48 @@ def test_get():
 @attr(speed='fast')
 def test_crop():
     """Image class: testing crop method"""
-    image1 = generate_image(shape=(6, 5), data=2.0, var=0.5, mask=True)
-    image1.data.data[2:4, 1:4] = 8
-    image1.data.mask[2:4, 1:4] = 0
+    # Create an image whose pixels are all masked.
+
+    image1 = generate_image(shape=(9,7), data=2.0, var=0.5, mask=True)
+
+    # Create a masked array of unmasked values to be assigned to the
+    # part of the image, with just a diamond shaped area of pixels
+    # unmasked.
+
+    diamond = np.ma.array(data=[[6.0,   2.0,   9.0],
+                                [1.0,   4.0,   8.0],
+                                [0.0,   5.0,   3.0]],
+                          mask=[[True,  False, True],
+                                [False, False, False],
+                                [True,  False, True]])
+
+    # Assign the above array to part of the image to clear the mask of
+    # an irregular rectangular area of pixels there.
+
+    image1.data[2:5, 1:4] = diamond
+
+    # The following should crop all but the rectangular area that was
+    # assigned above.
+
     image1.crop()
-    assert_image_equal(image1, shape=(2, 3), start=(2, 1), end=(3, 3))
+
+    # Check that the masked data array is as expected.
+
+    assert_masked_allclose(image1.data, diamond)
+
+    # The cropped variance array should look like the following array.
+
+    expected_var = np.ma.array(data=[[0.5, 0.5, 0.5],
+                                     [0.5, 0.5, 0.5],
+                                     [0.5, 0.5, 0.5]], mask=diamond.mask)
+
+    # Check that the masked variance array is as expected.
+
+    assert_masked_allclose(image1.var, expected_var)
+
+    # Check the WCS characteristics of the cropped image.
+
+    assert_image_equal(image1, shape=(3, 3), start=(2, 1), end=(4, 3))
     nose.tools.assert_equal(image1.get_rot(), 0)
 
 
@@ -414,19 +451,17 @@ def test_rebin_mean():
         data=[[6.0, 7.5], [13.5, 15], [0.0, 0.0]],
         mask=[[False, False], [False, False], [True, True]])
     image2 = image1.rebin_mean(2)
-    nose.tools.assert_true(np.ma.allclose(image2.data, expected))
+    assert_masked_allclose(image2.data, expected)
 
     # The variances of the original pixels were all 0.5, so taking the
     # mean of N of these should give the mean a variance of 0.5/N.
     # Given the number of pixels averaged in each of the above means,
     # we thus expect the variance array to look as follows.
 
-#     expected = np.ma.array(data=[[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]],
-#                            mask=[[False,False], [False,False], [True,True]])
-#     nose.tools.assert_true(np.ma.allclose(image2.var, expected))
-    expected = np.array([[0.5, 0.25], [0.25, 0.125], [0.0, 0.0]])
-    nose.tools.assert_true(np.allclose(image2.var, expected))
-
+    expected = np.ma.array(data=[[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]],
+                           mask=[[False,False], [False,False], [True,True]])
+    assert_masked_allclose(image2.var, expected)
+    
     # Check the WCS information.
 
     start = image2.get_start()
