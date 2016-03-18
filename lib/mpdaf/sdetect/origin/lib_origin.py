@@ -1694,7 +1694,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     sources = []
     uflux = u.erg/(u.s * u.cm**2)
     unone = u.dimensionless_unscaled
-    cols = ['LBDA_OBS','FWHM_OBS','FLUX_OBS','GLR','PVALC','PVALS','PVALF',
+    cols = ['LBDA_ORI','FWHM_ORI','FLUX_ORI','GLR','PVALC','PVALS','PVALF',
             'T1','T2','PROF']
     units = [u.Angstrom,u.Angstrom,uflux,unone,unone,unone,unone,unone,unone,
              unone]
