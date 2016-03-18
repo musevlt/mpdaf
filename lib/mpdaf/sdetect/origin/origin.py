@@ -595,8 +595,7 @@ class ORIGIN(object):
         self._logger.info('ORIGIN - Create the list of sources')
         sources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
                                          correl.data.data, self.wave,
-                                         os.path.basename(self.filename),
-                                         self.FWHM_profiles)
+                                         self.filename, self.FWHM_profiles)
         return sources
     
     def plot(self, correl, x, y, circle=False, vmin=0, vmax=30, title=None, ax=None):
