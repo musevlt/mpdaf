@@ -584,7 +584,7 @@ class ORIGIN(object):
 
         Returns
         -------
-        sources : list of mpdaf.sdetect.Source
+        sources : mpdaf.sdetect.SourceList
                   List of sources
         """
         # Add RA-DEC to the catalogue

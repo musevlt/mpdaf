@@ -15,17 +15,15 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path
-from scipy.io import loadmat
 from scipy.ndimage import measurements, morphology
 from scipy import signal, stats, special
 
 from ...obj import Cube, Image, Spectrum
-from ...sdetect import Source
+from ...sdetect import Source, SourceList
 
 from numpy.fft import rfftn, irfftn
 from scipy.signal.signaltools import _next_regular, _centered
 
-import time
 import sys
 
 __version__ = 'ORIGIN_18122015'
@@ -1683,7 +1681,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
 
     Returns
     -------
-    sources : list of mpdaf.sdetect.Source
+    sources : mpdaf.sdetect.SourceList
               List of sources
               
     Date  : Dec, 16 2015
@@ -1691,7 +1689,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     """
     #print 'Construct_Object_Catalogue'
     #t0 = time.time()
-    sources = []
+    sources = SourceList()
     uflux = u.erg/(u.s * u.cm**2)
     unone = u.dimensionless_unscaled
     cols = ['LBDA_ORI','FWHM_ORI','FLUX_ORI','GLR','PVALC','PVALS','PVALF',
@@ -1769,252 +1767,4 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
         sources.append(src)
     #print '    %0.1fs'%(time.time()-t0)
     return sources
-
-
-if __name__ == '__main__':
-    
-    ##########################################
-    # Input parameters                       #
-    ##########################################
-    
-    # Spatial dimension of the FSF
-    PSF_Nfsf = 13
-    PSF_beta = 2.6
-    # fwhm en arcsec
-    PSF_fwhm2 = 0.66
-    PSF_fwhm1 = 0.76
-    # wavelength in angstrom
-    PSF_lambda2 = 7000
-    PSF_lambda1 = 4750
-    
-    # Dictionary of spectral profile
-    Dico =  loadmat('Dico_FWHM_2_12.mat')['Dico']
-    #for i in range(20):
-    #    plt.plot(np.arange(201), Dico[:,i])
-    
-    # name of the MUSE data cube
-    filename = 'minicube.fits'
-    
-    # Number of subcubes for the spatial segmentation
-#    NbSubcube = 4 # HDFS and UDF
-    NbSubcube = 1 # minicube
-    
-    # Edges for PCA and p-values (matlab-1)
-#    Edge_xmin = 12 # HDFS
-#    Edge_xmax = 311 # HDFS
-#    Edge_ymin  = 18 # HDFS
-#    Edge_ymax = 316 # HDFS
-#    Edge_xmin = 6 # UDF
-#    Edge_xmax = 313 # UDF
-#    Edge_ymin  = 5 # UDF
-#    Edge_ymax = 315 # UDF
-    Edge_xmin = 1 # minicube
-    Edge_xmax = 37 # minicube
-    Edge_ymin  = 2 # minicube
-    Edge_ymax = 38 # minicube
-    
-    # Coefficient of determination for projection during PCA
-    r0 = 0.67 # HDFS 0.31c et minicube
-#    r0 = 0.63 # HDFS 1.35
-#    UDF ?
-    
-    # threshold applied on pvalues
-    threshold = 8
-    
-    # Connectivity of contiguous voxels
-    neighboors = 26
-    
-    # Number of the spectral ranges skipped to compute the controle cube
-    nb_ranges = 3
-    
-    # Estimation of each emission line 
-    # =1 is very slow (16h HDFS)
-    grid_dxy  = 0
-    grid_dz = 0
-    
-    
-    ##########################################
-    # Detection                              #
-    ##########################################
-    
-    print 'Read the Data Cube'
-    t0 = time.time()
-    # Read cube
-    cube = Cube(filename)
-    # Raw data cube
-    # Set to 0 the Nan
-    cube_raw = cube.data.filled(fill_value=0)
-    # Covariance Sigma
-    sigma = cube.var
-    # RA-DEC coordinates
-    wcs = cube.wcs
-    # spectral coordinates
-    wave = cube.wave
-    
-    del cube
-
-    # Set to Inf the Nana
-    sigma[np.isnan(sigma)] = np.inf
-    # Weigthed data cube
-    cube_std = cube_raw / np.sqrt(sigma)
-    print '    %0.1fs'%(time.time()-t0)
-
-    #Dimensions
-    Nz = cube_std.shape[0]
-    Ny = cube_std.shape[1]
-    Nx = cube_std.shape[2]
-
-    # Parameters
-    wave0 = wave.get_start(unit=u.angstrom)
-    step_wave = wave.get_step(unit=u.angstrom)
-    # 1 pixel in arcsec 
-    step_arcsec = wcs.get_step(unit=u.arcsec)[0]
-    
-    # PSF
-    PSF_Moffat, fwhm_pix ,fwhm_arcsec = Compute_PSF(wave, Nz,
-                                                    PSF_Nfsf, PSF_beta,
-                                                    PSF_fwhm1, PSF_fwhm2,
-                                                    PSF_lambda1, PSF_lambda2,
-                                                    step_arcsec)
-
-    # Parameters for projection during PCA
-    list_r0  = np.resize(r0, NbSubcube**2)
-    
-    # mean of the fwhm of the FSF in pixel
-    fwhm_fsf = np.mean(fwhm_arcsec)/step_arcsec
-    # Estimated mean for p-values distribution related
-    # to the Rayleigh criterium
-    mean_est = fwhm_fsf**2
-    
-    #Spatial segmentation
-    inty, intx = Spatial_Segmentation(Nx, Ny, NbSubcube)
-
-    # Compute PCA results
-    A, V, eig_val, nx, ny, nz = Compute_PCA_SubCube(NbSubcube, cube_std,
-                                                    intx, inty,
-                                                    Edge_xmin, Edge_xmax,
-                                                    Edge_ymin, Edge_ymax)
-
-    # Number of eigenvectors for each zone
-    # Parameter set to 1 if we want to plot the results
-    plot_lambda = False
-    nbkeep = Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, 
-                                              plot_lambda)
-
-    # Adaptive projection of the cube on the eigenvectors
-    cube_faint, cube_cont = Compute_Proj_Eigenvector_Zone(nbkeep, NbSubcube,
-                                                          Nx, Ny, Nz,
-                                                          A, V, nx, ny, nz,
-                                                          inty, intx)
-
-    # TGLR computing (normalized correlations)
-    correl, profile = Correlation_GLR_test(cube_faint, sigma, PSF_Moffat, Dico)
-
-    # p-values of correlation values
-    cube_pval_correl = Compute_pval_correl_zone(correl, intx, inty, NbSubcube,
-                                                Edge_xmin, Edge_xmax,
-                                                Edge_ymin, Edge_ymax,
-                                                threshold)
-
-    # p-values of spectral channel 
-    cube_pval_channel = Compute_pval_channel_Zone(cube_pval_correl, intx, inty,
-                                                  NbSubcube, mean_est)
-
-    # Final p-values 
-    cube_pval_final = Compute_pval_final(cube_pval_correl, cube_pval_channel,
-                                         threshold)
-                                         
-    # connected voxels 
-    labeled_cube, Ngp = Compute_Connected_Voxel(cube_pval_final, threshold,
-                                                neighboors)
-
-    # Referent pixel 
-    Cat0 = Compute_Referent_Voxel(correl, profile, cube_pval_correl,
-                                  cube_pval_channel, cube_pval_final, Ngp,
-                                  labeled_cube)
-
-    # 2D map : maximum of the T_GLR values over the spectral channels.
-    carte_2D_correl = np.amax(correl, axis=0)
-    carte_2D_correl_ = Image(data=carte_2D_correl, wcs=wcs)
-
-    plt.figure()
-    zpix, ypix, xpix = np.where(labeled_cube!=0)
-    plt.plot(xpix, ypix, 'b+')
-    carte_2D_correl_.plot(vmin=0, vmax=30, title='Catalogue-0-gp-voxel')
-
-    plt.figure()
-    plt.plot(Cat0['x'], Cat0['y'], 'b+')
-    carte_2D_correl_.plot(vmin=0, vmax=30, title='Catalogue-0-ref-voxel')
-
-    # Narrow band tests 
-    # Parameter set to 1 if we want to plot the results and associated folder
-    plot_narrow = False
-
-    Cat1 = Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
-                            plot_narrow, wcs)
-    
-    # Thresholded narrow bands tests
-    thresh_T1 = .2
-    thresh_T2 = 2
-
-    Cat1_T1, Cat1_T2 = Narrow_Band_Threshold(Cat1, thresh_T1, thresh_T2)
-
-    # 2D maps plot
-    plt.figure()
-    plt.plot(Cat1['x'], Cat1['y'], 'b+')
-    carte_2D_correl_.plot(vmin=0, vmax=30, title='Catalogue-1')
-
-    plt.figure()
-    plt.plot(Cat1_T1['x'], Cat1_T1['y'], 'b+')
-    carte_2D_correl_.plot(vmin=0, vmax=30, title='Catalogue-1-T1')
-    
-    plt.figure()
-    plt.plot(Cat1_T2['x'], Cat1_T2['y'], 'b+')
-    carte_2D_correl_.plot(vmin=0, vmax=30, title='Catalogue-1-T2')
-
-    # Estimation of each emission line 
-    # Estimation with the catalogue from the narrow band Test number 2 
-    Cat2_T2, Cat_est_line_raw_T2, Cat_est_line_std_T2 = \
-    Estimation_Line(Cat1_T2, profile, Nx, Ny, Nz, sigma, cube_faint,
-                    grid_dxy, grid_dz, PSF_Moffat, Dico)
-                    
-    # Spatial merging
-    Cat3 =  Spatial_Merging_Circle(Cat2_T2, fwhm_fsf, Nx, Ny)
-
-    # 2D map plot
-    plt.figure()
-    plt.plot(Cat3['x_centroid'], Cat3['y_centroid'], 'k+')
-    for x, y in zip(Cat3['x_circle'], Cat3['y_circle']):
-        circle = plt.Circle((x, y), np.round(fwhm_fsf/2), color='k',
-                            fill=False)
-        plt.gcf().gca().add_artist(circle)
-    carte_2D_correl_.plot(vmin=0, vmax=30, title='Catalogue-3-T2')
-
-    plt.figure()
-    plt.plot(Cat2_T2['x'], Cat2_T2['y'], 'k+')
-    for x, y in zip(Cat3['x_circle'], Cat3['y_circle']):
-        circle = plt.Circle((x, y), np.round(fwhm_fsf/2), color='k',
-                            fill=False)
-        plt.gcf().gca().add_artist(circle)
-    carte_2D_correl_.plot(vmin=0, vmax=30, title='Catalogue-2-T2-circle')
-
-    # Spectral merging
-    Cat4 =  Spectral_Merging(Cat3, Cat_est_line_raw_T2) 
-    
-    plt.figure()
-    plt.plot(Cat4['x_circle'], Cat4['y_circle'], 'k+')
-    carte_2D_correl_.plot(vmin=0, vmax=30, title='Catalogue-final-T2')
-
-    # Add RA-DEC to the catalogue
-    CatF_radec = Add_radec_to_Cat(Cat4, wcs)
-    
-    # list of source objects
-    sources = Construct_Object_Catalogue(CatF_radec, Cat_est_line_raw_T2,
-                                         correl, wave,
-                                         os.path.basename(filename))
-    
-    #save sources files
-    #sources.write('sources')
-
-    plt.show()
     
