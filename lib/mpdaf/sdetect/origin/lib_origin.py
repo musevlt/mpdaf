@@ -1703,6 +1703,10 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     origin = ('ORIGIN', 'V1.1', os.path.basename(filename))
     
     cube = Cube(filename)
+    if 'CUBE_V' in cube.primary_header.keys():
+        cubevers = cube.primary_header['CUBE_V']
+    else:
+        cubevers = None
     
     maxmap = Image(data=np.amax(correl, axis=0), wcs=cube.wcs)
     
@@ -1718,7 +1722,8 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
         src.add_white_image(cube)
         src.add_cube(cube, 'MUSE_CUBE')
         src.add_image(maxmap, 'MAXMAP')
-        
+        if cubevers is not None:
+            src.add_attr('CUBE_V', cubevers, desc='Cube version')
         # Lines of this group
         wave_pix = E['z']
         GLR = E['T_GLR']
