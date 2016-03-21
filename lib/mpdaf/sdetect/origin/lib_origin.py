@@ -29,7 +29,7 @@ import sys
 __version__ = 'ORIGIN_18122015'
 
 def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
-                step_arcsec): 
+                step_arcsec):
     """Compute PSF with a Moffat function
 
     Parameters
@@ -54,19 +54,19 @@ def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
     Returns
     -------
     PSF_Moffat : array (Nz, Nfsf, Nfsf)
-                 MUSE PSF 
+                 MUSE PSF
     fwhm_pix   : array (Nz)
                  fwhm of the PSF in pixels
     fwhm_arcsec : array (Nz)
                   fwhm of the PSF in arcsec
 
-    Date  : Dec, 11 2015 
+    Date  : Dec, 11 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     #print 'Compute_PSF'
     #t0 = time.time()
     wavelengths = wave.coord(unit=u.angstrom)
-    
+
     slope = (fwhm2 - fwhm1)/(lambda2 - lambda1)
     ordon_or = fwhm2 - slope*lambda2
     # fwhm curve in arcsec
@@ -83,7 +83,7 @@ def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
 
     #figure,plot(wavelengths,alpha)
     PSF_Moffat = np.empty((Nz,Nfsf,Nfsf))
-    
+
     for i in range(Nz):
         for dx in range(Nfsf):
             for dy in range(Nfsf):
@@ -97,8 +97,8 @@ def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
 
 
 def Spatial_Segmentation(Nx, Ny, NbSubcube):
-    """Function to compute the limits in pixels for each zone. 
-    Each zone is computed from the left to the right and the top to the bottom 
+    """Function to compute the limits in pixels for each zone.
+    Each zone is computed from the left to the right and the top to the bottom
     First pixel of the first zone has coordinates : (row,col) = (Nx,1).
 
     Parameters
@@ -109,13 +109,13 @@ def Spatial_Segmentation(Nx, Ny, NbSubcube):
                 Number of rows
     NbSubcube : integer
                 Number of subcubes for the spatial segmentation
-                
+
     Returns
     -------
     intx, inty : integer, integer
                   limits in pixels of the columns/rows for each zone
 
-    Date  : Dec,10 2015 
+    Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     #print 'Spatial_Segmentation'
@@ -128,11 +128,11 @@ def Spatial_Segmentation(Nx, Ny, NbSubcube):
     intx = np.linspace(0, Nx, NbSubcube + 1, dtype=np.int)
     #print '    %0.1fs'%(time.time()-t0)
     return inty, intx
-    
-    
+
+
 def Compute_PCA_SubCube(NbSubcube, cube_std, intx, inty, Edge_xmin, Edge_xmax,
                         Edge_ymin, Edge_ymax):
-    """Function to compute the PCA on each zone of a data cube. 
+    """Function to compute the PCA on each zone of a data cube.
 
     Parameters
     ----------
@@ -217,19 +217,19 @@ def Compute_PCA_SubCube(NbSubcube, cube_std, intx, inty, Edge_xmin, Edge_xmax,
             # Projection of the data on the eigenvectors basis
             # for each spatio-spectral zone
             A[(numx,numy)]  = A_c
-            
+
             output = '\r%d/%d'%(1+ numx + numy*NbSubcube, NbSubcube**2)
             sys.stdout.write("\r\x1b[K" + output.__str__())
             sys.stdout.flush()
     sys.stdout.write("\n")
-         
+
     #print '    %0.1fs'%(time.time()-t0)
     return A, V, eig_val, nx, ny, nz
 
 def Compute_PCA_edge(cube, cube_edge):
     """Function to compute the PCA the spectra of a data cube by excluding
     the undesired spectra.
-    
+
     Parameters
     ----------
     cube      : array
@@ -262,7 +262,7 @@ def Compute_PCA_edge(cube, cube_edge):
     # Projection of the data cube on the eigenvectors basis
     A = eig_vec.T.dot(cube_v)
     return A, eig_vec, eig_val
-    
+
 def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
     """Function to compute the number of eigenvectors to keep for the
     projection for each zone by calling the function
@@ -274,12 +274,12 @@ def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
                   Number of subcube in the spatial segementation
     list_r0     : array
                   List of the determination coefficient for each zone
-    eig_val     : dict 
+    eig_val     : dict
                   eigenvalues of each spatio-spectral zone
     plot_lambda : bool
                   if True, plot the eigenvalues and the separation
                   point
-    
+
     Returns
     -------
     nbkeep : array
@@ -295,10 +295,10 @@ def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
     zone = 0
     for numy in range(NbSubcube):
         for numx in range(NbSubcube):
-            
+
             # Eigenvalues for this zone
             lambdat = eig_val[(numx,numy)]
-                   
+
             # Number of eigenvalues per zone
             nbkeep[numx, numy] = Compute_Number_Eigenvectors(lambdat,
                                                              list_r0[zone])
@@ -317,10 +317,10 @@ def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
                 plt.semilogy(lambdat)
                 plt.semilogy(nbt, lambdat[nbt], 'r+')
                 plt.title('zone %d'%zone)
-   
+
     #print '    %0.1fs'%(time.time() - t0)
     return nbkeep
-    
+
 
 def Compute_Number_Eigenvectors(eig_val, r0):
     """Function to compute the number of eigenvectors to keep for the
@@ -398,7 +398,7 @@ def Compute_Proj_Eigenvector_Zone(nbkeep, NbSubcube, Nx, Ny, Nz, A, V,
                 limits in pixels of the columns for each zone
     inty      : array
                 limits in pixels of the rows for each zone
-    
+
     Returns
     -------
     cube_faint : array
@@ -439,8 +439,8 @@ def Compute_Proj_Eigenvector_Zone(nbkeep, NbSubcube, Nx, Ny, Nz, A, V,
                                                                ny[numx,numy],
                                                                nx[numx,numy]))
     #print '    %0.1fs'%(time.time() - t0)
-    return cube_faint, cube_cont  
-    
+    return cube_faint, cube_cont
+
 def Compute_Proj_Eigenvector(A, V, r):
     """Function to compute the projection of the data in the original basis
     keepping the desired number eigenvalues.
@@ -458,7 +458,7 @@ def Compute_Proj_Eigenvector(A, V, r):
     -------
     cube_proj_low_v  : array
                        Projection on the eigenvectors associated to the lower
-                       eigenvalues of the spectra. 
+                       eigenvalues of the spectra.
     cube_proj_high_v : array
                        Projection on the eigenvectors associated to the higher
                        eigenvalues of the spectra.
@@ -470,7 +470,7 @@ def Compute_Proj_Eigenvector(A, V, r):
     cube_proj_low_v = np.dot(V[:,:r+1], A[:r+1,:])
     cube_proj_high_v = np.dot(V[:,r+1:], A[r+1:,:])
     return cube_proj_low_v , cube_proj_high_v
-    
+
 
 def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     """Function to compute the cube of GLR test values obtained with the given
@@ -485,14 +485,14 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     PSF_Moffat : array
                  FSF for this data cube
     Dico       : array
-                 Dictionary of spectral profiles to test 
+                 Dictionary of spectral profiles to test
 
     Returns
     -------
     correl  : array
               cube of T_GLR values
     profile : array
-              Number of the profile associated to the T_GLR 
+              Number of the profile associated to the T_GLR
 
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
@@ -514,10 +514,10 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     PSF_Moffat_m = PSF_Moffat \
                    - np.mean(PSF_Moffat, axis=(1,2))[:, np.newaxis, np.newaxis]
     cube_fsf = np.empty(shape)
-    
+
     for i in range(Nz):
         cube_fsf[i,:,:] = signal.fftconvolve(cube_var[i,:,:],
-                                  PSF_Moffat_m[i,:,:][::-1, ::-1], mode='same')                           
+                                  PSF_Moffat_m[i,:,:][::-1, ::-1], mode='same')
     del cube_var
 
     fsf_square = PSF_Moffat_m**2
@@ -528,7 +528,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
         norm_fsf[i,:,:] = signal.fftconvolve(inv_var[i,:,:],
                                   fsf_square[i,:,:][::-1, ::-1], mode='same')
     del fsf_square, inv_var
-    
+
     # First cube of correlation values
     # initialization with the first profile
     profile = np.zeros(shape, dtype=np.int)
@@ -540,7 +540,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     d_j = d_j - np.mean(d_j)
     # Compute the square of the spectral profile
     profile_square = d_j**2
-    
+
     ygrid, xgrid = np.mgrid[0:Ny,0:Nx]
     xgrid = xgrid.flatten()
     ygrid = ygrid.flatten()
@@ -550,21 +550,21 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
 
     s1 = np.array(cube_fsf.shape[0])
     s2 = np.array(d_j.shape)
-    
+
     shape = s1 + s2 - 1
     fslice = tuple([slice(0, int(sz)) for sz in shape])
     fshape = [_next_regular(int(d)) for d in shape]
-    
+
     d_j_fft =  rfftn(d_j, fshape)
     profile_square_fft = rfftn(profile_square, fshape)
-    
+
     cube_fsf_fft = []
-    norm_fsf_fft = []    
+    norm_fsf_fft = []
     for y in range(Ny):
         for x in range(Nx):
             cube_fsf_fft.append(rfftn(cube_fsf[:,y,x], fshape))
             norm_fsf_fft.append(rfftn(norm_fsf[:,y,x], fshape))
-    
+
     i = 0
     for y in range(Ny):
         for x in range(Nx):
@@ -584,22 +584,22 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
                          profile_square_fft, fshape)[fslice].copy()
             norm_profile[:,y,x] = _centered(ret, s1)
             i = i+1
-    
+
     # Set to the infinity the norm equal to 0
     norm_profile[norm_profile<=0] = np.inf
     # T_GLR values with constraint  : cube_profile>0
     GLR = np.zeros((Nz, Ny, Nx, 2))
     GLR[:,:,:,0] = cube_profile/np.sqrt(norm_profile)
-    
+
     for k in range(1, Dico.shape[1]):
         # Second cube of correlation values
         d_j = Dico[:,k]
         d_j = d_j - np.mean(d_j)
         profile_square = d_j**2
-        
+
         d_j_fft =  rfftn(d_j, fshape)
         profile_square_fft = rfftn(profile_square, fshape)
-        
+
         i = 0
         for y in range(Ny):
             for x in range(Nx):
@@ -614,10 +614,10 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
                              profile_square_fft, fshape)[fslice].copy()
                 norm_profile[:,y,x] = _centered(ret, s1)
                 i = i+1
-                                                  
+
         norm_profile[norm_profile<=0] = np.inf
         GLR[:,:,:,1] = cube_profile/np.sqrt(norm_profile)
-        
+
         # maximum over the fourth dimension
         PROFILE_MAX = np.argmax(GLR, axis=3)
         correl = np.amax(GLR, axis=3)
@@ -631,10 +631,10 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
         sys.stdout.write("\r\x1b[K" + output.__str__())
         sys.stdout.flush()
     sys.stdout.write("\n")
-        
+
     #print '    %0.1fs'%(time.time()-t0)
     return correl, profile
-    
+
 def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
                              Edge_xmax, Edge_ymin, Edge_ymax, threshold):
     """Function to compute the p-values associated to the
@@ -678,7 +678,7 @@ def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
     #t0 = time.time()
     # initialization
     cube_pval_correl = np.ones(correl.shape)
-    
+
     for numy in range(NbSubcube):
         for numx in range(NbSubcube):
             # limits of each spatial zone
@@ -686,7 +686,7 @@ def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
             x2 = intx[numx+1]
             y2 = inty[numy]
             y1 = inty[numy+1]
-            
+
             # Edges are excluded for computing parameters of the
             # distribution of the T_GLR (mean and std)
             x1 = max(x1, Edge_xmin+1)
@@ -694,7 +694,7 @@ def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
             y1 = max(y1, Edge_ymin+1)
             y2 = min(y2, Edge_ymax)
             correl_temp_edge = correl[:, y1:y2, x1:x2]
-            
+
             # Cube of pvalues for each zone
             cube_pval_correl_temp = Compute_pval_correl(correl_temp_edge)
             cube_pval_correl[:, y1:y2, x1:x2] = cube_pval_correl_temp
@@ -702,25 +702,25 @@ def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
     # Threshold the pvalues
     threshold_log = 10**(-threshold)
     cube_pval_correl = cube_pval_correl * (cube_pval_correl < threshold_log)
-    # The pvalues equals to zero correspond to the values flag to zero because 
-    # they are higher than the threshold so actually they have to be set to 1 
+    # The pvalues equals to zero correspond to the values flag to zero because
+    # they are higher than the threshold so actually they have to be set to 1
     cube_pval_correl[cube_pval_correl == 0] = 1
     #print '    %0.1fs'%(time.time()-t0)
     return cube_pval_correl
-    
-    
+
+
 def Compute_pval_correl(correl_temp_edge):
-    """Function to compute distribution of the T_GLR values with 
+    """Function to compute distribution of the T_GLR values with
     hypothesis : T_GLR are distributed according a normal distribution
 
     Parameters
     ----------
     correl_temp_edge : T_GLR values with edges excluded
-    
+
     Returns
     -------
     cube_pval_correl : array
-                       p-values asssociated to the T_GLR values 
+                       p-values asssociated to the T_GLR values
 
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
@@ -760,7 +760,7 @@ def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
     Returns
     -------
     cube_pval_channel : array
-                        cube of p-values associated to the number of 
+                        cube of p-values associated to the number of
                         thresholded p-values of the correlations per spectral
                         channel for each zone
 
@@ -772,11 +772,11 @@ def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
     # initialization
     cube_pval_channel = np.zeros(cube_pval_correl.shape)
     # The p-values higher than the thresholded are previously set to 1, here
-    # we set them to 0 because we want to count the number of pvalues 
+    # we set them to 0 because we want to count the number of pvalues
     # thresholded.
     cube_pval_correl_threshold = cube_pval_correl.copy()
     cube_pval_correl_threshold[cube_pval_correl == 1] = 0
-    
+
     for numy in range(NbSubcube):
         for numx in range(NbSubcube):
             # limits of each spatial zone
@@ -796,7 +796,7 @@ def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
                                                                  np.newaxis]
     #print '    %0.1fs'%(time.time()-t0)
     return cube_pval_channel
-            
+
 def Compute_pval_channel(X, n_lambda, mean_est):
     """Function to compute the p-values associated to the
     number of thresholded p-values of the correlations per spectral channel
@@ -819,7 +819,7 @@ def Compute_pval_channel(X, n_lambda, mean_est):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    # initialization        
+    # initialization
     N = np.sum(np.array(X!=0, dtype=np.int))
     # Estimation of p parameter with the mean of the distribution set by the
     # FSF size
@@ -831,15 +831,15 @@ def Compute_pval_channel(X, n_lambda, mean_est):
     # zero (eps in Matlab ~= 2.2204.10^(-16))
     pval_channel[pval_channel <= 0] = np.spacing(1)**6
     return pval_channel
-    
-  
+
+
 def Compute_pval_final(cube_pval_correl, cube_pval_channel, threshold):
     """Function to compute the final p-values which are the thresholded
     pvalues associated to the T_GLR values divided by twice the pvalues
     associated to the number of thresholded p-values of the correlations
     per spectral channel for each zone
-    
-    The pvalues equals to zero correspond to the values flag to zero because 
+
+    The pvalues equals to zero correspond to the values flag to zero because
     they are higher than the threshold
 
     Parameters
@@ -855,7 +855,7 @@ def Compute_pval_final(cube_pval_correl, cube_pval_channel, threshold):
     Returns
     -------
     cube_pval_final : array
-                      cube of final thresholded p-values 
+                      cube of final thresholded p-values
 
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
@@ -871,12 +871,12 @@ def Compute_pval_final(cube_pval_correl, cube_pval_channel, threshold):
     # Threshold the p-values
     threshold_log = 10**(-threshold)
     cube_pval_final = cube_pval_final*(cube_pval_final<threshold_log)
-    # The pvalues equals to zero correspond to the values flag to zero because 
+    # The pvalues equals to zero correspond to the values flag to zero because
     # they are higher than the threshold so actually they have to be set to 1
     cube_pval_final[cube_pval_final == 0] = 1
     #print '    %0.1fs'%(time.time()-t0)
     return cube_pval_final
-    
+
 def Compute_Connected_Voxel(cube_pval_final, neighboors):
     """Function to compute the groups of connected voxels with a
     flood-fill algorithm.
@@ -884,14 +884,14 @@ def Compute_Connected_Voxel(cube_pval_final, neighboors):
     Parameters
     ----------
     cube_pval_final : array
-                      cube of final thresholded p-values 
+                      cube of final thresholded p-values
     neighboors      : int
                       Number of connected components
 
     Returns
     -------
     labeled_cube : array
-                   An integer array where each unique feature in 
+                   An integer array where each unique feature in
                    cube_pval_final has a unique label.
     Ngp          : integer
                    Number of groups
@@ -915,7 +915,7 @@ def Compute_Connected_Voxel(cube_pval_final, neighboors):
     #print '    %0.1fs'%(time.time()-t0)
     return labeled_cube, Ngp
 
-    
+
 def Compute_Referent_Voxel(correl, profile, cube_pval_correl,
                            cube_pval_channel, cube_pval_final, Ngp,
                            labeled_cube):
@@ -927,20 +927,20 @@ def Compute_Referent_Voxel(correl, profile, cube_pval_correl,
     correl            : array
                         cube of T_GLR values
     profile           : array
-                        Number of the profile associated to the T_GLR 
+                        Number of the profile associated to the T_GLR
     cube_pval_correl  : array
                         cube of thresholded p-values associated
                         to the T_GLR values
     cube_pval_channel : array
                         cube of p-values
     cube_pval_final   : array
-                        cube of final thresholded p-values 
+                        cube of final thresholded p-values
     Ngp               : int
                         Number of groups
     labeled_cube      : array
-                        An integer array where each unique feature in 
+                        An integer array where each unique feature in
                         cube_pval_final has a unique label.
-                        
+
     Returns
     -------
     Cat_ref : astropy.Table
@@ -988,7 +988,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
     cube_raw    : array
                   Raw data cube
     Dico        : array
-                  Dictionary of spectral profiles to test 
+                  Dictionary of spectral profiles to test
     PSF_Moffat  : array
                   FSF for this data cube
     nb_ranges   : integer
@@ -1031,7 +1031,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         intz1 = max(0, z0 - longz)
         intz2 = min(cube_raw.shape[0], z0 + longz + 1)
         # Subcube on test
-        longxy = PSF_Moffat.shape[1]/2  
+        longxy = PSF_Moffat.shape[1]/2
         inty1 = max(0, y0 - longxy)
         inty2 = min(cube_raw.shape[1], y0 + longxy + 1)
         intx1 = max(0, x0 - longxy)
@@ -1046,9 +1046,9 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         # Coordinates in this window
         y00 = y0 - y01
         x00 = x0 - x01
-        # subcube for the plot   
+        # subcube for the plot
         cube_test_plot = cube_raw[intz1:intz2, y01:y02, x01:x02]
-  
+
         # controle cube
         if (z0 + longz + nb_ranges*long0) < cube_raw.shape[0]:
             intz1c = intz1 + nb_ranges*long0
@@ -1058,7 +1058,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
             intz2c = intz2 - nb_ranges*long0
         cube_controle = cube_raw[intz1c:intz2c, inty1:inty2, intx1:intx2]
         cube_controle_plot = cube_raw[intz1c:intz2c, y01:y02, x01:x02]
-    
+
         # (1/sqrt(2)) * difference of the 2 sububes
         diff_cube = (1./np.sqrt(2)) * (cube_test - cube_controle)
         diff_cube_plot = (1./np.sqrt(2))*(cube_test_plot - cube_controle_plot)
@@ -1067,10 +1067,10 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         s1 = np.ones_like(cube_test)
         s1 = s1/np.sqrt(np.sum(s1**2))
         T1.append(np.inner(diff_cube.flatten(),s1.flatten()))
-    
+
         # Test 2
         atom = np.zeros((long0, PSF_Moffat.shape[1], PSF_Moffat.shape[2]))
-    
+
         # Construction of the 3D atom corresponding to the spectral profile
         z1 = max(0, z0 - longz)
         z2 = min(cube_raw.shape[0], long0 + z0 - longz)
@@ -1078,7 +1078,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
                                                     np.newaxis, np.newaxis] \
                                             * PSF_Moffat[z1:z2,:,:]
 
-        # Normalization     
+        # Normalization
         atom = atom/np.sqrt(np.sum(atom**2))
         # Edges
         # The minimal coordinates corresponding to the spatio-spectral range
@@ -1086,16 +1086,16 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         x1 = np.abs(min(0, x0 - longxy))
         y1 = np.abs(min(0, y0 - longxy))
         z1 = np.abs(min(0, z0 - longz))
-    
+
         # Part of the atom corresponding to the spatio-spectral range of the
         # data cube
         s2 = atom[z1:z1+intz2-intz1, y1:y1+inty2-inty1, x1:x1+intx2-intx1]
 
         # Test 2
         T2.append(np.inner(diff_cube.flatten(),s2.flatten()))
- 
+
         # Plot the narrow bands images
-        if plot_narrow:  
+        if plot_narrow:
             plt.figure()
             plt.plot(x00, y00, 'm+')
             ima_test_plot = Image(data=cube_test_plot.sum(axis=0),
@@ -1104,14 +1104,14 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
                     'T1=%.3f T2=%.3f\n'%(T1[i], T2[i]) + \
                     'lambda=%d int=[%d,%d['%(z0, intz1, intz2)
             ima_test_plot.plot(colorbar='v', title=title)
-            
+
             plt.figure()
             plt.plot(x00, y00, 'm+')
             ima_controle_plot = Image(data=cube_controle_plot.sum(axis=0),
                                   wcs=wcs[y01:y02, x01:x02])
             title = 'check - (%d,%d)\n'%(x0, y0) + \
                     'T1=%.3f T2=%.3f\n'%(T1[i], T2[i]) + \
-                    'int=[%d,%d['%(intz1c, intz2c)                      
+                    'int=[%d,%d['%(intz1c, intz2c)
             ima_controle_plot.plot(colorbar='v', title=title)
 
             plt.figure()
@@ -1120,7 +1120,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
                                   wcs=wcs[y01:y02, x01:x02])
             title = 'Difference narrow band - (%d,%d)\n'%(x0, y0) + \
                     'T1=%.3f T2=%.3f\n'%(T1[i], T2[i]) + \
-                    'int=[%d,%d['%(intz1c, intz2c)                      
+                    'int=[%d,%d['%(intz1c, intz2c)
             ima_diff_plot.plot(colorbar='v', title=title)
 
     col_t1 = Column(name='T1', data=T1)
@@ -1130,7 +1130,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
     #print '    %0.1fs'%(time.time()-t0)
     return Cat1
 
-    
+
 def Narrow_Band_Threshold(Cat1, thresh_T1, thresh_T2):
     """Function to compute the 2 narrow band tests for each detected
     emission line
@@ -1168,11 +1168,11 @@ def Narrow_Band_Threshold(Cat1, thresh_T1, thresh_T2):
     Cat1_T2 = Cat1[Cat1['T2'] > thresh_T2]
     #print '    %0.1fs'%(time.time()-t0)
     return Cat1_T1, Cat1_T2
-    
+
 def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
                     grid_dxy, grid_dz, PSF_Moffat, Dico):
     """Function to compute the estimated emission line and the optimal
-    coordinates for each detected lines in a spatio-spectral grid. 
+    coordinates for each detected lines in a spatio-spectral grid.
 
     Parameters
     ----------
@@ -1182,7 +1182,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
                  Columns of the Catalogue Cat1_T:
                  x y z T_GLR profile pvalC pvalS pvalF T1 T2
     profile    : array
-                 Number of the profile associated to the T_GLR 
+                 Number of the profile associated to the T_GLR
     Nx         : int
                  Size of the cube along the x-axis
     Ny         : int
@@ -1201,7 +1201,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     PSF_Moffat : array
                  FSF for this data cube
     Dico       : array
-                 Dictionary of spectral profiles to test 
+                 Dictionary of spectral profiles to test
 
     Returns
     -------
@@ -1209,7 +1209,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
                        Catalogue of parameters of detected emission lines.
                        Columns of the Catalogue Cat2:
                        x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual
-                       flux num_line   
+                       flux num_line
     Cat_est_line_raw : list of arrays
                        Estimated lines in data space
     Cat_est_line_std : list of arrays
@@ -1229,7 +1229,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     Cat_est_line_raw = []
     Cat_est_line_std = []
     longxy = PSF_Moffat.shape[1]/2
-    
+
     # Spatio-spectral grid
     grid_x1 = np.maximum(0, Cat1_T['x'] - grid_dxy)
     grid_x2 = np.minimum(Nx, Cat1_T['x'] + grid_dxy + 1)
@@ -1237,9 +1237,9 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     grid_y2 = np.minimum(Ny, Cat1_T['y'] + grid_dxy + 1)
     grid_z1 = np.maximum(0, Cat1_T['z'] - grid_dz)
     grid_z2 = np.minimum(Nz, Cat1_T['z'] + grid_dz + 1)
-    
+
     ngrid = (grid_x2 - grid_x1) *  (grid_y2 - grid_y1) * (grid_z2 - grid_z1)
-    
+
     # Loop on emission lines detected
     nit = len(Cat1_T)
     for it in range(nit):
@@ -1251,7 +1251,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
         line_est_std = np.zeros((ngrid[it], Nz))
         residual = np.zeros(ngrid[it])
         flux = np.zeros(ngrid[it])
-        
+
         # Estimation of a line on each voxel of the grid
         z_f, y_f, x_f = np.meshgrid(range(grid_z1[it], grid_z2[it]),
                                     range(grid_y1[it], grid_y2[it]),
@@ -1260,13 +1260,13 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
         z_f = z_f.ravel()
         y_f = y_f.ravel()
         x_f = x_f.ravel()
-        
+
         for n in range(x_f.shape[0]):
             f, res, lraw, lstd = Compute_Estim_Grid(x_f[n], y_f[n], z_f[n],
                                                     grid_dxy, profile, Nx, Ny,
                                                     Nz, sigma, cube_faint,
                                                     PSF_Moffat, longxy, Dico)
-                              
+
             flux[n] = f
             residual[n] = res
             line_est_raw[n,:] = lraw
@@ -1282,7 +1282,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
         Cat_est_line_raw.append(line_est_raw[ind_n,:])
         Cat_est_line_std.append(line_est_std[ind_n,:])
     sys.stdout.write("\n")
-    
+
     Cat2 = Cat1_T.copy()
     Cat2['x'] = Cat2_x
     Cat2['y'] = Cat2_y
@@ -1291,7 +1291,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     col_flux = Column(name='flux', data=Cat2_flux)
     col_num = Column(name='num_line', data=np.arange(len(Cat2)))
     Cat2.add_columns([col_res, col_flux, col_num])
-    
+
     #print '    %0.1fs'%(time.time()-t0)
     return Cat2, Cat_est_line_raw, Cat_est_line_std
 
@@ -1313,7 +1313,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     grid_dxy : integer
                Maximum spatial shift for the grid
     profile  : array
-               Number of the profile associated to the T_GLR 
+               Number of the profile associated to the T_GLR
     Nx         : int
                  Size of the cube along the x-axis
     Ny         : int
@@ -1330,7 +1330,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     longxy     : float
                  mid-size of the PSF
     Dico       : array
-                 Dictionary of spectral profiles to test 
+                 Dictionary of spectral profiles to test
 
     Returns
     -------
@@ -1342,7 +1342,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
                    Estimated line in the data space
     line_est     : array
                    Estimated line in the SNR space
-    
+
 
     Date  : Dec, 11 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
@@ -1355,7 +1355,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     profil1 = profil0[profil0>1e-20]
     long0 = profil1.shape[0]
     longz = long0/2
-    
+
     # size of the 3D atom
     inty1 = max(0, y0 - longxy)
     inty2 = min(Ny, y0 + longxy + 1)
@@ -1363,7 +1363,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     intx2 = min(Nx, x0 + longxy + 1)
     intz1 = max(0, z0 - longz)
     intz2 = min(Nz, z0 + longz + 1)
-       
+
     # part of the cube at the same location
     cube_faint_t = cube_faint[intz1:intz2, inty1:inty2, intx1:intx2]
     # corresponding covariance
@@ -1390,7 +1390,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
         / np.sum((PSF_Moffat[intz1:intz2,:,:]* \
         PSF_Moffat[intz1:intz2, :, :]) ,axis=(1,2))
 
-    # Estimated line in data space  
+    # Estimated line in data space
     line_est_raw = line_est * np.sqrt(sigmat)
 
     # Atome 3D corresponding to the estimated line
@@ -1399,15 +1399,15 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     z2 = min(sigma.shape[0], long0 + z0 - longz)
     atom_est[z1-z0+longz:z2-z0+longz,:,:] = \
             line_est_raw[z1:z2, np.newaxis, np.newaxis] * PSF_Moffat[z1:z2,:,:]
-                                    
+
     x1 = np.abs(min(0, x0 - longxy))
     y1 = np.abs(min(0, y0 - longxy))
     z1 = np.abs(min(0, z0 - longz))
 
-    # Atom cut at the edges of the cube 
+    # Atom cut at the edges of the cube
     atom_est_cut = atom_est[z1:z1+intz2-intz1, y1:y1+inty2-inty1,
                             x1:x1+intx2-intx1]
-    # Estimated 3D atom in SNR space      
+    # Estimated 3D atom in SNR space
     atom_est_std = atom_est_cut / np.sqrt(sigma_t)
     # Norm of the 3D atom
     norm2_atom1 = np.inner(atom_est_std.flatten(), atom_est_std.flatten())
@@ -1440,12 +1440,12 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
                Size of the cube along the x-axis
     Ny       : integer
                Size of the cube along the y-axis
-    
+
     Returns
     -------
     CatF : astropy.Table
            Columns of CatF:
-           ID x_circle y_circle x_centroid y_centroid nb_lines 
+           ID x_circle y_circle x_centroid y_centroid nb_lines
            x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
 
     Date : Dec,16 2015
@@ -1463,7 +1463,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     while len(E) > 0:
         # Set the new indices
         E['ID'] = np.arange(1,len(E)+1)
-        
+
         Cix, Ciy = np.mgrid[0:Nx,0:Ny]
         Cix = Cix.flatten()
         Ciy = Ciy.flatten()
@@ -1478,7 +1478,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
             d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2
             num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
             E0 = E[num0]
-            
+
             if len(ksel[0]) > 1:
                 # T_GLR values of the voxels in this group
                 correl_temp  = E0['T_GLR']
@@ -1507,8 +1507,8 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
             num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
             # subgroup containing only the voxels inside the cylinder
             E0 = E[num0]
-              
-        # Number of this source    
+
+        # Number of this source
         num_source = num_source + 1
         # Number of lines for this source
         nb_lines = len(E0)
@@ -1526,7 +1526,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
         x_centroid = np.sum(correl_temp*x_gp) / np.sum(correl_temp)
         y_centroid = np.sum(correl_temp*y_gp) / np.sum(correl_temp)
         # To fulfill each line of the catalogue
-        x_centroid = np.resize(x_centroid, nb_lines) 
+        x_centroid = np.resize(x_centroid, nb_lines)
         y_centroid = np.resize(y_centroid, nb_lines)
         # Number of lines for this source
         nb_lines = np.resize(int(nb_lines), nb_lines)
@@ -1559,7 +1559,7 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
     Cat          : astropy.Table
                    Catalogue of detected emission lines
                    Columns of Cat:
-                   ID x_circle y_circle x_centroid y_centroid nb_lines 
+                   ID x_circle y_circle x_centroid y_centroid nb_lines
                    x y z T_GLR profile pvalC pvalS pvalF T1 T2
                    residual flux num_line
     Cat_est_line : list of array
@@ -1572,7 +1572,7 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
     CatF : astropy.Table
            Catalogue
            Columns of CatF:
-           ID x_circle y_circle x_centroid y_centroid nb_lines 
+           ID x_circle y_circle x_centroid y_centroid nb_lines
            x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
 
     Date  : Dec,16 2015
@@ -1587,7 +1587,7 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
     for i in np.unique(Cat['ID']):
         # Catalogue of the lines in this group
         E = Cat[Cat['ID'] == i]
-        # Sort along the maximum of the estimated lines 
+        # Sort along the maximum of the estimated lines
         z = [np.argmax(Cat_est_line_raw[k]) for k in E['num_line']]
         # Add the spectral channel of the maximum
         # Sort along the spectral channel of the maximum
@@ -1595,7 +1595,7 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
         Ez = E.copy()
         Ez.add_column(col_zp)
         Ez.sort('z2')
-        
+
         ksel = np.where(Ez[1:]['z2'] - Ez[:-1]['z2'] > deltaz)
         indF = []
         for ind in np.split(np.arange(len(Ez)), ksel[0]+1):
@@ -1605,10 +1605,10 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
             else:
                 # Keep the estimated line with the highest flux
                 indF.append(np.where(Ez['flux'] == max(Ez[ind]['flux']))[0][0])
-        
+
         CatF_temp = Table(Ez[indF])
         nb_line = len(CatF_temp)
-        
+
         # Set the new number of lines for each group
         CatF_temp['nb_lines'] = np.resize(int(nb_line), len(CatF_temp))
         if len(CatF)==0:
@@ -1619,7 +1619,7 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
     CatF.remove_columns(['z2'])
     #print '    %0.1fs'%(time.time()-t0)
     return CatF
-    
+
 def Add_radec_to_Cat(Cat, wcs):
     """Function to add corresponding RA/DEC to each referent pixel
     of each group
@@ -1628,7 +1628,7 @@ def Add_radec_to_Cat(Cat, wcs):
     ----------
     Cat : astropy.Table
           Catalogue of the detected emission lines:
-          ID x_circle y_circle x_centroid y_centroid nb_lines 
+          ID x_circle y_circle x_centroid y_centroid nb_lines
           x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
     wcs : mpdaf.obj.WCS
           Spatial coordinates
@@ -1637,7 +1637,7 @@ def Add_radec_to_Cat(Cat, wcs):
     -------
     Cat_radec : astropy.Table
                 Catalogue of parameters of detected emission lines:
-                ID x_circle y_circle x_centroid y_centroid nb_lines 
+                ID x_circle y_circle x_centroid y_centroid nb_lines
                 x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux
                 num_line RA DEC
 
@@ -1658,14 +1658,14 @@ def Add_radec_to_Cat(Cat, wcs):
     Cat_radec.add_columns([col_ra, col_dec])
     #print '    %0.1fs'%(time.time()-t0)
     return Cat_radec
-    
+
 def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_profiles):
     """Function to create the final catalogue of sources with their parameters
 
     Parameters
     ----------
     Cat              : Catalogue of parameters of detected emission lines:
-                       ID x_circle y_circle x_centroid y_centroid nb_lines 
+                       ID x_circle y_circle x_centroid y_centroid nb_lines
                        x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual
                        flux num_line RA DEC
     Cat_est_line     : list of spectra
@@ -1683,7 +1683,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     -------
     sources : mpdaf.sdetect.SourceList
               List of sources
-              
+
     Date  : Dec, 16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
@@ -1701,15 +1701,12 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
 
     step_wave = wave.get_step(unit=u.angstrom)
     origin = ('ORIGIN', 'V1.1', os.path.basename(filename))
-    
+
     cube = Cube(filename)
-    if 'CUBE_V' in cube.primary_header.keys():
-        cubevers = cube.primary_header['CUBE_V']
-    else:
-        cubevers = None
-    
+    cubevers = cube.primary_header.get('CUBE_V')
+
     maxmap = Image(data=np.amax(correl, axis=0), wcs=cube.wcs)
-    
+
     for i in np.unique(Cat['ID']):
         # Source = group
         E = Cat[Cat['ID']==i]
@@ -1718,7 +1715,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
                      unit=u.pix, fmt='d')
         src.add_attr('y', E['y_centroid'][0], desc='y position in pixel',
                      unit=u.pix, fmt='d')
-                     
+
         src.add_white_image(cube)
         src.add_cube(cube, 'MUSE_CUBE')
         src.add_image(maxmap, 'MAXMAP')
@@ -1733,7 +1730,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
         pvalF = E['pvalF']
         T1 = E['T1']
         T2 = E['T2']
-        
+
         # Number of lines in this group
         nb_lines = E['nb_lines'][0]
         for j in range(nb_lines):
@@ -1761,15 +1758,15 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
             src.spectra['CORR{:04d}'.format(j+1)] = sp
             src.add_narrow_band_image_lbdaobs(cube,
                                               'NB_LINE{:04d}'.format(j+1),
-                                              w, width=2*profil_FWHM, 
+                                              w, width=2*profil_FWHM,
                                               is_sum=True, subtract_off=True)
-            
-        
+
+
 
 #    for key in hstlist.keys():
 #        src.add_image(hstlist[key],'HST_'+key, rotate=True)
-           
+
         sources.append(src)
     #print '    %0.1fs'%(time.time()-t0)
     return sources
-    
+
