@@ -3081,7 +3081,7 @@ class Image(DataArray):
 
         self.update_spatial_fmax(0.5 / self.wcs.get_step())
 
-    def rebin_mean(self, factor, margin='center'):
+    def rebin_mean(self, factor, margin='center', copy=True):
         """Return an image that shrinks the size of the current image by
         an integer division factor.
 
@@ -3100,13 +3100,16 @@ class Image(DataArray):
             center of the image. If 'origin' is selected, then one
             corner of the sub-image is the [0,0] pixel of the input
             image.
+        copy : bool
+            If True (the default), return a re-binned copy of the image.
+            If False, rebin the original image in place, and return that.
 
         Returns
         -------
         out : mpdaf.obj.Image
 
         """
-        res = self.copy()
+        res = self.copy() if copy else self
         res._rebin_mean(factor, margin)
         return res
 
