@@ -81,12 +81,16 @@ class DataArray(object):
         Data array, passed to numpy.ma.MaskedArray.
     var : numpy.ndarray or list
         Variance array, passed to numpy.array().
-    mask : bool or numpy.ma.nomask or numpy.ndarray
+    mask : numpy.ma.nomask or numpy.ndarray
+    
+    
         Mask used for the creation of the .data MaskedArray. If mask is
         False (default value), a mask array of the same size of the data array
         is created. To avoid creating an array, it is possible to use
         numpy.ma.nomask, but in this case several methods will break if
         they use the mask.
+        
+        
 
     Attributes
     ----------
@@ -119,7 +123,7 @@ class DataArray(object):
     _has_wcs = False
     _has_wave = False
 
-    def __init__(self, filename=None, hdulist=None, data=None, mask=False,
+    def __init__(self, filename=None, hdulist=None, data=None, mask=None,
                  var=None, ext=None, unit=u.dimensionless_unscaled, copy=True,
                  dtype=float, primary_header=None, data_header=None, **kwargs):
         self._logger = logging.getLogger(__name__)
@@ -128,7 +132,7 @@ class DataArray(object):
         self._data_ext = None
         self._var = None
         self._var_ext = None
-        self._mask = None
+        self._mask = mask
         self._ndim = None
         self._shape = None
         self.wcs = None
@@ -229,20 +233,28 @@ class DataArray(object):
             # Use a specified numpy data array?
             if data is not None:
                 if isinstance(data, ma.MaskedArray):
-                    self.data = np.array(data.data, dtype=dtype, copy=copy)
-                    mask = data.mask
+                    self._data = np.array(data.data, dtype=dtype, copy=copy)
+                    self._mask = data.mask | ~(np.isfinite(data))
                 else:
-                    self.data = np.array(data, dtype=dtype, copy=copy)
-
-                if mask is None or mask is True or mask is False or \
-                        mask is ma.nomask:
-                    self.mask = mask
-                else:
-                    self.mask = np.array(mask, dtype=bool, copy=copy)
+                    self._data = np.array(data, dtype=dtype, copy=copy)
+                    if mask is ma.nomask:
+                        self._mask = ma.nomask
+                    elif mask is None:
+                        self._mask = ~(np.isfinite(data))
+                    else:
+                        self._mask = np.array(mask, dtype=bool, copy=copy) | ~(np.isfinite(data))
+                        
+                self._ndim = self._data.ndim
+                self._shape = self._data.shape
 
             # Use a specified variance array?
             if var is not None:
-                self.var = np.array(var, dtype=dtype, copy=copy)
+                self._var = np.array(var, dtype=dtype, copy=copy)
+                if mask is not ma.nomask:
+                    self._mask = self._mask | ~(np.isfinite(var)) | (var<=0)
+                
+            if data is not None and not self._mask.any():
+                self._mask = ma.nomask
 
         # If a WCS object was specified as an optional parameter, install it.
         wcs = kwargs.pop('wcs', None)
@@ -297,7 +309,7 @@ class DataArray(object):
 
         """
         data = obj.data if data is None else data
-        var = obj.var if var is None else var
+        var = obj._var if var is None else var
         kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
                       dtype=obj.dtype, copy=copy, data_header=obj.data_header,
                       primary_header=obj.primary_header)
@@ -329,6 +341,45 @@ class DataArray(object):
             return self._shape
         elif self.data is not None:
             return self.data.shape
+        
+    def _read_from_file(self, item=None):
+        hdulist = fits.open(self.filename)
+        if item:
+            data = np.asarray(hdulist[self._data_ext].data[item], dtype=self.dtype)
+            if self._mask is not ma.nomask:
+                if 'DQ' in hdulist:
+                    mask = np.asarray(hdulist['DQ'].data[item], dtype=np.bool) | ~(np.isfinite(data))
+                else:
+                    mask = ~(np.isfinite(data))
+            else:
+                mask = ma.nomask
+            if self._var_ext is not None:
+                var = np.asarray(hdulist[self._var_ext].data[item])
+                if self._mask is not ma.nomask:
+                    mask = mask | ~(np.isfinite(var)) | (var<=0)
+            else:
+                var = None
+            if not mask.any():
+                mask = ma.nomask
+        else:
+            data = np.asarray(hdulist[self._data_ext].data, dtype=self.dtype)
+            if self._mask is not ma.nomask:
+                if 'DQ' in hdulist:
+                    mask = np.asarray(hdulist['DQ'].data, dtype=np.bool) | ~(np.isfinite(data))
+                else:
+                    mask = ~(np.isfinite(data))
+            else:
+                mask = ma.nomask
+            if self._var_ext is not None:
+                var = np.asarray(hdulist[self._var_ext].data)
+                if self._mask is not ma.nomask:
+                    mask = mask | ~(np.isfinite(var)) | (var<=0)  
+            else:
+                var = None  
+            if not mask.any():
+                mask = ma.nomask
+        hdulist.close()
+        return data, mask, var
 
     @property
     def data(self):
@@ -339,33 +390,26 @@ class DataArray(object):
 
         """
         if self._data is None and self.filename is not None:
-            data = read_slice_from_fits(
-                self.filename, ext=self._data_ext, mask_ext='DQ',
-                dtype=self.dtype)
-            if isinstance(data, ma.MaskedArray):
-                self._data = data.data
-                self._mask = data.mask | ~(np.isfinite(data.data))
-            else:
-                self._data = data
-                self._mask = ~(np.isfinite(data))
+            self._data, self._mask, self._var = \
+            self._read_from_file()
+            self._ndim = self._data.ndim
             self._shape = self._data.shape
-            self.ndim = self._data.ndim
-
-        return ma.MaskedArray(self._data, mask=self.mask, copy=False)
+        return ma.MaskedArray(self._data, mask=self._mask, copy=False)
 
     @data.setter
     def data(self, value):
+        if self._shape is not None and not np.array_equal(value.shape, self._shape):
+            raise IOError('try to set data with an array with a different shape')
         if isinstance(value, ma.MaskedArray):
             self._data = value.data
             self._mask = value.mask
         else:
             self._data = value
             self._mask = ~(np.isfinite(value))
-        self._shape = self._data.shape
-        # FIXME: This should be self.ndim to check to number of dimensions, but
-        # currently we have some code (__getitem__) that creates temporarily an
-        # object with a wrong ndim.
-        self._ndim = self._data.ndim
+        if self._var is not None:
+            self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
+        if not self._mask.any():
+            self._mask = ma.nomask
 
     @property
     def var(self):
@@ -378,32 +422,31 @@ class DataArray(object):
 
         if self._var is None and self._var_ext is not None and \
                 self.filename is not None:
-            var = read_slice_from_fits(
-                self.filename, ext=self._var_ext, dtype=self.dtype)
-            if var.ndim != self.data.ndim:
-                raise IOError('Wrong dimension number in STAT extension')
-            if not np.array_equal(var.shape, self.data.shape):
-                raise IOError('Number of points in STAT not equal to DATA')
-            self._var = var
-            self._mask |= ~(np.isfinite(var))
-
-        return self._var
+            self._data, self._mask, self._var = \
+            self._read_from_file()
+            self._ndim = self._data.ndim
+            self._shape = self._data.shape
+        if self._var is None:
+            return None
+        else:
+            return ma.MaskedArray(self._var, mask=self._mask, copy=False)
 
     @var.setter
     def var(self, value):
         if value is not None:
+            if self._shape is not None and  not np.array_equal(value.shape, self._shape):
+                raise IOError('try to set var with an array with a different shape')
             value = np.asarray(value)
-            if not np.array_equal(self.shape, value.shape):
-                raise ValueError('var and data have different dimensions.')
-            self._mask |= ~(np.isfinite(value))
+            self._var = value
+            self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
         else:
             self._var_ext = None
-        self._var = value
+            self._var = value
 
-    @property
-    def masked_var(self):
-        """Return a MaskedArray for the variance with the data mask."""
-        return ma.MaskedArray(self.var, mask=self.mask, copy=False)
+#     @property
+#     def masked_var(self):
+#         """Return a MaskedArray for the variance with the data mask."""
+#         return ma.MaskedArray(self.var, mask=self.mask, copy=False)
 
     @deprecated('Variance should now be set with the .var attribute')
     def set_var(self, var):
@@ -424,23 +467,28 @@ class DataArray(object):
         # method in MPDAF expect that the mask is an array and will not work
         # with np.ma.nomask. But nomask can still be used explicitly for
         # specific cases.
-        if value is None or value is False:
-            self._mask = np.zeros(self.shape, dtype=bool)
-        elif value is True:
-            self._mask = np.ones(self.shape, dtype=bool)
-        elif value is ma.nomask:
+#         
+#         if value is None or value is False:
+#             self._mask = np.zeros(self.shape, dtype=bool)
+#         elif value is True:
+#             self._mask = np.ones(self.shape, dtype=bool)
+#         el
+        
+        if value is ma.nomask:
             self._mask = value
         else:
-            self._mask = np.asarray(value, dtype=bool)
-            # TODO: combine masks or overwrite ?
-            # if self._mask is not None and self._mask is not ma.nomask:
-            #     self._mask |= value
+            self._mask = np.asarray(value, dtype=bool) | ~(np.isfinite(self._data))
+            if self._var is not None:
+                self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
+            if not self._mask.any():
+                self._mask = ma.nomask
 
     def copy(self):
         """Return a copy of the object."""
         return self.__class__(
-            filename=self.filename, data=self.data, unit=self.unit,
-            var=self.var, wcs=self.wcs, wave=self.wave, copy=True,
+            filename=self.filename, data=self._data, mask=self._mask,
+            unit=self.unit,
+            var=self._var, wcs=self.wcs, wave=self.wave, copy=True,
             data_header=fits.Header(self.data_header),
             primary_header=fits.Header(self.primary_header))
 
@@ -597,55 +645,21 @@ class DataArray(object):
         # until they are first used. Read the slice from the FITS file if
         # the data array hasn't been read yet.
         if self._data is None and self.filename is not None:
-            data = read_slice_from_fits(self.filename, item=item,
-                                        ext=self._data_ext, mask_ext='DQ',
-                                        dtype=self.dtype)
-
-            # Mask an array where invalid values occur (NaNs or infs).
-            if ma.is_masked(data):
-                data.mask |= ~(np.isfinite(data.data))
-            else:
-                data = ma.masked_invalid(data)
-
-            if np.array_equal(data.shape, self.shape):
-                # Store the data array if the full data has been read
-                self._data = data
+            data, mask, var = self._read_from_file(item)
+            
         else:
-            data = self.data[item]
+            data = self._data[item]
+            if self._mask is ma.nomask:
+                mask = ma.nomask
+            else:
+                mask = self._mask[item]
+            if self._var is None:
+                var = None
+            else:
+                var = self._var[item]
 
         if data.ndim == 0:
             return data
-
-        # The DataArray constructor postpones reading variances from
-        # FITS files until they are first used. Read the slice of
-        # variances from the FITS file if the variance array hasn't
-        # been read yet.
-        if self._var is None:
-            if self.filename is not None:
-                if self._var_ext is None:
-                    var = None
-                else:
-                    var = read_slice_from_fits(
-                        self.filename, item=item, ext=self._var_ext,
-                        dtype=self.dtype)
-                    if var.ndim != data.ndim:
-                        raise IOError('Wrong dimension number in STAT '
-                                      'extension')
-                    if not np.array_equal(var.shape, data.shape):
-                        raise IOError('Number of points in STAT not equal to '
-                                      'DATA')
-
-                    if np.array_equal(var.shape, self.shape):
-                        # Store the var array if the full var has been read
-                        self._var = var
-            else:
-                var = None
-        else:
-            var = self.var[item]
-
-        if var is not None:
-            # Combine data and var masks
-            data.mask |= ~(np.isfinite(var))
 
         # Construct new WCS and wavelength coordinate information for the slice
         wave = None
@@ -673,7 +687,7 @@ class DataArray(object):
                 wave = None
 
         return self.__class__(
-            data=data, unit=self.unit, var=var, wcs=wcs, wave=wave,
+            data=data, unit=self.unit, var=var, mask=mask, wcs=wcs, wave=wave,
             filename=self.filename, data_header=fits.Header(self.data_header),
             primary_header=fits.Header(self.primary_header))
 
@@ -700,10 +714,19 @@ class DataArray(object):
 
         if isinstance(other, ma.MaskedArray):
             self._data[item] = other.data
+            if self._mask is ma.nomask:
+                self._mask = np.zeros(self._shape, dtype=np.bool)
             self._mask[item] = other.mask
         else:
             self._data[item] = other
+            if self._mask is ma.nomask:
+                self._mask = np.zeros(self._shape, dtype=np.bool)
             self._mask[item] = ~(np.isfinite(other))
+            
+        if self._var is not None:
+            self._mask[item] = self._mask[item] | ~(np.isfinite(self._var[item])) | (self._var[item]<=0)
+        if not self._mask.any():
+            self._mask = ma.nomask   
 
     def get_wcs_header(self):
         """Return a FITS header containing coordinate descriptions."""
@@ -771,14 +794,14 @@ class DataArray(object):
         out : `astropy.io.fits.ImageHDU`
 
         """
-        if self.var is None:
+        if self._var is None:
             return None
 
-        if self.var.dtype == np.float64:
+        if self._var.dtype == np.float64:
             # Force var to be stored in float instead of double
-            var = self.var.astype(np.float32)
+            var = self._var.astype(np.float32)
         else:
-            var = self.var
+            var = self._var
 
         # world coordinates
         if header is None:
@@ -813,7 +836,7 @@ class DataArray(object):
         hdulist.append(datahdu)
 
         # create spectrum STAT extension
-        if self.var is not None:
+        if self._var is not None:
             hdulist.append(self.get_stat_hdu(header=datahdu.header.copy()))
 
         # create DQ extension
@@ -852,14 +875,14 @@ class DataArray(object):
 
         # Modify the variances to account for the effect of the square root.
 
-        if self.var is not None:
+        if self._var is not None:
             # For a value x, picked from a distribution of
             # variance, vx, the expected variance of sqrt(x), is:
             #
             #  vs = (d[sqrt(x)]/dx)**2 * vx
             #     = (0.5 / sqrt(x))**2 * vx
             #     = 0.25 / x * vx.
-            out.var = 0.25 * self.var / self.data.data
+            out._var = 0.25 * self._var / self._data
         return out
 
     def abs(self, out=None):
@@ -879,14 +902,17 @@ class DataArray(object):
             out = self.clone()
 
         out.data = np.ma.abs(self.data)
-        if self.var is not None:
-            out.var = self.var.copy()
+        if self._var is not None:
+            out._var = self._var.copy()
         return out
 
     def unmask(self):
         """Unmask the data (just invalid data (nan,inf) are masked)."""
-        self.mask = False
-        self.data = np.ma.masked_invalid(self.data)
+        self._mask = ~np.isfinite(self._data)
+        if self._var is not None:
+            self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
+        if not self._mask.any():
+            self._mask = ma.nomask
 
     def mask_variance(self, threshold):
         """Mask pixels with a variance above a threshold value.
@@ -897,9 +923,13 @@ class DataArray(object):
             Threshold value.
 
         """
-        if self.var is None:
+        if self._var is None: #pb si pas lu acore depuis fits
             raise ValueError('Operation forbidden without variance extension.')
-        self.data[self.var > threshold] = np.ma.masked
+        if self._mask is ma.nomask:
+            self._mask = np.zeros(self._shape, dtype=np.bool)
+        self._mask[self._var > threshold] = True
+        if not self._mask.any():
+            self._mask = ma.nomask
 
     def mask_selection(self, ksel):
         """Mask selected pixels.
@@ -910,7 +940,11 @@ class DataArray(object):
             Elements depending on a condition
 
         """
-        self.data[ksel] = np.ma.masked
+        if self._mask is ma.nomask:
+            self._mask = np.zeros(self._shape, dtype=np.bool)
+        self._mask[ksel] = True
+        if not self._mask.any():
+            self._mask = ma.nomask
 
     def crop(self):
         """Reduce the size of the array to the smallest sub-array that
