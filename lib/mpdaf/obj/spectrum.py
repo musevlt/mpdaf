@@ -812,86 +812,89 @@ class Spectrum(DataArray):
             - 'left': one pixel added on the left of the spectrum.
 
         """
+
+        # The divisor must be in the range 1 to (shape - 1).
+
         if factor <= 1 or factor >= self.shape[0]:
             raise ValueError('factor must be in ]1,shape[')
-        # assert not np.sometrue(np.mod( self.shape, factor))
-        if not np.sometrue(np.mod(self.shape[0], factor)):
-            # new size is an integer multiple of the original size
-            self._rebin_mean_(factor)
-        else:
-            newshape = self.shape[0] / factor
-            n = self.shape[0] - newshape * factor
-            if margin == 'center' and n == 1:
-                margin = 'right'
-            if margin == 'center':
-                n_left = n / 2
-                n_right = self.shape[0] - n + n_left
-                spe = self[n_left:n_right]
-                spe._rebin_mean_(factor)
-                newshape = spe.shape[0] + 2
-                data = np.ma.empty(newshape)
-                data[1:-1] = spe.data
-                data[0] = self.data[0:n_left].sum() / factor
-                data[-1] = self.data[n_right:].sum() / factor
-                var = None
-                if self.var is not None:
-                    var = np.empty(newshape)
-                    var[1:-1] = spe.var
-                    var[0] = self.var[0:n_left].sum() / factor / factor
-                    var[-1] = self.var[n_right:].sum() / factor / factor
-                try:
-                    wave = spe.wave
-                    wave.set_crpix(wave.get_crpix() + 1)
-                    wave.shape = wave.shape + 2
-                except:
-                    wave = None
-                self.wave = wave
-                self.data = np.ma.masked_invalid(data)
-                self.var = var
+        factor = int(factor)
+
+        # How many pixels need to be removed to make the dimension
+        # of the array an integer multiple of the division factor?
+
+        n = self.shape[0] % factor
+
+        # If needed, compute the slice needed to truncate the
+        # size of the spectrum to an integer multiple of the
+        # division factor.
+
+        if n != 0:
+
+            # Calculate the index of the first pixel of the spectrum
+            # that will be re-binned.
+
+            if margin == 'left' or n==1:
+                ia = 0
             elif margin == 'right':
-                spe = self[0:self.shape[0] - n]
-                spe._rebin_mean_(factor)
-                newshape = spe.shape[0] + 1
-                data = np.ma.empty(newshape)
-                data[:-1] = spe.data
-                data[-1] = self.data[self.shape[0] - n:].sum() / factor
-                var = None
-                if self.var is not None:
-                    var = np.empty(newshape)
-                    var[:-1] = spe.var
-                    var[-1] = self.var[self.shape[0] - n:].sum() / factor / factor
-                try:
-                    wave = spe.wave
-                    wave.shape = wave.shape + 1
-                except:
-                    wave = None
-                self.wave = wave
-                self.data = np.ma.masked_invalid(data)
-                self.var = var
-            elif margin == 'left':
-                spe = self[n:]
-                spe._rebin_mean_(factor)
-                newshape = spe.shape + 1
-                data = np.ma.empty(newshape)
-                data[0] = self.data[0:n].sum() / factor
-                data[1:] = spe.data
-                var = None
-                if self.var is not None:
-                    var = np.empty(newshape)
-                    var[0] = self.var[0:n].sum() / factor / factor
-                    var[1:] = spe.var
-                try:
-                    wave = spe.wave
-                    wave.set_crpix(wave.get_crpix() + 1)
-                    wave.shape = wave.shape + 1
-                except:
-                    wave = None
-                self.wave = wave
-                self.data = np.ma.masked_invalid(data)
-                self.var = var
+                ia = n
+            elif margin == 'center':
+                ia = n//2
             else:
-                raise ValueError('margin must be center|right|left')
-            pass
+                raise ValueError('Unsupported margin: %s' % margin)
+
+            # Compute the slice to be used to select the sub-spectrum.
+
+            sl = slice(ia, self.shape[0] - (n - ia))
+
+            # Slice the data and variance arrays.
+
+            self.data = self.data[sl]
+            if self.var is not None:
+                self.var = self.var[sl]
+
+            # Update the world coordinates to match the truncated
+            # array.
+
+            self.wcs = self.wcs[sl]
+
+
+        # At this point the spectrum dimension is an integer multiple of
+        # the division factor. What is the shape of the output spectrum?
+
+        newshape = self.shape[0] // factor
+
+        # Compute how many unmasked pixels in the input spectrum will
+        # contribute to each mean pixel in the output spectrum.
+
+        unmasked = self.data.reshape(newshape, factor).count(1)
+
+        # Reduce the size of the data array by taking the mean of
+        # successive groups of 'factor' pixels. Note that in the
+        # following, np.ma.mean() takes account of masked pixels.
+
+        self.data = self.data.reshape(newshape, factor).mean(1)
+
+        # The treatment of the variance array is complicated by the
+        # possibility of masked pixels in the data array. A sum of N
+        # data pixels p[i] of variance v[i] has a variance of
+        # sum(v[i] / N^2), where N^2 is the number of unmasked pixels
+        # in that particular sum.
+
+        if self.var is not None:
+            self.var = (self.var.reshape(newshape, factor).sum(1) / unmasked**2)
+
+        # Mask all pixels in the output array that come from zero
+        # unmasked pixels of the input array.
+
+        self.data.mask = unmasked < 1
+
+        # Update the world-coordinate information.
+
+        try:
+            self.wave.rebin(factor)
+        except:
+            self.wave = None
+
 
     def rebin_mean(self, factor, margin='center'):
         """Return a spectrum that shrinks the size of the current spectrum by
