@@ -41,7 +41,7 @@ class ORIGIN(object):
         - cube data (raw data and covariance)
         - 1D dictionary of spectral profiles
         - MUSE PSF
-        
+
        The class contains the methods that compose the ORIGIN software.
 
         Attributes
@@ -92,13 +92,13 @@ class ORIGIN(object):
                  Edge_ymin=None, Edge_ymax=None, profiles=None, FWHM_profiles=None, PSF=None,
                  FWHM_PSF=None):
         """Create a ORIGIN object.
-        
+
         An Origin object is composed by:
         - cube data (raw data and covariance)
         - 1D dictionary of spectral profiles
         - MUSE PSF
         - parameters used to segment the cube in different zones.
-        
+
 
         Parameters
         ----------
@@ -145,17 +145,17 @@ class ORIGIN(object):
         self.wcs = cub.wcs
         # spectral coordinates
         self.wave = cub.wave
-        
+
         #Dimensions
         self.Nz, self.Ny, self.Nx = cub.shape
-        
+
         del cub
 
         # Set to Inf the Nana
         self.var[np.isnan(self.var)] = np.inf
 
         self.NbSubcube = NbSubcube
-        
+
         if Edge_xmin is None:
             self.Edge_xmin = 0
         else:
@@ -172,7 +172,7 @@ class ORIGIN(object):
             self.Edge_ymax = self.Ny
         else:
             self.Edge_ymax = Edge_ymax
-        
+
         # Dictionary of spectral profile
         if profiles is None or FWHM_profiles is None:
             self._logger.info('ORIGIN - Load dictionary of spectral profile')
@@ -182,9 +182,9 @@ class ORIGIN(object):
         else:
             self.profiles = profiles
             self.FWHM_profiles = FWHM_profiles
-            
-            
-        # 1 pixel in arcsec 
+
+
+        # 1 pixel in arcsec
         step_arcsec = self.wcs.get_step(unit=u.arcsec)[0]
         if PSF is None or FWHM_PSF is None:
             self._logger.info('ORIGIN - Compute PSF')
@@ -201,35 +201,34 @@ class ORIGIN(object):
                 raise IOError('PSF and data cube have not the same dimensions along the spectral axis.')
             if cubePSF.wcs.get_step(unit=u.arcsec)[0] != step_arcsec:
                 raise IOError('PSF and data cube have not the same pixel sizes.')
-            
+
             self.PSF = cubePSF.data.data
             # mean of the fwhm of the FSF in pixel
             self.FWHM_PSF = np.mean(FWHM_PSF)
-        
+
         #Spatial segmentation
         self._logger.info('ORIGIN - Spatial segmentation')
         self.inty, self.intx = Spatial_Segmentation(self.Nx, self.Ny,
                                                     NbSubcube)
-    
-    
+
     def compute_PCA(self, r0=0.67, plot_lambda=False):
         """ Loop on each zone of the data cube and compute the PCA,
         the number of eigenvectors to keep for the projection
         (with a linear regression and its associated determination
         coefficient) and return the projection of the data
         in the original basis keeping the desired number eigenvalues.
-    
+
         Parameters
         ----------
         r0          : float
                       Coefficient of determination for projection during PCA
         plot_lambda : bool
                       If True, plot the eigenvalues and the separation point.
-             
+
         Returns
         -------
         cube_faint : mpdaf.obj.Cube
-                     Projection on the eigenvectors associated to the lower 
+                     Projection on the eigenvectors associated to the lower
                      eigenvalues of the data cube
                      (representing the faint signal)
         cube_cont  : mpdaf.obj.Cube
@@ -254,7 +253,7 @@ class ORIGIN(object):
         # Parameters for projection during PCA
         self._logger.info('ORIGIN - Compute the number of eigenvectors to keep for the projection')
         list_r0  = np.resize(r0, self.NbSubcube**2)
-        nbkeep = Compute_Number_Eigenvectors_Zone(self.NbSubcube, list_r0, eig_val, 
+        nbkeep = Compute_Number_Eigenvectors_Zone(self.NbSubcube, list_r0, eig_val,
                                               plot_lambda)
         # Adaptive projection of the cube on the eigenvectors
         self._logger.info('ORIGIN - Adaptive projection of the cube on the eigenvectors')
@@ -271,16 +270,16 @@ class ORIGIN(object):
         cube_cont = Cube(data=cube_cont, wave=self.wave, wcs=self.wcs,
                           mask=np.ma.nomask)
         return cube_faint, cube_cont
-    
+
     def compute_TGLR(self, cube_faint):
-        """compute the cube of GLR test values obtained with the given
-           PSF and dictionary of spectral profile.
+        """Compute the cube of GLR test values obtained with the given
+        PSF and dictionary of spectral profile.
 
         Parameters
         ----------
         cube_faint : mpdaf.obj.cube
                      data cube on test
-    
+
         Returns
         -------
         correl  : mpdaf.obj.Cube
@@ -298,23 +297,23 @@ class ORIGIN(object):
         profile = Cube(data=profile, wave=self.wave, wcs=self.wcs,
                           mask=np.ma.nomask, dtype=int)
         return correl, profile
-    
-    
+
     def compute_pvalues(self, correl, threshold=8):
         """Loop on each zone of the data cube and compute for each zone:
+
         - the p-values associated to the T_GLR values,
         - the p-values associated to the number of thresholded p-values
-          of the correlations per spectral channel, 
+          of the correlations per spectral channel,
         - the final p-values which are the thresholded pvalues associated
           to the T_GLR values divided by twice the pvalues associated to the
           number of thresholded p-values of the correlations per spectral
           channel.
-        
+
         Parameters
         ----------
         threshold : float
                     Threshold applied on pvalues.
-                    
+
         Returns
         -------
         cube_pval_correl  : mpdaf.obj.Cube
@@ -335,8 +334,8 @@ class ORIGIN(object):
                                                     self.Edge_xmax,
                                                     self.Edge_ymin,
                                                     self.Edge_ymax,
-                                                   threshold)
-        # p-values of spectral channel 
+                                                    threshold)
+        # p-values of spectral channel
         # Estimated mean for p-values distribution related
         # to the Rayleigh criterium
         self._logger.info('ORIGIN - Compute p-values of spectral channel')
@@ -345,22 +344,20 @@ class ORIGIN(object):
                                                       self.intx, self.inty,
                                                       self.NbSubcube, mean_est)
 
-        # Final p-values 
+        # Final p-values
         self._logger.info('ORIGIN - Compute final p-values')
         cube_pval_final = Compute_pval_final(cube_pval_correl, cube_pval_channel,
-                                         threshold)
-        
+                                             threshold)
+
         cube_pval_correl = Cube(data=cube_pval_correl, wave=self.wave, wcs=self.wcs,
-                          mask=np.ma.nomask)
+                                mask=np.ma.nomask)
         cube_pval_channel = Cube(data=cube_pval_channel, wave=self.wave, wcs=self.wcs,
-                          mask=np.ma.nomask)
+                                 mask=np.ma.nomask)
         cube_pval_final = Cube(data=cube_pval_final, wave=self.wave, wcs=self.wcs,
-                          mask=np.ma.nomask)
-        
+                               mask=np.ma.nomask)
+
         return cube_pval_correl, cube_pval_channel, cube_pval_final
-    
-    
-    
+
     def compute_ref_pix(self, correl, profile, cube_pval_correl,
                                   cube_pval_channel, cube_pval_final,
                                   neighboors=26):
@@ -368,23 +365,23 @@ class ORIGIN(object):
         on the cube of final thresholded p-values. Then compute referent
         voxel of each group of connected voxels using the voxel with the
         higher T_GLR value.
-        
+
         Parameters
         ----------
         correl            : mpdaf.obj.Cube
                             Cube of T_GLR values
         profile           : mpdaf.obj.Cube (type int)
-                            Number of the profile associated to the T_GLR 
+                            Number of the profile associated to the T_GLR
         cube_pval_correl  : mpdaf.obj.Cube
                            Cube of thresholded p-values associated
                            to the T_GLR values
         cube_pval_channel : mpdaf.obj.Cube
                             Cube of spectral p-values
         cube_pval_final   : mpdaf.obj.Cube
-                            Cube of final thresholded p-values 
+                            Cube of final thresholded p-values
         neighboors        : integer
                             Connectivity of contiguous voxels
-                     
+
         Returns
         -------
         Cat0 : astropy.Table
@@ -392,21 +389,20 @@ class ORIGIN(object):
                Coordinates are in pixels.
                Columns of Cat_ref : x y z T_GLR profile pvalC pvalS pvalF
         """
-        # connected voxels 
+        # connected voxels
         self._logger.info('ORIGIN - Compute connected voxels')
         labeled_cube, Ngp = Compute_Connected_Voxel(cube_pval_final.data.data, neighboors)
         self._logger.info('ORIGIN - %d connected voxels detected'%Ngp)
-        # Referent pixel 
+        # Referent pixel
         self._logger.info('ORIGIN - Compute referent pixels')
         Cat0 = Compute_Referent_Voxel(correl.data.data, profile.data.data, cube_pval_correl.data.data,
                                   cube_pval_channel.data.data, cube_pval_final.data.data, Ngp,
                                   labeled_cube)
         return Cat0
-    
-    
+
     def compute_NBtests(self, Cat0, nb_ranges=3, plot_narrow=False):
         """compute the 2 narrow band tests for each detected emission line.
-        
+
         Parameters
         ----------
         Cat0        : astropy.Table
@@ -418,7 +414,7 @@ class ORIGIN(object):
                       controle cube
         plot_narrow : boolean
                       If True, plot the narrow bands images
-                      
+
         Returns
         -------
         Cat1 : astropy.Table
@@ -433,8 +429,7 @@ class ORIGIN(object):
                                 self.PSF, nb_ranges,
                                 plot_narrow, self.wcs)
         return Cat1
-    
-    
+
     def select_NBtests(self, Cat1, thresh_T1=0.2, thresh_T2=2):
         """select emission lines according to the 2 narrow band tests.
 
@@ -446,7 +441,7 @@ class ORIGIN(object):
                     Threshold for the test 1
         thresh_T2 : float
                     Threshold for the test 2
-    
+
         Returns
         -------
         Cat1_T1 : astropy.Table
@@ -455,7 +450,7 @@ class ORIGIN(object):
         Cat1_T2 : astropy.Table
                   Catalogue of parameters of detected emission lines selected with
                   the test 2
-    
+
         Columns of the catalogues :
         x y z T_GLR profile pvalC pvalS pvalF T1 T2
         """
@@ -464,15 +459,14 @@ class ORIGIN(object):
         self._logger.info('ORIGIN - %d emission lines selected with the test 1'%len(Cat1_T1))
         self._logger.info('ORIGIN - %d emission lines selected with the test 2'%len(Cat1_T2))
         return Cat1_T1, Cat1_T2
-    
-    
+
     def estimate_line(self, Cat1_T, profile, cube_faint,
                       grid_dxy=0, grid_dz=0):
         """compute the estimated emission line and the optimal coordinates
         for each detected lines in a spatio-spectral grid (each emission line
         is estimated with the deconvolution model :
         subcube = FSF*line -> line_est = subcube*fsf/(fsf^2))
-    
+
         Parameters
         ----------
         Cat1_T     : astropy.Table
@@ -481,7 +475,7 @@ class ORIGIN(object):
                      Columns of the Catalogue Cat1_T:
                      x y z T_GLR profile pvalC pvalS pvalF T1 T2
         profile    : mpdaf.obj.Cube
-                     Number of the profile associated to the T_GLR 
+                     Number of the profile associated to the T_GLR
         cube_faint : mpdaf.obj.Cube
                      Projection on the eigenvectors associated to the lower
                      eigenvalues
@@ -489,17 +483,17 @@ class ORIGIN(object):
                      Maximum spatial shift for the grid
         grid_dz    : integer
                      Maximum spectral shift for the grid
-    
+
         Returns
         -------
         Cat2_T           : astropy.Table
                            Catalogue of parameters of detected emission lines.
                            Columns of the Catalogue Cat2:
                            x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual
-                           flux num_line   
+                           flux num_line
         Cat_est_line : list of mpdaf.obj.Spectrum
                         Estimated lines
-        """ 
+        """
         self._logger.info('ORIGIN - Lines estimation')
         Cat2_T, Cat_est_line_raw_T, Cat_est_line_std_T = \
         Estimation_Line(Cat1_T, profile.data.data, self.Nx, self.Ny, self.Nz, self.var, cube_faint.data.data,
@@ -509,8 +503,7 @@ class ORIGIN(object):
             spe = Spectrum(data=data, var=var, wave=self.wave, mask=np.ma.nomask)
             Cat_est_line.append(spe)
         return Cat2_T, Cat_est_line
-    
-    
+
     def merge_spatialy(self, Cat2_T):
         """Construct a catalogue of sources by spatial merging of the
         detected emission lines in a circle with a diameter equal to
@@ -523,53 +516,53 @@ class ORIGIN(object):
                    Columns of Cat2_T:
                    x y z T_GLR profile pvalC pvalS pvalF T1 T2
                    residual flux num_line
-        
+
         Returns
         -------
         Cat3 : astropy.Table
                Columns of Cat3:
-               ID x_circle y_circle x_centroid y_centroid nb_lines 
+               ID x_circle y_circle x_centroid y_centroid nb_lines
                x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
         """
         self._logger.info('ORIGIN - Spatial merging')
         Cat3 = Spatial_Merging_Circle(Cat2_T, self.FWHM_PSF, self.Nx, self.Ny)
         return Cat3
-    
+
     def merge_spectraly(self, Cat3, Cat_est_line, deltaz=1):
         """Merge the detected emission lines distants to less than deltaz
            spectral channel in each group.
 
         Parameters
-        ---------
+        ----------
         Cat3         : astropy.Table
                        Catalogue of detected emission lines
                        Columns of Cat:
-                       ID x_circle y_circle x_centroid y_centroid nb_lines 
+                       ID x_circle y_circle x_centroid y_centroid nb_lines
                        x y z T_GLR profile pvalC pvalS pvalF T1 T2
                        residual flux num_line
         Cat_est_line : list of mpdaf.obj.Spectrum
                        List of estimated lines
         deltaz       : integer
                        Distance maximum between 2 different lines
-    
+
         Returns
         -------
         Cat4 : astropy.Table
                Catalogue
                Columns of Cat4:
-               ID x_circle y_circle x_centroid y_centroid nb_lines 
+               ID x_circle y_circle x_centroid y_centroid nb_lines
                x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
         """
         self._logger.info('ORIGIN - Spectral merging')
         Cat_est_line_raw = [spe.data.data for spe in Cat_est_line]
-        Cat4 =  Spectral_Merging(Cat3, Cat_est_line_raw, deltaz)
+        Cat4 = Spectral_Merging(Cat3, Cat_est_line_raw, deltaz)
         return Cat4
-    
+
     def get_sources(self, Cat4, Cat_est_line, correl):
         """add corresponding RA/DEC to each referent pixel of each group and
         create the final catalogue of sources with their parameters
-        
-        
+
+
         Parameters
         ----------
         Cat4             : astropy.Table
@@ -590,18 +583,18 @@ class ORIGIN(object):
         # Add RA-DEC to the catalogue
         self._logger.info('ORIGIN - Add RA-DEC to the catalogue')
         CatF_radec = Add_radec_to_Cat(Cat4, self.wcs)
-    
+
         # list of source objects
         self._logger.info('ORIGIN - Create the list of sources')
         sources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
                                          correl.data.data, self.wave,
                                          self.filename, self.FWHM_profiles)
         return sources
-    
+
     def plot(self, correl, x, y, circle=False, vmin=0, vmax=30, title=None, ax=None):
         """Plot detected emission lines on the 2D map of maximum of the T_GLR
         values over the spectral channels.
-        
+
         Parameters
         ----------
         correl : mpdaf.obj.Cube
@@ -628,13 +621,11 @@ class ORIGIN(object):
         if ax is None:
             plt.figure()
             ax = plt.gca()
-        
+
         ax.plot(x, y, 'k+')
         if circle:
             for px, py in zip(x, y):
                 c = plt.Circle((px, py), np.round(self.FWHM_PSF/2), color='k',
-                            fill=False)
+                               fill=False)
                 ax.add_artist(c)
         carte_2D_correl_.plot(vmin=vmin, vmax=vmax, title=title, ax=ax)
-
-    
