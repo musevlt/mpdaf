@@ -1719,8 +1719,10 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
         src.add_white_image(cube)
         src.add_cube(cube, 'MUSE_CUBE')
         src.add_image(maxmap, 'MAXMAP')
+        src.add_attr('SRC_VERS', '0.1', desc='Source version')
         if cubevers is not None:
             src.add_attr('CUBE_V', cubevers, desc='Cube version')
+        src.add_history('[{}] Source created with Origin'.format(src.SRC_VERS),'RBA')
         # Lines of this group
         wave_pix = E['z']
         GLR = E['T_GLR']
