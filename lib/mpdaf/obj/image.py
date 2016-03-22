@@ -240,13 +240,13 @@ class Image(DataArray):
 
     _ndim_required = 2
     _has_wcs = True
-    _spflims = None
 
     def __init__(self, filename=None, ext=None, wcs=None, data=None, var=None,
                  unit=u.dimensionless_unscaled, copy=True, dtype=float,
                  **kwargs):
         self._clicks = None
         self._selector = None
+        self._spflims = None
 
         if filename is not None and not is_valid_fits_file(filename):
             from PIL import Image as PILImage
@@ -342,8 +342,11 @@ class Image(DataArray):
     def copy(self):
         """Return a new copy of an Image object."""
         obj = super(Image, self).copy()
-        obj._spflims = self._spflims
-        obj._has_wcs = self._has_wcs
+
+        # Make a deep copy of the spatial-frequency limits.
+
+        if self._spflims is not None:
+            obj._spflims = self._spflims.deepcopy()
         return obj
 
     def __radd__(self, other):
@@ -6035,13 +6038,16 @@ class SpatialFrequencyLimits(object):
 
         # Store the Y and X axes of the band-limiting ellipse.
 
-        self.fmax = np.asarray(fmax, dtype=np.float)
+        self.fmax = np.array(fmax, dtype=np.float, copy=True)
 
         # Record the rotation angle in degrees of the ellipse, after
         # wrapping the angle into the range -180 to 180, to make it
         # easy to compare with angles returned by wcs.get_rot().
 
-        self.rot = rot - 360.0 * np.floor(rot / 360.0 + 0.5)
+        self.rot = float(rot - 360.0 * np.floor(rot / 360.0 + 0.5))
+
+    def deepcopy(self):
+        return SpatialFrequencyLimits(self.fmax, self.rot)
 
     def get_fmax(self, rot):
 
