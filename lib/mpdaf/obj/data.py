@@ -578,6 +578,10 @@ class DataArray(object):
                 data.mask |= ~(np.isfinite(data.data))
             else:
                 data = ma.masked_invalid(data)
+
+            if np.array_equal(data.shape, self.shape):
+                # Store the data array if the full data has been read
+                self._data = data
         else:
             data = self._data[item]  # data = self.data[item].copy()
 
@@ -600,6 +604,10 @@ class DataArray(object):
                     if not np.array_equal(var.shape, data.shape):
                         raise IOError('Number of points in STAT not equal to '
                                       'DATA')
+
+                if np.array_equal(var.shape, self.shape):
+                    # Store the var array if the full var has been read
+                    self._var = var
             else:
                 var = None
         else:
