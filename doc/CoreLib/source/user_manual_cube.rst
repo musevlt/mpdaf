@@ -2,7 +2,7 @@ Cube object
 ***********
 
 Cube python object can handle datacubes which have a regular grid format in both spatial and spectral axis.
-Variance information can also be taken into account as well as bad pixels. 
+Variance information can also be taken into account as well as bad pixels.
 Cube object can be read and written to disk as a multi-extension FITS file.
 
 Object is build as a set or numpy masked arrays and world coordinate information. A number of transformation
@@ -36,23 +36,21 @@ A cube object O consist of:
 +------------------+--------------------------------------------------------------------------------------------------+
 | O.var            | (optionally) Numpy array with variance values                                                    |
 +------------------+--------------------------------------------------------------------------------------------------+
-| O.ima            | Dictionary of images attached to the cube                                                        |
-+------------------+--------------------------------------------------------------------------------------------------+
 
 Masked arrays are arrays that may have missing or invalid entries.
 The `numpy.ma <http://docs.scipy.org/doc/numpy/reference/maskedarray.html>`_ module provides a nearly work-alike replacement for numpy that supports data arrays with masks.
 
 Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis, p and q the spatial axes
 
-The format of each numpy array follows the indexing used by Python to 
-handle 3D arrays. For an MPDAF cube C, the pixel in the bottom-lower-left corner is 
-referenced as C[0,0,0] and the pixel C[k,p,q] refers to the horizontal position 
+The format of each numpy array follows the indexing used by Python to
+handle 3D arrays. For an MPDAF cube C, the pixel in the bottom-lower-left corner is
+referenced as C[0,0,0] and the pixel C[k,p,q] refers to the horizontal position
 q, the vertical position p, and the spectral position k, as follows:
 
 .. figure:: user_manual_cube_images/gridcube.jpg
   :align: center
 
-In total, this cube C contains nq pixels in the horizontal direction, 
+In total, this cube C contains nq pixels in the horizontal direction,
 np pixels in the vertical direction and nk channels in the spectral direction.
 
 
@@ -111,9 +109,9 @@ Getters and setters
 Mask
 ----
 
-:func:`<= <mpdaf.obj.DataArray.__le__>` masks data array where greater than a given value.                                 
+:func:`<= <mpdaf.obj.DataArray.__le__>` masks data array where greater than a given value.
 
-:func:`< <mpdaf.obj.DataArray.__lt__>` masks data array where greater or equal than a given value. 
+:func:`< <mpdaf.obj.DataArray.__lt__>` masks data array where greater or equal than a given value.
 
 :func:`>= <mpdaf.obj.DataArray.__ge__>` masks data array where less than a given value.
 
@@ -329,7 +327,7 @@ First let's isolate the emission line by truncating the object datacube in wavel
  [INFO] wavelength: min:9001.25 max:9200.00 step:1.25 angstrom
  >>> sp1 = emi1.sum(axis=(1,2))
  >>> sp1.plot(color='r')
- 
+
 .. figure::  user_manual_cube_images/spec4.png
    :align:   center
 
@@ -344,7 +342,7 @@ and the continnum subtracted::
  >>> cont1.plot()
  >>> line1 = sp1 - cont1
  >>> line1.plot(color='r')
- 
+
 .. figure::  user_manual_cube_images/spec5.png
    :align:   center
 
@@ -359,7 +357,7 @@ over the wavelength range centered around Halfa and the continuum mean flux at t
  >>> ew = fline/cline
  >>> print fline, cline, ew
  8352.08991389 1e-20 erg / (cm2 s) 1932.61993433 1e-20 erg / (Angstrom cm2 s) 4.32164119056 Angstrom
- 
+
 .. figure::  user_manual_cube_images/spec6.png
    :align:   center
 
@@ -389,9 +387,9 @@ the spectrum iterator.::
  >>> ha_ew.mask_selection(np.where((ima1.data)<40))
  >>> ha_ew.unit = ha_flux.unit / cont_flux.unit
  >>> ha_ew.plot(title="Ha line ew (%s)"%ha_ew.unit, colorbar='v')
- 
+
 .. image::  user_manual_cube_images/recima6.png
-   
+
 .. image::  user_manual_cube_images/recima7.png
 
 .. image::  user_manual_cube_images/recima8.png
@@ -409,18 +407,18 @@ First, we use the image iterator::
  >>> cube2 = cube.clone()
  >>> for ima,k in iter_ima(cube, index=True):
  >>>   cube2[k,:,:] = ima.gaussian_filter(sigma=3)
- 
+
 We can also use the :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method that automatically loops over all images to apply the convolution::
 
  >>> from mpdaf.obj import Image
  >>> cube2 = cube.loop_ima_multiprocessing(f=Image.gaussian_filter, sigma=3)
  [INFO] loop_ima_multiprocessing (gaussian_filter): 3601 tasks
- 
+
 We then plot the result::
 
  >>> cube.sum(axis=0).plot(title='before Gaussian filter')
  >>> cube2.sum(axis=0).plot(title='after Gaussian filter')
- 
+
 .. image::  user_manual_cube_images/recima9.png
 
 .. image::  user_manual_cube_images/recima10.png
@@ -428,9 +426,9 @@ We then plot the result::
 Tutorial 5
 ----------
 
-In this tutorial, we will use the spectrum iterator (Tutorial 3) to compute the 
-emission line velocity field in one of the objects. We start by extracting the object 
-from Tutorial 1 and computing the total spectrum to retrieve the central peak of the 
+In this tutorial, we will use the spectrum iterator (Tutorial 3) to compute the
+emission line velocity field in one of the objects. We start by extracting the object
+from Tutorial 1 and computing the total spectrum to retrieve the central peak of the
 emission line::
 
  >>> from mpdaf.obj import Cube
@@ -441,7 +439,7 @@ emission line::
  >>> sp1 = obj1.sum(axis=(1,2))
  >>> ltotal = sp1.gauss_fit(9000.0,9200.0).lpeak
 
-We then create three maps by cloning the continuum image and computing the 
+We then create three maps by cloning the continuum image and computing the
 line fit parameters spectrum by spectrum on the datacube::
 
  >>> im1 = obj1.mean(axis=0)
@@ -459,7 +457,7 @@ line fit parameters spectrum by spectrum on the datacube::
 We then plot the resulting velocity field, masking the outliers::
 
  >>> lfield2=lfield>-200
- >>> lfield3=lfield2<200 
+ >>> lfield3=lfield2<200
  >>> lfield3.plot()
 
 .. image::  user_manual_cube_images/vfield.png
@@ -467,17 +465,17 @@ We then plot the resulting velocity field, masking the outliers::
 Tutorial 6
 ----------
 
-In this tutorial, we will use the :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method (Tutorial 4) to fit and remove a background 
+In this tutorial, we will use the :func:`mpdaf.obj.Cube.loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method (Tutorial 4) to fit and remove a background
 gradient from the simulated datacube Central_DATACUBE_bkg.fits. We start by loading this cube::
 
  >>> from mpdaf.obj import Cube
  >>> import numpy as np
  >>> cube = Cube('Central_DATACUBE_bkg.fits.gz')
 
-For each image of the cube, we fit a 2nd order polynomial to the background values 
-(selected here by simply applying a flux threshold to mask all bright objects). We 
-do so by doing a chi^2 minimization over the polynomial coefficients using the 
-numpy recipe np.linalg.lstsq(). for this, we define a function that takes an image as parameter 
+For each image of the cube, we fit a 2nd order polynomial to the background values
+(selected here by simply applying a flux threshold to mask all bright objects). We
+do so by doing a chi^2 minimization over the polynomial coefficients using the
+numpy recipe np.linalg.lstsq(). for this, we define a function that takes an image as parameter
 and returns the background-subtracted image::
 
  >>> def remove_background_gradient(ima):
@@ -495,7 +493,7 @@ and returns the background-subtracted image::
  >>>     X,Y = np.meshgrid(xrange(ima.shape[0]),xrange(ima.shape[1]))
  >>>     ima2 = ima-np.array(map(lambda q,p: fp(p)+fq(q),Y,X))
  >>>     return ima2
-    
+
 We can then create the background-subtracted cube:::
 
  >>> cube2 = cube.loop_ima_multiprocessing(f=remove_background_gradient)

@@ -29,8 +29,7 @@ class iter_spe(object):
     Parameters
     ----------
     cube : mpdaf.obj.Cube
-       The cube that contains the spectra to be returned one after
-       another.
+       The cube that contains the spectra to be returned one after another.
     index : boolean
        If index=False, only return a spectrum at each iteration.
        If index=True, return both a spectrum and the position of that
@@ -70,8 +69,7 @@ class iter_ima(object):
     Parameters
     ----------
     cube : mpdaf.obj.Cube
-       The cube that contains the spectra to be returned one after
-       another.
+       The cube that contains the spectra to be returned one after another.
     index : boolean
        If index=False, only return an image at each iteration.
        If index=True, return both an image and the spectral pixel
@@ -127,11 +125,6 @@ class Cube(DataArray):
         cube (None by default). Where given, this array should be
         3 dimensional, and the python ordering of its axes should be
         (wavelength,image_y,image_x).
-    ima : boolean
-        If true (default), any 2 dimensional IMAGE extensions that are
-        found in the FITS file will be loaded and stored in the
-        dictionary attribute, .ima, indexed by their FITS extension
-        name.
     copy : boolean
         If true (default), then the data and variance arrays are copied.
     dtype : numpy.dtype
@@ -160,8 +153,6 @@ class Cube(DataArray):
         The type of the data (integer, float)
     var : float array
         An optional array containing the variance, or None.
-    ima : dict{string,mpdaf.obj.Image}
-        A dictionary of 2D images.
 
     """
 
@@ -171,43 +162,6 @@ class Cube(DataArray):
     _ndim_required = 3
     _has_wcs = True
     _has_wave = True
-
-    def __init__(self, filename=None, ext=None, wcs=None, wave=None, ima=True,
-                 unit=u.dimensionless_unscaled, data=None, var=None, copy=True,
-                 dtype=float, **kwargs):
-
-        # Set up the DataArray base class.
-
-        super(Cube, self).__init__(
-            filename=filename, ext=ext, wcs=wcs, wave=wave, unit=unit,
-            data=data, var=var, copy=copy, dtype=dtype, **kwargs)
-
-        # See if there are any 2-dimensional IMAGE extensions in the
-        # FITS file. If there are, load them into the self.ima
-        # dictionary, indexed by their extension names.
-
-        self.ima = {}
-        if filename is not None and ima:
-            hdulist = pyfits.open(filename)
-            for hdu in hdulist:
-                hdr = hdu.header
-                if hdr['NAXIS'] == 2 and hdr['XTENSION'] == 'IMAGE':
-                    ext = hdr.get('EXTNAME')
-                    self.ima[ext] = Image(filename, ext=ext)
-            hdulist.close()
-
-    def copy(self):
-        """Return a new copy of a Cube object."""
-        obj = super(Cube, self).copy()
-        for key, ima in self.ima:
-            obj.ima[key] = ima.copy()
-        return obj
-
-    def info(self):
-        """Print information."""
-        super(Cube, self).info()
-        if len(self.ima) > 0:
-            self._logger.info('.ima: %s', ', '.join(self.ima.keys()))
 
     @deprecated('The resize method is deprecated. Please use crop instead.')
     def resize(self):
