@@ -15,25 +15,8 @@ be used to navigate through the directory structure.
 Wiki page
 ---------
 
-You can browse tarball of specific revisions in the wiki page `CoreLib <http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
-
-
-MPDAF sub-modules
------------------
-
-mpdaf contains user packages:
-
-+-------------------+--------------------+-----------------------------------------------------------------------+
-| User packages     | Path               |                                                                       |
-+===================+====================+=======================================================================+
-| mpdaf_user.zap    | mpdaf_user/zap     | sky subtraction tool                                                  |
-|                   |                    | `zap doc <http://urania1.univ-lyon1.fr/mpdaf/wiki/ZapWiki>`_          |
-+-------------------+--------------------+-----------------------------------------------------------------------+
-| mpdaf_user.galpak | mpdaf_user/galpak  | galaxy parameters and kinematics extraction tool                      |
-|                   |                    | `galpak doc <http://galpak.irap.omp.eu>`_                             |
-+-------------------+--------------------+-----------------------------------------------------------------------+
-
-These user packages are included in the mpdaf tarball.
+You can browse tarball of specific revisions in the wiki page `CoreLib
+<http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
 
 
 Prerequisites
@@ -41,29 +24,30 @@ Prerequisites
 
 The various software required are:
 
- * `python <http://python.org/>`_ version 2.6 or 2.7
- * `ipython <http://ipython.org/>`_  (enhanced interactive console)
- * `numpy <http://www.numpy.org/>`_ version 1.6.2 or above (base N-dimensional array Python package)
- * `scipy <http://www.scipy.org/>`_ version 0.12 or above (fundamental Python library for scientific computing)
- * `matplotlib <http://matplotlib.org/>`_ version 1.1.0 or above (Python 2D plotting library)
- * `astropy <http://www.astropy.org/>`_ version 1.0 or above (Python package for Astronomy)
- * `nose <http://pypi.python.org/pypi/nose/>`_ (testing for python)
- * `PIL <http://pypi.python.org/pypi/PIL>`_  (Python imaging library)
- * `numexpr <http://pypi.python.org/pypi/numexpr>`_ (fast numerical expression evaluator for NumPy)
- * pkg-config tool (helper tool used when compiling C libraries)
- * `CFITSIO <http://heasarc.gsfc.nasa.gov/fitsio/>`_ (C library for reading and writing FITS files)
- * optional: `C OpenMP library <http://openmp.org>`_ (parallel programming)
+ * `Python <http://python.org/>`_ version 2.7
+ * `IPython <http://ipython.org/>`_  (enhanced interactive console)
+ * `Numpy <http://www.numpy.org/>`_ version 1.6.2 or above (base N-dimensional array Python package)
+ * `Scipy <http://www.scipy.org/>`_ version 0.12 or above (fundamental Python library for scientific computing)
+ * `Matplotlib <http://matplotlib.org/>`_ version 1.1.0 or above (Python 2D plotting library)
+ * `Astropy <http://www.astropy.org/>`_ version 1.0 or above (Python package for Astronomy)
 
+Some additional libraries can be installed for optional features:
+
+ * `Nose <http://pypi.python.org/pypi/nose/>`_, to run the unit tests.
+ * `Pillow <http://pypi.python.org/pypi/Pillow>`_, Python imaging library, to read jpg or png images.
+ * `Numexpr <http://pypi.python.org/pypi/numexpr>`_, to optimize some computations with pixtables.
+ * ``pkg-config`` tool (helper tool used when compiling C libraries)
+ * `CFITSIO <http://heasarc.gsfc.nasa.gov/fitsio/>`_ (C library for reading and writing FITS files)
+ * `C OpenMP library <http://openmp.org>`_, to get parallelization.
 
 .. _installation-label:
 
 Installation
 ============
 
-To install the mpdaf package, you must first run the *setup.py build* command
-to build everything needed to install::
+To install the Mpdaf package::
 
-  /mpdaf$ python setup.py build
+    $ python setup.py install
 
 The setup script requires ``pkg-config`` to find the correct compiler flags and
 library flags. ``cfitsio`` is also required.
@@ -72,12 +56,7 @@ Note that on Mac OS, OpenMP is not used by default because clang doesn't
 support OpenMP. To force it, the ``USEOPENMP`` environment variable can be set
 to anything except an empty string::
 
- /mpdaf$ sudo USEOPENMP=1 CC=<local path of gcc> python setup.py build
-
-After building everything, you log as root and install everything from build
-directory::
-
-  root:/mpdaf$ python setup.py install
+    USEOPENMP=1 CC=<local path of gcc> python setup.py install
 
 Tips for Mac OS users
 ---------------------
@@ -98,6 +77,6 @@ Tips for Mac OS users
 Unit tests
 ==========
 
-The command *setup.py test* runs unit tests after in-place build::
+To run the unit tests, you need to install the *nose* package, then run::
 
-  /mpdaf$ python setup.py test
+    $ python setup.py test
