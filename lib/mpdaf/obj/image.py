@@ -339,6 +339,13 @@ class Image(DataArray):
                 res = other.__add__(self)
                 return res
 
+    def copy(self):
+        """Return a new copy of an Image object."""
+        obj = super(Image, self).copy()
+        obj._spflims = self._spflims
+        obj._has_wcs = self._has_wcs
+        return obj
+
     def __radd__(self, other):
         return self.__add__(other)
 
@@ -3418,7 +3425,7 @@ class Image(DataArray):
 
         if antialias:
             data, newfmax = _antialias_filter_image(
-                data, abs(oldinc), abs(newinc), self.get_spatial_fmax())
+                data, abs(oldinc), abs(newinc), image.get_spatial_fmax())
         else:
             newfmax = 0.5 / abs(newinc)
 
@@ -3426,7 +3433,7 @@ class Image(DataArray):
         # reduced by the changes in the Y and X sampling intervals,
         # record this.
 
-        self.update_spatial_fmax(newfmax)
+        image.update_spatial_fmax(newfmax)
 
         # For each pixel in the output image, the affine_transform
         # function calculates the index of the equivalent pixel in the
@@ -5857,7 +5864,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
 
     # Return the original image if neither axis needs filtering.
 
-    if np.all(filter_axes):
+    if np.all(np.logical_not(filter_axes)):
         return data, oldfmax
 
     # Obtain the FFT of the input image.
