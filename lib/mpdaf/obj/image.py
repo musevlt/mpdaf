@@ -21,7 +21,8 @@ from six.moves import range, zip
 
 from .coords import WCS, WaveCoord
 from .data import DataArray, is_valid_fits_file
-from .objs import is_int, is_number, UnitArray, UnitMaskedArray
+from .objs import (is_int, is_number, circular_bounding_box,
+                   UnitArray, UnitMaskedArray)
 from ..tools import deprecated
 
 __all__ = ('Gauss2D', 'Moffat2D', 'Image', 'gauss_image', 'moffat_image',
@@ -5751,7 +5752,8 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
 
 
 def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
-               unit=u.dimensionless_unscaled):
+               unit=u.dimensionless_unscaled, unit_center=u.deg,
+               unit_radius=u.arcsec):
     """Create a new image from a table of apertures.
 
     ra(deg), dec(deg) and radius(arcsec).
@@ -5779,23 +5781,20 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
     if wcs.naxis1 == 1. and wcs.naxis2 == 1.:
         wcs.naxis1 = shape[1]
         wcs.naxis2 = shape[0]
-    else:
-        if wcs.naxis1 != 0. or wcs.naxis2 != 0.:
-            shape[1] = wcs.naxis1
-            shape[0] = wcs.naxis2
-    data = np.zeros(shape)
-    for y, x, r in objects:
-        center = wcs.sky2pix([y, x], unit=u.deg)[0]
-        r = np.array(r) / wcs.get_step(unit=u.arcsec)
-        r2 = r[0] * r[1]
-        imin = max(0, center[0] - r[0])
-        imax = min(center[0] + r[0] + 1, shape[0])
-        jmin = max(0, center[1] - r[1])
-        jmax = min(center[1] + r[1] + 1, shape[1])
-        grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                           np.arange(jmin, jmax) - center[1], indexing='ij')
-        data[imin:imax, jmin:jmax] = np.array(
-            (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
+    elif wcs.naxis1 != 0. or wcs.naxis2 != 0.:
+        shape = (wcs.naxis2, wcs.naxis1)
+    data = np.zeros(shape, dtype=np.uint8)
+    for y, x, radius in objects:
+        radius = (radius, radius)
+        center = (y, x)
+        if unit_center is not None:
+            center = wcs.sky2pix(center, unit=unit_center)[0]
+        if unit_radius is not None:
+            radius = np.array(radius) / wcs.get_step(unit=unit_radius)
+        r2 = radius[0] * radius[1]
+        sy, sx = circular_bounding_box(center, radius, shape)
+        y, x = np.mgrid[sy, sx]
+        data[sy, sx] = ((y - center[0]) ** 2 + (x - center[1]) ** 2) < r2
     return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)
 
 

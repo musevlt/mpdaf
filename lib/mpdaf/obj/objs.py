@@ -49,6 +49,17 @@ def mag2flux(mag, wave):
     return 10 ** (-0.4 * (mag + 48.60)) * cs / wave ** 2
 
 
+def circular_bounding_box(center, radius, shape):
+    center = np.asarray(center)
+    radius = np.asarray(radius)
+    shape = np.asarray(shape) - 1
+    imin, jmin = np.maximum(
+        np.minimum((center - radius + 0.5).astype(int), shape), [0, 0])
+    imax, jmax = np.maximum(
+        np.minimum((center + radius + 0.5).astype(int), shape), [0, 0])
+    return slice(imin, imax + 1), slice(jmin, jmax + 1)
+
+
 def UnitArray(array, old_unit, new_unit):
     return (array * old_unit).to(new_unit).value
 
