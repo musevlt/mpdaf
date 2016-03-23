@@ -129,7 +129,7 @@ def test_clone():
     cube2 = cube1.clone()
     assert_true(cube1.wcs.isEqual(cube2.wcs))
     assert_true(cube1.wave.isEqual(cube2.wave))
-    assert_true(cube2._data is None)
+    assert_true(cube2._pdata is None)
     assert_true(cube2._var is None)
     assert_true(cube2._mask is False)
 
@@ -384,11 +384,11 @@ def test_getitem():
     # Extract a spectrum from the cube, and check that it has the expected
     # values.
 
-    dz = 10; dy = 0; dx = 0
+    dz = 10#; dy = 0; dx = 0
     zb = za + dz
-    yb = ya + dy
-    xb = xa + dx
-    pixel_b = xb + yb*nx + zb*(nx*ny)
+    #yb = ya + dy
+    #xb = xa + dx
+    #pixel_b = xb + yb*nx + zb*(nx*ny)
     s = cube[za:zb,ya,xa]
     expected_spec = np.arange(pixel_a, pixel_a + dz*(nx*ny), nx*ny)
 
@@ -526,16 +526,14 @@ def test_setitem():
     cube2[slices] = d
 
     # Were the data assigned correctly without changing the mask?
-
+# LP: assigning data must change the mask (it is the case for the masked array class)
 #     assert_masked_allclose(cube2.data[slices],
 #                            ma.array(d,mask=mask[slices]))
     assert_allclose(cube2._data[slices],d)
     
-    # I think that here the mask should be updated 
 
     # The corresponding variances aren't expected to change when a
-    # simple data-array is assigned. Also check that the mask hasn't
-    # been changed.
+    # simple data-array is assigned.
 
     assert_allclose(cube2._var[slices],
                            cube1._var[slices])
@@ -581,18 +579,15 @@ def test_setitem():
     cube2[slices] = d
 
     # Were the data assigned correctly without changing the mask.
-
-    assert_masked_allclose(cube2.data[slices],
-                           ma.array(d[np.newaxis,:,:],
-                                       mask=mask[slices]))
+#     assert_masked_allclose(cube2.data[slices],
+#                            ma.array(d[np.newaxis,:,:],
+#                                        mask=mask[slices]))
+    assert_allclose(cube2._data[slices], d[np.newaxis,:,:])
 
     # The corresponding variances aren't expected to change when a
-    # simple data-array is assigned. Also check that the mask hasn't
-    # been changed.
+    # simple data-array is assigned.
 
-    assert_masked_allclose(cube2.var[slices],
-                           ma.array(cube1.var[slices].data,
-                                       mask=mask[slices]))
+    assert_allclose(cube2._var[slices], cube1._var[slices])
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
@@ -1068,7 +1063,10 @@ def test_shared_masks():
     # values.
 
     expected_mask = old_mask.copy()
-    expected_mask[30:32] = True
+#    expected_mask[30:32] = True
+# In the end, we decided to create the mask only from the data.
+# But the user can set the var attribute with a masked array,
+# In this case, the given mask will be taken into account.
 
     # Assign the new array to the var property of the spectrum, then
     # check the resulting data, var and masked properties.
@@ -1092,16 +1090,17 @@ def test_shared_masks():
     new_var[30] = np.inf
     new_var[31] = np.nan
     new_var[32] = ma.masked
+    new_var = np.ma.masked_invalid(new_var, copy=False)
 
     # What should the shared mask of the spectrum be after we assign
     # the above array to the .var property? When a masked array of the
     # same shape is assigned to the var property, the resulting mask
     # should be the union of the original shared mask, the mask of the
-    # new variance array, and True values at indexes where the new
-    # variances are Inf or Nan.
+    # new variance array
 
     expected_mask = old_mask.copy()
     expected_mask[30:33] = True
+    expected_mask[32] = True
 
     # Assign the new array to the var property of the spectrum, then
     # check the resulting data, var and masked properties.
@@ -1131,8 +1130,10 @@ def test_shared_masks():
     # except where the new data array contains extra Inf or Nan
     # values.
 
-    expected_mask = old_mask.copy()
+    expected_mask = np.zeros(old_mask.shape, dtype=bool)
     expected_mask[30:32] = True
+    
+# NO the mask should not remain the same ...
 
     # Assign the new array to the data property of the spectrum, then
     # check the resulting data, var and masked properties.
@@ -1152,7 +1153,7 @@ def test_shared_masks():
     # values. Then add an Inf and a Nan at indexes that are not masked
     # in the original spectrum, along with a single masked value.
 
-    new_data = ma.array(np.arange(n)*0.3, mask=False, copy=True)
+    new_data = np.array(np.arange(n)*0.3, copy=True)
     new_data[30] = np.inf
     new_data[31] = np.nan
     new_data[32] = ma.masked
@@ -1161,11 +1162,13 @@ def test_shared_masks():
     # the above array to the .data property? When a masked array is
     # assigned to the data property, the resulting mask should be the
     # mask of the new array, along with additions for each element in
-    # the new array and the current variance array that are Inf or Nan.
+    # the new array
+    
+# The invalid pixel of the variance are not taken into account
 
     expected_mask = np.ones(spec.shape) < 1  # All False
     expected_mask[30:33] = True
-    expected_mask = np.logical_or(expected_mask, ~(np.isfinite(old_var)))
+    #expected_mask = np.logical_or(expected_mask, ~(np.isfinite(old_var)))
 
     # Assign the new array to the data property of the spectrum, then
     # check the resulting data, var and masked properties.
@@ -1174,7 +1177,7 @@ def test_shared_masks():
     spec.data = new_data
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_masked_allclose(spec.data,
-                           ma.array(new_data.data, mask=expected_mask))
+                           ma.array(new_data, mask=expected_mask))
     assert_true(spec.data.mask is spec.mask and
                 spec.var.mask is spec.mask)
 
@@ -1250,41 +1253,51 @@ def test_shared_masks():
     # with the old mask.
 
     spec = template_spec.copy()
-    spec.data = new_data
-    assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
-    assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask)
-    assert_true(spec.var.mask is not spec.mask)
-
-    #. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    # Now that the size of the data array has been changed, try assigning
-    # a new variance array of the same size. Give this a couple of
-    # invalid values at different places than the newly installed data
-    # array.
-
-    new_var = np.arange(new_n) * 0.01
-    new_var[35] = np.inf
-    new_var[36] = np.nan
-
-    # What should the shared mask of the spectrum be after we assign
-    # the above array to the .var property? When a simple ndarray is
-    # assigned to the var property, the mask should remain the same,
-    # except where the new variance array contains extra Inf or Nan
-    # values.
-
-    expected_mask = spec.mask.copy()
-    expected_mask[35:37] = True
-
-    # Assign the new array to the var property of the spectrum, then
-    # check the resulting data, var and masked properties, noting
-    # that now the final variance array should use a reference to
-    # the shared mask array.
-
-    spec.var = new_var
-    assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
-    assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    
+    try:
+        spec.data = new_data
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Mismatched data array shape not caught')
+    
+    # Is it possible to assign data with an array of a different size ?
+    
+#     spec.data = new_data
+#     assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
+#     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
+#     assert_true(spec.data.mask is spec.mask)
+#     assert_true(spec.var.mask is not spec.mask)
+# 
+#     #. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+#     # Now that the size of the data array has been changed, try assigning
+#     # a new variance array of the same size. Give this a couple of
+#     # invalid values at different places than the newly installed data
+#     # array.
+# 
+#     new_var = np.arange(new_n) * 0.01
+#     new_var[35] = np.inf
+#     new_var[36] = np.nan
+# 
+#     # What should the shared mask of the spectrum be after we assign
+#     # the above array to the .var property? When a simple ndarray is
+#     # assigned to the var property, the mask should remain the same,
+#     # except where the new variance array contains extra Inf or Nan
+#     # values.
+# 
+#     expected_mask = spec.mask.copy()
+#     expected_mask[35:37] = True
+# 
+#     # Assign the new array to the var property of the spectrum, then
+#     # check the resulting data, var and masked properties, noting
+#     # that now the final variance array should use a reference to
+#     # the shared mask array.
+# 
+#     spec.var = new_var
+#     assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
+#     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
+#     assert_true(spec.data.mask is spec.mask and
+#                 spec.var.mask is spec.mask)
 
     #-----------------------------------------------------------------
     # Assign a MaskedArray of a different shape to DataArray.data:
@@ -1295,80 +1308,80 @@ def test_shared_masks():
     # indexes that are not masked in the original spectrum, along with
     # a single masked value.
 
-    new_n = n+5
-    new_data = ma.array(np.arange(new_n)*0.3, mask=False, copy=True)
-    new_data[30] = np.inf
-    new_data[31] = np.nan
-    new_data[32] = ma.masked
-
-    # What should the shared mask of the spectrum be after we assign
-    # the above array to the .data property? When a masked array of a
-    # different size is assigned to the data property, the resulting
-    # mask should be the mask of the new array, along with additions
-    # for each element in the new array that are Inf or Nan.
-
-    expected_mask = np.ones(new_n) < 1  # All False
-    expected_mask[30:33] = True
-
-    # Assign the new array to the data property of the spectrum, then
-    # check the resulting data, var and masked properties. Note that
-    # in this case the old variance array should remain in place with
-    # the original mask.
-
-    spec = template_spec.copy()
-    spec.data = new_data
-    assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
-    assert_masked_allclose(spec.data,
-                           ma.array(new_data.data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask)
-    assert_true(spec.var.mask is not spec.mask)
-
-    #-----------------------------------------------------------------
-    # Directly modify the masks of the data, var and masked properties.
-    #
-    # When a new value is assigned to an element of the mask of the
-    # data, var or masked properties, the change should be visible in
-    # all of these masks, which must remain as references to a single
-    # array.
-
-    spec = template_spec.copy()
-
-    # Try changing the mask of the data property, and check that this
-    # changes the value of the masks of all of the properties.
-
-    toggled_value = not spec.data.mask[2]
-    expected_mask = spec.mask.copy()
-    expected_mask[2] = toggled_value
-    spec.data.mask[2] = toggled_value
-    assert_array_equal(spec.data.mask, expected_mask)
-    assert_array_equal(spec.var.mask, expected_mask)
-    assert_array_equal(spec.mask, expected_mask)
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
-
-    # Now check the effect of changing the mask of the var property.
-
-    toggled_value = not spec.var.mask[2]
-    expected_mask = spec.mask.copy()
-    expected_mask[2] = toggled_value
-    spec.var.mask[2] = toggled_value
-    assert_array_equal(spec.data.mask, expected_mask)
-    assert_array_equal(spec.var.mask, expected_mask)
-    assert_array_equal(spec.mask, expected_mask)
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
-
-    # Now check the effect of changing the masked property.
-
-    toggled_value = not spec.mask[2]
-    expected_mask = spec.mask.copy()
-    expected_mask[2] = toggled_value
-    spec.mask[2] = toggled_value
-    assert_array_equal(spec.data.mask, expected_mask)
-    assert_array_equal(spec.var.mask, expected_mask)
-    assert_array_equal(spec.mask, expected_mask)
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+#     new_n = n+5
+#     new_data = ma.array(np.arange(new_n)*0.3, mask=False, copy=True)
+#     new_data[30] = np.inf
+#     new_data[31] = np.nan
+#     new_data[32] = ma.masked
+# 
+#     # What should the shared mask of the spectrum be after we assign
+#     # the above array to the .data property? When a masked array of a
+#     # different size is assigned to the data property, the resulting
+#     # mask should be the mask of the new array, along with additions
+#     # for each element in the new array that are Inf or Nan.
+# 
+#     expected_mask = np.ones(new_n) < 1  # All False
+#     expected_mask[30:33] = True
+# 
+#     # Assign the new array to the data property of the spectrum, then
+#     # check the resulting data, var and masked properties. Note that
+#     # in this case the old variance array should remain in place with
+#     # the original mask.
+# 
+#     spec = template_spec.copy()
+#     spec.data = new_data
+#     assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
+#     assert_masked_allclose(spec.data,
+#                            ma.array(new_data.data, mask=expected_mask))
+#     assert_true(spec.data.mask is spec.mask)
+#     assert_true(spec.var.mask is not spec.mask)
+# 
+#     #-----------------------------------------------------------------
+#     # Directly modify the masks of the data, var and masked properties.
+#     #
+#     # When a new value is assigned to an element of the mask of the
+#     # data, var or masked properties, the change should be visible in
+#     # all of these masks, which must remain as references to a single
+#     # array.
+# 
+#     spec = template_spec.copy()
+# 
+#     # Try changing the mask of the data property, and check that this
+#     # changes the value of the masks of all of the properties.
+# 
+#     toggled_value = not spec.data.mask[2]
+#     expected_mask = spec.mask.copy()
+#     expected_mask[2] = toggled_value
+#     spec.data.mask[2] = toggled_value
+#     assert_array_equal(spec.data.mask, expected_mask)
+#     assert_array_equal(spec.var.mask, expected_mask)
+#     assert_array_equal(spec.mask, expected_mask)
+#     assert_true(spec.data.mask is spec.mask and
+#                 spec.var.mask is spec.mask)
+# 
+#     # Now check the effect of changing the mask of the var property.
+# 
+#     toggled_value = not spec.var.mask[2]
+#     expected_mask = spec.mask.copy()
+#     expected_mask[2] = toggled_value
+#     spec.var.mask[2] = toggled_value
+#     assert_array_equal(spec.data.mask, expected_mask)
+#     assert_array_equal(spec.var.mask, expected_mask)
+#     assert_array_equal(spec.mask, expected_mask)
+#     assert_true(spec.data.mask is spec.mask and
+#                 spec.var.mask is spec.mask)
+# 
+#     # Now check the effect of changing the masked property.
+# 
+#     toggled_value = not spec.mask[2]
+#     expected_mask = spec.mask.copy()
+#     expected_mask[2] = toggled_value
+#     spec.mask[2] = toggled_value
+#     assert_array_equal(spec.data.mask, expected_mask)
+#     assert_array_equal(spec.var.mask, expected_mask)
+#     assert_array_equal(spec.mask, expected_mask)
+#     assert_true(spec.data.mask is spec.mask and
+#                 spec.var.mask is spec.mask)
 
     #-----------------------------------------------------------------
     # Assign a new mask of the same size to the masked property.
@@ -1383,11 +1396,13 @@ def test_shared_masks():
     # the final mask should be this mask plus masked elements
     # for any invalid values in the data and var properties.
 
+# if user assignes the mask attribute, this mask is simply used
+
     expected_mask = new_mask
-    expected_mask = np.logical_or(expected_mask,
-                                  ~(np.isfinite(spec.data.data)))
-    expected_mask = np.logical_or(expected_mask,
-                                  ~(np.isfinite(spec.var.data)))
+#     expected_mask = np.logical_or(expected_mask,
+#                                   ~(np.isfinite(spec.data.data)))
+#     expected_mask = np.logical_or(expected_mask,
+#                                   ~(np.isfinite(spec.var.data)))
 
     # Assign the new mask to the masked property and check that the
     # expected mask is install and that a reference to a single copy
@@ -1522,16 +1537,16 @@ def test_non_masked_data():
 
     # Assign ndarray arrays of a new size to the data and var properties.
 
-    new_n = n + 5
-    new_data = np.arange(new_n, dtype=float) * 0.3
-    new_var =  np.arange(new_n, dtype=float) * 0.1
-    spec = template_spec.copy()
-    spec.data = new_data
-    spec.var = new_var
-
-    assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
-    assert_masked_allclose(spec.var, ma.array(new_var, mask=ma.nomask))
-    assert_is(spec.mask, ma.nomask)
+#     new_n = n + 5
+#     new_data = np.arange(new_n, dtype=float) * 0.3
+#     new_var =  np.arange(new_n, dtype=float) * 0.1
+#     spec = template_spec.copy()
+#     spec.data = new_data
+#     spec.var = new_var
+# 
+#     assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
+#     assert_masked_allclose(spec.var, ma.array(new_var, mask=ma.nomask))
+#     assert_is(spec.mask, ma.nomask)
 
     # Assign a masked array of the same size to the data property.
 
@@ -1566,9 +1581,10 @@ def test_non_masked_data():
     # masking. Compute the expected mask, which should be new_mask
     # with the addition of a flag for the infinity in the original
     # data array that is still installed.
+    
 
     expected_mask = new_mask
-    expected_mask[0] = True
+    #expected_mask[0] = True
 
     assert_masked_allclose(spec.data,
                            ma.array(old_data, mask=expected_mask))
