@@ -61,7 +61,7 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
 #     count = 0
     bad = {}
     for key, im in images.items():
-        logger.info('Doing %s' % key)
+        logger.debug('Doing %s' % key)
 #         if (count == 0):
 #             nx, ny = im.shape
 #             ixc = nx/2
