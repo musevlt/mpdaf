@@ -1176,7 +1176,7 @@ class Cube(DataArray):
                 else:
                     var = None
             return Image.new_from_obj(self, data=data, var=var)
-        elif axis == tuple([1, 2]):
+        elif axis == (1, 2):
             # return a spectrum
             if weights is None:
                 data = ma.sum(ma.sum(self.data, axis=1), axis=1)
@@ -1215,7 +1215,7 @@ class Cube(DataArray):
             return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
                             copy=False)
         else:
-            return None
+            raise ValueError('Invalid axis argument')
 
     def mean(self, axis=None):
         """Return the mean over the given axis.
@@ -1246,18 +1246,18 @@ class Cube(DataArray):
             else:
                 var = None
             return Image.new_from_obj(self, data=data, var=var)
-        elif axis == tuple([1, 2]):
+        elif axis == (1, 2):
             # return a spectrum
-            data = (ma.sum(ma.sum(self.data, axis=1), axis=1) /
-                    np.sum(np.sum(~self.data.mask, axis=1), axis=1))
+            count = np.sum(np.sum(~self.data.mask, axis=1), axis=1)
+            data = ma.sum(ma.sum(self.data, axis=1), axis=1) / count
             if self.var is not None:
-                var = ma.sum(ma.sum(self.masked_var, axis=1), axis=1).filled(np.NaN) \
-                    / np.sum(np.sum(~self.data.mask, axis=1), axis=1)**2
+                var = (ma.sum(ma.sum(self.masked_var, axis=1), axis=1)
+                       .filled(np.NaN) / (count**2))
             else:
                 var = None
             return Spectrum.new_from_obj(self, data=data, var=var)
         else:
-            return None
+            raise ValueError('Invalid axis argument')
 
     def median(self, axis=None):
         """Return the median over the given axis.
