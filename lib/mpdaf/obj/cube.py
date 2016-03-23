@@ -236,22 +236,21 @@ class Cube(DataArray):
         imax += 1
         jmax += 1
 
-        mask = np.zeros(self.shape[1:], dtype=bool)
+        mask = np.zeros((lmax-lmin, self.shape[1], self.shape[2]), dtype=bool)
         if circular:
             xx = np.arange(imin, imax) - center[0]
             yy = np.arange(jmin, jmax) - center[1]
             grid = (xx[:, np.newaxis]**2 + yy[np.newaxis, :]**2) < radius2
-            mask[imin:imax, jmin:jmax] = grid
+            mask[:, imin:imax, jmin:jmax] = grid[np.newaxis, :, :]
         else:
-            mask[imin:imax, jmin:jmax] = True
-
-        mask = mask[np.newaxis, :, :]
+            mask[:, imin:imax, jmin:jmax] = True
+        
         if inside:
-            self.data.mask[lmin:lmax, :, :] |= mask
+            self.data[lmin:lmax, :, :][mask] = ma.masked
         else:
-            self.data.mask[:lmin, :, :] = True
-            self.data.mask[lmax:, :, :] = True
-            self.data.mask[lmin:lmax, :, :] |= ~mask
+            self.data[:lmin, :, :] = ma.masked
+            self.data[lmax:, :, :] = ma.masked
+            self.data[lmin:lmax, :, :][~mask] = ma.masked
 
     def mask_ellipse(self, center, radius, posangle, lmin=None, lmax=None,
                      pix=False, inside=True, unit_center=u.deg,
@@ -324,15 +323,14 @@ class Cube(DataArray):
                                + ((grid[0] * cospa - grid[1] * sinpa)
                                   / radius[1]) ** 2 < 1,
                                (lmax - lmin, imax - imin, jmax - jmin))
-            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = \
-                np.logical_or(self.data.mask[lmin:lmax, imin:imax, jmin:jmax], grid3d)
+            self.data[lmin:lmax, imin:imax, jmin:jmax][grid3d] = ma.masked
         if not inside:
-            self.data.mask[:lmin, :, :] = 1
-            self.data.mask[lmax:, :, :] = 1
-            self.data.mask[:, :imin, :] = 1
-            self.data.mask[:, imax:, :] = 1
-            self.data.mask[:, :, :jmin] = 1
-            self.data.mask[:, :, jmax:] = 1
+            self.data[:lmin, :, :] = ma.masked
+            self.data[lmax:, :, :] = ma.masked
+            self.data[:, :imin, :] = ma.masked
+            self.data[:, imax:, :] = ma.masked
+            self.data[:, :, :jmin] = ma.masked
+            self.data[:, :, jmax:] = ma.masked
 
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1],
@@ -342,8 +340,7 @@ class Cube(DataArray):
                                + ((grid[0] * cospa - grid[1] * sinpa)
                                   / radius[1]) ** 2 > 1,
                                (lmax - lmin, imax - imin, jmax - jmin))
-            self.data.mask[lmin:lmax, imin:imax, jmin:jmax] = np.logical_or(
-                self.data.mask[lmin:lmax, imin:imax, jmin:jmax], grid3d)
+            self.data[lmin:lmax, imin:imax, jmin:jmax][grid3d] = ma.masked
 
     def __add__(self, other):
         """Add other.
@@ -365,13 +362,13 @@ class Cube(DataArray):
         If not equal to None, world coordinates
         in spectral direction must be the same.
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = self.data + other
+                res._data = self._data + other
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -391,7 +388,7 @@ class Cube(DataArray):
 
             if other.ndim == 1:
                 # cube1 + spectrum = cube2
-                if other.data is None or other.shape[0] != self.shape[0]:
+                if other._get_data() is None or other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 res = self.copy()
@@ -403,25 +400,25 @@ class Cube(DataArray):
                         other.data[:, np.newaxis, np.newaxis],
                         other.unit, self.unit)
                 # variance
-                if other.var is not None:
-                    if self.var is None:
+                if other._var is not None:
+                    if self._var is None:
                         if other.unit == self.unit:
-                            res.var = np.ones(self.shape) * other.var[:, np.newaxis, np.newaxis]
+                            res._var = np.ones(self.shape) * other._var[:, np.newaxis, np.newaxis]
                         else:
-                            res.var = np.ones(self.shape) * \
-                                UnitArray(other.var[:, np.newaxis, np.newaxis],
+                            res._var = np.ones(self.shape) * \
+                                UnitArray(other._var[:, np.newaxis, np.newaxis],
                                           other.unit**2, self.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var[:, np.newaxis, np.newaxis]
+                            res._var = self._var + other._var[:, np.newaxis, np.newaxis]
                         else:
-                            res.var = self.var + \
-                                UnitArray(other.var[:, np.newaxis, np.newaxis],
+                            res._var = self._var + \
+                                UnitArray(other._var[:, np.newaxis, np.newaxis],
                                           other.unit**2, self.unit**2)
                 return res
             elif other.ndim == 2:
                 # cube1 + image = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
-                if other.data is None or self.shape[2] != other.shape[1] \
+                if other._get_data() is None or self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
@@ -433,19 +430,19 @@ class Cube(DataArray):
                     res.data = self.data + UnitMaskedArray(other.data[np.newaxis, :, :],
                                                            other.unit, self.unit)
                 # variance
-                if other.var is not None:
-                    if self.var is None:
+                if other._var is not None:
+                    if self._var is None:
                         if self.unit == other.unit:
-                            res.var = np.ones(self.shape) * other.var[np.newaxis, :, :]
+                            res._var = np.ones(self.shape) * other._var[np.newaxis, :, :]
                         else:
-                            res.var = np.ones(self.shape) \
-                                * UnitArray(other.var[np.newaxis, :, :],
+                            res._var = np.ones(self.shape) \
+                                * UnitArray(other._var[np.newaxis, :, :],
                                             other.unit**2, self.unit**2)
                     else:
                         if self.unit == other.unit:
-                            res.var = self.var + other.var[np.newaxis, :, :]
+                            res._var = self._var + other._var[np.newaxis, :, :]
                         else:
-                            res.var = self.var + UnitArray(other.var[np.newaxis, :, :],
+                            res._var = self._var + UnitArray(other._var[np.newaxis, :, :],
                                                            other.unit**2, self.unit**2)
 
                 return res
@@ -465,18 +462,18 @@ class Cube(DataArray):
                     res.data = self.data + UnitMaskedArray(other.data.data,
                                                            other.unit, self.unit)
                 # variance
-                if res.var is not None:
-                    if self.var is None:
+                if res._var is not None:
+                    if self._var is None:
                         if other.unit == self.unit:
-                            res.var = other.var
+                            res._var = other._var
                         else:
-                            res.var = UnitArray(other.var, other.unit**2,
+                            res._var = UnitArray(other._var, other.unit**2,
                                                 self.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var
+                            res._var = self._var + other._var
                         else:
-                            res.var = self.var + UnitArray(other.var,
+                            res._var = self._var + UnitArray(other._var,
                                                            other.unit**2,
                                                            self.unit**2)
                 return res
@@ -504,13 +501,13 @@ class Cube(DataArray):
         If not equal to None, world coordinates
         in spectral direction must be the same.
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = self.data - other
+                res._data = self._data - other
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -530,7 +527,7 @@ class Cube(DataArray):
 
             if other.ndim == 1:
                 # cube1 - spectrum = cube2
-                if other.data is None or other.shape[0] != self.shape[0]:
+                if other._get_data() is None or other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden '
                                   'for objects with different sizes')
                 res = self.copy()
@@ -541,27 +538,27 @@ class Cube(DataArray):
                     res.data = self.data - UnitMaskedArray(other.data[:, np.newaxis, np.newaxis],
                                                            other.unit, self.unit)
                 # variance
-                if other.var is not None:
-                    if self.var is None:
+                if other._var is not None:
+                    if self._var is None:
                         if self.unit == other.unit:
-                            res.var = np.ones(self.shape) \
-                                * other.var[:, np.newaxis, np.newaxis]
+                            res._var = np.ones(self.shape) \
+                                * other._var[:, np.newaxis, np.newaxis]
                         else:
-                            res.var = np.ones(self.shape) \
-                                * UnitArray(other.var[:, np.newaxis, np.newaxis],
+                            res._var = np.ones(self.shape) \
+                                * UnitArray(other._var[:, np.newaxis, np.newaxis],
                                             other.unit**2, self.unit**2)
                     else:
                         if self.unit == other.unit:
-                            res.var = self.var \
-                                + other.var[:, np.newaxis, np.newaxis]
+                            res._var = self._var \
+                                + other._var[:, np.newaxis, np.newaxis]
                         else:
-                            res.var = self.var \
-                                + UnitArray(other.var[:, np.newaxis, np.newaxis],
+                            res._var = self._var \
+                                + UnitArray(other._var[:, np.newaxis, np.newaxis],
                                             other.unit**2, self.unit**2)
                 return res
             elif other.ndim == 2:
                 # cube1 - image = cube2 (cube2[k,j,i]=cube1[k,j,i]-image[j,i])
-                if other.data is None or self.shape[2] != other.shape[1] \
+                if other._get_data() is None or self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -573,24 +570,24 @@ class Cube(DataArray):
                     res.data = self.data - UnitMaskedArray(other.data[np.newaxis, :, :],
                                                            other.unit, self.unit)
                 # variance
-                if other.var is not None:
-                    if self.var is None:
+                if other._var is not None:
+                    if self._var is None:
                         if self.unit == other.unit:
-                            res.var = np.ones(self.shape) * other.var[np.newaxis, :, :]
+                            res._var = np.ones(self.shape) * other._var[np.newaxis, :, :]
                         else:
-                            res.var = np.ones(self.shape) \
-                                * UnitArray(other.var[np.newaxis, :, :],
+                            res._var = np.ones(self.shape) \
+                                * UnitArray(other._var[np.newaxis, :, :],
                                             other.unit**2, self.unit**2)
                     else:
                         if self.unit == other.unit:
-                            res.var = self.var + other.var[np.newaxis, :, :]
+                            res._var = self._var + other._var[np.newaxis, :, :]
                         else:
-                            res.var = self.var + UnitArray(other.var[np.newaxis, :, :],
+                            res._var = self._var + UnitArray(other._var[np.newaxis, :, :],
                                                            other.unit**2, self.unit**2)
                 return res
             else:
                 # cube1 - cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]-cube2[k,j,i])
-                if other.data is None or self.shape[0] != other.shape[0] \
+                if other._get_data() is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
@@ -603,30 +600,30 @@ class Cube(DataArray):
                     res.data = self.data - UnitMaskedArray(other.data.data,
                                                            other.unit, self.unit)
                 # variance
-                if other.var is not None:
-                    if self.var is None:
+                if other._var is not None:
+                    if self._var is None:
                         if other.unit == self.unit:
-                            res.var = other.var
+                            res._var = other._var
                         else:
-                            res.var = UnitArray(other.var, other.unit**2,
+                            res._var = UnitArray(other._var, other.unit**2,
                                                 self.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var
+                            res._var = self._var + other._var
                         else:
-                            res.var = self.var + UnitArray(other.var,
+                            res._var = self._var + UnitArray(other._var,
                                                            other.unit**2,
                                                            self.unit**2)
                 return res
 
     def __rsub__(self, other):
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = other - self.data
+                res._data = other - self._data
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -653,15 +650,15 @@ class Cube(DataArray):
         If not equal to None, world coordinates
         in spectral direction must be the same.
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data *= other
-                if self.var is not None:
-                    res.var *= other ** 2
+                res._data *= other
+                if self._var is not None:
+                    res._var *= other ** 2
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -680,33 +677,33 @@ class Cube(DataArray):
                                   'in spatial directions')
             if other.ndim == 1:
                 # cube1 * spectrum = cube2
-                if other.data is None or other.shape[0] != self.shape[0]:
+                if other._get_data() is None or other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 res = self.copy()
                 # data
                 res.data = self.data * other.data[:, np.newaxis, np.newaxis]
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var[:, np.newaxis, np.newaxis] \
-                        * self.data.data * self.data.data
-                elif other.var is None:
-                    res.var = self.var \
-                        * other.data.data[:, np.newaxis, np.newaxis] \
-                        * other.data.data[:, np.newaxis, np.newaxis]
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var[:, np.newaxis, np.newaxis] \
+                        * self._data * self._data
+                elif other._var is None:
+                    res._var = self._var \
+                        * other._data[:, np.newaxis, np.newaxis] \
+                        * other._data[:, np.newaxis, np.newaxis]
                 else:
-                    res.var = (other.var[:, np.newaxis, np.newaxis] *
-                               self.data.data * self.data.data + self.var *
-                               other.data.data[:, np.newaxis, np.newaxis] *
-                               other.data.data[:, np.newaxis, np.newaxis])
+                    res._var = (other._var[:, np.newaxis, np.newaxis] *
+                               self._data * self._data + self._var *
+                               other._data[:, np.newaxis, np.newaxis] *
+                               other._data[:, np.newaxis, np.newaxis])
                 # unit
                 res.unit = self.unit * other.unit
                 return res
             elif other.ndim == 2:
                 # cube1 * image = cube2 (cube2[k,j,i]=cube1[k,j,i]*image[j,i])
-                if other.data is None or self.shape[2] != other.shape[1] \
+                if other._get_data() is None or self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -714,25 +711,25 @@ class Cube(DataArray):
                 # data
                 res.data = self.data * other.data[np.newaxis, :, :]
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var[np.newaxis, :, :] \
-                        * self.data.data * self.data.data
-                elif other.var is None:
-                    res.var = self.var * other.data.data[np.newaxis, :, :] \
-                        * other.data.data[np.newaxis, :, :]
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var[np.newaxis, :, :] \
+                        * self._data * self._data
+                elif other._var is None:
+                    res._var = self._var * other._data[np.newaxis, :, :] \
+                        * other._data[np.newaxis, :, :]
                 else:
-                    res.var = (other.var[np.newaxis, :, :] *
-                               self.data.data * self.data.data +
-                               self.var * other.data.data[np.newaxis, :, :] *
-                               other.data.data[np.newaxis, :, :])
+                    res._var = (other._var[np.newaxis, :, :] *
+                               self._data * self._data +
+                               self._var * other._data[np.newaxis, :, :] *
+                               other._data[np.newaxis, :, :])
                 # unit
                 res.unit = self.unit * other.unit
                 return res
             else:
                 # cube1 * cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]*cube2[k,j,i])
-                if other.data is None or self.shape[0] != other.shape[0] \
+                if other._get_data() is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
@@ -741,15 +738,15 @@ class Cube(DataArray):
                 # data
                 res.data = self.data * other.data
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var * self.data.data * self.data.data
-                elif other.var is None:
-                    res.var = self.var * other.data.data * other.data.data
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var * self._data * self._data
+                elif other._var is None:
+                    res._var = self._var * other._data * other._data
                 else:
-                    res.var = (other.var * self.data.data * self.data.data +
-                               self.var * other.data.data * other.data.data)
+                    res._var = (other._var * self._data * self._data +
+                               self._var * other._data * other._data)
                 # unit
                 res.unit = self.unit * other.unit
                 return res
@@ -778,15 +775,15 @@ class Cube(DataArray):
         If not equal to None, world coordinates
         in spectral direction must be the same.
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data /= other
-                if self.var is not None:
-                    res.var /= other ** 2
+                res._data /= other
+                if self._var is not None:
+                    res._var /= other ** 2
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -805,36 +802,36 @@ class Cube(DataArray):
                                      ' in spatial directions')
             if other.ndim == 1:
                 # cube1 / spectrum = cube2
-                if other.data is None or other.shape[0] != self.shape[0]:
+                if other._get_data() is None or other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 # data
                 res = self.copy()
                 res.data = self.data / other.data[:, np.newaxis, np.newaxis]
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var[:, np.newaxis, np.newaxis] \
-                        * self.data.data * self.data.data \
-                        / (other.data.data[:, np.newaxis, np.newaxis] ** 4)
-                elif other.var is None:
-                    res.var = self.var \
-                        * other.data.data[:, np.newaxis, np.newaxis] \
-                        * other.data.data[:, np.newaxis, np.newaxis] \
-                        / (other.data.data[:, np.newaxis, np.newaxis] ** 4)
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var[:, np.newaxis, np.newaxis] \
+                        * self._data * self._data \
+                        / (other._data[:, np.newaxis, np.newaxis] ** 4)
+                elif other._var is None:
+                    res._var = self._var \
+                        * other._data[:, np.newaxis, np.newaxis] \
+                        * other._data[:, np.newaxis, np.newaxis] \
+                        / (other._data[:, np.newaxis, np.newaxis] ** 4)
                 else:
-                    res.var = (other.var[:, np.newaxis, np.newaxis] *
-                               self.data.data * self.data.data + self.var *
-                               other.data.data[:, np.newaxis, np.newaxis] *
-                               other.data.data[:, np.newaxis, np.newaxis]) \
-                        / (other.data.data[:, np.newaxis, np.newaxis] ** 4)
+                    res._var = (other._var[:, np.newaxis, np.newaxis] *
+                               self._data * self._data + self._var *
+                               other._data[:, np.newaxis, np.newaxis] *
+                               other._data[:, np.newaxis, np.newaxis]) \
+                        / (other._data[:, np.newaxis, np.newaxis] ** 4)
                 # unit
                 res.unit = self.unit / other.unit
                 return res
             elif other.ndim == 2:
                 # cube1 / image = cube2 (cube2[k,j,i]=cube1[k,j,i]/image[j,i])
-                if other.data is None or self.shape[2] != other.shape[1] \
+                if other._get_data() is None or self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -842,28 +839,28 @@ class Cube(DataArray):
                 # data
                 res.data = self.data / other.data[np.newaxis, :, :]
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var[np.newaxis, :, :] \
-                        * self.data.data * self.data.data \
-                        / (other.data.data[np.newaxis, :, :] ** 4)
-                elif other.var is None:
-                    res.var = self.var * other.data.data[np.newaxis, :, :] \
-                        * other.data.data[np.newaxis, :, :] \
-                        / (other.data.data[np.newaxis, :, :] ** 4)
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var[np.newaxis, :, :] \
+                        * self._data * self._data \
+                        / (other._data[np.newaxis, :, :] ** 4)
+                elif other._var is None:
+                    res._var = self._var * other._data[np.newaxis, :, :] \
+                        * other._data[np.newaxis, :, :] \
+                        / (other._data[np.newaxis, :, :] ** 4)
                 else:
-                    res.var = (other.var[np.newaxis, :, :] *
-                               self.data.data * self.data.data + self.var *
-                               other.data.data[np.newaxis, :, :] *
-                               other.data.data[np.newaxis, :, :]) \
-                        / (other.data.data[np.newaxis, :, :] ** 4)
+                    res._var = (other._var[np.newaxis, :, :] *
+                               self._data * self._data + self._var *
+                               other._data[np.newaxis, :, :] *
+                               other._data[np.newaxis, :, :]) \
+                        / (other._data[np.newaxis, :, :] ** 4)
                 # unit
                 res.unit = self.unit / other.unit
                 return res
             else:
                 # cube1 / cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]/cube2[k,j,i])
-                if other.data is None or self.shape[0] != other.shape[0] \
+                if other._get_data() is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
@@ -872,32 +869,32 @@ class Cube(DataArray):
                 # data
                 res.data = self.data / other.data
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var * self.data.data * self.data.data \
-                        / (other.data.data ** 4)
-                elif other.var is None:
-                    res.var = self.var * other.data.data * other.data.data \
-                        / (other.data.data ** 4)
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var * self._data * self._data \
+                        / (other._data ** 4)
+                elif other._var is None:
+                    res._var = self._var * other._data * other._data \
+                        / (other._data ** 4)
                 else:
-                    res.var = (other.var * self.data.data * self.data.data +
-                               self.var * other.data.data * other.data.data) \
-                        / (other.data.data ** 4)
+                    res._var = (other._var * self._data * self._data +
+                               self._var * other._data * other._data) \
+                        / (other._data ** 4)
                 # unit
                 res.unit = self.unit / other.unit
                 return res
 
     def __rdiv__(self, other):
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = other / res.data
-                if self.var is not None:
-                    res.var = other ** 2 / res.var
+                res._data = other / res._data
+                if self._var is not None:
+                    res._var = other ** 2 / res._var
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -1118,19 +1115,19 @@ class Cube(DataArray):
                 if w.shape[0] != self.shape[0]:
                     raise IOError(excmsg % (w.shape[0], self.shape[0]))
                 else:
-                    w = np.ones_like(self.data.data) * w[:, np.newaxis, np.newaxis]
+                    w = np.ones_like(self._data) * w[:, np.newaxis, np.newaxis]
             else:
                 raise IOError(excmsg % (None, self.shape))
 
             # weights mask
-            wmask = ma.masked_where(self.data.mask, ma.masked_where(w == 0, w))
+            wmask = ma.masked_where(self._mask, ma.masked_where(w == 0, w))
 
         if axis is None:
             if weights is None:
                 return self.data.sum()
             else:
                 data = self.data * w
-                npix = np.sum(~self.data.mask)
+                npix = np.sum(~self.mask)
                 data = ma.sum(data) / npix
                 # flux conservation
                 orig_data = self.data * ~wmask.mask
@@ -1144,13 +1141,13 @@ class Cube(DataArray):
             # return an image
             if weights is None:
                 data = ma.sum(self.data, 0)
-                if self.var is not None:
-                    var = ma.sum(self.masked_var, 0).filled(np.NaN)
+                if self._var is not None:
+                    var = ma.sum(self.var)
                 else:
                     var = None
             else:
                 data = self.data * w
-                npix = np.sum(~self.data.mask, axis)
+                npix = np.sum(~self.mask, axis)
                 data = ma.sum(data, axis) / npix
                 orig_data = self.data * ~wmask.mask
                 orig_data = ma.sum(orig_data, axis)
@@ -1164,7 +1161,7 @@ class Cube(DataArray):
                     if med_rr > 0:
                         dspec /= med_rr
                     orig_var = self.var * ~wmask.mask
-                    orig_var = ma.masked_where(self.data.mask,
+                    orig_var = ma.masked_where(self.mask,
                                                ma.masked_invalid(orig_var))
                     orig_var = ma.sum(orig_var, axis)
                     sn_orig = orig_data / ma.sqrt(orig_var)
@@ -1180,13 +1177,13 @@ class Cube(DataArray):
             # return a spectrum
             if weights is None:
                 data = ma.sum(ma.sum(self.data, axis=1), axis=1)
-                if self.var is not None:
-                    var = ma.sum(ma.sum(self.masked_var, axis=1), axis=1).filled(np.NaN)
+                if self._var is not None:
+                    var = ma.sum(ma.sum(self.var, axis=1), axis=1).filled(np.NaN)
                 else:
                     var = None
             else:
                 data = self.data * w
-                npix = np.sum(np.sum(~self.data.mask, axis=1), axis=1)
+                npix = np.sum(np.sum(~self.mask, axis=1), axis=1)
                 data = ma.sum(ma.sum(data, axis=1), axis=1) / npix
                 orig_data = self.data * ~wmask.mask
                 orig_data = ma.sum(ma.sum(orig_data, axis=1), axis=1)
@@ -1194,13 +1191,13 @@ class Cube(DataArray):
                 med_rr = ma.median(rr)
                 if med_rr > 0:
                     data /= med_rr
-                if self.var is not None:
-                    var = ma.sum(ma.sum(self.masked_var * w, axis=1), axis=1) / npix
+                if self._var is not None:
+                    var = ma.sum(ma.sum(self.var * w, axis=1), axis=1) / npix
                     dspec = ma.sqrt(var)
                     if med_rr > 0:
                         dspec /= med_rr
-                    orig_var = self.var * ~wmask.mask
-                    orig_var = ma.masked_where(self.data.mask,
+                    orig_var = self._var * ~wmask.mask
+                    orig_var = ma.masked_where(self.mask,
                                                ma.masked_invalid(orig_var))
                     orig_var = ma.sum(ma.sum(orig_var, axis=1), axis=1)
                     sn_orig = orig_data / ma.sqrt(orig_var)
@@ -1240,19 +1237,19 @@ class Cube(DataArray):
         elif axis == 0:
             # return an image
             data = ma.mean(self.data, axis)
-            if self.var is not None:
-                var = (ma.sum(self.masked_var, axis).filled(np.NaN) /
-                       ma.count(self.data, axis) ** 2)
+            if self._var is not None:
+                var = ma.sum(self.var, axis).filled(np.inf) \
+                      / ma.count(self.data, axis) ** 2
             else:
                 var = None
             return Image.new_from_obj(self, data=data, var=var)
         elif axis == (1, 2):
             # return a spectrum
-            count = np.sum(np.sum(~self.data.mask, axis=1), axis=1)
-            data = ma.sum(ma.sum(self.data, axis=1), axis=1) / count
-            if self.var is not None:
-                var = (ma.sum(ma.sum(self.masked_var, axis=1), axis=1)
-                       .filled(np.NaN) / (count**2))
+            count = np.sum(np.sum(~self.mask, axis=1), axis=1)
+            data = (ma.sum(ma.sum(self.data, axis=1), axis=1)) / count
+            if self._var is not None:
+                var = ma.sum(ma.sum(self.var, axis=1), axis=1).filled(np.inf) \
+                    / (count**2)
             else:
                 var = None
             return Spectrum.new_from_obj(self, data=data, var=var)
@@ -1282,21 +1279,17 @@ class Cube(DataArray):
         elif axis == 0:
             # return an image
             data = np.ma.median(self.data, axis)
-            if self.var is not None:
-                var = np.ma.masked_where(self.data.mask,
-                                         np.ma.masked_invalid(self.var))
-                var = np.ma.median(var, axis).filled(np.NaN)
+            if self._var is not None:
+                var = np.ma.median(self.var, axis).filled(np.inf)
             else:
                 var = None
             return Image.new_from_obj(self, data=data, var=var)
         elif axis == (1, 2):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
-            if self.var is not None:
-                var = np.ma.masked_where(self.data.mask,
-                                         np.ma.masked_invalid(self.var))
-                var = np.ma.median(np.ma.median(var, axis=1),
-                                   axis=1).filled(np.NaN)
+            if self._var is not None:
+                var = np.ma.median(np.ma.median(self.var, axis=1),
+                                   axis=1).filled(np.inf)
             else:
                 var = None
             return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
@@ -1382,8 +1375,7 @@ class Cube(DataArray):
             test_x = np.logical_or(x < xmin, x > xmax)
             test_y = np.logical_or(y < ymin, y > ymax)
             test = np.logical_or(test_x, test_y)
-            res.data.mask = np.logical_or(res.data.mask,
-                                          np.tile(test, [res.shape[0], 1, 1]))
+            res.data[np.tile(test, [res.shape[0], 1, 1])] = ma.masked
             res.crop()
 
         return res
@@ -1399,18 +1391,33 @@ class Cube(DataArray):
 
         """
         assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
-        shape = self.shape / np.asarray(factor)
-        self.data = self.data.reshape(
-            shape[0], factor[0], shape[1], factor[1], shape[2], factor[2]
-        ).sum(1).sum(2).sum(3)
-        self.data /= np.prod(factor)
-
-        if self.var is not None:
-            self.var = self.var.reshape(self.shape[0], factor[0],
-                                        self.shape[1], factor[1],
-                                        self.shape[2], factor[2])\
-                .sum(1).sum(2).sum(3)
-            self.var /= np.prod(factor) ** 2
+        # new size is an integer multiple of the original size
+        sh = self.shape / np.asarray(factor)
+        if self.mask is np.ma.nomask:
+            self._data = self._data.reshape(sh[0], factor[0], sh[1],
+                                            factor[1], sh[2], factor[2])\
+                                            .sum(1).sum(2).sum(3) \
+                                            / np.prod(factor)
+            if self._var is not None:
+                self._var = self._var.reshape(sh[0], factor[0], sh[1],
+                                            factor[1], sh[2], factor[2])\
+                                            .sum(1).sum(2).sum(3) \
+                                            / np.prod(factor)**2
+        else:
+            mask_count = (~self.mask).reshape(sh[0], factor[0], sh[1],
+                                            factor[1], sh[2], factor[2])\
+                                            .sum(1).sum(2).sum(3)
+            self._data = self.data.reshape(sh[0], factor[0], sh[1],
+                                            factor[1], sh[2], factor[2])\
+                                            .sum(1).sum(2).sum(3).data / mask_count
+            if self._var is not None:
+                self._var = self.var.reshape(sh[0], factor[0], sh[1],
+                                            factor[1], sh[2], factor[2])\
+                                            .sum(1).sum(2).sum(3).data \
+                                            / (mask_count * mask_count)
+            self._mask = (mask_count==0)
+        self._ndim = self._data.ndim
+        
         # coordinates
         self.wcs = self.wcs.rebin(factor[1:])
         self.wave.rebin(factor[0])
@@ -1490,8 +1497,9 @@ class Cube(DataArray):
             cub._rebin_mean_(factor)
 
             if flux is False:
-                self.data = cub.data
-                self.var = cub.var
+                self._data = cub._data
+                self._var = cub._var
+                self._mask = cub._mask
                 self.wave = cub.wave
                 self.wcs = cub.wcs
                 return None
@@ -1546,13 +1554,13 @@ class Cube(DataArray):
                 mask = np.empty(newshape, dtype=bool)
                 data[l_left:l_right, p_left:p_right, q_left:q_right] = cub.data
                 mask[l_left:l_right, p_left:p_right, q_left:q_right] = \
-                    cub.data.mask
+                    cub.mask
 
-                if self.var is None:
+                if self._var is None:
                     var = None
                 else:
                     var = np.empty(newshape)
-                    var[l_left:l_right, p_left:p_right, q_left:q_right] = cub.var
+                    var[l_left:l_right, p_left:p_right, q_left:q_right] = cub._var
 
                 F = factor[0] * factor[1] * factor[2]
                 F2 = F * F
@@ -1570,7 +1578,7 @@ class Cube(DataArray):
                             .sum(axis=0)\
                             .reshape(cub.shape[1], factor[1],
                                      cub.shape[2], factor[2])\
-                            .sum(1).sum(2) / F2
+                            .sum(1).sum(2).data / F2
                 if l_left == 1:
                     d = self.data[:n0_left, n1_left:n1_right, n2_left:n2_right]\
                         .sum(axis=0)\
@@ -1584,7 +1592,7 @@ class Cube(DataArray):
                             .sum(axis=0)\
                             .reshape(cub.shape[1], factor[1],
                                      cub.shape[2], factor[2])\
-                            .sum(1).sum(2) / F2
+                            .sum(1).sum(2).data / F2
                 if cub.shape[1] != newshape[1]:
                     d = self.data[n0_left:n0_right, n1_right:,
                                   n2_left:n2_right]\
@@ -1599,7 +1607,7 @@ class Cube(DataArray):
                             .sum(axis=1)\
                             .reshape(cub.shape[0], factor[0],
                                      cub.shape[2], factor[2])\
-                            .sum(1).sum(2) / F2
+                            .sum(1).sum(2).data / F2
                 if p_left == 1:
                     d = self.data[n0_left:n0_right, :n1_left, n2_left:n2_right]\
                         .sum(axis=1).reshape(cub.shape[0], factor[0],
@@ -1612,7 +1620,7 @@ class Cube(DataArray):
                             self.var[n0_left:n0_right, :n1_left, n2_left:n2_right]\
                             .sum(axis=1).reshape(cub.shape[0], factor[0],
                                                  cub.shape[2], factor[2])\
-                            .sum(1).sum(2) / F2
+                            .sum(1).sum(2).data / F2
 
                 if cub.shape[2] != newshape[2]:
                     d = self.data[n0_left:n0_right,
@@ -1628,7 +1636,7 @@ class Cube(DataArray):
                                      n1_left:n1_right:, n2_right:]\
                             .sum(axis=2).reshape(cub.shape[0], factor[0],
                                                  cub.shape[1], factor[1])\
-                            .sum(1).sum(2) / F2
+                            .sum(1).sum(2).data / F2
                 if q_left == 1:
                     d = self.data[n0_left:n0_right,
                                   n1_left:n1_right:, :n2_left]\
@@ -1643,7 +1651,7 @@ class Cube(DataArray):
                             .sum(axis=2)\
                             .reshape(cub.shape[0], factor[0],
                                      cub.shape[1], factor[1])\
-                            .sum(1).sum(2) / F2
+                            .sum(1).sum(2).data / F2
 
                 if l_left == 1 and p_left == 1 and q_left == 1:
                     data[0, 0, 0] = \
@@ -1651,7 +1659,7 @@ class Cube(DataArray):
                     mask[0, 0, 0] = self.mask[:n0_left, :n1_left, :n2_left].any()
                     if var is not None:
                         var[0, 0, 0] = \
-                            self.var[:n0_left, :n1_left, :n2_left].sum() / F2
+                            self.var[:n0_left, :n1_left, :n2_left].sum().data / F2
                 if l_left == 1 and p_right == (newshape[1] - 1) \
                         and q_left == 1:
                     data[0, -1, 0] = \
@@ -1660,7 +1668,7 @@ class Cube(DataArray):
                         self.mask[:n0_left, n1_right:, :n2_left].any()
                     if var is not None:
                         var[0, -1, 0] = \
-                            self.var[:n0_left, n1_right:, :n2_left].sum() / F2
+                            self.var[:n0_left, n1_right:, :n2_left].sum().data / F2
                 if l_left == 1 and p_right == (newshape[1] - 1) \
                         and q_right == (newshape[2] - 1):
                     data[0, -1, -1] = \
@@ -1669,7 +1677,7 @@ class Cube(DataArray):
                         self.mask[:n0_left, n1_right:, n2_right:].any()
                     if var is not None:
                         var[0, -1, -1] = \
-                            self.var[:n0_left, n1_right:, n2_right:].sum() / F2
+                            self.var[:n0_left, n1_right:, n2_right:].sum().data / F2
                 if l_left == 1 and p_left == 1 and \
                         q_right == (newshape[2] - 1):
                     data[0, 0, -1] = \
@@ -1678,7 +1686,7 @@ class Cube(DataArray):
                         self.mask[:n0_left, :n1_left, n2_right:].any()
                     if var is not None:
                         var[0, 0, -1] = \
-                            self.var[:n0_left, :n1_left, n2_right:].sum() / F2
+                            self.var[:n0_left, :n1_left, n2_right:].sum().data / F2
                 if l_left == (newshape[0] - 1) and p_left == 1 \
                         and q_left == 1:
                     data[-1, 0, 0] = \
@@ -1687,7 +1695,7 @@ class Cube(DataArray):
                         self.mask[n0_right:, :n1_left, :n2_left].any()
                     if var is not None:
                         var[-1, 0, 0] = \
-                            self.var[n0_right:, :n1_left, :n2_left].sum() / F2
+                            self.var[n0_right:, :n1_left, :n2_left].sum().data / F2
                 if l_left == (newshape[0] - 1) \
                         and p_right == (newshape[1] - 1) and q_left == 1:
                     data[-1, -1, 0] = \
@@ -1696,7 +1704,7 @@ class Cube(DataArray):
                         self.mask[n0_right:, n1_right:, :n2_left].any()
                     if var is not None:
                         var[-1, -1, 0] = \
-                            self.var[n0_right:, n1_right:, :n2_left].sum() / F2
+                            self.var[n0_right:, n1_right:, :n2_left].sum().data / F2
                 if l_left == (newshape[0] - 1) \
                         and p_right == (newshape[1] - 1) \
                         and q_right == (newshape[2] - 1):
@@ -1706,7 +1714,7 @@ class Cube(DataArray):
                         self.mask[n0_right:, n1_right:, n2_right:].any()
                     if var is not None:
                         var[-1, -1, -1] = \
-                            self.var[n0_right:, n1_right:, n2_right:].sum() / F2
+                            self.var[n0_right:, n1_right:, n2_right:].sum().data / F2
                 if l_left == (newshape[0] - 1) and p_left == 1 \
                         and q_right == (newshape[2] - 1):
                     data[-1, 0, -1] = \
@@ -1715,7 +1723,7 @@ class Cube(DataArray):
                         self.mask[n0_right:, :n1_left, n2_right:].any()
                     if var is not None:
                         var[-1, 0, -1] = \
-                            self.var[n0_right:, :n1_left, n2_right:].sum() / F2
+                            self.var[n0_right:, :n1_left, n2_right:].sum().data / F2
 
                 if p_left == 1 and q_left == 1:
                     d = self.data[n0_left:n0_right, :n1_left, :n2_left]\
@@ -1727,7 +1735,7 @@ class Cube(DataArray):
                         var[l_left:l_right, 0, 0] = \
                             self.var[n0_left:n0_right, :n1_left, :n2_left]\
                             .sum(axis=2).sum(axis=1)\
-                            .reshape(cub.shape[0], factor[0]).sum(1) / F2
+                            .reshape(cub.shape[0], factor[0]).sum(1).data / F2
                 if l_left == 1 and p_left == 1:
                     d = self.data[:n0_left, :n1_left, n2_left:n2_right]\
                         .sum(axis=0).sum(axis=0)\
@@ -1738,7 +1746,7 @@ class Cube(DataArray):
                         var[0, 0, q_left:q_right] = \
                             self.var[:n0_left, :n1_left, n2_left:n2_right]\
                             .sum(axis=0).sum(axis=0)\
-                            .reshape(cub.shape[2], factor[2]).sum(1) / F2
+                            .reshape(cub.shape[2], factor[2]).sum(1).data / F2
                 if l_left == 1 and q_left == 1:
                     d = self.data[:n0_left, n1_left:n1_right, :n2_left]\
                         .sum(axis=2).sum(axis=0)\
@@ -1749,7 +1757,7 @@ class Cube(DataArray):
                         var[0, p_left:p_right, 0] = \
                             self.var[:n0_left, n1_left:n1_right, :n2_left]\
                             .sum(axis=2).sum(axis=0)\
-                            .reshape(cub.shape[1], factor[1]).sum(1) / F2
+                            .reshape(cub.shape[1], factor[1]).sum(1).data / F2
 
                 if p_left == 1 and q_right == (newshape[2] - 1):
                     d = self.data[n0_left:n0_right, :n1_left, n2_right:]\
@@ -1761,7 +1769,7 @@ class Cube(DataArray):
                         var[l_left:l_right, 0, -1] = \
                             self.var[n0_left:n0_right, :n1_left, n2_right:]\
                             .sum(axis=2).sum(axis=1)\
-                            .reshape(cub.shape[0], factor[0]).sum(1) / F2
+                            .reshape(cub.shape[0], factor[0]).sum(1).data / F2
                 if l_left == 1 and p_right == (newshape[1] - 1):
                     d = self.data[:n0_left, n1_right:, n2_left:n2_right]\
                         .sum(axis=0).sum(axis=0)\
@@ -1772,7 +1780,7 @@ class Cube(DataArray):
                         var[0, -1, q_left:q_right] = \
                             self.var[:n0_left, n1_right:, n2_left:n2_right]\
                             .sum(axis=0).sum(axis=0)\
-                            .reshape(cub.shape[2], factor[2]).sum(1) / F2
+                            .reshape(cub.shape[2], factor[2]).sum(1).data / F2
                 if l_left == 1 and q_right == (newshape[2] - 1):
                     d = self.data[:n0_left, n1_left:n1_right, n2_right:]\
                         .sum(axis=2).sum(axis=0)\
@@ -1783,7 +1791,7 @@ class Cube(DataArray):
                         var[0, p_left:p_right, -1] = \
                             self.var[:n0_left, n1_left:n1_right, n2_right:]\
                             .sum(axis=2).sum(axis=0)\
-                            .reshape(cub.shape[1], factor[1]).sum(1) / F2
+                            .reshape(cub.shape[1], factor[1]).sum(1).data / F2
 
                 if p_right == (newshape[1] - 1) and q_left == 1:
                     d = self.data[n0_left:n0_right, n1_right:, :n2_left]\
@@ -1795,7 +1803,7 @@ class Cube(DataArray):
                         var[l_left:l_right, -1, 0] = \
                             self.var[n0_left:n0_right, n1_right:, :n2_left]\
                             .sum(axis=2).sum(axis=1)\
-                            .reshape(cub.shape[0], factor[0]).sum(1) / F2
+                            .reshape(cub.shape[0], factor[0]).sum(1).data / F2
                 if l_right == (newshape[0] - 1) and p_left == 1:
                     d = self.data[n0_right:, :n1_left, n2_left:n2_right]\
                         .sum(axis=0).sum(axis=0)\
@@ -1806,7 +1814,7 @@ class Cube(DataArray):
                         var[-1, 0, q_left:q_right] = \
                             self.var[n0_right:, :n1_left, n2_left:n2_right]\
                             .sum(axis=0).sum(axis=0)\
-                            .reshape(cub.shape[2], factor[2]).sum(1) / F2
+                            .reshape(cub.shape[2], factor[2]).sum(1).data / F2
                 if l_right == (newshape[0] - 1) and q_left == 1:
                     d = self.data[n0_right:, n1_left:n1_right, :n2_left]\
                         .sum(axis=2).sum(axis=0)\
@@ -1817,7 +1825,7 @@ class Cube(DataArray):
                         var[-1, p_left:p_right, 0] = \
                             self.var[n0_right:, n1_left:n1_right, :n2_left]\
                             .sum(axis=2).sum(axis=0)\
-                            .reshape(cub.shape[1], factor[1]).sum(1) / F2
+                            .reshape(cub.shape[1], factor[1]).sum(1).data / F2
 
                 if p_right == (newshape[1] - 1) \
                         and q_right == (newshape[2] - 1):
@@ -1830,7 +1838,7 @@ class Cube(DataArray):
                         var[l_left:l_right, -1, -1] = \
                             self.var[n0_left:n0_right, n1_right:, n2_right:]\
                             .sum(axis=2).sum(axis=1)\
-                            .reshape(cub.shape[0], factor[0]).sum(1) / F2
+                            .reshape(cub.shape[0], factor[0]).sum(1).data / F2
                 if l_right == (newshape[0] - 1) \
                         and p_right == (newshape[1] - 1):
                     d = self.data[n0_right:, n1_right:, n2_left:n2_right]\
@@ -1842,7 +1850,7 @@ class Cube(DataArray):
                         var[-1, -1, q_left:q_right] = \
                             self.var[n0_right:, n1_right:, n2_left:n2_right]\
                             .sum(axis=0).sum(axis=0)\
-                            .reshape(cub.shape[2], factor[2]).sum(1) / F2
+                            .reshape(cub.shape[2], factor[2]).sum(1).data / F2
                 if l_right == (newshape[0] - 1) \
                         and q_right == (newshape[2] - 1):
                     d = self.data[n0_right:, n1_left:n1_right, n2_right:]\
@@ -1854,12 +1862,13 @@ class Cube(DataArray):
                         var[-1, p_left:p_right, -1] = \
                             self.var[n0_right:, n1_left:n1_right, n2_right:]\
                             .sum(axis=2).sum(axis=0)\
-                            .reshape(cub.shape[1], factor[1]).sum(1) / F2
+                            .reshape(cub.shape[1], factor[1]).sum(1).data / F2
 
                 self.wcs = wcs
                 self.wave = wave
-                self.data = np.ma.array(data, mask=mask)
-                self.var = var
+                self._data = data
+                self._mask = mask
+                self._var = var
                 return None
 
     def rebin_mean(self, factor, margin='center', flux=False, inplace=False):
@@ -1924,13 +1933,14 @@ class Cube(DataArray):
         g = grid[0:self.shape[0], 0:self.shape[1], 0:self.shape[2]]
         vfunc = np.vectorize(self._med_)
         data = vfunc(g[0], g[1], g[2], factor[0], factor[1], factor[2])
-        mask = self.data.mask.reshape(self.shape[0], factor[0],
+        mask = self._mask.reshape(self.shape[0], factor[0],
                                       self.shape[1], factor[1],
                                       self.shape[2], factor[2])\
             .sum(1).sum(2).sum(3)
-        self.data = np.ma.array(data, mask=mask)
+        self._data = data
+        self._mask = mask
         # variance
-        self.var = None
+        self._var = None
         # coordinates
         self.wcs = self.wcs.rebin(factor[1:])
         self.wave.rebin(factor[0])
@@ -2043,8 +2053,9 @@ class Cube(DataArray):
         if isinstance(f, types.MethodType):
             f = f.__name__
 
-        data = self.data
-        var = self.var
+        data = self._data
+        var = self._var
+        mask = self._mask
         header = self.wave.to_header()
         pv, qv = np.meshgrid(range(self.shape[1]),
                              range(self.shape[2]),
@@ -2054,15 +2065,15 @@ class Cube(DataArray):
         if var is None:
             for p, q in zip(pv, qv):
                 processlist.append([(p, q), f, header,
-                                    data.data[:, p, q],
-                                    data.mask[:, p, q],
+                                    data[:, p, q],
+                                    mask[:, p, q],
                                     None,
                                     self.unit, kargs])
         else:
             for p, q in zip(pv, qv):
                 processlist.append([(p, q), f, header,
-                                    data.data[:, p, q],
-                                    data.mask[:, p, q],
+                                    data[:, p, q],
+                                    mask[:, p, q],
                                     var[:, p, q],
                                     self.unit, kargs])
         num_tasks = len(processlist)
@@ -2171,17 +2182,18 @@ class Cube(DataArray):
             f = f.__name__
 
         header = self.wcs.to_header()
-        data = self.data
-        var = self.var
+        data = self._data
+        mask = self._mask
+        var = self._var
         if var is None:
             for k in range(self.shape[0]):
-                processlist.append([k, f, header, data.data[k, :, :],
-                                    data.mask[k, :, :], None,
+                processlist.append([k, f, header, data[k, :, :],
+                                    mask[k, :, :], None,
                                     self.unit, kargs])
         else:
             for k in range(self.shape[0]):
-                processlist.append([k, f, header, data.data[k, :, :],
-                                    data.mask[k, :, :], var[k, :, :],
+                processlist.append([k, f, header, data[k, :, :],
+                                    mask[k, :, :], var[k, :, :],
                                     self.unit, kargs])
         num_tasks = len(processlist)
 
@@ -2227,10 +2239,10 @@ class Cube(DataArray):
                                       data=np.zeros(cshape),
                                       var=np.zeros(cshape), unit=unit)
                     init = False
-                result.data.data[k, :, :] = data
-                result.data.mask[k, :, :] = mask
+                result._data[k, :, :] = data
+                result._mask[k, :, :] = mask
                 if self.var is not None:
-                    result.var[k, :, :] = var
+                    result._var[k, :, :] = var
                 result.data_header = pyfits.Header(self.data_header)
                 result.primary_header = pyfits.Header(self.primary_header)
             elif dtype == 'spectrum':
@@ -2333,8 +2345,8 @@ class Cube(DataArray):
             else:
                 off_im = self[is_off[0], :, :].mean(axis=0)
             ima.data -= off_im.data
-            if ima.var is not None:
-                ima.var += off_im.var
+            if ima._var is not None:
+                ima._var += off_im._var
 
         # add input in header
         if unit_wave is None:
