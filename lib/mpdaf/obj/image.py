@@ -290,14 +290,14 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
                 res = self.copy()
-                res.data = self.data + other
+                res._data = self._data + other
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -309,7 +309,7 @@ class Image(DataArray):
                               'with different world coordinates')
             if other.ndim == 2:
                 # image1 + image2 = image3 (image3[j,i]=image1[j,i]+image2[j,i])
-                if other.data is None or self.shape[0] != other.shape[0] \
+                if other._get_data() is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -322,19 +322,19 @@ class Image(DataArray):
                     res.data = self.data + UnitMaskedArray(
                         other.data, other.unit, self.unit)
                 # variance
-                if other.var is not None:
-                    if self.var is None:
+                if other._var is not None:
+                    if self._var is None:
                         if other.unit == self.unit:
-                            res.var = other.var
+                            res._var = other._var
                         else:
-                            res.var = UnitArray(other.var, other.unit**2,
+                            res._var = UnitArray(other._var, other.unit**2,
                                                 self.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var
+                            res._var = self._var + other._var
                         else:
-                            res.var = self.var + UnitArray(
-                                other.var, other.unit**2, self.unit**2)
+                            res._var = self._var + UnitArray(
+                                other._var, other.unit**2, self.unit**2)
 
                 return res
             else:
@@ -378,14 +378,14 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
                 res = self.copy()
-                res.data = self.data - other
+                res._data = self._data - other
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -397,7 +397,7 @@ class Image(DataArray):
                               'with different world coordinates')
             if other.ndim == 2:
                 # image1 - image2 = image3 (image3[j,i]=image1[j,i]-image2[j,i])
-                if other.data is None or self.shape[0] != other.shape[0] \
+                if other._get_data() is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -411,24 +411,24 @@ class Image(DataArray):
                                                            other.unit,
                                                            self.unit)
                 # variance
-                if other.var is not None:
-                    if self.var is None:
+                if other._var is not None:
+                    if self._var is None:
                         if other.unit == self.unit:
-                            res.var = other.var
+                            res._var = other._var
                         else:
-                            res.var = UnitArray(other.var,
+                            res._var = UnitArray(other._var,
                                                 other.unit**2, self.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var
+                            res._var = self._var + other._var
                         else:
-                            res.var = self.var + UnitArray(other.var,
+                            res._var = self._var + UnitArray(other._var,
                                                            other.unit**2,
                                                            self.unit**2)
                 return res
             else:
                 # image - cube1 = cube2
-                if other.data is None or self.shape[0] != other.shape[1] \
+                if other._get_data() is None or self.shape[0] != other.shape[1] \
                         or self.shape[1] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -441,36 +441,36 @@ class Image(DataArray):
                                                other.unit) - other.data
 
                 # variance
-                if self.var is not None:
-                    if other.var is None:
+                if self._var is not None:
+                    if other._var is None:
                         if other.unit == self.unit:
-                            res.var = self.var
+                            res._var = self._var
                         else:
-                            res.var = UnitArray(self.var, self.unit**2,
+                            res._var = UnitArray(self._var, self.unit**2,
                                                 other.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var
+                            res._var = self._var + other._var
                         else:
-                            res.var = other.var + UnitArray(self.var,
+                            res._var = other._var + UnitArray(self._var,
                                                             self.unit**2,
                                                             other.unit**2)
                 return res
 
     def __rsub__(self, other):
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = other - self.data
+                res._data = other - self._data
                 return res
             except:
                 raise IOError('Operation forbidden')
         else:
             return other.__sub__(self)
-
+        
     def __mul__(self, other):
         """Operator \*.
 
@@ -495,22 +495,22 @@ class Image(DataArray):
         -------
         out : `~mpdaf.obj.Spectrum` or `~mpdaf.obj.Image` or `~mpdaf.obj.Cube` object.
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data *= other
-                if self.var is not None:
-                    res.var *= other ** 2
+                res._data *= other
+                if self._var is not None:
+                    res._var *= other ** 2
                 return res
             except:
                 raise IOError('Operation forbidden')
         else:
             if other.ndim == 1:
                 # image * spectrum = cube
-                if other.data is None:
+                if other._get_data() is None:
                     raise IOError('Operation forbidden for empty data')
                 # data
                 data = self.data[np.newaxis, :, :] * \
@@ -518,19 +518,19 @@ class Image(DataArray):
                 # The shape of the resulting cube.
                 shape = (other.shape[0],self.shape[0],self.shape[1])
                 # variance
-                if self.var is None and other.var is None:
+                if self._var is None and other._var is None:
                     var = None
-                elif self.var is None:
-                    var = other.var[:, np.newaxis, np.newaxis] \
-                        * np.resize(self.data.data**2, shape)
-                elif other.var is None:
-                    var = np.resize(self.var, shape) \
-                        * (other.data.data**2)[:, np.newaxis, np.newaxis]
+                elif self._var is None:
+                    var = other._var[:, np.newaxis, np.newaxis] \
+                        * np.resize(self._data**2, shape)
+                elif other._var is None:
+                    var = np.resize(self._var, shape) \
+                        * (other._data**2)[:, np.newaxis, np.newaxis]
                 else:
-                    var = other.var[:, np.newaxis, np.newaxis] \
-                        * np.resize(self.data.data**2, shape) \
-                        + np.resize(self.var, shape) \
-                        * (other.data.data**2)[:, np.newaxis, np.newaxis]
+                    var = other._var[:, np.newaxis, np.newaxis] \
+                        * np.resize(self._data**2, shape) \
+                        + np.resize(self._var, shape) \
+                        * (other._data**2)[:, np.newaxis, np.newaxis]
 
                 from .cube import Cube
                 return Cube(wave=other.wave, wcs=self.wcs, data=data, var=var,
@@ -542,7 +542,7 @@ class Image(DataArray):
                                   'with different world coordinates')
                 if other.ndim == 2:
                     # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
-                    if other.data is None or self.shape[0] != other.shape[0] \
+                    if other._get_data() is None or self.shape[0] != other.shape[0] \
                             or self.shape[1] != other.shape[1]:
                         raise IOError('Operation forbidden for images '
                                       'with different sizes')
@@ -550,15 +550,15 @@ class Image(DataArray):
                     # data
                     res.data = self.data * other.data
                     # variance
-                    if self.var is None and other.var is None:
-                        res.var = None
-                    elif self.var is None:
-                        res.var = other.var * self.data.data * self.data.data
-                    elif other.var is None:
-                        res.var = self.var * other.data.data * other.data.data
+                    if self._var is None and other._var is None:
+                        res._var = None
+                    elif self._var is None:
+                        res._var = other._var * self._data * self._data
+                    elif other._var is None:
+                        res._var = self._var * other._data * other._data
                     else:
-                        res.var = (other.var * self.data.data * self.data.data
-                                   + self.var * other.data.data * other.data.data)
+                        res._var = (other._var * self._data * self._data
+                                   + self._var * other._data * other._data)
                     # unit
                     res.unit = self.unit * other.unit
                     return res
@@ -593,15 +593,15 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data /= other
-                if self.var is not None:
-                    res.var /= other ** 2
+                res._data /= other
+                if self._var is not None:
+                    res._var /= other ** 2
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -613,7 +613,7 @@ class Image(DataArray):
                               'with different world coordinates')
             if other.ndim == 2:
                 # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
-                if other.data is None or self.shape[0] != other.shape[0] \
+                if other._get_data() is None or self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden '
                                   'for images with different sizes')
@@ -621,45 +621,45 @@ class Image(DataArray):
                 # data
                 res.data = self.data / other.data
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var * self.data.data * self.data.data \
-                        / (other.data.data ** 4)
-                elif other.var is None:
-                    res.var = self.var * other.data.data * other.data.data \
-                        / (other.data.data ** 4)
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var * self._data * self._data \
+                        / (other._data ** 4)
+                elif other._var is None:
+                    res._var = self._var * other._data * other._data \
+                        / (other._data ** 4)
                 else:
-                    res.var = (other.var * self.data.data * self.data.data +
-                               self.var * other.data.data * other.data.data) \
-                        / (other.data.data ** 4)
+                    res._var = (other._var * self._data * self._data +
+                               self._var * other._data * other._data) \
+                        / (other._data ** 4)
                 # unit
                 res.unit = self.unit / other.unit
                 return res
             else:
                 # image / cube1 = cube2
-                if other.data is None or self.shape[0] != other.shape[1] \
+                if other._get_data() is None or self.shape[0] != other.shape[1] \
                         or self.shape[1] != other.shape[2]:
                     raise ValueError('Operation forbidden for images '
                                      'with different sizes')
                 # variance
-                if self.var is None and other.var is None:
+                if self._var is None and other._var is None:
                     var = None
-                elif self.var is None:
-                    var = other.var * self.data.data[np.newaxis, :, :]\
-                        * self.data.data[np.newaxis, :, :] \
-                        / (other.data.data ** 4)
-                elif other.var is None:
-                    var = self.var[np.newaxis, :, :] \
-                        * other.data.data * other.data.data \
-                        / (other.data.data ** 4)
+                elif self._var is None:
+                    var = other._var * self._data[np.newaxis, :, :]\
+                        * self._data[np.newaxis, :, :] \
+                        / (other._data ** 4)
+                elif other._var is None:
+                    var = self._var[np.newaxis, :, :] \
+                        * other._data * other._data \
+                        / (other._data ** 4)
                 else:
                     var = (
-                        other.var * self.data.data[np.newaxis, :, :] *
-                        self.data.data[np.newaxis, :, :] +
-                        self.var[np.newaxis, :, :] *
-                        other.data.data * other.data.data
-                    ) / (other.data.data ** 4)
+                        other._var * self._data[np.newaxis, :, :] *
+                        self._data[np.newaxis, :, :] +
+                        self._var[np.newaxis, :, :] *
+                        other._data * other._data
+                    ) / (other._data ** 4)
 
                 from .cube import Cube
                 return Cube(wave=other.wave, unit=self.unit / other.unit,
@@ -667,17 +667,17 @@ class Image(DataArray):
                             var=var, copy=False)
 
     def __rdiv__(self, other):
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = other / res.data
-                if self.var is not None:
-                    res.var = (self.var * other**2 +
-                               other * self.data.data * self.data.data
-                               ) / (self.data.data ** 4)
+                res._data = other / res._data
+                if self._var is not None:
+                    res._var = (self._var * other**2 +
+                               other * self._data * self._data
+                               ) / (self._data ** 4)
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -902,28 +902,24 @@ class Image(DataArray):
         jmax += 1
 
         if inside and not circular:
-            self.data.mask[imin:imax, jmin:jmax] = 1
+            self.data[imin:imax, jmin:jmax] = np.ma.masked
         elif inside and circular:
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
-            self.data.mask[imin:imax, jmin:jmax] = \
-                np.logical_or(self.data.mask[imin:imax, jmin:jmax],
-                              (grid[0] ** 2 + grid[1] ** 2) < radius2)
+            self.data[imin:imax, jmin:jmax][(grid[0] ** 2 + grid[1] ** 2) < radius2] = np.ma.masked
         elif not inside and circular:
-            self.data.mask[0:imin, :] = 1
-            self.data.mask[imax:, :] = 1
-            self.data.mask[imin:imax, 0:jmin] = 1
-            self.data.mask[imin:imax:, jmax:] = 1
+            self.data[0:imin, :] = np.ma.masked
+            self.data[imax:, :] = np.ma.masked
+            self.data[imin:imax, 0:jmin] = np.ma.masked
+            self.data[imin:imax:, jmax:] = np.ma.masked
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
-            self.data.mask[imin:imax, jmin:jmax] = \
-                np.logical_or(self.data.mask[imin:imax, jmin:jmax],
-                              (grid[0] ** 2 + grid[1] ** 2) > radius2)
+            self.data[imin:imax, jmin:jmax][(grid[0] ** 2 + grid[1] ** 2) > radius2] = np.ma.masked
         else:
-            self.data.mask[0:imin, :] = 1
-            self.data.mask[imax:, :] = 1
-            self.data.mask[imin:imax, 0:jmin] = 1
-            self.data.mask[imin:imax:, jmax:] = 1
+            self.data[0:imin, :] = np.ma.masked
+            self.data[imax:, :] = np.ma.masked
+            self.data[imin:imax, 0:jmin] = np.ma.masked
+            self.data[imin:imax:, jmax:] = np.ma.masked
 
     def mask_ellipse(self, center, radius, posangle, unit_center=u.deg,
                      unit_radius=u.arcsec, inside=True):
@@ -972,23 +968,21 @@ class Image(DataArray):
         if inside:
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
-            self.data.mask[imin:imax, jmin:jmax] = \
-                np.logical_or(self.data.mask[imin:imax, jmin:jmax],
-                              ((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
+            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
                               + ((grid[0] * cospa - grid[1] * sinpa)
                                  / radius[1]) ** 2 < 1)
+            self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
         if not inside:
-            self.data.mask[0:imin, :] = 1
-            self.data.mask[imax:, :] = 1
-            self.data.mask[imin:imax, 0:jmin] = 1
-            self.data.mask[imin:imax:, jmax:] = 1
+            self.data[0:imin, :] = np.ma.masked
+            self.data[imax:, :] = np.ma.masked
+            self.data[imin:imax, 0:jmin] = np.ma.masked
+            self.data[imin:imax:, jmax:] = np.ma.masked
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
-            self.data.mask[imin:imax, jmin:jmax] = \
-                np.logical_or(self.data.mask[imin:imax, jmin:jmax],
-                              ((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
+            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
                               + ((grid[0] * cospa - grid[1] * sinpa)
                                  / radius[1]) ** 2 > 1)
+            self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
 
     def mask_polygon(self, poly, unit=u.deg, inside=True):
         """Mask values inside/outside a polygonal region.
@@ -1022,7 +1016,7 @@ class Image(DataArray):
         c = c.reshape(self.shape[1], self.shape[0])  # convert the boolean table into a matrix
         c = c.T
 
-        self.data.mask = np.logical_or(c, self.data.mask)  # combine the previous mask with the new one
+        self._mask = np.logical_or(c, self._mask)  # combine the previous mask with the new one
         return poly
 
     def _truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg):
@@ -1047,9 +1041,10 @@ class Image(DataArray):
             jmax = self.shape[1]
 
         subima = self[imin:imax, jmin:jmax]
-        self.data = subima.data
-        if self.var is not None:
-            self.var = subima.var
+        self._data = subima._data
+        if self._var is not None:
+            self._var = subima._var
+        self._mask = subima._mask
         self.wcs = subima.wcs
 
         if mask:
@@ -1068,7 +1063,7 @@ class Image(DataArray):
             test_x = np.logical_or(x < x_min, x > x_max)
             test_y = np.logical_or(y < y_min, y > y_max)
             test = np.logical_or(test_x, test_y)
-            self.data.mask = np.logical_or(self.data.mask, test)
+            self._mask = np.logical_or(self._mask, test)
             self.crop()
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg,
@@ -1380,7 +1375,7 @@ class Image(DataArray):
         # the same way as the data to see where the masked areas end
         # up.
 
-        self.data.data[:,:] = 0.0
+        self._data[:,:] = 0.0
         newmask = np.ma.filled(self.data, 1.0)
 
         # Rotate the array of 1s that represent masked pixels, and fill
@@ -1400,8 +1395,8 @@ class Image(DataArray):
 
         # If the image has an associated array of variances, rotate it too.
 
-        if self.var is not None:
-            newvar = affine_transform(self.var, matrix=new2old,
+        if self._var is not None:
+            newvar = affine_transform(self._var, matrix=new2old,
                                       offset=offset.flatten(), cval=0.0,
                                       output_shape=newdims, output=np.float,
                                       order=order, prefilter=prefilter)
@@ -1434,8 +1429,9 @@ class Image(DataArray):
 
         # Install the rotated data array, mask and variances.
 
-        self.data = np.ma.array(data=newdata, mask=newmask)
-        self.var = newvar
+        self._data = newdata
+        self._mask = newmask
+        self._var = newvar
 
         # Install the new world-coordinate transformation matrix, along
         # with the new reference pixel.
@@ -1579,7 +1575,7 @@ class Image(DataArray):
             data = np.ma.sum(self.data, axis)
             var = None
             if self.var is not None:
-                var = np.sum(self.var, axis)
+                var = np.ma.sum(self.var, axis).data
             if axis == 0:
                 step = self.wcs.get_step()[1]
                 start = self.wcs.get_start()[1]
@@ -1622,9 +1618,9 @@ class Image(DataArray):
             norm = value / self.data.max()
         else:
             raise ValueError('Error in type: only flux,sum,max permitted')
-        self.data *= norm
-        if self.var is not None:
-            self.var *= (norm * norm)
+        self._data *= norm
+        if self._var is not None:
+            self._var *= (norm * norm)
 
     def background(self, niter=3, sigma=3.0):
         """Compute the image background with sigma-clipping.
@@ -2033,21 +2029,28 @@ class Image(DataArray):
             `scipy.interpolate.bisplev`).
 
         """
-        ksel = np.where(self.data.mask == False)
-        x = ksel[0]
-        y = ksel[1]
-        data = self.data.data[ksel]
+        if self.mask is np.ma.nomask:
+            meshgrid = np.meshgrid(np.arange(self.shape[0]),
+                               np.arange(self.shape[1]), indexing='ij')
+            x = meshgrid[0].ravel()
+            y = meshgrid[1].ravel()
+            data = self._data
+        else:
+            ksel = np.where(self._mask == False)
+            x = ksel[0]
+            y = ksel[1]
+            data = self._data[ksel]
         npoints = np.shape(data)[0]
 
         grid = np.array(grid)
         n = np.shape(grid)[0]
 
         if spline:
-            if self.var is not None:
+            var = self.var
+            if var is not None:
                 weight = np.empty(n, dtype=float)
                 for i in range(npoints):
-                    weight[i] = 1. / np.sqrt(np.abs(self.var[x[i], y[i]]))
-                np.ma.fix_invalid(weight, copy=False, fill_value=0)
+                    weight[i] = 1. / np.sqrt(np.abs(var[x[i], y[i]].filled(np.inf)))
             else:
                 weight = None
 
@@ -2062,8 +2065,8 @@ class Image(DataArray):
             # interpolate.interp2d segfaults when there are too many data points
             # f = interpolate.interp2d(x, y, data)
             points = np.empty((npoints, 2), dtype=float)
-            points[:, 0] = ksel[0]
-            points[:, 1] = ksel[1]
+            points[:, 0] = x
+            points[:, 1] = y
             res = interpolate.griddata(points, data,
                                        (grid[:, 0], grid[:, 1]),
                                        method='linear')
@@ -2084,11 +2087,11 @@ class Image(DataArray):
             `scipy.interpolate.bisplev`).
 
         """
-        if np.ma.count_masked(self.data) == 0:
-            return self.data.data
+        if not self._mask.any():
+            return self._data
         else:
-            ksel = np.where(self.data.mask == True)
-            data = self.data.data.__copy__()
+            ksel = np.where(self._mask == True)
+            data = self._data.__copy__()
             data[ksel] = self._interp(ksel, spline)
             return data
 
@@ -2255,8 +2258,7 @@ class Image(DataArray):
 
         # weight
         if ima.var is not None and weight:
-            wght = 1.0 / np.sqrt(np.abs(ima.var[p, q]))
-            np.ma.fix_invalid(wght, copy=False, fill_value=0)
+            wght = 1.0 / np.sqrt(np.abs(ima.var[p, q].filled(np.inf)))
         else:
             wght = np.ones(N)
 
@@ -2282,7 +2284,7 @@ class Image(DataArray):
 
         # initial gaussian integrated flux
         if flux is None:
-            peak = ima.data.data[center[0], center[1]] - cont
+            peak = ima._data[center[0], center[1]] - cont
         elif peak is True:
             peak = flux - cont
 
@@ -2636,14 +2638,14 @@ class Image(DataArray):
         qmin = max(0, qmin)
         ima = self[pmin:pmax, qmin:qmax]
 
-        ksel = np.where(ima.data.mask == False)
+        ksel = np.where(ima._mask == False)
         N = np.shape(ksel[0])[0]
         if N == 0:
             raise ValueError('empty sub-image')
         pixcrd = np.empty((np.shape(ksel[0])[0], 2))
         p = ksel[0]
         q = ksel[1]
-        data = ima.data.data[ksel]
+        data = ima._data[ksel]
 
         # weight
         if ima.var is not None and weight:
@@ -3052,9 +3054,10 @@ class Image(DataArray):
 
             # Slice the data and variance arrays.
 
-            self.data = self.data[slices[0],slices[1]]
-            if self.var is not None:
-                self.var = self.var[slices[0],slices[1]]
+            self._data = self._data[slices[0],slices[1]]
+            if self._var is not None:
+                self._var = self._var[slices[0],slices[1]]
+            self._mask = self._mask[slices[0],slices[1]]
 
             # Update the world coordinates to match the truncated
             # array.
@@ -3077,10 +3080,12 @@ class Image(DataArray):
         # masked pixels.
 
         if self.var is not None:
-            var = self.masked_var.copy()
+            var = self.var.copy()
 
-        self.data = self.data.reshape(
+        newdata = self.data.reshape(
             newshape[0], factor[0], newshape[1], factor[1]).mean(1).mean(2)
+        self._data = newdata.data
+        self._mask = newdata.mask
 
         # The treatment of the variance array is complicated by the
         # possibility of masked pixels in the data array. A sum of N
@@ -3088,13 +3093,13 @@ class Image(DataArray):
         # sum(v[i] / N^2), where N^2 is the number of unmasked pixels
         # in that particular sum.
 
-        if self.var is not None:
-            self.var = (var.reshape(newshape[0], factor[0], newshape[1], factor[1]).sum(1).sum(2) / unmasked**2).data
+        if self._var is not None:
+            self._var = (var.reshape(newshape[0], factor[0], newshape[1], factor[1]).sum(1).sum(2) / unmasked**2).data
 
         # Any pixels in the output array that come from zero unmasked
         # pixels of the input array should be masked.
 
-        self.data.mask = unmasked < 1
+        self._mask = unmasked < 1
 
         # Update the world-coordinate information.
 
@@ -3530,7 +3535,7 @@ class Image(DataArray):
         # the the same way as the data to see where the masked areas
         # end up.
 
-        image.data.data[:,:] = 0.0
+        image._data[:,:] = 0.0
         mask = np.ma.filled(image.data, 1.0)
 
         # Resample the array of 1s that represent masked pixels.
@@ -3546,8 +3551,8 @@ class Image(DataArray):
 
         # Also repeat the procedure for the array of variances, if any.
 
-        if image.var is not None:
-            var = affine_transform(image.var, new2old, offset.flatten(),
+        if image._var is not None:
+            var = affine_transform(image._var, new2old, offset.flatten(),
                                    output_shape=newdim, order=order,
                                    prefilter=order >= 3)
 
@@ -3619,8 +3624,9 @@ class Image(DataArray):
 
         # Install the resampled data, mask and variance arrays.
 
-        image.data = np.ma.array(data, mask=mask)
-        image.var = var
+        image._data = data
+        image._mask = mask
+        image._var = var
 
         # Get the coordinate reference pixel of the input image,
         # arranged as a column vector in python (Y,X) order. Note that
@@ -3781,13 +3787,13 @@ class Image(DataArray):
         #
         # First get the union of the masked areas of the two images.
 
-        mask = np.ma.mask_or(self.data.mask, ref.data.mask)
+        mask = np.ma.mask_or(self._mask, ref._mask)
 
         # Place both image arrays into masked array containers that
         # share the above mask.
 
-        sdata = np.ma.array(data=self.data.data, mask=mask)
-        rdata = np.ma.array(data=ref.data.data, mask=mask)
+        sdata = np.ma.array(data=self._data, mask=mask)
+        rdata = np.ma.array(data=ref._data, mask=mask)
 
         # Get copies of the above arrays with masked pixels filled
         # with the median values of the images.
@@ -3905,11 +3911,9 @@ class Image(DataArray):
         # Get a copy of the data array with masked values filled.
 
         data = self._prepare_data(interp)
-
-        self.data = np.ma.array(ndi.gaussian_filter(data, sigma),
-                                mask=self.data.mask)
-        if self.var is not None:
-            self.var = ndi.gaussian_filter(self.var, sigma)
+        self._data = ndi.gaussian_filter(data, sigma)
+        if self._var is not None:
+            self._var = ndi.gaussian_filter(self._var, sigma)
 
     def gaussian_filter(self, sigma=3, interp='no', inplace=False):
         """Return an image containing Gaussian filter applied to the current
@@ -3949,10 +3953,9 @@ class Image(DataArray):
 
         data = self._prepare_data(interp)
 
-        self.data = np.ma.array(ndi.median_filter(data, size),
-                                mask=self.data.mask)
-        if self.var is not None:
-            self.var = ndi.median_filter(self.var, size)
+        self._data = ndi.median_filter(data, size)
+        if self._var is not None:
+            self._var = ndi.median_filter(self._var, size)
 
     def median_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing median filter applied to the current
@@ -3993,8 +3996,7 @@ class Image(DataArray):
 
         data = self._prepare_data(interp)
 
-        self.data = np.ma.array(ndi.maximum_filter(data, size),
-                                mask=self.data.mask)
+        self._data = ndi.maximum_filter(data, size)
 
     def maximum_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing maximum filter applied to the current
@@ -4035,8 +4037,7 @@ class Image(DataArray):
 
         data = self._prepare_data(interp)
 
-        self.data = np.ma.array(ndi.minimum_filter(data, size),
-                                mask=self.data.mask)
+        self._data = ndi.minimum_filter(data, size)
 
     def minimum_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing minimum filter applied to the current
@@ -4148,10 +4149,10 @@ class Image(DataArray):
         else:
             nl2 = ima.shape[1]
 
-        mask = self.data.mask.__copy__()
+        mask = self._mask.__copy__()
         self.data[k1:k2, l1:l2] += UnitMaskedArray(ima.data[nk1:nk2, nl1:nl2],
                                                    ima.unit, self.unit)
-        self.data.mask = mask
+        self._mask = mask | self._mask
 
     def segment(self, shape=(2, 2), minsize=20, minpts=None,
                 background=20, interp='no', median=None):
@@ -4193,7 +4194,7 @@ class Image(DataArray):
         structure = ndi.generate_binary_structure(shape[0], shape[1])
         if median is not None:
             data = np.ma.array(ndi.median_filter(data, median),
-                               mask=self.data.mask)
+                               mask=self._mask)
         expanded = ndi.grey_dilation(data, (minsize, minsize))
         ksel = np.where(expanded < background)
         expanded[ksel] = 0
@@ -4242,12 +4243,12 @@ class Image(DataArray):
 
         data = self._prepare_data(interp)
 
-        self.data = np.ma.array(np.random.normal(data, sigma),
-                                mask=self.data.mask)
-        if self.var is None:
-            self.var = np.ones((self.shape)) * sigma * sigma
+        self._data = np.random.normal(data, sigma)
+        
+        if self._var is None:
+            self._var = np.ones((self.shape)) * sigma * sigma
         else:
-            self.var *= (sigma * sigma)
+            self._var *= (sigma * sigma)
 
     def add_poisson_noise(self, interp='no'):
         """Add Poisson noise to image in place.
@@ -4263,12 +4264,12 @@ class Image(DataArray):
 
         data = self._prepare_data(interp)
 
-        self.data = np.ma.array(np.random.poisson(data).astype(float),
-                                mask=self.data.mask)
-        if self.var is None:
-            self.var = self.data.data.__copy__()
+        self._data = np.random.poisson(data).astype(float)
+        
+        if self._var is None:
+            self._var = self._data.__copy__()
         else:
-            self.var += self.data.data
+            self._var += self._data
 
     def inside(self, coord, unit=u.deg):
         """Return True if coord is inside image.
@@ -4295,7 +4296,7 @@ class Image(DataArray):
             return False
 
     def _fftconvolve(self, other, interp='no'):
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
@@ -4308,14 +4309,13 @@ class Image(DataArray):
 
             data = self._prepare_data(interp)
 
-            self.data = np.ma.array(signal.fftconvolve(data, other,
-                                                       mode='same'),
-                                    mask=self.data.mask)
-            if self.var is not None:
-                self.var = signal.fftconvolve(self.var, other,
+            self._data = signal.fftconvolve(data, other, mode='same')
+            
+            if self._var is not None:
+                self._var = signal.fftconvolve(self._var, other,
                                               mode='same')
         elif other.ndim == 2:
-            if other.data is None or self.shape[0] != other.shape[0] \
+            if other._get_data() is None or self.shape[0] != other.shape[0] \
                     or self.shape[1] != other.shape[1]:
                 raise IOError('Operation forbidden for images '
                               'with different sizes')
@@ -4328,11 +4328,10 @@ class Image(DataArray):
             if self.unit != other.unit:
                 other_data = UnitMaskedArray(other_data, other.unit, self.unit)
 
-            self.data = np.ma.array(signal.fftconvolve(data, other_data,
-                                                       mode='same'),
-                                    mask=self.data.mask)
-            if self.var is not None:
-                self.var = signal.fftconvolve(self.var,
+            self._data = signal.fftconvolve(data, other_data, mode='same')
+            
+            if self._var is not None:
+                self._var = signal.fftconvolve(self._var,
                                               other_data, mode='same')
         else:
             raise IOError('Operation forbidden')
@@ -4493,7 +4492,7 @@ class Image(DataArray):
             if 'spline', spline interpolation of the masked values.
 
         """
-        if self.data is None:
+        if self._get_data() is None:
             raise ValueError('empty data array')
 
         if not isinstance(other, DataArray):
@@ -4503,11 +4502,10 @@ class Image(DataArray):
             data = self._prepare_data(interp)
 
             res = self.copy()
-            res.data = np.ma.array(signal.correlate2d(data, other, mode='same',
-                                                      boundary='symm'),
-                                   mask=res.data.mask)
-            if res.var is not None:
-                res.var = signal.correlate2d(res.var, other, mode='same',
+            res._data = signal.correlate2d(data, other, mode='same',
+                                                      boundary='symm')
+            if res._var is not None:
+                res._var = signal.correlate2d(res._var, other, mode='same',
                                              boundary='symm')
             return res
         elif other.ndim == 2:
@@ -4520,11 +4518,10 @@ class Image(DataArray):
             if self.unit != other.unit:
                 other_data = UnitMaskedArray(other_data, other.unit, self.unit)
             res = self.copy()
-            res.data = np.ma.array(signal.correlate2d(data,
-                                                      other_data, mode='same'),
-                                   mask=res.data.mask)
-            if res.var is not None:
-                res.var = signal.correlate2d(res.var, other_data,
+            res._data = signal.correlate2d(data, other_data, mode='same')
+
+            if res._var is not None:
+                res._var = signal.correlate2d(res._var, other_data,
                                              mode='same')
             return res
         else:
