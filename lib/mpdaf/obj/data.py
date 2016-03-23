@@ -20,6 +20,38 @@ from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
 
 __all__ = ('DataArray', )
 
+# class SharedMaskArray(ma.MaskedArray):
+#     """This is a subclass of numpy.ma.MaskedArray() which prevents
+#     the mask of the array from being replaced when data are assigned
+#     to slices of it. In the standard MaskedArray(), a simple
+#     assignment like v[2] = np.ma.masked, causes the whole mask array
+#     of v to be replaced with a new mask. This behavior is innefficient
+#     and problematic when one is trying to share a mask between two
+#     masked arrays, so the SharedMaskArray subclass overrides the
+#     __setitem__() method of MaskedArray to directly assign to the
+#     specified elements of the existing data and mask arrays.
+# 
+#     Parameters
+#     ----------
+#     data     : The initial data to be stored in the array.
+#     **kwargs : The remaining key-value arguments are forwarded to
+#          the MaskedArray constructor.
+# 
+#     """
+# 
+#     def __init__(self, data, **kwargs):
+#         super(ma.MaskedArray, self).__init__(data, **kwargs)
+# 
+#     def __setitem__(self, indx, value):
+#         if isinstance(value, ma.MaskedArray):
+#             self.data[indx] = value.data
+#             self.mask[indx] = value.mask
+#         else:
+#             self.data[indx] = value
+#             self.mask[indx] = False
+# 
+#     def __setslice__(self, i, j, value):
+#             self.__setitem__(slice(i,j), value)
 
 class DataArray(object):
 
@@ -244,7 +276,8 @@ class DataArray(object):
                     elif mask is None:
                         self._mask = ~(np.isfinite(data))
                     else:
-                        self._mask = np.array(mask, dtype=bool, copy=copy)
+                        self._mask = np.resize(np.array(mask, dtype=bool, copy=copy),
+                                               self._data.shape)
                         
                 self._ndim = self._data.ndim
 
@@ -411,6 +444,7 @@ class DataArray(object):
         they are first used. Read the data array here if not already read.
 
         """
+        #res = SharedMaskArray(self._get_data(), mask=self._get_mask(), copy=False)
         res = ma.MaskedArray(self._get_data(), mask=self._get_mask(), copy=False)
         res._sharedmask = False
         return res
@@ -419,13 +453,14 @@ class DataArray(object):
     @data.setter
     def data(self, value):
         if self.shape is not None and not np.array_equal(value.shape, self.shape):
-            raise IOError('try to set data with an array with a different shape')
+            raise ValueError('try to set data with an array with a different shape')
         if isinstance(value, ma.MaskedArray):
             self._data = value.data
             self._mask = value.mask
         else:
             self._data = value
-            self._mask = ~(np.isfinite(value))
+            if self._mask is not ma.nomask:
+                self._mask = ~(np.isfinite(value))
 
     @property
     def var(self):
@@ -441,7 +476,7 @@ class DataArray(object):
     def var(self, value):
         if value is not None:
             if self.shape is not None and  not np.array_equal(value.shape, self.shape):
-                raise IOError('try to set var with an array with a different shape')
+                raise ValueError('try to set var with an array with a different shape')
             if isinstance(value, ma.MaskedArray):
                 self._var = value.data
                 self._mask |= value.mask
@@ -471,13 +506,8 @@ class DataArray(object):
         # method in MPDAF expect that the mask is an array and will not work
         # with np.ma.nomask. But nomask can still be used explicitly for
         # specific cases.
-#         
-#         if value is None or value is False:
-#             self._mask = np.zeros(self.shape, dtype=bool)
-#         elif value is True:
-#             self._mask = np.ones(self.shape, dtype=bool)
-#         el
-        
+        if self.shape is not None and not np.array_equal(value.shape, self.shape):
+            raise ValueError('try to set mask with an array with a different shape')
         if value is ma.nomask:
             self._mask = value
         else:
@@ -704,8 +734,6 @@ class DataArray(object):
                     and not np.allclose(self.wave.get_step(),
                                     other.wave.get_step(unit=self.wave.unit),
                                     atol=1E-2, rtol=0):
-                print self.wave.get_step()
-                print other.wave.get_step(unit=self.wave.unit)
                 raise ValueError('Operation forbidden for cubes with different'
                                  ' world coordinates in spectral direction')
             if self._has_wcs and other._has_wcs \
@@ -726,9 +754,14 @@ class DataArray(object):
                 other = UnitMaskedArray(other.data, other.unit, self.unit)
                 
         if isinstance(other, ma.MaskedArray):
-            self.data[item] = other.data
+            self._data[item] = other.data
+            if self._mask is ma.nomask:
+                self._mask = np.zeros(self.shape, dtype=bool)
+            self._mask[item] = other.mask
         else:
-            self.data[item] = ma.masked_invalid(other)
+            self._data[item] = other
+            if self._mask is not ma.nomask:
+                self._mask[item] = ~(np.isfinite(other))
             
     def get_wcs_header(self):
         """Return a FITS header containing coordinate descriptions."""
