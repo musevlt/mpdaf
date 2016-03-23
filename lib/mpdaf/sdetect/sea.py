@@ -112,13 +112,13 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
         # position get another simple segmentation map.
         for key in images:
             if bad[key] == 1:
-                logger.info('Image %s has no objects', key)
+                logger.warning('Image %s has no objects', key)
                 this_map = np.zeros(ref_map.shape, dtype=bool)
             else:
                 # Has at least one object - let us see.
                 if np.abs(min_distances[key] - global_min) <= tolerance:
                     # Create simple map
-                    logger.info('Image %s has one useful objects', key)
+                    logger.debug('Image %s has one useful objects', key)
                     this_map = images[key] == min_values[key]
                     n_useful = n_useful + 1
                     isUseful[key] = True
