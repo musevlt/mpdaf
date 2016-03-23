@@ -13,7 +13,7 @@ from datetime import datetime
 from numpy import ma
 
 from .coords import WCS, WaveCoord
-from .objs import UnitMaskedArray
+from .objs import UnitMaskedArray, UnitArray
 from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
                      fix_unit_read, is_valid_fits_file, read_slice_from_fits,
                      copy_header)
@@ -123,7 +123,7 @@ class DataArray(object):
     _has_wcs = False
     _has_wave = False
 
-    def __init__(self, filename=None, hdulist=None, data=None, mask=None,
+    def __init__(self, filename=None, hdulist=None, data=None, mask=False,
                  var=None, ext=None, unit=u.dimensionless_unscaled, copy=True,
                  dtype=float, primary_header=None, data_header=None, **kwargs):
         self._logger = logging.getLogger(__name__)
@@ -132,7 +132,10 @@ class DataArray(object):
         self._data_ext = None
         self._var = None
         self._var_ext = None
-        self._mask = mask
+        if mask is ma.nomask:
+            self._mask = ma.nomask
+        else:
+            self._mask = False
         self._ndim = None
         self.wcs = None
         self.wave = None
@@ -233,7 +236,7 @@ class DataArray(object):
             if data is not None:
                 if isinstance(data, ma.MaskedArray):
                     self._data = np.array(data.data, dtype=dtype, copy=copy)
-                    self._mask = data.mask | ~(np.isfinite(data))
+                    self._mask = data.mask
                 else:
                     self._data = np.array(data, dtype=dtype, copy=copy)
                     if mask is ma.nomask:
@@ -241,15 +244,17 @@ class DataArray(object):
                     elif mask is None:
                         self._mask = ~(np.isfinite(data))
                     else:
-                        self._mask = np.array(mask, dtype=bool, copy=copy) | ~(np.isfinite(data))
+                        self._mask = np.array(mask, dtype=bool, copy=copy)
                         
                 self._ndim = self._data.ndim
 
             # Use a specified variance array?
             if var is not None:
-                self._var = np.array(var, dtype=dtype, copy=copy)
-                if mask is not ma.nomask:
-                    self._mask = self._mask | ~(np.isfinite(var)) | (var<=0)
+                if isinstance(var, ma.MaskedArray):
+                    self._var = np.array(var.data, dtype=dtype, copy=copy)
+                    self._mask |= var.mask
+                else:
+                    self._var = np.array(var, dtype=dtype, copy=copy)
 
         # If a WCS object was specified as an optional parameter, install it.
         wcs = kwargs.pop('wcs', None)
@@ -295,30 +300,26 @@ class DataArray(object):
             data = np.asarray(hdulist[self._data_ext].data[item], dtype=self.dtype)
             if self._mask is not ma.nomask:
                 if 'DQ' in hdulist:
-                    mask = np.asarray(hdulist['DQ'].data[item], dtype=np.bool) | ~(np.isfinite(data))
+                    mask = np.asarray(hdulist['DQ'].data[item], dtype=np.bool)
                 else:
                     mask = ~(np.isfinite(data))
             else:
                 mask = ma.nomask
             if self._var_ext is not None:
                 var = np.asarray(hdulist[self._var_ext].data[item])
-                if self._mask is not ma.nomask:
-                    mask = mask | ~(np.isfinite(var)) | (var<=0)
             else:
                 var = None
         else:
             data = np.asarray(hdulist[self._data_ext].data, dtype=self.dtype)
             if self._mask is not ma.nomask:
                 if 'DQ' in hdulist:
-                    mask = np.asarray(hdulist['DQ'].data, dtype=np.bool) | ~(np.isfinite(data))
+                    mask = np.asarray(hdulist['DQ'].data, dtype=np.bool)
                 else:
                     mask = ~(np.isfinite(data))
             else:
                 mask = ma.nomask
             if self._var_ext is not None:
-                var = np.asarray(hdulist[self._var_ext].data)
-                if self._mask is not ma.nomask:
-                    mask = mask | ~(np.isfinite(var)) | (var<=0)  
+                var = np.asarray(hdulist[self._var_ext].data) 
             else:
                 var = None
         hdulist.close()
@@ -425,8 +426,6 @@ class DataArray(object):
         else:
             self._data = value
             self._mask = ~(np.isfinite(value))
-        if self._var is not None:
-            self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
 
     @property
     def var(self):
@@ -445,11 +444,10 @@ class DataArray(object):
                 raise IOError('try to set var with an array with a different shape')
             if isinstance(value, ma.MaskedArray):
                 self._var = value.data
-                self._mask = self._mask | value.mask
+                self._mask |= value.mask
             else:
                 value = np.asarray(value)
                 self._var = value
-                self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
         else:
             self._var_ext = None
             self._var = value
@@ -483,9 +481,7 @@ class DataArray(object):
         if value is ma.nomask:
             self._mask = value
         else:
-            self._mask = np.asarray(value, dtype=bool) | ~(np.isfinite(self._get_data()))
-            if self._get_var() is not None:
-                self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
+            self._mask = np.asarray(value, dtype=bool)
 
     def copy(self):
         """Return a copy of the object."""
@@ -702,35 +698,38 @@ class DataArray(object):
             raise ValueError('empty data array')
 
         if isinstance(other, DataArray):
-            # FIXME: check only step or full wcs ?
+            # FIXME: check only step
+            
             if self._has_wave and other._has_wave \
-                    and not self.wave.isEqual(other.wave):
+                    and not np.allclose(self.wave.get_step(),
+                                    other.wave.get_step(unit=self.wave.unit),
+                                    atol=1E-2, rtol=0):
+                print self.wave.get_step()
+                print other.wave.get_step(unit=self.wave.unit)
                 raise ValueError('Operation forbidden for cubes with different'
                                  ' world coordinates in spectral direction')
             if self._has_wcs and other._has_wcs \
-                    and not self.wcs.isEqual(other.wcs):
+                    and not np.allclose(self.wcs.get_step(),
+                                    other.wcs.get_step(unit=self.wcs.unit),
+                                    atol=1E-3, rtol=0):
                 raise ValueError('Operation forbidden for cubes with different'
                                  ' world coordinates in spatial directions')
 
             if self.unit == other.unit:
+                if self._var is not None and other._var is not None:
+                    self._var[item] = other._var
                 other = other.data
             else:
+                if self._var is not None and other._var is not None:
+                    self._var[item] = UnitArray(other._var,
+                                                other.unit**2, self.unit**2)
                 other = UnitMaskedArray(other.data, other.unit, self.unit)
-
+                
         if isinstance(other, ma.MaskedArray):
-            self._data[item] = other.data
-            if self._mask is ma.nomask:
-                self._mask = np.zeros(self.shape, dtype=np.bool)
-            self._mask[item] = other.mask
+            self.data[item] = other.data
         else:
-            self._data[item] = other
-            if self._mask is ma.nomask:
-                self._mask = np.zeros(self.shape, dtype=np.bool)
-            self._mask[item] = ~(np.isfinite(other))
+            self.data[item] = ma.masked_invalid(other)
             
-        if self._var is not None:
-            self._mask[item] = self._mask[item] | ~(np.isfinite(self._var[item])) | (self._var[item]<=0)
-
     def get_wcs_header(self):
         """Return a FITS header containing coordinate descriptions."""
         if self.ndim == 1 and self.wave is not None:
@@ -912,8 +911,6 @@ class DataArray(object):
     def unmask(self):
         """Unmask the data (just invalid data (nan,inf) are masked)."""
         self._mask = ~np.isfinite(self._get_data())
-        if self._var is not None:
-            self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
 
     def mask_variance(self, threshold):
         """Mask pixels with a variance above a threshold value.
