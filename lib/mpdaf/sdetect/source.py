@@ -89,7 +89,7 @@ def matchlines(nlines, wl, z, eml):
     lbdas = np.array(eml.keys())
     a = (wl[:, np.newaxis] / (1 + z) - lbdas[np.newaxis, :]) ** 2.0
     jfound = np.argmin(a, axis=1)
-    error = np.diag(a[:,jfound]).sum()
+    error = np.diag(a[:, jfound]).sum()
     error = np.sqrt(error / nlines)
     if((nlines >= 2)and(jfound[0] == jfound[1])):
         error = 15.
@@ -345,8 +345,8 @@ class Source(object):
         filename : string
             FITS filename
         ext : string or list of string
-              Names of the FITS extensions that will be loaded in the source object.
-              Regular expression accepted.
+              Names of the FITS extensions that will be loaded in the source
+              object. Regular expression accepted.
         """
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
@@ -354,16 +354,16 @@ class Source(object):
         images = {}
         cubes = {}
         tables = {}
-        
+
         if ext is None:
             extnames = [h.name for h in hdulist[1:]]
+        elif isinstance(ext, (str, unicode)):
+            extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
         else:
-            if type(ext)==str:
-                extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
-            else:
-                extnames = []
-                for e in ext:
-                    extnames += [h.name for h in hdulist[1:] if re.findall(e, h.name)]
+            extnames = []
+            for e in ext:
+                extnames += [h.name for h in hdulist[1:]
+                             if re.findall(e, h.name)]
 
         lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in extnames
                  else None)
@@ -416,7 +416,7 @@ class Source(object):
                 if extname in extnames:
                     start = extname[:3]
                     end = extname[-4:]
-    
+
                     if end == 'STAT':
                         continue
                     elif end == 'DATA':
@@ -433,7 +433,8 @@ class Source(object):
                         elif start == 'CUB':
                             cubes[name] = _read_cube(hdulist, ext, ima=False)
                     elif start == 'TAB':
-                        tables[extname[4:]] = _read_masked_table(hdulist, extname)
+                        tables[extname[4:]] = _read_masked_table(hdulist,
+                                                                 extname)
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
@@ -871,9 +872,11 @@ class Source(object):
         fmt : list<string>
                Fromat of each column.
         match : (string, float/integer/string, bool)
-            Tuple (key, value, False/True) that gives the key to match the added line with
-            an existing line.  eg ('LINE','LYALPHA1216', True)
-            If the boolean is True, the line will be added even if it is not matched.
+            Tuple (key, value, False/True) that gives the key to match the
+            added line with an existing line.  eg ('LINE','LYALPHA1216', True)
+            If the boolean is True, the line will be added even if it is not
+            matched.
+
         """
         if self.lines is None:
             types = []
@@ -937,7 +940,7 @@ class Source(object):
                 else:
                     if not add_if_not_matched:
                         return
-                        
+
             # add new row
             ncol = len(self.lines.colnames)
             row = [None] * ncol
@@ -1117,7 +1120,7 @@ class Source(object):
                 eml = {1216 : 'LYALPHA', 1908: 'SUMCIII1907',
                         3727: 'SUMOII3726', 4863: 'HBETA' ,
                         5007: 'OIII5007', 6564: 'HALPHA'}
-                        
+
         size : float
             The total size to extract. It corresponds to the size along the
             delta axis and the image is square. If None, the size of the white
@@ -1142,6 +1145,7 @@ class Source(object):
                 # or if is_sum is True:
                 sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                 flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
+
         margin : float
             This off-band is offseted by margin wrt narrow-band limit (in
             angstrom).
@@ -1177,7 +1181,7 @@ class Source(object):
             if eml is None:
                 all_lines = np.array([1216, 1908, 3727, 4863, 5007, 6564])
                 all_tags = np.array(['LYALPHA', 'SUMCIII1907', 'SUMOII3726',
-                                     'HBETA', 'OIII5007', 'HALPHA'])                 
+                                     'HBETA', 'OIII5007', 'HALPHA'])
             else:
                 all_lines = np.array(eml.keys())
                 all_tags = np.array(eml.values())
@@ -1193,15 +1197,16 @@ class Source(object):
                 for l1, l2, tag in zip(lambda_ranges[0, :],
                                        lambda_ranges[1, :], tags):
                     self._logger.debug('Generate narrow band image for NB_%s'
-                                      ' with z=%s', tag, z[0])
+                                       ' with z=%s', tag, z[0])
                     self.images['NB_' + tag] = subcub.get_image(
                         wave=(l1, l2), is_sum=is_sum,
                         subtract_off=subtract_off, margin=margin,
                         fband=fband, unit_wave=u.angstrom)
 
     def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None,
-                                      unit_size=u.arcsec, width=8, is_sum=False,
-                                      subtract_off=True, margin=10., fband=3.):
+                                      unit_size=u.arcsec, width=8,
+                                      is_sum=False, subtract_off=True,
+                                      margin=10., fband=3.):
         """Create narrow band image around an observed wavelength value.
 
         Parameters
@@ -1234,8 +1239,8 @@ class Source(object):
             The size of the off-band is fband*narrow-band width (in angstrom).
 
         """
-        self._logger.debug('Generate narrow band image for %s, lamdba: %s', tag,
-                          lbda)
+        self._logger.debug('Generate narrow band image for %s, lamdba: %s',
+                           tag, lbda)
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
@@ -1260,8 +1265,9 @@ class Source(object):
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
         self.images[tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
-                                            subtract_off=subtract_off, margin=margin,
-                                            fband=fband, unit_wave=u.angstrom)
+                                            subtract_off=subtract_off,
+                                            margin=margin, fband=fband,
+                                            unit_wave=u.angstrom)
 
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
         """Run SExtractor on all images listed in tags
@@ -1429,9 +1435,10 @@ class Source(object):
         self.tables[name] = tab
 
     def extract_spectra(self, cube, obj_mask='MASK_UNION', sky_mask='MASK_SKY',
-                        tags_to_try=['MUSE_WHITE', 'NB_LYALPHA',
-                                     'NB_HALPHA', 'NB_SUMOII3726'],
-                        skysub=True, psf=None, lbda=None, unit_wave=u.angstrom):
+                        tags_to_try=('MUSE_WHITE', 'NB_LYALPHA',
+                                     'NB_HALPHA', 'NB_SUMOII3726'),
+                        skysub=True, psf=None, lbda=None,
+                        unit_wave=u.angstrom):
         """Extract spectra from the MUSE data cube and from a list of
         narrow-band images (to define spectrum extraction apertures).
 
@@ -1447,9 +1454,9 @@ class Source(object):
         ``self.spectra[nb_ima]`` (for nb_ima in tags_to_try).
 
         If psf:
-            The potential PSF weighted spectrum is computed as the sum of
-            the subcube weighted by mutliplication of the mask of the objetct and the PSF.
-            It is saved in self.spectra['MUSE_PSF']
+            The potential PSF weighted spectrum is computed as the sum of the
+            subcube weighted by mutliplication of the mask of the objetct and
+            the PSF. It is saved in self.spectra['MUSE_PSF']
 
         If skysub:
             The local sky spectrum is computed as the average of the subcube
@@ -1491,44 +1498,44 @@ class Source(object):
             If None, inputs are in pixels
 
         """
-        if obj_mask in self.images:
-            ima = self.images[obj_mask]
+        if obj_mask not in self.images:
+            raise ValueError('key %s not present in the images dictionary'
+                             % obj_mask)
 
-            if ima.wcs.sameStep(cube.wcs):
-                size = ima.shape[0]
-                unit_size = None
-            else:
-                size = ima.wcs.get_step(unit=u.arcsec)[0] * ima.shape[0]
-                unit_size = u.arcsec
+        if skysub and sky_mask not in self.images:
+            raise ValueError('key %s not present in the images dictionary'
+                             % sky_mask)
 
-            subcub = cube.subcube(center=(self.dec, self.ra), size=size,
-                                  unit_center=u.deg, unit_size=unit_size,
-                                  lbda=lbda, unit_wave=unit_wave)
-            if ima.wcs.isEqual(subcub.wcs):
-                object_mask = ima.data.data
+        ima = self.images[obj_mask]
+
+        if ima.wcs.sameStep(cube.wcs):
+            size = ima.shape[0]
+            unit_size = None
+        else:
+            size = ima.wcs.get_step(unit=u.arcsec)[0] * ima.shape[0]
+            unit_size = u.arcsec
+
+        subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+                              unit_center=u.deg, unit_size=unit_size,
+                              lbda=lbda, unit_wave=unit_wave)
+        if ima.wcs.isEqual(subcub.wcs):
+            object_mask = ima.data.data
+        else:
+            object_mask = ima.resample(
+                newdim=(subcub.shape[1], subcub.shape[2]),
+                newstart=subcub.wcs.get_start(unit=u.deg),
+                newstep=subcub.wcs.get_step(unit=u.arcsec),
+                order=0, unit_start=u.deg, unit_step=u.arcsec).data.data
+
+        if skysub:
+            if self.images[sky_mask].wcs.isEqual(subcub.wcs):
+                skymask = self.images[sky_mask].data.data
             else:
-                object_mask = ima.resample(
+                skymask = self.images[sky_mask].resample(
                     newdim=(subcub.shape[1], subcub.shape[2]),
                     newstart=subcub.wcs.get_start(unit=u.deg),
                     newstep=subcub.wcs.get_step(unit=u.arcsec),
-                    order=0, unit_start=u.deg,
-                    unit_step=u.arcsec).data.data
-        else:
-            raise IOError('key %s not present in the images dictionary' % obj_mask)
-
-        if skysub:
-            if sky_mask in self.images:
-                if self.images[sky_mask].wcs.isEqual(subcub.wcs):
-                    skymask = self.images[sky_mask].data.data
-                else:
-                    skymask = self.images[sky_mask].resample(
-                        newdim=(subcub.shape[1], subcub.shape[2]),
-                        newstart=subcub.wcs.get_start(unit=u.deg),
-                        newstep=subcub.wcs.get_step(unit=u.arcsec),
-                        order=0, unit_start=u.deg,
-                        unit_step=u.arcsec).data.data
-            else:
-                raise IOError('key %s not present in the images dictionary' % sky_mask)
+                    order=0, unit_start=u.deg, unit_step=u.arcsec).data.data
 
             # Get the sky spectrum to subtract
             sky = subcub.sum(axis=(1, 2), weights=skymask)
@@ -1687,7 +1694,9 @@ class Source(object):
                     nlines = len(self.lines)
                     col = MaskedColumn(ma.masked_array(np.array([''] * nlines),
                                                        mask=np.ones(nlines)),
-                                       name='LINE', dtype='S20', unit='unitless', description='line name')
+                                       name='LINE', dtype='S20',
+                                       unit='unitless',
+                                       description='line name')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
                     self.lines['LINE'][self.lines[col_lbda] == w] = name
@@ -1883,7 +1892,6 @@ class SourceList(list):
         cat = Catalog.from_sources(self, fmt)
         try:
             cat.write(fcat)
-            #raise Warning("For FITS tables, the maximum number of fields is 999")
         except:
             cat.write(fcat.replace('.fits', '.txt'), format='ascii')
 
