@@ -8,7 +8,10 @@
 import os
 import re
 import sphinx_rtd_theme
-import sys; sys.setrecursionlimit(1500)
+import sys
+
+sys.path.insert(0, os.path.abspath('./ext'))
+sys.setrecursionlimit(1500)
 
 # -- General configuration ----------------------------------------------------
 
@@ -35,6 +38,11 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.intersphinx',
     'numpydoc',
+    # From astropy:
+    'automodsumm',
+    'automodapi',
+    'viewcode',  # Use patched version of viewcode
+    'smart_resolver'
 ]
 # sys.path.insert(0, os.path.abspath('../../sphinxext'))
 
