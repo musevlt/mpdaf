@@ -240,13 +240,13 @@ class Image(DataArray):
 
     _ndim_required = 2
     _has_wcs = True
-    _spflims = None
 
     def __init__(self, filename=None, ext=None, wcs=None, data=None, var=None,
                  unit=u.dimensionless_unscaled, copy=True, dtype=float,
                  **kwargs):
         self._clicks = None
         self._selector = None
+        self._spflims = None
 
         if filename is not None and not is_valid_fits_file(filename):
             from PIL import Image as PILImage
@@ -338,6 +338,16 @@ class Image(DataArray):
                 # image + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
                 res = other.__add__(self)
                 return res
+
+    def copy(self):
+        """Return a new copy of an Image object."""
+        obj = super(Image, self).copy()
+
+        # Make a deep copy of the spatial-frequency limits.
+
+        if self._spflims is not None:
+            obj._spflims = self._spflims.deepcopy()
+        return obj
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -3418,7 +3428,7 @@ class Image(DataArray):
 
         if antialias:
             data, newfmax = _antialias_filter_image(
-                data, abs(oldinc), abs(newinc), self.get_spatial_fmax())
+                data, abs(oldinc), abs(newinc), image.get_spatial_fmax())
         else:
             newfmax = 0.5 / abs(newinc)
 
@@ -3426,7 +3436,7 @@ class Image(DataArray):
         # reduced by the changes in the Y and X sampling intervals,
         # record this.
 
-        self.update_spatial_fmax(newfmax)
+        image.update_spatial_fmax(newfmax)
 
         # For each pixel in the output image, the affine_transform
         # function calculates the index of the equivalent pixel in the
@@ -5857,7 +5867,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
 
     # Return the original image if neither axis needs filtering.
 
-    if np.all(filter_axes):
+    if np.all(np.logical_not(filter_axes)):
         return data, oldfmax
 
     # Obtain the FFT of the input image.
@@ -6028,13 +6038,16 @@ class SpatialFrequencyLimits(object):
 
         # Store the Y and X axes of the band-limiting ellipse.
 
-        self.fmax = np.asarray(fmax, dtype=np.float)
+        self.fmax = np.array(fmax, dtype=np.float, copy=True)
 
         # Record the rotation angle in degrees of the ellipse, after
         # wrapping the angle into the range -180 to 180, to make it
         # easy to compare with angles returned by wcs.get_rot().
 
-        self.rot = rot - 360.0 * np.floor(rot / 360.0 + 0.5)
+        self.rot = float(rot - 360.0 * np.floor(rot / 360.0 + 0.5))
+
+    def deepcopy(self):
+        return SpatialFrequencyLimits(self.fmax, self.rot)
 
     def get_fmax(self, rot):
 
