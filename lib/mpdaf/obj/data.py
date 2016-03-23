@@ -605,9 +605,9 @@ class DataArray(object):
                         raise IOError('Number of points in STAT not equal to '
                                       'DATA')
 
-                if np.array_equal(var.shape, self.shape):
-                    # Store the var array if the full var has been read
-                    self._var = var
+                    if np.array_equal(var.shape, self.shape):
+                        # Store the var array if the full var has been read
+                        self._var = var
             else:
                 var = None
         else:
