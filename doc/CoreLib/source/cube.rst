@@ -29,7 +29,3 @@ Examples::
 .. autoclass:: mpdaf.obj.Cube
     :members:
     :special-members:
-
-
-
-
