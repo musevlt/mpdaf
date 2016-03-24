@@ -12,25 +12,22 @@ from ..tools import fix_unit_read
 
 
 def deg2sexa(x):
-    """Transform one or more equatorial coordinate pairs from
-       degrees to sexagesimal strings.
+    """Transform equatorial coordinates from degrees to sexagesimal strings.
 
     Parameters
     ----------
     x : float array
-        Either a single coordinate in a 1D array like [dec,ra],
+        Either a single coordinate in a 1D array like ``[dec, ra]``,
         or a 2D array of multiple (dec,ra) coordinates, ordered like
-        [[dec1,ra1], [dec2,ra2], ...].  All coordinates must be in
-        degrees.
+        ``[[dec1,ra1], [dec2,ra2], ...]``. All coordinates must be in degrees.
 
     Returns
     -------
     out : array of strings
-          The array of dec,ra coordinates as sexagesimal strings,
-          stored in an array of the same dimensions as the input
-          array. Declination values are written like
-          degrees:minutes:seconds. Right-ascension values are
-          written like hours:minutes:seconds.
+        The array of dec,ra coordinates as sexagesimal strings, stored in an
+        array of the same dimensions as the input array. Declination values
+        are written like degrees:minutes:seconds. Right-ascension values are
+        written like hours:minutes:seconds.
 
     """
     x = np.array(x)
@@ -57,24 +54,23 @@ def deg2sexa(x):
 
 
 def sexa2deg(x):
-    """Transform one or more equatorial coordinate pairs from
-       sexagesimal strings to decimal degrees.
+    """Transform equatorial coordinates from sexagesimal strings to degrees.
 
     Parameters
     ----------
     x : string array
-        Either a single pair of coordinate strings in a 1D array like
-        [dec,ra], or a 2D array of multiple (dec,ra) coordinate
-        strings, ordered like [[dec1,ra1], [dec2,ra2], ...]. In each
-        coordinate pair, the declination string should be written like
-        degrees:minutes:seconds, and the right-ascension string should
-        be written like hours:minutes:seconds.
+        Either a single pair of coordinate strings in a 1D array like ``[dec,
+        ra]``, or a 2D array of multiple (dec,ra) coordinate strings, ordered
+        like ``[[dec1,ra1], [dec2,ra2], ...]``. In each coordinate pair, the
+        declination string should be written like degrees:minutes:seconds, and
+        the right-ascension string should be written like
+        hours:minutes:seconds.
 
     Returns
     -------
     out : array of numbers
-          The array of ra,dec coordinates in degrees, returned in an
-          array of the same dimensions as the input array.
+        The array of ra,dec coordinates in degrees, returned in an
+        array of the same dimensions as the input array.
 
     """
     x = np.array(x)
@@ -101,8 +97,7 @@ def sexa2deg(x):
 
 
 def deg2hms(x):
-    """Transform a degree value to a string representation
-    of the coordinate as hours:minutes:seconds.
+    """Transform degrees to *hours:minutes:seconds* strings.
 
     Parameters
     ----------
@@ -111,7 +106,7 @@ def deg2hms(x):
 
     Returns
     -------
-    out : string
+    out : str
         The input angle written as a sexagesimal string, in the
         form, hours:minutes:seconds.
 
@@ -122,12 +117,11 @@ def deg2hms(x):
 
 
 def hms2deg(x):
-    """Transform a string representation of a coordinate,
-    written as hours:minutes:seconds, to a float degree value.
+    """Transform *hours:minutes:seconds* strings to degrees.
 
     Parameters
     ----------
-    x : string
+    x : str
         The input angle, written in the form, hours:minutes:seconds
 
     Returns
@@ -142,8 +136,7 @@ def hms2deg(x):
 
 
 def deg2dms(x):
-    """Transform a degree value to a string representation
-       of the coordinate, written as degrees:arcminutes:arcseconds.
+    """Transform degrees to *degrees:arcminutes:arcseconds* strings.
 
     Parameters
     ----------
@@ -152,8 +145,9 @@ def deg2dms(x):
 
     Returns
     -------
-    out : string
+    out : str
         The input angle as a string, written as degrees:minutes:seconds.
+
     """
     ac = Angle(x, unit='degree')
     dms = ac.to_string(unit='degree', sep=':', pad=True)
@@ -161,12 +155,11 @@ def deg2dms(x):
 
 
 def dms2deg(x):
-    """Transform a string representation of the coordinate,
-       written as degrees:arcminutes:arcseconds, to a float degree value.
+    """Transform *degrees:arcminutes:arcseconds* strings to degrees.
 
     Parameters
     ----------
-    x : string
+    x : str
         The input angle written in the form, degrees:arcminutes:arcseconds
 
     Returns
@@ -190,26 +183,25 @@ def wcs_from_header(hdr, naxis=None):
 
 
 def image_angle_from_cd(cd, unit=u.deg):
-    """Return the rotation angle of the image, defined such that a
-    rotation angle of zero aligns north along the positive Y axis, and
-    a positive rotation angle rotates north away from the Y axis, in
-    the sense of a rotation from north to east.
+    """Return the rotation angle of the image.
 
-    Note that the rotation angle is defined in a flat map-projection
-    of the sky. It is what would be seen if the pixels of the image
-    were drawn with their pixel widths scaled by the angular pixel
-    increments returned by the axis_increments_from_cd() method.
+    Defined such that a rotation angle of zero aligns north along the positive
+    Y axis, and a positive rotation angle rotates north away from the Y axis,
+    in the sense of a rotation from north to east.
+
+    Note that the rotation angle is defined in a flat map-projection of the
+    sky. It is what would be seen if the pixels of the image were drawn with
+    their pixel widths scaled by the angular pixel increments returned by the
+    axis_increments_from_cd() method.
 
     If the CD matrix was derived from the archaic CROTA and CDELT FITS
-    keywords, then the angle returned by this function is equal to
-    CROTA.
+    keywords, then the angle returned by this function is equal to CROTA.
 
     Parameters
     ----------
-    cd : numpy.narray
+    cd : numpy.ndarray
         The 2x2 coordinate conversion matrix, with its elements
-        ordered for multiplying a column vector in FITS (x,y) axis
-        order.
+        ordered for multiplying a column vector in FITS (x,y) axis order.
     unit : astropy.units
         The unit to give the returned angle (degrees by default).
 
@@ -671,7 +663,7 @@ class WCS(object):
         return res
 
     def pix2sky(self, x, unit=None):
-        """Convert image pixel indexes (y,x) to world coordinates (dec,ra)
+        """Convert image pixel indexes (y,x) to world coordinates (dec,ra).
 
         Parameters
         ----------
@@ -705,10 +697,10 @@ class WCS(object):
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes.
-        Beware that if the two wcs objects have the same world
-        coordinate characteristics, but come from images of
-        different dimensions, the objects will be considered
-        different.
+
+        Beware that if the two wcs objects have the same world coordinate
+        characteristics, but come from images of different dimensions, the
+        objects will be considered different.
 
         Parameters
         ----------
@@ -859,10 +851,9 @@ class WCS(object):
         """Return the angular height and width of a pixel along the
         Y and X axes of the image array.
 
-        In MPDAF, images are sampled on a regular grid of square
-        pixels that represent a flat projection of the celestial
-        sphere. The get_step() method returns the angular width and
-        height of these pixels on the sky.
+        In MPDAF, images are sampled on a regular grid of square pixels that
+        represent a flat projection of the celestial sphere. The get_step()
+        method returns the angular width and height of these pixels on the sky.
 
         See also get_axis_increments().
 
@@ -937,17 +928,15 @@ class WCS(object):
         incrementing the array indexes of the image by one along the Y
         and X axes, respectively.
 
-        In MPDAF, images are sampled on a regular grid of square
-        pixels that represent a flat projection of the celestial
-        sphere. The get_axis_increments() method returns the angular
-        width and height of these pixels on the sky, with signs that
-        indicate whether the angle increases or decreases as one
-        increments the array indexes. To keep plots consistent,
-        regardless of the rotation angle of the image on the sky, the
-        returned height is always positive, but the returned width is
-        negative if a plot of the image with pixel 0,0 at the bottom
-        left would place east anticlockwise of north, and positive
-        otherwise.
+        In MPDAF, images are sampled on a regular grid of square pixels that
+        represent a flat projection of the celestial sphere. The
+        get_axis_increments() method returns the angular width and height of
+        these pixels on the sky, with signs that indicate whether the angle
+        increases or decreases as one increments the array indexes. To keep
+        plots consistent, regardless of the rotation angle of the image on the
+        sky, the returned height is always positive, but the returned width is
+        negative if a plot of the image with pixel 0,0 at the bottom left would
+        place east anticlockwise of north, and positive otherwise.
 
         Parameters
         ----------
@@ -983,9 +972,9 @@ class WCS(object):
         """Return the minimum and maximum right-ascensions and declinations
         in the image array.
 
-        Specifically a list is returned with the following contents:
+        Specifically a list is returned with the following contents::
 
-         [dec_min, ra_min, dec_max, ra_max]
+            [dec_min, ra_min, dec_max, ra_max]
 
         Note that if the Y axis of the image is not parallel to the
         declination axis, then the 4 returned values will all come
@@ -1093,33 +1082,32 @@ class WCS(object):
         return image_angle_from_cd(cd, unit)
 
     def get_cd(self):
-        """Return the coordinate conversion matrix (CD). This is a 2x2 matrix
-           that can be used to convert from the column and row indexes
-           of a pixel in the image array to a coordinate within a flat
-           map-projection of the celestial sphere. For example, if the
-           celestial coordinates of the observation are
-           right-ascension and declination, and r and d denote their
-           gnonomic TAN projection onto a flat plane, then a pixel at row
-           and column [col,row] has [r,d] coordinates given by:
+        """Return the coordinate conversion matrix (CD).
 
-           (r,d) = np.dot(get_cd(), (col - get_crpix1(), row - get_crpix2())
+        This is a 2x2 matrix that can be used to convert from the column and
+        row indexes of a pixel in the image array to a coordinate within a flat
+        map-projection of the celestial sphere. For example, if the celestial
+        coordinates of the observation are right-ascension and declination, and
+        r and d denote their gnonomic TAN projection onto a flat plane, then
+        a pixel at row and column [col,row] has [r,d] coordinates given by::
+
+            (r,d) = np.dot(get_cd(), (col - get_crpix1(), row - get_crpix2())
 
         Returns
         -------
         out : nump.ndarray
            A 2D array containing the coordinate transformation matrix,
            arranged such that the elements described in the FITS
-           standard are arranged as follows:
+           standard are arranged as follows::
 
-              [[CD_11, CD_12]
-               [CD_21, CD_22]]
+               [[CD_11, CD_12]
+                [CD_21, CD_22]]
 
         """
 
         # The documentation for astropy.wcs.Wcsprm indicates that
         # get_cdelt() and get_pc() work:
         #
-
         # "even when the header specifies the linear transformation
         #  matrix in one of the alternative CDi_ja or CROTAia
         #  forms. This is useful when you want access to the linear
@@ -1137,15 +1125,13 @@ class WCS(object):
     def get_crpix1(self):
         """Return the value of the FITS CRPIX1 parameter.
 
-        CRPIX1 contains the index of the reference position of
-        the image along the X-axis of the image. Beware that
-        this is a FITS array index, which is 1 greater than the
-        corresponding python array index. For example, a crpix
-        value of 1 denotes a python array index of 0. The
-        reference pixel index is a floating point value that
-        can indicate a position between two pixels. It can also
-        indicate an index that is outside the bounds of the
-        array.
+        CRPIX1 contains the index of the reference position of the image along
+        the X-axis of the image. Beware that this is a FITS array index, which
+        is 1 greater than the corresponding python array index. For example,
+        a crpix value of 1 denotes a python array index of 0. The reference
+        pixel index is a floating point value that can indicate a position
+        between two pixels. It can also indicate an index that is outside the
+        bounds of the array.
 
         Returns
         -------
@@ -1158,15 +1144,13 @@ class WCS(object):
     def get_crpix2(self):
         """Return the value of the FITS CRPIX2 parameter.
 
-        CRPIX2 contains the index of the reference position of
-        the image along the Y-axis of the image. Beware that
-        this is a FITS array index, which is 1 greater than the
-        corresponding python array index. For example, a crpix
-        value of 1 denotes a python array index of 0. The
-        reference pixel index is a floating point value that
-        can indicate a position between two pixels. It can also
-        indicate an index that is outside the bounds of the
-        array.
+        CRPIX2 contains the index of the reference position of the image along
+        the Y-axis of the image. Beware that this is a FITS array index, which
+        is 1 greater than the corresponding python array index. For example,
+        a crpix value of 1 denotes a python array index of 0. The reference
+        pixel index is a floating point value that can indicate a position
+        between two pixels. It can also indicate an index that is outside the
+        bounds of the array.
 
         Returns
         -------
@@ -1179,8 +1163,8 @@ class WCS(object):
     def get_crval1(self, unit=None):
         """Return the value of the FITS CRVAL1 parameter.
 
-        CRVAL1 contains the coordinate reference value of the first
-        image axis (eg. right-ascension).
+        CRVAL1 contains the coordinate reference value of the first image axis
+        (eg. right-ascension).
 
         Parameters
         ----------
@@ -1203,8 +1187,8 @@ class WCS(object):
     def get_crval2(self, unit=None):
         """Return the value of the FITS CRVAL2 parameter.
 
-        CRVAL2 contains the coordinate reference value of the second
-        image axis (eg. declination).
+        CRVAL2 contains the coordinate reference value of the second image axis
+        (eg. declination).
 
         Parameters
         ----------
@@ -1242,24 +1226,21 @@ class WCS(object):
     def set_cd(self, cd):
         """Install a new coordinate transform matrix.
 
-        This is a 2x2 matrix that is used to convert from the row and
-        column indexes of a pixel in the image array to a coordinate
-        within a flat map-projection of the celestial sphere. It is
-        formerly described in the FITS standard. The matrix
-        should be ordered like
+        This is a 2x2 matrix that is used to convert from the row and column
+        indexes of a pixel in the image array to a coordinate within a flat
+        map-projection of the celestial sphere. It is formerly described in the
+        FITS standard. The matrix should be ordered like::
 
-           cd = numpy.array([[CD1_1, CD1_2],
-                             [CD2_1, CD2_2]]),
+            cd = numpy.array([[CD1_1, CD1_2],
+                              [CD2_1, CD2_2]]),
 
-         where CDj_i are the names of the corresponding FITS
-         keywords.
+        where CDj_i are the names of the corresponding FITS keywords.
 
         Parameters
         ----------
         cd : numpy.ndarray
             The 2x2 coordinate conversion matrix, with its elements
-            ordered for multiplying a column vector in FITS (x,y)
-            axis order.
+            ordered for multiplying a column vector in FITS (x,y) axis order.
 
         """
 
@@ -1284,8 +1265,8 @@ class WCS(object):
     def set_naxis1(self, n):
         """Set the dimension of the X-axis of the image.
 
-        This sets the dimension of axis 1 of the python data array
-        that holds the image (ie. data.shape[1])
+        This sets the dimension of axis 1 of the python data array that holds
+        the image (ie. data.shape[1])
 
         Parameters
         ----------
@@ -1298,8 +1279,8 @@ class WCS(object):
     def set_naxis2(self, n):
         """Set the dimension of the Y-axis of the image.
 
-        This sets the dimension of axis 0 of the python data array
-        that holds the image (ie. data.shape[0])
+        This sets the dimension of axis 0 of the python data array that holds
+        the image (ie. data.shape[0])
 
         Parameters
         ----------
@@ -1310,17 +1291,17 @@ class WCS(object):
         self.naxis2 = n
 
     def set_crpix1(self, x):
-        """Set the value of the FITS CRPIX1 parameter, which sets the
-        reference pixel index along the X-axis of the image.
+        """Set the value of the FITS CRPIX1 parameter.
 
-        This is a floating point value which can denote a position
-        between pixels. It is specified with the FITS indexing
-        convention, where FITS pixel 1 is equivalent to pixel 0 in
-        python arrays. In general subtract 1 from x to get the
-        corresponding floating-point pixel index along axis 1 of the
-        image array.  In cases where x is an integer, the
-        corresponding row in the python data array that contains the
-        image is data[:,x-1].
+        This sets the reference pixel index along the X-axis of the image.
+
+        This is a floating point value which can denote a position between
+        pixels. It is specified with the FITS indexing convention, where FITS
+        pixel 1 is equivalent to pixel 0 in python arrays. In general subtract
+        1 from x to get the corresponding floating-point pixel index along axis
+        1 of the image array.  In cases where x is an integer, the
+        corresponding row in the python data array that contains the image is
+        ``data[:, x-1]``.
 
         Parameters
         ----------
@@ -1333,31 +1314,32 @@ class WCS(object):
         self.wcs.wcs.set()
 
     def set_crpix2(self, y):
-        """Set the value of the FITS CRPIX1 parameter, which sets the
-        reference pixel index along the Y-axis of the image.
+        """Set the value of the FITS CRPIX2 parameter.
 
-        This is a floating point value which can denote a position
-        between pixels. It is specified with the FITS indexing
-        convention, where FITS pixel 1 is equivalent to pixel 0 in
-        python arrays. In general subtract 1 from y to get the
-        corresponding floating-point pixel index along axis 0 of the
-        image array.  In cases where y is an integer, the
-        corresponding column in the python data array that contains
-        the image is data[y-1,:].
+        This sets the reference pixel index along the Y-axis of the image.
+
+        This is a floating point value which can denote a position between
+        pixels. It is specified with the FITS indexing convention, where FITS
+        pixel 1 is equivalent to pixel 0 in python arrays. In general subtract
+        1 from y to get the corresponding floating-point pixel index along axis
+        0 of the image array.  In cases where y is an integer, the
+        corresponding column in the python data array that contains the image
+        is ``data[y-1, :]``.
 
         Parameters
         ----------
         y : float
             The index of the reference pixel along the Y axis.
-        """
 
+        """
         self.wcs.wcs.crpix[1] = y
         self.wcs.wcs.set()
 
     def set_crval1(self, x, unit=None):
-        """Set the value of the CRVAL1 keyword, which indicates the coordinate
-        reference value along the first image axis (eg. right
-        ascension).
+        """Set the value of the CRVAL1 keyword.
+
+        It indicates the coordinate reference value along the first image axis
+        (eg. right ascension).
 
         Parameters
         ----------
@@ -1374,7 +1356,10 @@ class WCS(object):
         self.wcs.wcs.set()
 
     def set_crval2(self, x, unit=None):
-        """CRVAL2 setter (value of the reference pixel on the second axis).
+        """Set the value of the CRVAL2 keyword.
+
+        It indicates the coordinate reference value along the second image axis
+        (eg. declination).
 
         Parameters
         ----------
@@ -1382,6 +1367,7 @@ class WCS(object):
             The value of the reference pixel on the second axis.
         unit : astropy.units
             The angular units of the world coordinates.
+
         """
         if unit is None:
             self.wcs.wcs.crval[1] = x
@@ -1392,10 +1378,9 @@ class WCS(object):
     def set_step(self, step, unit=None):
         """Set the height and width of pixels on the sky.
 
-        In MPDAF, images are sampled on a regular grid of square
-        pixels that represent a flat projection of the celestial
-        sphere. The set_step() method changes the angular
-        width and height of these pixels on the sky.
+        In MPDAF, images are sampled on a regular grid of square pixels that
+        represent a flat projection of the celestial sphere. The set_step()
+        method changes the angular width and height of these pixels on the sky.
 
         Parameters
         ----------
@@ -1444,17 +1429,15 @@ class WCS(object):
         incrementing the array indexes of the image by one along the Y
         and X axes, respectively.
 
-        In MPDAF, images are sampled on a regular grid of square
-        pixels that represent a flat projection of the celestial
-        sphere. The set_axis_increments() method changes the angular
-        width and height of these pixels on the sky, with signs that
-        indicate whether the angle increases or decreases as one
-        increments the array indexes. To keep plots consistent,
-        regardless of the rotation angle of the image on the sky, the
-        height should always be positive, and the width should be
-        negative if a plot of the image with pixel 0,0 at the bottom
-        left would place east anticlockwise of north, and positive
-        otherwise.
+        In MPDAF, images are sampled on a regular grid of square pixels that
+        represent a flat projection of the celestial sphere. The
+        set_axis_increments() method changes the angular width and height of
+        these pixels on the sky, with signs that indicate whether the angle
+        increases or decreases as one increments the array indexes. To keep
+        plots consistent, regardless of the rotation angle of the image on the
+        sky, the height should always be positive, and the width should be
+        negative if a plot of the image with pixel 0,0 at the bottom left would
+        place east anticlockwise of north, and positive otherwise.
 
         Parameters
         ----------
@@ -1462,8 +1445,7 @@ class WCS(object):
            (dy,dx). These are the desired angular increments of pixels
            along the Y and X axes of the image. These should
            either be in the unit specified by the 'unit' input parameter,
-           or, if unit=None, in the unit specified by the self.unit
-           property.
+           or, if unit=None, in the unit specified by the self.unit property.
         unit : astropy.units
             The angular units of the specified increments.
 
@@ -1511,6 +1493,7 @@ class WCS(object):
         Returns
         -------
         out : WCS
+
         """
 
         # Make the changes to a copy of the current WCS object.
@@ -1542,8 +1525,10 @@ class WCS(object):
         return res
 
     def is_deg(self):
-        """Return True if world coordinates are in decimal degrees
-        (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg).
+        """Return True if world coordinates are in decimal degrees.
+
+        (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg)
+
         """
         try:
             return self.wcs.wcs.ctype[0] not in ('LINEAR', 'PIXEL')
@@ -1657,12 +1642,14 @@ class WaveCoord(object):
                 self.wcs.wcs.ctype[0] == other.wcs.wcs.ctype[0])
 
     def coord(self, pixel=None, unit=None):
-        """Return the coordinate corresponding to pixel. If pixel is None
-        (default value), the full coordinate array is returned.
+        """Return the coordinate corresponding to pixel.
+
+        If pixel is None (default value), the full coordinate array is
+        returned.
 
         Parameters
         ----------
-        pixel : integer, array or None.
+        pixel : int, array or None.
             pixel value.
         unit : astropy.units
             type of the wavelength coordinates
