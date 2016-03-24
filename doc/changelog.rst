@@ -4,4 +4,4 @@
 Full Changelog
 **************
 
-.. include:: ../../../CHANGES.rst
+.. include:: ../CHANGES.rst
