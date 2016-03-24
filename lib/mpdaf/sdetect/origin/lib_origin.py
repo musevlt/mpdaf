@@ -1240,6 +1240,15 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
 
     ngrid = (grid_x2 - grid_x1) *  (grid_y2 - grid_y1) * (grid_z2 - grid_z1)
 
+    # Pad subcube in case of the 3D atom is out of the cube data
+    cube_faint_pad = np.zeros((cube_faint.shape[0],
+                               cube_faint.shape[1] + 2*grid_dxy + 2*longxy,
+                               cube_faint.shape[2] + 2*grid_dxy + 2*longxy))
+    cube_faint_pad[0: cube_faint.shape[0],
+                   grid_dxy+longxy: cube_faint.shape[1] + grid_dxy + longxy,
+                   grid_dxy+longxy: cube_faint.shape[2] + grid_dxy + longxy] \
+                   = cube_faint
+
     # Loop on emission lines detected
     nit = len(Cat1_T)
     for it in range(nit):
@@ -1260,12 +1269,35 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
         z_f = z_f.ravel()
         y_f = y_f.ravel()
         x_f = x_f.ravel()
+        
+        # size of the 3D atom along the spatial axes
+        inty1 = np.maximum(0, y_f - longxy)
+        inty2 = np.minimum(Ny, y_f + longxy + 1)
+        intx1 = np.maximum(0, x_f - longxy)
+        intx2 = np.minimum(Nx, x_f + longxy + 1)
+        
+        x1 = x_f + grid_dxy
+        x2 = x_f + 2*longxy + grid_dxy + 1
+        y1 = y_f + grid_dxy
+        y2 = y_f + 2*longxy + grid_dxy + 1
+        
+        xmin = np.abs(np.minimum(0, x_f - longxy))
+        ymin = np.abs(np.minimum(0, y_f - longxy))
 
         for n in range(x_f.shape[0]):
+            s = (slice(None, None, 1),
+                slice(inty1[n], inty2[n], 1),
+                slice(intx1[n], intx2[n], 1))
+            spad = (slice(None, None, 1),
+                   slice(y1[n], y2[n], 1),
+                   slice(x1[n], x2[n], 1))
             f, res, lraw, lstd = Compute_Estim_Grid(x_f[n], y_f[n], z_f[n],
                                                     grid_dxy, profile, Nx, Ny,
-                                                    Nz, sigma, cube_faint,
-                                                    PSF_Moffat, longxy, Dico)
+                                                    Nz, sigma[:,y_f[n],x_f[n]],
+                                                    sigma[s], cube_faint[s],
+                                                    cube_faint_pad[spad],
+                                                    PSF_Moffat, longxy, Dico,
+                                                    xmin[n], ymin[n])
 
             flux[n] = f
             residual[n] = res
@@ -1297,7 +1329,8 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
 
 
 def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
-                       sigma, cube_faint, PSF_Moffat,longxy, Dico):
+                       sigmat, sigma_t, cube_faint_t, cube_faint_pad,
+                       PSF_Moffat,longxy, Dico, xmin, ymin):
     """Function to compute the estimated emission line for each coordinate
     with the deconvolution model :
     subcube = FSF*line -> line_est = subcube*fsf/(fsf^2)
@@ -1320,17 +1353,25 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
                  Size of the cube along the z-axis
     Nz         : int
                  Size of the cube along the spectral axis
-    sigma      : array
+    sigmat     : array
+                 MUSE covariance for the pixel (x0,y0)
+    sigma_t      : array
                  MUSE covariance
-    cube_faint : array
+    cube_faint_t : array
                  Projection on the eigenvectors associated to the lower
                  eigenvalues
+    cube_faint_pad : array
+                     Pad subcube in case of the 3D atom is out of the cube data
     PSF_Moffat : array
                  FSF for this data cube
     longxy     : float
                  mid-size of the PSF
     Dico       : array
                  Dictionary of spectral profiles to test
+    xmin       : int
+                 Edge of the cube
+    ymin       : int
+                 Edge of the cube
 
     Returns
     -------
@@ -1347,8 +1388,6 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     Date  : Dec, 11 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-   # Covariance for the pixel under test
-    sigmat = sigma[:,y0,x0]
     # spectral profile
     num_prof = profile[z0, y0, x0]
     profil0 = Dico[:, num_prof]
@@ -1356,37 +1395,16 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     long0 = profil1.shape[0]
     longz = long0/2
 
-    # size of the 3D atom
-    inty1 = max(0, y0 - longxy)
-    inty2 = min(Ny, y0 + longxy + 1)
-    intx1 = max(0, x0 - longxy)
-    intx2 = min(Nx, x0 + longxy + 1)
+    # size of the 3D atom along the spectral axis
     intz1 = max(0, z0 - longz)
     intz2 = min(Nz, z0 + longz + 1)
 
-    # part of the cube at the same location
-    cube_faint_t = cube_faint[intz1:intz2, inty1:inty2, intx1:intx2]
-    # corresponding covariance
-    sigma_t = sigma[intz1:intz2, inty1:inty2, intx1:intx2]
-
     # Initialization
-    line_est = np.zeros(sigma.shape[0])
-    # Pad subcube in case of the 3D atom is out of the cube data
-    cube_faint_pad = np.zeros((cube_faint.shape[0],
-                               cube_faint.shape[1] + 2*grid_dxy + 2*longxy,
-                               cube_faint.shape[2] + 2*grid_dxy + 2*longxy))
-    cube_faint_pad[0: cube_faint.shape[0],
-                   grid_dxy+longxy: cube_faint.shape[1] + grid_dxy + longxy,
-                   grid_dxy+longxy: cube_faint.shape[2] + grid_dxy + longxy] \
-                   = cube_faint
+    line_est = np.zeros(Nz)
 
     # Deconvolution
-    x1 = x0 + grid_dxy
-    x2 = x0 + 2*longxy + grid_dxy + 1
-    y1 = y0 + grid_dxy
-    y2 = y0 + 2*longxy + grid_dxy + 1
     line_est[intz1:intz2] = np.sum((PSF_Moffat[intz1:intz2,:,:]* \
-        cube_faint_pad[intz1:intz2, y1: y2, x1: x2]) ,axis=(1,2)) \
+        cube_faint_pad[intz1:intz2, :, :]) ,axis=(1,2)) \
         / np.sum((PSF_Moffat[intz1:intz2,:,:]* \
         PSF_Moffat[intz1:intz2, :, :]) ,axis=(1,2))
 
@@ -1396,27 +1414,27 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     # Atome 3D corresponding to the estimated line
     atom_est = np.zeros((long0, PSF_Moffat.shape[1], PSF_Moffat.shape[2]))
     z1 = max(0, z0 - longz)
-    z2 = min(sigma.shape[0], long0 + z0 - longz)
+    z2 = min(Nz, long0 + z0 - longz)
     atom_est[z1-z0+longz:z2-z0+longz,:,:] = \
             line_est_raw[z1:z2, np.newaxis, np.newaxis] * PSF_Moffat[z1:z2,:,:]
 
-    x1 = np.abs(min(0, x0 - longxy))
-    y1 = np.abs(min(0, y0 - longxy))
     z1 = np.abs(min(0, z0 - longz))
 
     # Atom cut at the edges of the cube
-    atom_est_cut = atom_est[z1:z1+intz2-intz1, y1:y1+inty2-inty1,
-                            x1:x1+intx2-intx1]
+    atom_est_cut = atom_est[z1:z1+intz2-intz1,
+                            ymin:ymin+cube_faint_t.shape[1],
+                            xmin:xmin+cube_faint_t.shape[2]]
     # Estimated 3D atom in SNR space
-    atom_est_std = atom_est_cut / np.sqrt(sigma_t)
+    atom_est_std = atom_est_cut / np.sqrt(sigma_t[intz1:intz2, :, :])
     # Norm of the 3D atom
     norm2_atom1 = np.inner(atom_est_std.flatten(), atom_est_std.flatten())
     # Estimated amplitude of the 3D atom
-    alpha_est = np.inner(cube_faint_t.flatten(), atom_est_std.flatten()) / norm2_atom1
+    alpha_est = np.inner(cube_faint_t[intz1:intz2, :, :].flatten(),
+                         atom_est_std.flatten()) / norm2_atom1
     # Estimated detected emitters
     atom_alpha_est = alpha_est * atom_est_std
     # Residual of the estimation
-    res = np.sum((cube_faint_t - atom_alpha_est)**2)
+    res = np.sum((cube_faint_t[intz1:intz2, :, :] - atom_alpha_est)**2)
     # Flux
     flux = np.sum(line_est_raw)
 
