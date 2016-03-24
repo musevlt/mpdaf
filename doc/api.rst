@@ -8,7 +8,6 @@ Contents:
 
    calibfile
    catalog
-   coord
    cube
    data
    gauss1d
@@ -24,5 +23,4 @@ Contents:
    source
    sourcelist
    spectrum
-   wavecoord
-   wcs
+   coordinates
