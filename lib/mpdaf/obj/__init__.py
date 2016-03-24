@@ -1,12 +1,5 @@
 
-from .coords import deg2dms
-from .coords import deg2hms
-from .coords import deg2sexa
-from .coords import dms2deg
-from .coords import hms2deg
-from .coords import sexa2deg
-from .coords import WaveCoord
-from .coords import WCS
+from .coords import *
 from .cube import *
 from .cubelist import *
 from .data import *

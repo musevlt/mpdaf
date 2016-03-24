@@ -10,6 +10,10 @@ import numpy as np
 from .objs import is_float, is_int
 from ..tools import fix_unit_read
 
+__all__ = ('deg2sexa', 'sexa2deg', 'deg2hms', 'hms2deg', 'deg2dms', 'dms2deg',
+           'image_angle_from_cd', 'axis_increments_from_cd',
+           'WCS', 'WaveCoord')
+
 
 def deg2sexa(x):
     """Transform equatorial coordinates from degrees to sexagesimal strings.
@@ -173,7 +177,7 @@ def dms2deg(x):
     return deg
 
 
-def wcs_from_header(hdr, naxis=None):
+def _wcs_from_header(hdr, naxis=None):
     if 'CD1_1' in hdr and 'CDELT3' in hdr and 'CD3_3' not in hdr:
         hdr['CD3_3'] = hdr['CDELT3']
     if 'PC1_1' in hdr and 'CDELT3' in hdr and 'PC3_3' not in hdr:
@@ -463,7 +467,7 @@ class WCS(object):
         # image.
 
         if hdr is not None:
-            self.wcs = wcs_from_header(hdr, naxis=2)
+            self.wcs = _wcs_from_header(hdr, naxis=2)
             try:
                 self.naxis1 = hdr['NAXIS1']
                 self.naxis2 = hdr['NAXIS2']
@@ -1594,7 +1598,7 @@ class WaveCoord(object):
             # Get the unit and remove it from the header so that wcslib does
             # not convert the values.
             self.unit = u.Unit(fix_unit_read(hdr.pop('CUNIT%d' % axis)))
-            self.wcs = wcs_from_header(hdr).sub([axis])
+            self.wcs = _wcs_from_header(hdr).sub([axis])
             if shape is not None:
                 self.shape = shape
         else:
