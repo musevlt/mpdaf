@@ -37,14 +37,13 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.ifconfig',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.viewcode',
     'numpydoc',
     # From astropy:
     'automodsumm',
     'automodapi',
-    'viewcode',  # Use patched version of viewcode
     'smart_resolver'
 ]
-# sys.path.insert(0, os.path.abspath('../../sphinxext'))
 
 intersphinx_mapping = {
     'python': ('http://docs.python.org/', None),
