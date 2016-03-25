@@ -1102,32 +1102,28 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        if size > 0:
-            if not self.inside(center, unit_center):
-                return None
+        if size <= 0:
+            raise ValueError('size must be positive')
 
-            if unit_center is not None:
-                center = self.wcs.sky2pix(center, unit=unit_center)[0]
-            else:
-                center = np.array(center)
-            if unit_size is not None:
-                step0 = self.wcs.get_step(unit=unit_size)[0]
-                size = size / step0
-                minsize = minsize / step0
-            radius = np.array(size) / 2.
-
-            imin, jmin = np.maximum(np.minimum(
-                (center - radius + 0.5).astype(int),
-                [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + int(size + 0.5),
-                                     jmin + int(size + 0.5)],
-                                    [self.shape[0], self.shape[1]])
-
-            if (imax - imin + 1) < minsize or (jmax - jmin + 1) < minsize:
-                return None
-            return self[imin:imax, jmin:jmax]
-        else:
+        if not self.inside(center, unit_center):
             return None
+
+        center = np.asarray(center)
+        if unit_center is not None:
+            center = self.wcs.sky2pix(center, unit=unit_center)[0]
+
+        if unit_size is not None:
+            step0 = self.wcs.get_step(unit=unit_size)[0]
+            size = size / step0
+            minsize = minsize / step0
+
+        radius = np.array(size) / 2.
+        sy, sx = circular_bounding_box(center, radius, self.shape)
+
+        if (sy.stop - sy.start + 1) < minsize or \
+                (sx.stop - sx.start + 1) < minsize:
+            return None
+        return self[sy, sx]
 
     def _rotate(self, theta=0.0, interp='no', reshape=False, order=1,
                 pivot=None, unit=u.deg, regrid=None, flux=False, cutoff=0.25):

@@ -8,7 +8,7 @@ import numpy as np
 from astropy.constants import c
 
 __all__ = ('is_float', 'is_int', 'is_number', 'flux2mag', 'mag2flux',
-           'UnitArray', 'UnitMaskedArray')
+           'UnitArray', 'UnitMaskedArray', 'circular_bounding_box')
 
 
 def is_float(x):
