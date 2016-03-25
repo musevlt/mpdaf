@@ -17,6 +17,7 @@ import numpy as np
 import os.path
 from scipy.ndimage import measurements, morphology
 from scipy import signal, stats, special
+import logging, warnings
 
 from ...obj import Cube, Image, Spectrum
 from ...sdetect import Source, SourceList
@@ -175,6 +176,7 @@ def Compute_PCA_SubCube(NbSubcube, cube_std, intx, inty, Edge_xmin, Edge_xmax,
     Date  : Dec,7 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
     #print 'Compute_PCA_SubCube'
     #t0 = time.time()
     #Initialization
@@ -1469,6 +1471,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     Date : Dec,16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
     #print 'Spatial_Merging_Circle'
     #t0 = time.time()
     E = Cat0.copy()
@@ -1477,8 +1480,9 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     # Add indices of lines
     col_id = Column(name='ID', data=np.arange(1,len(E)+1))
     E.add_column(col_id, index=0)
-
+    Etot = len(E)
     while len(E) > 0:
+        logger.debug('{}/{} remaining lines to be merged'.format(len(E),Etot))
         # Set the new indices
         E['ID'] = np.arange(1,len(E)+1)
 
@@ -1705,6 +1709,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     Date  : Dec, 16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
     #print 'Construct_Object_Catalogue'
     #t0 = time.time()
     sources = SourceList()
