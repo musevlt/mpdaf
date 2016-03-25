@@ -3091,26 +3091,35 @@ class Image(DataArray):
 
         self.update_spatial_fmax(0.5 / self.wcs.get_step())
 
-    def rebin_mean(self, factor, margin='center'):
+    def rebin_mean(self, factor, margin='center', copy=True):
         """Return an image that shrinks the size of the current image by
-        factor.
+        an integer division factor.
 
         Parameters
         ----------
         factor : int or (int,int)
-            Factor in y and x. Python notation: (ny,nx).
+            The integer division factor along the y and x axes.
+            Note the conventional python ordering of the axes.
         margin : 'center' or 'origin'
-            This parameters is used if new size is not an integer multiple of
-            the original size.  In 'center' case, pixels will be added on the
-            left and on the right, on the bottom and of the top of the image.
-            In 'origin'case, pixels will be added on (n+1) line/column.
+            When the dimensions of the input array are not integer
+            multiples of the division factor, a sub-image is chosen
+            for rebinning. This sub-image has dimensions that are
+            integer multiples of the division factor. The margin
+            parameter determines how the sub-image is chosen. If
+            'center' is selected, then the sub-image is taken from the
+            center of the image. If 'origin' is selected, then one
+            corner of the sub-image is the [0,0] pixel of the input
+            image.
+        copy : bool
+            If True (the default), return a re-binned copy of the image.
+            If False, rebin the original image in place, and return that.
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : mpdaf.obj.Image
 
         """
-        res = self.copy()
+        res = self.copy() if copy else self
         res._rebin_mean(factor, margin)
         return res
 

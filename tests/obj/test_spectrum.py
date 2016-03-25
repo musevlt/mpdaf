@@ -228,29 +228,38 @@ def test_rebin_mean():
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
                          wave=wave)
     unit = spectrum1.wave.unit
-    flux1 = spectrum1.sum() * spectrum1.wave.get_step(unit=unit)
-    spectrum2 = spectrum1.rebin_mean(3)
+    factor = 3
+    s = slice(0,factor*(spectrum1.shape[0] // factor)) # The rebinned slice
+    flux1 = spectrum1[s].sum() * spectrum1[s].wave.get_step(unit=unit)
+    spectrum2 = spectrum1.rebin_mean(factor, margin='left')
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
-    flux1 = spe.sum() * spe.wave.get_step(unit=unit)
-    spe2 = spe.rebin_mean(3)
+    factor = 3
+    s = slice(0,factor*(spe.shape[0] // factor))
+    flux1 = spe[s].sum() * spe[s].wave.get_step(unit=unit)
+    spe2 = spe.rebin_mean(factor, margin='left')
     flux2 = spe2.sum() * spe2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
     unit = spnovar.wave.unit
-    flux1 = spnovar.sum() * spnovar.wave.get_step(unit=unit)
-    spnovar2 = spnovar.rebin_mean(4)
+    factor = 4
+    s = slice(0,factor*(spnovar.shape[0] // factor))
+    flux1 = spnovar[s].sum() * spnovar[s].wave.get_step(unit=unit)
+    spnovar2 = spnovar.rebin_mean(factor, margin='left')
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
+
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.unit
-    flux1 = spvar.sum(weight=False) * spvar.wave.get_step(unit=unit)
-    spvar2 = spvar.rebin_mean(4)
+    factor = 4
+    s = slice(0,factor*(spvar.shape[0] // factor))
+    flux1 = spvar[s].sum(weight=False) * spvar[s].wave.get_step(unit=unit)
+    spvar2 = spvar.rebin_mean(factor, margin='left')
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 
