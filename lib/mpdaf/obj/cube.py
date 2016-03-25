@@ -362,9 +362,6 @@ class Cube(DataArray):
         If not equal to None, world coordinates
         in spectral direction must be the same.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -388,7 +385,7 @@ class Cube(DataArray):
 
             if other.ndim == 1:
                 # cube1 + spectrum = cube2
-                if other._get_data() is None or other.shape[0] != self.shape[0]:
+                if other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 res = self.copy()
@@ -418,7 +415,7 @@ class Cube(DataArray):
                 return res
             elif other.ndim == 2:
                 # cube1 + image = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
-                if other._get_data() is None or self.shape[2] != other.shape[1] \
+                if self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
@@ -501,9 +498,6 @@ class Cube(DataArray):
         If not equal to None, world coordinates
         in spectral direction must be the same.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -527,7 +521,7 @@ class Cube(DataArray):
 
             if other.ndim == 1:
                 # cube1 - spectrum = cube2
-                if other._get_data() is None or other.shape[0] != self.shape[0]:
+                if other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden '
                                   'for objects with different sizes')
                 res = self.copy()
@@ -558,7 +552,7 @@ class Cube(DataArray):
                 return res
             elif other.ndim == 2:
                 # cube1 - image = cube2 (cube2[k,j,i]=cube1[k,j,i]-image[j,i])
-                if other._get_data() is None or self.shape[2] != other.shape[1] \
+                if self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -587,7 +581,7 @@ class Cube(DataArray):
                 return res
             else:
                 # cube1 - cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]-cube2[k,j,i])
-                if other._get_data() is None or self.shape[0] != other.shape[0] \
+                if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
@@ -617,9 +611,6 @@ class Cube(DataArray):
                 return res
 
     def __rsub__(self, other):
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -650,9 +641,6 @@ class Cube(DataArray):
         If not equal to None, world coordinates
         in spectral direction must be the same.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -677,7 +665,7 @@ class Cube(DataArray):
                                   'in spatial directions')
             if other.ndim == 1:
                 # cube1 * spectrum = cube2
-                if other._get_data() is None or other.shape[0] != self.shape[0]:
+                if other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 res = self.copy()
@@ -703,7 +691,7 @@ class Cube(DataArray):
                 return res
             elif other.ndim == 2:
                 # cube1 * image = cube2 (cube2[k,j,i]=cube1[k,j,i]*image[j,i])
-                if other._get_data() is None or self.shape[2] != other.shape[1] \
+                if self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -729,7 +717,7 @@ class Cube(DataArray):
                 return res
             else:
                 # cube1 * cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]*cube2[k,j,i])
-                if other._get_data() is None or self.shape[0] != other.shape[0] \
+                if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
@@ -775,9 +763,6 @@ class Cube(DataArray):
         If not equal to None, world coordinates
         in spectral direction must be the same.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -802,7 +787,7 @@ class Cube(DataArray):
                                      ' in spatial directions')
             if other.ndim == 1:
                 # cube1 / spectrum = cube2
-                if other._get_data() is None or other.shape[0] != self.shape[0]:
+                if other.shape[0] != self.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 # data
@@ -831,7 +816,7 @@ class Cube(DataArray):
                 return res
             elif other.ndim == 2:
                 # cube1 / image = cube2 (cube2[k,j,i]=cube1[k,j,i]/image[j,i])
-                if other._get_data() is None or self.shape[2] != other.shape[1] \
+                if self.shape[2] != other.shape[1] \
                         or self.shape[1] != other.shape[0]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -860,7 +845,7 @@ class Cube(DataArray):
                 return res
             else:
                 # cube1 / cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]/cube2[k,j,i])
-                if other._get_data() is None or self.shape[0] != other.shape[0] \
+                if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
@@ -886,9 +871,6 @@ class Cube(DataArray):
                 return res
 
     def __rdiv__(self, other):
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()

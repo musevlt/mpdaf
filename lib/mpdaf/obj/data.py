@@ -160,9 +160,15 @@ class DataArray(object):
                  dtype=float, primary_header=None, data_header=None, **kwargs):
         self._logger = logging.getLogger(__name__)
         self.filename = filename
-        self._data = None
+        
+        # used for properties
+        self._pdata = None
+        self._pvar = None
+        self._pmask = None
+        
+        #self._data = None
         self._data_ext = None
-        self._var = None
+        #self._var = None
         self._var_ext = None
         if mask is ma.nomask:
             self._mask = ma.nomask
@@ -327,31 +333,39 @@ class DataArray(object):
                 self._logger.warning('wavelength solution not copied',
                                      exc_info=True)
                 
-    def _read_from_file(self, item=None):
+    def _read_from_file(self, item=None, data=True, var=False):
         hdulist = fits.open(self.filename)
         if item:
-            data = np.asarray(hdulist[self._data_ext].data[item], dtype=self.dtype)
-            if self._mask is not ma.nomask:
-                if 'DQ' in hdulist:
-                    mask = np.asarray(hdulist['DQ'].data[item], dtype=np.bool)
+            if data:
+                data = np.asarray(hdulist[self._data_ext].data[item], dtype=self.dtype)
+                if self._pmask is not ma.nomask:
+                    if 'DQ' in hdulist:
+                        mask = np.asarray(hdulist['DQ'].data[item], dtype=np.bool)
+                    else:
+                        mask = ~(np.isfinite(data))
                 else:
-                    mask = ~(np.isfinite(data))
+                    mask = ma.nomask
             else:
-                mask = ma.nomask
-            if self._var_ext is not None:
+                data = self._pdata
+                mask = self._pmask
+            if var and self._var_ext is not None:
                 var = np.asarray(hdulist[self._var_ext].data[item])
             else:
                 var = None
         else:
-            data = np.asarray(hdulist[self._data_ext].data, dtype=self.dtype)
-            if self._mask is not ma.nomask:
-                if 'DQ' in hdulist:
-                    mask = np.asarray(hdulist['DQ'].data, dtype=np.bool)
+            if data:
+                data = np.asarray(hdulist[self._data_ext].data, dtype=self.dtype)
+                if self._pmask is not ma.nomask:
+                    if 'DQ' in hdulist:
+                        mask = np.asarray(hdulist['DQ'].data, dtype=np.bool)
+                    else:
+                        mask = ~(np.isfinite(data))
                 else:
-                    mask = ~(np.isfinite(data))
+                    mask = ma.nomask
             else:
-                mask = ma.nomask
-            if self._var_ext is not None:
+                data = self._pdata
+                mask = self._pmask
+            if var and self._var_ext is not None:
                 var = np.asarray(hdulist[self._var_ext].data) 
             else:
                 var = None
@@ -360,31 +374,50 @@ class DataArray(object):
             del self._shape
         return data, mask, var
                 
-    def _get_data(self):
-        """ A array of data values
+    @property
+    def _data(self):
+        """ A array of data and mask values
         """
-        if self._data is None and self.filename is not None:
-            self._data, self._mask, self._var = \
-            self._read_from_file()
-            self._ndim = self._data.ndim
-        return self._data
-    
-    def _get_var(self):
-        """ A array of data values
+        if self._pdata is None and self.filename is not None:
+            self._pdata, self._pmask, self._pvar = \
+            self._read_from_file(var=False)
+            self._ndim = self._pdata.ndim
+        if self._pdata is None:
+            raise ValueError('empty data array')
+        return self._pdata
+           
+    @_data.setter
+    def _data(self, value):
+        self._pdata = value
+      
+    @property
+    def _var(self):
+        """ A array of data, var and mask values
         """
-        if self._data is None and self.filename is not None:
-            self._data, self._mask, self._var = \
-            self._read_from_file()
-            self._ndim = self._data.ndim
-        return self._var
+        if self._pvar is None and self._var_ext is not None and \
+                self.filename is not None:
+            self._pdata, self._pmask, self._pvar = \
+            self._read_from_file(data=(self._pdata is None), var=True)
+            self._ndim = self._pdata.ndim
+        return self._pvar
     
-    def _get_mask(self):
-        if self._mask is None and self._data is None and self.filename is not None:
-            self._data, self._mask, self._var = \
-            self._read_from_file()
-            self._ndim = self._data.ndim
-        return self._mask
-    
+    @_var.setter
+    def _var(self, value):
+        self._pvar = value
+     
+    @property
+    def _mask(self):
+        """ A array of data and mask values
+        """
+        if self._pdata is None and self.filename is not None:
+            self._pdata, self._pmask, self._var = \
+            self._read_from_file(var=False)
+            self._ndim = self._pdata.ndim
+        return self._pmask
+           
+    @_mask.setter
+    def _mask(self, value):
+        self._pmask = value
 
     @classmethod
     def new_from_obj(cls, obj, data=None, var=None, copy=False):
@@ -416,8 +449,8 @@ class DataArray(object):
         """ The number of dimensions in the data and variance arrays : int """
         if self._ndim is not None:
             return self._ndim
-        elif self._get_data() is not None:
-            return self._data.ndim
+        elif self._pdata is not None:
+            return self._pdata.ndim
 
     @ndim.setter
     def ndim(self, value):
@@ -429,13 +462,13 @@ class DataArray(object):
     @property
     def shape(self):
         """ The lengths of each of the .ndim data axes. """
-        if self._get_data() is not None:
-            return self._data.shape
+        if self._pdata is not None:
+            return self._pdata.shape
         elif hasattr(self, '_shape'):
             return self._shape
         else:
             return None
-
+   
     @property
     def data(self):
         """ A masked array of data values : numpy.ma.MaskedArray.
@@ -444,8 +477,8 @@ class DataArray(object):
         they are first used. Read the data array here if not already read.
 
         """
-        #res = SharedMaskArray(self._get_data(), mask=self._get_mask(), copy=False)
-        res = ma.MaskedArray(self._get_data(), mask=self._get_mask(), copy=False)
+        #res = SharedMaskArray(self._data, mask=self._mask, copy=False)
+        res = ma.MaskedArray(self._data, mask=self._mask, copy=False)
         res._sharedmask = False
         return res
     
@@ -467,7 +500,7 @@ class DataArray(object):
         """ Either None, or a numpy.ndarray containing the variances
         of each data value. This has the same shape as the data array.
         """
-        if self._get_var() is None:
+        if self._var is None:
             return None
         else:
             return ma.MaskedArray(self._var, mask=self._mask, copy=False)
@@ -495,7 +528,7 @@ class DataArray(object):
 
     @property
     def mask(self):
-        return self._get_mask()
+        return self._mask
 
     @mask.setter
     def mask(self, value):
@@ -724,7 +757,7 @@ class DataArray(object):
 
     def __setitem__(self, item, other):
         """Set the corresponding part of data."""
-        if self._get_data() is None:
+        if self._data is None:
             raise ValueError('empty data array')
 
         if isinstance(other, DataArray):
@@ -829,7 +862,7 @@ class DataArray(object):
         out : `astropy.io.fits.ImageHDU`
 
         """
-        if self._get_var() is None:
+        if self._var is None:
             return None
 
         if self._var.dtype == np.float64:
@@ -899,7 +932,7 @@ class DataArray(object):
             By default, a new array is created.
 
         """
-        if self._get_data() is None:
+        if self._data is None:
             raise ValueError('empty data array')
 
         if out is None:
@@ -930,9 +963,6 @@ class DataArray(object):
             By default, a new array is created.
 
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if out is None:
             out = self.clone()
 
@@ -943,7 +973,7 @@ class DataArray(object):
 
     def unmask(self):
         """Unmask the data (just invalid data (nan,inf) are masked)."""
-        self._mask = ~np.isfinite(self._get_data())
+        self._mask = ~np.isfinite(self._data)
 
     def mask_variance(self, threshold):
         """Mask pixels with a variance above a threshold value.
@@ -954,7 +984,7 @@ class DataArray(object):
             Threshold value.
 
         """
-        if self._get_var() is None:
+        if self._var is None:
             raise ValueError('Operation forbidden without variance extension.')
         self.data[self._var > threshold] = ma.masked
 
@@ -983,7 +1013,7 @@ class DataArray(object):
             The slices that were used to extract the sub-array.
 
         """
-        if self._get_data() is None:
+        if self._data is None:
             return
 
         nmasked = ma.count_masked(self.data)

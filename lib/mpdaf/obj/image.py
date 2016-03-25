@@ -290,9 +290,6 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
@@ -309,7 +306,7 @@ class Image(DataArray):
                               'with different world coordinates')
             if other.ndim == 2:
                 # image1 + image2 = image3 (image3[j,i]=image1[j,i]+image2[j,i])
-                if other._get_data() is None or self.shape[0] != other.shape[0] \
+                if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -378,9 +375,6 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 # image1 + number = image2 (image2[j,i]=image1[j,i]+number)
@@ -397,7 +391,7 @@ class Image(DataArray):
                               'with different world coordinates')
             if other.ndim == 2:
                 # image1 - image2 = image3 (image3[j,i]=image1[j,i]-image2[j,i])
-                if other._get_data() is None or self.shape[0] != other.shape[0] \
+                if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -428,7 +422,7 @@ class Image(DataArray):
                 return res
             else:
                 # image - cube1 = cube2
-                if other._get_data() is None or self.shape[0] != other.shape[1] \
+                if self.shape[0] != other.shape[1] \
                         or self.shape[1] != other.shape[2]:
                     raise IOError('Operation forbidden for images '
                                   'with different sizes')
@@ -458,9 +452,6 @@ class Image(DataArray):
                 return res
 
     def __rsub__(self, other):
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -495,9 +486,6 @@ class Image(DataArray):
         -------
         out : `~mpdaf.obj.Spectrum` or `~mpdaf.obj.Image` or `~mpdaf.obj.Cube` object.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -510,8 +498,6 @@ class Image(DataArray):
         else:
             if other.ndim == 1:
                 # image * spectrum = cube
-                if other._get_data() is None:
-                    raise IOError('Operation forbidden for empty data')
                 # data
                 data = self.data[np.newaxis, :, :] * \
                     other.data[:, np.newaxis, np.newaxis]
@@ -542,7 +528,7 @@ class Image(DataArray):
                                   'with different world coordinates')
                 if other.ndim == 2:
                     # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
-                    if other._get_data() is None or self.shape[0] != other.shape[0] \
+                    if self.shape[0] != other.shape[0] \
                             or self.shape[1] != other.shape[1]:
                         raise IOError('Operation forbidden for images '
                                       'with different sizes')
@@ -593,9 +579,6 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -613,7 +596,7 @@ class Image(DataArray):
                               'with different world coordinates')
             if other.ndim == 2:
                 # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
-                if other._get_data() is None or self.shape[0] != other.shape[0] \
+                if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden '
                                   'for images with different sizes')
@@ -638,7 +621,7 @@ class Image(DataArray):
                 return res
             else:
                 # image / cube1 = cube2
-                if other._get_data() is None or self.shape[0] != other.shape[1] \
+                if self.shape[0] != other.shape[1] \
                         or self.shape[1] != other.shape[2]:
                     raise ValueError('Operation forbidden for images '
                                      'with different sizes')
@@ -667,9 +650,6 @@ class Image(DataArray):
                             var=var, copy=False)
 
     def __rdiv__(self, other):
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -4296,9 +4276,6 @@ class Image(DataArray):
             return False
 
     def _fftconvolve(self, other, interp='no'):
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             if self.shape[0] != other.shape[0] \
                     or self.shape[1] != other.shape[1]:
@@ -4315,7 +4292,7 @@ class Image(DataArray):
                 self._var = signal.fftconvolve(self._var, other,
                                               mode='same')
         elif other.ndim == 2:
-            if other._get_data() is None or self.shape[0] != other.shape[0] \
+            if self.shape[0] != other.shape[0] \
                     or self.shape[1] != other.shape[1]:
                 raise IOError('Operation forbidden for images '
                               'with different sizes')
@@ -4492,9 +4469,6 @@ class Image(DataArray):
             if 'spline', spline interpolation of the masked values.
 
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
 
             # Get a copy of the data array with masked values filled.

@@ -173,9 +173,6 @@ class Spectrum(DataArray):
         -------
         out : Spectrum or Cube object.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -192,7 +189,7 @@ class Spectrum(DataArray):
 
             if other.ndim == 1:
                 # spectrum1 + spectrum2 = spectrum3
-                if other._get_data() is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 res = self.copy()
@@ -250,9 +247,6 @@ class Spectrum(DataArray):
         -------
         out : Spectrum or Cube object.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -269,7 +263,7 @@ class Spectrum(DataArray):
 
             if other.ndim == 1:
                 # spectrum1 + spectrum2 = spectrum3
-                if other._get_data() is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 res = self.copy()
@@ -298,7 +292,7 @@ class Spectrum(DataArray):
                 return res
             else:
                 # spectrum - cube1 = cube2
-                if other._get_data() is None or self.shape[0] != other.shape[0]:
+                if self.shape[0] != other.shape[0]:
                     raise IOError('Operation forbidden for objects'
                                   ' with different sizes')
 
@@ -326,9 +320,6 @@ class Spectrum(DataArray):
                 return res
 
     def __rsub__(self, other):
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -365,9 +356,6 @@ class Spectrum(DataArray):
         -------
         out : Spectrum or Cube object.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             # spectrum1 * number = spectrum2
             # (spectrum2[k]=spectrum1[k]*number)
@@ -381,7 +369,7 @@ class Spectrum(DataArray):
                 raise IOError('Operation forbidden')
         elif other.ndim == 1:
             # spectrum1 * spectrum2 = spectrum3
-            if other._get_data() is None or self.shape != other.shape:
+            if self.shape != other.shape:
                 raise IOError('Operation forbidden for spectra '
                               'with different sizes')
             # coordinates
@@ -442,9 +430,6 @@ class Spectrum(DataArray):
         -------
         out : Spectrum or Cube object.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 # spectrum1 / number =
@@ -464,7 +449,7 @@ class Spectrum(DataArray):
                               'with different world coordinates')
             if other.ndim == 1:
                 # spectrum1 / spectrum2 = spectrum3
-                if other._get_data() is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
 
@@ -489,7 +474,7 @@ class Spectrum(DataArray):
                 return res
             else:
                 # spectrum / cube1 = cube2
-                if other._get_data() is None or self.shape[0] != other.shape[0]:
+                if self.shape[0] != other.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 # data
@@ -519,9 +504,6 @@ class Spectrum(DataArray):
                 return res
 
     def __rdiv__(self, other):
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -1143,7 +1125,7 @@ class Spectrum(DataArray):
         -------
         out : float
         """
-        if self._get_var() is None:
+        if self._var is None:
             weight = False
         if lmin is None:
             i1 = 0
@@ -1204,7 +1186,7 @@ class Spectrum(DataArray):
                 i2 = min(self.shape[0], self.wave.pixel(lmax, True, unit) + 1)
 
         subspe = self[i1:i2]
-        if weight and self._get_var() is not None:
+        if weight and self._var is not None:
             weights = 1.0 / subspe.var.filled(np.inf)
 
             # How many unmasked pixels will be averaged?
@@ -1300,7 +1282,7 @@ class Spectrum(DataArray):
         if self.shape[0] <= deg + 1:
             raise ValueError('Too few points to perform polynomial fit')
 
-        if self._get_var() is None:
+        if self._var is None:
             weight = False
 
         if weight:
@@ -2486,12 +2468,9 @@ class Spectrum(DataArray):
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         try:
             if isinstance(other, Spectrum):
-                if other._get_data() is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
@@ -2551,12 +2530,9 @@ class Spectrum(DataArray):
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         try:
             if isinstance(other, Spectrum):
-                if other._get_data() is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden '
                                   'for spectra with different sizes')
                 else:
@@ -2615,12 +2591,9 @@ class Spectrum(DataArray):
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-
         try:
             if isinstance(other, Spectrum):
-                if other._get_data() is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
@@ -2680,9 +2653,6 @@ class Spectrum(DataArray):
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-        
         from scipy import special
 
         sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
@@ -2752,9 +2722,6 @@ class Spectrum(DataArray):
         -------
         out : `~mpdaf.obj.Spectrum`
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-        
         res = self.clone()
         if self._data.sum() == 0:
             return res
@@ -2804,9 +2771,6 @@ class Spectrum(DataArray):
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
-        if self._get_data() is None:
-            raise ValueError('empty data array')
-        
         d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
         cont = self.poly_spec(5)
         ksel = np.where(d > cont.data)
