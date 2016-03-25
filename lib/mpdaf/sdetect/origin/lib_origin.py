@@ -64,8 +64,8 @@ def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
     Date  : Dec, 11 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Compute_PSF'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
     wavelengths = wave.coord(unit=u.angstrom)
 
     slope = (fwhm2 - fwhm1)/(lambda2 - lambda1)
@@ -93,7 +93,7 @@ def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
     # Normalization
     PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1,2))\
                                                     [:, np.newaxis, np.newaxis]
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return PSF_Moffat, fwhm_pix ,fwhm_arcsec
 
 
@@ -119,15 +119,16 @@ def Spatial_Segmentation(Nx, Ny, NbSubcube):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Spatial_Segmentation'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # Segmentation of the rows vector in Nbsubcube parts from the right to the
     # left
     inty = np.linspace(Ny, 0, NbSubcube + 1, dtype=np.int)
     # Segmentation of the columns vector in Nbsubcube parts from the left to
     # the right
     intx = np.linspace(0, Nx, NbSubcube + 1, dtype=np.int)
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return inty, intx
 
 
@@ -177,8 +178,8 @@ def Compute_PCA_SubCube(NbSubcube, cube_std, intx, inty, Edge_xmin, Edge_xmax,
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     logger = logging.getLogger(__name__)
-    #print 'Compute_PCA_SubCube'
-    #t0 = time.time()
+    logger.debug(__name__)
+    t0 = time.time()
     #Initialization
     nx = np.empty((NbSubcube, NbSubcube), dtype=np.int)
     ny = np.empty((NbSubcube, NbSubcube), dtype=np.int)
@@ -220,12 +221,10 @@ def Compute_PCA_SubCube(NbSubcube, cube_std, intx, inty, Edge_xmin, Edge_xmax,
             # for each spatio-spectral zone
             A[(numx,numy)]  = A_c
 
-            output = '\r%d/%d'%(1+ numx + numy*NbSubcube, NbSubcube**2)
-            sys.stdout.write("\r\x1b[K" + output.__str__())
-            sys.stdout.flush()
-    sys.stdout.write("\n")
+            output = 'Compute_PCA_SubCube %d/%d'%(1+ numx + numy*NbSubcube, NbSubcube**2)
+            logger.debug(output)
 
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return A, V, eig_val, nx, ny, nz
 
 def Compute_PCA_edge(cube, cube_edge):
@@ -252,6 +251,8 @@ def Compute_PCA_edge(cube, cube_edge):
     Date  : Dec,3 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
     # data cube converted to dictionary of spectra
     cube_v = cube.reshape(cube.shape[0], cube.shape[1]*cube.shape[2])
     # data cube without undesired spectra converted to dictionary of spectra
@@ -290,8 +291,9 @@ def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Compute_Number_Eigenvectors_Zone'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     #Initialization
     nbkeep = np.empty((NbSubcube, NbSubcube), dtype=np.int)
     zone = 0
@@ -320,7 +322,7 @@ def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
                 plt.semilogy(nbt, lambdat[nbt], 'r+')
                 plt.title('zone %d'%zone)
 
-    #print '    %0.1fs'%(time.time() - t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return nbkeep
 
 
@@ -344,6 +346,8 @@ def Compute_Number_Eigenvectors(eig_val, r0):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
     # Initialization
     nl = eig_val.shape[0]
     coeffr = np.zeros(nl - 4)
@@ -413,8 +417,9 @@ def Compute_Proj_Eigenvector_Zone(nbkeep, NbSubcube, Nx, Ny, Nz, A, V,
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Compute_Proj_Eigenvector_Zone'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # initialization
     cube_faint = np.zeros((Nz, Ny, Nx))
     cube_cont =  np.zeros((Nz, Ny, Nx))
@@ -440,7 +445,7 @@ def Compute_Proj_Eigenvector_Zone(nbkeep, NbSubcube, Nx, Ny, Nz, A, V,
                                      cube_proj_cont_v.reshape((nz[numx,numy],
                                                                ny[numx,numy],
                                                                nx[numx,numy]))
-    #print '    %0.1fs'%(time.time() - t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return cube_faint, cube_cont
 
 def Compute_Proj_Eigenvector(A, V, r):
@@ -468,6 +473,8 @@ def Compute_Proj_Eigenvector(A, V, r):
     Date  : Dec,7 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
     # initialization
     cube_proj_low_v = np.dot(V[:,:r+1], A[:r+1,:])
     cube_proj_high_v = np.dot(V[:,r+1:], A[r+1:,:])
@@ -499,8 +506,9 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Correlation_GLR_test'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # data cube weighted by the MUSE covariance
     cube_var = cube / np.sqrt(sigma)
     # Inverse of the MUSE covariance
@@ -629,12 +637,10 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
         # to the maximum of the two previous ones
         GLR[:,:,:,0] = correl
         # Display the number of the spectral profile already done
-        output = '\r%d/%d'%(k,Dico.shape[1]-1)
-        sys.stdout.write("\r\x1b[K" + output.__str__())
-        sys.stdout.flush()
-    sys.stdout.write("\n")
+        output = '{} {}/{}'%(__name__,k,Dico.shape[1]-1)
+        logger.debug(output)
 
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return correl, profile
 
 def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
@@ -676,8 +682,9 @@ def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Compute_pval_correl_zone'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # initialization
     cube_pval_correl = np.ones(correl.shape)
 
@@ -707,7 +714,7 @@ def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
     # The pvalues equals to zero correspond to the values flag to zero because
     # they are higher than the threshold so actually they have to be set to 1
     cube_pval_correl[cube_pval_correl == 0] = 1
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return cube_pval_correl
 
 
@@ -727,6 +734,8 @@ def Compute_pval_correl(correl_temp_edge):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
     moy_est = np.mean(correl_temp_edge)
     std_est = np.std(correl_temp_edge)
     # hypothesis : T_GLR are distributed according a normal distribution
@@ -769,8 +778,9 @@ def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Compute_pval_channel_Zone'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # initialization
     cube_pval_channel = np.zeros(cube_pval_correl.shape)
     # The p-values higher than the thresholded are previously set to 1, here
@@ -796,7 +806,7 @@ def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
             # cube of p-values
             cube_pval_channel[:,y1:y2,x1:x2] = pval_channel_temp[:, np.newaxis,
                                                                  np.newaxis]
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return cube_pval_channel
 
 def Compute_pval_channel(X, n_lambda, mean_est):
@@ -821,6 +831,7 @@ def Compute_pval_channel(X, n_lambda, mean_est):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
     # initialization
     N = np.sum(np.array(X!=0, dtype=np.int))
     # Estimation of p parameter with the mean of the distribution set by the
@@ -862,8 +873,9 @@ def Compute_pval_final(cube_pval_correl, cube_pval_channel, threshold):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Compute_pval_final'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # probability : Pr(line|not nuisance) = Pr(line)/Pr(not nuisance)
     probafinale = cube_pval_correl/cube_pval_channel
     # pvalue = probability/2
@@ -876,7 +888,7 @@ def Compute_pval_final(cube_pval_correl, cube_pval_channel, threshold):
     # The pvalues equals to zero correspond to the values flag to zero because
     # they are higher than the threshold so actually they have to be set to 1
     cube_pval_final[cube_pval_final == 0] = 1
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return cube_pval_final
 
 def Compute_Connected_Voxel(cube_pval_final, neighboors):
@@ -901,8 +913,9 @@ def Compute_Connected_Voxel(cube_pval_final, neighboors):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Compute_Connected_Voxel'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
 #     threshold_log = 10**(-threshold)
 #     # The p-values higher than the thresholded are previously set to 1, here we
 #     # set them to 0 because we want to merge in group pvalues thresholded.
@@ -914,7 +927,7 @@ def Compute_Connected_Voxel(cube_pval_final, neighboors):
     s = morphology.generate_binary_structure(3, conn)
     labeled_cube, Ngp = measurements.label(cube_pval_final, structure=s)
     # Maximum number of voxels in one group
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return labeled_cube, Ngp
 
 
@@ -952,8 +965,9 @@ def Compute_Referent_Voxel(correl, profile, cube_pval_correl,
     Date  : Dec,16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print ' Compute_Referent_Voxel'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     grp = measurements.find_objects(labeled_cube)
     argmax = [np.argmax(correl[grp[i]]) for i in range(Ngp)]
     correl_max = np.array([np.ravel(correl[grp[i]])[argmax[i]] for i in range(Ngp)])
@@ -973,7 +987,7 @@ def Compute_Referent_Voxel(correl, profile, cube_pval_correl,
                     'profile', 'pvalC', 'pvalS', 'pvalF'))
     # Catalogue sorted along the Z axis
     Cat_ref.sort('z')
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return Cat_ref
 
 def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
@@ -1010,8 +1024,9 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
     Date : Dec,16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Narrow_Band_Test'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # Initialization
     T1 = []
     T2 = []
@@ -1129,7 +1144,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
     col_t2 = Column(name='T2', data=T2)
     Cat1 = Cat0.copy()
     Cat1.add_columns([col_t1, col_t2])
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return Cat1
 
 
@@ -1162,13 +1177,14 @@ def Narrow_Band_Threshold(Cat1, thresh_T1, thresh_T2):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Narrow_Band_Threshold'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # Catalogue with the rows corresponding to the lines with test values
     # greater than the given threshold
     Cat1_T1 = Cat1[Cat1['T1'] > thresh_T1]
     Cat1_T2 = Cat1[Cat1['T2'] > thresh_T2]
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return Cat1_T1, Cat1_T2
 
 def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
@@ -1220,8 +1236,9 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     Date  : Dec, 16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Estimation_Line'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # Initialization
     Cat2_x = []
     Cat2_y = []
@@ -1326,7 +1343,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     col_num = Column(name='num_line', data=np.arange(len(Cat2)))
     Cat2.add_columns([col_res, col_flux, col_num])
 
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return Cat2, Cat_est_line_raw, Cat_est_line_std
 
 
@@ -1390,6 +1407,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     Date  : Dec, 11 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
+    logger = logging.getLogger(__name__)
     # spectral profile
     num_prof = profile[z0, y0, x0]
     profil0 = Dico[:, num_prof]
@@ -1472,8 +1490,8 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     logger = logging.getLogger(__name__)
-    #print 'Spatial_Merging_Circle'
-    #t0 = time.time()
+    logger.debug(__name__)
+    t0 = time.time()
     E = Cat0.copy()
     CatF = Table()
     num_source = 0
@@ -1482,7 +1500,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     E.add_column(col_id, index=0)
     Etot = len(E)
     while len(E) > 0:
-        logger.debug('{}/{} remaining lines to be merged'.format(len(E),Etot))
+        logger.debug('{} {}/{} remaining lines to be merged'.format(__name__,len(E),Etot))
         # Set the new indices
         E['ID'] = np.arange(1,len(E)+1)
 
@@ -1569,7 +1587,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
         # Suppress the voxels added in the catalogue
         for k in E0['ID']:
             E.remove_rows(E['ID']==k)
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return CatF
 
 def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
@@ -1600,8 +1618,9 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
     Date  : Dec,16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Spectral_Merging'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     # Initialization
     CatF = Table()
 
@@ -1639,7 +1658,7 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
             CatF = join(CatF, CatF_temp, join_type='outer')
 
     CatF.remove_columns(['z2'])
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return CatF
 
 def Add_radec_to_Cat(Cat, wcs):
@@ -1666,8 +1685,9 @@ def Add_radec_to_Cat(Cat, wcs):
     Date  : Dec,16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    #print 'Add_radec_to_Cat'
-    #t0 = time.time()
+    logger = logging.getLogger(__name__)
+    logger.debug(__name__)
+    t0 = time.time()
     x = Cat['x_centroid']
     y = Cat['y_centroid']
     pixcrd = [[p,q] for p,q in zip(y,x)]
@@ -1678,7 +1698,7 @@ def Add_radec_to_Cat(Cat, wcs):
     col_dec = Column(name='DEC', data=dec)
     Cat_radec = Cat.copy()
     Cat_radec.add_columns([col_ra, col_dec])
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return Cat_radec
 
 def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_profiles):
@@ -1710,8 +1730,8 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     logger = logging.getLogger(__name__)
-    #print 'Construct_Object_Catalogue'
-    #t0 = time.time()
+    logger.debug(__name__)
+    t0 = time.time()
     sources = SourceList()
     uflux = u.erg/(u.s * u.cm**2)
     unone = u.dimensionless_unscaled
@@ -1792,6 +1812,6 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
 #        src.add_image(hstlist[key],'HST_'+key, rotate=True)
 
         sources.append(src)
-    #print '    %0.1fs'%(time.time()-t0)
+    logger.debug('{} executed in %0.1fs'%(__name__,time.time()-t0))
     return sources
 
