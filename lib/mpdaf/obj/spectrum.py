@@ -865,7 +865,6 @@ class Spectrum(DataArray):
 
             self.wave = self.wave[sl]
 
-
         # At this point the spectrum dimension is an integer multiple of
         # the division factor. What is the shape of the output spectrum?
 
