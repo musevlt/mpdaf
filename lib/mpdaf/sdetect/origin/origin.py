@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os.path
 from scipy.io import loadmat
-from muse_analysis.log import init_logging
 
 from ...obj import Cube, Image, Spectrum
 from .lib_origin import Compute_PSF, Spatial_Segmentation, \
