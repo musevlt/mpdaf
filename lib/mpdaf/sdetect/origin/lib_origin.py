@@ -740,7 +740,7 @@ def Compute_pval_correl(correl_temp_edge):
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     logger = logging.getLogger(__name__)
-    logger.debug(__name__)
+    #logger.debug(whoami())
     moy_est = np.mean(correl_temp_edge)
     std_est = np.std(correl_temp_edge)
     # hypothesis : T_GLR are distributed according a normal distribution
@@ -1505,7 +1505,8 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     E.add_column(col_id, index=0)
     Etot = len(E)
     while len(E) > 0:
-        logger.debug('{} {}/{} remaining lines to be merged'.format(whoami(),len(E),Etot))
+        if (100*len(E)/Etot)%10:
+            logger.debug('{} {}/{} remaining lines to be merged'.format(whoami(),len(E),Etot))
         # Set the new indices
         E['ID'] = np.arange(1,len(E)+1)
 
