@@ -15,6 +15,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path
+import time
 from scipy.ndimage import measurements, morphology
 from scipy import signal, stats, special
 import logging, warnings
@@ -66,6 +67,7 @@ def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
     """
     logger = logging.getLogger(__name__)
     logger.debug(__name__)
+    t0 = time.time()
     wavelengths = wave.coord(unit=u.angstrom)
 
     slope = (fwhm2 - fwhm1)/(lambda2 - lambda1)
