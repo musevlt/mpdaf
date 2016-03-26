@@ -349,7 +349,6 @@ def Compute_Number_Eigenvectors(eig_val, r0):
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     logger = logging.getLogger(__name__)
-    logger.debug(__name__)
     # Initialization
     nl = eig_val.shape[0]
     coeffr = np.zeros(nl - 4)
@@ -476,7 +475,7 @@ def Compute_Proj_Eigenvector(A, V, r):
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     logger = logging.getLogger(__name__)
-    logger.debug(__name__)
+    #logger.debug(whoami())
     # initialization
     cube_proj_low_v = np.dot(V[:,:r+1], A[:r+1,:])
     cube_proj_high_v = np.dot(V[:,r+1:], A[r+1:,:])
@@ -523,6 +522,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     Nx = cube_var.shape[2]
 
     # Spatial convolution of the weighted data with the zero-mean FSF
+    logger.debug('{} Spatial convolution of the weighted data with the zero-mean FSF'.format(whoami()))
     PSF_Moffat_m = PSF_Moffat \
                    - np.mean(PSF_Moffat, axis=(1,2))[:, np.newaxis, np.newaxis]
     cube_fsf = np.empty(shape)
@@ -542,6 +542,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     del fsf_square, inv_var
 
     # First cube of correlation values
+    logger.debug('{} compute first cube of correlation values'.format(whoami()))
     # initialization with the first profile
     profile = np.zeros(shape, dtype=np.int)
 
@@ -602,6 +603,8 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     # T_GLR values with constraint  : cube_profile>0
     GLR = np.zeros((Nz, Ny, Nx, 2))
     GLR[:,:,:,0] = cube_profile/np.sqrt(norm_profile)
+    
+    logger.debug('{} compute second cube of correlation values'.format(whoami()))
 
     for k in range(1, Dico.shape[1]):
         # Second cube of correlation values
@@ -639,7 +642,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
         # to the maximum of the two previous ones
         GLR[:,:,:,0] = correl
         # Display the number of the spectral profile already done
-        output = '{} {}/{}'%(__name__,k,Dico.shape[1]-1)
+        output = '{} {}/{}'.format(whoami(),k,Dico.shape[1]-1)
         logger.debug(output)
 
     logger.debug('%s executed in %0.1fs'%(__name__,time.time()-t0))
