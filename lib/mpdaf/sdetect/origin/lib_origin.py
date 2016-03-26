@@ -1505,7 +1505,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     E.add_column(col_id, index=0)
     Etot = len(E)
     while len(E) > 0:
-        logger.debug('{} {}/{} remaining lines to be merged'.format(__name__,len(E),Etot))
+        logger.debug('{} {}/{} remaining lines to be merged'.format(whoami(),len(E),Etot))
         # Set the new indices
         E['ID'] = np.arange(1,len(E)+1)
 
