@@ -1595,7 +1595,8 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
         # Suppress the voxels added in the catalogue
         for k in E0['ID']:
             E.remove_rows(E['ID']==k)
-    logger.info('{} sources identified in catalog after spatial merging'.format(len(CatF)))
+    nid = len(np.unique(CatF['ID']))
+    logger.info('{} sources identified in catalog after spatial merging'.format(nid))
     logger.debug('%s executed in %0.1fs'%(whoami(),time.time()-t0))
     return CatF
 
@@ -1667,7 +1668,9 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
             CatF = join(CatF, CatF_temp, join_type='outer')
 
     CatF.remove_columns(['z2'])
-    logger.debug('%s executed in %0.1fs'%(__name__,time.time()-t0))
+    nid = len(np.unique(CatF['ID']))
+    logger.info('{} sources identified in catalog after spectral merging'.format(nid))
+    logger.debug('%s executed in %0.1fs'%(whoami(),time.time()-t0))
     return CatF
 
 def Add_radec_to_Cat(Cat, wcs):
