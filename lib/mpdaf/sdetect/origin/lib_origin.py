@@ -1635,7 +1635,10 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
     CatF = Table()
 
     # Loop on the group
-    for i in np.unique(Cat['ID']):
+    nid = len(np.unique(Cat['ID']))
+    for jline,i in enumerate(np.unique(Cat['ID'])):
+        if jline%50 == 0:
+            logger.debug('{} {}/{} sources explored'.format(whoami(),jline,nid))        
         # Catalogue of the lines in this group
         E = Cat[Cat['ID'] == i]
         # Sort along the maximum of the estimated lines
