@@ -1507,7 +1507,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     jline = 0
     while len(E) > 0:
         jline += 1
-        if (100*jline/Etot)%5 == 0:
+        if jline%50 == 0:
             logger.debug('{} {}/{} remaining lines to be merged'.format(whoami(),len(E),Etot))
         # Set the new indices
         E['ID'] = np.arange(1,len(E)+1)
@@ -1595,7 +1595,8 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
         # Suppress the voxels added in the catalogue
         for k in E0['ID']:
             E.remove_rows(E['ID']==k)
-    logger.debug('%s executed in %0.1fs'%(__name__,time.time()-t0))
+    logger.info('{} sources identified in catalog after spatial merging'.format(len(CatF)))
+    logger.debug('%s executed in %0.1fs'%(whoami(),time.time()-t0))
     return CatF
 
 def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
