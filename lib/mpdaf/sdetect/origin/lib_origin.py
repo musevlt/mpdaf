@@ -1504,8 +1504,10 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     col_id = Column(name='ID', data=np.arange(1,len(E)+1))
     E.add_column(col_id, index=0)
     Etot = len(E)
+    jline = 0
     while len(E) > 0:
-        if (100*len(E)/Etot)%10 == 0:
+        jline += 1
+        if (100*jline/Etot)%5 == 0:
             logger.debug('{} {}/{} remaining lines to be merged'.format(whoami(),len(E),Etot))
         # Set the new indices
         E['ID'] = np.arange(1,len(E)+1)
