@@ -40,7 +40,7 @@ Contents
    muse
    tools
    sdetect
-   api
+   tocapi
    changelog
 
 

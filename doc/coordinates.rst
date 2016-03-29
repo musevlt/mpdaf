@@ -4,7 +4,7 @@ World coordinates
 The :class:`~mpdaf.obj.WCS` class manages world coordinates in spatial
 direction (2-dimensions WCS object of pywcs package is used).
 
-The :class:`~mpdaf.obj.WaveCoord` class manages world coordinates in
+The :class:`~mpdaf.obj.coords.WaveCoord` class manages world coordinates in
 spectral direction (1-dimension WCS object of pywcs package is used).
 
 deg2sexa and sexa2deg methods transforms coordinates from degree/sexagesimal to
@@ -16,13 +16,13 @@ used.
 Degree / sexagesimal conversion
 -------------------------------
 
-- `~mpdaf.obj.deg2sexa` transforms the values of n coordinates from
+- `mpdaf.obj.coords.deg2sexa` transforms the values of n coordinates from
   degrees to sexagesimal.
 
-- `~mpdaf.obj.sexa2deg` transforms the values of n coordinates from
+- `mpdaf.obj.sexa2deg` transforms the values of n coordinates from
   sexagesimal to degrees.
 
-- `~mpdaf.obj.deg2hms` transforms a degree value to a string
+- `~mpdaf.obj.coords.deg2hms` transforms a degree value to a string
   representation of the coordinate as hours:minutes:seconds.
 
 - `~mpdaf.obj.hms2deg` transforms a string representation of the
@@ -69,9 +69,3 @@ World coordinates in spectral direction
 
 The `~mpdaf.obj.WaveCoord` class manages world coordinates in spectral
 direction.
-
-
-Reference/API
--------------
-
-.. automodapi:: mpdaf.obj.coords

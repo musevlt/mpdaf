@@ -17,9 +17,3 @@ Examples::
   spe = Spectrum(wave=wave2, data=MyData) # warning: wavelength coordinates and data have not the same dimensions. Shape of WaveCoord object is modified.
 					  # Shape of WaveCoord object is modified.
 					  # spe.wave = 4000
-
-.. autoclass:: mpdaf.obj.Spectrum
-	:members:
-	:special-members:
-
-

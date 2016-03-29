@@ -65,7 +65,7 @@ intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None)
 }
 
-autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance']
+# autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance']
 autosummary_generate = True
 
 automodapi_toctreedirnm = 'api'

@@ -13,3 +13,9 @@ Contents:
    
    euro3D
 
+
+
+Reference/API
+-------------
+
+.. automodapi:: mpdaf.tools

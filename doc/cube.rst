@@ -25,7 +25,3 @@ Examples::
   # Shape of WCS object is modified.
   # cub.wcs.naxis1 = 30
   # cub.wcs.naxis2 = 30
-
-.. autoclass:: mpdaf.obj.Cube
-    :members:
-    :special-members:

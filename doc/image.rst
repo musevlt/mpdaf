@@ -15,20 +15,15 @@ Examples::
   ima = Image(filename="image.fits",ext=(1,2)) # image from file with variance (extension numbers are 1 and 2)
   ima = Image(data=MyData, wcs=wcs1) # image 300x300 filled with MyData
   ima = Image(data=MyData, wcs=wcs2) # warning: world coordinates and data have not the same dimensions.
-                                   # Shape of WCS object is modified.
-				   # ima.wcs.naxis1 = 300
-				   # ima.wcs.naxis2 = 300
-
-.. autoclass:: mpdaf.obj.Image
-	:members:
-	:special-members:
+  # Shape of WCS object is modified.
+  # ima.wcs.naxis1 = 300
+  # ima.wcs.naxis2 = 300
 
 
 
 Functions to create a new image
-===============================
+-------------------------------
 
-.. autofunction:: mpdaf.obj.gauss_image
 
 Examples::
 
@@ -41,11 +36,6 @@ Examples::
     gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0, plot=True)
     gauss.print_param()
 
-.. autofunction:: mpdaf.obj.moffat_image
-
-.. autofunction:: mpdaf.obj.make_image
-
-.. autofunction:: mpdaf.obj.composite_image
 
 Examples::
 
@@ -62,4 +52,3 @@ Examples::
   p1.show()
   p1.save('test_composite.jpg')
 
-.. autofunction:: mpdaf.obj.mask_image

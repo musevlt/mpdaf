@@ -19,3 +19,9 @@ Contents:
    user_manual_origin
 
 
+
+
+Reference/API
+-------------
+
+.. automodapi:: mpdaf.sdetect

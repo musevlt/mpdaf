@@ -12,3 +12,9 @@ Contents:
    user_manual_slicer
    user_manual_PSF
 
+
+
+Reference/API
+-------------
+
+.. automodapi:: mpdaf.MUSE

@@ -18,3 +18,10 @@ Contents:
    user_manual_cube
    user_manual_cubelist
    coordinates
+
+
+Reference/API
+-------------
+
+.. automodapi:: mpdaf.obj
+    :allowed-package-names: coords

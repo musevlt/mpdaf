@@ -19,3 +19,9 @@ Contents:
    user_manual_calibfile
    user_manual_rawfile
 
+
+
+Reference/API
+-------------
+
+.. automodapi:: mpdaf.drs
