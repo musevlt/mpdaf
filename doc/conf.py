@@ -70,8 +70,9 @@ autosummary_generate = True
 
 automodapi_toctreedirnm = 'api'
 
-numpydoc_show_class_members = False
 numpydoc_class_members_toctree = False
+numpydoc_show_class_members = False
+# numpydoc_use_plots = True
 
 # Class documentation should contain *both* the class docstring and
 # the __init__ docstring
