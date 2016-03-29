@@ -15,7 +15,7 @@ from .cube import Cube
 from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
-__all__ = ['CubeList', 'CubeMosaic']
+__all__ = ('CubeList', 'CubeMosaic')
 
 # List of keywords that will be copied to the combined cube
 KEYWORDS_TO_COPY = (

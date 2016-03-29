@@ -10,6 +10,10 @@ from numpy import ma
 
 from ..version import __version__
 
+__all__ = ('add_mpdaf_method_keywords', 'add_mpdaf_keywords_to_file',
+           'fix_unit_read', 'fix_unit_write', 'copy_header', 'copy_keywords',
+           'is_valid_fits_file', 'read_slice_from_fits')
+
 
 def add_mpdaf_method_keywords(header, method, params, values, comments):
     """Add keywords in a FITS header to describe the method and the

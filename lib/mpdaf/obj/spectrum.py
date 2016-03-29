@@ -16,6 +16,8 @@ from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
 from ..gui.clicks import SpectrumClicks
 from ..tools import deprecated
 
+__all__ = ('Gauss1D', 'Spectrum')
+
 
 class Gauss1D(object):
 

@@ -22,6 +22,9 @@ from .data import DataArray, is_valid_fits_file
 from .objs import is_int, is_number, UnitArray, UnitMaskedArray
 from ..tools import deprecated
 
+__all__ = ('Gauss2D', 'Moffat2D', 'Image', 'gauss_image', 'moffat_image',
+           'composite_image', 'mask_image', 'SpatialFrequencyLimits')
+
 
 class Gauss2D(object):
 

@@ -18,6 +18,8 @@ from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
                      fix_unit_read, is_valid_fits_file, read_slice_from_fits,
                      copy_header)
 
+__all__ = ('DataArray', )
+
 
 class DataArray(object):
 
