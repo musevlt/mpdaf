@@ -578,7 +578,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
 
     Returns
     -------
-    continuum,single,raw : :class:`mpdaf.sdetect.SourceList`, :class:`mpdaf.sdetect.SourceList`, :class:`mpdaf.sdetect.SourceList`
+    continuum,single,raw : `mpdaf.sdetect.SourceList`, `mpdaf.sdetect.SourceList`, `mpdaf.sdetect.SourceList`
     continuum             : List of detected sources that contains emission lines associated with continuum detection
     single                : List of detected sources that contains emission lines not associated with continuum detection
     raw                   : List of detected sources  before the merging procedure.

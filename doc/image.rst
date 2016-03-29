@@ -3,7 +3,7 @@ Image object
 
 
 Image, optionally including a variance and a bad pixel mask.
-The Image object handles a 2D data array (basically a numpy masked array) containing flux values, associated with a :class:`WCS <mpdaf.obj.WCS>`
+The Image object handles a 2D data array (basically a numpy masked array) containing flux values, associated with a `WCS <mpdaf.obj.WCS>`
 object containing the spatial coordinated information (alpha,delta). Optionally, a variance data array
 can be attached and used for weighting the flux values. Array masking is used to ignore
 some of the pixel values in the calculations.
@@ -75,7 +75,7 @@ An Image object O consists of:
 +------------------+----------------------------------------------------------------------------+
 | O.primary_header | FITS primary header instance                                               |
 +------------------+----------------------------------------------------------------------------+
-| O.wcs            | World coordinate spatial information (:class:`WCS <mpdaf.obj.WCS>` object) |
+| O.wcs            | World coordinate spatial information (`WCS <mpdaf.obj.WCS>` object)        |
 +------------------+----------------------------------------------------------------------------+
 | O.shape          | Array containing the 2 dimensions [np,nq] of the image                     |
 +------------------+----------------------------------------------------------------------------+
@@ -346,7 +346,7 @@ An Image object can be created:
 If the FITS file contains a single extension (image fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
 
 
-The :class:`WCS <mpdaf.obj.WCS>` object can be copied from another image or taken from the FITS header::
+The `WCS <mpdaf.obj.WCS>` object can be copied from another image or taken from the FITS header::
 
     >>> wcs1=ima1.wcs #WCS copied from Image object ima1
     >>> wcs2 = WCS(crval=(-3.11E+01,1.46E+02,),cdelt=4E-04, deg=True, rot = 20, shape=(1000,1000)) #Spatial WCS created from a reference position in degrees, a pixel size and a rotation angle

@@ -1576,7 +1576,7 @@ class PixTable(object):
 #
 #         Returns
 #         -------
-#         out : :class:`mpdaf.obj.Image`
+#         out : `mpdaf.obj.Image`
 #         """
 #         # TODO replace by DRS
 #         # step in arcsec
@@ -1650,7 +1650,7 @@ class PixTable(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
         """
         if self.nrows == 0:
             return None
@@ -1694,7 +1694,7 @@ class PixTable(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
         """
         if self.nrows == 0:
             return None
@@ -1738,7 +1738,7 @@ class PixTable(object):
 
         Returns
         -------
-        out : :class:`mpdaf.drs.PixTableMask`
+        out : `mpdaf.drs.PixTableMask`
         """
 
         if maskfile is None:
@@ -1759,7 +1759,7 @@ class PixTable(object):
 
         Parameters
         ----------
-        pixmask : :class:`mpdaf.drs.PixTableMask`
+        pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
             ``mask_column``).
         dlbda : double
@@ -1775,7 +1775,7 @@ class PixTable(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Spectrum`
+        out : `mpdaf.obj.Spectrum`
         """
         # mask
         if pixmask is None:
@@ -1855,15 +1855,15 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref : :class:`mpdaf.obj.Spectrum`
+        skyref : `mpdaf.obj.Spectrum`
             Reference sky spectrum
-        pixmask : :class:`mpdaf.drs.PixTableMask`
+        pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
             ``mask_column``).
 
         Returns
         -------
-        out : :class:`mpdaf.drs.PixTableAutoCalib`
+        out : `mpdaf.drs.PixTableAutoCalib`
 
         """
         origin = self.get_origin()
@@ -1973,15 +1973,15 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref : :class:`mpdaf.obj.Spectrum`
+        skyref : `mpdaf.obj.Spectrum`
             Reference sky spectrum
-        pixmask : :class:`mpdaf.drs.PixTableMask`
+        pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
             ``mask_column``).
 
         Returns
         -------
-        out : :class:`mpdaf.drs.PixTableAutoCalib`
+        out : `mpdaf.drs.PixTableAutoCalib`
 
         """
         origin = self.get_origin()

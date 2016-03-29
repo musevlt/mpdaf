@@ -28,15 +28,15 @@ A Source object O consist of:
 +-----------+---------------------------------------------------------------+
 | O.spectra | Dictionary that contains spectra.                             |
 |           | Keys give description of the spectra.                         |
-|           | Values are :class:`mpdaf.obj.Spectrum` objects                |
+|           | Values are `mpdaf.obj.Spectrum` objects                       |
 +-----------+---------------------------------------------------------------+
 | O.images  | Dictionary that contains images.                              |
 |           | Keys gives filter names.                                      |
-|           | Values are :class:`mpdaf.obj.Image` object                    |
+|           | Values are `mpdaf.obj.Image` object                           |
 +-----------+---------------------------------------------------------------+
 | O.cubes   | Dictionary that contains small data cubes.                    |
 |           | Keys give description of the cubes.                           |
-|           | Values are :class:`mpdaf.obj.Cube` object                     |
+|           | Values are `mpdaf.obj.Cube` object                            |
 +-----------+---------------------------------------------------------------+
 | O.tables  | Dictionary that contains astropy tables.                      |
 |           | Keys give description of the tables.                          |

@@ -22,7 +22,7 @@ class Catalog(Table):
 
     """This class contains a catalog of objects.
 
-    Inherits from :class:`astropy.table.Table`.
+    Inherits from `astropy.table.Table`.
     """
 
     def __init__(self, *args, **kwargs):
@@ -60,8 +60,8 @@ class Catalog(Table):
 
         Parameters
         ----------
-        sources : list< :class:`mpdaf.sdetect.Source` >
-            List of :class:`mpdaf.sdetect.Source` objects
+        sources : list< `mpdaf.sdetect.Source` >
+            List of `mpdaf.sdetect.Source` objects
         fmt : str 'working'|'default'
             Format of the catalog. The format differs for the LINES table.
 
@@ -433,7 +433,7 @@ class Catalog(Table):
 
         Parameters
         ----------
-        wcs : :class:`mpdaf.obj.WCS`
+        wcs : `mpdaf.obj.WCS`
             Image WCS
         ra : string
             Name of the column that contains RA values in degrees
@@ -442,7 +442,7 @@ class Catalog(Table):
 
         Returns
         -------
-        out : :class:`mpdaf.sdetect.Catalog`
+        out : `mpdaf.sdetect.Catalog`
 
         """
         ksel = []
@@ -461,7 +461,7 @@ class Catalog(Table):
         ----------
         ax : matplotlib.axes._subplots.AxesSubplot
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
-        wcs : :class:`mpdaf.obj.WCS`
+        wcs : `mpdaf.obj.WCS`
             Image WCS
         ra : string
             Name of the column that contains RA values (in degrees)
@@ -527,7 +527,7 @@ class Catalog(Table):
         ----------
         ax : matplotlib.axes._subplots.AxesSubplot
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
-        wcs : :class:`mpdaf.obj.WCS`
+        wcs : `mpdaf.obj.WCS`
             Image WCS
         iden : string
             Name of the column that contains ID values

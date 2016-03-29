@@ -244,7 +244,7 @@ It uses the catalogue from the narrow band Test number 2::
 
 *Cat2_T2* completes *Cat1_T2* with the flux and the residual of the lines.
 
-*Cat_est_line* is a list of :class:`mpdaf.obj.Spectrum` that gives the data profile and the SNR of each line.
+*Cat_est_line* is a list of `mpdaf.obj.Spectrum` that gives the data profile and the SNR of each line.
 
 The eighth step makes a spatial merging in order to associate several lines to the same source::
 
@@ -265,7 +265,7 @@ The ninth step is the spectral merging.
   :align: center
 
 The last step adds corresponding RA/DEC to the catalogue and
-creates a list of :class:`mpdaf.sdetect.Source` objects::
+creates a list of `mpdaf.sdetect.Source` objects::
 
  >>> sources = my_origin.get_sources(Cat4, Cat_est_line, correl)
 

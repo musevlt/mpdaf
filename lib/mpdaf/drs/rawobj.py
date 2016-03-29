@@ -291,7 +291,7 @@ class Channel(object):
 
         Returns
         -------
-        out : :class:`mpdaf.drs.Channel`
+        out : `mpdaf.drs.Channel`
         """
         result = Channel(self.extname)
         result.header = self.header
@@ -307,7 +307,7 @@ class Channel(object):
 
         Returns
         -------
-        out : :class:`mpdaf.drs.Channel`
+        out : `mpdaf.drs.Channel`
         """
         result = Channel(self.extname)
         result.header = self.header
@@ -331,7 +331,7 @@ class Channel(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
         """
         wcs = obj.WCS(self.header)
         ima = obj.Image(wcs=wcs, data=self.data.__copy__())
@@ -444,7 +444,7 @@ class Channel(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
         """
         # Physical active pixels in X
         nx_data2 = self.header["ESO DET CHIP NX"]
@@ -581,7 +581,7 @@ class Channel(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
@@ -637,7 +637,7 @@ class Channel(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
@@ -829,7 +829,7 @@ class RawFile(object):
 
         Returns
         -------
-        out : :class:`mpdaf.drs.Channel`
+        out : `mpdaf.drs.Channel`
         """
         if self.channels[extname] is not None:
             return self.channels[extname]
@@ -850,7 +850,7 @@ class RawFile(object):
 
         Returns
         -------
-        out : :class:`mpdaf.drs.Channel`
+        out : `mpdaf.drs.Channel`
         """
         extname = "CHAN%02d" % key
         if self.channels[extname] is None:
@@ -970,7 +970,7 @@ class RawFile(object):
 
         Returns
         -------
-        :class:`mpdaf.drs.RawFile`
+        `mpdaf.drs.RawFile`
         """
         cpu_count = multiprocessing.cpu_count()
         result = RawFile()
@@ -996,7 +996,7 @@ class RawFile(object):
 
         Returns
         -------
-        :class:`mpdaf.drs.RawFile`
+        `mpdaf.drs.RawFile`
         """
         cpu_count = multiprocessing.cpu_count()
         result = RawFile()
@@ -1164,7 +1164,7 @@ class RawFile(object):
 
         Returns
         -------
-        :class:`mpdaf.obj.Image`
+        `mpdaf.obj.Image`
 
         """
         if mask is None:

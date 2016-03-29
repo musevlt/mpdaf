@@ -104,7 +104,7 @@ class Spectrum(DataArray):
     ext : integer or (integer,integer) or string or (string,string)
         Number/name of the data extension or numbers/names
         of the data and variance extensions.
-    wave : :class:`mpdaf.obj.WaveCoord`
+    wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates.
     unit : string
         Data unit type. u.dimensionless_unscaled by default.
@@ -129,7 +129,7 @@ class Spectrum(DataArray):
         Size of spectrum.
     var : array
         Array containing the variance.
-    wave : :class:`mpdaf.obj.WaveCoord`
+    wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates.
 
     """
@@ -656,7 +656,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        wave : :class:`mpdaf.obj.WaveCoord`
+        wave : `mpdaf.obj.WaveCoord`
             Wavelength coordinates.
         """
         if wave.shape is not None and wave.shape != self.shape:
@@ -962,7 +962,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out :class:`mpdaf.obj.Spectrum`
+        out `mpdaf.obj.Spectrum`
         """
         if factor <= 1 or factor >= self.shape[0]:
             raise ValueError('factor must be in ]1,shape[')
@@ -1634,7 +1634,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss1D`
+        out : `mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
         if is_int(lmin) or is_float(lmin):
@@ -1822,7 +1822,7 @@ class Spectrum(DataArray):
                    plot=False, plot_factor=10, unit=u.angstrom):
         """Truncate the spectrum and fit it as a sum of two gaussian functions.
 
-        Returns the two gaussian functions as :class:`mpdaf.obj.Gauss1D` objects.
+        Returns the two gaussian functions as `mpdaf.obj.Gauss1D` objects.
 
         From Johan Richard and Vera Patricio.
 
@@ -1865,7 +1865,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`
+        out : `mpdaf.obj.Gauss1D`, `mpdaf.obj.Gauss1D`
         """
         if is_int(lmin) or is_float(lmin):
             fmin = None
@@ -2008,7 +2008,7 @@ class Spectrum(DataArray):
         function.
 
         Returns the two gaussian functions (right and left) as
-        :class:`mpdaf.obj.Gauss1D` objects.
+        `mpdaf.obj.Gauss1D` objects.
 
         From Johan Richard and Vera Patricio, modified by Jeremy Blaizot.
 
@@ -2046,7 +2046,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`
+        out : `mpdaf.obj.Gauss1D`, `mpdaf.obj.Gauss1D`
             Left and right Gaussian functions.
 
         """
@@ -2268,7 +2268,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss1D`
+        out : `mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
         if is_int(lmin) or is_float(lmin):
@@ -2673,7 +2673,7 @@ class Spectrum(DataArray):
         Parameters
         ----------
         lsf : python function
-            :class:`mpdaf.MUSE.LSF` object or function f describing the LSF.
+            `mpdaf.MUSE.LSF` object or function f describing the LSF.
 
             The first three parameters of the function f must be lbda
             (wavelength value in A), step (in A) and size (odd integer).
@@ -2688,7 +2688,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Spectrum`
+        out : `mpdaf.obj.Spectrum`
         """
         res = self.clone()
         if self.data.sum() == 0:
@@ -3016,7 +3016,7 @@ class Spectrum(DataArray):
         To quit the interactive mode, click on the right mouse button.
 
         The parameters of the last gaussian are saved in self.gauss
-        (:class:`mpdaf.obj.Gauss1D`)
+        (`mpdaf.obj.Gauss1D`)
 
         Parameters
         ----------
@@ -3157,7 +3157,7 @@ class Spectrum(DataArray):
         To quit the interactive mode, click on the right mouse button.
 
         The parameters of the returned gaussian functions are saved in
-        self.gauss2 (:class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`)
+        self.gauss2 (`mpdaf.obj.Gauss1D`, `mpdaf.obj.Gauss1D`)
 
         Parameters
         ----------

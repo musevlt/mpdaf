@@ -1,7 +1,7 @@
 Cube lists and combination
 **************************
 
-The :class:`~mpdaf.obj.CubeList` and :class:`~mpdaf.obj.CubeMosaic` classes
+The `~mpdaf.obj.CubeList` and `~mpdaf.obj.CubeMosaic` classes
 allows to manages a list of cube FITS filenames, and to combine the cubes using
 several methods (median, sigma clipping).
 
@@ -22,9 +22,9 @@ A cube object `O` consist of:
 +------------+--------------------------------------------------------------------------------------------------+
 | O.fscale   | Scaling factor for the flux and variance values                                                  |
 +------------+--------------------------------------------------------------------------------------------------+
-| O.wcs      | world coordinate spatial information (:class:`WCS <mpdaf.obj.WCS>` object)                       |
+| O.wcs      | world coordinate spatial information (`WCS <mpdaf.obj.WCS>` object)                              |
 +------------+--------------------------------------------------------------------------------------------------+
-| O.wave     | world coordinate spectral information  (:class:`WaveCoord <mpdaf.obj.WaveCoord>` object)         |
+| O.wave     | world coordinate spectral information  (`WaveCoord <mpdaf.obj.WaveCoord>` object)                |
 +------------+--------------------------------------------------------------------------------------------------+
 
 Dimensions, scaling factor and coordinates must be the same for all cubes.
@@ -135,7 +135,7 @@ We merge these cubes in a single data cube containing median values of each voxe
  12/15/14 - 10:40AM 97.8%
  12/15/14 - 10:40AM 100%
 
-cube and expmap are :class:`mpdaf.obj.Cube` objects that contains respectively the merged cube and an exposure map data cube which counts the number of exposures used for the combination of each pixel.
+cube and expmap are `mpdaf.obj.Cube` objects that contains respectively the merged cube and an exposure map data cube which counts the number of exposures used for the combination of each pixel.
 statpix is an astropy.Table objects that gives pixel statistics.
 
 This process is multithreaded. It needs 30 minutes on a machine with 32 cpus.
@@ -272,8 +272,8 @@ Reference
    mpdaf.obj.Cube
    mpdaf.obj.CubeList
 
-- :class:`mpdaf.obj.CubeList` is the constructor.
-- :class:`mpdaf.obj.CubeMosaic` is the constructor.
+- `mpdaf.obj.CubeList` is the constructor.
+- `mpdaf.obj.CubeMosaic` is the constructor.
 - :func:`mpdaf.obj.CubeList.info` prints information.
 
 Checking

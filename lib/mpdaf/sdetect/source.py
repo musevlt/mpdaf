@@ -225,13 +225,13 @@ class Source(object):
         List of redshifts
     spectra : dict
         Spectra dictionary, keys give origin of spectra (``'tot'`` for total
-        spectrum, TBC). Values are :class:`mpdaf.obj.Spectrum` objects.
+        spectrum, TBC). Values are `mpdaf.obj.Spectrum` objects.
     images : dict
         Images dictionary, keys give filter names (``'MUSE_WHITE'`` for white
-        image, TBC). Values are :class:`mpdaf.obj.Image` objects.
+        image, TBC). Values are `mpdaf.obj.Image` objects.
     cubes : dict
         Cubes dictionary, keys give a description of the cube.
-        Values are :class:`mpdaf.obj.Cube` objects.
+        Values are `mpdaf.obj.Cube` objects.
     tables : dict
         Tables dictionary, keys give a description of each table.
         Values are `astropy.table.Table` objects.
@@ -301,15 +301,15 @@ class Source(object):
             Dictionary containing spectra.
             Keys gives the origin of the spectrum ('tot' for total spectrum,
             TBC).
-            Values are :class:`mpdaf.obj.Spectrum` object
+            Values are `mpdaf.obj.Spectrum` object
         images : dict
             Dictionary containing small images.
             Keys gives the filter ('MUSE_WHITE' for white image, TBC)
-            Values are :class:`mpdaf.obj.Image` object
+            Values are `mpdaf.obj.Image` object
         cubes : dict
             Dictionary containing small data cubes
             Keys gives a description of the cube
-            Values are :class:`mpdaf.obj.Cube` objects
+            Values are `mpdaf.obj.Cube` objects
         tables : dict
             Dictionary containing tables
             Keys give a description of each table
@@ -959,7 +959,7 @@ class Source(object):
 
         Parameters
         ----------
-        image : :class:`mpdaf.obj.Image`
+        image : `mpdaf.obj.Image`
             Input image MPDAF object.
         name : str
             Name used to distinguish this image
@@ -1033,7 +1033,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : :class:`mpdaf.obj.Cube`
+        cube : `mpdaf.obj.Cube`
             Input cube MPDAF object.
         name : str
             Name used to distinguish this cube
@@ -1076,7 +1076,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : :class:`mpdaf.obj.Cube`
+        cube : `mpdaf.obj.Cube`
             MUSE data cube.
         size : float
             The total size to extract in arcseconds.
@@ -1102,7 +1102,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : :class:`mpdaf.obj.Cube`
+        cube : `mpdaf.obj.Cube`
             MUSE data cube.
         z_desc : str
             Redshift description. The redshift value corresponding to
@@ -1207,7 +1207,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : :class:`mpdaf.obj.Cube`
+        cube : `mpdaf.obj.Cube`
             MUSE data cube.
         tag : str
             key used to identify the new narrow band image in the images
@@ -1474,7 +1474,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : :class:`mpdaf.obj.Cube`
+        cube : `mpdaf.obj.Cube`
             MUSE data cube.
         obj_mask : str
             Name of the image that contains the mask of the object.
@@ -1792,7 +1792,7 @@ class Source(object):
             Minimum and maximum values to use for the scaling.
         zero : float
             If True, the 0 flux line is plotted in black.
-        sky : :class:`mpdaf.obj.Spectrum`
+        sky : `mpdaf.obj.Spectrum`
             Sky spectra to overplot (default None).
         lines : str
             Name of a columns of the lines table containing wavelength values.
@@ -1843,7 +1843,7 @@ class Source(object):
 
 class SourceList(list):
 
-    """Handles a list of :class:`mpdaf.sdetect.Source` objects."""
+    """Handles a list of `mpdaf.sdetect.Source` objects."""
 
     def write(self, name, path='.', overwrite=True, fmt='default'):
         """Create the directory and saves all sources files and the catalog

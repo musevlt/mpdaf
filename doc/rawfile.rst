@@ -1,12 +1,12 @@
 Python interface for raw FITS files
 ************************************
 
-:class:`RawFile <mpdaf.drs.RawFile>` python object can handle raw MUSE CCD image, with 24 extensions. 
+`RawFile <mpdaf.drs.RawFile>` python object can handle raw MUSE CCD image, with 24 extensions. 
 RawFile object can be read and written to disk as a multi-extension FITS file. To use efficiently the memory, the file is open in memory mapping mode when a RawFile object is created from an input FITS file: i.e. the arrays are not in memory unless they are used by the script.
 
 A few functions can be performed on the RawFile object: recontruct trimmed image of a channel, compute the bias level of channels, mask overscanned pixels ... 
 In most cases multiprocessing is used because the same process is applied on each channel.
-:class:`Channel <mpdaf.drs.Channel>` python object manages input/output and methods on a channel, i.e. an extension of the raw FITS file.
+`Channel <mpdaf.drs.Channel>` python object manages input/output and methods on a channel, i.e. an extension of the raw FITS file.
    
 RawFile object
 ==============

@@ -3,7 +3,7 @@ Catalog object
 
 Catalog is a subclass of Table class from astropy.table.
 
-A catalog object can be read from a file (by using the astropy.table constructor Table.read) or it can be created from a list of :class:`mpdaf.sdetect.Source` objects.
+A catalog object can be read from a file (by using the astropy.table constructor Table.read) or it can be created from a list of `mpdaf.sdetect.Source` objects.
 
 
 Reference

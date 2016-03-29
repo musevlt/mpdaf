@@ -51,9 +51,9 @@ MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
   2 columns (name and wavelength) and can be adjusted to one's needs.
 
 The code will produce:
-  - a :class:`mpdaf.sdetect.SourceList` containing continuum emission lines,
-  - a :class:`mpdaf.sdetect.SourceList` containing isolated emission lines,
-  - a :class:`mpdaf.sdetect.SourceList` that stores all detected sources before the merging procedure.
+  - a `mpdaf.sdetect.SourceList` containing continuum emission lines,
+  - a `mpdaf.sdetect.SourceList` containing isolated emission lines,
+  - a `mpdaf.sdetect.SourceList` that stores all detected sources before the merging procedure.
 
 Requirements:
 
@@ -83,7 +83,7 @@ sources and the corresponding catalog  as FITS files::
 
   >>> cont.write(path='cont', fmt='working')
 
-Is is also possible to create a :class:`mpdaf.sdetect.Catalog` object and save
+Is is also possible to create a `mpdaf.sdetect.Catalog` object and save
 it as an ascii file::
 
   >>> from mpdaf.sdetect import Catalog

@@ -45,9 +45,9 @@ A cube object O consist of:
 +------------------+--------------------------------------------------------------------------------------------------+
 | O.primary_header | FITS primary header instance                                                                     |
 +------------------+--------------------------------------------------------------------------------------------------+
-| O.wcs            | World coordinate spatial information (:class:`WCS <mpdaf.obj.WCS>` object)                       |
+| O.wcs            | World coordinate spatial information (`WCS <mpdaf.obj.WCS>` object)                              |
 +------------------+--------------------------------------------------------------------------------------------------+
-| O.wave           | World coordinate spectral information  (:class:`WaveCoord <mpdaf.obj.WaveCoord>` object)         |
+| O.wave           | World coordinate spectral information  (`WaveCoord <mpdaf.obj.WaveCoord>` object)                |
 +------------------+--------------------------------------------------------------------------------------------------+
 | O.shape          | Array containing the 3 dimensions [nk,np,nq] of the cube: nk channels and np x nq spatial pixels |
 +------------------+--------------------------------------------------------------------------------------------------+

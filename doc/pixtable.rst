@@ -230,7 +230,7 @@ First we load a pixtable containing a MUSE exposure of HDFS. This is a reduced p
 We will mask out all bright continuum objects present in the FoV.
 We use a mask which has been produced by SExtractor on the corresponding white light image of this exposure.
 
-:func:`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` method returns a :class:`mpdaf.drs.PixTableMask` object containing the mask as a new column.
+:func:`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` method returns a `mpdaf.drs.PixTableMask` object containing the mask as a new column.
 We save this mask column as a FITS table::
 
  >>> mask = pix.mask_column('Mask.fits')
@@ -247,7 +247,7 @@ Then, we estimat a reference sky spectrum from the masked pixel table::
  >>> skyref = pix.sky_ref(pixmask=mask)
  >>> skyref.write('skyref.fits')
  
-:func:`sky_ref <mpdaf.drs.PixTable.sky_ref>` returns a :class:`mpdaf.obj.Spectrum`. Let’s look to it::
+:func:`sky_ref <mpdaf.drs.PixTable.sky_ref>` returns a `mpdaf.obj.Spectrum`. Let’s look to it::
 
  >>> skyref.plot()
  

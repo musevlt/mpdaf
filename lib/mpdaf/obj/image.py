@@ -56,7 +56,7 @@ class Gauss2D(object):
         Estimated error on rotation.
     err_peak : float
         Estimated error on Gaussian peak value.
-    ima : :class:`mpdaf.obj.Image`
+    ima : `mpdaf.obj.Image`
         Gaussian image
 
     """
@@ -141,7 +141,7 @@ class Moffat2D(object):
         Estimated error on rotation.
     err_peak : float
         Estimated error on peak value.
-    ima : :class:`mpdaf.obj.Image`
+    ima : `mpdaf.obj.Image`
         Moffat image
 
     """
@@ -205,7 +205,7 @@ class Image(DataArray):
     ext : int or (int,int) or string or (string,string)
         Number/name of the data extension or numbers/names
         of the data and variance extensions.
-    wcs : :class:`mpdaf.obj.WCS`
+    wcs : `mpdaf.obj.WCS`
         World coordinates.
     unit : str
         Data unit type. u.dimensionless_unscaled by default.
@@ -224,7 +224,7 @@ class Image(DataArray):
         Possible FITS filename.
     primary_header : pyfits.Header
         FITS primary header instance.
-    wcs : :class:`mpdaf.obj.WCS`
+    wcs : `mpdaf.obj.WCS`
         World coordinates.
     shape : tuple
         Lengths of data (python notation (nz,ny,nx)).
@@ -845,7 +845,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        wcs : :class:`mpdaf.obj.WCS`
+        wcs : `mpdaf.obj.WCS`
             World coordinates.
         """
         self.wcs = wcs.copy()
@@ -1092,7 +1092,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -1121,7 +1121,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         if size > 0:
@@ -1535,7 +1535,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         # Should we rotate a copy of the image, or the image itself?
@@ -2201,12 +2201,12 @@ class Image(DataArray):
             If True, the Gaussian parameters are printed at the end of the
             method.
         full_output : int
-            non-zero to return a :class:`mpdaf.obj.Gauss2D` object containing
+            non-zero to return a `mpdaf.obj.Gauss2D` object containing
             the gauss image
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss2D`
+        out : `mpdaf.obj.Gauss2D`
 
         """
         pmin, qmin = 0, 0
@@ -2569,7 +2569,7 @@ class Image(DataArray):
         unit_fwhm : astropy.units
             FWHM unit. Arcseconds by default (use None for radius in pixels)
         full_output : int
-            non-zero to return a :class:`mpdaf.obj.Moffat2D`
+            non-zero to return a `mpdaf.obj.Moffat2D`
             object containing the moffat image
         fit_n : boolean
             False: n value is fixed,
@@ -2580,7 +2580,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Moffat2D`
+        out : `mpdaf.obj.Moffat2D`
 
         """
         if unit_center is None:
@@ -3360,7 +3360,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
             The resampled image is returned.
 
         """
@@ -3900,7 +3900,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -3936,7 +3936,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -3970,7 +3970,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -4004,7 +4004,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -4293,7 +4293,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -4333,7 +4333,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         ima = gauss_image(self.shape, wcs=self.wcs, center=center,
@@ -4381,7 +4381,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `mpdaf.obj.Image`
 
         """
         fwhmy = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
@@ -5334,13 +5334,13 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
         Lengths of the image in Y and X with python notation: (ny,nx).
         (101,101) by default. If wcs object contains dimensions, shape is
         ignored and wcs dimensions are used.
-    wcs : :class:`mpdaf.obj.WCS`
+    wcs : `mpdaf.obj.WCS`
         World coordinates.
     factor : int
         If factor<=1, gaussian value is computed in the center of each pixel.
         If factor>1, for each pixel, gaussian value is the sum of the gaussian
         values on the factor*factor pixels divided by the pixel area.
-    gauss : :class:`mpdaf.obj.Gauss2D`
+    gauss : `mpdaf.obj.Gauss2D`
         Object that contains all Gaussian parameters. If it is present, the
         following parameters are not used.
     center : (float,float)
@@ -5366,7 +5366,7 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
 
     Returns
     -------
-    out : :class:`mpdaf.obj.Image`
+    out : `mpdaf.obj.Image`
 
     """
     if is_int(shape):
@@ -5475,14 +5475,14 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
         Lengths of the image in Y and X with python notation: (ny,nx).
         (101,101) by default. If wcs object contains dimensions, shape is
         ignored and wcs dimensions are used.
-    wcs : :class:`mpdaf.obj.WCS`
+    wcs : `mpdaf.obj.WCS`
         World coordinates.
     factor : int
         If factor<=1, moffat value is computed in the center of each pixel.
         If factor>1, for each pixel, moffat value is the sum
         of the moffat values on the factor*factor pixels divided
         by the pixel area.
-    moffat : :class:`mpdaf.obj.Moffat2D`
+    moffat : `mpdaf.obj.Moffat2D`
         object that contains all moffat parameters.
         If it is present, following parameters are not used.
     center : (float,float)
@@ -5511,7 +5511,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
 
     Returns
     -------
-    out : :class:`mpdaf.obj.Image`
+    out : `mpdaf.obj.Image`
 
     """
     n = float(n)
@@ -5615,7 +5615,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
 
     Returns
     -------
-    out : :class:`mpdaf.obj.Image`
+    out : `mpdaf.obj.Image`
 
     """
     if limits is None:
@@ -5774,7 +5774,7 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
         Lengths of the image in Y and X with python notation: (ny,nx).
         (101,101) by default. If wcs object contains dimensions, shape is
         ignored and wcs dimensions are used.
-    wcs : :class:`mpdaf.obj.WCS`
+    wcs : `mpdaf.obj.WCS`
         World coordinates.
     objects : list of (float, float, float)
         (y, x, size) describes an aperture on the sky, defined by a center
@@ -5782,7 +5782,7 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
 
     Returns
     -------
-    out : :class:`mpdaf.obj.Image`
+    out : `mpdaf.obj.Image`
 
     """
     if is_int(shape):
