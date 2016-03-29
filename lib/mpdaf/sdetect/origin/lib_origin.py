@@ -255,7 +255,7 @@ def Compute_PCA_edge(cube, cube_edge):
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
     logger = logging.getLogger(__name__)
-    logger.debug(whoami())
+    #logger.debug(whoami())
     # data cube converted to dictionary of spectra
     cube_v = cube.reshape(cube.shape[0], cube.shape[1]*cube.shape[2])
     # data cube without undesired spectra converted to dictionary of spectra
@@ -1277,9 +1277,8 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     # Loop on emission lines detected
     nit = len(Cat1_T)
     for it in range(nit):
-        output = '\r%d/%d'%(it+1, nit)
-        sys.stdout.write("\r\x1b[K" + output.__str__())
-        sys.stdout.flush()
+        if it%50 == 0:
+            logger.debug('{} working on line {}/{}'.format(whoami(),it+1,nit))
         # initialization
         line_est_raw = np.zeros((ngrid[it], Nz))
         line_est_std = np.zeros((ngrid[it], Nz))
@@ -1835,4 +1834,4 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     return sources
 
 def whoami():
-    return sys._getframe().f_code.co_name
+    return sys._getframe(1).f_code.co_name
