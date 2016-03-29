@@ -4,13 +4,13 @@ ORIGIN: detectiOn and extRactIon of Galaxy emIssion liNes
 
 ORIGIN is a detection algorithm for emission lines.  The strategy of ORIGIN
 consists in learning and canceling locally the (unknown) nuisance sources.
-These sources can astrophysical sources much brighter than the LAE to be
+These sources can be astrophysical sources much brighter than the LAE to be
 detected, local residuals caused by imperfect sky subtraction and/or variance
 estimation, or faint artifacts due to the overall processing pipeline.  A fast
 normalization of the test statistics makes the overall processing
 computationally tractable.
 
-This software has been developped in Matlab by Carole Clastres under the
+This software has been developed in Matlab by Carole Clastres under the
 supervision of David Mary (Lagrange institute, University of Nice) and ported
 to python by Laure Piqueras (CRAL).
 
@@ -117,7 +117,8 @@ We will test the source detection on a zone (80x80 pixels) of the UDF cube::
 
  >>> filename = 'UDF-10-subcube43.fits'
 
-In this case, the cube don't need to be spatial segmented (generaly sub-cubes have 70-80 pixels along the spatial axes)::
+In this case, the cube doesn't need to be spatially segmented (generally
+sub-cubes have 70-80 pixels along the spatial axes)::
 
  >>> NbSubcube = 1
 
@@ -147,18 +148,26 @@ The second step applies PCA and returns two cubes containing continuum and faint
 .. figure:: _static/origin/cubes_faint_cont.png
   :align: center
 
-In the third step, we compute the cube of GLR test values obtained with the given PSF and the dictionary of spectral profiles::
+In the third step, we compute the cube of GLR test values obtained with the
+given PSF and the dictionary of spectral profiles::
 
  >>> correl, profile = my_origin.compute_TGLR(cube_faint)
  [INFO] ORIGIN - Compute the GLR test
   19/19
 
-*correl* contains the values of the GLR test, *profile* contains the index of the profile associated to the GRL test.
+*correl* contains the values of the GLR test, *profile* contains the index of
+the profile associated to the GRL test.
 
 The fourth step computes:
-  - the p-values associated to the T_GLR values,
-  - the p-values associated to the number of thresholded p-values of the correlations per spectral channel,
-  - the final p-values which are the thresholded pvalues associated to the T_GLR values divided by twice the pvalues associated to the number of thresholded p-values of the correlations per spectral channel.
+
+- the p-values associated to the T_GLR values,
+
+- the p-values associated to the number of thresholded p-values of the
+  correlations per spectral channel,
+
+- the final p-values which are the thresholded pvalues associated to the T_GLR
+  values divided by twice the pvalues associated to the number of thresholded
+  p-values of the correlations per spectral channel.
 
 *threshold* is the threshold applied on pvalues::
 
@@ -169,8 +178,10 @@ The fourth step computes:
  [INFO] ORIGIN - Compute final p-values
 
 
-The fifth step determines groups of connected voxels with a flood-fill algorithm on the cube of final thresholded p-values.
-Then it computes referent voxel of each group of connected voxels using the voxel with the higher T_GLR value and returns a first catalogue (astropy.Table).
+The fifth step determines groups of connected voxels with a flood-fill
+algorithm on the cube of final thresholded p-values.  Then it computes referent
+voxel of each group of connected voxels using the voxel with the higher T_GLR
+value and returns a first catalogue (astropy.Table).
 
 *neighboors* gives the connectivity used to define the contiguous voxels::
 
@@ -200,7 +211,8 @@ We plot the referent pixels::
 The sixth step selects emission lines according to the 2 narrow band tests
 (testing for a line in raw data and testing the energy in raw data).
 
-*nb_ranges* is the number of the spectral ranges skipped to compute the controle cube.
+*nb_ranges* is the number of the spectral ranges skipped to compute the control
+cube.
 
 *thresh_T1* and *thresh_T2* are thresholds use during the selection::
 
@@ -247,9 +259,11 @@ It uses the catalogue from the narrow band Test number 2::
 
 *Cat2_T2* completes *Cat1_T2* with the flux and the residual of the lines.
 
-*Cat_est_line* is a list of `mpdaf.obj.Spectrum` that gives the data profile and the SNR of each line.
+*Cat_est_line* is a list of `~Spectrum` objects that gives the data profile and
+the SNR of each line.
 
-The eighth step makes a spatial merging in order to associate several lines to the same source::
+The eighth step makes a spatial merging in order to associate several lines to
+the same source::
 
  >>> Cat3 = my_origin.merge_spatialy(Cat2_T2)
  >>> my_origin.plot(correl, Cat3['x_circle'], Cat3['y_circle'], circle=True, title='Catalogue-3-T2')
@@ -268,11 +282,12 @@ The ninth step is the spectral merging.
   :align: center
 
 The last step adds corresponding RA/DEC to the catalogue and
-creates a list of `mpdaf.sdetect.Source` objects::
+creates a list of `~mpdaf.sdetect.Source` objects::
 
  >>> sources = my_origin.get_sources(Cat4, Cat_est_line, correl)
 
 A source corresponds to a group on detected emission lines and contains:
+
  - the spatial position in world coordinates,
  - the 2D map of maximum of the T_GLR values (*MAXMAP*),
  - the estimated spectrum of each detected emission line (*LINExxxx*),
