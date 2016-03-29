@@ -289,14 +289,3 @@ Merging
 
 - :func:`mpdaf.obj.CubeList.median` combines cubes in a single data cube using median.
 - :func:`mpdaf.obj.CubeList.combine` combines cubes in a single data cube using sigma clipped mean.
-
-
-CubeList class
---------------
-
-.. autoclass:: mpdaf.obj.CubeList
-
-CubeMosaic class
-----------------
-
-.. autoclass:: mpdaf.obj.CubeMosaic

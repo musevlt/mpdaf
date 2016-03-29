@@ -100,9 +100,3 @@ Action" menu and put the following custom code:
 
 The shell script ``topcat_show_ds9`` (inspired by Benjamin Clement) is
 installed with MPDAF and should be in your path.
-
-
-Reference
-=========
-
-.. autofunction:: mpdaf.sdetect.muselet
