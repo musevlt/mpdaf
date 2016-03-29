@@ -1,10 +1,13 @@
 Source object
 *************
 
-A lot of tools are currently been developed to detect sources in MUSE data cubes.
-In order to easily exchange information about detected sources, we needed to define a format for storing source file.
-A FITS file format has been defined and is described in `this document <http://urania1.univ-lyon1.fr/mpdaf/attachment/wiki/WikiCoreLib/SourceICD.pdf>`_. 
-The Source class implements input/output for this Source FITS file and methods to analyse, plot and compare source objects. 
+A lot of tools are currently been developed to detect sources in MUSE data
+cubes.  In order to easily exchange information about detected sources, we
+needed to define a format for storing source file.  A FITS file format has been
+defined and is described in `this document
+<http://urania1.univ-lyon1.fr/mpdaf/attachment/wiki/WikiCoreLib/SourceICD.pdf>`_.
+The Source class implements input/output for this Source FITS file and methods
+to analyse, plot and compare source objects.
 
 
 Source object format
@@ -79,7 +82,7 @@ Reference
 :func:`mpdaf.sdetect.Source.add_seg_images <mpdaf.sdetect.Source.add_seg_images>` runs SExtractor to create segmentation maps.
 
 :func:`mpdaf.sdetect.Source.find_sky_mask <mpdaf.sdetect.Source.find_sky_mask>` creates a sky mask from a list of segmentation maps.
-	    
+
 :func:`mpdaf.sdetect.Source.find_union_mask <mpdaf.sdetect.Source.find_union_mask>` creates an object mask as the union of the segmentation maps.
 
 :func:`mpdaf.sdetect.Source.find_intersection_mask <mpdaf.sdetect.Source.find_intersection_mask>` creates an object mask as the intersection of the segmentation maps.
@@ -108,40 +111,40 @@ For example, we create a source object from spatial coordinates::
 
  >>> s = Source.from_data(ID=1, ra=150.05654, dec=2.60335, origin=('test','v0.0','DATACUBE-HDFS.fits'))
  >>> s.info()
- [INFO] ID      =                    1 / object ID                                      
- [INFO] RA      =    150.0565338134766 / RA in degrees                                  
- [INFO] DEC     =    2.603349924087524 / DEC in degrees                                 
- [INFO] ORIGIN  = 'test    '           / detection software                             
- [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software              
+ [INFO] ID      =                    1 / object ID
+ [INFO] RA      =    150.0565338134766 / RA in degrees
+ [INFO] DEC     =    2.603349924087524 / DEC in degrees
+ [INFO] ORIGIN  = 'test    '           / detection software
+ [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software
  [INFO] CUBE    = 'DATACUBE-HDFS.fits' / MUSE data cube
- 
+
 :func:`Source.add_white_image <mpdaf.sdetect.Source.add_white_image>` method computes from the MUSE data cube a white image of 5 arcseconds around the object and appends it to the images dictionary::
 
  >>> from mpdaf.obj import Cube
  >>> cub = Cube('DATACUBE-HDFS.fits')
  >>> s.add_white_image(cube=cub, size=5)
  >>> s.info()
- [INFO] ID      =                    1 / object ID                                      
- [INFO] RA      =    150.0565338134766 / RA in degrees                                  
- [INFO] DEC     =    2.603349924087524 / DEC in degrees                                 
- [INFO] ORIGIN  = 'test    '           / detection software                             
- [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software              
+ [INFO] ID      =                    1 / object ID
+ [INFO] RA      =    150.0565338134766 / RA in degrees
+ [INFO] DEC     =    2.603349924087524 / DEC in degrees
+ [INFO] ORIGIN  = 'test    '           / detection software
+ [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software
  [INFO] CUBE    = 'DATACUBE-HDFS.fits' / MUSE data cube
- 
+
  [INFO] images['MUSE_WHITE'] 25 X 25 .data .var rot=0.0
- 
+
 We can also extract an HST image centered on the source center and append it to the images dictionary::
 
  >>> from mpdaf.obj import Image
  >>> ima_hst = Image('hst.fits')
  >>> s.add_image(ima_hst, name='HST_F814W')
  >>> s.info()
- [INFO] ID      =                    1 / object ID                                      
- [INFO] RA      =    150.0565338134766 / RA in degrees                                  
- [INFO] DEC     =    2.603349924087524 / DEC in degrees                                 
- [INFO] ORIGIN  = 'test    '           / detection software                             
- [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software              
- [INFO] CUBE    = 'DATACUBE-HDFS.fits' / MUSE data cube                                 
+ [INFO] ID      =                    1 / object ID
+ [INFO] RA      =    150.0565338134766 / RA in degrees
+ [INFO] DEC     =    2.603349924087524 / DEC in degrees
+ [INFO] ORIGIN  = 'test    '           / detection software
+ [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software
+ [INFO] CUBE    = 'DATACUBE-HDFS.fits' / MUSE data cube
 
  [INFO] images['HST_F814W']
  [INFO] 168 X 167 image (hst.fits)
@@ -158,6 +161,7 @@ We can also extract an HST image centered on the source center and append it to 
 SourceList class
 ================
 
-SourceList is a sub-class of the python list class.  
-This class contains just one method :func:`mpdaf.sdetect.SourceList.write <mpdaf.sdetect.SourceList.write>` that creates a folder and saves all sources files and the catalog file in it.
-        
+SourceList is a sub-class of the python list class.  This class contains just
+one method :func:`mpdaf.sdetect.SourceList.write
+<mpdaf.sdetect.SourceList.write>` that creates a folder and saves all sources
+files and the catalog file in it.

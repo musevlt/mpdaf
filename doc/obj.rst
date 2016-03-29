@@ -1,12 +1,8 @@
-.. mpdaf documentation master file, created by
-   sphinx-quickstart on Fri Jun 22 10:03:09 2012.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Interface for spectra, images and cubes (``mpdaf.obj``)
+=======================================================
 
-mpdaf.obj package: python interface for spectra, images and cubes.
-==================================================================
-
-mpdaf.obj package contains python interface for spectra, images and cubes.
+The ``mpdaf.obj`` package contains Python interface for spectra, images and
+cubes.
 
 Contents:
 
@@ -24,4 +20,3 @@ Reference/API
 -------------
 
 .. automodapi:: mpdaf.obj
-    :allowed-package-names: coords

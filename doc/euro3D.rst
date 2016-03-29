@@ -3,7 +3,8 @@
 Python interface for euro3D convention
 **************************************
 
-The Euro3D Research Training Network introduces a common data format for Integral Field Spectroscopy.
+The Euro3D Research Training Network introduces a common data format for
+Integral Field Spectroscopy.
 
 mpdaf.tools.euro3D package contains Euro3D conventions about :
 
@@ -17,10 +18,14 @@ Data quality : DQ_PIXEL dictionary
 The data quality is used to set a data quality flag for each pixel.
 It serves two purposes:
 
- * to mask out pixels that do not contain any data (e.g. in the case that not all spectra span the same wavelength range)
- * to flag any pixel affected by one or more anomalies (such as detector flaws, cosmic ray hits, ...).
+ * to mask out pixels that do not contain any data (e.g. in the case that not
+   all spectra span the same wavelength range)
 
-The Euro3D format links a condition to a bit and to a flag value. The higher the value, the more severe is the problem. 
+ * to flag any pixel affected by one or more anomalies (such as detector flaws,
+   cosmic ray hits, ...).
+
+The Euro3D format links a condition to a bit and to a flag value. The higher
+the value, the more severe is the problem. 
 
 euro3D.DQ_PIXEL dictionary contains these condition/value pairs:
 
@@ -68,7 +73,7 @@ euro3D.DQ_PIXEL dictionary contains these condition/value pairs:
 Since each condition is linked to a bit, several simultaneous conditions can be directly expressed as the sum of all corresponding flag values.
 for example, a pixel with calibration defects, known as a hot pixel and saturated would have a flag value of 128 + 256 + 4096 = 4480::
 
-  >>> from mpdaf.tools import euro3D
-  >>> flag = euro3D.DQ_PIXEL['CalibrationFileDefect'] + euro3D.DQ_PIXEL['HotPixel'] + euro3D.DQ_PIXEL['ADSaturation']
-  >>> print flag
-   4480
+    >>> from mpdaf.tools import euro3D
+    >>> flag = euro3D.DQ_PIXEL['CalibrationFileDefect'] + euro3D.DQ_PIXEL['HotPixel'] + euro3D.DQ_PIXEL['ADSaturation']
+    >>> print flag
+    4480

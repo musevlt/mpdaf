@@ -1,14 +1,8 @@
-.. mpdaf documentation master file, created by
-   sphinx-quickstart on Fri Jun 22 10:03:09 2012.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Interface for the MUSE pipeline (``mpdaf.drs``)
+===============================================
 
-mpdaf.drs package: python interface for the MUSE pipeline's objects.
-====================================================================
-
-mpdaf.drs package contains python interface for the MUSE pipeline's objects.
-
-Memory mapping and multiprocessing is used.
+The ``mpdaf.drs`` package contains Python interfaces for the MUSE pipeline's
+objects.
 
 Contents:
 
