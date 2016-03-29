@@ -303,9 +303,9 @@ The results of the interpolations are shown below::
   >>> spvarcut.plot(lmin=4600, lmax=6200, title='Spectrum after interpolation', unit=spvar.wave.unit)
   
   
-.. image:: spectrum_images/Spectrum_before_interp_mask.png
+.. image:: _static/spectrum/Spectrum_before_interp_mask.png
 
-.. image:: spectrum_images/Spectrum_after_interp_mask.png 
+.. image:: _static/spectrum/Spectrum_after_interp_mask.png 
 
 
 Last, we will resample the extracted spectrum using the 2 dedicated functions (rebin_mean and resample). 
@@ -316,7 +316,7 @@ The function :func:`rebin_mean <mpdaf.obj.Spectrum.rebin_mean>` rebins the Spect
   >>> spvarcut.plot()
   >>> (sprebin1+10).plot(noise=True)
 
-.. figure:: spectrum_images/Spectrum_rebin.png
+.. figure:: _static/spectrum/Spectrum_rebin.png
   :align:   center
 
 The function :func:`resample <mpdaf.obj.Spectrum.resample>` resamples the Spectrum 
@@ -328,7 +328,7 @@ updated::
   >>> spvarcut.plot()
   >>> (sprebin2+10).plot(noise=True)
 
-.. figure:: spectrum_images/Spectrum_rebin2.png
+.. figure:: _static/spectrum/Spectrum_rebin2.png
   :align:   center
 
 Tutorial 3: Gaussian Line fitting
@@ -360,7 +360,7 @@ continuum (2 positions) and the peak of the line. Variance weighting is used in 
 
 The result of the fit is overploted in red:
 
-.. figure:: spectrum_images/specline1.png
+.. figure:: _static/spectrum/specline1.png
   :align:   center
 
   Interactive Gaussian line fitting result
@@ -373,7 +373,7 @@ Now, we move to the fainter line (Hbeta) and we perform the same analysis, again
 
 The result of the fit is given below:
 
-.. figure:: spectrum_images/specline2.png
+.. figure:: _static/spectrum/specline2.png
   :align:   center
 
   Interactive Gaussian line fitting on a faint line

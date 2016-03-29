@@ -1,7 +1,7 @@
 MUSELET
 *******
 
-.. figure:: muselet/muselet_logo.jpg
+.. figure:: _static/muselet/muselet_logo.jpg
   :align: center
 
 Description
@@ -96,7 +96,7 @@ Action" menu and put the following custom code:
 
 >>> exec("topcat_show_ds9",toString(RA),toString(DEC),toString(LBDA_OBS001))
 
-.. figure:: muselet/topcat_muselet_catalogs.png
+.. figure:: _static/muselet/topcat_muselet_catalogs.png
 
 The shell script ``topcat_show_ds9`` (inspired by Benjamin Clement) is
 installed with MPDAF and should be in your path.

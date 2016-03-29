@@ -35,7 +35,7 @@ MUSE PSF models
 
 This is a simple model where the LSF is supposed to be constant over the filed
 of view. It uses a simple parametric model of variation with wavelength.
-    
+
 The model is a convolution of a step function with a gaussian. The resulting
 function is then sample by the pixel size::
 
@@ -73,7 +73,7 @@ Tutorial::
     >>> plt.show()
 
 
-.. image:: psf_images/simple_LSF.png
+.. image:: _static/simple_LSF.png
 
 
 

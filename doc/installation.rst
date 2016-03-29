@@ -1,5 +1,6 @@
-Download and install mpdaf
-**************************
+************
+Installation
+************
 
 
 Download the code

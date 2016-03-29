@@ -72,7 +72,7 @@ handle 3D arrays. For an MPDAF cube C, the pixel in the bottom-lower-left corner
 referenced as C[0,0,0] and the pixel C[k,p,q] refers to the horizontal position
 q, the vertical position p, and the spectral position k, as follows:
 
-.. figure:: cube_images/gridcube.jpg
+.. figure:: _static/cube/gridcube.jpg
   :align: center
 
 In total, this cube C contains nq pixels in the horizontal direction,
@@ -232,7 +232,7 @@ Let's compute the reconstructed white light image and display it::
  >>> ima = cube.sum(axis=0)
  >>> ima.plot(scale='arcsinh', colorbar='v')
 
-.. figure::  cube_images/recima1.png
+.. figure::  _static/cube/recima1.png
    :align:   center
 
 We extract the cube corresponding to the object centered at x=31 y=55 spaxels::
@@ -241,7 +241,7 @@ We extract the cube corresponding to the object centered at x=31 y=55 spaxels::
  >>> ima1 = obj1.mean(axis=0)
  >>> ima1.plot(colorbar='v')
 
-.. figure::  cube_images/recima2.png
+.. figure::  _static/cube/recima2.png
    :align:   center
 
 Let's now compute the total spectrum of the object::
@@ -251,7 +251,7 @@ Let's now compute the total spectrum of the object::
  >>> sp1 = obj1.sum(axis=(1,2))
  >>> sp1.plot()
 
-.. figure::  cube_images/spec1.png
+.. figure::  _static/cube/spec1.png
    :align:   center
 
 Tutorial 2
@@ -266,7 +266,7 @@ We start by fitting the continuum on sp1 (see tutorial 1)::
  >>> sp1.plot()
  >>> cont1.plot(color='r')
 
-.. figure::  cube_images/spec2.png
+.. figure::  _static/cube/spec2.png
    :align:   center
 
 Let's try also on a single spectrum at the edge of the galaxy::
@@ -275,7 +275,7 @@ Let's try also on a single spectrum at the edge of the galaxy::
  >>> obj1[:,5,2].plot()
  >>> obj1[:,5,2].poly_spec(5).plot(color='r')
 
-.. figure::  cube_images/spec3.png
+.. figure::  _static/cube/spec3.png
    :align:   center
 
 Fine, now let's do this for all spectrum of the input datacube. We are going to use the spectra iterator
@@ -323,7 +323,7 @@ Let's check the result and display the continuum reconstructed image::
  >>> rec2 = cont2.sum(axis=0)
  >>> rec2.plot(scale='arcsinh', colorbar='v')
 
-.. figure::  cube_images/recima4.png
+.. figure::  _static/cube/recima4.png
    :align:   center
 
 We can also compute the line emission datacube::
@@ -331,7 +331,7 @@ We can also compute the line emission datacube::
  >>> line1 = obj1 - cont1
  >>> line1.sum(axis=0).plot(scale='arcsinh', colorbar='v')
 
-.. figure::  cube_images/recima5.png
+.. figure::  _static/cube/recima5.png
    :align:   center
 
 
@@ -353,7 +353,7 @@ First let's isolate the emission line by truncating the object datacube in wavel
  >>> sp1 = emi1.sum(axis=(1,2))
  >>> sp1.plot(color='r')
 
-.. figure::  cube_images/spec4.png
+.. figure::  _static/cube/spec4.png
    :align:   center
 
 We first fit and subtract the continuum. Before doing the polynomial fit we mask the region of
@@ -368,7 +368,7 @@ and the continnum subtracted::
  >>> line1 = sp1 - cont1
  >>> line1.plot(color='r')
 
-.. figure::  cube_images/spec5.png
+.. figure::  _static/cube/spec5.png
    :align:   center
 
 We then compute the Ha line total flux by simple integration (taking into account the pixel size in A)
@@ -383,7 +383,7 @@ over the wavelength range centered around Halfa and the continuum mean flux at t
  >>> print fline, cline, ew
  8352.08991389 1e-20 erg / (cm2 s) 1932.61993433 1e-20 erg / (Angstrom cm2 s) 4.32164119056 Angstrom
 
-.. figure::  cube_images/spec6.png
+.. figure::  _static/cube/spec6.png
    :align:   center
 
 Now we repeat this for all datacube spectra, and we  save Ha flux and equivalent width in two images.
@@ -413,11 +413,11 @@ the spectrum iterator.::
  >>> ha_ew.unit = ha_flux.unit / cont_flux.unit
  >>> ha_ew.plot(title="Ha line ew (%s)"%ha_ew.unit, colorbar='v')
 
-.. image::  cube_images/recima6.png
+.. image::  _static/cube/recima6.png
 
-.. image::  cube_images/recima7.png
+.. image::  _static/cube/recima7.png
 
-.. image::  cube_images/recima8.png
+.. image::  _static/cube/recima8.png
 
 
 Tutorial 4
@@ -444,9 +444,9 @@ We then plot the result::
  >>> cube.sum(axis=0).plot(title='before Gaussian filter')
  >>> cube2.sum(axis=0).plot(title='after Gaussian filter')
 
-.. image::  cube_images/recima9.png
+.. image::  _static/cube/recima9.png
 
-.. image::  cube_images/recima10.png
+.. image::  _static/cube/recima10.png
 
 Tutorial 5
 ----------
@@ -485,7 +485,7 @@ We then plot the resulting velocity field, masking the outliers::
  >>> lfield3=lfield2<200
  >>> lfield3.plot()
 
-.. image::  cube_images/vfield.png
+.. image::  _static/cube/vfield.png
 
 Tutorial 6
 ----------
@@ -529,5 +529,5 @@ Finally, we write the output datacube and compare the results for one of the sli
  >>> cube[1000,:,:].plot(vmin=-1, vmax=4)
  >>> cube2[1000,:,:].plot(vmin=-1, vmax=4)
 
-.. image::  cube_images/cube1.png
-.. image::  cube_images/cube2.png
+.. image::  _static/cube/cube1.png
+.. image::  _static/cube/cube2.png
