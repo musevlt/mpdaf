@@ -992,7 +992,7 @@ class Spectrum(DataArray):
                   spline=False, notnoise=False, unit=u.angstrom):
         """Resample spectrum data to different wavelength step size.
 
-        Uses :func:`scipy.integrate.quad`.
+        Uses `scipy.integrate.quad`.
 
         Parameters
         ----------
@@ -1071,7 +1071,7 @@ class Spectrum(DataArray):
         """Return a spectrum with data resample to different wavelength step
         size.
 
-        Uses :func:`scipy.integrate.quad`.
+        Uses `scipy.integrate.quad`.
 
         Parameters
         ----------
@@ -1327,7 +1327,7 @@ class Spectrum(DataArray):
     def poly_val(self, z):
         """Update in place the spectrum data from polynomial coefficients.
 
-        Uses :func:`numpy.poly1d`.
+        Uses `numpy.poly1d`.
 
         Parameters
         ----------
@@ -1597,7 +1597,7 @@ class Spectrum(DataArray):
                   plot=False, plot_factor=10, unit=u.angstrom):
         """Perform a Gaussian fit.
 
-        Uses :func:`scipy.optimize.leastsq` to minimize the sum of squares.
+        Uses `scipy.optimize.leastsq` to minimize the sum of squares.
 
         Parameters
         ----------
@@ -2232,7 +2232,7 @@ class Spectrum(DataArray):
                        plot=False, plot_factor=10, unit=u.angstrom):
         """Perform a Gaussian fit on a line (fixed Gaussian center).
 
-        Uses :func:`scipy.optimize.leastsq` to minimize the sum of squares.
+        Uses `scipy.optimize.leastsq` to minimize the sum of squares.
 
         Parameters
         ----------
@@ -2393,7 +2393,7 @@ class Spectrum(DataArray):
     def _median_filter(self, kernel_size=1., spline=False, unit=u.angstrom):
         """Perform a median filter on the spectrum.
 
-        Uses :func:`scipy.signal.medfilt`.
+        Uses `scipy.signal.medfilt`.
 
         Parameters
         ----------
@@ -2417,7 +2417,7 @@ class Spectrum(DataArray):
         """Return a spectrum resulted on a median filter on the current
         spectrum.
 
-        Uses :func:`scipy.signal.medfilt`.
+        Uses `scipy.signal.medfilt`.
 
         Parameters
         ----------
@@ -2437,7 +2437,7 @@ class Spectrum(DataArray):
     def _convolve(self, other):
         """Convolve the spectrum with a other spectrum or an array.
 
-        Uses :func:`scipy.signal.convolve`. self and other must have the same
+        Uses `scipy.signal.convolve`. self and other must have the same
         size.
 
         Parameters
@@ -2479,7 +2479,7 @@ class Spectrum(DataArray):
         """Return the convolution of the spectrum with a other spectrum or an
         array.
 
-        Uses :func:`scipy.signal.convolve`. self and other must have the same
+        Uses `scipy.signal.convolve`. self and other must have the same
         size.
 
         Parameters
@@ -2498,7 +2498,7 @@ class Spectrum(DataArray):
     def _fftconvolve(self, other):
         """Convolve the spectrum with a other spectrum or an array using fft.
 
-        Uses :func:`scipy.signal.fftconvolve`. self and other must have the
+        Uses `scipy.signal.fftconvolve`. self and other must have the
         same size.
 
         Parameters
@@ -2539,7 +2539,7 @@ class Spectrum(DataArray):
         """Return the convolution of the spectrum with a other spectrum or an
         array using fft.
 
-        Uses :func:`scipy.signal.fftconvolve`. self and other must have the
+        Uses `scipy.signal.fftconvolve`. self and other must have the
         same size.
 
         Parameters
@@ -2558,7 +2558,7 @@ class Spectrum(DataArray):
     def _correlate(self, other):
         """Cross-correlate the spectrum with a other spectrum or an array.
 
-        Uses :func:`scipy.signal.correlate`. self and other must have the same
+        Uses `scipy.signal.correlate`. self and other must have the same
         size.
 
         Parameters
@@ -2599,7 +2599,7 @@ class Spectrum(DataArray):
         """Return the cross-correlation of the spectrum with a other spectrum
         or an array.
 
-        Uses :func:`scipy.signal.correlate`. self and other must have the same
+        Uses `scipy.signal.correlate`. self and other must have the same
         size.
 
         Parameters
@@ -2729,7 +2729,7 @@ class Spectrum(DataArray):
     def peak_detection(self, kernel_size=None, unit=u.angstrom):
         """Return a list of peak locations.
 
-        Uses :func:`scipy.signal.medfilt`.
+        Uses `scipy.signal.medfilt`.
 
         Parameters
         ----------
@@ -2836,7 +2836,7 @@ class Spectrum(DataArray):
                  **kwargs):
         """Plot the spectrum with y logarithmic scale.
 
-        Shortcut for :meth:`mpdaf.obj.Spectrum.plot` with `stretch='log'`.
+        Shortcut for `mpdaf.obj.Spectrum.plot` with `stretch='log'`.
         By default, drawstyle is 'steps-mid'.
 
         Parameters
@@ -3028,7 +3028,7 @@ class Spectrum(DataArray):
             Use 5 mouse clicks: the two first select a range
             of minimum wavelengths, the 3th selects the peak wavelength and
             the two last clicks select a range of maximum wavelengths
-            - see :func:`mpdaf.obj.Spectrum.gauss_fit`.
+            - see `mpdaf.obj.Spectrum.gauss_fit`.
         """
         if nclicks == 3:
             msg = 'Use 3 mouse clicks to get minimim, '\
@@ -3169,7 +3169,7 @@ class Spectrum(DataArray):
             Use 5 mouse clicks: the two first select a range
             of minimum wavelengths, the 3th selects the peak wavelength and
             the two last clicks select a range of maximum wavelengths
-            - see :func:`mpdaf.obj.Spectrum.gauss_symfit`.
+            - see `mpdaf.obj.Spectrum.gauss_symfit`.
         """
         if nclicks == 3:
             msg = 'Use 3 mouse clicks to get minimim, '\

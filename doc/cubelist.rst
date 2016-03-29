@@ -274,18 +274,18 @@ Reference
 
 - `mpdaf.obj.CubeList` is the constructor.
 - `mpdaf.obj.CubeMosaic` is the constructor.
-- :func:`mpdaf.obj.CubeList.info` prints information.
+- `mpdaf.obj.CubeList.info` prints information.
 
 Checking
 --------
 
-- :func:`mpdaf.obj.CubeList.check_dim` checks if all cubes have same dimensions.
-- :func:`mpdaf.obj.CubeList.check_wcs` checks if all cubes have same world coordinates.
-- :func:`mpdaf.obj.CubeList.check_fscale` checks if all cubes have same scale factor.
-- :func:`mpdaf.obj.CubeList.check_compatibility` checks if all cubes are compatible.
+- `mpdaf.obj.CubeList.check_dim` checks if all cubes have same dimensions.
+- `mpdaf.obj.CubeList.check_wcs` checks if all cubes have same world coordinates.
+- `mpdaf.obj.CubeList.check_fscale` checks if all cubes have same scale factor.
+- `mpdaf.obj.CubeList.check_compatibility` checks if all cubes are compatible.
 
 Merging
 -------
 
-- :func:`mpdaf.obj.CubeList.median` combines cubes in a single data cube using median.
-- :func:`mpdaf.obj.CubeList.combine` combines cubes in a single data cube using sigma clipped mean.
+- `mpdaf.obj.CubeList.median` combines cubes in a single data cube using median.
+- `mpdaf.obj.CubeList.combine` combines cubes in a single data cube using sigma clipped mean.

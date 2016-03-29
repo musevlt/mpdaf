@@ -1461,7 +1461,7 @@ class Image(DataArray):
         eastward of where it was, and self.get_rot() will thereafter
         return 10.0.
 
-        Uses :func:`scipy.ndimage.affine_transform`.
+        Uses `scipy.ndimage.affine_transform`.
 
         Parameters
         ----------
@@ -1680,8 +1680,8 @@ class Image(DataArray):
              unit_radius=u.angstrom, dpix=2, background=None, plot=False):
         """Find image peak location.
 
-        Used :func:`scipy.ndimage.measurements.maximum_position` and
-        :func:`scipy.ndimage.measurements.center_of_mass`.
+        Used `scipy.ndimage.measurements.maximum_position` and
+        `scipy.ndimage.measurements.center_of_mass`.
 
         Parameters
         ----------
@@ -2016,9 +2016,9 @@ class Image(DataArray):
             pixel values
         spline : bool
             If False, linear interpolation (uses
-            :func:`scipy.interpolate.griddata`), or if True: spline
-            interpolation (uses :func:`scipy.interpolate.bisplrep` and
-            :func:`scipy.interpolate.bisplev`).
+            `scipy.interpolate.griddata`), or if True: spline
+            interpolation (uses `scipy.interpolate.bisplrep` and
+            `scipy.interpolate.bisplev`).
 
         """
         ksel = np.where(self.data.mask == False)
@@ -2067,9 +2067,9 @@ class Image(DataArray):
         ----------
         spline : bool
             False: bilinear interpolation (it uses
-            :func:`scipy.interpolate.griddata`), True: spline interpolation (it
-            uses :func:`scipy.interpolate.bisplrep` and
-            :func:`scipy.interpolate.bisplev`).
+            `scipy.interpolate.griddata`), True: spline interpolation (it
+            uses `scipy.interpolate.bisplrep` and
+            `scipy.interpolate.bisplev`).
 
         """
         if np.ma.count_masked(self.data) == 0:
@@ -3887,7 +3887,7 @@ class Image(DataArray):
         """Return an image containing Gaussian filter applied to the current
         image.
 
-        Uses :func:`scipy.ndimage.gaussian_filter`.
+        Uses `scipy.ndimage.gaussian_filter`.
 
         Parameters
         ----------
@@ -3922,7 +3922,7 @@ class Image(DataArray):
         """Return an image containing median filter applied to the current
         image.
 
-        Uses :func:`scipy.ndimage.median_filter`.
+        Uses `scipy.ndimage.median_filter`.
 
         Parameters
         ----------
@@ -3956,7 +3956,7 @@ class Image(DataArray):
         """Return an image containing maximum filter applied to the current
         image.
 
-        Uses :func:`scipy.ndimage.maximum_filter`.
+        Uses `scipy.ndimage.maximum_filter`.
 
         Parameters
         ----------
@@ -3990,7 +3990,7 @@ class Image(DataArray):
         """Return an image containing minimum filter applied to the current
         image.
 
-        Uses :func:`scipy.ndimage.minimum_filter`.
+        Uses `scipy.ndimage.minimum_filter`.
 
         Parameters
         ----------
@@ -4098,10 +4098,10 @@ class Image(DataArray):
         """Segment the image in a number of smaller images.
 
         Returns a list of images. Uses
-        :func:`scipy.ndimage.generate_binary_structure`,
-        :func:`scipy.ndimage.grey_dilation`,
-        :func:`scipy.ndimage.measurements.label`, and
-        :func:`scipy.ndimage.measurements.find_objects`.
+        `scipy.ndimage.generate_binary_structure`,
+        `scipy.ndimage.grey_dilation`,
+        `scipy.ndimage.measurements.label`, and
+        `scipy.ndimage.measurements.find_objects`.
 
         Parameters
         ----------
@@ -4280,7 +4280,7 @@ class Image(DataArray):
     def fftconvolve(self, other, interp='no'):
         """Return the convolution of the image with other using fft.
 
-        Uses :func:`scipy.signal.fftconvolve`.
+        Uses `scipy.signal.fftconvolve`.
 
         Parameters
         ----------
@@ -4398,7 +4398,7 @@ class Image(DataArray):
     def correlate2d(self, other, interp='no'):
         """Return the cross-correlation of the image with an array/image
 
-        Uses :func:`scipy.signal.correlate2d`.
+        Uses `scipy.signal.correlate2d`.
 
         Parameters
         ----------
@@ -5605,9 +5605,9 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
         Limits of the image (y_min,x_min,y_max,x_max).
         If None, minum and maximum values of x,y arrays are used.
     spline : boolean
-        False: bilinear interpolation (uses :func:`scipy.interpolate.griddata`)
-        True: spline interpolation (uses :func:`scipy.interpolate.bisplrep` and
-        :func:`scipy.interpolate.bisplev`).
+        False: bilinear interpolation (uses `scipy.interpolate.griddata`)
+        True: spline interpolation (uses `scipy.interpolate.bisplrep` and
+        `scipy.interpolate.bisplev`).
     order : int
         Polynomial order for spline interpolation (default 3)
     smooth : float

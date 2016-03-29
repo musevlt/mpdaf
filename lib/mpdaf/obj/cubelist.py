@@ -90,7 +90,7 @@ class CubeList(object):
     def __getitem__(self, item):
         """Apply a slice on all the cubes.
 
-        See :meth:`mpdaf.obj.Cube.__getitem__` for details.
+        See `mpdaf.obj.Cube.__getitem__` for details.
         """
         if not (isinstance(item, tuple) and len(item) == 3):
             raise ValueError('Operation forbidden')

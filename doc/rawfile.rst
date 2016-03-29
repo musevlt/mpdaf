@@ -100,7 +100,7 @@ Or displaying only overscan area::
 .. figure::  _static/raw/ima_overscan.png
    :align:   center 
    
-:func:`mpdaf.drs.Channel.get_trimmed_image <mpdaf.drs.Channel.get_trimmed_image>` method returns an Image object without over scanned pixels. If bias option is used, median value of the overscanned pixels is subtracted on each detector::
+`mpdaf.drs.Channel.get_trimmed_image <mpdaf.drs.Channel.get_trimmed_image>` method returns an Image object without over scanned pixels. If bias option is used, median value of the overscanned pixels is subtracted on each detector::
 
   >>> ima = chan.get_trimmed_image(bias=True)
   >>> ima.plot(cmap=cm.copper)
@@ -124,7 +124,7 @@ Let's compute the reconstructed white light image and display it::
 
 The fast reconstruction used a mask file produced by the drs. By default, the mask constructed during the PAE global test is used.
 
-:func:`mpdaf.drs.RawFile.plot_white_image <mpdaf.drs.RawFile.plot_white_image>` method reconstructs the white image and plots it. It plots also a channel image and provides mouse interaction between the 2 parts in order for the user to be able to click somewhere on one display and exhibit the corresponding data in the other display::
+`mpdaf.drs.RawFile.plot_white_image <mpdaf.drs.RawFile.plot_white_image>` method reconstructs the white image and plots it. It plots also a channel image and provides mouse interaction between the 2 parts in order for the user to be able to click somewhere on one display and exhibit the corresponding data in the other display::
 
   >>> raw.plot_white_image()
   To select on other channel/slice, click on the images with the right mouse button.
@@ -148,75 +148,75 @@ Select a channel by clicking with the right mouse button on the left display (Re
 Reference
 =========
 
-:func:`mpdaf.drs.RawFile <mpdaf.drs.RawFile>` is the classic RawFile constructor.
+`mpdaf.drs.RawFile <mpdaf.drs.RawFile>` is the classic RawFile constructor.
 
-:func:`mpdaf.drs.RawFile.copy <mpdaf.drs.RawFile.copy>` returns a copy of the RawFile object.
+`mpdaf.drs.RawFile.copy <mpdaf.drs.RawFile.copy>` returns a copy of the RawFile object.
 
-:func:`mpdaf.drs.RawFile.info <mpdaf.drs.RawFile.info>` prints information.
+`mpdaf.drs.RawFile.info <mpdaf.drs.RawFile.info>` prints information.
 
-:func:`mpdaf.drs.RawFile.write <mpdaf.drs.RawFile.write>` saves the object in a FITS file.
+`mpdaf.drs.RawFile.write <mpdaf.drs.RawFile.write>` saves the object in a FITS file.
 
 
 Getters and setters
 -------------------
 
-:func:`mpdaf.drs.RawFile.get_keywords <mpdaf.drs.RawFile.get_keywords>` returns a FITS header keyword value.
+`mpdaf.drs.RawFile.get_keywords <mpdaf.drs.RawFile.get_keywords>` returns a FITS header keyword value.
 
-:func:`mpdaf.drs.RawFile.get_channel <mpdaf.drs.RawFile.get_channel>` returns a Channel object corresponding to an extension name.
+`mpdaf.drs.RawFile.get_channel <mpdaf.drs.RawFile.get_channel>` returns a Channel object corresponding to an extension name.
 
-:func:`mpdaf.drs.RawFile.get_channels_extname_list <mpdaf.drs.RawFile.get_channels_extname_list>` returns the list of existing channels names.
+`mpdaf.drs.RawFile.get_channels_extname_list <mpdaf.drs.RawFile.get_channels_extname_list>` returns the list of existing channels names.
 
-:func:`mpdaf.drs.RawFile['CHANxx'] <mpdaf.drs.RawFile.__getitem__>` returns a Channel object.
+`mpdaf.drs.RawFile['CHANxx'] <mpdaf.drs.RawFile.__getitem__>` returns a Channel object.
 
-:func:`mpdaf.drs.RawFile['CHANxx'] = mpdaf.drs.Channel <mpdaf.drs.RawFile.__setitem__>` sets channel object in RawFile.channels['CHANxx']
+`mpdaf.drs.RawFile['CHANxx'] = mpdaf.drs.Channel <mpdaf.drs.RawFile.__setitem__>` sets channel object in RawFile.channels['CHANxx']
 
 
 Arithmetic
 ----------
 
-:func:`\+ <mpdaf.drs.RawFile.__add__>` makes a addition.
+`\+ <mpdaf.drs.RawFile.__add__>` makes a addition.
 
-:func:`\- <mpdaf.drs.RawFile.__sub__>` makes a subtraction .
+`\- <mpdaf.drs.RawFile.__sub__>` makes a subtraction .
 
-:func:`\* <mpdaf.drs.RawFile.__mul__>` makes a multiplication.
+`\* <mpdaf.drs.RawFile.__mul__>` makes a multiplication.
 
-:func:`/ <mpdaf.drs.RawFile.__div__>` makes a division.
+`/ <mpdaf.drs.RawFile.__div__>` makes a division.
 
-:func:`\*\* <mpdaf.drs.RawFile.__pow__>`  computes the power exponent of data extensions.
+`\*\* <mpdaf.drs.RawFile.__pow__>`  computes the power exponent of data extensions.
 
-:func:`mpdaf.drs.RawFile.sqrt <mpdaf.drs.RawFile.sqrt>` computes the square root of each channel.
+`mpdaf.drs.RawFile.sqrt <mpdaf.drs.RawFile.sqrt>` computes the square root of each channel.
 
 
 Plotting
 --------
 
-:func:`mpdaf.drs.RawFile.plot <mpdaf.drs.RawFile.plot>` plots the raw images.
+`mpdaf.drs.RawFile.plot <mpdaf.drs.RawFile.plot>` plots the raw images.
 
-:func:`mpdaf.drs.RawFile.plot_white_image <mpdaf.drs.RawFile.plot_white_image>` reconstructs the white image of the FOV using a mask file and plots this image.
+`mpdaf.drs.RawFile.plot_white_image <mpdaf.drs.RawFile.plot_white_image>` reconstructs the white image of the FOV using a mask file and plots this image.
 
 
 
 Transformation
 --------------
 
-:func:`mpdaf.drs.RawFile.overscan <mpdaf.drs.RawFile.overscan>` returns a RawFile object containing only overscanned pixels.
+`mpdaf.drs.RawFile.overscan <mpdaf.drs.RawFile.overscan>` returns a RawFile object containing only overscanned pixels.
 
-:func:`mpdaf.drs.RawFile.trimmed <mpdaf.drs.RawFile.trimmed>` returns a RawFile object containing only reference to the valid pixels.
+`mpdaf.drs.RawFile.trimmed <mpdaf.drs.RawFile.trimmed>` returns a RawFile object containing only reference to the valid pixels.
 
-:func:`mpdaf.drs.RawFile.reconstruct_white_image <mpdaf.drs.RawFile.reconstruct_white_image>` reconstructs the white image using a mask file.
+`mpdaf.drs.RawFile.reconstruct_white_image <mpdaf.drs.RawFile.reconstruct_white_image>` reconstructs the white image using a mask file.
 
 
 Function on Channel object
 --------------------------
 
-:func:`mpdaf.drs.Channel <mpdaf.drs.Channel>` object corresponds to an extension of a raw FITS file.
+`mpdaf.drs.Channel <mpdaf.drs.Channel>` object corresponds to an extension of a raw FITS file.
 
-:func:`mpdaf.drs.Channel.get_bias_level <mpdaf.drs.Channel.get_bias_level>` computes median value of the overscanned pixels for a given detector.
+`mpdaf.drs.Channel.get_bias_level <mpdaf.drs.Channel.get_bias_level>` computes median value of the overscanned pixels for a given detector.
 
-:func:`mpdaf.drs.Channel.get_image <mpdaf.drs.Channel.get_image>` returns an Image object.
+`mpdaf.drs.Channel.get_image <mpdaf.drs.Channel.get_image>` returns an Image object.
 
-:func:`mpdaf.drs.Channel.get_image_just_overscan <mpdaf.drs.Channel.get_image_just_overscan>` returns an Image object in which only overscanned pixels are not masked.
+`mpdaf.drs.Channel.get_image_just_overscan <mpdaf.drs.Channel.get_image_just_overscan>` returns an Image object in which only overscanned pixels are not masked.
 
-:func:`mpdaf.drs.Channel.get_image_mask_overscan <mpdaf.drs.Channel.get_image_mask_overscan>` returns an Image object in which overscanned pixels are masked.
+`mpdaf.drs.Channel.get_image_mask_overscan <mpdaf.drs.Channel.get_image_mask_overscan>` returns an Image object in which overscanned pixels are masked.
 
-:func:`mpdaf.drs.Channel.get_trimmed_image <mpdaf.drs.Channel.get_trimmed_image>` returns an Image object without over scanned pixels (bias could be subtracted).
+`mpdaf.drs.Channel.get_trimmed_image <mpdaf.drs.Channel.get_trimmed_image>` returns an Image object without over scanned pixels (bias could be subtracted).

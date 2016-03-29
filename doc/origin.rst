@@ -74,32 +74,32 @@ Reference
 
 The following methods correspond to different steps of the algorithm:
 
-:func:`mpdaf.sdetect.ORIGIN <mpdaf.sdetect.ORIGIN>` is the classic constructor.
+`mpdaf.sdetect.ORIGIN <mpdaf.sdetect.ORIGIN>` is the classic constructor.
 
-:func:`mpdaf.sdetect.ORIGIN.compute_PCA <mpdaf.sdetect.ORIGIN.compute_PCA>` computes the PCA and returns two cube (faint signal and continuum).
+`mpdaf.sdetect.ORIGIN.compute_PCA <mpdaf.sdetect.ORIGIN.compute_PCA>` computes the PCA and returns two cube (faint signal and continuum).
 
-:func:`mpdaf.sdetect.ORIGIN.compute_TGLR <mpdaf.sdetect.ORIGIN.compute_TGLR>` computes the cube of GLR test values.
+`mpdaf.sdetect.ORIGIN.compute_TGLR <mpdaf.sdetect.ORIGIN.compute_TGLR>` computes the cube of GLR test values.
 
-:func:`mpdaf.sdetect.ORIGIN.compute_pvalues <mpdaf.sdetect.ORIGIN.compute_pvalues>` computes 3 cubes of pvalues (spatial, spectral and final).
+`mpdaf.sdetect.ORIGIN.compute_pvalues <mpdaf.sdetect.ORIGIN.compute_pvalues>` computes 3 cubes of pvalues (spatial, spectral and final).
 
-:func:`mpdaf.sdetect.ORIGIN.compute_ref_pix <mpdaf.sdetect.ORIGIN.compute_ref_pix>` groups connected voxels and determines the referent pixel of each group.
+`mpdaf.sdetect.ORIGIN.compute_ref_pix <mpdaf.sdetect.ORIGIN.compute_ref_pix>` groups connected voxels and determines the referent pixel of each group.
 
-:func:`mpdaf.sdetect.ORIGIN.compute_NBtests <mpdaf.sdetect.ORIGIN.compute_NBtests>` computes the 2 narrow band tests.
+`mpdaf.sdetect.ORIGIN.compute_NBtests <mpdaf.sdetect.ORIGIN.compute_NBtests>` computes the 2 narrow band tests.
 
-:func:`mpdaf.sdetect.ORIGIN.select_NBtests <mpdaf.sdetect.ORIGIN.select_NBtests>` selects emission lines according to the 2 narrow band tests.
+`mpdaf.sdetect.ORIGIN.select_NBtests <mpdaf.sdetect.ORIGIN.select_NBtests>` selects emission lines according to the 2 narrow band tests.
 
-:func:`mpdaf.sdetect.ORIGIN.estimate_line <mpdaf.sdetect.ORIGIN.estimate_line>` computes the estimated emission line and the optimal coordinates for each detected lines.
+`mpdaf.sdetect.ORIGIN.estimate_line <mpdaf.sdetect.ORIGIN.estimate_line>` computes the estimated emission line and the optimal coordinates for each detected lines.
 
-:func:`mpdaf.sdetect.ORIGIN.merge_spatialy <mpdaf.sdetect.ORIGIN.merge_spatialy>` applies a spatial merging.
+`mpdaf.sdetect.ORIGIN.merge_spatialy <mpdaf.sdetect.ORIGIN.merge_spatialy>` applies a spatial merging.
 
-:func:`mpdaf.sdetect.ORIGIN.merge_spectraly <mpdaf.sdetect.ORIGIN.merge_spectraly>` applies a spectral merging.
+`mpdaf.sdetect.ORIGIN.merge_spectraly <mpdaf.sdetect.ORIGIN.merge_spectraly>` applies a spectral merging.
 
-:func:`mpdaf.sdetect.ORIGIN.get_sources <mpdaf.sdetect.ORIGIN.get_sources>` creates the final catalogue of sources.
+`mpdaf.sdetect.ORIGIN.get_sources <mpdaf.sdetect.ORIGIN.get_sources>` creates the final catalogue of sources.
 
 
 The following method can be used to visualize the detected lines at each step.
 
-:func:`mpdaf.sdetect.ORIGIN.plot <mpdaf.sdetect.ORIGIN.get_plot>` plots (x,y) on the 2D map of maximum of the T_GLR values over the spectral channels.
+`mpdaf.sdetect.ORIGIN.plot <mpdaf.sdetect.ORIGIN.get_plot>` plots (x,y) on the 2D map of maximum of the T_GLR values over the spectral channels.
 
 
 

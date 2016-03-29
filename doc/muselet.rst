@@ -78,7 +78,7 @@ each side of the narrow-band images::
 
   >>> cont, sing, raw = muselet('DATACUBE.fits',delta=15) #only 15 wavelength planes in continuum estimate
 
-The method :func:`mpdaf.sdetect.SourceList.write` could be used to save all
+The method `mpdaf.sdetect.SourceList.write` could be used to save all
 sources and the corresponding catalog  as FITS files::
 
   >>> cont.write(path='cont', fmt='working')

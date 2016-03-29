@@ -9,19 +9,19 @@ A catalog object can be read from a file (by using the astropy.table constructor
 Reference
 =========
 
-:func:`mpdaf.sdetect.Catalog.from_sources <mpdaf.sdetect.Catalog.from_sources>` constructs a catalog from a list of source objects.
+`mpdaf.sdetect.Catalog.from_sources <mpdaf.sdetect.Catalog.from_sources>` constructs a catalog from a list of source objects.
 
-:func:`mpdaf.sdetect.Catalog.from_path <mpdaf.sdetect.Catalog.from_path>` constructs a catalog from the path of a directory containing source files.
+`mpdaf.sdetect.Catalog.from_path <mpdaf.sdetect.Catalog.from_path>` constructs a catalog from the path of a directory containing source files.
 
-:func:`mpdaf.sdetect.Catalog.masked_invalid <mpdaf.sdetect.Catalog.masked_invalid>` masks where invalid values occur.
+`mpdaf.sdetect.Catalog.masked_invalid <mpdaf.sdetect.Catalog.masked_invalid>` masks where invalid values occur.
 
-:func:`mpdaf.sdetect.Catalog.match <mpdaf.sdetect.Catalog.match>` matchs elements of the current catalog with an other (in RA, DEC).
+`mpdaf.sdetect.Catalog.match <mpdaf.sdetect.Catalog.match>` matchs elements of the current catalog with an other (in RA, DEC).
 
-:func:`mpdaf.sdetect.Catalog.select <mpdaf.sdetect.Catalog.select>` selects all sources from catalog which are inside the WCS of an image.
+`mpdaf.sdetect.Catalog.select <mpdaf.sdetect.Catalog.select>` selects all sources from catalog which are inside the WCS of an image.
 
-:func:`mpdaf.sdetect.Catalog.plot_symb <mpdaf.sdetect.Catalog.plot_symb>` plots the sources location from the catalog.
+`mpdaf.sdetect.Catalog.plot_symb <mpdaf.sdetect.Catalog.plot_symb>` plots the sources location from the catalog.
 
-:func:`mpdaf.sdetect.Catalog.plot_id <mpdaf.sdetect.Catalog.plot_id>` displays the id of the catalog.
+`mpdaf.sdetect.Catalog.plot_id <mpdaf.sdetect.Catalog.plot_id>` displays the id of the catalog.
 
 
 Examples

@@ -230,7 +230,7 @@ First we load a pixtable containing a MUSE exposure of HDFS. This is a reduced p
 We will mask out all bright continuum objects present in the FoV.
 We use a mask which has been produced by SExtractor on the corresponding white light image of this exposure.
 
-:func:`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` method returns a `mpdaf.drs.PixTableMask` object containing the mask as a new column.
+`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` method returns a `mpdaf.drs.PixTableMask` object containing the mask as a new column.
 We save this mask column as a FITS table::
 
  >>> mask = pix.mask_column('Mask.fits')
@@ -247,7 +247,7 @@ Then, we estimat a reference sky spectrum from the masked pixel table::
  >>> skyref = pix.sky_ref(pixmask=mask)
  >>> skyref.write('skyref.fits')
  
-:func:`sky_ref <mpdaf.drs.PixTable.sky_ref>` returns a `mpdaf.obj.Spectrum`. Let’s look to it::
+`sky_ref <mpdaf.drs.PixTable.sky_ref>` returns a `mpdaf.obj.Spectrum`. Let’s look to it::
 
  >>> skyref.plot()
  
@@ -258,7 +258,7 @@ In this example, we choose to use the additive correction::
 
  >>> pix.subtract_slice_median(skyref, pixmask=mask)
  
-:func:`subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` is a python pixtable method but it has been coded in C for efficiency.
+`subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` is a python pixtable method but it has been coded in C for efficiency.
 
 Finaly, we save this corrected pixel table::
 
@@ -272,118 +272,118 @@ Sky subtraction can then be perfomed with the zap software.
 Reference
 =========
 
-:func:`mpdaf.drs.PixTable.copy <mpdaf.drs.PixTable.copy>` copies PixTable object in a new one and returns it.
+`mpdaf.drs.PixTable.copy <mpdaf.drs.PixTable.copy>` copies PixTable object in a new one and returns it.
 
-:func:`mpdaf.drs.PixTable.info <mpdaf.drs.PixTable.info>` prints information.
+`mpdaf.drs.PixTable.info <mpdaf.drs.PixTable.info>` prints information.
 
-:func:`mpdaf.drs.PixTable.write <mpdaf.drs.PixTable.write>` saves the pixtable in a FITS file.
+`mpdaf.drs.PixTable.write <mpdaf.drs.PixTable.write>` saves the pixtable in a FITS file.
 
-:func:`mpdaf.drs.PixTable.reconstruct_det_image <mpdaf.drs.PixTable.reconstruct_det_image>` reconstructs the image on the detector from the pixtable.
+`mpdaf.drs.PixTable.reconstruct_det_image <mpdaf.drs.PixTable.reconstruct_det_image>` reconstructs the image on the detector from the pixtable.
 
-:func:`mpdaf.drs.PixTable.reconstruct_det_waveimage <mpdaf.drs.PixTable.reconstruct_det_waveimage>` reconstructs the image of wavelength values on the detector from the pixtable.
+`mpdaf.drs.PixTable.reconstruct_det_waveimage <mpdaf.drs.PixTable.reconstruct_det_waveimage>` reconstructs the image of wavelength values on the detector from the pixtable.
 
-:func:`mpdaf.drs.PixTable.reconstruct_sky_image <mpdaf.drs.PixTable.reconstruct_sky_image>` reconstructs the image on the sky from the pixtable.
+`mpdaf.drs.PixTable.reconstruct_sky_image <mpdaf.drs.PixTable.reconstruct_sky_image>` reconstructs the image on the sky from the pixtable.
 
 
 Getters and setters
 -------------------
 
-:func:`mpdaf.drs.PixTable.get_column <mpdaf.drs.PixTable.get_column>` loads a column and returns it.
+`mpdaf.drs.PixTable.get_column <mpdaf.drs.PixTable.get_column>` loads a column and returns it.
 
-:func:`mpdaf.drs.PixTable.set_column <mpdaf.drs.PixTable.set_column>` sets a column (or a part of it).
+`mpdaf.drs.PixTable.set_column <mpdaf.drs.PixTable.set_column>` sets a column (or a part of it).
 
-:func:`mpdaf.drs.PixTable.get_xpos <mpdaf.drs.PixTable.get_xpos>` gets the xpos column.
+`mpdaf.drs.PixTable.get_xpos <mpdaf.drs.PixTable.get_xpos>` gets the xpos column.
 
-:func:`mpdaf.drs.PixTable.set_xpos <mpdaf.drs.PixTable.set_xpos>` sets the xpos column.
+`mpdaf.drs.PixTable.set_xpos <mpdaf.drs.PixTable.set_xpos>` sets the xpos column.
 
-:func:`mpdaf.drs.PixTable.get_ypos <mpdaf.drs.PixTable.get_ypos>` gets the ypos column.
+`mpdaf.drs.PixTable.get_ypos <mpdaf.drs.PixTable.get_ypos>` gets the ypos column.
 
-:func:`mpdaf.drs.PixTable.set_ypos <mpdaf.drs.PixTable.set_ypos>` sets the ypos column.
+`mpdaf.drs.PixTable.set_ypos <mpdaf.drs.PixTable.set_ypos>` sets the ypos column.
 
-:func:`mpdaf.drs.PixTable.get_lambda <mpdaf.drs.PixTable.get_lambda>` gets the lambda column.
+`mpdaf.drs.PixTable.get_lambda <mpdaf.drs.PixTable.get_lambda>` gets the lambda column.
 
-:func:`mpdaf.drs.PixTable.set_lambda <mpdaf.drs.PixTable.set_lambda>` sets the lambda column.
+`mpdaf.drs.PixTable.set_lambda <mpdaf.drs.PixTable.set_lambda>` sets the lambda column.
 
-:func:`mpdaf.drs.PixTable.get_data <mpdaf.drs.PixTable.get_data>` gets the data column.
+`mpdaf.drs.PixTable.get_data <mpdaf.drs.PixTable.get_data>` gets the data column.
 
-:func:`mpdaf.drs.PixTable.set_data <mpdaf.drs.PixTable.set_data>` sets the data column.
+`mpdaf.drs.PixTable.set_data <mpdaf.drs.PixTable.set_data>` sets the data column.
 
-:func:`mpdaf.drs.PixTable.get_stat <mpdaf.drs.PixTable.get_stat>` gets the stat column.
+`mpdaf.drs.PixTable.get_stat <mpdaf.drs.PixTable.get_stat>` gets the stat column.
 
-:func:`mpdaf.drs.PixTable.set_stat <mpdaf.drs.PixTable.set_stat>` sets the stat column.
+`mpdaf.drs.PixTable.set_stat <mpdaf.drs.PixTable.set_stat>` sets the stat column.
 
-:func:`mpdaf.drs.PixTable.get_dq <mpdaf.drs.PixTable.get_dq>` gets the dq column.
+`mpdaf.drs.PixTable.get_dq <mpdaf.drs.PixTable.get_dq>` gets the dq column.
 
-:func:`mpdaf.drs.PixTable.set_dq <mpdaf.drs.PixTable.set_dq>` sets the dq column.
+`mpdaf.drs.PixTable.set_dq <mpdaf.drs.PixTable.set_dq>` sets the dq column.
 
-:func:`mpdaf.drs.PixTable.get_origin <mpdaf.drs.PixTable.get_origin>` gets the origin column.
+`mpdaf.drs.PixTable.get_origin <mpdaf.drs.PixTable.get_origin>` gets the origin column.
 
-:func:`mpdaf.drs.PixTable.set_origin <mpdaf.drs.PixTable.set_origin>` sets the origin column.
+`mpdaf.drs.PixTable.set_origin <mpdaf.drs.PixTable.set_origin>` sets the origin column.
 
-:func:`mpdaf.drs.PixTable.get_weight <mpdaf.drs.PixTable.get_weight>` gets the weight column.
+`mpdaf.drs.PixTable.get_weight <mpdaf.drs.PixTable.get_weight>` gets the weight column.
 
-:func:`mpdaf.drs.PixTable.set_weight <mpdaf.drs.PixTable.set_weight>` sets the weight column.
+`mpdaf.drs.PixTable.set_weight <mpdaf.drs.PixTable.set_weight>` sets the weight column.
 
-:func:`mpdaf.drs.PixTable.get_exp <mpdaf.drs.PixTable.get_exp>` gets the exposure numbers.
+`mpdaf.drs.PixTable.get_exp <mpdaf.drs.PixTable.get_exp>` gets the exposure numbers.
 
-:func:`mpdaf.drs.PixTable.get_pos_sky <mpdaf.drs.PixTable.get_pos_sky>` gets the absolute position on the sky.
+`mpdaf.drs.PixTable.get_pos_sky <mpdaf.drs.PixTable.get_pos_sky>` gets the absolute position on the sky.
 
-:func:`mpdaf.drs.PixTable.get_slices <mpdaf.drs.PixTable.get_slices>` returns slices dictionary.
+`mpdaf.drs.PixTable.get_slices <mpdaf.drs.PixTable.get_slices>` returns slices dictionary.
 
-:func:`mpdaf.drs.PixTable.get_keywords <mpdaf.drs.PixTable.get_keywords>` returns the keyword value corresponding to a key.
+`mpdaf.drs.PixTable.get_keywords <mpdaf.drs.PixTable.get_keywords>` returns the keyword value corresponding to a key.
 
 
 Get information from origin array
 ---------------------------------
 
-:func:`mpdaf.drs.PixTable.origin2ifu <mpdaf.drs.PixTable.origin2ifu>` converts the origin value and returns the ifu number.
+`mpdaf.drs.PixTable.origin2ifu <mpdaf.drs.PixTable.origin2ifu>` converts the origin value and returns the ifu number.
 
-:func:`mpdaf.drs.PixTable.origin2slice <mpdaf.drs.PixTable.origin2slice>` converts the origin value and returns the slice number.
+`mpdaf.drs.PixTable.origin2slice <mpdaf.drs.PixTable.origin2slice>` converts the origin value and returns the slice number.
 
-:func:`mpdaf.drs.PixTable.origin2ypix <mpdaf.drs.PixTable.origin2ypix>` converts the origin value and returns the y coordinates.
+`mpdaf.drs.PixTable.origin2ypix <mpdaf.drs.PixTable.origin2ypix>` converts the origin value and returns the y coordinates.
 
-:func:`mpdaf.drs.PixTable.origin2xoffset <mpdaf.drs.PixTable.origin2xoffset>` converts the origin value and returns the x coordinates offset.
+`mpdaf.drs.PixTable.origin2xoffset <mpdaf.drs.PixTable.origin2xoffset>` converts the origin value and returns the x coordinates offset.
 
-:func:`mpdaf.drs.PixTable.origin2xpix <mpdaf.drs.PixTable.origin2xpix>` converts the origin value and returns the x coordinates.
+`mpdaf.drs.PixTable.origin2xpix <mpdaf.drs.PixTable.origin2xpix>` converts the origin value and returns the x coordinates.
 
-:func:`mpdaf.drs.PixTable.origin2coords <mpdaf.drs.PixTable.origin2coords>` converts the origin value and returns (ifu, slice, ypix, xpix).
+`mpdaf.drs.PixTable.origin2coords <mpdaf.drs.PixTable.origin2coords>` converts the origin value and returns (ifu, slice, ypix, xpix).
 
 
 Extraction
 ----------
 
-:func:`mpdaf.drs.PixTable.select_lambda <mpdaf.drs.PixTable.select_lambda>` returns a mask corresponding to the given wavelength range.
+`mpdaf.drs.PixTable.select_lambda <mpdaf.drs.PixTable.select_lambda>` returns a mask corresponding to the given wavelength range.
 
-:func:`mpdaf.drs.PixTable.select_stacks <mpdaf.drs.PixTable.select_stacks>` returns a mask corresponding to given stacks.
+`mpdaf.drs.PixTable.select_stacks <mpdaf.drs.PixTable.select_stacks>` returns a mask corresponding to given stacks.
 
-:func:`mpdaf.drs.PixTable.select_slices <mpdaf.drs.PixTable.select_slices>` returns a mask corresponding to given slices.
+`mpdaf.drs.PixTable.select_slices <mpdaf.drs.PixTable.select_slices>` returns a mask corresponding to given slices.
 
-:func:`mpdaf.drs.PixTable.select_ifus <mpdaf.drs.PixTable.select_ifus>` returns a mask corresponding to given ifus.
+`mpdaf.drs.PixTable.select_ifus <mpdaf.drs.PixTable.select_ifus>` returns a mask corresponding to given ifus.
 
-:func:`mpdaf.drs.PixTable.select_exp <mpdaf.drs.PixTable.select_exp>` returns a mask corresponding to given exposures.
+`mpdaf.drs.PixTable.select_exp <mpdaf.drs.PixTable.select_exp>` returns a mask corresponding to given exposures.
 
-:func:`mpdaf.drs.PixTable.select_xpix <mpdaf.drs.PixTable.select_xpix>` returns a mask corresponding to detector pixels.
+`mpdaf.drs.PixTable.select_xpix <mpdaf.drs.PixTable.select_xpix>` returns a mask corresponding to detector pixels.
 
-:func:`mpdaf.drs.PixTable.select_ypix <mpdaf.drs.PixTable.select_ypix>` returns a mask corresponding to detector pixels.
+`mpdaf.drs.PixTable.select_ypix <mpdaf.drs.PixTable.select_ypix>` returns a mask corresponding to detector pixels.
 
-:func:`mpdaf.drs.PixTable.select_sky <mpdaf.drs.PixTable.select_sky>` returns a mask corresponding to the given aperture on the sky.
+`mpdaf.drs.PixTable.select_sky <mpdaf.drs.PixTable.select_sky>` returns a mask corresponding to the given aperture on the sky.
 
-:func:`mpdaf.drs.PixTable.extract <mpdaf.drs.PixTable.extract>` extracts a subset of a pixtable.
+`mpdaf.drs.PixTable.extract <mpdaf.drs.PixTable.extract>` extracts a subset of a pixtable.
 
-:func:`mpdaf.drs.PixTable.extract_from_mask <mpdaf.drs.PixTable.extract_from_mask>` Return a new pixtable extracted with the given mask.
+`mpdaf.drs.PixTable.extract_from_mask <mpdaf.drs.PixTable.extract_from_mask>` Return a new pixtable extracted with the given mask.
 
 
 
 Autocalibration
 ---------------
 
-:func:`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` computes the mask column corresponding to a mask file.
+`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` computes the mask column corresponding to a mask file.
 
-:func:`mpdaf.drs.PixTable.sky_ref <mpdaf.drs.PixTable.sky_ref>` computes the reference sky spectrum.
+`mpdaf.drs.PixTable.sky_ref <mpdaf.drs.PixTable.sky_ref>` computes the reference sky spectrum.
 
-:func:`mpdaf.drs.PixTable.subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` computes the median value for all slices and subtracts this correction to each slice to bring all slices to the same median value.
+`mpdaf.drs.PixTable.subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` computes the median value for all slices and subtracts this correction to each slice to bring all slices to the same median value.
 
-:func:`mpdaf.drs.PixTable.divide_slice_median <mpdaf.drs.PixTable.divide_slice_median>` computes the median value for all slices and divides each slice by this correction to bring all slices to the same median value.
+`mpdaf.drs.PixTable.divide_slice_median <mpdaf.drs.PixTable.divide_slice_median>` computes the median value for all slices and divides each slice by this correction to bring all slices to the same median value.
 
 
 .. warning::
