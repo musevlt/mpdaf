@@ -1,5 +1,6 @@
+*****************
 World coordinates
-=================
+*****************
 
 The `~mpdaf.obj.WCS` class manages world coordinates in spatial
 direction (2-dimensions WCS object of pywcs package is used).
@@ -11,12 +12,12 @@ Note that by convention python reverse x,y indices : ``(dec,ra)`` order is
 used.
 
 Degree / sexagesimal conversion
--------------------------------
+===============================
 
-- `mpdaf.obj.deg2sexa` transforms the values of n coordinates from
+- `~mpdaf.obj.deg2sexa` transforms the values of n coordinates from
   degrees to sexagesimal.
 
-- `mpdaf.obj.sexa2deg` transforms the values of n coordinates from
+- `~mpdaf.obj.sexa2deg` transforms the values of n coordinates from
   sexagesimal to degrees.
 
 - `~mpdaf.obj.deg2hms` transforms a degree value to a string
@@ -51,7 +52,7 @@ Example of conversion::
     [ 10.   10. ]]
 
 World coordinates in spatial direction
---------------------------------------
+======================================
 
 The `~mpdaf.obj.WCS` class manages spatial world coordinates.
 
@@ -74,7 +75,7 @@ Example::
     [INFO] center:(-31:06:00,09:44:00) size in arcsec:(432.000,432.000) step in arcsec:(1.440,1.440) rot:20.0 deg
 
 World coordinates in spectral direction
----------------------------------------
+=======================================
 
 The `~mpdaf.obj.WaveCoord` class manages world coordinates in spectral
 direction.

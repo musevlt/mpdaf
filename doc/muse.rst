@@ -1,10 +1,11 @@
+************************************
 MUSE specific tools (``mpdaf.MUSE``)
-====================================
+************************************
 
 The ``mpdaf.MUSE`` package contains tools to manipulate MUSE specific data.
 
 Python interface for MUSE slicer numbering scheme
--------------------------------------------------
+=================================================
 
 The `mpdaf.MUSE.Slicer` class contains a set of static methods to convert
 a slice number between the various numbering schemes. The definition of the
@@ -28,10 +29,10 @@ Example::
     25
 
 MUSE PSF models
----------------
+===============
 
 'qsim_v1' LSF model
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 This is a simple model where the LSF is supposed to be constant over the filed
 of view. It uses a simple parametric model of variation with wavelength.
@@ -78,6 +79,6 @@ Tutorial::
 
 
 Reference/API
--------------
+=============
 
 .. automodapi:: mpdaf.MUSE

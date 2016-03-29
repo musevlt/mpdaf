@@ -1,12 +1,15 @@
+***********
 Cube object
 ***********
 
-Cube python object can handle datacubes which have a regular grid format in both spatial and spectral axis.
-Variance information can also be taken into account as well as bad pixels.
-Cube object can be read and written to disk as a multi-extension FITS file.
+Cube python object can handle datacubes which have a regular grid format in
+both spatial and spectral axis.  Variance information can also be taken into
+account as well as bad pixels.  Cube object can be read and written to disk as
+a multi-extension FITS file.
 
-Object is build as a set or numpy masked arrays and world coordinate information. A number of transformation
-have been developed  as object properties. Note that virtually all numpy and scipy functions are available.
+Object is build as a set or numpy masked arrays and world coordinate
+information. A number of transformation have been developed  as object
+properties. Note that virtually all numpy and scipy functions are available.
 
 Example::
 

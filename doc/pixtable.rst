@@ -1,15 +1,28 @@
+***************
 PixTable object
 ***************
 
-In the reduction approach of the MUSE pipeline, data need to be kept un-resampled until the very last step. 
-The pixel tables used for this purpose can be saved at each intermediate reduction step and hence 
-contain lists of pixels together with output coordinates and values.
-The pixel tables values and units change according to the reduction step. Please consult the data reduction user manual for further informations.
+In the reduction approach of the MUSE pipeline, data need to be kept
+un-resampled until the very last step.  The pixel tables used for this purpose
+can be saved at each intermediate reduction step and hence contain lists of
+pixels together with output coordinates and values.  The pixel tables values
+and units change according to the reduction step. Please consult the data
+reduction user manual for further informations.
 
-The PixTable python object is used to handle the MUSE pixel tables created by the data reduction system. The PixTable object can be read and write to disk and a few functions can be performed on the object.
-Note that pixel tables are saved as FITS binary tables or as multi-extension FITS images (data reduction software version 0.08 or above). PixTable python object detects the file format and acts accordingly. But by default PixTable object writes to disk using the multi-extension FITS images option because it's faster. A 8.2 GB pixel table can be saved 3x faster as FITS images and loaded 5x faster compared to saving and loading as FITS table.
+The PixTable python object is used to handle the MUSE pixel tables created by
+the data reduction system. The PixTable object can be read and write to disk
+and a few functions can be performed on the object.  Note that pixel tables are
+saved as FITS binary tables or as multi-extension FITS images (data reduction
+software version 0.08 or above). PixTable python object detects the file format
+and acts accordingly. But by default PixTable object writes to disk using the
+multi-extension FITS images option because it's faster. A 8.2 GB pixel table
+can be saved 3x faster as FITS images and loaded 5x faster compared to saving
+and loading as FITS table.
 
-Also pixtable can be very large and then used a lot of RAM. To use efficiently the memory, the file is open in memory mapping mode when a PixTable object is created from an input FITS file: i.e. the arrays are not in memory unless they are used by the script.
+Also pixtable can be very large and then used a lot of RAM. To use efficiently
+the memory, the file is open in memory mapping mode when a PixTable object is
+created from an input FITS file: i.e. the arrays are not in memory unless they
+are used by the script.
 
 Format
 ======
@@ -32,8 +45,11 @@ Format
 | origin     | int   | pixel location on detector, slice and channel number   |                                      |
 +------------+-------+--------------------------------------------------------+--------------------------------------+
 
-The origin column is composed of the IFU and slice numbers and the x and y coordinates on the originating CCD. Using bit shifting and information in the FITS headers these four numbers are encoded in a single 32bit integer. Note that the `MUSE package <tools.html>`_  provides a `Slicer class <slicer.html>`_ to convert
-the slicer number between various numbering schemes.
+The origin column is composed of the IFU and slice numbers and the x and
+y coordinates on the originating CCD. Using bit shifting and information in the
+FITS headers these four numbers are encoded in a single 32bit integer. Note
+that the `MUSE package <tools.html>`_  provides a `Slicer class <slicer.html>`_
+to convert the slicer number between various numbering schemes.
 
 
 Tutorials
@@ -48,13 +64,14 @@ Preliminary imports for all tutorials::
   >>> import numpy as np
   >>> import matplotlib.pyplot as plt
   >>> from mpdaf.drs import PixTable
-  
+
 
 Tutorial 1
 ----------
 
-In this tutorial we will learn how to read a pixtable, display informations and extract a smaller pixtable 
-centrered around an object. We will also learn how to display the original detector pixels which belong to the object.
+In this tutorial we will learn how to read a pixtable, display informations and
+extract a smaller pixtable centered around an object. We will also learn how to
+display the original detector pixels which belong to the object.
 
 We read the pixtable from the disk and check its basic informations and FITS header content::
 
@@ -62,20 +79,21 @@ We read the pixtable from the disk and check its basic informations and FITS hea
  >>> pix.info()
  Filename: Central_PIXTABLE_REDUCED_11_positioned.fits
  No.    Name         Type      Cards   Dimensions   Format
- 0    PRIMARY     PrimaryHDU    1614   ()           uint8   
- 1                BinTableHDU     29   29960130R x 7C   [E, E, E, E, J, E, J]   
+ 0    PRIMARY     PrimaryHDU    1614   ()           uint8
+ 1                BinTableHDU     29   29960130R x 7C   [E, E, E, E, J, E, J]
  >>> print pix.primary_header
  ...........
- HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE HIGH = 48                           
- HIERARCH ESO TMP FILE = '../Output/dry-run-ref_000_001_001.fits'                
- AUTHOR  = 'MPDAF   '           / origin of the file                             
- COMMENT   and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H 
+ HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE HIGH = 48
+ HIERARCH ESO TMP FILE = '../Output/dry-run-ref_000_001_001.fits'
+ AUTHOR  = 'MPDAF   '           / origin of the file
+ COMMENT   and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H
  >>> print pix.nrows
  >>> 29960130
 
-Note that the current table has 29960130 pixels. It is only 1/9 of the full MUSE field for a single exposure.
-It has been fully reduced. The corresponding reconstructed image from the associated datacube is available. 
-Let's look to it::
+Note that the current table has 29960130 pixels. It is only 1/9 of the full
+MUSE field for a single exposure.  It has been fully reduced. The corresponding
+reconstructed image from the associated datacube is available.  Let's look to
+it::
 
  >>> from mpdaf.obj import Image
  >>> rec = Image('REC_Central_PIXTABLE_REDUCED_11_positioned.fits')
@@ -105,9 +123,9 @@ the wavelength to the 6000:6100 Angstroem range::
  >>> objpix.nrows
  20558
 
-Note that we have extracted a circular ('C') region of 2 arcsec (2/3600.) around the object.
-The new pixtable (objpix) is much smaller, only 20558 pixels. The pixtable has been saved as a 
-FITS file (Star_pixtable.fits).
+Note that we have extracted a circular ('C') region of 2 arcsec (2/3600.)
+around the object.  The new pixtable (objpix) is much smaller, only 20558
+pixels. The pixtable has been saved as a FITS file (Star_pixtable.fits).
 
 Let's investigate this pixtable. We start by plotting the sky positions::
 
@@ -118,14 +136,16 @@ Let's investigate this pixtable. We start by plotting the sky positions::
 .. figure::  _static/pixtable/pixima1.png
    :align:   center
 
-Ok, we have a circular location of pixels as expected. Note that the plotted points seems to be 'thick'. We can check this by zooming. For example if we zoom to the two points on the left side, this what we obtain.
+Ok, we have a circular location of pixels as expected. Note that the plotted
+points seems to be 'thick'. We can check this by zooming. For example if we
+zoom to the two points on the left side, this what we obtain.
 
 .. figure::  _static/pixtable/pixima2.png
    :align:   center
 
-This is typical of the pixel table. because of distortion each pixel on the detector has not exactly 
-the same location on the sky for the various wavelength.
-Let's see if we have some bad pixel ifentified::
+This is typical of the pixel table. Because of distortion each pixel on the
+detector has not exactly the same location on the sky for the various
+wavelength.  Let's see if we have some bad pixel identified::
 
  >>> dq = objpix.get_dq()
  >>> k = np.where(dq > 0)
@@ -136,9 +156,10 @@ Let's see if we have some bad pixel ifentified::
 .. figure::  _static/pixtable/pixima3.png
    :align:   center
 
-Indeed there are two bad pixels. We can see their location as the red points in the plot.
-Let's now investigate how this object is mapped on the detector. We start to get the origin array and then
-decode it to get for example the ifu number::
+Indeed there are two bad pixels. We can see their location as the red points in
+the plot.  Let's now investigate how this object is mapped on the detector. We
+start to get the origin array and then decode it to get for example the IFU
+number::
 
  >>> origin = objpix.get_origin()
  >>> ifu = objpix.origin2ifu(origin)
@@ -149,13 +170,14 @@ decode it to get for example the ifu number::
  >>> k = np.where(ifu == 10)
  >>> plt.plot(y[k],x[k],'or')
 
-We can see that the star is split into two IFUs (9 and 10). We plot the sky location according to the IFU number.
+We can see that the star is split into two IFUs (9 and 10). We plot the sky
+location according to the IFU number.
 
 .. figure::  _static/pixtable/pixima4.png
    :align:   center
 
-Now we are going to display the data as located on the original exposure. Before we have to compute
-separatly the corresponding pixtable for each IFU.
+Now we are going to display the data as located on the original exposure.
+Before we have to compute separately the corresponding pixtable for each IFU::
 
  >>> objpix9 = pix.extract(sky=(-30.0023, 20.0015, 2/3600., 'C'), lbda=(6000,6100), ifu=9)
  >>> objpix10 = pix.extract(sky=(-30.0023, 20.0015, 2/3600., 'C'), lbda=(6000,6100), ifu=10)
@@ -173,17 +195,18 @@ This give a good view of the pixels that comes into the object.
 Tutorial 2
 ----------
 
-In this second tutorial we will learn how to use the pixel table to fit a 2D gaussian for a restricted
-wavelength range.
+In this second tutorial we will learn how to use the pixel table to fit a 2D
+gaussian for a restricted wavelength range.
 
-We start to define a function that fit a 2D gaussian to a set of points (x, y, data)::
+We start to define a function that fit a 2D gaussian to a set of points (x, y,
+data)::
 
  >>> from scipy.optimize import leastsq
  >>> def fitgauss(x, y, data, peak, center, fwhm):
  >>>         p0 = np.array([peak, center[0], center[1], fwhm/2.355])
  >>>         res = leastsq(gauss2D, p0, args=[x, y, data])
  >>>         return res
- >>> 
+ >>>
  >>> def gauss2D(p, arglist):
  >>>         x, y, data = arglist
  >>>         peak, x0, y0, sigma = p
@@ -217,20 +240,25 @@ OK, so now we can test it on our object pixtable::
  >>> print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
  Peak: 1080.1060791 Center: [-30.0023  20.0015] Fwhm: 0.7
 
- 
+
 Tutorial 3: self-calibration method for empty field
 ---------------------------------------------------
 
-In this last tutorial, we will apply a self-calibration method on a single pixel table to bring all slices to the same median value. This will work on fields with small object, e.g. objects smaller than a slice length (15 arcsec).
+In this last tutorial, we will apply a self-calibration method on a single
+pixel table to bring all slices to the same median value. This will work on
+fields with small object, e.g. objects smaller than a slice length (15 arcsec).
 
-First we load a pixtable containing a MUSE exposure of HDFS. This is a reduced pixtable produced by scipost, without sky subtraction.::
+First we load a pixtable containing a MUSE exposure of HDFS. This is a reduced
+pixtable produced by scipost, without sky subtraction.::
 
- >>> pix = PixTable('sub-PIXTABLE-MUSE.2014-07-27T04:22:08.024.fits') 
- 
-We will mask out all bright continuum objects present in the FoV.
-We use a mask which has been produced by SExtractor on the corresponding white light image of this exposure.
+ >>> pix = PixTable('sub-PIXTABLE-MUSE.2014-07-27T04:22:08.024.fits')
 
-`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` method returns a `mpdaf.drs.PixTableMask` object containing the mask as a new column.
+We will mask out all bright continuum objects present in the FoV.  We use
+a mask which has been produced by SExtractor on the corresponding white light
+image of this exposure.
+
+`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` method
+returns a `mpdaf.drs.PixTableMask` object containing the mask as a new column.
 We save this mask column as a FITS table::
 
  >>> mask = pix.mask_column('Mask.fits')
@@ -242,32 +270,35 @@ We save this mask column as a FITS table::
  [INFO] masking object 69/69 338.232<x<338.234 -60.5552<y<-60.5548 (7416 pixels)
  >>> mask.write('maskcol.fits')
 
-Then, we estimat a reference sky spectrum from the masked pixel table::
- 
+Then, we estimate a reference sky spectrum from the masked pixel table::
+
  >>> skyref = pix.sky_ref(pixmask=mask)
  >>> skyref.write('skyref.fits')
- 
+
 `sky_ref <mpdaf.drs.PixTable.sky_ref>` returns a `mpdaf.obj.Spectrum`. Let’s look to it::
 
  >>> skyref.plot()
- 
+
 .. image::  _static/pixtable/skyref.png
- 
-This reference spectrum is used by the auto calibration method to normalise data values in each MUSE slice.
-In this example, we choose to use the additive correction::
+
+This reference spectrum is used by the auto calibration method to normalise
+data values in each MUSE slice.  In this example, we choose to use the additive
+correction::
 
  >>> pix.subtract_slice_median(skyref, pixmask=mask)
- 
-`subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` is a python pixtable method but it has been coded in C for efficiency.
 
-Finaly, we save this corrected pixel table::
+`subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` is a python
+pixtable method but it has been coded in C for efficiency.
+
+Finally, we save this corrected pixel table::
 
  >>> pix.write('corr-PIXTABLE-MUSE.2014-07-27T04:22:08.024.fits')
 
-This non sky subtracted corrected pixtable can then be used to create a datacube with the appropriate pipeline recipe.
-Sky subtraction can then be perfomed with the zap software. 
+This non sky subtracted corrected pixtable can then be used to create
+a datacube with the appropriate pipeline recipe.  Sky subtraction can then be
+performed with the zap software.
 
- 
+
 
 Reference
 =========
@@ -388,4 +419,7 @@ Autocalibration
 
 .. warning::
 
-   The use of OpenMP by MPDAF could hand an other process using OpenMP during the same python program. This problem only affects GCC; ICC is not affected. There is currently no workaround; the solution is to stop MPDAF before starting on other process using OpenMP.
+   The use of OpenMP by MPDAF could hand an other process using OpenMP during
+   the same python program. This problem only affects GCC; ICC is not affected.
+   There is currently no workaround; the solution is to stop MPDAF before
+   starting on other process using OpenMP.

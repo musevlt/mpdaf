@@ -1,10 +1,6 @@
-.. mpdaf documentation master file, created by
-   sphinx-quickstart on Fri Jun 22 10:03:09 2012.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
+**************************************
 MPDAF CoreLib |release| documentation!
-======================================
+**************************************
 
 :Release: |release|
 :Date: |today|
@@ -29,7 +25,7 @@ A user library, labeled *UserLib*, will contains user developed packages that
 will be available for the consortium.
 
 Contents
---------
+========
 
 .. toctree::
    :maxdepth: 2
@@ -44,7 +40,7 @@ Contents
 
 
 Indices and tables
-------------------
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`

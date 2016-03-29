@@ -1,16 +1,18 @@
+*********************************************************
 ORIGIN: detectiOn and extRactIon of Galaxy emIssion liNes
 *********************************************************
 
-ORIGIN is a detection algorithm for emission lines.
-The strategy of ORIGIN consists in learning and canceling locally the (unknown) nuisance sources.
-These sources can astrophysical sources much brighter than the LAE to be detected,
-local residuals caused by imperfect sky subtraction and/or variance estimation,
-or faint artifacts due to the overall processing pipeline.
-A fast normalization of the test statistics makes the overall processing computationally tractable.
+ORIGIN is a detection algorithm for emission lines.  The strategy of ORIGIN
+consists in learning and canceling locally the (unknown) nuisance sources.
+These sources can astrophysical sources much brighter than the LAE to be
+detected, local residuals caused by imperfect sky subtraction and/or variance
+estimation, or faint artifacts due to the overall processing pipeline.  A fast
+normalization of the test statistics makes the overall processing
+computationally tractable.
 
-This software has been developped in Matlab by Carole Clastres under the supervision of
-David Mary (Lagrange institute, University of Nice) and ported to python by
-Laure Piqueras (CRAL).
+This software has been developped in Matlab by Carole Clastres under the
+supervision of David Mary (Lagrange institute, University of Nice) and ported
+to python by Laure Piqueras (CRAL).
 
 The project is funded by the ERC MUSICOS (Roland Bacon, CRAL).
 
@@ -21,10 +23,11 @@ ORIGIN object format
 ====================
 
 An ORIGIN object is composed by:
-        - the cube data (raw data and covariance)
-        - a dictionary of spectral profiles
-        - a MUSE PSF
-        - parameters used to segment the cube in zones.
+
+- the cube data (raw data and covariance)
+- a dictionary of spectral profiles
+- a MUSE PSF
+- parameters used to segment the cube in zones.
 
 Specifically, an ORIGIN object O consist of:
 

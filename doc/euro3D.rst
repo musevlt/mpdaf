@@ -1,5 +1,4 @@
-
-
+**************************************
 Python interface for euro3D convention
 **************************************
 
@@ -25,48 +24,48 @@ It serves two purposes:
    cosmic ray hits, ...).
 
 The Euro3D format links a condition to a bit and to a flag value. The higher
-the value, the more severe is the problem. 
+the value, the more severe is the problem.
 
 euro3D.DQ_PIXEL dictionary contains these condition/value pairs:
 
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| Key in DQ_PIXEL         | Flag value | Bit | Quality condition										|
+| Key in DQ_PIXEL         | Flag value | Bit | Quality condition                                                                                |
 +=========================+============+=====+==================================================================================================+
-| 'Good'                  |    0       | 0   | Good pixel - no flaw detected								        |
+| 'Good'                  |    0       | 0   | Good pixel - no flaw detected                                                                    |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'TelluricCorrected'     |    1       | 1   | Affected by telluric feature (corrected)							        |
+| 'TelluricCorrected'     |    1       | 1   | Affected by telluric feature (corrected)                                                         |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'TelluricUnCorrected'   |    2       | 2   | Affected by telluric feature (uncorrected)							|
+| 'TelluricUnCorrected'   |    2       | 2   | Affected by telluric feature (uncorrected)                                                       |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'GhostStrayLight'       |    4       | 3   | Ghost/stray light at > 10% intensity level							|
+| 'GhostStrayLight'       |    4       | 3   | Ghost/stray light at > 10% intensity level                                                       |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'ElectronicNoise'       |    8       | 4   | Electronic pickup noise									        |
+| 'ElectronicNoise'       |    8       | 4   | Electronic pickup noise                                                                          |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'CosmicRemoved'         |    16      | 5   | Cosmic ray (removed)									        |
+| 'CosmicRemoved'         |    16      | 5   | Cosmic ray (removed)                                                                             |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'CosmicUnCorrected'     |    32      | 6   | Cosmic ray (unremoved)									        |
+| 'CosmicUnCorrected'     |    32      | 6   | Cosmic ray (unremoved)                                                                           |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'LowQE'                 |    64      | 7   | Low QE pixel (< 20% of the average sensitivity; e.g. defective CCD coating, vignetting...)	|
+| 'LowQE'                 |    64      | 7   | Low QE pixel (< 20% of the average sensitivity; e.g. defective CCD coating, vignetting...)       |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'CalibrationFileDefect' |    128     | 8   | Calibration file defect (if pixel is flagged in any calibration file)			        |
+| 'CalibrationFileDefect' |    128     | 8   | Calibration file defect (if pixel is flagged in any calibration file)                            |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'HotPixel'              |    256     | 9   | Hot pixel (> 5 sigma median dark)								|
+| 'HotPixel'              |    256     | 9   | Hot pixel (> 5 sigma median dark)                                                                |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'Dark'                  |    512     | 10  | Dark pixel (permanent CCD charge trap)							        |
+| 'Dark'                  |    512     | 10  | Dark pixel (permanent CCD charge trap)                                                           |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'Questionable'          |    1024    | 11  | Questionable pixel (lying above a charge trap which may have affected it)		        |
+| 'Questionable'          |    1024    | 11  | Questionable pixel (lying above a charge trap which may have affected it)                        |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
 | 'WellSaturation'        |    2048    | 12  | Detector potential well saturation (signal irrecoverable, but known to exceed the max. e-number) |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
 | 'ADSaturation'          |    4096    | 13  | A/D converter saturation (signal irrecoverable, but known to exceed the A/D full scale signal)   |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'PermanentCameraDefect' |    8192    | 14  | Permanent camera defect (such as blocked columns, dead pixels)				        |
+| 'PermanentCameraDefect' |    8192    | 14  | Permanent camera defect (such as blocked columns, dead pixels)                                   |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'BadOther'              |    16384   | 15  | Bad pixel not fitting into any other category						        |
+| 'BadOther'              |    16384   | 15  | Bad pixel not fitting into any other category                                                    |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'MissingData'           |    230     | 31  | Missing data (pixel was lost)								        |
+| 'MissingData'           |    230     | 31  | Missing data (pixel was lost)                                                                    |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
-| 'OutsideDataRange'      |    231     | 32  | Outside data range (outside of spectral range, inactive detector area, mosaic gap, ...)	        |
+| 'OutsideDataRange'      |    231     | 32  | Outside data range (outside of spectral range, inactive detector area, mosaic gap, ...)          |
 +-------------------------+------------+-----+--------------------------------------------------------------------------------------------------+
 
 

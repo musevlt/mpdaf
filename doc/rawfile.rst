@@ -1,13 +1,19 @@
+***********************************
 Python interface for raw FITS files
-************************************
+***********************************
 
-`RawFile <mpdaf.drs.RawFile>` python object can handle raw MUSE CCD image, with 24 extensions. 
-RawFile object can be read and written to disk as a multi-extension FITS file. To use efficiently the memory, the file is open in memory mapping mode when a RawFile object is created from an input FITS file: i.e. the arrays are not in memory unless they are used by the script.
+`RawFile <mpdaf.drs.RawFile>` python object can handle raw MUSE CCD image, with
+24 extensions.  RawFile object can be read and written to disk as
+a multi-extension FITS file. To use efficiently the memory, the file is open in
+memory mapping mode when a RawFile object is created from an input FITS file:
+i.e. the arrays are not in memory unless they are used by the script.
 
-A few functions can be performed on the RawFile object: recontruct trimmed image of a channel, compute the bias level of channels, mask overscanned pixels ... 
-In most cases multiprocessing is used because the same process is applied on each channel.
-`Channel <mpdaf.drs.Channel>` python object manages input/output and methods on a channel, i.e. an extension of the raw FITS file.
-   
+A few functions can be performed on the RawFile object: recontruct trimmed
+image of a channel, compute the bias level of channels, mask overscanned pixels
+...  In most cases multiprocessing is used because the same process is applied
+on each channel.  `Channel <mpdaf.drs.Channel>` python object manages
+input/output and methods on a channel, i.e. an extension of the raw FITS file.
+
 RawFile object
 ==============
 
@@ -80,35 +86,35 @@ Let's extract the channel 12 and display its image::
   >>> chan = raw.get_channel('CHAN12')
   >>> ima = chan.get_image()
   >>> ima.plot(cmap=cm.copper)
-  
+
 .. figure::  _static/raw/ima.png
-   :align:   center  
+   :align:   center
 
 Masking overscanned pixels::
 
   >>> ima = chan.get_image_mask_overscan()
   >>> ima.plot(cmap=cm.copper)
-  
+
 .. figure::  _static/raw/ima_mask.png
-   :align:   center 
+   :align:   center
 
 Or displaying only overscan area::
 
   >>> ima = chan.get_image_just_overscan()
   >>> ima.plot(cmap=cm.copper)
-  
+
 .. figure::  _static/raw/ima_overscan.png
-   :align:   center 
-   
+   :align:   center
+
 `mpdaf.drs.Channel.get_trimmed_image <mpdaf.drs.Channel.get_trimmed_image>` method returns an Image object without over scanned pixels. If bias option is used, median value of the overscanned pixels is subtracted on each detector::
 
   >>> ima = chan.get_trimmed_image(bias=True)
   >>> ima.plot(cmap=cm.copper)
-  
+
 .. figure::  _static/raw/ima_trimmed.png
-   :align:   center 
-   
-   
+   :align:   center
+
+
 Tutorial 2: White image fast reconstruction.
 --------------------------------------------
 
@@ -116,11 +122,11 @@ Let's compute the reconstructed white light image and display it::
 
   >>> ima = raw.reconstruct_white_image()
   >>> ima.info()
-      
+
   >>> ima.plot(cmap=cm.copper)
-  
+
 .. figure::  _static/raw/ima_white.png
-   :align:   center 
+   :align:   center
 
 The fast reconstruction used a mask file produced by the drs. By default, the mask constructed during the PAE global test is used.
 
@@ -128,21 +134,21 @@ The fast reconstruction used a mask file produced by the drs. By default, the ma
 
   >>> raw.plot_white_image()
   To select on other channel/slice, click on the images with the right mouse button.
-  
+
 .. figure::  _static/raw/visu1.png
-   :align:   center 
+   :align:   center
 
 The selected slice, which corresponds to a single row of pixels on the reconstructed image, is surrounded by a red colored line on the two displays.
 Select a slice by clicking with the right mouse button on the right display (channel image), automatically update the slice display on the white image. As a reverse process,
-selecting one of the 48 slices on the white image updates the position of the slice on the CCD image. 
+selecting one of the 48 slices on the white image updates the position of the slice on the CCD image.
 
 .. figure::  _static/raw/visu2.png
-   :align:   center 
+   :align:   center
 
 Select a channel by clicking with the right mouse button on the left display (Reconstructed Image), automatically update the display in the raw exposure image and surround the selected channel by a blue colored line.
 
 .. figure::  _static/raw/visu3.png
-   :align:   center 
+   :align:   center
 
 
 Reference

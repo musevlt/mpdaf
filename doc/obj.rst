@@ -1,5 +1,6 @@
+*******************************************************
 Interface for spectra, images and cubes (``mpdaf.obj``)
-=======================================================
+*******************************************************
 
 The ``mpdaf.obj`` package contains Python interface for spectra, images and
 cubes.
@@ -17,6 +18,6 @@ Contents:
 
 
 Reference/API
--------------
+=============
 
 .. automodapi:: mpdaf.obj

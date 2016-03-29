@@ -1,9 +1,12 @@
+***************
 Spectrum object
 ***************
 
-The Spectrum object handles a 1D data array (basically a numpy masked array) containing flux values, associated with a `WaveCoord <mpdaf.obj.WaveCoord>` object containing the wavelength information. Optionally, a variance data array
-can be attached and used for weighting the flux values. Array masking is used to ignore
-some of the pixel values in the calculations.
+The Spectrum object handles a 1D data array (basically a numpy masked array)
+containing flux values, associated with a `WaveCoord <mpdaf.obj.WaveCoord>`
+object containing the wavelength information. Optionally, a variance data array
+can be attached and used for weighting the flux values. Array masking is used
+to ignore some of the pixel values in the calculations.
 
 Note that virtually all numpy and scipy functions are available.
 
@@ -29,27 +32,27 @@ Spectrum object format
 
 A Spectrum object O consists of:
 
-+------------------+-----------------------------------------------------------------------------------+
-| Component        | Description                                                                       |
-+==================+===================================================================================+
-| O.filename       | Possible FITS filename                                                            |
-+------------------+-----------------------------------------------------------------------------------+
-| O.primary_header | FITS primary header instance                                                      |
-+------------------+-----------------------------------------------------------------------------------+
-| O.wave           | World coordinate spectral information  (`WaveCoord <mpdaf.obj.WaveCoord>` object) |
-+------------------+-----------------------------------------------------------------------------------+
-| O.shape          | Array containing the dimension nk                                                 |
-+------------------+-----------------------------------------------------------------------------------+
-| O.data           | Masked numpy array with data values                                               |
-+------------------+-----------------------------------------------------------------------------------+
-| O.data_header    | FITS data header instance                                                         |
-+------------------+-----------------------------------------------------------------------------------+
-| O.unit           | Physical units of the data values                                                 |
-+------------------+-----------------------------------------------------------------------------------+
-| O.dtype          | Type of the data (integer, float)                                                 |
-+------------------+-----------------------------------------------------------------------------------+
-| O.var            | (optionally) Numpy array with variance values                                     |
-+------------------+-----------------------------------------------------------------------------------+
++------------------+------------------------------------------------------------------------+
+| Component        | Description                                                            |
++==================+========================================================================+
+| O.filename       | Possible FITS filename                                                 |
++------------------+------------------------------------------------------------------------+
+| O.primary_header | FITS primary header instance                                           |
++------------------+------------------------------------------------------------------------+
+| O.wave           | World coordinate spectral information  (`~mpdaf.obj.WaveCoord` object) |
++------------------+------------------------------------------------------------------------+
+| O.shape          | Array containing the dimension nk                                      |
++------------------+------------------------------------------------------------------------+
+| O.data           | Masked numpy array with data values                                    |
++------------------+------------------------------------------------------------------------+
+| O.data_header    | FITS data header instance                                              |
++------------------+------------------------------------------------------------------------+
+| O.unit           | Physical units of the data values                                      |
++------------------+------------------------------------------------------------------------+
+| O.dtype          | Type of the data (integer, float)                                      |
++------------------+------------------------------------------------------------------------+
+| O.var            | (optionally) Numpy array with variance values                          |
++------------------+------------------------------------------------------------------------+
 
 
 Reference
@@ -278,7 +281,7 @@ We start from the original spectrum and its variance::
 
   >>> spvar = Spectrum('Spectrum_Variance.fits',ext=[0,1])
 
-We mask the residuals from the strong sky emission line arround 5577 Angstroms::
+We mask the residuals from the strong sky emission line around 5577 Angstroms::
 
   >>> spvar.mask(lmin=5575, lmax=5590, unit=spvar.wave.unit)
 
@@ -308,8 +311,11 @@ The results of the interpolations are shown below::
 .. image:: _static/spectrum/Spectrum_after_interp_mask.png
 
 
-Last, we will resample the extracted spectrum using the 2 dedicated functions (rebin_mean and resample).
-The function `rebin_mean <mpdaf.obj.Spectrum.rebin_mean>` rebins the Spectrum using an integer number of pixels per bin. The corresponding variance is updated accordingly. We can overplot the rebinned Spectrum and show the corresponding variance as follows::
+Last, we will resample the extracted spectrum using the 2 dedicated functions
+(rebin_mean and resample).  The function `rebin_mean
+<mpdaf.obj.Spectrum.rebin_mean>` rebins the Spectrum using an integer number of
+pixels per bin. The corresponding variance is updated accordingly. We can
+overplot the rebinned Spectrum and show the corresponding variance as follows::
 
   >>> plt.figure()
   >>> sprebin1 = spvarcut.rebin_mean(5)
