@@ -95,13 +95,13 @@ def copy_header(srchdr, dsthdr=None, exclude=(), unit=None):
 
     Parameters
     ----------
-    srchdr : astropy.io.fits.Header
+    srchdr : `astropy.io.fits.Header`
         Source header
-    dsthdr : astropy.io.fits.Header
+    dsthdr : `astropy.io.fits.Header`
         Destination header, created if needed.
     exclude : list
         List of glob patterns to exclude keywords.
-    unit : str or astropy.units.Unit
+    unit : str or `astropy.units.Unit`
         Unit
 
     """
@@ -145,9 +145,9 @@ def copy_keywords(srchdr, dsthdr, keys):
 
     Parameters
     ----------
-    srchdr : astropy.io.fits.Header
+    srchdr : `astropy.io.fits.Header`
         Source header
-    dsthdr : astropy.io.fits.Header
+    dsthdr : `astropy.io.fits.Header`
         Destination header
     keys : list
         List of keys

@@ -117,7 +117,7 @@ class Spectrum(DataArray):
     ----------
     filename : string
         Possible FITS filename.
-    unit : astropy.units
+    unit : `astropy.units.Unit`
         Data unit type.
     primary_header : pyfits.Header
         Possible FITS primary header instance.
@@ -558,7 +558,7 @@ class Spectrum(DataArray):
             minimum wavelength.
         lmax : float
             maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates. if None, inputs are in pixels.
 
         Returns
@@ -588,7 +588,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
 
         Returns
@@ -605,7 +605,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
 
         Returns
@@ -622,7 +622,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
 
         Returns
@@ -639,7 +639,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
 
         Returns
@@ -674,7 +674,7 @@ class Spectrum(DataArray):
             minimum wavelength.
         lmax : float
             maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         inside : boolean
             If inside is True, pixels inside [lmin,lmax] are masked.
@@ -714,11 +714,11 @@ class Spectrum(DataArray):
         ----------
         wavelengths : array of float
             wavelength values
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
         spline : boolean
-            False: linear interpolation (scipy.interpolate.interp1d used),
-            True: spline interpolation (scipy.interpolate.splrep/splev used).
+            False: linear interpolation (`scipy.interpolate.interp1d` used),
+            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         lbda = self.wave.coord()
         ksel = np.where(self.data.mask == False)
@@ -752,8 +752,8 @@ class Spectrum(DataArray):
         Parameters
         ----------
         spline : boolean
-            False: linear interpolation (scipy.interpolate.interp1d used),
-            True: spline interpolation (scipy.interpolate.splrep/splev used).
+            False: linear interpolation (`scipy.interpolate.interp1d` used),
+            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         if np.ma.count_masked(self.data) == 0:
             return self.data.data
@@ -771,8 +771,8 @@ class Spectrum(DataArray):
         Parameters
         ----------
         spline : boolean
-            False: linear interpolation (scipy.interpolate.interp1d used),
-            True: spline interpolation (scipy.interpolate.splrep/splev used).
+            False: linear interpolation (`scipy.interpolate.interp1d` used),
+            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         self.data = np.ma.masked_invalid(self._interp_data(spline))
 
@@ -962,7 +962,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out `mpdaf.obj.Spectrum`
+        out `~mpdaf.obj.Spectrum`
         """
         if factor <= 1 or factor >= self.shape[0]:
             raise ValueError('factor must be in ]1,shape[')
@@ -1001,7 +1001,7 @@ class Spectrum(DataArray):
         start : float
             Spectral position of the first new pixel.
             It can be set or kept at the edge of the old first one.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
         shape : integer
             Size of the new spectrum.
@@ -1080,7 +1080,7 @@ class Spectrum(DataArray):
         start : float
             Spectral position of the first new pixel.
             It can be set or kept at the edge of the old first one.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
         shape : integer
             Size of the new spectrum.
@@ -1105,7 +1105,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         weight : boolean
             If weight is True, compute the weighted average
@@ -1151,7 +1151,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         weight : boolean
             If weight is True, compute the weighted average
@@ -1201,7 +1201,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
 
         Returns
@@ -1517,7 +1517,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         if lmin is None:
@@ -1555,7 +1555,7 @@ class Spectrum(DataArray):
         ----------
         l0 : float
             Wavelength value corresponding to the peak position.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         cont : integer
             The continuum [default 0].
@@ -1611,7 +1611,7 @@ class Spectrum(DataArray):
             Input gaussian center (in angstrom), if None it is estimated
             with the wavelength corresponding to the maximum value
             in [max(lmin), min(lmax)]
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         flux : float
             Integrated gaussian flux or gaussian peak value if peak is True.
@@ -1783,7 +1783,7 @@ class Spectrum(DataArray):
             Continuum value.
         peak : boolean
             If true, flux contains the gaussian peak value
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         gauss = lambda p, x: cont \
@@ -1860,7 +1860,7 @@ class Spectrum(DataArray):
             If True, the resulted fit is plotted.
         plot_factor : double
             oversampling factor for the overplotted fit
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
 
         Returns
@@ -2037,7 +2037,7 @@ class Spectrum(DataArray):
         weight : boolean
             If weight is True, the weight is computed as the inverse of
             variance.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates. If None, inputs are in pixels.
         plot : boolean
             If True, the resulted fit is plotted.
@@ -2195,7 +2195,7 @@ class Spectrum(DataArray):
             Continuum value.
         peak : boolean
             If true, flux contains the gaussian peak value.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
 
@@ -2399,7 +2399,7 @@ class Spectrum(DataArray):
         ----------
         kernel_size : float
             Size of the median filter window.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit ot the kernekl size. If None, inputs are in pixels.
         """
         if unit is not None:
@@ -2423,7 +2423,7 @@ class Spectrum(DataArray):
         ----------
         kernel_size : float
             Size of the median filter window.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit ot the kernel size
 
         Returns
@@ -2624,7 +2624,7 @@ class Spectrum(DataArray):
             Gaussian fwhm in angstrom
         nsig : integer
             Number of standard deviations.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         from scipy import special
@@ -2656,7 +2656,7 @@ class Spectrum(DataArray):
             Gaussian fwhm.
         nsig : integer
             Number of standard deviations.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         Returns
@@ -2688,7 +2688,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Spectrum`
+        out : `~mpdaf.obj.Spectrum`
         """
         res = self.clone()
         if self.data.sum() == 0:
@@ -2735,7 +2735,7 @@ class Spectrum(DataArray):
         ----------
         kernel_size : float
             size of the median filter window
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
@@ -2768,7 +2768,7 @@ class Spectrum(DataArray):
             Maximum wavelength.
         ax : matplotlib.Axes
             The Axes instance in which the spectrum is drawn.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the wavelength coordinates.
         noise_kwargs : dict
             Properties for the noise plot (if ``noise=True``). Default to
@@ -2853,7 +2853,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
         ax : matplotlib.Axes
             the Axes instance in which the spectrum is drawn

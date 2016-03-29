@@ -56,7 +56,7 @@ class Gauss2D(object):
         Estimated error on rotation.
     err_peak : float
         Estimated error on Gaussian peak value.
-    ima : `mpdaf.obj.Image`
+    ima : `~mpdaf.obj.Image`
         Gaussian image
 
     """
@@ -141,7 +141,7 @@ class Moffat2D(object):
         Estimated error on rotation.
     err_peak : float
         Estimated error on peak value.
-    ima : `mpdaf.obj.Image`
+    ima : `~mpdaf.obj.Image`
         Moffat image
 
     """
@@ -222,7 +222,7 @@ class Image(DataArray):
     ----------
     filename : str
         Possible FITS filename.
-    primary_header : pyfits.Header
+    primary_header : `astropy.io.fits.Header`
         FITS primary header instance.
     wcs : `mpdaf.obj.WCS`
         World coordinates.
@@ -232,7 +232,7 @@ class Image(DataArray):
         Masked array containing the cube pixel values.
     data_header : pyfits.Header
         FITS data header instance.
-    unit : astropy.units
+    unit : `astropy.units.Unit`
         Physical units of the data values.
     dtype : numpy.dtype
         Type of the data (int, float)
@@ -287,7 +287,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Image or mpdaf.obj.Cube
+        out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
         if self.data is None:
@@ -375,7 +375,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Image or mpdaf.obj.Cube
+        out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
         if self.data is None:
@@ -493,7 +493,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Spectrum or mpdaf.obj.Image or mpdaf.obj.Cube object.
+        out : `~mpdaf.obj.Spectrum` or `~mpdaf.obj.Image` or `~mpdaf.obj.Cube` object.
         """
         if self.data is None:
             raise ValueError('empty data array')
@@ -590,7 +590,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Image or mpdaf.obj.Cube
+        out : `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
 
         """
         if self.data is None:
@@ -697,7 +697,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the returned values.
 
         Returns
@@ -731,7 +731,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the returned values.
 
         Returns
@@ -765,7 +765,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The units of the returned angles.
 
         Returns
@@ -786,7 +786,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the world coordinates
 
         Returns
@@ -801,7 +801,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the world coordinates
 
         Returns
@@ -825,7 +825,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The unit to give the returned angle (degrees by default).
 
         Returns
@@ -869,10 +869,10 @@ class Image(DataArray):
             Radius defined the explored region.
             If radius is float, it defined a circular region.
             If radius is (float,float), it defined a rectangular region.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             Radius unit. Arcseconds by default (use None for radius in pixels)
         inside : boolean
             If inside is True, pixels inside the described region are masked.
@@ -940,10 +940,10 @@ class Image(DataArray):
         posangle : float
             Position angle of the first axis. It is defined in degrees against
             the horizontal (q) axis of the image, counted counterclockwise.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             Radius unit. Arcseconds by default (use None for radius in pixels)
         inside : boolean
             If inside is True, pixels inside the described region are masked.
@@ -998,7 +998,7 @@ class Image(DataArray):
         poly : (float, float)
             array of (float,float) containing a set of (p,q) or (dec,ra)
             values for the polygon vertices
-        pix : astropy.units
+        pix : `astropy.units.Unit`
             Type of the polygon coordinates (by default in degrees).
             Use unit=None to have polygon coordinates in pixels.
         inside : boolean
@@ -1087,12 +1087,12 @@ class Image(DataArray):
         mask : boolean
             if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are
             masked.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the coordinates x and y (degrees by default)
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -1110,10 +1110,10 @@ class Image(DataArray):
         size : float
             The size to extract. It corresponds to the size along the delta
             axis and the image is square.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_size : astropy.units
+        unit_size : `astropy.units.Unit`
             Size and minsize unit.
             Arcseconds by default (use None for size in pixels)
         minsize : float
@@ -1121,7 +1121,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         if size > 0:
@@ -1504,7 +1504,7 @@ class Image(DataArray):
             image in such a way as to keep the sky position of the
             pivot pixel at the same place. This makes the image appear
             to rotate around that pixel.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the rotation angle, theta.
         regrid : bool
             When this option is True, the pixel sizes along each axis
@@ -1535,7 +1535,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         # Should we rotate a copy of the image, or the image itself?
@@ -1690,10 +1690,10 @@ class Image(DataArray):
             If center is None, the full image is explored.
         radius : float or (float,float)
             Radius defined the explored region.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             Radius unit.
             Arcseconds by default (use None for radius in pixels)
         dpix : int
@@ -1772,10 +1772,10 @@ class Image(DataArray):
             If center is None, the full image is explored.
         radius : float or (float,float)
             Radius defined the explored region.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             Radius unit.  Arcseconds by default (use None for radius in pixels)
 
         Returns
@@ -1818,10 +1818,10 @@ class Image(DataArray):
             Radius defined the explored region.
             If radius is float, it defined a circular region (encircled energy).
             If radius is (float,float), it defined a rectangular region (ensquared energy).
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             Type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             Radius unit. Arcseconds by default (use None for radius in pixels)
         frac : boolean
             If frac is True, result is given relative to the total energy of
@@ -1897,10 +1897,10 @@ class Image(DataArray):
         center : (float,float)
             Center of the explored region.
             If center is None, center of the image is used.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             Type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             Radius units (arcseconds by default)/
         etot : float
             Total energy used to comute the ratio.
@@ -1952,7 +1952,7 @@ class Image(DataArray):
         center : (float,float)
             Center (y,x) of the explored region.
             If center is None, center of the image is used.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
         etot : float
@@ -1962,10 +1962,10 @@ class Image(DataArray):
             Fraction of energy.
         cont : float
             continuum value
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             Type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_size : astropy.units
+        unit_size : `astropy.units.Unit`
             Size unit.  Arcseconds by default (use None for sier in pixels).
 
         Returns
@@ -2114,7 +2114,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the returned moments (arcseconds by default).
             If None, moments will be in pixels
 
@@ -2187,10 +2187,10 @@ class Image(DataArray):
         weight : boolean
             If weight is True, the weight is computed as the inverse of
             variance.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center and position coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_fwhm : astropy.units
+        unit_fwhm : `astropy.units.Unit`
             FWHM unit. Arcseconds by default (use None for radius in pixels)
         maxiter : int
             The maximum number of iterations during the sum of square
@@ -2563,10 +2563,10 @@ class Image(DataArray):
             variance.
         plot : boolean
             If True, the gaussian is plotted.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center and position coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_fwhm : astropy.units
+        unit_fwhm : `astropy.units.Unit`
             FWHM unit. Arcseconds by default (use None for radius in pixels)
         full_output : int
             non-zero to return a `mpdaf.obj.Moffat2D`
@@ -3119,7 +3119,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Image
+        out : `~mpdaf.obj.Image`
 
         """
         res = self.copy() if copy else self
@@ -3193,9 +3193,9 @@ class Image(DataArray):
             interpolation between neighboring values.
             if 'spline', replace masked values using a spline
             interpolation between neighboring values.
-        unit_start : astropy.units
+        unit_start : `astropy.units.Unit`
             The angular units of the newstart coordinates. Degrees by default.
-        unit_step : astropy.units
+        unit_step : `astropy.units.Unit`
             The angular units of the step argument. Arcseconds by default.
         antialias : bool
             By default, when the resolution of an image axis is about
@@ -3213,7 +3213,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Image
+        out : `~mpdaf.obj.Image`
            The resampled image.
 
         """
@@ -3336,9 +3336,9 @@ class Image(DataArray):
             interpolation between neighboring values.
             if 'spline', replace masked values using a spline
             interpolation between neighboring values.
-        unit_pos : astropy.units
+        unit_pos : `astropy.units.Unit`
             The units of the refpos coordinates.  Degrees by default.
-        unit_inc : astropy.units
+        unit_inc : `astropy.units.Unit`
             The units of newinc.  Arcseconds by default.
         antialias : bool
             By default, when the resolution of an image axis is about
@@ -3360,7 +3360,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
             The resampled image is returned.
 
         """
@@ -3684,7 +3684,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        other : mpdaf.obj.Image
+        other : `~mpdaf.obj.Image`
             The image to be aligned with.
         flux : boolean
             If True, the flux of each pixel is multiplied by the ratio
@@ -3726,7 +3726,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        ref : mpdaf.obj.Image
+        ref : `~mpdaf.obj.Image`
             The image of the sky that is to be used as the coordinate
             reference. The sky coverage of this image should overlap
             with that of self. Ideally the resolution of this image
@@ -3835,7 +3835,7 @@ class Image(DataArray):
 
         Parameters
         ----------
-        ref : mpdaf.obj.Image
+        ref : `~mpdaf.obj.Image`
             The image of the sky that is to be used as the coordinate
             reference. The sky coverage of this image should overlap
             with that of self. Ideally the resolution of this image
@@ -3849,7 +3849,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Image
+        out : `~mpdaf.obj.Image`
             A version of self in which the sky coordinates have been
             shifted to match those of the reference image.
 
@@ -3900,7 +3900,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -3936,7 +3936,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -3970,7 +3970,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -4004,7 +4004,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -4217,7 +4217,7 @@ class Image(DataArray):
         ----------
         coord : (float,float)
                 coordinates (y,x).
-        unit : astropy units
+        unit : `astropy.units.Unit`
                 Type of the coordinates (degrees by default)
 
         Returns
@@ -4293,7 +4293,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         res = self.copy()
@@ -4325,15 +4325,15 @@ class Image(DataArray):
             pixel.  If factor>1, for each pixel, gaussian value is the sum of
             the gaussian values on the factor*factor pixels divided by the
             pixel area.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center and position coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_fwhm : astropy.units
+        unit_fwhm : `astropy.units.Unit`
             FWHM unit. Arcseconds by default (use None for radius in pixels)
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         ima = gauss_image(self.shape, wcs=self.wcs, center=center,
@@ -4373,15 +4373,15 @@ class Image(DataArray):
             divided by the pixel area.
         peak : boolean
             If true, flux contains a gaussian peak value.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             type of the center and position coordinates.
             Degrees by default (use None for coordinates in pixels).
-        unit_a : astropy.units
+        unit_a : `astropy.units.Unit`
             a unit. Arcseconds by default (use None for radius in pixels)
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
 
         """
         fwhmy = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
@@ -4659,7 +4659,7 @@ class Image(DataArray):
                 is overplotted.
         ax : matplotlib.Axes
                 the Axes instance in which the image is drawn
-        unit : astropy.units
+        unit : `astropy.units.Unit`
                    type of the world coordinates (degrees by default)
         kwargs : matplotlib.artist.Artist
                 kwargs can be used to set additional Artist properties.
@@ -5358,15 +5358,15 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
         Angle position in degree.
     cont : float
         Continuum value. 0 by default.
-    unit_center : astropy.units
+    unit_center : `astropy.units.Unit`
         type of the center and position coordinates.
         Degrees by default (use None for coordinates in pixels).
-    unit_fwhm : astropy.units
+    unit_fwhm : `astropy.units.Unit`
         FWHM unit.  Arcseconds by default (use None for radius in pixels)
 
     Returns
     -------
-    out : `mpdaf.obj.Image`
+    out : `~mpdaf.obj.Image`
 
     """
     if is_int(shape):
@@ -5503,15 +5503,15 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
         Angle position in degree.
     cont : float
         Continuum value. 0 by default.
-    unit_center : astropy.units
+    unit_center : `astropy.units.Unit`
         type of the center and position coordinates.
         Degrees by default (use None for coordinates in pixels).
-    unit_fwhm : astropy.units
+    unit_fwhm : `astropy.units.Unit`
         FWHM unit. Arcseconds by default (use None for radius in pixels)
 
     Returns
     -------
-    out : `mpdaf.obj.Image`
+    out : `~mpdaf.obj.Image`
 
     """
     n = float(n)
@@ -5615,7 +5615,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
 
     Returns
     -------
-    out : `mpdaf.obj.Image`
+    out : `~mpdaf.obj.Image`
 
     """
     if limits is None:
@@ -5782,7 +5782,7 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
 
     Returns
     -------
-    out : `mpdaf.obj.Image`
+    out : `~mpdaf.obj.Image`
 
     """
     if is_int(shape):

@@ -225,13 +225,13 @@ class Source(object):
         List of redshifts
     spectra : dict
         Spectra dictionary, keys give origin of spectra (``'tot'`` for total
-        spectrum, TBC). Values are `mpdaf.obj.Spectrum` objects.
+        spectrum, TBC). Values are `~mpdaf.obj.Spectrum` objects.
     images : dict
         Images dictionary, keys give filter names (``'MUSE_WHITE'`` for white
-        image, TBC). Values are `mpdaf.obj.Image` objects.
+        image, TBC). Values are `~mpdaf.obj.Image` objects.
     cubes : dict
         Cubes dictionary, keys give a description of the cube.
-        Values are `mpdaf.obj.Cube` objects.
+        Values are `~mpdaf.obj.Cube` objects.
     tables : dict
         Tables dictionary, keys give a description of each table.
         Values are `astropy.table.Table` objects.
@@ -301,15 +301,15 @@ class Source(object):
             Dictionary containing spectra.
             Keys gives the origin of the spectrum ('tot' for total spectrum,
             TBC).
-            Values are `mpdaf.obj.Spectrum` object
+            Values are `~mpdaf.obj.Spectrum` object
         images : dict
             Dictionary containing small images.
             Keys gives the filter ('MUSE_WHITE' for white image, TBC)
-            Values are `mpdaf.obj.Image` object
+            Values are `~mpdaf.obj.Image` object
         cubes : dict
             Dictionary containing small data cubes
             Keys gives a description of the cube
-            Values are `mpdaf.obj.Cube` objects
+            Values are `~mpdaf.obj.Cube` objects
         tables : dict
             Dictionary containing tables
             Keys give a description of each table
@@ -744,7 +744,7 @@ class Source(object):
             Attribute value
         desc : str
             Attribute description
-        unit : astropy.units
+        unit : `astropy.units.Unit`
                Attribute units
         fmt : str
               Attribute format ('.2f' for example)
@@ -959,7 +959,7 @@ class Source(object):
 
         Parameters
         ----------
-        image : `mpdaf.obj.Image`
+        image : `~mpdaf.obj.Image`
             Input image MPDAF object.
         name : str
             Name used to distinguish this image
@@ -967,7 +967,7 @@ class Source(object):
             The size to extract. It corresponds to the size along the delta
             axis and the image is square. If None, the size of the white image
             extension is taken if it exists.
-        unit_size : astropy.units
+        unit_size : `astropy.units.Unit`
             Size and minsize unit.
             Arcseconds by default (use None for size in pixels)
         minsize : float
@@ -1033,7 +1033,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : `mpdaf.obj.Cube`
+        cube : `~mpdaf.obj.Cube`
             Input cube MPDAF object.
         name : str
             Name used to distinguish this cube
@@ -1043,10 +1043,10 @@ class Source(object):
             extension is taken if it exists.
         lbda : (float, float) or None
             If not None, tuple giving the wavelength range.
-        unit_size : astropy.units
+        unit_size : `astropy.units.Unit`
             unit of the size value (arcseconds by default)
             If None, size is in pixels
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
 
@@ -1076,13 +1076,13 @@ class Source(object):
 
         Parameters
         ----------
-        cube : `mpdaf.obj.Cube`
+        cube : `~mpdaf.obj.Cube`
             MUSE data cube.
         size : float
             The total size to extract in arcseconds.
             It corresponds to the size along the delta axis and the image is
             square.  By default 5x5arcsec
-        unit_size : astropy.units
+        unit_size : `astropy.units.Unit`
             unit of the size value (arcseconds by default)
             If None, size is in pixels
         """
@@ -1102,7 +1102,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : `mpdaf.obj.Cube`
+        cube : `~mpdaf.obj.Cube`
             MUSE data cube.
         z_desc : str
             Redshift description. The redshift value corresponding to
@@ -1121,7 +1121,7 @@ class Source(object):
             The total size to extract. It corresponds to the size along the
             delta axis and the image is square. If None, the size of the white
             image extension is taken if it exists.
-        unit_size : astropy.units
+        unit_size : `astropy.units.Unit`
             unit of the size value (arcseconds by default)
             If None, size is in pixels
         width : float
@@ -1207,7 +1207,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : `mpdaf.obj.Cube`
+        cube : `~mpdaf.obj.Cube`
             MUSE data cube.
         tag : str
             key used to identify the new narrow band image in the images
@@ -1218,7 +1218,7 @@ class Source(object):
             The total size to extract in arcseconds. It corresponds to the size
             along the delta axis and the image is square. If None, the size of
             the white image extension is taken if it exists.
-        unit_size : astropy.units
+        unit_size : `astropy.units.Unit`
             unit of the size value (arcseconds by default)
             If None, size is in pixels
         width : float
@@ -1474,7 +1474,7 @@ class Source(object):
 
         Parameters
         ----------
-        cube : `mpdaf.obj.Cube`
+        cube : `~mpdaf.obj.Cube`
             MUSE data cube.
         obj_mask : str
             Name of the image that contains the mask of the object.
@@ -1492,7 +1492,7 @@ class Source(object):
             psf=None by default (no PSF-weighted extraction).
         lbda : (float, float) or none
             if not none, tuple giving the wavelength range.
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
 
@@ -1792,7 +1792,7 @@ class Source(object):
             Minimum and maximum values to use for the scaling.
         zero : float
             If True, the 0 flux line is plotted in black.
-        sky : `mpdaf.obj.Spectrum`
+        sky : `~mpdaf.obj.Spectrum`
             Sky spectra to overplot (default None).
         lines : str
             Name of a columns of the lines table containing wavelength values.

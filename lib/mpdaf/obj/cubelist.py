@@ -199,7 +199,7 @@ class CubeList(object):
 
         Returns
         -------
-        out : `mpdaf.obj.Cube`, `mpdaf.obj.Cube`, Table
+        out : `~mpdaf.obj.Cube`, `mpdaf.obj.Cube`, Table
             cube, expmap, statpix
 
             - ``cube`` will contain the merged cube
@@ -272,7 +272,7 @@ class CubeList(object):
 
         Returns
         -------
-        out : `mpdaf.obj.Cube`, `mpdaf.obj.Cube`, astropy.table
+        out : `~mpdaf.obj.Cube`, `mpdaf.obj.Cube`, astropy.table
             cube, expmap, statpix
 
             - ``cube`` will contain the merged cube

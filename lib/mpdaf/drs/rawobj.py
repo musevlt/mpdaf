@@ -331,7 +331,7 @@ class Channel(object):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
         """
         wcs = obj.WCS(self.header)
         ima = obj.Image(wcs=wcs, data=self.data.__copy__())
@@ -444,7 +444,7 @@ class Channel(object):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
         """
         # Physical active pixels in X
         nx_data2 = self.header["ESO DET CHIP NX"]
@@ -581,7 +581,7 @@ class Channel(object):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
@@ -637,7 +637,7 @@ class Channel(object):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
         """
         wcs = obj.WCS(pyfits.Header(self.header))
         ima = obj.Image(wcs=wcs, data=self.data)
@@ -1164,7 +1164,7 @@ class RawFile(object):
 
         Returns
         -------
-        `mpdaf.obj.Image`
+        `~mpdaf.obj.Image`
 
         """
         if mask is None:

@@ -218,7 +218,7 @@ class CalibFile(object):
 
         Returns
         -------
-        out : `mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
         """
         wcs = obj.WCS(self.data_header)
         ima = obj.Image(wcs=wcs, data=self.get_data())

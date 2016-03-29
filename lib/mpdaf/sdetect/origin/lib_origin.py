@@ -34,7 +34,7 @@ def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
 
     Parameters
     ----------
-    wave    : mpdaf.obj.WaveCoord
+    wave    : `mpdaf.obj.WaveCoord`
               Spectral coordinates
     Nz      : int
               Number of spectral channels
@@ -995,7 +995,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
                   Number of skipped intervals for computing control cube
     plot_narrow : boolean
                   If True, plot the narrow bands images
-    wcs         : mpdaf.obj.WCS
+    wcs         : `mpdaf.obj.WCS`
                   Spatial coordinates
 
     Returns
@@ -1648,7 +1648,7 @@ def Add_radec_to_Cat(Cat, wcs):
           Catalogue of the detected emission lines:
           ID x_circle y_circle x_centroid y_centroid nb_lines
           x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
-    wcs : mpdaf.obj.WCS
+    wcs : `mpdaf.obj.WCS`
           Spatial coordinates
 
     Returns
@@ -1690,7 +1690,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
                        Catalogue of estimated lines
     correl            : array
                         Cube of T_GLR values
-    wave              : mpdaf.obj.WaveCoord
+    wave              : `mpdaf.obj.WaveCoord`
                         Spectral coordinates
     filename          : string
                         Name of the cube

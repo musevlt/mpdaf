@@ -206,7 +206,7 @@ def image_angle_from_cd(cd, unit=u.deg):
     cd : numpy.ndarray
         The 2x2 coordinate conversion matrix, with its elements
         ordered for multiplying a column vector in FITS (x,y) axis order.
-    unit : astropy.units
+    unit : `astropy.units.Unit`
         The unit to give the returned angle (degrees by default).
 
     Returns
@@ -264,7 +264,7 @@ def axis_increments_from_cd(cd):
         The 2x2 coordinate conversion matrix, with its elements
         ordered for multiplying a column vector in FITS (x,y) axis
         order.
-    unit : astropy.units
+    unit : `astropy.units.Unit`
         The angular units of the returned values.
 
     Returns
@@ -633,7 +633,7 @@ class WCS(object):
         nearest : bool
             If nearest is True returns the nearest integer pixel
             in place of the decimal pixel.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The units of the world coordinates
 
         Returns
@@ -675,7 +675,7 @@ class WCS(object):
             An (n,2) array of image pixel indexes. These should be
             python array indexes, ordered like (y,x) and with
             0,0 denoting the lower left pixel of the image.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The units of the world coordinates.
 
         Returns
@@ -863,7 +863,7 @@ class WCS(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the returned values.
 
         Returns
@@ -944,7 +944,7 @@ class WCS(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the returned values.
 
         Returns
@@ -990,7 +990,7 @@ class WCS(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The units of the returned angles.
 
         Returns
@@ -1012,7 +1012,7 @@ class WCS(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the returned coordinates.
 
         Returns
@@ -1034,7 +1034,7 @@ class WCS(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the returned coordinates.
 
         Returns
@@ -1065,7 +1065,7 @@ class WCS(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The unit to give the returned angle (degrees by default).
 
         Returns
@@ -1172,7 +1172,7 @@ class WCS(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units to give the return value.
 
         Returns
@@ -1196,7 +1196,7 @@ class WCS(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units to give the return value.
 
         Returns
@@ -1218,7 +1218,7 @@ class WCS(object):
 
         Returns
         -------
-        out : astropy.units
+        out : `astropy.units.Unit`
            The unit to use for coordinate angles.
 
         """
@@ -1349,7 +1349,7 @@ class WCS(object):
         ----------
         x : float
             The value of the reference pixel on the first axis.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the world coordinates.
 
         """
@@ -1369,7 +1369,7 @@ class WCS(object):
         ----------
         x : float
             The value of the reference pixel on the second axis.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the world coordinates.
 
         """
@@ -1394,7 +1394,7 @@ class WCS(object):
            either be in the unit specified by the 'unit' input parameter,
            or, if unit=None, in the unit specified by the self.unit
            property.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the specified increments.
 
         """
@@ -1450,7 +1450,7 @@ class WCS(object):
            along the Y and X axes of the image. These should
            either be in the unit specified by the 'unit' input parameter,
            or, if unit=None, in the unit specified by the self.unit property.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             The angular units of the specified increments.
 
         """
@@ -1655,7 +1655,7 @@ class WaveCoord(object):
         ----------
         pixel : int, array or None.
             pixel value.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         Returns
@@ -1689,7 +1689,7 @@ class WaveCoord(object):
         nearest : bool
             If nearest is True returns the nearest integer pixel
             in place of the decimal pixel.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         Returns
@@ -1768,7 +1768,7 @@ class WaveCoord(object):
             New wavelength for the pixel 0.
         step : float
             New step.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         Returns
@@ -1839,7 +1839,7 @@ class WaveCoord(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         """
@@ -1861,7 +1861,7 @@ class WaveCoord(object):
         ----------
         x : float
             Step value
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
         """
         if unit is not None:
@@ -1881,7 +1881,7 @@ class WaveCoord(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         """
@@ -1892,7 +1892,7 @@ class WaveCoord(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         """
@@ -1906,7 +1906,7 @@ class WaveCoord(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         """
@@ -1929,7 +1929,7 @@ class WaveCoord(object):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         """
@@ -1945,7 +1945,7 @@ class WaveCoord(object):
         ----------
         x : float
             value of the reference pixel on the wavelength axis
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
         """
         if unit is None:

@@ -265,7 +265,7 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
         Tables containing positions and names of the objects.
         It needs to have at minimum these columns: ID, Z, RA, DEC
         for the name, redshift & position of the object.
-    cube : `mpdaf.obj.Cube`
+    cube : `~mpdaf.obj.Cube`
         Data cube.
     images : `dict`
         Dictionary containing one or more external images of the field
@@ -273,7 +273,7 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
 
         Keys gives the filter ('HST_F814' for example)
 
-        Values are `mpdaf.obj.Image` objects.
+        Values are `~mpdaf.obj.Image` objects.
     size : float
         The total size to extract images in arcseconds.
         By default 10x10 arcsec
