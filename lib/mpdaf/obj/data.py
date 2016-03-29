@@ -550,11 +550,11 @@ class DataArray(object):
         """Return a copy of the object."""
         return self.__class__(
             filename=self.filename, data=self._data, mask=self._mask,
-            unit=self.unit,
-            var=self._var, wcs=self.wcs, wave=self.wave, copy=True,
+            var=self._var, unit=self.unit,
+             wcs=self.wcs, wave=self.wave, copy=True,
             data_header=fits.Header(self.data_header),
             primary_header=fits.Header(self.primary_header),
-            ext= (self._data_ext, self._var_ext))
+            ext= (self._data_ext, self._var_ext), dtype=self.dtype)
 
     def clone(self, var=None, data_init=None, var_init=None):
         """Return a shallow copy with the same header and coordinates.
