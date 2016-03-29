@@ -5321,6 +5321,7 @@ class Image(DataArray):
             rot = self.wcs.get_rot()
         self._spflims = SpatialFrequencyLimits(newfmax, rot)
 
+
 def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
                 center=None, flux=1., fwhm=(1., 1.), peak=False, rot=0.,
                 cont=0, unit_center=u.deg, unit_fwhm=u.arcsec,

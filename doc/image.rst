@@ -16,52 +16,73 @@ Examples
 
 ::
 
-  import numpy as np
-  from mpdaf.obj import Image
-  from mpdaf.obj import WCS
+    >>> import numpy as np
+    >>> from mpdaf.obj import Image
+    >>> from mpdaf.obj import WCS
+    >>>
+    >>> data = np.ones((300,300))
+    >>>
+    >>> wcs1 = WCS(crval=0,cdelt=0.2)
+    >>> ima = Image(data=data, wcs=wcs1) # image 300x300 filled with data
+    >>> ima.info()
+    [INFO] 300 x 300 Image (no name)
+    [INFO] .data(300 x 300) (no unit), no noise
+    [INFO] spatial coord (pix): min:(0.0,0.0) max:(59.8,59.8) step:(0.2,0.2) rot:-0.0 deg
+    >>>
+    >>> wcs2 = WCS(crval=0,cdelt=0.2,shape=400)
+    >>> ima = Image(data=data, wcs=wcs2) # warning: world coordinates and data have not the same dimensions.
+    [WARNING] The world coordinates and data have different dimensions: Modifying the shape of the WCS object
+    >>> ima.info()
+    [INFO] 300 x 300 Image (no name)
+    [INFO] .data(300 x 300) (no unit), no noise
+    [INFO] spatial coord (pix): min:(-39.9,-39.9) max:(19.9,19.9) step:(0.2,0.2) rot:-0.0 deg
 
-  wcs1 = WCS(crval=0,cdelt=0.2)
-  wcs2 = WCS(crval=0,cdelt=0.2,shape=400)
-  MyData = np.ones((300,300))
 
-  ima = Image(filename="image.fits",ext=1) # image from file without variance (extension number is 1)
-  ima = Image(filename="image.fits",ext=(1,2)) # image from file with variance (extension numbers are 1 and 2)
-  ima = Image(data=MyData, wcs=wcs1) # image 300x300 filled with MyData
-  ima = Image(data=MyData, wcs=wcs2) # warning: world coordinates and data have not the same dimensions.
-  # Shape of WCS object is modified.
-  # ima.wcs.naxis1 = 300
-  # ima.wcs.naxis2 = 300
+When reading from a FITS file, it is possible to specify the extension names or
+number for the data and variance::
+
+    # image from file without variance (extension number is 1)
+    ima = Image(filename="image.fits",ext=1)
+
+    # image from file with variance (extension numbers are 1 and 2)
+    ima = Image(filename="image.fits",ext=(1,2))
 
 
 Functions to create a new image
 -------------------------------
 
-Examples::
+.. plot::
+    :include-source:
 
     import numpy as np
     from mpdaf.obj import gauss_image
     from mpdaf.obj import WCS
     wcs = WCS (cdelt=(0.2,0.3), crval=(8.5,12),shape=(40,30))
-    ima = gauss_image(wcs=wcs, width=(1,2), factor=2, rot=60)
+    ima = gauss_image(wcs=wcs, fwhm=(1,2), factor=2, rot=60, unit_center=None,
+                      unit_fwhm=None)
     ima.plot()
-    gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0, plot=True)
-    gauss.print_param()
+
+Then it is possible to fit a Gaussian::
+
+    >>> gauss = ima.gauss_fit(pos_min=(4, 7), pos_max=(13,17), cont=0, plot=True,
+                              unit_center=None, unit_fwhm=None)
+    >>> gauss.print_param()
 
 
-Examples::
+Annother example to generate a composite image::
 
-  import numpy as np
-  from mpdaf.obj import Image
-  from mpdaf.obj import composite_image
+    import numpy as np
+    from mpdaf.obj import Image
+    from mpdaf.obj import composite_image
 
-  stars = Image(filename="stars.fits")
-  lowz = Image(filename="lowz.fits")
-  highz = Image(filename="highz.fits")
-  imalist = [stars, lowz, highz]
-  tab = zip(imalist, linspace(250,0,3), ones(3)*100)
-  p1 = composite_image(tab, cuts=(0,99.5), mode='sqrt')
-  p1.show()
-  p1.save('test_composite.jpg')
+    stars = Image(filename="stars.fits")
+    lowz = Image(filename="lowz.fits")
+    highz = Image(filename="highz.fits")
+    imalist = [stars, lowz, highz]
+    tab = zip(imalist, linspace(250,0,3), ones(3)*100)
+    p1 = composite_image(tab, cuts=(0,99.5), mode='sqrt')
+    p1.show()
+    p1.save('test_composite.jpg')
 
 
 Image object format
