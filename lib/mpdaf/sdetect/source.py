@@ -1270,23 +1270,24 @@ class Source(object):
                                             unit_wave=u.angstrom)
 
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
-        """Run SExtractor on all images listed in tags
-        to create segmentation maps.
-        SExtractor will use the default.nnw, default.param, default.sex
-        and *.conv files present in the current directory.
-        If not present default parameter files are created
-        or copied from the directory given in input (DIR).
+        """Run SExtractor on all images to create segmentation maps.
+
+        SExtractor will use the ``default.nnw``, ``default.param``,
+        ``default.sex`` and ``*.conv`` files present in the current directory.
+        If not present default parameter files are created or copied from the
+        directory given in input (DIR).
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
 
         Parameters
         ----------
-        tags : list<string>
+        tags : list of str
             List of tags of selected images
-        DIR : string
+        DIR : str
             Directory that contains the configuration files of sextractor
-        del_sex : boolean
+        del_sex : bool
             If False, configuration files of sextractor are not removed.
+
         """
         if 'MUSE_WHITE' in self.images:
             if tags is None:
@@ -1461,10 +1462,10 @@ class Source(object):
         If skysub:
             The local sky spectrum is computed as the average of the subcube
             weighted by the sky mask image.
-            It is saved in self.spectra['MUSE_SKY']
+            It is saved in ``self.spectra['MUSE_SKY']``
 
             The other spectra are computed on the sky-subtracted subcube and
-            they are saved in self.spectra['*_SKYSUB']
+            they are saved in ``self.spectra['*_SKYSUB']``.
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
 
