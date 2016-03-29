@@ -141,7 +141,7 @@ The second step applies PCA and returns two cubes containing continuum and faint
  >>> ax2 = plt.subplot(1,2,2)
  >>> cube_cont.sum(axis=0).plot(ax=ax2, title='continuum', colorbar='v')
  
-.. figure:: user_manual_origin/cubes_faint_cont.png
+.. figure:: origin/cubes_faint_cont.png
   :align: center
 
 In the third step, we compute the cube of GLR test values obtained with the given PSF and the dictionary of spectral profiles::
@@ -191,7 +191,7 @@ We plot the referent pixels::
 
  >>> my_origin.plot(correl, Cat0['x'], Cat0['y'], title='Catalogue-0-ref-voxel')
  
-.. figure:: user_manual_origin/Cat0.png
+.. figure:: origin/Cat0.png
   :align: center
 
 The sixth step selects emission lines according to the 2 narrow band tests 
@@ -230,7 +230,7 @@ We visualize the resulted catalogues::
  >>> ax3 = plt.subplot(1,3,3)
  >>> my_origin.plot(correl, Cat1_T2['x'], Cat1_T2['y'], ax=ax3, title='Catalogue-1-T2') 
 
-.. figure:: user_manual_origin/Cat1.png
+.. figure:: origin/Cat1.png
   :align: center
   
 The seventh step estimates more precisely each emission line.
@@ -239,7 +239,7 @@ It uses the catalogue from the narrow band Test number 2::
  >>> Cat2_T2, Cat_est_line = my_origin.estimate_line(Cat1_T2, profile, cube_faint)
  >>> my_origin.plot(correl, Cat2_T2['x'], Cat2_T2['y'], circle=True, title='Catalogue-2-T2')
  
-.. figure:: user_manual_origin/Cat2.png
+.. figure:: origin/Cat2.png
   :align: center
  
 *Cat2_T2* completes *Cat1_T2* with the flux and the residual of the lines.
@@ -251,7 +251,7 @@ The eighth step makes a spatial merging in order to associate several lines to t
  >>> Cat3 = my_origin.merge_spatialy(Cat2_T2)
  >>> my_origin.plot(correl, Cat3['x_circle'], Cat3['y_circle'], circle=True, title='Catalogue-3-T2')
  
-.. figure:: user_manual_origin/Cat3.png
+.. figure:: origin/Cat3.png
   :align: center
 
 The ninth step is the spectral merging.
@@ -261,7 +261,7 @@ The ninth step is the spectral merging.
  >>> Cat4 = my_origin.merge_spectraly(Cat3, Cat_est_line, deltaz)
  >>> my_origin.plot(correl, Cat4['x_circle'], Cat4['y_circle'], circle=True, title='Catalogue-final-T2')
     
-.. figure:: user_manual_origin/Cat4.png
+.. figure:: origin/Cat4.png
   :align: center
   
 The last step adds corresponding RA/DEC to the catalogue and 

@@ -13,10 +13,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
    
-   user_manual_source
-   user_manual_catalog
-   user_manual_muselet
-   user_manual_origin
+   source
+   catalog
+   muselet
+   origin
 
 
 

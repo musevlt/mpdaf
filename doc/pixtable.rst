@@ -85,7 +85,7 @@ Let's look to it::
  center:(-30:00:01.02,01:20:00.123) size in arcsec:(20.000,20.000) step in arcsec:(0.200,0.200) rot:0.0
  >>> rec.plot(scale='arcsinh')
 
-.. figure::  user_manual_pixtable_images/recima1.png
+.. figure::  pixtable_images/recima1.png
    :align:   center
 
 We are interested in the bright object at the bottom. Let's find its position::
@@ -115,12 +115,12 @@ Let's investigate this pixtable. We start by plotting the sky positions::
  >>> y = objpix.get_ypos()
  >>> plt.plot(y, x, '.')
 
-.. figure::  user_manual_pixtable_images/pixima1.png
+.. figure::  pixtable_images/pixima1.png
    :align:   center
 
 Ok, we have a circular location of pixels as expected. Note that the plotted points seems to be 'thick'. We can check this by zooming. For example if we zoom to the two points on the left side, this what we obtain.
 
-.. figure::  user_manual_pixtable_images/pixima2.png
+.. figure::  pixtable_images/pixima2.png
    :align:   center
 
 This is typical of the pixel table. because of distortion each pixel on the detector has not exactly 
@@ -133,7 +133,7 @@ Let's see if we have some bad pixel ifentified::
  (array([3591, 4791]),)
  >>> plt.plot(y[k], x[k], 'or')
 
-.. figure::  user_manual_pixtable_images/pixima3.png
+.. figure::  pixtable_images/pixima3.png
    :align:   center
 
 Indeed there are two bad pixels. We can see their location as the red points in the plot.
@@ -151,7 +151,7 @@ decode it to get for example the ifu number::
 
 We can see that the star is split into two IFUs (9 and 10). We plot the sky location according to the IFU number.
 
-.. figure::  user_manual_pixtable_images/pixima4.png
+.. figure::  pixtable_images/pixima4.png
    :align:   center
 
 Now we are going to display the data as located on the original exposure. Before we have to compute
@@ -164,9 +164,9 @@ separatly the corresponding pixtable for each IFU.
  >>> ima9.plot(vmin=0, vmax=10)
  >>> ima10.plot(vmin=0, vmax=10)
 
-.. image::  user_manual_pixtable_images/pixima5.png
+.. image::  pixtable_images/pixima5.png
 
-.. image::  user_manual_pixtable_images/pixima6.png
+.. image::  pixtable_images/pixima6.png
 
 This give a good view of the pixels that comes into the object.
 
@@ -251,7 +251,7 @@ Then, we estimat a reference sky spectrum from the masked pixel table::
 
  >>> skyref.plot()
  
-.. image::  user_manual_pixtable_images/skyref.png
+.. image::  pixtable_images/skyref.png
  
 This reference spectrum is used by the auto calibration method to normalise data values in each MUSE slice.
 In this example, we choose to use the additive correction::

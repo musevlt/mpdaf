@@ -47,7 +47,7 @@ Tutorial
   >>> plt.plot(np.arange(-5,6),lsf.get_LSF(lbda=6000,step=1.25,size=11),drawstyle='steps-mid')
   >>> plt.show()
   
-.. image:: user_manual_psf_images/simple_LSF.png
+.. image:: psf_images/simple_LSF.png
 
 
 References

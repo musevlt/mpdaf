@@ -13,10 +13,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   user_manual_spectrum
-   user_manual_image
-   user_manual_cube
-   user_manual_cubelist
+   spectrum
+   image
+   cube
+   cubelist
    coordinates
 
 

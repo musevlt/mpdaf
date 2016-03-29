@@ -96,7 +96,7 @@ handle images. For an MPDAF image im, the pixel in the lower-left corner is
 referenced as im[0,0] and the pixel im[p,q] refers to the horizontal position
 q and the vertical position p, as follows:
 
-.. figure:: user_manual_image_images/grid.jpg
+.. figure:: image_images/grid.jpg
   :align: center
 
 In total, this image im contains nq pixels in the horizontal direction and
@@ -361,7 +361,7 @@ Display an image with lower / upper scale values::
     >>> ima=Image('image.fits.gz')
     >>> ima.plot(vmin=1950, vmax=2400, colorbar='v')
 
-.. figure:: user_manual_image_images/Image_full.png
+.. figure:: image_images/Image_full.png
   :align: center
 
 Masking a specific region::
@@ -372,7 +372,7 @@ Zoom on an image section::
 
     >>> ima[600:1000,800:1200].plot(vmin=1950,vmax=2400, colorbar='v')
 
-.. figure:: user_manual_image_images/Image_zoom.png
+.. figure:: image_images/Image_zoom.png
   :align: center
 
 
@@ -393,7 +393,7 @@ The new image would look like this::
 
     >>> im3.plot(vmin=1950*4, vmax=2400*4, colorbar='v')
 
-.. figure:: user_manual_image_images/Image_rebin.png
+.. figure:: image_images/Image_rebin.png
   :align: center
 
 Then, we load an external image of the same field (observed with a different instrument), aligned to the previous image in WCS coordinates. We combine both datasets to produce a higher S/N image::
@@ -403,7 +403,7 @@ Then, we load an external image of the same field (observed with a different ins
     >>> im1.add(imhst)
     >>> im1[700:900,850:1050].plot(vmin=1950, vmax=2500) #combined image
 
-.. figure:: user_manual_image_images/before-after.png
+.. figure:: image_images/before-after.png
   :align: center
 
 (Left) original image (Right) combination of ground-based and high-resolution image
@@ -423,7 +423,7 @@ We plot one of the sub-images to analyse the corresponding source::
     >>> source=seg[8]
     >>> source.plot(colorbar='v')
 
-.. figure:: user_manual_image_images/Image_source8.png
+.. figure:: image_images/Image_source8.png
   :align: center
 
 We find the location of the peak interactively::
@@ -452,7 +452,7 @@ We perform a 2D Gaussian fitting of the source, and plot the isocontours::
     [INFO] Gaussian continuum = 2022.39 (error:1.86548)
 
 
-.. figure:: user_manual_image_images/Image_source8_gaussfit.png
+.. figure:: image_images/Image_source8_gaussfit.png
   :align: center
 
 Alternatively, we perform a 2D MOFFAT fitting of the same source::
@@ -478,8 +478,8 @@ the residuals::
     >>> mresiduals.plot(colorbar='v')
     >>> gresiduals.plot(colorbar='v')
 
-.. image:: user_manual_image_images/mresiduals.png
+.. image:: image_images/mresiduals.png
 
-.. image:: user_manual_image_images/gresiduals.png
+.. image:: image_images/gresiduals.png
 
 Residuals from 2D Moffat (left) and Gaussian (right) profile fittings.

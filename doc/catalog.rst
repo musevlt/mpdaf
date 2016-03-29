@@ -149,4 +149,4 @@ Then, we visualize these sources on our white image::
  >>> ima.plot(scale='log')
  >>> cat.plot_id(ax, ima.wcs)
 
-.. image::  user_manual_sourceselect_images/catalog_id.png
+.. image::  sourceselect_images/catalog_id.png
