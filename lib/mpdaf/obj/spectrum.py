@@ -898,7 +898,7 @@ class Spectrum(DataArray):
             self.wave = None
 
 
-    def rebin_mean(self, factor, margin='center'):
+    def rebin_mean(self, factor, margin='center', inplace=False):
         """Return a spectrum that shrinks the size of the current spectrum by
         factor.
 
@@ -914,12 +914,20 @@ class Spectrum(DataArray):
               and on the right of the spectrum.
             - 'right': one pixel added on the right of the spectrum.
             - 'left': one pixel added on the left of the spectrum.
+        inplace : bool
+            If False, return a rebinned copy of the spectrum (the default).
+            If True, rebin the original spectrum in-place, and return that.
 
         Returns
         -------
         out : Spectrum
         """
-        res = self.copy()
+        # Should we rebin the spectrum in-place, or rebin a copy of the spectrum?
+
+        res = self if inplace else self.copy()
+
+        # Rebin the result object in-place.
+
         res._rebin_mean(factor, margin)
         return res
 
@@ -1067,7 +1075,7 @@ class Spectrum(DataArray):
         self.wave = newwave
 
     def resample(self, step, start=None, shape=None,
-                 spline=False, notnoise=False, unit=u.angstrom):
+                 spline=False, notnoise=False, unit=u.angstrom, inplace=False):
         """Return a spectrum with data resample to different wavelength step
         size.
 
@@ -1087,12 +1095,20 @@ class Spectrum(DataArray):
         spline : boolean
             Linear/spline interpolation to interpolate masked values.
         notnoise : boolean
+        inplace : bool
+            If False, return a resampled copy of the spectrum (the default).
+            If True, resample the original spectrum in-place, and return that.
 
         Returns
         -------
         out : Spectrum
         """
-        res = self.copy()
+        # Should we resample the spectrum in-place, or resample a copy?
+
+        res = self if inplace else self.copy()
+
+        # Resample the result object in-place.
+
         res._resample(step, start, shape, spline, notnoise, unit)
         return res
 
@@ -2413,7 +2429,8 @@ class Spectrum(DataArray):
         data = signal.medfilt(data, ks)
         self.data = np.ma.array(data[ks:-ks], mask=self.data.mask)
 
-    def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom):
+    def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom,
+                      inplace=False):
         """Return a spectrum resulted on a median filter on the current
         spectrum.
 
@@ -2425,12 +2442,20 @@ class Spectrum(DataArray):
             Size of the median filter window.
         unit : `astropy.units.Unit`
             unit ot the kernel size
+        inplace : bool
+            If False, return a filtered copy of the spectrum (the default).
+            If True, filter the original spectrum in-place, and return that.
 
         Returns
         -------
         out : Spectrum
         """
-        res = self.copy()
+        # Should we filter the spectrum in-place, or filter a copy?
+
+        res = self if inplace else self.copy()
+
+        # Filter the result object in-place.
+
         res._median_filter(kernel_size, spline, unit)
         return res
 
@@ -2475,7 +2500,7 @@ class Spectrum(DataArray):
                 raise IOError('Operation forbidden')
                 return None
 
-    def convolve(self, other):
+    def convolve(self, other, inplace=False):
         """Return the convolution of the spectrum with a other spectrum or an
         array.
 
@@ -2486,12 +2511,20 @@ class Spectrum(DataArray):
         ----------
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
+        inplace : bool
+            If False, return a convolved copy of the spectrum (the default).
+            If True, convolve the original spectrum in-place, and return that.
 
         Returns
         -------
         out : Spectrum
         """
-        res = self.copy()
+        # Should we convolve the spectrum in-place, or convolve a copy?
+
+        res = self if inplace else self.copy()
+
+        # Convolve the result object in-place.
+
         res._convolve(other)
         return res
 
@@ -2535,7 +2568,7 @@ class Spectrum(DataArray):
             except:
                 raise IOError('Operation forbidden')
 
-    def fftconvolve(self, other):
+    def fftconvolve(self, other, inplace=False):
         """Return the convolution of the spectrum with a other spectrum or an
         array using fft.
 
@@ -2546,12 +2579,20 @@ class Spectrum(DataArray):
         ----------
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
+        inplace : bool
+            If False, return a convolved copy of the spectrum (the default).
+            If True, convolve the original spectrum in-place, and return that.
 
         Returns
         -------
         out : Spectrum
         """
-        res = self.copy()
+        # Should we convolve the spectrum in-place, or convolve a copy?
+
+        res = self if inplace else self.copy()
+
+        # Convolve the result object in-place.
+
         res._fftconvolve(other)
         return res
 
@@ -2595,7 +2636,7 @@ class Spectrum(DataArray):
             except:
                 raise IOError('Operation forbidden')
 
-    def correlate(self, other):
+    def correlate(self, other, inplace=False):
         """Return the cross-correlation of the spectrum with a other spectrum
         or an array.
 
@@ -2606,12 +2647,20 @@ class Spectrum(DataArray):
         ----------
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
+        inplace : bool
+            If False, return the correlation in a new spectrum object (default).
+            If True, replace the input spectrum with the correlation.
 
         Returns
         -------
         out : Spectrum
         """
-        res = self.copy()
+        # Should we perform the correlation in-place, or to a copy of the spectrum?
+
+        res = self if inplace else self.copy()
+
+        # Perform the correlation in-place.
+
         res._correlate(other)
         return res
 
@@ -2647,7 +2696,7 @@ class Spectrum(DataArray):
         if self.var is not None:
             self.var = signal.correlate(self.var, kernel, mode='same')
 
-    def fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom):
+    def fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom, inplace=False):
         """Return the convolution of the spectrum with a Gaussian using fft.
 
         Parameters
@@ -2658,12 +2707,20 @@ class Spectrum(DataArray):
             Number of standard deviations.
         unit : `astropy.units.Unit`
             type of the wavelength coordinates
+        inplace : bool
+            If False, return a convolved copy of the spectrum (the default).
+            If True, convolve the original spectrum in-place, and return that.
 
         Returns
         -------
         out : Spectrum
         """
-        res = self.copy()
+        # Should we convolve the spectrum in-place, or convolve a copy?
+
+        res = self if inplace else self.copy()
+
+        # Convolve the result object in-place.
+
         res._fftconvolve_gauss(fwhm, nsig, unit)
         return res
 

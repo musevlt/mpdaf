@@ -1862,7 +1862,7 @@ class Cube(DataArray):
                 self.var = var
                 return None
 
-    def rebin_mean(self, factor, margin='center', flux=False):
+    def rebin_mean(self, factor, margin='center', flux=False, inplace=False):
         """Shrink the size of the cube by factor.
 
         Parameters
@@ -1888,6 +1888,9 @@ class Cube(DataArray):
 
             In 'origin'case, cube is truncated/pixels are added
             at the end along each direction
+        inplace : bool
+            If False, return a rebinned copy of the image (the default).
+            If True, rebin the original image in-place, and return that.
 
         """
         if is_int(factor):
@@ -1895,7 +1898,7 @@ class Cube(DataArray):
         factor = np.array(factor)
         factor = np.maximum(factor, [1, 1, 1])
         factor = np.minimum(factor, self.shape)
-        res = self.copy()
+        res = self if inplace else self.copy()
         res._rebin_mean(factor, margin, flux)
         return res
 
