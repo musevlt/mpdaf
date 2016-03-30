@@ -15,8 +15,7 @@ from numpy import ma
 from .coords import WCS, WaveCoord
 from .objs import UnitMaskedArray, UnitArray
 from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
-                     fix_unit_read, is_valid_fits_file, read_slice_from_fits,
-                     copy_header)
+                     fix_unit_read, is_valid_fits_file, copy_header)
 
 __all__ = ('DataArray', )
 
@@ -30,18 +29,18 @@ __all__ = ('DataArray', )
 #     masked arrays, so the SharedMaskArray subclass overrides the
 #     __setitem__() method of MaskedArray to directly assign to the
 #     specified elements of the existing data and mask arrays.
-# 
+#
 #     Parameters
 #     ----------
 #     data     : The initial data to be stored in the array.
 #     **kwargs : The remaining key-value arguments are forwarded to
 #          the MaskedArray constructor.
-# 
+#
 #     """
-# 
+#
 #     def __init__(self, data, **kwargs):
 #         super(ma.MaskedArray, self).__init__(data, **kwargs)
-# 
+#
 #     def __setitem__(self, indx, value):
 #         if isinstance(value, ma.MaskedArray):
 #             self.data[indx] = value.data
@@ -49,9 +48,10 @@ __all__ = ('DataArray', )
 #         else:
 #             self.data[indx] = value
 #             self.mask[indx] = False
-# 
+#
 #     def __setslice__(self, i, j, value):
 #             self.__setitem__(slice(i,j), value)
+
 
 class DataArray(object):
 
@@ -114,15 +114,11 @@ class DataArray(object):
     var : numpy.ndarray or list
         Variance array, passed to numpy.array().
     mask : numpy.ma.nomask or numpy.ndarray
-    
-    
         Mask used for the creation of the .data MaskedArray. If mask is
         False (default value), a mask array of the same size of the data array
         is created. To avoid creating an array, it is possible to use
         numpy.ma.nomask, but in this case several methods will break if
         they use the mask.
-        
-        
 
     Attributes
     ----------
@@ -160,15 +156,15 @@ class DataArray(object):
                  dtype=float, primary_header=None, data_header=None, **kwargs):
         self._logger = logging.getLogger(__name__)
         self.filename = filename
-        
+
         # used for properties
         self._pdata = None
         self._pvar = None
         self._pmask = None
-        
-        #self._data = None
+
+        # self._data = None
         self._data_ext = None
-        #self._var = None
+        # self._var = None
         self._var_ext = None
         if mask is ma.nomask:
             self._mask = ma.nomask
@@ -274,7 +270,10 @@ class DataArray(object):
             if data is not None:
                 if isinstance(data, ma.MaskedArray):
                     self._data = np.array(data.data, dtype=dtype, copy=copy)
-                    self._mask = data.mask
+                    if data.mask is ma.nomask:
+                        self._mask = data.mask
+                    else:
+                        self._mask = np.array(data.mask, dtype=bool, copy=copy)
                 else:
                     self._data = np.array(data, dtype=dtype, copy=copy)
                     if mask is ma.nomask:
@@ -284,7 +283,7 @@ class DataArray(object):
                     else:
                         self._mask = np.resize(np.array(mask, dtype=bool, copy=copy),
                                                self._data.shape)
-                        
+
                 self._ndim = self._data.ndim
 
             # Use a specified variance array?
@@ -332,7 +331,7 @@ class DataArray(object):
             except:
                 self._logger.warning('wavelength solution not copied',
                                      exc_info=True)
-                
+
     def _read_from_file(self, item=None, data=True, var=False):
         hdulist = fits.open(self.filename)
         if item:
@@ -366,30 +365,30 @@ class DataArray(object):
                 data = self._pdata
                 mask = self._pmask
             if var and self._var_ext is not None:
-                var = np.asarray(hdulist[self._var_ext].data, dtype=self.dtype) 
+                var = np.asarray(hdulist[self._var_ext].data, dtype=self.dtype)
             else:
                 var = None
         hdulist.close()
         if hasattr(self, '_shape'):
             del self._shape
         return data, mask, var
-                
+
     @property
     def _data(self):
         """ A array of data and mask values
         """
         if self._pdata is None and self.filename is not None:
             self._pdata, self._pmask, self._pvar = \
-            self._read_from_file(var=False)
+                self._read_from_file(var=False)
             self._ndim = self._pdata.ndim
         if self._pdata is None:
             raise ValueError('empty data array')
         return self._pdata
-           
+
     @_data.setter
     def _data(self, value):
         self._pdata = value
-      
+
     @property
     def _var(self):
         """ A array of data, var and mask values
@@ -397,24 +396,24 @@ class DataArray(object):
         if self._pvar is None and self._var_ext is not None and \
                 self.filename is not None:
             self._pdata, self._pmask, self._pvar = \
-            self._read_from_file(data=(self._pdata is None), var=True)
+                self._read_from_file(data=(self._pdata is None), var=True)
             self._ndim = self._pdata.ndim
         return self._pvar
-    
+
     @_var.setter
     def _var(self, value):
         self._pvar = value
-     
+
     @property
     def _mask(self):
         """ A array of data and mask values
         """
         if self._pdata is None and self.filename is not None:
             self._pdata, self._pmask, self._var = \
-            self._read_from_file(var=False)
+                self._read_from_file(var=False)
             self._ndim = self._pdata.ndim
         return self._pmask
-           
+
     @_mask.setter
     def _mask(self, value):
         self._pmask = value
@@ -468,7 +467,7 @@ class DataArray(object):
             return self._shape
         else:
             return None
-   
+
     @property
     def data(self):
         """ A masked array of data values : numpy.ma.MaskedArray.
@@ -477,11 +476,10 @@ class DataArray(object):
         they are first used. Read the data array here if not already read.
 
         """
-        #res = SharedMaskArray(self._data, mask=self._mask, copy=False)
+        # res = SharedMaskArray(self._data, mask=self._mask, copy=False)
         res = ma.MaskedArray(self._data, mask=self._mask, copy=False)
         res._sharedmask = False
         return res
-    
 
     @data.setter
     def data(self, value):
@@ -508,7 +506,7 @@ class DataArray(object):
     @var.setter
     def var(self, value):
         if value is not None:
-            if self.shape is not None and  not np.array_equal(value.shape, self.shape):
+            if self.shape is not None and not np.array_equal(value.shape, self.shape):
                 raise ValueError('try to set var with an array with a different shape')
             if isinstance(value, ma.MaskedArray):
                 self._var = value.data
@@ -551,10 +549,10 @@ class DataArray(object):
         return self.__class__(
             filename=self.filename, data=self._data, mask=self._mask,
             var=self._var, unit=self.unit,
-             wcs=self.wcs, wave=self.wave, copy=True,
+            wcs=self.wcs, wave=self.wave, copy=True,
             data_header=fits.Header(self.data_header),
             primary_header=fits.Header(self.primary_header),
-            ext= (self._data_ext, self._var_ext), dtype=self.dtype)
+            ext=(self._data_ext, self._var_ext), dtype=self.dtype)
 
     def clone(self, var=None, data_init=None, var_init=None):
         """Return a shallow copy with the same header and coordinates.
@@ -709,8 +707,7 @@ class DataArray(object):
         # until they are first used. Read the slice from the FITS file if
         # the data array hasn't been read yet.
         if self._data is None and self.filename is not None:
-            data, mask, var = self._read_from_file(item)
-            
+            data, mask, var = self._read_from_file(item, var=True)
         else:
             data = self._data[item]
             if self._mask is ma.nomask:
@@ -762,15 +759,15 @@ class DataArray(object):
 
         if isinstance(other, DataArray):
             # FIXME: check only step
-            
-            if self._has_wave and other._has_wave \
-                    and not np.allclose(self.wave.get_step(),
+
+            if self._has_wave and other._has_wave and \
+                    not np.allclose(self.wave.get_step(),
                                     other.wave.get_step(unit=self.wave.unit),
                                     atol=1E-2, rtol=0):
                 raise ValueError('Operation forbidden for cubes with different'
                                  ' world coordinates in spectral direction')
-            if self._has_wcs and other._has_wcs \
-                    and not np.allclose(self.wcs.get_step(),
+            if self._has_wcs and other._has_wcs and \
+                    not np.allclose(self.wcs.get_step(),
                                     other.wcs.get_step(unit=self.wcs.unit),
                                     atol=1E-3, rtol=0):
                 raise ValueError('Operation forbidden for cubes with different'
@@ -785,17 +782,9 @@ class DataArray(object):
                     self._var[item] = UnitArray(other._var,
                                                 other.unit**2, self.unit**2)
                 other = UnitMaskedArray(other.data, other.unit, self.unit)
-                
-        if isinstance(other, ma.MaskedArray):
-            self._data[item] = other.data
-            if self._mask is ma.nomask:
-                self._mask = np.zeros(self.shape, dtype=bool)
-            self._mask[item] = other.mask
-        else:
-            self._data[item] = other
-            if self._mask is not ma.nomask:
-                self._mask[item] = ~(np.isfinite(other))
-            
+
+        self.data[item] = other
+
     def get_wcs_header(self):
         """Return a FITS header containing coordinate descriptions."""
         if self.ndim == 1 and self.wave is not None:

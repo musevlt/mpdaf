@@ -244,7 +244,7 @@ class Cube(DataArray):
             mask[:, imin:imax, jmin:jmax] = grid[np.newaxis, :, :]
         else:
             mask[:, imin:imax, jmin:jmax] = True
-        
+
         if inside:
             self.data[lmin:lmax, :, :][mask] = ma.masked
         else:
@@ -1399,7 +1399,7 @@ class Cube(DataArray):
                                             / (mask_count * mask_count)
             self._mask = (mask_count==0)
         self._ndim = self._data.ndim
-        
+
         # coordinates
         self.wcs = self.wcs.rebin(factor[1:])
         self.wave.rebin(factor[0])
