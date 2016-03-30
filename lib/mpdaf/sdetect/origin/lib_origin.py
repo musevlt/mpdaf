@@ -195,37 +195,37 @@ def Compute_PCA_SubCube(NbSubcube, cube_std, intx, inty, Edge_xmin, Edge_xmax,
     #Spatial segmentation
     with ProgressBar(NbSubcube**2) as bar:
         for numy in range(NbSubcube):
-	        for numx in range(NbSubcube):
-	            bar.update()
-	            # limits of each spatial zone
-	            x1 = intx[numx]
-	            x2 = intx[numx+1]
-	            y2 = inty[numy]
-	            y1 = inty[numy+1]
-	            # Data in this spatio-spectral zone
-	            cube_temp = cube_std[:, y1:y2, x1:x2]
-	
-	            # Edges are excluded for PCA computing
-	            x1 = max(x1, Edge_xmin+1)
-	            x2 = min(x2, Edge_xmax)
-	            y1 = max(y1, Edge_ymin+1)
-	            y2 = min(y2, Edge_ymax)
-	            cube_temp_edge = cube_std[:, y1:y2, x1:x2]
-	
-	            #Dimensions of each subcube of each spatio-spectral zone
-	            nx[numx,numy] = cube_temp.shape[2]
-	            ny[numx,numy] = cube_temp.shape[1]
-	            nz[numx,numy] = cube_temp.shape[0]
-	
-	            # PCA on each subcube
-	            A_c, V_c,lambda_c = Compute_PCA_edge(cube_temp, cube_temp_edge)
-	            # eigenvalues for each spatio-spectral zone
-	            eig_val[(numx, numy)] = lambda_c
-	            # Eigenvectors basis for each spatio-spectral zone
-	            V[(numx, numy)]= V_c
-	            # Projection of the data on the eigenvectors basis
-	            # for each spatio-spectral zone
-	            A[(numx,numy)]  = A_c
+            for numx in range(NbSubcube):
+                bar.update()
+                # limits of each spatial zone
+                x1 = intx[numx]
+                x2 = intx[numx+1]
+                y2 = inty[numy]
+                y1 = inty[numy+1]
+                # Data in this spatio-spectral zone
+                cube_temp = cube_std[:, y1:y2, x1:x2]
+
+                # Edges are excluded for PCA computing
+                x1 = max(x1, Edge_xmin+1)
+                x2 = min(x2, Edge_xmax)
+                y1 = max(y1, Edge_ymin+1)
+                y2 = min(y2, Edge_ymax)
+                cube_temp_edge = cube_std[:, y1:y2, x1:x2]
+
+                #Dimensions of each subcube of each spatio-spectral zone
+                nx[numx,numy] = cube_temp.shape[2]
+                ny[numx,numy] = cube_temp.shape[1]
+                nz[numx,numy] = cube_temp.shape[0]
+
+                # PCA on each subcube
+                A_c, V_c,lambda_c = Compute_PCA_edge(cube_temp, cube_temp_edge)
+                # eigenvalues for each spatio-spectral zone
+                eig_val[(numx, numy)] = lambda_c
+                # Eigenvectors basis for each spatio-spectral zone
+                V[(numx, numy)]= V_c
+                # Projection of the data on the eigenvectors basis
+                # for each spatio-spectral zone
+                A[(numx,numy)]  = A_c
 
 
     logger.debug('%s executed in %0.1fs'%(whoami(),time.time()-t0))
@@ -586,32 +586,32 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     i = 0
     logger.info('Step 4/5 Spectral convolution of the weighted datacube')
     with ProgressBar(Nx*Ny) as bar:
-	    for y in range(Ny):
-	        for x in range(Nx):
-                    bar.update()
-	            # Spectral convolution of the weighted data cube spreaded
-	            # by the FSF and the spectral profile : correlation between the
-	            # data and the 3D atom
-	#            cube_profile[:,y,x] = signal.fftconvolve(cube_fsf[:,y,x], d_j,
-	#                                                  mode = 'same')
-	            ret = irfftn(cube_fsf_fft[i] * d_j_fft, fshape)[fslice].copy()
-	            cube_profile[:,y,x] = _centered(ret, s1)
-	            # Spectral convolution between the spatial part of the norm of the
-	            # 3D atom and the spectral profile : The norm of the 3D atom
-	#            norm_profile[:,y,x] = signal.fftconvolve(norm_fsf[:,y,x],
-	#                                                  profile_square,
-	#                                                  mode = 'same')
-	            ret = irfftn(norm_fsf_fft[i] *
-	                         profile_square_fft, fshape)[fslice].copy()
-	            norm_profile[:,y,x] = _centered(ret, s1)
-	            i = i+1
+        for y in range(Ny):
+            for x in range(Nx):
+                bar.update()
+                # Spectral convolution of the weighted data cube spreaded
+                # by the FSF and the spectral profile : correlation between the
+                # data and the 3D atom
+                # cube_profile[:,y,x] = signal.fftconvolve(cube_fsf[:,y,x], d_j,
+                #                                          mode = 'same')
+                ret = irfftn(cube_fsf_fft[i] * d_j_fft, fshape)[fslice].copy()
+                cube_profile[:,y,x] = _centered(ret, s1)
+                # Spectral convolution between the spatial part of the norm of the
+                # 3D atom and the spectral profile : The norm of the 3D atom
+                # norm_profile[:,y,x] = signal.fftconvolve(norm_fsf[:,y,x],
+                #                                          profile_square,
+                #                                          mode = 'same')
+                ret = irfftn(norm_fsf_fft[i] *
+                             profile_square_fft, fshape)[fslice].copy()
+                norm_profile[:,y,x] = _centered(ret, s1)
+                i = i+1
 
     # Set to the infinity the norm equal to 0
     norm_profile[norm_profile<=0] = np.inf
     # T_GLR values with constraint  : cube_profile>0
     GLR = np.zeros((Nz, Ny, Nx, 2))
     GLR[:,:,:,0] = cube_profile/np.sqrt(norm_profile)
-    
+
     logger.info('Step 5/5 Computing second cube of correlation values')
 
     for k in ProgressBar(range(1, Dico.shape[1])):
@@ -1296,18 +1296,18 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
         z_f = z_f.ravel()
         y_f = y_f.ravel()
         x_f = x_f.ravel()
-        
+
         # size of the 3D atom along the spatial axes
         inty1 = np.maximum(0, y_f - longxy)
         inty2 = np.minimum(Ny, y_f + longxy + 1)
         intx1 = np.maximum(0, x_f - longxy)
         intx2 = np.minimum(Nx, x_f + longxy + 1)
-        
+
         x1 = x_f + grid_dxy
         x2 = x_f + 2*longxy + grid_dxy + 1
         y1 = y_f + grid_dxy
         y2 = y_f + 2*longxy + grid_dxy + 1
-        
+
         xmin = np.abs(np.minimum(0, x_f - longxy))
         ymin = np.abs(np.minimum(0, y_f - longxy))
 
@@ -1508,93 +1508,93 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     E.add_column(col_id, index=0)
     Esize = len(E)
     with ProgressBar(Esize) as bar:
-	    while len(E) > 0:
-	        # Set the new indices
-	        E['ID'] = np.arange(1,len(E)+1)
-	
-	        Cix, Ciy = np.mgrid[0:Nx,0:Ny]
-	        Cix = Cix.flatten()
-	        Ciy = Ciy.flatten()
-	        d = (E['x'][:,np.newaxis] - Cix[np.newaxis,:])**2 + \
-	            (E['y'][:,np.newaxis] - Ciy[np.newaxis,:])**2
-	        numi = np.where(d <= np.round(fwhm_fsf/2)**2)
-	        if len(numi[-1]) != 0:
-	            unique, count = np.unique(numi[-1], return_counts=True)
-	            ksel = np.where(count==max(count))
-	            pix = unique[ksel][0]
-	            C0 = [Cix[pix], Ciy[pix]]
-	            d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2
-	            num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
-	            E0 = E[num0]
-	
-	            if len(ksel[0]) > 1:
-	                # T_GLR values of the voxels in this group
-	                correl_temp  = E0['T_GLR']
-	                # Spatial positions of the voxels
-	                x_gp = E0['x']
-	                y_gp = E0['y']
-	                # Centroid weighted by the T_GLR of voxels in each group
-	                x_centroid = np.sum(correl_temp*x_gp) / np.sum(correl_temp)
-	                y_centroid = np.sum(correl_temp*y_gp) / np.sum(correl_temp)
-	                # Distances of the centroids to the center of the circle
-	                pix = unique[ksel]
-	                d_i = (x_centroid - Cix[pix])**2 + (y_centroid - Ciy[pix])**2
-	                # Keep the lower distance
-	                ksel2 = np.argmin(d_i)
-	                C0 = [Cix[pix][ksel2], Ciy[pix][ksel2]]
-	                d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2
-	                num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
-	                E0 = E[num0]
-	        else:
-	            x0 = 0
-	            y0 = 0
-	            C0 = [x0, y0]
-	            # Distance from the center of the circle to the pixel
-	            d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2  # d**2 ???????
-	            # Indices of the voxel inside the circle
-	            num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
-	            # subgroup containing only the voxels inside the cylinder
-	            E0 = E[num0]
-	
-	        # Number of this source
-	        num_source = num_source + 1
-	        # Number of lines for this source
-	        nb_lines = len(E0)
-	        # To fulfill each line of the catalogue
-	        n_S = np.resize(num_source, nb_lines)
-	        # Coordinates of the center of the circle
-	        x_c = np.resize(C0[0], nb_lines)
-	        y_c = np.resize(C0[1], nb_lines)
-	        # T_GLR values of the voxels in this group
-	        correl_temp  = E0['T_GLR']
-	        # Spatial positions of the voxels
-	        x_gp = E0['x']
-	        y_gp = E0['y']
-	        # Centroid weighted by the T_GLR of voxels in each group
-	        x_centroid = np.sum(correl_temp*x_gp) / np.sum(correl_temp)
-	        y_centroid = np.sum(correl_temp*y_gp) / np.sum(correl_temp)
-	        # To fulfill each line of the catalogue
-	        x_centroid = np.resize(x_centroid, nb_lines)
-	        y_centroid = np.resize(y_centroid, nb_lines)
-	        # Number of lines for this source
-	        nb_lines = np.resize(int(nb_lines), nb_lines)
-	        # New catalogue of detected emission lines merged in sources
-	        CatF0 = E0.copy()
-	        CatF0['ID'] = n_S
-	        col_x = Column(name='x_circle', data=x_c)
-	        col_y = Column(name='y_circle', data=y_c)
-	        col_xc = Column(name='x_centroid', data=x_centroid)
-	        col_yc = Column(name='y_centroid', data=y_centroid)
-	        col_nlines = Column(name='nb_lines', data=nb_lines)
-	        CatF0.add_columns([col_x, col_y, col_xc, col_yc, col_nlines],
-	                          indexes=[1, 1, 1, 1, 1])
-	        if len(CatF)==0:
-	            CatF = CatF0
-	        else:
-	            CatF = join(CatF, CatF0, join_type='outer')
-	        # Suppress the voxels added in the catalogue
-	        for k in E0['ID']:
-	            E.remove_rows(E['ID']==k)
+        while len(E) > 0:
+            # Set the new indices
+            E['ID'] = np.arange(1,len(E)+1)
+
+            Cix, Ciy = np.mgrid[0:Nx,0:Ny]
+            Cix = Cix.flatten()
+            Ciy = Ciy.flatten()
+            d = (E['x'][:,np.newaxis] - Cix[np.newaxis,:])**2 + \
+                (E['y'][:,np.newaxis] - Ciy[np.newaxis,:])**2
+            numi = np.where(d <= np.round(fwhm_fsf/2)**2)
+            if len(numi[-1]) != 0:
+                unique, count = np.unique(numi[-1], return_counts=True)
+                ksel = np.where(count==max(count))
+                pix = unique[ksel][0]
+                C0 = [Cix[pix], Ciy[pix]]
+                d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2
+                num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
+                E0 = E[num0]
+
+                if len(ksel[0]) > 1:
+                    # T_GLR values of the voxels in this group
+                    correl_temp  = E0['T_GLR']
+                    # Spatial positions of the voxels
+                    x_gp = E0['x']
+                    y_gp = E0['y']
+                    # Centroid weighted by the T_GLR of voxels in each group
+                    x_centroid = np.sum(correl_temp*x_gp) / np.sum(correl_temp)
+                    y_centroid = np.sum(correl_temp*y_gp) / np.sum(correl_temp)
+                    # Distances of the centroids to the center of the circle
+                    pix = unique[ksel]
+                    d_i = (x_centroid - Cix[pix])**2 + (y_centroid - Ciy[pix])**2
+                    # Keep the lower distance
+                    ksel2 = np.argmin(d_i)
+                    C0 = [Cix[pix][ksel2], Ciy[pix][ksel2]]
+                    d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2
+                    num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
+                    E0 = E[num0]
+            else:
+                x0 = 0
+                y0 = 0
+                C0 = [x0, y0]
+                # Distance from the center of the circle to the pixel
+                d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2  # d**2 ???????
+                # Indices of the voxel inside the circle
+                num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
+                # subgroup containing only the voxels inside the cylinder
+                E0 = E[num0]
+
+            # Number of this source
+            num_source = num_source + 1
+            # Number of lines for this source
+            nb_lines = len(E0)
+            # To fulfill each line of the catalogue
+            n_S = np.resize(num_source, nb_lines)
+            # Coordinates of the center of the circle
+            x_c = np.resize(C0[0], nb_lines)
+            y_c = np.resize(C0[1], nb_lines)
+            # T_GLR values of the voxels in this group
+            correl_temp  = E0['T_GLR']
+            # Spatial positions of the voxels
+            x_gp = E0['x']
+            y_gp = E0['y']
+            # Centroid weighted by the T_GLR of voxels in each group
+            x_centroid = np.sum(correl_temp*x_gp) / np.sum(correl_temp)
+            y_centroid = np.sum(correl_temp*y_gp) / np.sum(correl_temp)
+            # To fulfill each line of the catalogue
+            x_centroid = np.resize(x_centroid, nb_lines)
+            y_centroid = np.resize(y_centroid, nb_lines)
+            # Number of lines for this source
+            nb_lines = np.resize(int(nb_lines), nb_lines)
+            # New catalogue of detected emission lines merged in sources
+            CatF0 = E0.copy()
+            CatF0['ID'] = n_S
+            col_x = Column(name='x_circle', data=x_c)
+            col_y = Column(name='y_circle', data=y_c)
+            col_xc = Column(name='x_centroid', data=x_centroid)
+            col_yc = Column(name='y_centroid', data=y_centroid)
+            col_nlines = Column(name='nb_lines', data=nb_lines)
+            CatF0.add_columns([col_x, col_y, col_xc, col_yc, col_nlines],
+                              indexes=[1, 1, 1, 1, 1])
+            if len(CatF)==0:
+                CatF = CatF0
+            else:
+                CatF = join(CatF, CatF0, join_type='outer')
+            # Suppress the voxels added in the catalogue
+            for k in E0['ID']:
+                E.remove_rows(E['ID']==k)
                 # update the progress bar
                 for k in range(len(E0)):
                     bar.update()
