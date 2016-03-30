@@ -1071,8 +1071,9 @@ class Image(DataArray):
             self.data.mask = np.logical_or(self.data.mask, test)
             self.crop()
 
-    def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg):
-        """Return truncated image.
+    def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg,
+                 inplace=False):
+        """Return a truncated version of an image.
 
         Parameters
         ----------
@@ -1089,13 +1090,21 @@ class Image(DataArray):
             masked.
         unit : `astropy.units.Unit`
             Type of the coordinates x and y (degrees by default)
+        inplace : bool
+            If False, return a truncated copy of the image (the default).
+            If True, truncate the original image in-place, and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        res = self.copy()
+        # Should we truncate the image in-place, or truncate a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Truncate the result object in-place.
+
         res._truncate(y_min, y_max, x_min, x_max, mask, unit)
         return res
 
@@ -1450,7 +1459,7 @@ class Image(DataArray):
 
     def rotate(self, theta=0.0, interp='no', reshape=False, order=1,
                pivot=None, unit=u.deg, regrid=None, flux=False, cutoff=0.25,
-               copy=True):
+               inplace=False):
 
         """Rotate the sky within an image in the sense of a rotation from
         north to east.
@@ -1529,18 +1538,21 @@ class Image(DataArray):
             After rotation, if the interpolated value of a pixel
             has an integrated contribution of this many masked pixels,
             mask the pixel.
-        copy : bool
-            If True, return a rotated copy of the image (the default).
-            If False, rotate the original image in place, and return that.
+        inplace : bool
+            If False, return a rotated copy of the image (the default).
+            If True, rotate the original image in-place, and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we rotate a copy of the image, or the image itself?
+        # Should we rotate the image in-place, or rotate a copy of the image?
 
-        res = self.copy() if copy else self
+        res = self if inplace else self.copy()
+
+        # Rotate the result object in-place.
+
         res._rotate(theta=theta, interp=interp, reshape=reshape, order=order,
                     pivot=pivot, unit=unit, regrid=regrid, flux=flux,
                     cutoff=cutoff)
@@ -3094,7 +3106,7 @@ class Image(DataArray):
 
         self.update_spatial_fmax(0.5 / self.wcs.get_step())
 
-    def rebin_mean(self, factor, margin='center', copy=True):
+    def rebin_mean(self, factor, margin='center', inplace=False):
         """Return an image that shrinks the size of the current image by
         an integer division factor.
 
@@ -3113,16 +3125,21 @@ class Image(DataArray):
             center of the image. If 'origin' is selected, then one
             corner of the sub-image is the [0,0] pixel of the input
             image.
-        copy : bool
-            If True (the default), return a re-binned copy of the image.
-            If False, rebin the original image in place, and return that.
+        inplace : bool
+            If False, return a rebinned copy of the image (the default).
+            If True, rebin the original image in-place, and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        res = self.copy() if copy else self
+        # Should we rebin the image in-place, or rebin a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Rebin the result object in-place.
+
         res._rebin_mean(factor, margin)
         return res
 
@@ -3132,7 +3149,7 @@ class Image(DataArray):
 
     def resample(self, newdim, newstart, newstep, flux=False,
                  order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
-                 antialias=True, copy=True):
+                 antialias=True, inplace=False):
 
         """Resample an image of the sky to select its angular resolution and
         to specify which sky position appears at the center of pixel [0,0].
@@ -3142,7 +3159,7 @@ class Image(DataArray):
 
          regrid(newdim, newstart, [0.0, 0.0], [abs(newstep[0]),-abs(newstep[1])]
                 flux=flux, order=order, interp=interp, unit_pos=unit_start,
-                unit_inc=unit_step, copy=copy)
+                unit_inc=unit_step, inplace=inplace)
 
         When this function is used to resample an image to a lower
         resolution, a low-pass anti-aliasing filter is applied to the
@@ -3207,9 +3224,9 @@ class Image(DataArray):
             ringing artefacts next to sharp edges, such as CCD saturation
             spikes. This filtering can be disabled by passing False to
             the antialias argument.
-        copy : bool
-            If True, return a resampled copy of the image (the default).
-            If False, resample the original image in place, and return that.
+        inplace : bool
+            If False, return a rotated copy of the image (the default).
+            If True, rotate the original image in-place, and return that.
 
         Returns
         -------
@@ -3238,11 +3255,12 @@ class Image(DataArray):
 
         return self.regrid(newdim, refpos, refpix, newinc, flux=flux,
                            order=order, interp=interp, unit_pos=unit_start,
-                           unit_inc=unit_step, antialias=antialias, copy=copy)
+                           unit_inc=unit_step, antialias=antialias,
+                           inplace=inplace)
 
     def regrid(self, newdim, refpos, refpix, newinc, flux=False, order=1,
                interp='no', unit_pos=u.deg, unit_inc=u.arcsec, antialias=True,
-               copy=True, cutoff=0.25):
+               inplace=False, cutoff=0.25):
 
         """Resample an image of the sky to select its angular resolution,
         to specify the position of the sky in the image array, and
@@ -3350,9 +3368,9 @@ class Image(DataArray):
             ringing artefacts next to sharp edges, such as CCD saturation
             spikes. This filtering can be disabled by passing False to
             the antialias argument.
-        copy : bool
-            If True, return a resampled copy of the image. This is the default.
-            If False, resample the original image in place, and return that.
+        inplace : bool
+            If False, return a resampled copy of the image (the default).
+            If True, resample the original image in-place, and return that.
         cutoff : float
             After resampling, if the interpolated value of a pixel
             has an integrated contribution of this many masked pixels,
@@ -3365,9 +3383,9 @@ class Image(DataArray):
 
         """
 
-        # Should we resample a copy of the image, or the image itself?
+        # Should we resample the image in-place, or resample a copy of the image?
 
-        image = self.copy() if copy else self
+        image = self if inplace else self.copy()
 
         # Create a shape that has the same dimension for both axes?
 
@@ -3659,9 +3677,9 @@ class Image(DataArray):
 
         self.regrid(other.shape, centersky, centerpix,
                     other.wcs.get_axis_increments(unit=u.deg),
-                    flux, unit_inc=u.deg, copy=False)
+                    flux, unit_inc=u.deg, inplace=True)
 
-    def align_with_image(self, other, flux=False, copy=True):
+    def align_with_image(self, other, flux=False, inplace=False):
         """Resample the image to give it the same orientation, position,
         resolution and size as a given image.
 
@@ -3691,13 +3709,18 @@ class Image(DataArray):
             of the areas of the resampled and original pixels. For images
             whose units are flux per pixel, this keeps the total flux
             in an area unchanged.
-        copy : boolean
-            If True, return a copy of self that has been aligned.
-            Otherwise return self after aligning it.
+        inplace : bool
+            If False, return an aligned copy of the image (the default).
+            If True, align the original image in-place, and return that.
 
         """
 
-        res = self.copy() if copy else self
+        # Should we align the image in-place, or align a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Align the result object in-place.
+
         res._align_with_image(other, flux)
         return res
 
@@ -3819,7 +3842,7 @@ class Image(DataArray):
 
         return dy,dx
 
-    def adjust_coordinates(self, ref, nsigma=1.0, copy=True):
+    def adjust_coordinates(self, ref, nsigma=1.0, inplace=False):
         """Given a reference image of the sky that is expected to
         overlap with the current image, attempt to fit for any offset
         between the sky coordinate system of the current image and
@@ -3843,9 +3866,9 @@ class Image(DataArray):
         nsigma : float
             Only values that exceed this many standard deviations
             above the mean of each image will be used.
-        copy : boolean
-            If True, return a copy of self that has been corrected.
-            Otherwise return self after correcting its coordinates.
+        inplace : bool
+            If False, return a shifted copy of the image (the default).
+            If True, shift the original image in-place, and return that.
 
         Returns
         -------
@@ -3855,7 +3878,12 @@ class Image(DataArray):
 
         """
 
-        res = self.copy() if copy else self
+        # Should we shift the image in-place, or shift a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Adjust the result object in-place.
+
         res._adjust_coordinates(ref, nsigma=nsigma)
         return res
 
@@ -3883,7 +3911,7 @@ class Image(DataArray):
         if self.var is not None:
             self.var = ndi.gaussian_filter(self.var, sigma)
 
-    def gaussian_filter(self, sigma=3, interp='no'):
+    def gaussian_filter(self, sigma=3, interp='no', inplace=False):
         """Return an image containing Gaussian filter applied to the current
         image.
 
@@ -3897,13 +3925,21 @@ class Image(DataArray):
             if 'no', data median value replaced masked values.
             if 'linear', linear interpolation of the masked values.
             if 'spline', spline interpolation of the masked values.
+        inplace : bool
+            If False, return a filtered copy of the image (the default).
+            If True, filter the original image in-place, and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        res = self.copy()
+        # Should we filter the image in-place, or filter a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Filter the result object in-place.
+
         res._gaussian_filter(sigma, interp)
         return res
 
@@ -3918,7 +3954,7 @@ class Image(DataArray):
         if self.var is not None:
             self.var = ndi.median_filter(self.var, size)
 
-    def median_filter(self, size=3, interp='no'):
+    def median_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing median filter applied to the current
         image.
 
@@ -3933,13 +3969,21 @@ class Image(DataArray):
             if 'no', data median value replaced masked values.
             if 'linear', linear interpolation of the masked values.
             if 'spline', spline interpolation of the masked values.
+        inplace : bool
+            If False, return a filtered copy of the image (the default).
+            If True, filter the original image in-place, and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        res = self.copy()
+        # Should we filter the image in-place, or filter a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Filter the result object in-place.
+
         res._median_filter(size, interp)
         return res
 
@@ -3952,7 +3996,7 @@ class Image(DataArray):
         self.data = np.ma.array(ndi.maximum_filter(data, size),
                                 mask=self.data.mask)
 
-    def maximum_filter(self, size=3, interp='no'):
+    def maximum_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing maximum filter applied to the current
         image.
 
@@ -3967,13 +4011,21 @@ class Image(DataArray):
             if 'no', data median value replaced masked values.
             if 'linear', linear interpolation of the masked values.
             if 'spline', spline interpolation of the masked values.
+        inplace : bool
+            If False, return a filtered copy of the image (the default).
+            If True, filter the original image in-place, and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        res = self.copy()
+        # Should we filter the image in-place, or filter a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Filter the result object in-place.
+
         res._maximum_filter(size, interp)
         return res
 
@@ -3986,7 +4038,7 @@ class Image(DataArray):
         self.data = np.ma.array(ndi.minimum_filter(data, size),
                                 mask=self.data.mask)
 
-    def minimum_filter(self, size=3, interp='no'):
+    def minimum_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing minimum filter applied to the current
         image.
 
@@ -4001,18 +4053,26 @@ class Image(DataArray):
             if 'no', data median value replaced masked values.
             if 'linear', linear interpolation of the masked values.
             if 'spline', spline interpolation of the masked values.
+        inplace : bool
+            If False, return a filtered copy of the image (the default).
+            If True, filter the original image in-place, and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        res = self.copy()
+        # Should we filter the image in-place, or filter a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Filter the result object in-place.
+
         res._minimum_filter(size, interp)
         return res
 
     def add(self, other):
-        """Add the image other to the current image in place. The coordinate
+        """Add the image other to the current image in-place. The coordinate
         are taken into account.
 
         Parameters
@@ -4277,7 +4337,7 @@ class Image(DataArray):
         else:
             raise IOError('Operation forbidden')
 
-    def fftconvolve(self, other, interp='no'):
+    def fftconvolve(self, other, interp='no', inplace=False):
         """Return the convolution of the image with other using fft.
 
         Uses `scipy.signal.fftconvolve`.
@@ -4290,19 +4350,27 @@ class Image(DataArray):
             if 'no', data median value replaced masked values.
             if 'linear', linear interpolation of the masked values.
             if 'spline', spline interpolation of the masked values.
+        inplace : bool
+            If False, return a convolved copy of the image (the default).
+            If True, convolve the original image in-place, and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        res = self.copy()
+        # Should we convolve the image in-place, or convolve a copy of the image?
+
+        res = self if inplace else self.copy()
+
+        # Convolve the result object in-place.
+
         res._fftconvolve(other, interp)
         return res
 
     def fftconvolve_gauss(self, center=None, flux=1., fwhm=(1., 1.),
                           peak=False, rot=0., factor=1, unit_center=u.deg,
-                          unit_fwhm=u.arcsec):
+                          unit_fwhm=u.arcsec, inplace=True):
         """Return the convolution of the image with a 2D gaussian.
 
         Parameters
@@ -4330,22 +4398,37 @@ class Image(DataArray):
             Degrees by default (use None for coordinates in pixels).
         unit_fwhm : `astropy.units.Unit`
             FWHM unit. Arcseconds by default (use None for radius in pixels)
+        inplace : bool
+            If False, return a convolved copy of the image.
+            If True, convolve the original image in-place, and return that.
+            Note that the default value of this argument is True. For
+            historical reasons this is the opposite of other MPDAF image
+            functions.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
+
+        # Create an image of the gaussian to be convolved.
+
         ima = gauss_image(self.shape, wcs=self.wcs, center=center,
                           flux=flux, fwhm=fwhm, peak=peak, rot=rot,
                           factor=factor, gauss=None, unit_center=unit_center,
                           unit_fwhm=unit_fwhm, cont=0, unit=self.unit)
+
+        # Normalize the total flux of the Gaussian.
+
         ima.norm(typ='sum')
-        return self.fftconvolve(ima)
+
+        # Perform the convolution in the Fourier plane.
+
+        return self.fftconvolve(ima, inplace=inplace)
 
     def fftconvolve_moffat(self, center=None, flux=1., a=1.0, q=1.0,
                            n=2, peak=False, rot=0., factor=1,
-                           unit_center=u.deg, unit_a=u.arcsec):
+                           unit_center=u.deg, unit_a=u.arcsec, inplace=True):
         """Return the convolution of the image with a 2D moffat.
 
         Parameters
@@ -4378,6 +4461,12 @@ class Image(DataArray):
             Degrees by default (use None for coordinates in pixels).
         unit_a : `astropy.units.Unit`
             a unit. Arcseconds by default (use None for radius in pixels)
+        inplace : bool
+            If False, return a convolved copy of the image.
+            If True, convolve the original image in-place, and return that.
+            Note that the default value of this argument is True. For
+            historical reasons this is the opposite of other MPDAF image
+            functions.
 
         Returns
         -------
@@ -4393,7 +4482,7 @@ class Image(DataArray):
                            unit_fwhm=unit_a, unit=self.unit)
 
         ima.norm(typ='sum')
-        return self.fftconvolve(ima)
+        return self.fftconvolve(ima, inplace=inplace)
 
     def correlate2d(self, other, interp='no'):
         """Return the cross-correlation of the image with an array/image
