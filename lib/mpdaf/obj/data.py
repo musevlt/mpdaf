@@ -349,7 +349,7 @@ class DataArray(object):
                 data = self._pdata
                 mask = self._pmask
             if var and self._var_ext is not None:
-                var = np.asarray(hdulist[self._var_ext].data[item])
+                var = np.asarray(hdulist[self._var_ext].data[item], dtype=self.dtype)
             else:
                 var = None
         else:
@@ -366,7 +366,7 @@ class DataArray(object):
                 data = self._pdata
                 mask = self._pmask
             if var and self._var_ext is not None:
-                var = np.asarray(hdulist[self._var_ext].data) 
+                var = np.asarray(hdulist[self._var_ext].data, dtype=self.dtype) 
             else:
                 var = None
         hdulist.close()
