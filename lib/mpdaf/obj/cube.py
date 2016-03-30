@@ -2395,6 +2395,10 @@ class Cube(DataArray):
             size = size / self.wcs.get_step(unit=unit_size)[0]
         radius = size / 2.
 
+        if np.any((center - radius + 0.5).astype(int) > self.shape[1:]) or \
+                np.any((center + radius + 0.5).astype(int) < 0):
+            raise ValueError('Region is outside of the cube limits.')
+
         size = int(size + 0.5)
         i, j = (center - radius + 0.5).astype(int)
         ny, nx = self.shape[1:]
