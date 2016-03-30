@@ -16,6 +16,8 @@ from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
 from ..gui.clicks import SpectrumClicks
 from ..tools import deprecated
 
+__all__ = ('Gauss1D', 'Spectrum')
+
 
 class Gauss1D(object):
 
@@ -102,7 +104,7 @@ class Spectrum(DataArray):
     ext : integer or (integer,integer) or string or (string,string)
         Number/name of the data extension or numbers/names
         of the data and variance extensions.
-    wave : :class:`mpdaf.obj.WaveCoord`
+    wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates.
     unit : string
         Data unit type. u.dimensionless_unscaled by default.
@@ -115,7 +117,7 @@ class Spectrum(DataArray):
     ----------
     filename : string
         Possible FITS filename.
-    unit : astropy.units
+    unit : `astropy.units.Unit`
         Data unit type.
     primary_header : pyfits.Header
         Possible FITS primary header instance.
@@ -127,7 +129,7 @@ class Spectrum(DataArray):
         Size of spectrum.
     var : array
         Array containing the variance.
-    wave : :class:`mpdaf.obj.WaveCoord`
+    wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates.
 
     """
@@ -556,7 +558,7 @@ class Spectrum(DataArray):
             minimum wavelength.
         lmax : float
             maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates. if None, inputs are in pixels.
 
         Returns
@@ -586,7 +588,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
 
         Returns
@@ -603,7 +605,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
 
         Returns
@@ -620,7 +622,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
 
         Returns
@@ -637,7 +639,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
 
         Returns
@@ -654,7 +656,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        wave : :class:`mpdaf.obj.WaveCoord`
+        wave : `mpdaf.obj.WaveCoord`
             Wavelength coordinates.
         """
         if wave.shape is not None and wave.shape != self.shape:
@@ -672,7 +674,7 @@ class Spectrum(DataArray):
             minimum wavelength.
         lmax : float
             maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         inside : boolean
             If inside is True, pixels inside [lmin,lmax] are masked.
@@ -712,11 +714,11 @@ class Spectrum(DataArray):
         ----------
         wavelengths : array of float
             wavelength values
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates
         spline : boolean
-            False: linear interpolation (scipy.interpolate.interp1d used),
-            True: spline interpolation (scipy.interpolate.splrep/splev used).
+            False: linear interpolation (`scipy.interpolate.interp1d` used),
+            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         lbda = self.wave.coord()
         ksel = np.where(self.data.mask == False)
@@ -750,8 +752,8 @@ class Spectrum(DataArray):
         Parameters
         ----------
         spline : boolean
-            False: linear interpolation (scipy.interpolate.interp1d used),
-            True: spline interpolation (scipy.interpolate.splrep/splev used).
+            False: linear interpolation (`scipy.interpolate.interp1d` used),
+            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         if np.ma.count_masked(self.data) == 0:
             return self.data.data
@@ -769,8 +771,8 @@ class Spectrum(DataArray):
         Parameters
         ----------
         spline : boolean
-            False: linear interpolation (scipy.interpolate.interp1d used),
-            True: spline interpolation (scipy.interpolate.splrep/splev used).
+            False: linear interpolation (`scipy.interpolate.interp1d` used),
+            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         self.data = np.ma.masked_invalid(self._interp_data(spline))
 
@@ -960,7 +962,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out :class:`mpdaf.obj.Spectrum`
+        out `~mpdaf.obj.Spectrum`
         """
         if factor <= 1 or factor >= self.shape[0]:
             raise ValueError('factor must be in ]1,shape[')
@@ -990,7 +992,7 @@ class Spectrum(DataArray):
                   spline=False, notnoise=False, unit=u.angstrom):
         """Resample spectrum data to different wavelength step size.
 
-        Uses :func:`scipy.integrate.quad`.
+        Uses `scipy.integrate.quad`.
 
         Parameters
         ----------
@@ -999,7 +1001,7 @@ class Spectrum(DataArray):
         start : float
             Spectral position of the first new pixel.
             It can be set or kept at the edge of the old first one.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
         shape : integer
             Size of the new spectrum.
@@ -1069,7 +1071,7 @@ class Spectrum(DataArray):
         """Return a spectrum with data resample to different wavelength step
         size.
 
-        Uses :func:`scipy.integrate.quad`.
+        Uses `scipy.integrate.quad`.
 
         Parameters
         ----------
@@ -1078,7 +1080,7 @@ class Spectrum(DataArray):
         start : float
             Spectral position of the first new pixel.
             It can be set or kept at the edge of the old first one.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
         shape : integer
             Size of the new spectrum.
@@ -1103,7 +1105,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         weight : boolean
             If weight is True, compute the weighted average
@@ -1149,7 +1151,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         weight : boolean
             If weight is True, compute the weighted average
@@ -1199,7 +1201,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
 
         Returns
@@ -1325,7 +1327,7 @@ class Spectrum(DataArray):
     def poly_val(self, z):
         """Update in place the spectrum data from polynomial coefficients.
 
-        Uses :func:`numpy.poly1d`.
+        Uses `numpy.poly1d`.
 
         Parameters
         ----------
@@ -1515,7 +1517,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         if lmin is None:
@@ -1553,7 +1555,7 @@ class Spectrum(DataArray):
         ----------
         l0 : float
             Wavelength value corresponding to the peak position.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         cont : integer
             The continuum [default 0].
@@ -1595,7 +1597,7 @@ class Spectrum(DataArray):
                   plot=False, plot_factor=10, unit=u.angstrom):
         """Perform a Gaussian fit.
 
-        Uses :func:`scipy.optimize.leastsq` to minimize the sum of squares.
+        Uses `scipy.optimize.leastsq` to minimize the sum of squares.
 
         Parameters
         ----------
@@ -1609,7 +1611,7 @@ class Spectrum(DataArray):
             Input gaussian center (in angstrom), if None it is estimated
             with the wavelength corresponding to the maximum value
             in [max(lmin), min(lmax)]
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         flux : float
             Integrated gaussian flux or gaussian peak value if peak is True.
@@ -1632,7 +1634,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss1D`
+        out : `mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
         if is_int(lmin) or is_float(lmin):
@@ -1781,7 +1783,7 @@ class Spectrum(DataArray):
             Continuum value.
         peak : boolean
             If true, flux contains the gaussian peak value
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         gauss = lambda p, x: cont \
@@ -1820,7 +1822,7 @@ class Spectrum(DataArray):
                    plot=False, plot_factor=10, unit=u.angstrom):
         """Truncate the spectrum and fit it as a sum of two gaussian functions.
 
-        Returns the two gaussian functions as :class:`mpdaf.obj.Gauss1D` objects.
+        Returns the two gaussian functions as `mpdaf.obj.Gauss1D` objects.
 
         From Johan Richard and Vera Patricio.
 
@@ -1858,12 +1860,12 @@ class Spectrum(DataArray):
             If True, the resulted fit is plotted.
         plot_factor : double
             oversampling factor for the overplotted fit
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`
+        out : `mpdaf.obj.Gauss1D`, `mpdaf.obj.Gauss1D`
         """
         if is_int(lmin) or is_float(lmin):
             fmin = None
@@ -2006,7 +2008,7 @@ class Spectrum(DataArray):
         function.
 
         Returns the two gaussian functions (right and left) as
-        :class:`mpdaf.obj.Gauss1D` objects.
+        `mpdaf.obj.Gauss1D` objects.
 
         From Johan Richard and Vera Patricio, modified by Jeremy Blaizot.
 
@@ -2035,7 +2037,7 @@ class Spectrum(DataArray):
         weight : boolean
             If weight is True, the weight is computed as the inverse of
             variance.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates. If None, inputs are in pixels.
         plot : boolean
             If True, the resulted fit is plotted.
@@ -2044,7 +2046,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`
+        out : `mpdaf.obj.Gauss1D`, `mpdaf.obj.Gauss1D`
             Left and right Gaussian functions.
 
         """
@@ -2193,7 +2195,7 @@ class Spectrum(DataArray):
             Continuum value.
         peak : boolean
             If true, flux contains the gaussian peak value.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
 
@@ -2230,7 +2232,7 @@ class Spectrum(DataArray):
                        plot=False, plot_factor=10, unit=u.angstrom):
         """Perform a Gaussian fit on a line (fixed Gaussian center).
 
-        Uses :func:`scipy.optimize.leastsq` to minimize the sum of squares.
+        Uses `scipy.optimize.leastsq` to minimize the sum of squares.
 
         Parameters
         ----------
@@ -2266,7 +2268,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Gauss1D`
+        out : `mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
         if is_int(lmin) or is_float(lmin):
@@ -2391,13 +2393,13 @@ class Spectrum(DataArray):
     def _median_filter(self, kernel_size=1., spline=False, unit=u.angstrom):
         """Perform a median filter on the spectrum.
 
-        Uses :func:`scipy.signal.medfilt`.
+        Uses `scipy.signal.medfilt`.
 
         Parameters
         ----------
         kernel_size : float
             Size of the median filter window.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit ot the kernekl size. If None, inputs are in pixels.
         """
         if unit is not None:
@@ -2415,13 +2417,13 @@ class Spectrum(DataArray):
         """Return a spectrum resulted on a median filter on the current
         spectrum.
 
-        Uses :func:`scipy.signal.medfilt`.
+        Uses `scipy.signal.medfilt`.
 
         Parameters
         ----------
         kernel_size : float
             Size of the median filter window.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit ot the kernel size
 
         Returns
@@ -2435,7 +2437,7 @@ class Spectrum(DataArray):
     def _convolve(self, other):
         """Convolve the spectrum with a other spectrum or an array.
 
-        Uses :func:`scipy.signal.convolve`. self and other must have the same
+        Uses `scipy.signal.convolve`. self and other must have the same
         size.
 
         Parameters
@@ -2477,7 +2479,7 @@ class Spectrum(DataArray):
         """Return the convolution of the spectrum with a other spectrum or an
         array.
 
-        Uses :func:`scipy.signal.convolve`. self and other must have the same
+        Uses `scipy.signal.convolve`. self and other must have the same
         size.
 
         Parameters
@@ -2496,7 +2498,7 @@ class Spectrum(DataArray):
     def _fftconvolve(self, other):
         """Convolve the spectrum with a other spectrum or an array using fft.
 
-        Uses :func:`scipy.signal.fftconvolve`. self and other must have the
+        Uses `scipy.signal.fftconvolve`. self and other must have the
         same size.
 
         Parameters
@@ -2537,7 +2539,7 @@ class Spectrum(DataArray):
         """Return the convolution of the spectrum with a other spectrum or an
         array using fft.
 
-        Uses :func:`scipy.signal.fftconvolve`. self and other must have the
+        Uses `scipy.signal.fftconvolve`. self and other must have the
         same size.
 
         Parameters
@@ -2556,7 +2558,7 @@ class Spectrum(DataArray):
     def _correlate(self, other):
         """Cross-correlate the spectrum with a other spectrum or an array.
 
-        Uses :func:`scipy.signal.correlate`. self and other must have the same
+        Uses `scipy.signal.correlate`. self and other must have the same
         size.
 
         Parameters
@@ -2597,7 +2599,7 @@ class Spectrum(DataArray):
         """Return the cross-correlation of the spectrum with a other spectrum
         or an array.
 
-        Uses :func:`scipy.signal.correlate`. self and other must have the same
+        Uses `scipy.signal.correlate`. self and other must have the same
         size.
 
         Parameters
@@ -2622,7 +2624,7 @@ class Spectrum(DataArray):
             Gaussian fwhm in angstrom
         nsig : integer
             Number of standard deviations.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         from scipy import special
@@ -2654,7 +2656,7 @@ class Spectrum(DataArray):
             Gaussian fwhm.
         nsig : integer
             Number of standard deviations.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
 
         Returns
@@ -2671,7 +2673,7 @@ class Spectrum(DataArray):
         Parameters
         ----------
         lsf : python function
-            :class:`mpdaf.MUSE.LSF` object or function f describing the LSF.
+            `mpdaf.MUSE.LSF` object or function f describing the LSF.
 
             The first three parameters of the function f must be lbda
             (wavelength value in A), step (in A) and size (odd integer).
@@ -2686,7 +2688,7 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Spectrum`
+        out : `~mpdaf.obj.Spectrum`
         """
         res = self.clone()
         if self.data.sum() == 0:
@@ -2727,13 +2729,13 @@ class Spectrum(DataArray):
     def peak_detection(self, kernel_size=None, unit=u.angstrom):
         """Return a list of peak locations.
 
-        Uses :func:`scipy.signal.medfilt`.
+        Uses `scipy.signal.medfilt`.
 
         Parameters
         ----------
         kernel_size : float
             size of the median filter window
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
@@ -2766,7 +2768,7 @@ class Spectrum(DataArray):
             Maximum wavelength.
         ax : matplotlib.Axes
             The Axes instance in which the spectrum is drawn.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the wavelength coordinates.
         noise_kwargs : dict
             Properties for the noise plot (if ``noise=True``). Default to
@@ -2834,7 +2836,7 @@ class Spectrum(DataArray):
                  **kwargs):
         """Plot the spectrum with y logarithmic scale.
 
-        Shortcut for :meth:`mpdaf.obj.Spectrum.plot` with `stretch='log'`.
+        Shortcut for `mpdaf.obj.Spectrum.plot` with `stretch='log'`.
         By default, drawstyle is 'steps-mid'.
 
         Parameters
@@ -2851,7 +2853,7 @@ class Spectrum(DataArray):
             Minimum wavelength.
         lmax : float
             Maximum wavelength.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the wavelength coordinates
         ax : matplotlib.Axes
             the Axes instance in which the spectrum is drawn
@@ -3014,7 +3016,7 @@ class Spectrum(DataArray):
         To quit the interactive mode, click on the right mouse button.
 
         The parameters of the last gaussian are saved in self.gauss
-        (:class:`mpdaf.obj.Gauss1D`)
+        (`mpdaf.obj.Gauss1D`)
 
         Parameters
         ----------
@@ -3026,7 +3028,7 @@ class Spectrum(DataArray):
             Use 5 mouse clicks: the two first select a range
             of minimum wavelengths, the 3th selects the peak wavelength and
             the two last clicks select a range of maximum wavelengths
-            - see :func:`mpdaf.obj.Spectrum.gauss_fit`.
+            - see `mpdaf.obj.Spectrum.gauss_fit`.
         """
         if nclicks == 3:
             msg = 'Use 3 mouse clicks to get minimim, '\
@@ -3155,7 +3157,7 @@ class Spectrum(DataArray):
         To quit the interactive mode, click on the right mouse button.
 
         The parameters of the returned gaussian functions are saved in
-        self.gauss2 (:class:`mpdaf.obj.Gauss1D`, :class:`mpdaf.obj.Gauss1D`)
+        self.gauss2 (`mpdaf.obj.Gauss1D`, `mpdaf.obj.Gauss1D`)
 
         Parameters
         ----------
@@ -3167,7 +3169,7 @@ class Spectrum(DataArray):
             Use 5 mouse clicks: the two first select a range
             of minimum wavelengths, the 3th selects the peak wavelength and
             the two last clicks select a range of maximum wavelengths
-            - see :func:`mpdaf.obj.Spectrum.gauss_symfit`.
+            - see `mpdaf.obj.Spectrum.gauss_symfit`.
         """
         if nclicks == 3:
             msg = 'Use 3 mouse clicks to get minimim, '\

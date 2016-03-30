@@ -58,9 +58,9 @@ class ORIGIN(object):
                         Number of rows
         Nz            : int
                         Number of spectral channels
-        wcs           : mpdaf.obj.WCS
+        wcs           : `mpdaf.obj.WCS`
                         RA-DEC coordinates.
-        wave          : mpdaf.obj.WaveCoord
+        wave          : `mpdaf.obj.WaveCoord`
                         Spectral coordinates.
         intx          : array
                         Limits in pixels of the columns for each zone
@@ -227,11 +227,11 @@ class ORIGIN(object):
 
         Returns
         -------
-        cube_faint : mpdaf.obj.Cube
+        cube_faint : `~mpdaf.obj.Cube`
                      Projection on the eigenvectors associated to the lower
                      eigenvalues of the data cube
                      (representing the faint signal)
-        cube_cont  : mpdaf.obj.Cube
+        cube_cont  : `~mpdaf.obj.Cube`
                      Projection on the eigenvectors associated to the higher
                      eigenvalues of the data cube
                      (representing the continuum)
@@ -282,9 +282,9 @@ class ORIGIN(object):
 
         Returns
         -------
-        correl  : mpdaf.obj.Cube
+        correl  : `~mpdaf.obj.Cube`
                   cube of T_GLR values
-        profile : mpdaf.obj.Cube (type int)
+        profile : `~mpdaf.obj.Cube` (type int)
                   Number of the profile associated to the T_GLR
                   profile = Cube('profile.fits', dtype=int)
         """
@@ -316,14 +316,14 @@ class ORIGIN(object):
 
         Returns
         -------
-        cube_pval_correl  : mpdaf.obj.Cube
+        cube_pval_correl  : `~mpdaf.obj.Cube`
                             Cube of thresholded p-values associated
                             to the T_GLR values
-        cube_pval_channel : mpdaf.obj.Cube
+        cube_pval_channel : `~mpdaf.obj.Cube`
                             Cube of p-values associated to the number of
                             thresholded p-values of the correlations
                             per spectral channel for each zone
-        cube_pval_final   : mpdaf.obj.Cube
+        cube_pval_final   : `~mpdaf.obj.Cube`
                             Cube of final thresholded p-values
         """
         # p-values of correlation values
@@ -368,16 +368,16 @@ class ORIGIN(object):
 
         Parameters
         ----------
-        correl            : mpdaf.obj.Cube
+        correl            : `~mpdaf.obj.Cube`
                             Cube of T_GLR values
-        profile           : mpdaf.obj.Cube (type int)
+        profile           : `~mpdaf.obj.Cube` (type int)
                             Number of the profile associated to the T_GLR
-        cube_pval_correl  : mpdaf.obj.Cube
+        cube_pval_correl  : `~mpdaf.obj.Cube`
                            Cube of thresholded p-values associated
                            to the T_GLR values
-        cube_pval_channel : mpdaf.obj.Cube
+        cube_pval_channel : `~mpdaf.obj.Cube`
                             Cube of spectral p-values
-        cube_pval_final   : mpdaf.obj.Cube
+        cube_pval_final   : `~mpdaf.obj.Cube`
                             Cube of final thresholded p-values
         neighboors        : integer
                             Connectivity of contiguous voxels
@@ -474,9 +474,9 @@ class ORIGIN(object):
                      with a narrow band test.
                      Columns of the Catalogue Cat1_T:
                      x y z T_GLR profile pvalC pvalS pvalF T1 T2
-        profile    : mpdaf.obj.Cube
+        profile    : `~mpdaf.obj.Cube`
                      Number of the profile associated to the T_GLR
-        cube_faint : mpdaf.obj.Cube
+        cube_faint : `~mpdaf.obj.Cube`
                      Projection on the eigenvectors associated to the lower
                      eigenvalues
         grid_dxy   : integer
@@ -491,7 +491,7 @@ class ORIGIN(object):
                            Columns of the Catalogue Cat2:
                            x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual
                            flux num_line
-        Cat_est_line : list of mpdaf.obj.Spectrum
+        Cat_est_line : list of `~mpdaf.obj.Spectrum`
                         Estimated lines
         """
         self._logger.info('ORIGIN - Lines estimation')
@@ -540,7 +540,7 @@ class ORIGIN(object):
                        ID x_circle y_circle x_centroid y_centroid nb_lines
                        x y z T_GLR profile pvalC pvalS pvalF T1 T2
                        residual flux num_line
-        Cat_est_line : list of mpdaf.obj.Spectrum
+        Cat_est_line : list of `~mpdaf.obj.Spectrum`
                        List of estimated lines
         deltaz       : integer
                        Distance maximum between 2 different lines
@@ -570,9 +570,9 @@ class ORIGIN(object):
                            ID x_circle y_circle x_centroid y_centroid
                            nb_lines x y z T_GLR profile pvalC pvalS pvalF
                            T1 T2 residual flux num_line
-        Cat_est_line : list of mpdaf.obj.Spectrum
+        Cat_est_line : list of `~mpdaf.obj.Spectrum`
                            List of estimated lines
-        correl           : mpdaf.obj.Cube
+        correl           : `~mpdaf.obj.Cube`
                            Cube of T_GLR values
 
         Returns
@@ -597,7 +597,7 @@ class ORIGIN(object):
 
         Parameters
         ----------
-        correl : mpdaf.obj.Cube
+        correl : `~mpdaf.obj.Cube`
                  Cube of T_GLR values
         x      : array
                  Coordinates along the x-axis of the estimated lines

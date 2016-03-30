@@ -19,7 +19,7 @@ from .spectrum import Spectrum
 from ..tools import deprecated
 from ..tools.fits import add_mpdaf_method_keywords
 
-__all__ = ['iter_spe', 'iter_ima', 'Cube']
+__all__ = ('iter_spe', 'iter_ima', 'Cube')
 
 
 class iter_spe(object):
@@ -28,7 +28,7 @@ class iter_spe(object):
 
     Parameters
     ----------
-    cube : mpdaf.obj.Cube
+    cube : `~mpdaf.obj.Cube`
        The cube that contains the spectra to be returned one after another.
     index : boolean
        If index=False, only return a spectrum at each iteration.
@@ -68,7 +68,7 @@ class iter_ima(object):
 
     Parameters
     ----------
-    cube : mpdaf.obj.Cube
+    cube : `~mpdaf.obj.Cube`
        The cube that contains the spectra to be returned one after another.
     index : boolean
        If index=False, only return an image at each iteration.
@@ -108,11 +108,11 @@ class Cube(DataArray):
     ext : integer or (integer,integer) or string or (string,string)
         The optional number/name of the data extension
         or the numbers/names of the data and variance extensions.
-    wcs : mpdaf.obj.WCS
+    wcs : `mpdaf.obj.WCS`
         The world coordinates of the image pixels.
-    wave : mpdaf.obj.WaveCoord
+    wave : `mpdaf.obj.WaveCoord`
         The wavelength coordinates of the spectral pixels.
-    unit : astropy.units.Unit
+    unit : `astropy.units.Unit`
         The physical units of the data values. Defaults to
         u.dimensionless_unscaled.
     data : numpy.ndarray or list
@@ -137,9 +137,9 @@ class Cube(DataArray):
     primary_header : pyfits.Header
         The FITS primary header instance, if a FITS file was
         provided. Otherwise None.
-    wcs : mpdaf.obj.WCS
+    wcs : `mpdaf.obj.WCS`
         The world coordinates of the image pixels.
-    wave : mpdaf.obj.WaveCoord
+    wave : `mpdaf.obj.WaveCoord`
         The wavelength coordinates of the spectral pixels.
     shape : tuple
         The dimensions of the data axes (python axis ordering (nz,ny,nx)).
@@ -147,7 +147,7 @@ class Cube(DataArray):
         A masked array containing the pixel values of the cube.
     data_header : pyfits.Header
         The FITS header of the DATA extension.
-    unit : astropy.units
+    unit : `astropy.units.Unit`
         The physical units of the data values.
     dtype : numpy.dtype
         The type of the data (integer, float)
@@ -187,15 +187,15 @@ class Cube(DataArray):
         inside : boolean
             If inside is True, pixels inside the described region are masked.
             If inside is False, pixels outside the described region are masked.
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             The units of the lmin and lmax wavelength coordinates
             (Angstroms by default). If None, the units of the lmin and lmax
             arguments are assumed to be pixels.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             The units of the coordinates of the center argument
             (degrees by default).  If None, the units of the center
             argument are assumed to be pixels.
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             The units of the radius argument (arcseconds by default).
             If None, the units are assumed to be pixels.
 
@@ -275,13 +275,13 @@ class Cube(DataArray):
             maximum wavelength.
         inside : boolean
             If inside is True, pixels inside the described region are masked.
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             Type of the wavelengths coordinates (Angstrom by default)
             If None, inputs are in pixels
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             Type of the coordinates of the center (degrees by default)
             If None, inputs are in pixels
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             Radius unit (arcseconds by default)
             If None, inputs are in pixels
 
@@ -932,7 +932,7 @@ class Cube(DataArray):
             Minimum wavelength.
         lbda_max : float
             Maximum wavelength.
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             wavelengths unit.
             If None, inputs are in pixels
 
@@ -959,9 +959,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             wavelengths unit.
-        unit_wcs : astropy.units
+        unit_wcs : `astropy.units.Unit`
             world coordinates unit.
 
         """
@@ -985,9 +985,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             The wavelengths units.
-        unit_wcs : astropy.units
+        unit_wcs : `astropy.units.Unit`
             The angular units of the returned sky coordinates.
 
         Returns
@@ -1008,9 +1008,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             wavelengths unit.
-        unit_wcs : astropy.units
+        unit_wcs : `astropy.units.Unit`
             world coordinates unit.
 
         """
@@ -1024,9 +1024,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             wavelengths unit.
-        unit_wcs : astropy.units
+        unit_wcs : `astropy.units.Unit`
             world coordinates unit.
 
         """
@@ -1040,7 +1040,7 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             type of the angle coordinate
             degree by default
 
@@ -1052,9 +1052,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        wcs : mpdaf.obj.WCS
+        wcs : `mpdaf.obj.WCS`
             World coordinates.
-        wave : mpdaf.obj.WaveCoord
+        wave : `mpdaf.obj.WaveCoord`
             Wavelength coordinates.
 
         """
@@ -1315,9 +1315,9 @@ class Cube(DataArray):
             (output of mpdaf.obj.cube.get_range)
         mask : boolean
             if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             wavelengths unit.  If None, inputs are in pixels
-        unit_wcs : astropy.units
+        unit_wcs : `astropy.units.Unit`
             world coordinates unit.  If None, inputs are in pixels
 
         """
@@ -1951,7 +1951,7 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Cube
+        out : `~mpdaf.obj.Cube`
         """
         if is_int(factor):
             factor = (factor, factor, factor)
@@ -2009,7 +2009,7 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        f : function or mpdaf.obj.Spectrum method
+        f : function or `~mpdaf.obj.Spectrum` method
             Spectrum method or function that the first argument
             is a spectrum object.
         cpu : integer
@@ -2022,8 +2022,8 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Cube if f returns mpdaf.obj.Spectrum,
-        out : mpdaf.obj.Image if f returns a number,
+        out : `~mpdaf.obj.Cube` if f returns `~mpdaf.obj.Spectrum`,
+        out : `~mpdaf.obj.Image` if f returns a number,
         out : np.array(dtype=object) in others cases.
 
         """
@@ -2136,7 +2136,7 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        f : function or mpdaf.obj.Image method
+        f : function or `~mpdaf.obj.Image` method
             Image method or function that the first argument
             is a Image object. It should return an Image object.
         cpu : integer
@@ -2148,8 +2148,8 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Cube if f returns mpdaf.obj.Image,
-        out : mpdaf.obj.Spectrum if f returns a number,
+        out : `~mpdaf.obj.Cube` if f returns `~mpdaf.obj.Image`,
+        out : `~mpdaf.obj.Spectrum` if f returns a number,
         out : np.array(dtype=object) in others cases.
 
         """
@@ -2265,7 +2265,7 @@ class Cube(DataArray):
         ----------
         wave : (float, float)
             (lbda1,lbda2) interval of wavelength in angstrom.
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             wavelengths unit (angstrom by default).
             If None, inputs are in pixels
         is_sum : boolean
@@ -2288,7 +2288,7 @@ class Cube(DataArray):
 
         Returns
         -------
-        out : mpdaf.obj.Image
+        out : `~mpdaf.obj.Image`
 
         """
         if unit_wave is None:
@@ -2371,17 +2371,17 @@ class Cube(DataArray):
             axis and the image is square.
         lbda : (float, float) or None
             If not None, tuple giving the wavelength range.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             Type of the center coordinates (degrees by default)
-        unit_size : astropy.units
+        unit_size : `astropy.units.Unit`
             unit of the size value (arcseconds by default)
-        unit_wave : astropy.units
+        unit_wave : `astropy.units.Unit`
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
 
         Returns
         -------
-        out : mpdaf.obj.Cube
+        out : `~mpdaf.obj.Cube`
 
         """
         if size <= 0:
@@ -2462,16 +2462,16 @@ class Cube(DataArray):
         radius : float
             Radius of the aperture. It corresponds to the radius
             along the delta axis and the image is square.
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             Type of the center coordinates (degrees by default)
             If None, inputs are in pixels
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             unit of the radius value (arcseconds by default)
             If None, inputs are in pixels
 
         Returns
         -------
-        out : mpdaf.obj.Cube
+        out : `~mpdaf.obj.Cube`
         """
         subcub = self.subcube(center, radius * 2, unit_center=unit_center,
                               unit_size=unit_radius)
@@ -2493,16 +2493,16 @@ class Cube(DataArray):
         radius : float
             Radius of the aperture in arcsec.
             If None, spectrum at nearest pixel is returned
-        unit_center : astropy.units
+        unit_center : `astropy.units.Unit`
             Type of the center coordinates (degrees by default)
             If None, inputs are in pixels
-        unit_radius : astropy.units
+        unit_radius : `astropy.units.Unit`
             unit of the radius value (arcseconds by default)
             If None, inputs are in pixels
 
         Returns
         -------
-        out : mpdaf.obj.Spectrum
+        out : `~mpdaf.obj.Spectrum`
         """
         if radius > 0:
             cub = self.subcube_circle_aperture(center, radius,

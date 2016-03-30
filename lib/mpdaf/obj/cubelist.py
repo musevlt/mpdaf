@@ -15,7 +15,7 @@ from .cube import Cube
 from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
-__all__ = ['CubeList', 'CubeMosaic']
+__all__ = ('CubeList', 'CubeMosaic')
 
 # List of keywords that will be copied to the combined cube
 KEYWORDS_TO_COPY = (
@@ -50,9 +50,9 @@ class CubeList(object):
         List of scales
     shape : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
-    wcs : :class:`mpdaf.obj.WCS`
+    wcs : `mpdaf.obj.WCS`
         World coordinates.
-    wave : :class:`mpdaf.obj.WaveCoord`
+    wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates
     unit : str
         Possible data unit type. None by default.
@@ -90,7 +90,7 @@ class CubeList(object):
     def __getitem__(self, item):
         """Apply a slice on all the cubes.
 
-        See :meth:`mpdaf.obj.Cube.__getitem__` for details.
+        See `mpdaf.obj.Cube.__getitem__` for details.
         """
         if not (isinstance(item, tuple) and len(item) == 3):
             raise ValueError('Operation forbidden')
@@ -199,7 +199,7 @@ class CubeList(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, Table
+        out : `~mpdaf.obj.Cube`, `mpdaf.obj.Cube`, Table
             cube, expmap, statpix
 
             - ``cube`` will contain the merged cube
@@ -272,7 +272,7 @@ class CubeList(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Cube`, :class:`mpdaf.obj.Cube`, astropy.table
+        out : `~mpdaf.obj.Cube`, `mpdaf.obj.Cube`, astropy.table
             cube, expmap, statpix
 
             - ``cube`` will contain the merged cube
@@ -485,7 +485,7 @@ class CubeMosaic(CubeList):
     values from the ``CRPIX`` keywords will be used as offsets to put a cube
     inside the combined cube.
 
-    This class inherits from :class:`mpdaf.obj.CubeList`.
+    This class inherits from `mpdaf.obj.CubeList`.
 
     Parameters
     ----------
@@ -500,9 +500,9 @@ class CubeMosaic(CubeList):
         Number of files.
     shape : array of 3 integers)
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
-    wcs : :class:`mpdaf.obj.WCS`
+    wcs : `mpdaf.obj.WCS`
         World coordinates.
-    wave : :class:`mpdaf.obj.WaveCoord`
+    wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates
     unit : str
         Possible data unit type. None by default.

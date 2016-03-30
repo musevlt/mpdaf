@@ -311,10 +311,10 @@ class PixTable(object):
         If True, this pixel table was sky-subtracted.
     fluxcal : bool
         If True, this pixel table was flux-calibrated.
-    wcs : astropy.units
+    wcs : `astropy.units.Unit`
         Type of spatial coordinates of this pixel table
         (u.pix, u.deg or u.rad)
-    wave : astropy.units
+    wave : `astropy.units.Unit`
         Type of spectral coordinates of this pixel table
     ima : bool
         If True, pixtable is saved as multi-extension FITS image
@@ -589,7 +589,7 @@ class PixTable(object):
         ----------
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the returned data.
 
         Returns
@@ -610,7 +610,7 @@ class PixTable(object):
             xpos values
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit of the xpos column in input.
         """
         if unit is not None:
@@ -628,7 +628,7 @@ class PixTable(object):
         ----------
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the returned data.
 
         Returns
@@ -649,7 +649,7 @@ class PixTable(object):
             ypos values
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit of the ypos column in input.
         """
         if unit is not None:
@@ -667,7 +667,7 @@ class PixTable(object):
         ----------
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the returned data.
 
         Returns
@@ -688,7 +688,7 @@ class PixTable(object):
             lbda values
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit of the lambda column in input.
         """
         if unit is not None:
@@ -708,7 +708,7 @@ class PixTable(object):
         ----------
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the returned data.
 
         Returns
@@ -729,7 +729,7 @@ class PixTable(object):
             data values
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit of the data column in input.
         """
         if unit is not None:
@@ -743,7 +743,7 @@ class PixTable(object):
         ----------
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the returned data.
 
         Returns
@@ -764,7 +764,7 @@ class PixTable(object):
             stat values
         ksel : output of np.where
             Elements depending on a condition.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             unit of the stat column in input.
         """
         if unit is not None:
@@ -891,7 +891,7 @@ class PixTable(object):
         ----------
         lbda : (float, float)
             (min, max) wavelength range in angstrom.
-        unit : astropy.units
+        unit : `astropy.units.Unit`
             Unit of the wavelengths in input.
 
         Returns
@@ -1576,7 +1576,7 @@ class PixTable(object):
 #
 #         Returns
 #         -------
-#         out : :class:`mpdaf.obj.Image`
+#         out : `~mpdaf.obj.Image`
 #         """
 #         # TODO replace by DRS
 #         # step in arcsec
@@ -1650,7 +1650,7 @@ class PixTable(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
         """
         if self.nrows == 0:
             return None
@@ -1694,7 +1694,7 @@ class PixTable(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Image`
+        out : `~mpdaf.obj.Image`
         """
         if self.nrows == 0:
             return None
@@ -1738,7 +1738,7 @@ class PixTable(object):
 
         Returns
         -------
-        out : :class:`mpdaf.drs.PixTableMask`
+        out : `mpdaf.drs.PixTableMask`
         """
 
         if maskfile is None:
@@ -1759,7 +1759,7 @@ class PixTable(object):
 
         Parameters
         ----------
-        pixmask : :class:`mpdaf.drs.PixTableMask`
+        pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
             ``mask_column``).
         dlbda : double
@@ -1775,7 +1775,7 @@ class PixTable(object):
 
         Returns
         -------
-        out : :class:`mpdaf.obj.Spectrum`
+        out : `~mpdaf.obj.Spectrum`
         """
         # mask
         if pixmask is None:
@@ -1855,15 +1855,15 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref : :class:`mpdaf.obj.Spectrum`
+        skyref : `~mpdaf.obj.Spectrum`
             Reference sky spectrum
-        pixmask : :class:`mpdaf.drs.PixTableMask`
+        pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
             ``mask_column``).
 
         Returns
         -------
-        out : :class:`mpdaf.drs.PixTableAutoCalib`
+        out : `mpdaf.drs.PixTableAutoCalib`
 
         """
         origin = self.get_origin()
@@ -1973,15 +1973,15 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref : :class:`mpdaf.obj.Spectrum`
+        skyref : `~mpdaf.obj.Spectrum`
             Reference sky spectrum
-        pixmask : :class:`mpdaf.drs.PixTableMask`
+        pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
             ``mask_column``).
 
         Returns
         -------
-        out : :class:`mpdaf.drs.PixTableAutoCalib`
+        out : `mpdaf.drs.PixTableAutoCalib`
 
         """
         origin = self.get_origin()

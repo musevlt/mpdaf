@@ -3,12 +3,14 @@ SpecExtractAndWeb software developed by Jarle.
 
 This software has been developed by Jarle Brinchmann (University of Leiden)
 and ported to python by Laure Piqueras (CRAL).
+
 It takes a MUSE data cube and a catalogue of objects and extracts small
 sub-cubes around each object. From this it creates narrow-band images and
-eventually spectra. To do the latter it is necessary to run an external
-routine which runs sextractor on the images to define spectrum
-extraction apertures.
+eventually spectra. To do the latter it is necessary to run an external routine
+which runs sextractor on the images to define spectrum extraction apertures.
+
 Please contact Jarle for more info at jarle@strw.leidenuniv.nl
+
 """
 from astropy.io import fits as pyfits
 import astropy.units as u
@@ -260,51 +262,53 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
     Parameters
     ----------
     cat : astropy.Table
-          Tables containing positions and names of the objects.
-          It needs to have at minimum these columns: ID, Z, RA, DEC
-          for the name, redshift & position of the object.
-    cube : :class:`mpdaf.obj.Cube`
-           Data cube.
-    images : :class:`dict`
-          Dictionary containing one or more external images of the field
-          which you want to extract stamps.
+        Tables containing positions and names of the objects.
+        It needs to have at minimum these columns: ID, Z, RA, DEC
+        for the name, redshift & position of the object.
+    cube : `~mpdaf.obj.Cube`
+        Data cube.
+    images : `dict`
+        Dictionary containing one or more external images of the field
+        which you want to extract stamps.
 
-          Keys gives the filter ('HST_F814' for example)
+        Keys gives the filter ('HST_F814' for example)
 
-          Values are :class:`mpdaf.obj.Image` object
+        Values are `~mpdaf.obj.Image` objects.
     size : float
-           The total size to extract images in arcseconds.
-           By default 10x10 arcsec
+        The total size to extract images in arcseconds.
+        By default 10x10 arcsec
     eml  : dict{float: string}
-           Full catalog of lines used to extract narrow band images.
-           Dictionary: key is the wavelength value in Angstrom,
-           value is the name of the line.
-           If None, the following catalog is used:
-           eml = {1216 : 'Lyalpha1216', 1909: 'CIII]1909', 3727: '[OII]3727',
-                  4861 : 'Hbeta4861' , 5007: '[OIII]5007', 6563: 'Halpha6563',
-                6724 : '[SII]6724'}
+        Full catalog of lines used to extract narrow band images.
+        Dictionary: key is the wavelength value in Angstrom,
+        value is the name of the line.
+        If None, the following catalog is used:
+
+            eml = {1216 : 'Lyalpha1216', 1909: 'CIII]1909', 3727: '[OII]3727',
+                   4861 : 'Hbeta4861' , 5007: '[OIII]5007', 6563: 'Halpha6563',
+                   6724 : '[SII]6724'}
+
     width : float
-            Angstrom total width used to extract narrow band images.
+        Angstrom total width used to extract narrow band images.
     margin : float
-            Parameter used to extract narrow band images.
-            This off-band is offseted by margin wrt narrow-band limit.
+        Parameter used to extract narrow band images.
+        This off-band is offseted by margin wrt narrow-band limit.
     fband : float
-            Parameter used to extract narrow band images.
-            The size of the off-band is fband*narrow-band width.
+        Parameter used to extract narrow band images.
+        The size of the off-band is fband*narrow-band width.
     DIR   : string
-            Directory that contains the configuration files of sextractor
+        Directory that contains the configuration files of sextractor
     psf  : np.array
-           The PSF to use for PSF-weighted extraction.
-           This can be a vector of length equal to the wavelength
-           axis to give the FWHM of the Gaussian PSF at each
-           wavelength (in arcsec) or a cube with the PSF to use.
+        The PSF to use for PSF-weighted extraction.
+        This can be a vector of length equal to the wavelength
+        axis to give the FWHM of the Gaussian PSF at each
+        wavelength (in arcsec) or a cube with the PSF to use.
     path : path where the source file will be saved.
-           This option should be used to avoid memory problem
-           (source are saved as we go along)
+        This option should be used to avoid memory problem
+        (source are saved as we go along)
 
     Returns
     -------
-    out : :class:`mpdaf.sdetect.SourceList` if path is None
+    out : `mpdaf.sdetect.SourceList` if path is None
     """
     logger = logging.getLogger(__name__)
 

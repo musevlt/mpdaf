@@ -18,11 +18,13 @@ from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
                      fix_unit_read, is_valid_fits_file, read_slice_from_fits,
                      copy_header)
 
+__all__ = ('DataArray', )
+
 
 class DataArray(object):
 
-    """The DataArray class is the parent of the mpdaf.obj.Cube,
-    mpdaf.obj.Image and mpdaf.obj.Spectrum classes. Its primary
+    """The DataArray class is the parent of the `~mpdaf.obj.Cube`,
+    `~mpdaf.obj.Image` and `~mpdaf.obj.Spectrum` classes. Its primary
     purpose is to store pixel values in a masked numpy array. For
     Cube objects this is a 3D array indexed in the order
     [wavelength,image_y,image_x]. For Image objects it is a 2D
@@ -60,13 +62,13 @@ class DataArray(object):
     ----------
     filename : str
         FITS file name, default to None.
-    hdulist : astropy.fits.HDUList
+    hdulist : `astropy.fits.HDUList`
         HDU list class, used instead of fits.open(filename) if not None,
         to avoid opening the FITS file.
     ext : int or (int,int) or str or (str,str)
         Number/name of the data extension or numbers/names of the data and
         variance extensions.
-    unit : astropy.units.Unit
+    unit : `astropy.units.Unit`
         Physical units of the data values, default to
         u.dimensionless_unscaled.
     copy : bool
@@ -90,11 +92,11 @@ class DataArray(object):
     ----------
     filename : str
         FITS filename.
-    primary_header : astropy.io.fits.Header
+    primary_header : `astropy.io.fits.Header`
         FITS primary header instance.
-    wcs : mpdaf.obj.WCS
+    wcs : `mpdaf.obj.WCS`
         World coordinates.
-    wave : mpdaf.obj.WaveCoord
+    wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates
     ndim : int
         Number of dimensions.
@@ -102,9 +104,9 @@ class DataArray(object):
         Lengths of the data axes (python notation (nz,ny,nx)).
     data : numpy.ma.MaskedArray
         Masked array containing the cube of pixel values.
-    data_header : astropy.io.fits.Header
+    data_header : `astropy.io.fits.Header`
         FITS data header instance.
-    unit : astropy.units.Unit
+    unit : `astropy.units.Unit`
         Physical units of the data values.
     dtype : numpy.dtype
         Type of the data (int, float, ...).
@@ -696,7 +698,7 @@ class DataArray(object):
 
         Returns
         -------
-        out : astropy.io.fits.ImageHDU
+        out : `astropy.io.fits.ImageHDU`
 
         """
         if self.data.dtype == np.float64:
@@ -736,7 +738,7 @@ class DataArray(object):
 
         Returns
         -------
-        out : astropy.io.fits.ImageHDU
+        out : `astropy.io.fits.ImageHDU`
 
         """
         if self.var is None:
@@ -804,7 +806,7 @@ class DataArray(object):
 
         Parameters
         ----------
-        out : mpdaf.obj.DataArray, optional
+        out : `mpdaf.obj.DataArray`, optional
             Array of the same shape as input, into which the output is placed.
             By default, a new array is created.
 
@@ -835,7 +837,7 @@ class DataArray(object):
 
         Parameters
         ----------
-        out : mpdaf.obj.DataArray, optional
+        out : `mpdaf.obj.DataArray`, optional
             Array of the same shape as input, into which the output is placed.
             By default, a new array is created.
 

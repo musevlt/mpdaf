@@ -3,6 +3,9 @@
 import numpy as np
 from astropy.constants import c
 
+__all__ = ('is_float', 'is_int', 'is_number', 'flux2mag', 'mag2flux',
+           'UnitArray', 'UnitMaskedArray')
+
 
 def is_float(x):
     """Test if `x` is a float number."""

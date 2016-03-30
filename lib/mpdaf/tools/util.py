@@ -11,6 +11,9 @@ from contextlib import contextmanager
 from functools import wraps
 from time import time
 
+__all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
+           'timeit', 'timer')
+
 
 # NOTE(kgriffs): We don't want our deprecations to be ignored by default,
 # so create our own type.

@@ -15,7 +15,7 @@ def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
 
     Parameters
     ----------
-    ima   : :class:`mpdaf.obj.Image`
+    ima   : `mpdaf.obj.Image`
         The image to be tested.
     shape : tuple
         The shape of the data array of the image.
@@ -147,9 +147,9 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
         Either None, or the shape to give the data and variance arrays.
         If either data or var are arrays, this must match their shape.
         If shape==None and neither data nor var are arrays, (6,5) is used.
-    unit  : :class:`astropy.units.Unit`
+    unit  : `astropy.units.Unit`
         The units of the data.
-    wcs   : :class:`mpdaf.obj.WCS`
+    wcs   : `mpdaf.obj.WCS`
         The world coordinates of image pixels.
     copy  : boolean
         If true (default), the data, variance and mask arrays are copied.
@@ -189,7 +189,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
         Either None, or the size to give the data and variance arrays.
         If either data, var or mask are arrays, this must match their shape.
         If shape==None and neither data, var, nor mask are arrays, 10 is used.
-    uwave : :class:`astropy.units.Unit`
+    uwave : `astropy.units.Unit`
         The units to use for wavelengths.
     crpix : float
         The reference pixel of the spectrum.
@@ -197,9 +197,9 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
         The step in wavelength between pixels.
     crval : float
         The wavelength of the reference pixel.
-    wave  : :class:`mpdaf.obj.WaveCoord`
+    wave  : `mpdaf.obj.WaveCoord`
         The wavelength coordinates of spectral pixels.
-    unit  : :class:`astropy.units.Unit`
+    unit  : `astropy.units.Unit`
         The units of the data.
     copy  : boolean
         If true (default), the data, variance and mask arrays are copied.
@@ -236,13 +236,13 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
         Either None, or the shape to give the data and variance arrays.
         If either data or var are arrays, this must match their shape.
         If shape==None and neither data nor var are arrays, (10,6,5) is used.
-    uwave : :class:`astropy.units.Unit`
+    uwave : `astropy.units.Unit`
         The units to use for wavelengths.
-    unit  : :class:`astropy.units.Unit`
+    unit  : `astropy.units.Unit`
         The units of the data.
-    wcs   : :class:`mpdaf.obj.WCS`
+    wcs   : `mpdaf.obj.WCS`
         The world coordinates of image pixels.
-    wave  : :class:`mpdaf.obj.WaveCoord`
+    wave  : `mpdaf.obj.WaveCoord`
         The wavelength coordinates of spectral pixels.
     copy  : boolean
         If true (default), the data, variance and mask arrays are copied.
