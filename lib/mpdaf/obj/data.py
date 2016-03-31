@@ -26,11 +26,22 @@ class LazyData(object):
     def __init__(self, label):
         self.label = label
 
-    def __get__(self, obj, owner=None):
-        print '__get__', obj, owner, self.label
+    def read_data(self, obj):
+        print 'read data'
         obj_dict = obj.__dict__
+        data, mask = read_slice_from_fits(obj.filename, ext=obj._data_ext,
+                                          mask_ext='DQ', dtype=obj.dtype)
+        if mask is None:
+            mask = ~(np.isfinite(data))
+        obj_dict['_data'] = data
+        obj_dict['_mask'] = mask
+        obj._loaded_data = True
+        return mask if self.label == '_mask' else data
+
+    def __get__(self, obj, owner=None):
+        print '__get__', owner, self.label
         try:
-            return obj_dict[self.label]
+            return obj.__dict__[self.label]
         except KeyError:
             if obj.filename is None:
                 if self.label == '_data':
@@ -38,30 +49,21 @@ class LazyData(object):
                 return
 
             if self.label in ('_data', '_mask'):
-                print 'read data'
-                data, mask = read_slice_from_fits(
-                    obj.filename, ext=obj._data_ext, mask_ext='DQ',
-                    dtype=obj.dtype)
-                if mask is None:
-                    mask = ~(np.isfinite(data))
-                obj_dict['_data'] = data
-                obj_dict['_mask'] = mask
-                obj._loaded_data = True
-                return data if self.label == '_data' else mask
+                val = self.read_data(obj)
 
             if self.label == '_var':
                 if obj._var_ext is None:
                     return None
-                # TODO: Make sure that data is read
+                # Make sure that data is read because the mask may be needed
+                self.read_data(obj)
                 print 'read var'
                 val = read_slice_from_fits(obj.filename, ext=obj._var_ext,
                                            dtype=obj.dtype)
-
-            obj_dict[self.label] = val
+                obj.__dict__[self.label] = val
             return val
 
     def __set__(self, obj, val):
-        print '__set__', obj, self.label, val
+        print '__set__', self.label, val
         if obj.shape is not None and not np.array_equal(val.shape, obj.shape):
             raise ValueError('Try to set %s with an array with a different '
                              'shape' % self.label)
@@ -417,7 +419,7 @@ class DataArray(object):
         if self._loaded_data:
             return self._data.shape
         try:
-            return tuple(self.data_header['NAXIS%d'] % i
+            return tuple(self.data_header['NAXIS%d' % i]
                          for i in range(self.ndim, 0, -1))
         except (KeyError, TypeError):
             return None
