@@ -20,39 +20,6 @@ from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
 
 __all__ = ('DataArray', )
 
-# class SharedMaskArray(ma.MaskedArray):
-#     """This is a subclass of numpy.ma.MaskedArray() which prevents
-#     the mask of the array from being replaced when data are assigned
-#     to slices of it. In the standard MaskedArray(), a simple
-#     assignment like v[2] = np.ma.masked, causes the whole mask array
-#     of v to be replaced with a new mask. This behavior is innefficient
-#     and problematic when one is trying to share a mask between two
-#     masked arrays, so the SharedMaskArray subclass overrides the
-#     __setitem__() method of MaskedArray to directly assign to the
-#     specified elements of the existing data and mask arrays.
-#
-#     Parameters
-#     ----------
-#     data     : The initial data to be stored in the array.
-#     **kwargs : The remaining key-value arguments are forwarded to
-#          the MaskedArray constructor.
-#
-#     """
-#
-#     def __init__(self, data, **kwargs):
-#         super(ma.MaskedArray, self).__init__(data, **kwargs)
-#
-#     def __setitem__(self, indx, value):
-#         if isinstance(value, ma.MaskedArray):
-#             self.data[indx] = value.data
-#             self.mask[indx] = value.mask
-#         else:
-#             self.data[indx] = value
-#             self.mask[indx] = False
-#
-#     def __setslice__(self, i, j, value):
-#             self.__setitem__(slice(i,j), value)
-
 
 class LazyData(object):
 
@@ -463,7 +430,6 @@ class DataArray(object):
         they are first used. Read the data array here if not already read.
 
         """
-        # res = SharedMaskArray(self._data, mask=self._mask, copy=False)
         res = ma.MaskedArray(self._data, mask=self._mask, copy=False)
         res._sharedmask = False
         return res
@@ -487,8 +453,9 @@ class DataArray(object):
         if self._var is None:
             return None
         else:
-            # FIXME: + _sharedmask ?
-            return ma.MaskedArray(self._var, mask=self._mask, copy=False)
+            res = ma.MaskedArray(self._var, mask=self._mask, copy=False)
+            res._sharedmask = False
+            return res
 
     @var.setter
     def var(self, value):
@@ -616,8 +583,7 @@ class DataArray(object):
 
         """
         result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_greater(self.data, item)
+        result.data = np.ma.masked_greater(self.data, item)
         return result
 
     def __lt__(self, item):
@@ -635,8 +601,7 @@ class DataArray(object):
 
         """
         result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_greater_equal(self.data, item)
+        result.data = np.ma.masked_greater_equal(self.data, item)
         return result
 
     def __ge__(self, item):
@@ -653,8 +618,7 @@ class DataArray(object):
 
         """
         result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_less(self.data, item)
+        result.data = np.ma.masked_less(self.data, item)
         return result
 
     def __gt__(self, item):
@@ -672,8 +636,7 @@ class DataArray(object):
 
         """
         result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_less_equal(self.data, item)
+        result.data = np.ma.masked_less_equal(self.data, item)
         return result
 
     def __getitem__(self, item):
