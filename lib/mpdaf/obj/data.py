@@ -27,7 +27,7 @@ class LazyData(object):
         self.label = label
 
     def read_data(self, obj):
-        print 'read data'
+        # print 'read data'
         obj_dict = obj.__dict__
         data, mask = read_slice_from_fits(obj.filename, ext=obj._data_ext,
                                           mask_ext='DQ', dtype=obj.dtype)
@@ -39,13 +39,13 @@ class LazyData(object):
         return mask if self.label == '_mask' else data
 
     def __get__(self, obj, owner=None):
-        print '__get__', owner, self.label
+        # print '__get__', owner, self.label
         try:
             return obj.__dict__[self.label]
         except KeyError:
             if obj.filename is None:
-                if self.label == '_data':
-                    raise ValueError('empty data array')
+                # if self.label == '_data':
+                #     raise ValueError('empty data array')
                 return
 
             if self.label in ('_data', '_mask'):
@@ -55,19 +55,24 @@ class LazyData(object):
                 if obj._var_ext is None:
                     return None
                 # Make sure that data is read because the mask may be needed
-                self.read_data(obj)
-                print 'read var'
-                val = read_slice_from_fits(obj.filename, ext=obj._var_ext,
-                                           dtype=obj.dtype)
+                if not obj._loaded_data:
+                    self.read_data(obj)
+                # print 'read var'
+                val, _ = read_slice_from_fits(obj.filename, ext=obj._var_ext,
+                                              dtype=obj.dtype)
                 obj.__dict__[self.label] = val
             return val
 
     def __set__(self, obj, val):
-        print '__set__', self.label, val
-        if obj.shape is not None and not np.array_equal(val.shape, obj.shape):
-            raise ValueError('Try to set %s with an array with a different '
-                             'shape' % self.label)
-        obj.__dict__[self.label] = val
+        # print '__set__', self.label  # , val
+        label = self.label
+        if label == '_data':
+            obj._loaded_data = True
+        elif (val is not None and val is not np.ma.nomask and
+                obj.shape is not None and
+                not np.array_equal(val.shape, obj.shape)):
+            raise ValueError("Can't set %s with a different shape" % label)
+        obj.__dict__[label] = val
 
 
 class DataArray(object):
@@ -290,14 +295,11 @@ class DataArray(object):
                     elif mask is not ma.nomask:
                         self._mask = np.array(mask, dtype=bool, copy=copy)
 
-                self._loaded_data = True
-
             # Use a specified variance array?
             if var is not None:
                 if isinstance(var, ma.MaskedArray):
                     self._var = np.array(var.data, dtype=dtype, copy=copy)
-                    if self._mask is not ma.nomask:
-                        self._mask |= var.mask
+                    self._mask |= var.mask
                 else:
                     self._var = np.array(var, dtype=dtype, copy=copy)
 
@@ -338,45 +340,6 @@ class DataArray(object):
             except:
                 self._logger.warning('wavelength solution not copied',
                                      exc_info=True)
-
-    def _read_from_file(self, item=None, data=True, var=False):
-        hdulist = fits.open(self.filename)
-        if item:
-            if data:
-                data = np.asarray(hdulist[self._data_ext].data[item], dtype=self.dtype)
-                if self._pmask is not ma.nomask:
-                    if 'DQ' in hdulist:
-                        mask = np.asarray(hdulist['DQ'].data[item], dtype=np.bool)
-                    else:
-                        mask = ~(np.isfinite(data))
-                else:
-                    mask = ma.nomask
-            else:
-                data = self._pdata
-                mask = self._pmask
-            if var and self._var_ext is not None:
-                var = np.asarray(hdulist[self._var_ext].data[item], dtype=self.dtype)
-            else:
-                var = None
-        else:
-            if data:
-                data = np.asarray(hdulist[self._data_ext].data, dtype=self.dtype)
-                if self._pmask is not ma.nomask:
-                    if 'DQ' in hdulist:
-                        mask = np.asarray(hdulist['DQ'].data, dtype=np.bool)
-                    else:
-                        mask = ~(np.isfinite(data))
-                else:
-                    mask = ma.nomask
-            else:
-                data = self._pdata
-                mask = self._pmask
-            if var and self._var_ext is not None:
-                var = np.asarray(hdulist[self._var_ext].data, dtype=self.dtype)
-            else:
-                var = None
-        hdulist.close()
-        return data, mask, var
 
     @classmethod
     def new_from_obj(cls, obj, data=None, var=None, copy=False):
@@ -438,6 +401,13 @@ class DataArray(object):
 
     @data.setter
     def data(self, value):
+        # Handle this case specifically for .data, since it is already done for
+        # ._var and ._mask, but ._data can be used to change the shape
+        if self.shape is not None and \
+                not np.array_equal(value.shape, self.shape):
+            raise ValueError('try to set data with an array with a different '
+                             'shape')
+
         if isinstance(value, ma.MaskedArray):
             self._data = value.data
             self._mask = value.mask
@@ -445,7 +415,6 @@ class DataArray(object):
             self._data = value
             if self._mask is not ma.nomask:
                 self._mask = ~(np.isfinite(value))
-        self._loaded_data = True
 
     @property
     def var(self):
@@ -464,8 +433,7 @@ class DataArray(object):
         if value is not None:
             if isinstance(value, ma.MaskedArray):
                 self._var = value.data
-                if self._mask is not ma.nomask:
-                    self._mask |= value.mask
+                self._mask |= value.mask
             else:
                 self._var = np.asarray(value)
         else:
@@ -653,18 +621,26 @@ class DataArray(object):
         # The DataArray constructor postpones reading data from FITS files
         # until they are first used. Read the slice from the FITS file if
         # the data array hasn't been read yet.
-        if self._data is None and self.filename is not None:
-            data, mask, var = self._read_from_file(item, var=True)
-        else:
+        var = None
+        if self._loaded_data:
             data = self._data[item]
-            if self._mask is ma.nomask:
-                mask = ma.nomask
-            else:
-                mask = self._mask[item]
-            if self._var is None:
-                var = None
-            else:
+            mask = self._mask
+            if mask is not ma.nomask:
+                mask = mask[item]
+            if self._var is not None:
                 var = self._var[item]
+        elif self.filename is not None:
+            with fits.open(self.filename) as hdu:
+                data, mask = read_slice_from_fits(
+                    hdu, ext=self._data_ext, mask_ext='DQ', dtype=self.dtype,
+                    item=item)
+                if self._var_ext is not None:
+                    var = read_slice_from_fits(hdu, ext=self._var_ext,
+                                               dtype=self.dtype, item=item)[0]
+                if mask is None:
+                    mask = ~(np.isfinite(data))
+        else:
+            raise ValueError('empty data array')
 
         if data.ndim == 0:
             return data

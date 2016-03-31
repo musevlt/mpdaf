@@ -164,11 +164,18 @@ def is_valid_fits_file(filename):
     return os.path.isfile(filename) and filename.endswith(("fits", "fits.gz"))
 
 
-def read_slice_from_fits(filename, item=None, ext='DATA', mask_ext=None,
+def read_slice_from_fits(filename_or_hdu, item=None, ext='DATA', mask_ext=None,
                          dtype=None):
     """Read data from a FITS file."""
 
-    with fits.open(filename) as hdulist:
+    try:
+        if isinstance(filename_or_hdu, fits.HDUList):
+            close_hdu = False
+            hdulist = filename_or_hdu
+        else:
+            hdulist = fits.open(filename_or_hdu)
+            close_hdu = True
+
         data = hdulist[ext].data
         if item is not None:
             data = data[item]
@@ -176,11 +183,14 @@ def read_slice_from_fits(filename, item=None, ext='DATA', mask_ext=None,
 
         # mask extension
         if mask_ext is not None and mask_ext in hdulist:
-            mask = hdulist[ext].data
+            mask = hdulist[mask_ext].data
             if item is not None:
                 mask = mask[item]
             mask = np.asarray(mask, dtype=bool)
         else:
             mask = None
+    finally:
+        if close_hdu:
+            hdulist.close()
 
     return data, mask
