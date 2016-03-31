@@ -1122,9 +1122,9 @@ class Cube(DataArray):
         elif axis == 0:
             # return an image
             if weights is None:
-                data = ma.sum(self.data, 0)
+                data = ma.sum(self.data, axis=0)
                 if self._var is not None:
-                    var = ma.sum(self.var)
+                    var = ma.sum(self.var, axis=0)
                 else:
                     var = None
             else:
