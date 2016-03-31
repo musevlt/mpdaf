@@ -167,16 +167,20 @@ def is_valid_fits_file(filename):
 def read_slice_from_fits(filename, item=None, ext='DATA', mask_ext=None,
                          dtype=None):
     """Read data from a FITS file."""
-    hdulist = fits.open(filename)
-    if item is None:
-        data = np.asarray(hdulist[ext].data, dtype=dtype)
-    else:
-        data = np.asarray(hdulist[ext].data[item], dtype=dtype)
 
-    # mask extension
-    if mask_ext is not None and mask_ext in hdulist:
-        mask = ma.make_mask(hdulist[mask_ext].data[item])
-        data = ma.MaskedArray(data, mask=mask)
+    with fits.open(filename) as hdulist:
+        data = hdulist[ext].data
+        if item is not None:
+            data = data[item]
+        data = np.asarray(data, dtype=dtype)
 
-    hdulist.close()
-    return data
+        # mask extension
+        if mask_ext is not None and mask_ext in hdulist:
+            mask = hdulist[ext].data
+            if item is not None:
+                mask = mask[item]
+            mask = np.asarray(mask, dtype=bool)
+        else:
+            mask = None
+
+    return data, mask
