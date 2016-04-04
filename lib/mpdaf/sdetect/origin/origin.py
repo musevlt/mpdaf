@@ -132,6 +132,13 @@ class ORIGIN(object):
                       FWHM of the PSFs in pixels.
         """
         self._logger = logging.getLogger(__name__)
+        # create parameters dictionary
+        self.param = {}
+        self.param['cubename'] = cube
+        self.param['nbsubcube'] = NbSubcube
+        if Edge_xmin is not None:
+            self.param['edgecube'] = [Edge_xmin,Edge_xmax,Edge_ymin,Edge_ymax]
+        self.param['PSF'] = PSF 
         # Read cube
         self._logger.info('ORIGIN - Read the Data Cube')
         self.filename = cube
@@ -236,6 +243,8 @@ class ORIGIN(object):
                      eigenvalues of the data cube
                      (representing the continuum)
         """
+        # save paaremeters values in object
+        self.param['r0PCA'] = r0
         # Weigthed data cube
         cube_std = self.cube_raw / np.sqrt(self.var)
         # Compute PCA results
@@ -328,6 +337,7 @@ class ORIGIN(object):
         """
         # p-values of correlation values
         self._logger.info('ORIGIN - Compute p-values of correlation values')
+        self.param['ThresholdPval'] = threshold
         cube_pval_correl = Compute_pval_correl_zone(correl.data.data, self.intx,
                                                     self.inty, self.NbSubcube,
                                                     self.Edge_xmin,
@@ -340,6 +350,7 @@ class ORIGIN(object):
         # to the Rayleigh criterium
         self._logger.info('ORIGIN - Compute p-values of spectral channel')
         mean_est = self.FWHM_PSF**2
+        self.param['meanestPvalChan'] = mean_est
         cube_pval_channel = Compute_pval_channel_Zone(cube_pval_correl,
                                                       self.intx, self.inty,
                                                       self.NbSubcube, mean_est)
@@ -391,6 +402,7 @@ class ORIGIN(object):
         """
         # connected voxels
         self._logger.info('ORIGIN - Compute connected voxels')
+        self.param['neighboors'] = neighboors
         labeled_cube, Ngp = Compute_Connected_Voxel(cube_pval_final.data.data, neighboors)
         self._logger.info('ORIGIN - %d connected voxels detected'%Ngp)
         # Referent pixel
@@ -425,6 +437,7 @@ class ORIGIN(object):
         # Parameter set to 1 if we want to plot the results and associated folder
         plot_narrow = False
         self._logger.info('ORIGIN - Compute narrow band tests')
+        self.param['NBranges'] = nb_ranges
         Cat1 = Narrow_Band_Test(Cat0, self.cube_raw, self.profiles,
                                 self.PSF, nb_ranges,
                                 plot_narrow, self.wcs)
@@ -454,6 +467,8 @@ class ORIGIN(object):
         Columns of the catalogues :
         x y z T_GLR profile pvalC pvalS pvalF T1 T2
         """
+        self.param['threshT1'] = thresh_T1
+        self.param['threshT2'] = thresh_T2
         # Thresholded narrow bands tests
         Cat1_T1, Cat1_T2 = Narrow_Band_Threshold(Cat1, thresh_T1, thresh_T2)
         self._logger.info('ORIGIN - %d emission lines selected with the test 1'%len(Cat1_T1))
@@ -495,6 +510,8 @@ class ORIGIN(object):
                         Estimated lines
         """
         self._logger.info('ORIGIN - Lines estimation')
+        self.param['grid_dxy'] = grid_dxy
+        self.param['grid_dz'] = grid_dz
         Cat2_T, Cat_est_line_raw_T, Cat_est_line_std_T = \
         Estimation_Line(Cat1_T, profile.data.data, self.Nx, self.Ny, self.Nz, self.var, cube_faint.data.data,
                     grid_dxy, grid_dz, self.PSF, self.profiles)
@@ -554,6 +571,7 @@ class ORIGIN(object):
                x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
         """
         self._logger.info('ORIGIN - Spectral merging')
+        self.param['deltaz'] = deltaz
         Cat_est_line_raw = [spe.data.data for spe in Cat_est_line]
         Cat4 = Spectral_Merging(Cat3, Cat_est_line_raw, deltaz)
         return Cat4
@@ -589,6 +607,19 @@ class ORIGIN(object):
         sources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
                                          correl.data.data, self.wave,
                                          self.filename, self.FWHM_profiles)
+        # save orig parameters in sources
+        for src in sources:
+            src.OP_THRES = (self.param['ThresholdPval'],'Orig Threshold Pval')
+            src.OP_DZ = (self.param['deltaz'],'Orig deltaz')
+            src.OP_R0 = (self.param['r0PCA'],'Orig PCA R0')
+            src.OP_T1 = (self.param['threshT1'],'Orig T1 threshold')
+            src.OP_T1 = (self.param['threshT2'],'Orig T2 threshold')
+            src.OP_NG = (self.param['neighboors'],'Orig Neighboors')
+            src.OP_MP = (self.param['meanestPvalChan'],'Orig Meanest PvalChan')
+            src.OP_NS = (self.param['nbsubcube'],'Orig nb of subcubes')
+            src.OP_DXY = (self.param['grid_dxy'],'Orig Grid Nxy')
+            src.OP_DZ = (self.param['grid_dz'],'Orig Grid Nz')
+            src.OP_FSF = (self.param['PSF'],'Orig FSF cube')
         return sources
 
     def plot(self, correl, x, y, circle=False, vmin=0, vmax=30, title=None, ax=None):
