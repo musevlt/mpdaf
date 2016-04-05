@@ -20,15 +20,13 @@ import time
 import sys
 from scipy.ndimage import measurements, morphology
 from scipy import signal, stats, special
-import logging, warnings
+import logging
 
 from ...obj import Cube, Image, Spectrum
 from ...sdetect import Source, SourceList
 
 from numpy.fft import rfftn, irfftn
 from scipy.signal.signaltools import _next_regular, _centered
-
-import sys
 
 __version__ = 'ORIGIN_18122015'
 
