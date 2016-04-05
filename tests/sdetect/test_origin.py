@@ -17,7 +17,7 @@ class TestORIGIN():
         # Number of subcubes for the spatial segmentation
         NbSubcube = 1
 
-        my_origin = ORIGIN(filename, NbSubcube, Edge_xmin=1, Edge_xmax=37, Edge_ymin=2, Edge_ymax=38)
+        my_origin = ORIGIN(filename, NbSubcube, [2, 2, 1, 3])
 
         # Coefficient of determination for projection during PCA   
         r0 = 0.67

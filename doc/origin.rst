@@ -121,10 +121,14 @@ In this case, the cube doesn't need to be spatially segmented (generally
 sub-cubes have 70-80 pixels along the spatial axes)::
 
  >>> NbSubcube = 1
+ 
+We will take into account all pixels to compute the p-values (no margins)::
+
+ >>> margins=[0,0,0,0]
 
 First, we create the ORIGIN object::
 
- >>> my_origin = ORIGIN(filename, NbSubcube)
+ >>> my_origin = ORIGIN(filename, NbSubcube, margins)
  [INFO] ORIGIN - Read the Data Cube
  [INFO] ORIGIN - Load dictionary of spectral profile
  [INFO] ORIGIN - Compute PSF

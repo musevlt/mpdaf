@@ -88,9 +88,8 @@ class ORIGIN(object):
                         Mean of the fwhm of the PSF in pixel
     """
 
-    def __init__(self, cube, NbSubcube, Edge_xmin=None, Edge_xmax=None,
-                 Edge_ymin=None, Edge_ymax=None, profiles=None, FWHM_profiles=None, PSF=None,
-                 FWHM_PSF=None):
+    def __init__(self, cube, NbSubcube, margins, profiles=None,
+                 FWHM_profiles=None, PSF=None, FWHM_PSF=None):
         """Create a ORIGIN object.
 
         An Origin object is composed by:
@@ -106,18 +105,12 @@ class ORIGIN(object):
                       Cube FITS file name.
         NbSubcube   : integer
                       Number of sub-cubes for the spatial segmentation
-        Edge_xmin   : int
-                      Minimum limits along the x-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_xmax   : int
-                      Maximum limits along the x-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_ymin   : int
-                      Minimum limits along the y-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_ymax   : int
-                      Maximum limits along the y-axis in pixel
-                      of the data cube taken to compute p-values
+        margin      : (int, int, int, int)
+                      Size in pixels of the margins
+                      at the bottom, top, left and rigth  of the data cube.
+                      (ymin, Ny-ymax, xmin, Nx-xmax)
+                      Pixels in margins will not be taken
+                      into account to compute p-values.
         profiles    : array (Size_profile, N_profile)
                       Dictionary of spectral profiles
                       If None, a default dictionary of 20 profiles is used.
@@ -136,8 +129,7 @@ class ORIGIN(object):
         self.param = {}
         self.param['cubename'] = cube
         self.param['nbsubcube'] = NbSubcube
-        if Edge_xmin is not None:
-            self.param['edgecube'] = [Edge_xmin,Edge_xmax,Edge_ymin,Edge_ymax]
+        self.param['margin'] = margins
         self.param['PSF'] = PSF 
         # Read cube
         self._logger.info('ORIGIN - Read the Data Cube')
@@ -163,23 +155,11 @@ class ORIGIN(object):
 
         self.NbSubcube = NbSubcube
 
-        if Edge_xmin is None:
-            self.Edge_xmin = 0
-        else:
-            self.Edge_xmin = Edge_xmin
-        if Edge_xmax is None:
-            self.Edge_xmax = self.Nx
-        else:
-            self.Edge_xmax = Edge_xmax
-        if Edge_ymin is None:
-            self.Edge_ymin = 0
-        else:
-            self.Edge_ymin = Edge_ymin
-        if Edge_ymax is None:
-            self.Edge_ymax = self.Ny
-        else:
-            self.Edge_ymax = Edge_ymax
-
+        self.Edge_xmin = margins[2]
+        self.Edge_xmax = self.Nx - margins[3]
+        self.Edge_ymin = margins[0]
+        self.Edge_ymax = self.Ny - margins[1]
+        
         # Dictionary of spectral profile
         if profiles is None or FWHM_profiles is None:
             self._logger.info('ORIGIN - Load dictionary of spectral profile')
