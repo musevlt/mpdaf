@@ -286,9 +286,9 @@ The ninth step is the spectral merging.
   :align: center
 
 The last step adds corresponding RA/DEC to the catalogue and
-creates a list of `~mpdaf.sdetect.Source` objects::
+writes the `~mpdaf.Source` objects in a folder::
 
- >>> sources = my_origin.get_sources(Cat4, Cat_est_line, correl)
+ >>> sources = my_origin.get_sources(Cat4, Cat_est_line, correl, name='origin', path=path='.')
 
 A source corresponds to a group on detected emission lines and contains:
 
@@ -303,7 +303,9 @@ A source corresponds to a group on detected emission lines and contains:
 
 For example, the first source of the list::
 
- >>> sources[0].info()
+ >>> from mpdaf.sdetect import Source
+ >>> src = Source.from_file('origin/origin-0001.fits')
+ >>> src.info()
  [INFO] ID      =                    1 / object ID u.unitless %d
  [INFO] RA      =    53.15859585425986 / RA u.degree %.7f
  [INFO] DEC     =   -27.77043838806513 / DEC u.degree %.7f

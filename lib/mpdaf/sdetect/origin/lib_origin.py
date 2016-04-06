@@ -1724,7 +1724,8 @@ def Add_radec_to_Cat(Cat, wcs):
     logger.debug('%s executed in %0.1fs'%(whoami(),time.time()-t0))
     return Cat_radec
 
-def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_profiles):
+def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
+                               fwhm_profiles, path, name, param):
     """Function to create the final catalogue of sources with their parameters
 
     Parameters
@@ -1744,10 +1745,6 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     fwhm_profiles     : array
                         List of fwhm values (in pixels) of the input spectra profiles (DICO).
 
-    Returns
-    -------
-    sources : mpdaf.sdetect.SourceList
-              List of sources
 
     Date  : Dec, 16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
@@ -1755,7 +1752,6 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     logger = logging.getLogger(__name__)
     logger.debug(whoami())
     t0 = time.time()
-    sources = SourceList()
     uflux = u.erg/(u.s * u.cm**2)
     unone = u.dimensionless_unscaled
     cols = ['LBDA_ORI','FWHM_ORI','FLUX_ORI','GLR','PVALC','PVALS','PVALF',
@@ -1834,9 +1830,21 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
 #    for key in hstlist.keys():
 #        src.add_image(hstlist[key],'HST_'+key, rotate=True)
 
-        sources.append(src)
+        src.OP_THRES = (param['ThresholdPval'],'Orig Threshold Pval')
+        src.OP_DZ = (param['deltaz'],'Orig deltaz')
+        src.OP_R0 = (param['r0PCA'],'Orig PCA R0')
+        src.OP_T1 = (param['threshT1'],'Orig T1 threshold')
+        src.OP_T1 = (param['threshT2'],'Orig T2 threshold')
+        src.OP_NG = (param['neighboors'],'Orig Neighboors')
+        src.OP_MP = (param['meanestPvalChan'],'Orig Meanest PvalChan')
+        src.OP_NS = (param['nbsubcube'],'Orig nb of subcubes')
+        src.OP_DXY = (param['grid_dxy'],'Orig Grid Nxy')
+        src.OP_DZ = (param['grid_dz'],'Orig Grid Nz')
+        src.OP_FSF = (param['PSF'],'Orig FSF cube')
+        src.write('%s/%s-%04d.fits' % (path, name, src.ID))
+
     logger.debug('%s executed in %0.1fs'%(whoami(),time.time()-t0))
-    return sources
+    return len(np.unique(Cat['ID']))
 
 def whoami():
     return sys._getframe(1).f_code.co_name
