@@ -90,7 +90,7 @@ class TestSource():
 
     def test_add_image(self):
         """Source class: testing add_image method"""
-        cube = Cube('data/sdetect/minicube.fits')
+        cube = Cube('data/sdetect/minicube.fits', dtype=np.float64)
         self.source2.add_white_image(cube)
         ima = cube.mean(axis=0)
         nose.tools.assert_equal(ima[15, 25], self.source2.images['MUSE_WHITE'][9, 5])
