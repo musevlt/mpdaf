@@ -36,6 +36,7 @@ class LazyData(object):
         obj_dict['_data'] = data
         obj_dict['_mask'] = mask
         obj._loaded_data = True
+        obj.dtype = data.dtype
         return mask if self.label == '_mask' else data
 
     def __get__(self, obj, owner=None):
@@ -59,7 +60,7 @@ class LazyData(object):
                     self.read_data(obj)
                 # print 'read var'
                 val, _ = read_slice_from_fits(obj.filename, ext=obj._var_ext,
-                                              dtype=obj.dtype)
+                                              dtype=np.float64)
                 obj.__dict__[self.label] = val
             return val
 
@@ -181,7 +182,7 @@ class DataArray(object):
         If True (default), then the data and variance arrays are copied.
         Passed to numpy.ma.MaskedArray.
     dtype : numpy.dtype
-        Type of the data, default to float.
+        Type of the data.
         Passed to numpy.ma.MaskedArray.
     data : numpy.ndarray or list
         Data array, passed to numpy.ma.MaskedArray.
@@ -230,7 +231,7 @@ class DataArray(object):
 
     def __init__(self, filename=None, hdulist=None, data=None, mask=False,
                  var=None, ext=None, unit=u.dimensionless_unscaled, copy=True,
-                 dtype=float, primary_header=None, data_header=None, **kwargs):
+                 dtype=None, primary_header=None, data_header=None, **kwargs):
         self._logger = logging.getLogger(__name__)
 
         self._loaded_data = False
@@ -331,14 +332,19 @@ class DataArray(object):
 
             # Use a specified numpy data array?
             if data is not None:
+                if self.dtype is None:
+                    self.dtype = data.dtype
+                # Force data to be in double instead of float
+                if self.dtype == np.float32:
+                    self.dtype = np.float64
                 if isinstance(data, ma.MaskedArray):
-                    self._data = np.array(data.data, dtype=dtype, copy=copy)
+                    self._data = np.array(data.data, dtype=self.dtype, copy=copy)
                     if data.mask is ma.nomask:
                         self._mask = data.mask
                     else:
                         self._mask = np.array(data.mask, dtype=bool, copy=copy)
                 else:
-                    self._data = np.array(data, dtype=dtype, copy=copy)
+                    self._data = np.array(data, dtype=self.dtype, copy=copy)
                     if mask is None or mask is False:
                         self._mask = ~(np.isfinite(data))
                     elif mask is True:
@@ -349,10 +355,10 @@ class DataArray(object):
             # Use a specified variance array?
             if var is not None:
                 if isinstance(var, ma.MaskedArray):
-                    self._var = np.array(var.data, dtype=dtype, copy=copy)
+                    self._var = np.array(var.data, dtype=np.float64, copy=copy)
                     self._mask |= var.mask
                 else:
-                    self._var = np.array(var, dtype=dtype, copy=copy)
+                    self._var = np.array(var, dtype=np.float64, copy=copy)
 
         # If a WCS object was specified as an optional parameter, install it.
         wcs = kwargs.pop('wcs', None)

@@ -180,6 +180,9 @@ def read_slice_from_fits(filename_or_hdu, item=None, ext='DATA', mask_ext=None,
         if item is not None:
             data = data[item]
         data = np.asarray(data, dtype=dtype)
+        # Force data to be in double instead of float
+        if data.dtype == np.float32:
+            data = data.astype(np.float64)
 
         # mask extension
         if mask_ext is not None and mask_ext in hdulist:

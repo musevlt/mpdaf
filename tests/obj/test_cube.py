@@ -208,7 +208,7 @@ def test_sum():
 @attr(speed='fast')
 def test_median():
     """Cube class: testing median methods"""
-    cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
+    cube1 = generate_cube(data=1., wave=WaveCoord(crval=1))
     ind = np.arange(10)
     median = np.median(ind)
     cube1.data = (ind[:, np.newaxis,  np.newaxis] *
