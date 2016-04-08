@@ -1151,7 +1151,7 @@ class Cube(DataArray):
                     sn_ratio = ma.median(sn_orig / sn_now)
                     dspec /= sn_ratio
                     var = dspec * dspec
-                    var = var.filled(np.NaN)
+                    var = var.filled(np.inf)
                 else:
                     var = None
             return Image.new_from_obj(self, data=data, var=var)
@@ -1160,7 +1160,7 @@ class Cube(DataArray):
             if weights is None:
                 data = ma.sum(ma.sum(self.data, axis=1), axis=1)
                 if self._var is not None:
-                    var = ma.sum(ma.sum(self.var, axis=1), axis=1).filled(np.NaN)
+                    var = ma.sum(ma.sum(self.var, axis=1), axis=1).filled(np.inf)
                 else:
                     var = None
             else:
@@ -1187,7 +1187,7 @@ class Cube(DataArray):
                     sn_ratio = ma.median(sn_orig / sn_now)
                     dspec /= sn_ratio
                     var = dspec * dspec
-                    var = var.filled(np.NaN)
+                    var = var.filled(np.inf)
                 else:
                     var = None
 
