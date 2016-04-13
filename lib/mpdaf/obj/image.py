@@ -266,6 +266,16 @@ class Image(DataArray):
     def resize(self):
         return self.crop()
 
+    def copy(self):
+        """Return a new copy of an Image object."""
+        obj = super(Image, self).copy()
+
+        # Make a deep copy of the spatial-frequency limits.
+
+        if self._spflims is not None:
+            obj._spflims = self._spflims.deepcopy()
+        return obj
+
     def __add__(self, other):
         """Operator +.
 
@@ -304,7 +314,7 @@ class Image(DataArray):
                 raise IOError('Operation forbidden for images '
                               'with different world coordinates')
             if other.ndim == 2:
-                # image1 + image2 = image3 (image3[j,i]=image1[j,i]+image2[j,i])
+                # image1 + image2 = image3
                 if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
@@ -324,7 +334,7 @@ class Image(DataArray):
                             res._var = other._var
                         else:
                             res._var = UnitArray(other._var, other.unit**2,
-                                                self.unit**2)
+                                                 self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res._var = self._var + other._var
@@ -337,16 +347,6 @@ class Image(DataArray):
                 # image + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
                 res = other.__add__(self)
                 return res
-
-    def copy(self):
-        """Return a new copy of an Image object."""
-        obj = super(Image, self).copy()
-
-        # Make a deep copy of the spatial-frequency limits.
-
-        if self._spflims is not None:
-            obj._spflims = self._spflims.deepcopy()
-        return obj
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -389,7 +389,7 @@ class Image(DataArray):
                 raise IOError('Operation forbidden for images '
                               'with different world coordinates')
             if other.ndim == 2:
-                # image1 - image2 = image3 (image3[j,i]=image1[j,i]-image2[j,i])
+                # image1 - image2 = image3
                 if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden for images '
@@ -410,14 +410,14 @@ class Image(DataArray):
                             res._var = other._var
                         else:
                             res._var = UnitArray(other._var,
-                                                other.unit**2, self.unit**2)
+                                                 other.unit**2, self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res._var = self._var + other._var
                         else:
                             res._var = self._var + UnitArray(other._var,
-                                                           other.unit**2,
-                                                           self.unit**2)
+                                                             other.unit**2,
+                                                             self.unit**2)
                 return res
             else:
                 # image - cube1 = cube2
@@ -440,14 +440,14 @@ class Image(DataArray):
                             res._var = self._var
                         else:
                             res._var = UnitArray(self._var, self.unit**2,
-                                                other.unit**2)
+                                                 other.unit**2)
                     else:
                         if other.unit == self.unit:
                             res._var = self._var + other._var
                         else:
                             res._var = other._var + UnitArray(self._var,
-                                                            self.unit**2,
-                                                            other.unit**2)
+                                                              self.unit**2,
+                                                              other.unit**2)
                 return res
 
     def __rsub__(self, other):
@@ -460,7 +460,7 @@ class Image(DataArray):
                 raise IOError('Operation forbidden')
         else:
             return other.__sub__(self)
-        
+
     def __mul__(self, other):
         """Operator \*.
 
@@ -483,7 +483,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Spectrum` or `~mpdaf.obj.Image` or `~mpdaf.obj.Cube` object.
+        out : `~mpdaf.obj.Spectrum` or `~mpdaf.obj.Image` or `~mpdaf.obj.Cube`
         """
         if not isinstance(other, DataArray):
             try:
@@ -501,7 +501,7 @@ class Image(DataArray):
                 data = self.data[np.newaxis, :, :] * \
                     other.data[:, np.newaxis, np.newaxis]
                 # The shape of the resulting cube.
-                shape = (other.shape[0],self.shape[0],self.shape[1])
+                shape = (other.shape[0], self.shape[0], self.shape[1])
                 # variance
                 if self._var is None and other._var is None:
                     var = None
@@ -543,7 +543,7 @@ class Image(DataArray):
                         res._var = self._var * other._data * other._data
                     else:
                         res._var = (other._var * self._data * self._data
-                                   + self._var * other._data * other._data)
+                                    + self._var * other._data * other._data)
                     # unit
                     res.unit = self.unit * other.unit
                     return res
@@ -594,7 +594,7 @@ class Image(DataArray):
                 raise IOError('Operation forbidden for images '
                               'with different world coordinates')
             if other.ndim == 2:
-                # image1 / image2 = image3 (image3[j,i]=image1[j,i]/image2[j,i])
+                # image1 / image2 = image3
                 if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1]:
                     raise IOError('Operation forbidden '
@@ -613,7 +613,7 @@ class Image(DataArray):
                         / (other._data ** 4)
                 else:
                     res._var = (other._var * self._data * self._data +
-                               self._var * other._data * other._data) \
+                                self._var * other._data * other._data) \
                         / (other._data ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -655,8 +655,8 @@ class Image(DataArray):
                 res._data = other / res._data
                 if self._var is not None:
                     res._var = (self._var * other**2 +
-                               other * self._data * self._data
-                               ) / (self._data ** 4)
+                                other * self._data * self._data
+                                ) / (self._data ** 4)
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -948,8 +948,8 @@ class Image(DataArray):
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
             ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
-                              + ((grid[0] * cospa - grid[1] * sinpa)
-                                 / radius[1]) ** 2 < 1)
+                    + ((grid[0] * cospa - grid[1] * sinpa)
+                       / radius[1]) ** 2 < 1)
             self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
         if not inside:
             self.data[0:imin, :] = np.ma.masked
@@ -959,8 +959,8 @@ class Image(DataArray):
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
                                np.arange(jmin, jmax) - center[1], indexing='ij')
             ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
-                              + ((grid[0] * cospa - grid[1] * sinpa)
-                                 / radius[1]) ** 2 > 1)
+                    + ((grid[0] * cospa - grid[1] * sinpa)
+                       / radius[1]) ** 2 > 1)
             self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
 
     def mask_polygon(self, poly, unit=u.deg, inside=True):
@@ -979,71 +979,35 @@ class Image(DataArray):
 
         """
 
-        if unit is not None:  # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
-            poly = np.array([[self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][0],
-                              self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][1]] for val in poly])
+        # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
+        if unit is not None:
+            poly = np.array([
+                [self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][0],
+                 self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][1]]
+                for val in poly])
 
         P, Q = np.meshgrid(range(self.shape[0]), range(self.shape[1]))
         b = np.dstack([P.ravel(), Q.ravel()])
 
-        polymask = Path(poly)  # use the matplotlib method to create a path wich is the polygon we want to use
-        c = polymask.contains_points(b[0])  # go through all pixels in the image to see if there are in the polygon, ouput is a boolean table
+        # use the matplotlib method to create a path wich is the polygon we
+        # want to use
+        polymask = Path(poly)
+        # go through all pixels in the image to see if there are in the
+        # polygon, ouput is a boolean table
+        c = polymask.contains_points(b[0])
 
-        if not inside:  # invert the boolean table to ''mask'' the outside part of the polygon, if it's False I mask the inside part
+        # invert the boolean table to ''mask'' the outside part of the polygon,
+        # if it's False I mask the inside part
+        if not inside:
             c = ~np.array(c)
 
-        c = c.reshape(self.shape[1], self.shape[0])  # convert the boolean table into a matrix
+        # convert the boolean table into a matrix
+        c = c.reshape(self.shape[1], self.shape[0])
         c = c.T
 
-        self._mask = np.logical_or(c, self._mask)  # combine the previous mask with the new one
+        # combine the previous mask with the new one
+        self._mask = np.logical_or(c, self._mask)
         return poly
-
-    def _truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg):
-        skycrd = [[y_min, x_min], [y_min, x_max],
-                  [y_max, x_min], [y_max, x_max]]
-        if unit is None:
-            pixcrd = np.array(skycrd)
-        else:
-            pixcrd = self.wcs.sky2pix(skycrd, unit=unit)
-
-        imin = int(np.min(pixcrd[:, 0]) + 0.5)
-        if imin < 0:
-            imin = 0
-        imax = int(np.max(pixcrd[:, 0]) + 0.5) + 1
-        if imax > self.shape[0]:
-            imax = self.shape[0]
-        jmin = int(np.min(pixcrd[:, 1]) + 0.5)
-        if jmin < 0:
-            jmin = 0
-        jmax = int(np.max(pixcrd[:, 1]) + 0.5) + 1
-        if jmax > self.shape[1]:
-            jmax = self.shape[1]
-
-        subima = self[imin:imax, jmin:jmax]
-        self._data = subima._data
-        if self._var is not None:
-            self._var = subima._var
-        self._mask = subima._mask
-        self.wcs = subima.wcs
-
-        if mask:
-            # mask outside pixels
-            grid = np.meshgrid(np.arange(0, self.shape[0]),
-                               np.arange(0, self.shape[1]), indexing='ij')
-            shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]),
-                                                      np.ravel(grid[1]))])
-            if unit is None:
-                skycrd = pixcrd
-            else:
-                skycrd = np.array(self.wcs.pix2sky(pixcrd, unit=unit))
-            x = skycrd[:, 1].reshape(shape)
-            y = skycrd[:, 0].reshape(shape)
-            test_x = np.logical_or(x < x_min, x > x_max)
-            test_y = np.logical_or(y < y_min, y > y_max)
-            test = np.logical_or(test_x, test_y)
-            self._mask = np.logical_or(self._mask, test)
-            self.crop()
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg,
                  inplace=False):
@@ -1060,10 +1024,10 @@ class Image(DataArray):
         x_max : float
             Maximum value of x.
         mask : boolean
-            if True, pixels outside [dec_min,dec_max] and [ra_min,ra_max] are
-            masked.
+            if True, pixels outside ``[x_min, x_max]`` and ``[y_min, y_max]``
+            are masked.
         unit : `astropy.units.Unit`
-            Type of the coordinates x and y (degrees by default)
+            Type of the coordinates x and y (degrees by default).
         inplace : bool
             If False, return a truncated copy of the image (the default).
             If True, truncate the original image in-place, and return that.
@@ -1073,14 +1037,46 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we truncate the image in-place, or truncate a copy of the image?
 
-        res = self if inplace else self.copy()
+        out = self if inplace else self.copy()
 
-        # Truncate the result object in-place.
+        skycrd = np.array([[y_min, x_min], [y_min, x_max],
+                           [y_max, x_min], [y_max, x_max]])
+        if unit is not None:
+            pixcrd = out.wcs.sky2pix(skycrd, unit=unit)
 
-        res._truncate(y_min, y_max, x_min, x_max, mask, unit)
-        return res
+        imin = max(0, int(np.min(pixcrd[:, 0]) + 0.5))
+        imax = min(out.shape[0], int(np.max(pixcrd[:, 0]) + 0.5) + 1)
+        jmin = max(0, int(np.min(pixcrd[:, 1]) + 0.5))
+        jmax = min(out.shape[1], int(np.max(pixcrd[:, 1]) + 0.5) + 1)
+
+        subima = out[imin:imax, jmin:jmax]
+        out._data = subima._data
+        if out._var is not None:
+            out._var = subima._var
+        out._mask = subima._mask
+        out.wcs = subima.wcs
+
+        if mask:
+            # mask outside pixels
+            grid = np.meshgrid(np.arange(0, out.shape[0]),
+                               np.arange(0, out.shape[1]), indexing='ij')
+            shape = grid[1].shape
+            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]),
+                                                      np.ravel(grid[1]))])
+            if unit is None:
+                skycrd = pixcrd
+            else:
+                skycrd = np.array(out.wcs.pix2sky(pixcrd, unit=unit))
+            x = skycrd[:, 1].reshape(shape)
+            y = skycrd[:, 0].reshape(shape)
+            test_x = np.logical_or(x < x_min, x > x_max)
+            test_y = np.logical_or(y < y_min, y > y_max)
+            test = np.logical_or(test_x, test_y)
+            out._mask = np.logical_or(out._mask, test)
+            out.crop()
+
+        return out
 
     def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec,
                  minsize=2.0):
@@ -1139,92 +1135,76 @@ class Image(DataArray):
 
         # In general it isn't possible to both anchor a point in the
         # image while reshaping the image so that it fits.
-
         if reshape and pivot is not None:
             raise ValueError("The pivot and reshape options can't be combined")
 
         # Turn off the sampling filter when orders of less than 2 are selected.
-
         prefilter = order > 1
 
         # Convert the rotation angle to radians.
-
         angle = (theta * unit).to(u.rad).value
 
         # Get the current rotation angle of the image in radians.
-
         oldrot = self.wcs.get_rot(unit=u.rad)
 
         # Where should north end up after we have rotated the image?
-
         newrot = oldrot + angle
 
         # Get the current pixel size.
-
         oldinc = self.wcs.get_axis_increments()
 
         # If no value has been specified for the regrid option, regrid
         # unless asked not to reshape the array.
-
         if regrid is None:
             regrid = reshape
 
         # Have we been asked to adjust pixel dimensions to avoid undersampling
         # and oversampling?
-
         if regrid:
 
             # Determine the spatial frequencies that need to be sampled
             # along the rotated Y and X axes.
-
             newfmax = self.get_spatial_fmax(np.rad2deg(newrot))
 
             # Calculate the pixel increments along the X and Y axes
             # that will be needed to adequately sample these
             # frequencies.
-
             newinc = 0.5 / newfmax * np.sign(oldinc)
 
-        # Keep pixel sizes fixed?
-
         else:
+            # Keep pixel sizes fixed?
             newinc = oldinc
 
         # Get the coordinate reference pixel of the input image,
         # arranged as a column vector in python (Y,X) order. Note that
         # crpix contains FITS pixel indexes which are 1 greater than
         # the corresponding python pixel indexes.
-
         oldcrpix = np.array([[self.wcs.get_crpix2() - 1],
                              [self.wcs.get_crpix1() - 1]])
 
         # Create a similar matrix that would scale a column vector in
         # (X,Y) axis order by the rotated X-axis and Y-axis pixel
         # increments.
-
-        newscale = np.array([[newinc[1], 0.0  ],
-                             [0.0       , newinc[0]]])
+        newscale = np.array([[newinc[1], 0.0],
+                             [0.0, newinc[0]]])
 
         # Get the current WCS coordinate transformation matrix (which
         # transforms pixel coordinates to intermediate sky
         # coordinates).
-
         oldcd = self.wcs.get_cd()
 
         # Create a rotation matrix that multiplies the sky by the
         # above angle.
-
         sinq = np.sin(newrot)
         cosq = np.cos(newrot)
         sky_mrot = np.array([[cosq, -sinq],
-                             [sinq,  cosq]])
+                             [sinq, cosq]])
 
         # Compute the coordinate transformation matrix that will
         # pertain to the output image. We can interpolate to any grid,
         # so take the opportunity to zero any shear terms that were in
         # the original CD matrix, and just create a CD matrix that
         # rotates and scales the sky.
-
         newcd = np.dot(sky_mrot, newscale)
 
         # To fill the pixels of the output image we need a coordinate
@@ -1234,54 +1214,46 @@ class Image(DataArray):
         # indexes to intermediate sky coordinates, then apply the
         # inverse of the old CD matrix, to convert these back to
         # indexes of the original image.
-
         wcs_remap = np.dot(np.linalg.inv(oldcd), newcd)
 
         # The above matrix was computed from the WCS CD matrix, which
         # is designed to multiply a column vector in FORTRAN (X,Y)
         # axis order. Rearrange it to the equivalent matrix for
         # multiplying a column vector in python (Y,X) axis order.
-
-        new2old = np.array([[wcs_remap[1,1], wcs_remap[1,0]],
-                            [wcs_remap[0,1], wcs_remap[0,0]]])
+        new2old = np.array([[wcs_remap[1, 1], wcs_remap[1, 0]],
+                            [wcs_remap[0, 1], wcs_remap[0, 0]]])
 
         # Also compute the inverse of this, so that we can convert
         # from input image indexes to rotated image indexes.
-
         old2new = np.linalg.inv(new2old)
 
         # Have we been asked to reshape the image array to just encompass
         # the rotated image?
-
         if reshape:
 
             # Determine where the corners of the input image end up in the
             # output image with CRPIX set to [0,0].
-
             corners = np.array(
-                [[0, 0, self.shape[0]-1, self.shape[0]-1],  # Y indexes
-                 [0, self.shape[1]-1, 0, self.shape[1]-1]], # X indexes
+                [[0, 0, self.shape[0] - 1, self.shape[0] - 1],  # Y indexes
+                 [0, self.shape[1] - 1, 0, self.shape[1] - 1]],  # X indexes
                 dtype=np.float)
             pix = np.dot(old2new, (corners - oldcrpix))
 
             # Get the ranges of indexes occupied by the input image in the
             # rotated image.
-
-            ymin = min(pix[0,:])
-            ymax = max(pix[0,:])
-            xmin = min(pix[1,:])
-            xmax = max(pix[1,:])
+            ymin = min(pix[0, :])
+            ymax = max(pix[0, :])
+            xmin = min(pix[1, :])
+            xmax = max(pix[1, :])
 
             # Calculate the indexes of the coordinate reference pixel of
             # the rotated image, such that pixel [xmin,ymin] is moved to
             # array index [0,0]. Use (Y,X) axis ordering.
-
             newcrpix = np.array([[-ymin], [-xmin]])
 
             # Calculate the dimensions of the output image in (Y,X) order.
             # The dimensions are ymax-ymin+1 rounded up, and xmax-xmin+1
             # rounded up.
-
             newdims = np.array([int(ymax - ymin + 1.5),
                                 int(xmax - xmin + 1.5)])
 
@@ -1289,33 +1261,27 @@ class Image(DataArray):
         # dimensions the same, and choose the reference pixel such
         # that the rotation appears to occur around a specified pixel,
         # or the central pixel of the image.
-
         else:
-
             newdims = np.asarray(self.shape)
 
             # If no pivot pixel has been specified, substitute the
             # central pixel of the input image.
-
             if pivot is None:
                 pivot = np.asarray(self.shape, dtype=np.float) / 2.0
             else:
                 pivot = np.asarray(pivot, dtype=np.float)
 
             # Convert the pivot indexes to a column vector.
-
-            pivot = pivot[np.newaxis,:].T
+            pivot = pivot[np.newaxis, :].T
 
             # If the new coordinate reference pixel were zero, where
             # would the pivot pixel end up if we rotated the image
             # around oldcrpix?
-
             pix = np.dot(old2new, (pivot - oldcrpix))
 
             # Calculate the indexes of the coordinate reference pixel of
             # the rotated image, such that pixel pix is moved to
             # pivot. Use (Y,X) axis ordering.
-
             newcrpix = pivot - pix
 
         # The affine_transform() function calculates the pixel index
@@ -1336,14 +1302,12 @@ class Image(DataArray):
         offset = oldcrpix - np.dot(new2old, newcrpix)
 
         # Get a copy of the current image array with masked values filled.
-
         newdata = self._prepare_data(interp)
 
         # For each pixel of the rotated image, use the new2old affine
         # transformation matrix to determine where that pixel
         # originates in the input image, then interpolate a value from
         # the pixels of the input image surrounding that point.
-
         newdata = affine_transform(newdata, matrix=new2old,
                                    offset=offset.flatten(), cval=0.0,
                                    output_shape=newdims, output=np.float,
@@ -1351,16 +1315,13 @@ class Image(DataArray):
 
         # Zero the current data array and then fill its masked pixels
         # with floating point 1.0s, so that we can rotate this in the
-        # the same way as the data to see where the masked areas end
-        # up.
-
-        self._data[:,:] = 0.0
+        # the same way as the data to see where the masked areas end up.
+        self._data[:, :] = 0.0
         newmask = np.ma.filled(self.data, 1.0)
 
         # Rotate the array of 1s that represent masked pixels, and fill
         # corners that weren't mapped from the input array with 1s, so
         # that we end up flagging them too.
-
         newmask = affine_transform(newmask, matrix=new2old,
                                    offset=offset.flatten(), cval=1.0,
                                    output_shape=newdims, output=np.float,
@@ -1369,11 +1330,9 @@ class Image(DataArray):
         # Create new boolean mask in which all pixels that had an
         # integrated contribution of more than 'cutoff' originally
         # masked pixels are masked.
-
         newmask = np.greater(newmask, cutoff)
 
         # If the image has an associated array of variances, rotate it too.
-
         if self._var is not None:
             newvar = affine_transform(self._var, matrix=new2old,
                                       offset=offset.flatten(), cval=0.0,
@@ -1384,37 +1343,30 @@ class Image(DataArray):
 
         # Compute the number of old pixel areas per new pixel, if the
         # pixel dimensions have been changed.
-
         if regrid:
-
             n = newinc.prod() / oldinc.prod()
 
             # Scale the flux per pixel by the multiplicative increase in the
             # area of a pixel?
-
             if flux:
 
                 # Scale the pixel fluxes by the increase in the area.
-
                 newdata *= n
 
                 # Each output pixel is an interpolation between the
                 # nearest neighboring pixels, so the variance is unchanged
                 # by resampling. Scaling the pixel values by n, however,
                 # increases the variances by n**2.
-
                 if newvar is not None:
                     newvar *= n**2
 
         # Install the rotated data array, mask and variances.
-
         self._data = newdata
         self._mask = newmask
         self._var = newvar
 
         # Install the new world-coordinate transformation matrix, along
         # with the new reference pixel.
-
         self.wcs.set_cd(newcd)
         self.wcs.set_naxis1(newdims[1])
         self.wcs.set_naxis2(newdims[0])
@@ -1422,20 +1374,17 @@ class Image(DataArray):
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel
         # indexes to FITS 1-relative pixel indexes.
-
         self.wcs.set_crpix1(newcrpix[1] + 1)
         self.wcs.set_crpix2(newcrpix[0] + 1)
 
         # If allowed to reshape the array, crop away any entirely
         # masked margins.
-
         if reshape:
             self.crop()
 
     def rotate(self, theta=0.0, interp='no', reshape=False, order=1,
                pivot=None, unit=u.deg, regrid=None, flux=False, cutoff=0.25,
                inplace=False):
-
         """Rotate the sky within an image in the sense of a rotation from
         north to east.
 
@@ -1522,12 +1471,8 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we rotate the image in-place, or rotate a copy of the image?
 
         res = self if inplace else self.copy()
-
-        # Rotate the result object in-place.
-
         res._rotate(theta=theta, interp=interp, reshape=reshape, order=order,
                     pivot=pivot, unit=unit, regrid=regrid, flux=flux,
                     cutoff=cutoff)
@@ -1621,14 +1566,7 @@ class Image(DataArray):
 
         for n in range(niter + 1):
             tab = tab[tab <= (tab.mean() + sigma * tab.std())]
-        return np.array([tab.mean(), tab.std()])
-
-    def _struct(self, n):
-        struct = np.zeros([n, n])
-        for i in range(0, n):
-            dist = abs(i - (n / 2))
-            struct[i][dist: abs(n - dist)] = 1
-        return struct
+        return tab.mean(), tab.std()
 
     def peak_detection(self, nstruct, niter, threshold=None):
         """Return a list of peak locations.
@@ -1645,15 +1583,22 @@ class Image(DataArray):
         Returns
         -------
         out : np.array
+
         """
-        # threshold value
-        (background, std) = self.background()
         if threshold is None:
+            background, std = self.background()
             threshold = background + 10 * std
+
+        def _struct(n):
+            struct = np.zeros([n, n])
+            for i in range(0, n):
+                dist = abs(i - (n / 2))
+                struct[i][dist: abs(n - dist)] = 1
+            return struct
 
         selec = self.data > threshold
         selec.fill_value = False
-        struct = self._struct(nstruct)
+        struct = _struct(nstruct)
         selec = ndi.binary_erosion(selec, structure=struct, iterations=niter)
         selec = ndi.binary_dilation(selec, structure=struct, iterations=niter)
         selec = ndi.binary_fill_holes(selec)
@@ -1803,8 +1748,9 @@ class Image(DataArray):
             If center is None, the full image is explored.
         radius : float or (float,float)
             Radius defined the explored region.
-            If radius is float, it defined a circular region (encircled energy).
-            If radius is (float,float), it defined a rectangular region (ensquared energy).
+            If float, it defined a circular region (encircled energy).
+            If (float,float), it defined a rectangular region (ensquared
+            energy).
         unit_center : `astropy.units.Unit`
             Type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
@@ -2010,7 +1956,7 @@ class Image(DataArray):
         """
         if self.mask is np.ma.nomask:
             meshgrid = np.meshgrid(np.arange(self.shape[0]),
-                               np.arange(self.shape[1]), indexing='ij')
+                                   np.arange(self.shape[1]), indexing='ij')
             x = meshgrid[0].ravel()
             y = meshgrid[1].ravel()
             data = self._data
@@ -2362,7 +2308,7 @@ class Image(DataArray):
                         args=(pixcrd[:, 0], pixcrd[:, 1], data, wght),
                         maxfev=maxiter, full_output=1)
         else:
-            e_gauss_fit = lambda v, p, q, data, w : \
+            e_gauss_fit = lambda v, p, q, data, w: \
                 w * (gaussfit(v, p, q) - data)
             v, covar, info, mesg, success = \
                 leastsq(e_gauss_fit, v0[:], args=(p, q, data, wght),
@@ -2482,7 +2428,8 @@ class Image(DataArray):
             # Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
 
-            err_center = np.array([err_p_peak, err_q_peak]) * self.wcs.get_step(unit=unit_center)
+            err_center = np.array([err_p_peak, err_q_peak]) * \
+                self.wcs.get_step(unit=unit_center)
         else:
             center = (p_peak, q_peak)
             err_center = (err_p_peak, err_q_peak)
@@ -2963,7 +2910,8 @@ class Image(DataArray):
         else:
             # Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
-            err_center = np.array([err_p_peak, err_q_peak]) * self.wcs.get_step(unit=unit_center)
+            err_center = np.array([err_p_peak, err_q_peak]) * \
+                self.wcs.get_step(unit=unit_center)
 
         if unit_fwhm is not None:
             step0 = self.wcs.get_step(unit=unit_fwhm)[0]
@@ -2988,76 +2936,65 @@ class Image(DataArray):
             raise ValueError('Unknown margin parameter: %s' % margin)
 
         # Use the same factor for both dimensions?
-
         if is_int(factor):
             factor = (factor, factor)
         factor = np.asarray(factor, dtype=np.int)
 
         # The divisors must be in the range 1 to shape-1.
-
         if factor[0] <= 1 or factor[0] >= self.shape[0] \
                 or factor[1] <= 1 or factor[1] >= self.shape[1]:
             raise ValueError('The factor must be from 1 to shape.')
 
         # Compute the number of pixels by which each axis dimension
         # exceeds being an integer multiple of its reduction factor.
-
         n = np.asarray(np.mod(self.shape, factor), dtype=int)
 
         # If necessary, compute the 2D slice needed to truncate the
         # image dimesions to be integer multiples of the axis
         # reduction factors.
-
         if n[0] != 0 or n[1] != 0:
 
-            slices=[None,None]
+            slices = [None, None]
 
             # Truncate the Y axis?
-
             if n[0] != 0:
                 nstart = 0 if (margin == 'origin' or n[0] == 1) else n[0] // 2
                 slices[0] = slice(nstart, self.shape[0] - n[0] + nstart)
 
             # Truncate the X axis?
-
             if n[1] != 0:
                 nstart = 0 if (margin == 'origin' or n[1] == 1) else n[1] // 2
                 slices[1] = slice(nstart, self.shape[1] - n[1] + nstart)
 
             # Substitute an all-inclusive slice for non-truncated axes.
-
             if slices[0] is None:
                 slices[0] = slice(0, self.shape[0])
             if slices[1] is None:
                 slices[1] = slice(0, self.shape[1])
 
             # Slice the data and variance arrays.
-
-            self._data = self._data[slices[0],slices[1]]
+            self._data = self._data[slices[0], slices[1]]
             if self._var is not None:
-                self._var = self._var[slices[0],slices[1]]
-            self._mask = self._mask[slices[0],slices[1]]
+                self._var = self._var[slices[0], slices[1]]
+            self._mask = self._mask[slices[0], slices[1]]
 
             # Update the world coordinates to match the truncated
             # array.
-
-            self.wcs = self.wcs[slices[0],slices[1]]
+            self.wcs = self.wcs[slices[0], slices[1]]
 
         # At this point the image dimensions are integer multiples of
         # the reduction factors. What is the shape of the output image?
-
         newshape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
 
         # Compute the number of unmasked pixels of the input image
         # that will contribute to each mean pixel in the output image.
-
-        unmasked = self.data.reshape(newshape[0], factor[0], newshape[1], factor[1]).count(1).sum(2)
+        unmasked = self.data.reshape(
+            newshape[0], factor[0], newshape[1], factor[1]).count(1).sum(2)
 
         # Reduce the size of the data array by taking the mean of
         # successive groups of 'factor[0] x factor[1]' pixels. Note
         # that the following uses np.ma.mean(), which takes account of
         # masked pixels.
-
         if self.var is not None:
             var = self.var.copy()
 
@@ -3071,23 +3008,21 @@ class Image(DataArray):
         # data pixels p[i] of variance v[i] has a variance of
         # sum(v[i] / N^2), where N^2 is the number of unmasked pixels
         # in that particular sum.
-
         if self._var is not None:
-            self._var = (var.reshape(newshape[0], factor[0], newshape[1], factor[1]).sum(1).sum(2) / unmasked**2).data
+            self._var = (var.reshape(
+                newshape[0], factor[0], newshape[1], factor[1]).sum(1).sum(2) /
+                unmasked**2).data
 
         # Any pixels in the output array that come from zero unmasked
         # pixels of the input array should be masked.
-
         self._mask = unmasked < 1
 
         # Update the world-coordinate information.
-
         self.wcs = self.wcs.rebin(factor)
 
         # If the spatial frequency band-limits of the image have been
         # reduced by the changes in the Y and X sampling intervals,
         # record this.
-
         self.update_spatial_fmax(0.5 / self.wcs.get_step())
 
     def rebin_mean(self, factor, margin='center', inplace=False):
@@ -3118,12 +3053,8 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we rebin the image in-place, or rebin a copy of the image?
 
         res = self if inplace else self.copy()
-
-        # Rebin the result object in-place.
-
         res._rebin_mean(factor, margin)
         return res
 
@@ -3134,16 +3065,16 @@ class Image(DataArray):
     def resample(self, newdim, newstart, newstep, flux=False,
                  order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
                  antialias=True, inplace=False):
-
         """Resample an image of the sky to select its angular resolution and
         to specify which sky position appears at the center of pixel [0,0].
 
-        This function is a simplified interface to the regrid()
-        function, which it calls with the following arguments.
+        This function is a simplified interface to the `mpdaf.obj.Image.regrid`
+        function, which it calls with the following arguments::
 
-         regrid(newdim, newstart, [0.0, 0.0], [abs(newstep[0]),-abs(newstep[1])]
-                flux=flux, order=order, interp=interp, unit_pos=unit_start,
-                unit_inc=unit_step, inplace=inplace)
+            regrid(newdim, newstart, [0.0, 0.0],
+                   [abs(newstep[0]),-abs(newstep[1])]
+                   flux=flux, order=order, interp=interp, unit_pos=unit_start,
+                   unit_inc=unit_step, inplace=inplace)
 
         When this function is used to resample an image to a lower
         resolution, a low-pass anti-aliasing filter is applied to the
@@ -3245,7 +3176,6 @@ class Image(DataArray):
     def regrid(self, newdim, refpos, refpix, newinc, flux=False, order=1,
                interp='no', unit_pos=u.deg, unit_inc=u.arcsec, antialias=True,
                inplace=False, cutoff=0.25):
-
         """Resample an image of the sky to select its angular resolution,
         to specify the position of the sky in the image array, and
         optionally to reflect one or more of its axes.
@@ -3367,35 +3297,27 @@ class Image(DataArray):
 
         """
 
-        # Should we resample the image in-place, or resample a copy of the image?
-
         image = self if inplace else self.copy()
 
         # Create a shape that has the same dimension for both axes?
-
         if is_int(newdim):
             newdim = (newdim, newdim)
         newdim = np.asarray(newdim, dtype=np.int)
 
-        # If neither refpos nor refpix have values, substitute values
-        # that will place the current sky position of the bottom left
-        # corner of the image at the bottom left corner of the output
-        # image.
-
         if refpos is None and refpix is None:
+            # If neither refpos nor refpix have values, substitute values
+            # that will place the current sky position of the bottom left
+            # corner of the image at the bottom left corner of the output
+            # image.
 
             # Use the pixel index of the bottom left corner of the image.
-
             refpix = np.array([-0.5, -0.5])
             refpos = image.wcs.pix2sky(refpix)
-
-        # Were refpos and refpix both given values?
-
         elif refpos is not None and refpix is not None:
+            # Were refpos and refpix both given values?
 
             # If necessary convert refpos to a numpy array and convert
             # it's units to the current WCS units.
-
             if unit_pos is not None:
                 refpos = (np.asarray(refpos, dtype=np.float)
                           * unit_pos).to(image.wcs.unit).value
@@ -3403,29 +3325,24 @@ class Image(DataArray):
                 refpos = np.asarray(refpos, dtype=np.float)
 
             # If necessary convert refpix to a floating point numpy array.
-
             refpix = np.asarray(refpix, dtype=np.float)
-
-        # Complain if just one of refpos and refpix is None.
-
         else:
-            raise ValueError('The refpos and refpix arguments should both be None or both have values.')
+            # Complain if just one of refpos and refpix is None.
+            raise ValueError('The refpos and refpix arguments should both be '
+                             'None or both have values.')
 
         # Get the current index increments of the 2 axes.
-
         oldinc = image.wcs.get_axis_increments()
 
         # Use a common increment for both axes? If so, give them
         # the same size, but with signs matching the current
         # pixel increments.
-
         if is_number(newinc):
             size = abs(newinc)
-            newinc = (size*np.sign(oldinc[0]), size*np.sign(oldinc[1]))
+            newinc = (size * np.sign(oldinc[0]), size * np.sign(oldinc[1]))
 
         # Ensure that newinc is an array of values that have the
         # same units as the WCS object.
-
         if unit_inc is not None:
             newinc = (np.asarray(newinc, dtype=np.float)
                       * unit_inc).to(image.wcs.unit).value
@@ -3433,13 +3350,11 @@ class Image(DataArray):
             newinc = np.asarray(newinc, dtype=np.float)
 
         # Get a copy of the data array with masked values filled.
-
         data = image._prepare_data(interp)
 
         # If the angular pixel increments along either axis are being
         # increased, then low-pass filter the data along that axis to
         # prevent aliasing in the resampled data.
-
         if antialias:
             data, newfmax = _antialias_filter_image(
                 data, abs(oldinc), abs(newinc), image.get_spatial_fmax())
@@ -3449,7 +3364,6 @@ class Image(DataArray):
         # If the spatial frequency band-limits of the image have been
         # reduced by the changes in the Y and X sampling intervals,
         # record this.
-
         image.update_spatial_fmax(newfmax)
 
         # For each pixel in the output image, the affine_transform
@@ -3471,14 +3385,12 @@ class Image(DataArray):
         # corresponding angular offset of that pixel from the origin
         # of the output array, then divides this by oldinc to compute
         # the equivalent index offset in the input array.
-
         new2old = np.array([[newinc[0] / oldinc[0], 0],
                             [0, newinc[1] / oldinc[1]]])
 
         # Also work out the inverse, so that we can convert from
         # pixels in the current image to the equivalent pixel of the
         # resampled image.
-
         old2new = np.linalg.inv(new2old)
 
         # We have been asked to locate sky position 'refpos' at pixel
@@ -3497,39 +3409,33 @@ class Image(DataArray):
         # affine_transform() is:
         #
         #   offset = sky2pix(refpos) - new2old * refpix
-
-        offset = (image.wcs.sky2pix(refpos).T[:,:1]
-                  - np.dot(new2old, refpix[np.newaxis,:].T))
+        offset = (image.wcs.sky2pix(refpos).T[:, :1]
+                  - np.dot(new2old, refpix[np.newaxis, :].T))
 
         # For each pixel of the output image, map its index to the
         # equivalent index of the input image and interpolate a value
         # for the new pixel from there.
-
         data = affine_transform(data, new2old, offset.flatten(),
-                                        output_shape=newdim, order=order,
-                                        prefilter=order >= 3)
+                                output_shape=newdim, order=order,
+                                prefilter=order >= 3)
 
         # Zero the current data array and then fill its masked pixels
         # with floating point 1.0s, so that we can resample this in
         # the the same way as the data to see where the masked areas
         # end up.
-
-        image._data[:,:] = 0.0
+        image._data[:, :] = 0.0
         mask = np.ma.filled(image.data, 1.0)
 
         # Resample the array of 1s that represent masked pixels.
-
         mask = affine_transform(mask, new2old, offset.flatten(), cval=1.0,
                                 output_shape=newdim, output=np.float)
 
         # Create new boolean mask in which all pixels that had an
         # integrated contribution of more than 'cutoff' originally
         # masked pixels are masked.
-
         mask = np.greater(mask, cutoff)
 
         # Also repeat the procedure for the array of variances, if any.
-
         if image._var is not None:
             var = affine_transform(image._var, new2old, offset.flatten(),
                                    output_shape=newdim, order=order,
@@ -3540,21 +3446,17 @@ class Image(DataArray):
 
         # Compute the absolute changes in the size of the pixels
         # along the X and Y axes.
-
         xs = abs(newinc[1] / oldinc[1])
         ys = abs(newinc[0] / oldinc[0])
 
         # Compute the number of input pixels per output pixel.
-
         n = xs * ys
 
         # Scale the flux per pixel by the multiplicative increase in the
         # area of a pixel?
 
         if flux:
-
             # Scale the pixel fluxes by the increase in the area.
-
             data *= n
 
             # The variances of the output pixels depend on whether an
@@ -3582,11 +3484,10 @@ class Image(DataArray):
             #    have a mix of the above two cases.
 
             if var is not None:
-
                 # Scale the variance according to the prescription described
                 # above.
-
-                var *= (xs if xs > 1.0 and antialias else xs**2) * (ys if ys > 1.0 and antialias else ys**2)
+                var *= ((xs if xs > 1.0 and antialias else xs**2) *
+                        (ys if ys > 1.0 and antialias else ys**2))
 
         # If we haven't been asked to scale the fluxes by the increase
         # in the area of a pixel, the effect on the variances are as
@@ -3599,10 +3500,10 @@ class Image(DataArray):
 
         else:
             if var is not None and (xs > 1.0 or ys > 1.0):
-                var *= (1/xs if xs > 1.0 and antialias else 1.0) * (1/ys if ys > 1.0 and antialias else 1.0)
+                var *= ((1 / xs if xs > 1.0 and antialias else 1.0) *
+                        (1 / ys if ys > 1.0 and antialias else 1.0))
 
         # Install the resampled data, mask and variance arrays.
-
         image._data = data
         image._mask = mask
         image._var = var
@@ -3611,17 +3512,14 @@ class Image(DataArray):
         # arranged as a column vector in python (Y,X) order. Note that
         # crpix contains FITS pixel indexes which are 1 greater than
         # the corresponding python pixel indexes.
-
         oldcrpix = np.array([[image.wcs.get_crpix2() - 1],
                              [image.wcs.get_crpix1() - 1]])
 
         # Compute the updated value of the coordinate reference pixel
         # in (Y,X) axis order.
-
         newcrpix = np.dot(old2new, (oldcrpix - offset))
 
         # Update the world-coordinate description object.
-
         image.wcs.set_axis_increments(newinc)
         image.wcs.set_naxis1(newdim[1])
         image.wcs.set_naxis2(newdim[0])
@@ -3629,40 +3527,10 @@ class Image(DataArray):
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel
         # indexes to FITS 1-relative pixel indexes.
-
         image.wcs.set_crpix1(newcrpix[1] + 1)
         image.wcs.set_crpix2(newcrpix[0] + 1)
 
         return image
-
-    def _align_with_image(self, other, flux=False):
-
-        # Do nothing if the images are already aligned.
-
-        if self.wcs.isEqual(other.wcs):
-            return
-
-        # Rotate the image to have the same orientation as the other
-        # image. Note that the rotate function has a side effect of
-        # correcting the image for shear terms in the CD matrix, so we
-        # perform this step even if no rotation is otherwise needed.
-
-        self._rotate(other.wcs.get_rot() - self.wcs.get_rot(), reshape=True,
-                     regrid=True, flux=flux)
-
-        # Get the pixel index and Dec,Ra coordinate at the center of
-        # the image that we are aligning with.
-
-        centerpix = np.asarray(other.shape) / 2.0
-        centersky = other.wcs.pix2sky(centerpix)[0]
-
-        # Re-sample the rotated image to have the same axis
-        # increments, offset and number of pixels as the image that we
-        # are aligning it with.
-
-        self.regrid(other.shape, centersky, centerpix,
-                    other.wcs.get_axis_increments(unit=u.deg),
-                    flux, unit_inc=u.deg, inplace=True)
 
     def align_with_image(self, other, flux=False, inplace=False):
         """Resample the image to give it the same orientation, position,
@@ -3700,14 +3568,31 @@ class Image(DataArray):
 
         """
 
-        # Should we align the image in-place, or align a copy of the image?
+        out = self if inplace else self.copy()
 
-        res = self if inplace else self.copy()
+        # Do nothing if the images are already aligned.
+        if out.wcs.isEqual(other.wcs):
+            return out
 
-        # Align the result object in-place.
+        # Rotate the image to have the same orientation as the other
+        # image. Note that the rotate function has a side effect of
+        # correcting the image for shear terms in the CD matrix, so we
+        # perform this step even if no rotation is otherwise needed.
+        out._rotate(other.wcs.get_rot() - out.wcs.get_rot(), reshape=True,
+                    regrid=True, flux=flux)
 
-        res._align_with_image(other, flux)
-        return res
+        # Get the pixel index and Dec,Ra coordinate at the center of
+        # the image that we are aligning with.
+        centerpix = np.asarray(other.shape) / 2.0
+        centersky = other.wcs.pix2sky(centerpix)[0]
+
+        # Re-sample the rotated image to have the same axis
+        # increments, offset and number of pixels as the image that we
+        # are aligning it with.
+        out.regrid(other.shape, centersky, centerpix,
+                   other.wcs.get_axis_increments(unit=u.deg),
+                   flux, unit_inc=u.deg, inplace=True)
+        return out
 
     def estimate_coordinate_offset(self, ref, nsigma=1.0):
         """Given a reference image of the sky that is expected to
@@ -3755,7 +3640,6 @@ class Image(DataArray):
 
         # Resample the reference sky image onto the same coordinate
         # grid as our image.
-
         ref = ref.align_with_image(self)
 
         # Before cross-correlating the images we need to make sure
@@ -3765,18 +3649,15 @@ class Image(DataArray):
         # will produce false correlations.
         #
         # First get the union of the masked areas of the two images.
-
         mask = np.ma.mask_or(self._mask, ref._mask)
 
         # Place both image arrays into masked array containers that
         # share the above mask.
-
         sdata = np.ma.array(data=self._data, mask=mask)
         rdata = np.ma.array(data=ref._data, mask=mask)
 
         # Get copies of the above arrays with masked pixels filled
         # with the median values of the images.
-
         sdata = np.ma.filled(sdata, np.ma.median(sdata))
         rdata = np.ma.filled(rdata, np.ma.median(rdata))
 
@@ -3785,19 +3666,17 @@ class Image(DataArray):
         # correlation, so remove most of the noisy background by
         # zeroing all values that are less than nsigma standard
         # deviations above the mean.
-
         sdata = threshold(sdata,
-                          threshmin = sdata.mean() + nsigma * sdata.std())
+                          threshmin=sdata.mean() + nsigma * sdata.std())
         rdata = threshold(rdata,
-                          threshmin = rdata.mean() + nsigma * rdata.std())
+                          threshmin=rdata.mean() + nsigma * rdata.std())
 
         # Sometimes a bright artefact or a bright star with
         # appreciable proper motion biases the correlation. To avoid
         # this take the log of the thresholded data to prevent very
         # bright features from dominating the correlation.
-
-        sdata = np.log(1.0+sdata)
-        rdata = np.log(1.0+rdata)
+        sdata = np.log(1.0 + sdata)
+        rdata = np.log(1.0 + rdata)
 
         # Cross correlate our image with the reference image, by
         # convolving our image with an axis-reversed version of the
@@ -3805,27 +3684,23 @@ class Image(DataArray):
         # of the array. We don't expect the peak to be outside this
         # area, and this avoids edge effects where there is incomplete
         # data.
-
-        cc = signal.fftconvolve(sdata, rdata[::-1,::-1], mode="same")
+        cc = signal.fftconvolve(sdata, rdata[::-1, ::-1], mode="same")
 
         # Find the position of the maximum value in the correlation image.
-
-        py,px = np.unravel_index(np.argmax(cc), cc.shape)
+        py, px = np.unravel_index(np.argmax(cc), cc.shape)
 
         # Quadratically interpolate a more precise peak position from three
         # points along the X and Y axes, centered on the position found above.
-
-        py = py - 1 + _find_quadratic_peak(cc[py-1 : py+2, px])
-        px = px - 1 + _find_quadratic_peak(cc[py, px-1 : px+2])
+        py = py - 1 + _find_quadratic_peak(cc[py - 1: py + 2, px])
+        px = px - 1 + _find_quadratic_peak(cc[py, px - 1: px + 2])
 
         # Compute the offset of the peak relative to the central pixel
         # of the correlation image. This yields the offset between the
         # two images.
+        dy = py - float(cc.shape[0] // 2)
+        dx = px - float(cc.shape[1] // 2)
 
-        dy = py - float(cc.shape[0]//2)
-        dx = px - float(cc.shape[1]//2)
-
-        return dy,dx
+        return dy, dx
 
     def adjust_coordinates(self, ref, nsigma=1.0, inplace=False):
         """Given a reference image of the sky that is expected to
@@ -3863,36 +3738,16 @@ class Image(DataArray):
 
         """
 
-        # Should we shift the image in-place, or shift a copy of the image?
-
-        res = self if inplace else self.copy()
-
-        # Adjust the result object in-place.
-
-        res._adjust_coordinates(ref, nsigma=nsigma)
-        return res
-
-    def _adjust_coordinates(self, ref, nsigma=1.0):
+        out = self if inplace else self.copy()
 
         # Determine the pixel offset of features in the current
         # image relative to features in the reference image.
+        dy, dx = out.estimate_coordinate_offset(ref, nsigma)
 
-        dy,dx = self.estimate_coordinate_offset(ref, nsigma)
-
-        # Offset the WCS of the current image by the pixel shift found
-        # above.
-
-        self.wcs.set_crpix1(self.wcs.get_crpix1() + dx)
-        self.wcs.set_crpix2(self.wcs.get_crpix2() + dy)
-
-    def _gaussian_filter(self, sigma=3, interp='no'):
-
-        # Get a copy of the data array with masked values filled.
-
-        data = self._prepare_data(interp)
-        self._data = ndi.gaussian_filter(data, sigma)
-        if self._var is not None:
-            self._var = ndi.gaussian_filter(self._var, sigma)
+        # Offset the WCS of the current image by the pixel shift found above.
+        out.wcs.set_crpix1(out.wcs.get_crpix1() + dx)
+        out.wcs.set_crpix2(out.wcs.get_crpix2() + dy)
+        return out
 
     def gaussian_filter(self, sigma=3, interp='no', inplace=False):
         """Return an image containing Gaussian filter applied to the current
@@ -3917,24 +3772,15 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we filter the image in-place, or filter a copy of the image?
 
-        res = self if inplace else self.copy()
-
-        # Filter the result object in-place.
-
-        res._gaussian_filter(sigma, interp)
-        return res
-
-    def _median_filter(self, size=3, interp='no'):
+        out = self if inplace else self.copy()
 
         # Get a copy of the data array with masked values filled.
-
-        data = self._prepare_data(interp)
-
-        self._data = ndi.median_filter(data, size)
-        if self._var is not None:
-            self._var = ndi.median_filter(self._var, size)
+        data = out._prepare_data(interp)
+        out._data = ndi.gaussian_filter(data, sigma)
+        if out._var is not None:
+            out._var = ndi.gaussian_filter(out._var, sigma)
+        return out
 
     def median_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing median filter applied to the current
@@ -3960,22 +3806,13 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we filter the image in-place, or filter a copy of the image?
 
-        res = self if inplace else self.copy()
-
-        # Filter the result object in-place.
-
-        res._median_filter(size, interp)
-        return res
-
-    def _maximum_filter(self, size=3, interp='no'):
-
-        # Get a copy of the data array with masked values filled.
-
-        data = self._prepare_data(interp)
-
-        self._data = ndi.maximum_filter(data, size)
+        out = self if inplace else self.copy()
+        data = out._prepare_data(interp)
+        out._data = ndi.median_filter(data, size)
+        if out._var is not None:
+            out._var = ndi.median_filter(out._var, size)
+        return out
 
     def maximum_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing maximum filter applied to the current
@@ -4001,22 +3838,11 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we filter the image in-place, or filter a copy of the image?
 
-        res = self if inplace else self.copy()
-
-        # Filter the result object in-place.
-
-        res._maximum_filter(size, interp)
-        return res
-
-    def _minimum_filter(self, size=3, interp='no'):
-
-        # Get a copy of the data array with masked values filled.
-
-        data = self._prepare_data(interp)
-
-        self._data = ndi.minimum_filter(data, size)
+        out = self if inplace else self.copy()
+        data = out._prepare_data(interp)
+        out._data = ndi.maximum_filter(data, size)
+        return out
 
     def minimum_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing minimum filter applied to the current
@@ -4042,14 +3868,11 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we filter the image in-place, or filter a copy of the image?
 
-        res = self if inplace else self.copy()
-
-        # Filter the result object in-place.
-
-        res._minimum_filter(size, interp)
-        return res
+        out = self if inplace else self.copy()
+        data = out._prepare_data(interp)
+        out._data = ndi.minimum_filter(data, size)
+        return out
 
     def add(self, other):
         """Add the image other to the current image in-place. The coordinate
@@ -4167,7 +3990,6 @@ class Image(DataArray):
         """
 
         # Get a copy of the data array with masked values filled.
-
         data = self._prepare_data(interp)
 
         structure = ndi.generate_binary_structure(shape[0], shape[1])
@@ -4219,11 +4041,9 @@ class Image(DataArray):
                  if 'spline', spline interpolation of the masked values.
         """
         # Get a copy of the data array with masked values filled.
-
         data = self._prepare_data(interp)
-
         self._data = np.random.normal(data, sigma)
-        
+
         if self._var is None:
             self._var = np.ones((self.shape)) * sigma * sigma
         else:
@@ -4240,11 +4060,10 @@ class Image(DataArray):
                 if 'spline', spline interpolation of the masked values.
         """
         # Get a copy of the data array with masked values filled.
-
         data = self._prepare_data(interp)
 
         self._data = np.random.poisson(data).astype(float)
-        
+
         if self._var is None:
             self._var = self._data.__copy__()
         else:
@@ -4274,44 +4093,6 @@ class Image(DataArray):
         else:
             return False
 
-    def _fftconvolve(self, other, interp='no'):
-        if not isinstance(other, DataArray):
-            if self.shape[0] != other.shape[0] \
-                    or self.shape[1] != other.shape[1]:
-                raise IOError('Operation forbidden for images '
-                              'with different sizes')
-
-            # Get a copy of the data array with masked values filled.
-
-            data = self._prepare_data(interp)
-
-            self._data = signal.fftconvolve(data, other, mode='same')
-            
-            if self._var is not None:
-                self._var = signal.fftconvolve(self._var, other,
-                                              mode='same')
-        elif other.ndim == 2:
-            if self.shape[0] != other.shape[0] \
-                    or self.shape[1] != other.shape[1]:
-                raise IOError('Operation forbidden for images '
-                              'with different sizes')
-
-            # Get copies of the data arrays with masked values filled.
-
-            data = self._prepare_data(interp)
-            other_data = other._prepare_data(interp)
-
-            if self.unit != other.unit:
-                other_data = UnitMaskedArray(other_data, other.unit, self.unit)
-
-            self._data = signal.fftconvolve(data, other_data, mode='same')
-            
-            if self._var is not None:
-                self._var = signal.fftconvolve(self._var,
-                                              other_data, mode='same')
-        else:
-            raise IOError('Operation forbidden')
-
     def fftconvolve(self, other, interp='no', inplace=False):
         """Return the convolution of the image with other using fft.
 
@@ -4334,14 +4115,42 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Should we convolve the image in-place, or convolve a copy of the image?
 
-        res = self if inplace else self.copy()
+        out = self if inplace else self.copy()
 
-        # Convolve the result object in-place.
+        if not isinstance(other, DataArray):
+            if out.shape[0] != other.shape[0] \
+                    or out.shape[1] != other.shape[1]:
+                raise IOError('Operation forbidden for images '
+                              'with different sizes')
 
-        res._fftconvolve(other, interp)
-        return res
+            # Get a copy of the data array with masked values filled.
+            data = out._prepare_data(interp)
+            out._data = signal.fftconvolve(data, other, mode='same')
+
+            if out._var is not None:
+                out._var = signal.fftconvolve(out._var, other, mode='same')
+        elif other.ndim == 2:
+            if out.shape[0] != other.shape[0] \
+                    or out.shape[1] != other.shape[1]:
+                raise IOError('Operation forbidden for images '
+                              'with different sizes')
+
+            # Get copies of the data arrays with masked values filled.
+            data = out._prepare_data(interp)
+            other_data = other._prepare_data(interp)
+
+            if out.unit != other.unit:
+                other_data = UnitMaskedArray(other_data, other.unit, out.unit)
+
+            out._data = signal.fftconvolve(data, other_data, mode='same')
+
+            if out._var is not None:
+                out._var = signal.fftconvolve(out._var,
+                                              other_data, mode='same')
+        else:
+            raise IOError('Operation forbidden')
+        return out
 
     def fftconvolve_gauss(self, center=None, flux=1., fwhm=(1., 1.),
                           peak=False, rot=0., factor=1, unit_center=u.deg,
@@ -4383,19 +4192,15 @@ class Image(DataArray):
 
         """
 
-        # Create an image of the gaussian to be convolved.
-
         ima = gauss_image(self.shape, wcs=self.wcs, center=center,
                           flux=flux, fwhm=fwhm, peak=peak, rot=rot,
                           factor=factor, gauss=None, unit_center=unit_center,
                           unit_fwhm=unit_fwhm, cont=0, unit=self.unit)
 
         # Normalize the total flux of the Gaussian.
-
         ima.norm(typ='sum')
 
         # Perform the convolution in the Fourier plane.
-
         return self.fftconvolve(ima, inplace=inplace)
 
     def fftconvolve_moffat(self, center=None, flux=1., a=1.0, q=1.0,
@@ -4469,22 +4274,18 @@ class Image(DataArray):
 
         """
         if not isinstance(other, DataArray):
-
             # Get a copy of the data array with masked values filled.
-
             data = self._prepare_data(interp)
 
             res = self.copy()
             res._data = signal.correlate2d(data, other, mode='same',
-                                                      boundary='symm')
+                                           boundary='symm')
             if res._var is not None:
                 res._var = signal.correlate2d(res._var, other, mode='same',
-                                             boundary='symm')
+                                              boundary='symm')
             return res
         elif other.ndim == 2:
-
             # Get copies of the data arrays with masked values filled.
-
             data = self._prepare_data(interp)
             other_data = other._prepare_data(interp)
 
@@ -4495,7 +4296,7 @@ class Image(DataArray):
 
             if res._var is not None:
                 res._var = signal.correlate2d(res._var, other_data,
-                                             mode='same')
+                                              mode='same')
             return res
         else:
             raise IOError('Operation forbidden')
@@ -4599,11 +4400,11 @@ class Image(DataArray):
 
             # extract a larger window to get the convolution ok on the edge
             if np.abs(pa_hst - pa_muse) > 1.e-3:
-                subima = hst.subimage(center, (hsize + 2*seeing) * 1.5)
+                subima = hst.subimage(center, (hsize + 2 * seeing) * 1.5)
                 subima = subima.rotate(pa_hst - pa_muse)
-                zhst = subima.subimage(center, hsize + 2*seeing)
+                zhst = subima.subimage(center, hsize + 2 * seeing)
             else:
-                zhst = hst.subimage(center, hsize + 2*seeing)
+                zhst = hst.subimage(center, hsize + 2 * seeing)
 
             if plot:
                 rhst = zhst.subimage(center, hsize)
@@ -4806,7 +4607,8 @@ class Image(DataArray):
     def _format_coord(self, x, y):
         col = int(x + 0.5)
         row = int(y + 0.5)
-        if col >= 0 and col < self.shape[0] and row >= 0 and row < self.shape[1]:
+        if col >= 0 and col < self.shape[0] and \
+                row >= 0 and row < self.shape[1]:
             pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
             yc = pixsky[0][0]
             xc = pixsky[0][1]
@@ -5018,8 +4820,8 @@ class Image(DataArray):
                 radius = (np.abs(i2 - i1) / 2, np.abs(j2 - j1) / 2)
                 peak = self.peak(center, radius, unit_center=None,
                                  unit_radius=None)
-                msg = 'peak: y=%g\tx=%g\tp=%d\tq=%d\tdata=%g' \
-                    % (peak['y'], peak['x'], peak['p'], peak['q'], peak['data'])
+                msg = 'peak: y=%g\tx=%g\tp=%d\tq=%d\tdata=%g' % (
+                    peak['y'], peak['x'], peak['p'], peak['q'], peak['data'])
                 self._logger.info(msg)
             except:
                 pass
@@ -5387,7 +5189,6 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
                 center=None, flux=1., fwhm=(1., 1.), peak=False, rot=0.,
                 cont=0, unit_center=u.deg, unit_fwhm=u.arcsec,
                 unit=u.dimensionless_unscaled):
-
     """Create a new image from a 2D gaussian.
 
     Parameters
@@ -5748,7 +5549,6 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
         ima, col, sat = ImaCol
 
         # Get a copy of the data array with masked values filled.
-
         data = ima._prepare_data(interp)
 
         if mode == 'lin':
@@ -5772,7 +5572,6 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
     p1 = PILima.new('RGB', (ima.shape[0], ima.shape[1]))
 
     # Get a copy of the data array with masked values filled.
-
     data = ima._prepare_data(interp)
 
     if mode == 'lin':
@@ -5790,7 +5589,6 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
         p2 = PILima.new('RGB', (ima.shape[0], ima.shape[1]))
 
         # Get a copy of the data array with masked values filled.
-
         data = ima._prepare_data(interp)
 
         if mode == 'lin':
@@ -5872,8 +5670,8 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
             (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
     return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)
 
-def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
 
+def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
     """ Apply an anti-aliasing prefilter to an image to prepare
     it for subsampling.
 
@@ -5907,20 +5705,17 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
     """
 
     # Convert oldstep into a numpy array of two float elements.
-
     if is_number(oldstep):
         oldstep = (oldstep, oldstep)
     oldstep = abs(np.asarray(oldstep, dtype=np.float))
 
     # Convert newstep into a numpy array of two float elements.
-
     if is_number(newstep):
         newstep = (newstep, newstep)
     newstep = abs(np.asarray(newstep, dtype=np.float))
 
     # If no band-limits have been specified, substitute the
     # band-limits dictated by the current sampling interval.
-
     if oldfmax is None:
         oldfmax = 0.5 / oldstep
     else:
@@ -5928,24 +5723,19 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
 
     # Calculate the maximum frequencies that will be sampled by
     # the new pixel sizes along the Y and X axes.
-
     newfmax = 0.5 / newstep
 
     # Get the dimensions of the image to be filtered.
-
     nya, nxa = data.shape
 
     # Which axes need to be filtered?
-
     filter_axes = newfmax < oldfmax
 
     # Return the original image if neither axis needs filtering.
-
     if np.all(np.logical_not(filter_axes)):
         return data, oldfmax
 
     # Obtain the FFT of the input image.
-
     fft = np.fft.rfft2(data)
 
     # If newstep[1] is in degrees, then the pixel interval of that
@@ -5971,9 +5761,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
     # value of unity.
     #
     # Start by filtering the Y axis if needed.
-
     if filter_axes[0]:
-
         nyw = max(int((oldstep[0] * nya) / newstep[0]), 1)
         if nyw % 2 == 0:
             nyw -= 1
@@ -5982,21 +5770,17 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
 
         # Multiply the positive Y-axis frequencies by the positive
         # frequency side of the window, transposed to a column vector.
-
-        fft[0:nyw//2+1,:] *= y_window[np.newaxis,nyw//2:].T
+        fft[0:nyw // 2 + 1, :] *= y_window[np.newaxis, nyw // 2:].T
 
         # Multiply the negative Y-axis frequencies (not including
         # zero, which was multiplied above) by the pixels 1 and above
         # of the window, transposed to a column vector.
-
-        fft[nya-nyw//2:nya,:] *= y_window[np.newaxis,1:nyw//2+1].T
+        fft[nya - nyw // 2:nya, :] *= y_window[np.newaxis, 1:nyw // 2 + 1].T
 
         # Zero all pixels along the Y-axis that lie outside the window.
-
-        fft[nyw//2+1:nya-nyw//2,:] = 0.0+0.0j
+        fft[nyw // 2 + 1:nya - nyw // 2, :] = 0.0 + 0.0j
 
     # Filter the X axis?
-
     if filter_axes[1]:
 
         nxw = max(int((oldstep[1] * nxa) / newstep[1]), 1)
@@ -6004,27 +5788,24 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
             nxw -= 1
 
         # Get Blackman window functions for the X and Y directions.
-
         x_window = np.blackman(nxw)
 
         # Multiply the positive X-axis frequencies by the positive
         # frequency side of the window.
-
-        fft[:,0:nxw//2+1] *= x_window[nxw//2:]
+        fft[:, 0:nxw // 2 + 1] *= x_window[nxw // 2:]
 
         # Note that there aren't any negative X-axis frequencies to
         # window, because we are using a real-only FFT which only
         # computes the positive frequencies.
         #
         # Zero all pixels along the X-axis that lie outside the window.
-
-        fft[:,nxw//2+1:] = 0.0+0.0j
+        fft[:, nxw // 2 + 1:] = 0.0 + 0.0j
 
     # Perform an inverse Fourier transform to get the filtered image
-
     data = np.fft.irfft2(fft)
 
     return data, np.where(filter_axes, newfmax, oldfmax)
+
 
 def _find_quadratic_peak(y):
     """Given an array of 3 numbers in which the first and last numbers are
@@ -6063,8 +5844,8 @@ def _find_quadratic_peak(y):
     b = -1.5 * y[0] + 2.0 * y[1] - 0.5 * y[2]
 
     # Quadratic curves peak at:  x = -b / (2*a)
-
     return -b / (2 * a)
+
 
 class SpatialFrequencyLimits(object):
 
@@ -6109,22 +5890,18 @@ class SpatialFrequencyLimits(object):
     """
 
     def __init__(self, fmax, rot):
-
         # Store the Y and X axes of the band-limiting ellipse.
-
         self.fmax = np.array(fmax, dtype=np.float, copy=True)
 
         # Record the rotation angle in degrees of the ellipse, after
         # wrapping the angle into the range -180 to 180, to make it
         # easy to compare with angles returned by wcs.get_rot().
-
         self.rot = float(rot - 360.0 * np.floor(rot / 360.0 + 0.5))
 
     def deepcopy(self):
         return SpatialFrequencyLimits(self.fmax, self.rot)
 
     def get_fmax(self, rot):
-
         """Return the spatial-frequency band-limits along a Y axis that is
         'rot' degrees west of north, and an X axis that is 90 degrees
         away from this Y axis in the sense of a rotation from north to east.
@@ -6144,15 +5921,12 @@ class SpatialFrequencyLimits(object):
         """
 
         # Extract the Y and X axis radii of the ellipse.
-
         ys, xs = self.fmax
 
         # Compute the rotation angle of the ellipse in radians.
-
         psi = np.deg2rad(rot - self.rot)
 
         # Precalculate sin and cos of the ellipse rotation angle.
-
         cos_psi = np.cos(psi)
         sin_psi = np.sin(psi)
 
@@ -6160,14 +5934,12 @@ class SpatialFrequencyLimits(object):
         # of the ellipse locus are maximized. These equations come from
         # calculating d[x(t)]/dt=0 and d[y(t)]/dt=0 using the definitions
         # of x(t) and y(t) that are shown in the class documentation.
-
-        t_xmax = np.arctan2(-ys*sin_psi, xs*cos_psi)
-        t_ymax = np.arctan2(ys*cos_psi, xs*sin_psi)
+        t_xmax = np.arctan2(-ys * sin_psi, xs * cos_psi)
+        t_ymax = np.arctan2(ys * cos_psi, xs * sin_psi)
 
         # Get the maximum X and Y coordinates of the rotated ellipse.
-
-        xmax = xs*np.cos(t_xmax)*cos_psi - ys*np.sin(t_xmax)*sin_psi
-        ymax = xs*np.cos(t_ymax)*sin_psi + ys*np.sin(t_ymax)*cos_psi
+        xmax = xs * np.cos(t_xmax) * cos_psi - ys * np.sin(t_xmax) * sin_psi
+        ymax = xs * np.cos(t_ymax) * sin_psi + ys * np.sin(t_ymax) * cos_psi
 
         return np.array([ymax, xmax], dtype=np.float)
 
@@ -6191,27 +5963,22 @@ class SpatialFrequencyLimits(object):
         """
 
         # Extract the Y and X axis radii of the ellipse.
-
         ys, xs = self.fmax
 
         # Compute the rotation angle of the ellipse in radians.
-
         psi = np.deg2rad(rot - self.rot)
 
         # Precalculate sin and cos of the ellipse rotation angle.
-
         cos_psi = np.cos(psi)
         sin_psi = np.sin(psi)
 
         # Precalculate sin and cos of the phase of the ellipse.
-
         cos_t = np.cos(t)
         sin_t = np.sin(t)
 
         # Calculate the locus of the ellipse at phase t, using
         # the equations shown in the class documentation.
+        x = xs * cos_t * cos_psi - ys * sin_t * sin_psi
+        y = xs * cos_t * sin_psi + ys * sin_t * cos_psi
 
-        x = xs*cos_t*cos_psi - ys*sin_t*sin_psi
-        y = xs*cos_t*sin_psi + ys*sin_t*cos_psi
-
-        return np.array([y,x], dtype=np.float)
+        return np.array([y, x], dtype=np.float)
