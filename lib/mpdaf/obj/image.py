@@ -4370,7 +4370,7 @@ class Image(DataArray):
 
     def fftconvolve_gauss(self, center=None, flux=1., fwhm=(1., 1.),
                           peak=False, rot=0., factor=1, unit_center=u.deg,
-                          unit_fwhm=u.arcsec, inplace=True):
+                          unit_fwhm=u.arcsec, inplace=False):
         """Return the convolution of the image with a 2D gaussian.
 
         Parameters
@@ -4399,11 +4399,8 @@ class Image(DataArray):
         unit_fwhm : `astropy.units.Unit`
             FWHM unit. Arcseconds by default (use None for radius in pixels)
         inplace : bool
-            If False, return a convolved copy of the image.
+            If False, return a convolved copy of the image (default value).
             If True, convolve the original image in-place, and return that.
-            Note that the default value of this argument is True. For
-            historical reasons this is the opposite of other MPDAF image
-            functions.
 
         Returns
         -------
@@ -4428,7 +4425,7 @@ class Image(DataArray):
 
     def fftconvolve_moffat(self, center=None, flux=1., a=1.0, q=1.0,
                            n=2, peak=False, rot=0., factor=1,
-                           unit_center=u.deg, unit_a=u.arcsec, inplace=True):
+                           unit_center=u.deg, unit_a=u.arcsec, inplace=False):
         """Return the convolution of the image with a 2D moffat.
 
         Parameters
@@ -4462,11 +4459,8 @@ class Image(DataArray):
         unit_a : `astropy.units.Unit`
             a unit. Arcseconds by default (use None for radius in pixels)
         inplace : bool
-            If False, return a convolved copy of the image.
+            If False, return a convolved copy of the image (default value).
             If True, convolve the original image in-place, and return that.
-            Note that the default value of this argument is True. For
-            historical reasons this is the opposite of other MPDAF image
-            functions.
 
         Returns
         -------
