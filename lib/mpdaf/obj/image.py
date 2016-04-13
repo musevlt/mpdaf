@@ -16,7 +16,6 @@ from scipy.ndimage.interpolation import affine_transform
 from scipy.optimize import leastsq
 from scipy.stats import threshold
 
-from . import plt_norm, plt_zscale
 from .coords import WCS, WaveCoord
 from .data import DataArray, is_valid_fits_file
 from .objs import is_int, is_number, UnitArray, UnitMaskedArray
@@ -4741,18 +4740,26 @@ class Image(DataArray):
             ax.plot(xaxis, self.data)
             ylabel = self.unit
         else:
+            from astropy import visualization as viz
+            from astropy.visualization.mpl_normalize import ImageNormalize
             if zscale:
+                from . import plt_zscale
                 vmin, vmax = plt_zscale.zscale(self.data.filled(0))
-            if scale == 'log':
-                norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
-            elif scale == 'arcsinh':
-                norm = plt_norm.ArcsinhNorm(vmin=vmin, vmax=vmax)
+
+            if scale == 'linear':
+                stretch = viz.LinearStretch
+            elif scale == 'log':
+                stretch = viz.LogStretch
+            elif scale in ('asinh', 'arcsinh'):
+                stretch = viz.AsinhStretch
             elif scale == 'power':
-                norm = plt_norm.PowerNorm(vmin=vmin, vmax=vmax)
+                stretch = viz.PowerStretch
             elif scale == 'sqrt':
-                norm = plt_norm.SqrtNorm(vmin=vmin, vmax=vmax)
+                stretch = viz.SqrtStretch
             else:
-                norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+                raise ValueError('Unknown scale: {}'.format(scale))
+
+            norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch())
 
             if var and self.var is not None:
                 wght = 1.0 / self.var
@@ -4760,13 +4767,13 @@ class Image(DataArray):
 
                 normalpha = mpl.colors.Normalize(wght.min(), wght.max())
 
-                img_array = plt.get_cmap('jet')(norm(self.data))
-                img_array[:, :, 3] = 1 - normalpha(wght) / 2
-                cax = ax.imshow(img_array, interpolation='nearest',
-                                origin='lower', norm=norm, **kwargs)
+                data = plt.get_cmap('jet')(norm(self.data))
+                data[:, :, 3] = 1 - normalpha(wght) / 2
             else:
-                cax = ax.imshow(self.data, interpolation='nearest',
-                                origin='lower', norm=norm, **kwargs)
+                data = self.data
+
+            cax = ax.imshow(data, interpolation='nearest', origin='lower',
+                            norm=norm, **kwargs)
 
             # create colorbar
             from mpl_toolkits.axes_grid1 import make_axes_locatable
