@@ -97,7 +97,7 @@ The following methods correspond to different steps of the algorithm:
 
 `mpdaf.sdetect.ORIGIN.merge_spectraly <mpdaf.sdetect.ORIGIN.merge_spectraly>` applies a spectral merging.
 
-`mpdaf.sdetect.ORIGIN.get_sources <mpdaf.sdetect.ORIGIN.get_sources>` creates the final catalogue of sources.
+`mpdaf.sdetect.ORIGIN.write_sources <mpdaf.sdetect.ORIGIN.get_sources>` creates the final catalogue of sources.
 
 
 The following method can be used to visualize the detected lines at each step.
@@ -288,7 +288,7 @@ The ninth step is the spectral merging.
 The last step adds corresponding RA/DEC to the catalogue and
 writes the `~mpdaf.Source` objects in a folder::
 
- >>> sources = my_origin.get_sources(Cat4, Cat_est_line, correl, name='origin', path=path='.')
+ >>> sources = my_origin.write_sources(Cat4, Cat_est_line, correl, name='origin', path=path='.')
 
 A source corresponds to a group on detected emission lines and contains:
 
