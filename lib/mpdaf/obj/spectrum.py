@@ -857,7 +857,7 @@ class Spectrum(DataArray):
             # Update the world coordinates to match the truncated
             # array.
 
-            self.wcs = self.wcs[sl]
+            self.wave = self.wave[sl]
 
 
         # At this point the spectrum dimension is an integer multiple of
