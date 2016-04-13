@@ -262,10 +262,6 @@ class Image(DataArray):
             filename=filename, ext=ext, wcs=wcs, unit=unit, data=data, var=var,
             copy=copy, dtype=dtype, **kwargs)
 
-    @deprecated('The resize method is deprecated. Please use crop instead.')
-    def resize(self):
-        return self.crop()
-
     def copy(self):
         """Return a new copy of an Image object."""
         obj = super(Image, self).copy()

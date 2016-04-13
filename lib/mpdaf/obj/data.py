@@ -85,7 +85,7 @@ class DataArray(object):
     indexed in the order [wavelength,image_y,image_x]. For Image
     objects they are 2D arrays indexed in the order
     [image_y,image_x]. For Spectrum objects they are 1D arrays.
-    
+
     Image arrays hold flat 2D map-projections of the sky. The X and Y
     axes of the image arrays are orthogonal on the sky at the tangent
     point of the projection. When the rotation angle of the projection
@@ -133,10 +133,10 @@ class DataArray(object):
 
     More specifically, when a new data array is assigned to obj.data,
     the shared mask becomes a copy of the mask array of the input data
-    array, if it has one. 
+    array, if it has one.
     If the new data array is not a masked array, the mask is created
     by masking any elements that are Inf or Nan in the new data array.
-    
+
     When a new variance array is assigned to obj.var, the shared mask
     becomes the union of the mask of the current data array and the
     mask of the new variance array, if it has a mask.
@@ -338,7 +338,8 @@ class DataArray(object):
                 if self.dtype == np.float32:
                     self.dtype = np.float64
                 if isinstance(data, ma.MaskedArray):
-                    self._data = np.array(data.data, dtype=self.dtype, copy=copy)
+                    self._data = np.array(data.data, dtype=self.dtype,
+                                          copy=copy)
                     if data.mask is ma.nomask:
                         self._mask = data.mask
                     else:
@@ -520,7 +521,7 @@ class DataArray(object):
         property. When a masked array is
         assigned to the var property, its mask is combined with the
         existing shared mask, rather than replacing it.
-    
+
         """
         if self._var is None:
             return None
@@ -1100,3 +1101,7 @@ class DataArray(object):
                                      'attribute set to None', exc_info=True)
 
         return item
+
+    @deprecated('The resize method is deprecated. Please use crop instead.')
+    def resize(self):
+        return self.crop()

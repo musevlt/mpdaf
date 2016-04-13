@@ -163,10 +163,6 @@ class Cube(DataArray):
     _has_wcs = True
     _has_wave = True
 
-    @deprecated('The resize method is deprecated. Please use crop instead.')
-    def resize(self):
-        return self.crop()
-
     def mask_region(self, center, radius, lmin=None, lmax=None, inside=True,
                     unit_center=u.deg, unit_radius=u.arcsec,
                     unit_wave=u.angstrom):

@@ -145,10 +145,6 @@ class Spectrum(DataArray):
             var=var, copy=copy, dtype=dtype, **kwargs)
         self._clicks = None
 
-    @deprecated('The resize method is deprecated. Please use crop instead.')
-    def resize(self):
-        return self.crop()
-
     def __add__(self, other):
         """Operator +.
 
@@ -766,7 +762,7 @@ class Spectrum(DataArray):
         assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
         sh = self.shape[0] / factor
-        
+
         if self.mask is np.ma.nomask:
             self._data = self._data.reshape(sh, factor).sum(1) / factor
             if self._var is not None:
@@ -778,7 +774,7 @@ class Spectrum(DataArray):
                 self._var = self.var.reshape(sh, factor).sum(1).data / (mask_count * mask_count)
             self._mask = (mask_count==0)
         self._ndim = self._data.ndim
-        
+
         try:
             self.wave.rebin(factor)
         except:
@@ -1042,7 +1038,7 @@ class Spectrum(DataArray):
                 self._data[i] = \
                     integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
                     / newwave.get_step(unit)
-                    
+
         if self._mask is not np.ma.nomask:
             self._mask = ~(np.isfinite(self._data))
 
@@ -1059,10 +1055,10 @@ class Spectrum(DataArray):
                         integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
                         / newwave.get_step(unit)
                 self._var = var
-                
+
             if self._mask is not np.ma.nomask:
                 self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
-            
+
         else:
             self._var = None
 
