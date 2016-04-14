@@ -662,6 +662,9 @@ class Image(DataArray):
         else:
             return other.__div__(self)
 
+    __truediv__ = __div__
+    __rtruediv__ = __rdiv__
+
     def get_step(self, unit=None):
         """Return the angular height and width of a pixel along the
         Y and X axes of the image array.

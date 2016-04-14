@@ -231,6 +231,9 @@ class Channel(object):
         else:
             return np.ndarray.__div__(self, other)
 
+    __truediv__ = __div__
+    __itruediv__ = __idiv__
+
     @_decorator
     def __sub__(self, other):
         """Subtracts either a number or a Channel object."""
@@ -901,6 +904,9 @@ class RawFile(object):
 
     def __idiv__(self, other):
         return self._mp_operator(other, 'Channel.__idiv__')
+
+    __truediv__ = __div__
+    __itruediv__ = __idiv__
 
     def __sub__(self, other):
         """Subtracts either a number or a RawFits object."""

@@ -486,6 +486,9 @@ class CalibFile(object):
     def __idiv__(self, other):
         return self.__imul__(1. / other)
 
+    __truediv__ = __div__
+    __itruediv__ = __idiv__
+
 
 STR_FUNCTIONS = {'CalibFile.__mul__': CalibFile.__mul__,
                  'CalibFile.__imul__': CalibFile.__imul__,
@@ -600,6 +603,8 @@ class CalibDir(object):
     def __div__(self, other):
         """Divides by a number."""
         return self.__mul__(1. / other)
+
+    __truediv__ = __div__
 
     def _mp_operator(self, other, funcfile, funcnumber):
         if isinstance(other, CalibDir):

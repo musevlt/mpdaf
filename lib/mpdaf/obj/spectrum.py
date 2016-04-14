@@ -515,6 +515,9 @@ class Spectrum(DataArray):
         else:
             return other.__div__(self)
 
+    __truediv__ = __div__
+    __rtruediv__ = __rdiv__
+
     def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
         """ Return the flux value corresponding to a wavelength,
         or return the sub-spectrum corresponding to a wavelength range.

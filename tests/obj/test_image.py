@@ -6,14 +6,19 @@ from nose.plugins.attrib import attr
 import astropy.units as u
 import numpy as np
 import scipy.ndimage as ndi
+import six
 
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import assert_almost_equal
-from operator import add, sub, mul, div
 from six.moves import range
 
 from ..utils import (assert_image_equal, generate_image, generate_cube,
                      generate_spectrum, assert_masked_allclose)
+
+if six.PY2:
+    from operator import add, sub, mul, div
+else:
+    from operator import add, sub, mul, truediv as div
 
 
 @attr(speed='fast')

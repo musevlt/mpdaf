@@ -862,6 +862,9 @@ class Cube(DataArray):
         else:
             return other.__div__(self)
 
+    __truediv__ = __div__
+    __rtruediv__ = __rdiv__
+
     def __getitem__(self, item):
         """Return the corresponding object:
         cube[k,p,k] = value
