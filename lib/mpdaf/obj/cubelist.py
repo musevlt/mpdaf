@@ -11,6 +11,7 @@ from astropy.table import Table
 from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
 from numpy import allclose, array_equal
+from six.moves import range, zip
 
 from .cube import Cube
 from .objs import is_float, is_int
@@ -181,7 +182,7 @@ class CubeList(object):
             c.data_header['OBJECT'] = self.cubes[0].data_header['OBJECT']
 
         if keywords is not None:
-            params, values, comments = zip(*keywords)
+            params, values, comments = list(zip(*keywords))
         else:
             params, values, comments = [], [], []
 
@@ -364,7 +365,7 @@ class CubeList(object):
         nl = self.shape[0]
 
         self._logger.info('Looping on the %d planes of the cube', nl)
-        for l in ProgressBar(xrange(nl)):
+        for l in ProgressBar(range(nl)):
             arr = np.array([c[l, :, :][0] for c in data])
             cube[l, :, :] = np.nanmedian(arr, axis=0)
             expmap[l, :, :] = (~np.isnan(arr)).astype(int).sum(axis=0)
@@ -437,7 +438,7 @@ class CubeList(object):
 
         info('Looping on the %d planes of the cube', nl)
 
-        for l in xrange(nl):
+        for l in range(nl):
             if l % 100 == 0:
                 info('%d/%d', l, nl)
             for i, f in enumerate(data):
@@ -639,7 +640,7 @@ class CubeMosaic(CubeList):
             stat = [fitsio.FITS(f)['STAT'] for f in self.files]
 
         info('Looping on the %d planes of the cube', nl)
-        for l in xrange(nl):
+        for l in range(nl):
             if l % 100 == 0:
                 info('%d/%d', l, nl)
             arr.fill(np.nan)

@@ -1,7 +1,7 @@
 """rawobj.py Manages raw FITS file."""
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
 import datetime
 import logging
 import matplotlib.cm as cm
@@ -15,6 +15,7 @@ import warnings
 from astropy.io import fits as pyfits
 from mpdaf import obj
 from scipy import integrate
+from six.moves import range
 
 NB_SUBSLICERS = 4  # number of sub-slicers
 NB_SPEC_PER_SLICE = 75  # number of pixels per slice

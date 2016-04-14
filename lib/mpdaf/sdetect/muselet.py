@@ -1,6 +1,5 @@
 from __future__ import absolute_import
-from astropy.io import fits as pyfits
-from astropy.table import Table
+
 import astropy.units as u
 import logging
 import numpy as np
@@ -9,7 +8,11 @@ import shutil
 import subprocess
 import stat
 import sys
+
+from astropy.io import fits as pyfits
+from astropy.table import Table
 from glob import glob
+from six.moves import range
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
@@ -52,12 +55,12 @@ def remove_files():
     for f in glob('nb/*'):
         os.remove(f)
     os.removedirs('nb')
-    
+
 def write_white(data, mvar, size1, wcs, unit):
     weight_data = np.ma.average(data[1:size1 - 1, :, :], weights=1. / mvar[1:size1 - 1, :, :], axis=0)
     weight = Image(wcs=wcs, data=np.ma.filled(weight_data, np.nan), unit=unit, copy=False)
     weight.write('white.fits', savemask='nan')
-    
+
 def write_inv_variance(expmap, mvar, size1, wcs, unit):
     if not expmap:
         mcentralvar = mvar[2: size1 - 3, :, :]
@@ -66,8 +69,8 @@ def write_inv_variance(expmap, mvar, size1, wcs, unit):
     else:
         fullvar = expmap.mean(axis=0)
     fullvar.write('inv_variance.fits', savemask='nan')
-    
-    
+
+
 def write_rgb(data, mvar, size1, wcs, unit):
     nsfilter = int(size1 / 3.0)
     bdata = np.ma.average(data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)
@@ -82,7 +85,7 @@ def write_rgb(data, mvar, size1, wcs, unit):
     r.write('whiter.fits', savemask='nan')
     g.write('whiteg.fits', savemask='nan')
     b.write('whiteb.fits', savemask='nan')
-    
+
 def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs, unit, cmd_sex, cubename, data_header):
 
     try:
@@ -94,9 +97,9 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs, un
         outnbcube = np.empty(data.shape, dtype=np.float32)
 
     f2 = open("nb/dosex", 'w')
-        
+
     fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
-    
+
     for k in range(2, size1 - 3):
         sys.stdout.write("Narrow band:%d/%d" % (k, size1 - 3) + "\r")
         leftmin = max(0, k - 2 - delta)
@@ -130,15 +133,15 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs, un
         else:
             expmap[k, :, :].write('nb/exp' + kstr + '.fits', savemask='nan')
             f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' + kstr + '.fits\n')
-  
+
     sys.stdout.write("\n")
     sys.stdout.flush()
     f2.close()
     if(nbcube):
         outnbcubename = 'NB_' + os.path.basename(cubename)
         pyfits.writeto(outnbcubename, outnbcube, data_header, clobber=True)
-    
-    
+
+
 def step1(logger, cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     logger.info("muselet - Opening: " + cubename)
     c = Cube(cubename, copy=False, dtype=np.float32)
@@ -150,7 +153,7 @@ def step1(logger, cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     size1 = c.shape[0]
     size2 = c.shape[1]
     size3 = c.shape[2]
-    
+
     if not expmapcube:
         expmap = None
     else:
@@ -158,12 +161,12 @@ def step1(logger, cubename, expmapcube, fw, nbcube, cmd_sex, delta):
         expmap = Cube(expmapcube)
 
     logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images")
-    
+
     write_white(c.data, mvar, size1, c.wcs, c.unit)
     write_inv_variance(expmap, mvar, size1, c.wcs, c.unit)
     write_rgb(c.data, mvar, size1, c.wcs, c.unit)
     write_nb(c.data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, c.wcs, c.unit, cmd_sex, cubename, c.data_header)
-    
+
 def step2(logger, cmd_sex):
     logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and narrow-band images")
     # tests here if the files default.sex, default.conv, default.nnw and default.param exist.
@@ -207,7 +210,7 @@ def step2(logger, cmd_sex):
     os.chmod('dosex', st.st_mode | stat.S_IEXEC)
     subprocess.Popen('./dosex', shell=True).wait()
     os.chdir("..")
-    
+
 def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
     logger.info("muselet - STEP 3: merge SExtractor catalogs and measure redshifts")
 
@@ -535,7 +538,7 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
     single_lines.sort(key=lsource)
 
     return continuum_lines, single_lines, raw_catalog
-    
+
 
 def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25, clean=0.5, nbcube=True, expmapcube=None, skyclean=[(5573.5, 5578.8), (6297.0, 6300.5)], del_sex=False):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
@@ -552,7 +555,7 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
              (2) runs SExtractor
              (3) merges catalogs and measure redshifts,
     delta  : integer
-             Size of the two median continuum estimates to be taken 
+             Size of the two median continuum estimates to be taken
              on each side of the narrow-band image (in MUSE wavelength planes).
              Default is 20 planes, or 25 Angstroms.
     fw     : list of 5 floats
@@ -610,17 +613,17 @@ def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.
             raise OSError('SExtractor not found')
 
     if(step == 1):
-        
+
         step1(logger, cubename, expmapcube, fw, nbcube, cmd_sex, delta)
 
     if(step <= 2):
-        
+
         step2(logger, cmd_sex)
-        
+
     if(step <= 3):
-        
+
         continuum_lines, single_lines, raw_catalog = step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max)
-        
+
 
     if del_sex:
         remove_files()

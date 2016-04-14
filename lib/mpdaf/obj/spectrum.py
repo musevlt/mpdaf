@@ -1,7 +1,7 @@
 """spectrum.py defines Spectrum objects."""
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,6 +11,7 @@ import warnings
 import astropy.units as u
 from scipy import integrate, interpolate, signal
 from scipy.optimize import leastsq
+from six.moves import range
 
 from . import ABmag_filters
 from .data import DataArray
@@ -2744,17 +2745,15 @@ class Spectrum(DataArray):
         data[:k] = self._data[k:0:-1]
         data[-k:] = self._data[-2:-k - 2:-1]
 
-        res._data = np.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
-                                              * data[i:i + size]).sum(),
-                                   range(self.shape[0])))
+        res._data = np.array([(f(lbda[i], step, size, **kwargs)
+                                              * data[i:i + size]).sum() for i in range(self.shape[0])])
         res._mask = self._mask
 
         if self._var is None:
             res._var = None
         else:
-            res._var = np.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
-                                              * data[i:i + size]).sum(),
-                                   range(self.shape[0])))
+            res._var = np.array([(f(lbda[i], step, size, **kwargs)
+                                              * data[i:i + size]).sum() for i in range(self.shape[0])])
         return res
 
     def peak_detection(self, kernel_size=None, unit=u.angstrom):

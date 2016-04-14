@@ -1,5 +1,5 @@
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
 import astropy.units as u
 import datetime
 import glob
@@ -17,6 +17,7 @@ from functools import partial
 from matplotlib import cm
 from matplotlib.patches import Ellipse
 from numpy import ma
+from six.moves import range, zip
 
 from ..obj import Cube, Image, Spectrum, gauss_image
 from ..obj.objs import is_int, is_float
@@ -356,7 +357,7 @@ class Source(object):
 
         if ext is None:
             extnames = [h.name for h in hdulist[1:]]
-        elif isinstance(ext, (str, unicode)):
+        elif isinstance(ext, (str, six.text_type)):
             extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
         else:
             extnames = []

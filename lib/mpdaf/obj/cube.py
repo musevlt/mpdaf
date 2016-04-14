@@ -11,6 +11,7 @@ import types
 
 from astropy.io import fits as pyfits
 from numpy import ma
+from six.moves import range, zip
 
 from .coords import WCS, WaveCoord
 from .data import DataArray
@@ -2017,7 +2018,8 @@ class Cube(DataArray):
         var = self._var
         mask = self._mask
         header = self.wave.to_header()
-        pv, qv = np.meshgrid(range(self.shape[1]), range(self.shape[2]),
+        pv, qv = np.meshgrid(list(range(self.shape[1])),
+                             list(range(self.shape[2])),
                              sparse=False, indexing='ij')
         pv = pv.ravel()
         qv = qv.ravel()

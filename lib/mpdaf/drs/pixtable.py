@@ -13,6 +13,7 @@ import warnings
 import astropy.units as u
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
+from six.moves import range
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
 from ..obj.objs import is_float, is_int

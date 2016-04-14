@@ -1,12 +1,15 @@
 """coords.py Manages coordinates."""
 
 from __future__ import absolute_import
-from astropy.coordinates import Angle
-from astropy.io import fits
+
 import astropy.units as u
 import astropy.wcs as pywcs
 import logging
 import numpy as np
+
+from astropy.coordinates import Angle
+from astropy.io import fits
+from six.moves import range
 
 from .objs import is_float, is_int
 from ..tools import fix_unit_read

@@ -10,6 +10,7 @@ from astropy.coordinates import SkyCoord, search_around_sky
 from astropy.table import Table, hstack, vstack
 from astropy import units as u
 from matplotlib.patches import Ellipse
+from six.moves import range, zip
 
 INVALID = {
     type(1): -9999, np.int_: -9999,
@@ -71,19 +72,19 @@ class Catalog(Table):
         # union of all headers keywords without mandatory FITS keywords
         h = sources[0].header
 
-        d = dict(zip(h.keys(), [(type(c[1]), c[2]) for c in h.cards]))
+        d = dict(list(zip(list(h.keys()), [(type(c[1]), c[2]) for c in h.cards])))
         for source in sources[1:]:
             h = source.header
-            d.update(dict(zip(h.keys(), [(type(c[1]), c[2]) for c in h.cards])))
+            d.update(dict(list(zip(list(h.keys()), [(type(c[1]), c[2]) for c in h.cards]))))
 
         excluded_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR']
         i = 1
-        while 'COM%03d' % i in d.keys():
+        while 'COM%03d' % i in list(d.keys()):
             excluded_cards.append('COM%03d' % i)
             i += 1
         i = 1
-        while 'HIST%03d' % i in d.keys():
+        while 'HIST%03d' % i in list(d.keys()):
             excluded_cards.append('HIST%03d' % i)
             i += 1
 
@@ -208,7 +209,7 @@ class Catalog(Table):
         for source in sources:
             # header
             h = source.header
-            keys = h.keys()
+            keys = list(h.keys())
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
                 if typ == type('1'):
@@ -419,7 +420,7 @@ class Catalog(Table):
         """
         coord1 = SkyCoord(zip(self[colc1[0]], self[colc1[1]]), unit=(u.degree, u.degree))
         coord2 = SkyCoord(zip(cat2[colc2[0]], cat2[colc2[1]]), unit=(u.degree, u.degree))
-        id2, d2d, d3d = coord1.match_to_catalog_sky(coord2) 
+        id2, d2d, d3d = coord1.match_to_catalog_sky(coord2)
         kmatch = d2d < radius * u.arcsec
         match1 = coord1[kmatch]
         nomatch1 = self[~kmatch]

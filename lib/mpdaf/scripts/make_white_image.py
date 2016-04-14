@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
-from __future__ import absolute_import
 import argparse
 from mpdaf.obj import Cube
 from time import time
