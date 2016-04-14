@@ -1,6 +1,6 @@
 """rawobj.py Manages raw FITS file."""
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, division
 
 import datetime
 import logging
@@ -117,13 +117,13 @@ class Channel(object):
                     x = self.header["%s X" % key]
                     # Y location of output
                     y = self.header["%s Y" % key]
-                    if x < nx_data2 / 2:
+                    if x < nx_data2 // 2:
                         i1 = x - 1 + prscx
                         i2 = i1 + nx
                     else:
                         i2 = nx_data - prscx
                         i1 = i2 - nx
-                    if y < ny_data2 / 2:
+                    if y < ny_data2 // 2:
                         j1 = y - 1 + prscy
                         j2 = j1 + ny
                     else:
@@ -361,13 +361,13 @@ class Channel(object):
             x = self.header["%s X" % key]
             # Y location of output
             y = self.header["%s Y" % key]
-            if x < nx_data2 / 2:
+            if x < nx_data2 // 2:
                 i1 = x - 1
                 i2 = i1 + nx + 2 * prscx
             else:
                 i2 = nx_data
                 i1 = i2 - nx - 2 * prscx
-            if y < ny_data2 / 2:
+            if y < ny_data2 // 2:
                 j1 = y - 1
                 j2 = j1 + ny + 2 * prscy
             else:
@@ -400,13 +400,13 @@ class Channel(object):
                 x = self.header["%s X" % key]
                 # Y location of output
                 y = self.header["%s Y" % key]
-                if x < nx_data2 / 2:
+                if x < nx_data2 // 2:
                     i1 = x - 1
                     i2 = i1 + nx + 2 * prscx
                 else:
                     i2 = nx_data
                     i1 = i2 - nx - 2 * prscx
-                if y < ny_data2 / 2:
+                if y < ny_data2 // 2:
                     j1 = y - 1
                     j2 = j1 + ny + 2 * prscy
                 else:
@@ -487,13 +487,13 @@ class Channel(object):
                     x = self.header["%s X" % key]
                     # Y location of output
                     y = self.header["%s Y" % key]
-                    if x < nx_data2 / 2:
+                    if x < nx_data2 // 2:
                         i1 = x - 1
                         i2 = i1 + nx + 2 * prscx
                     else:
                         i2 = nx_data
                         i1 = i2 - nx - 2 * prscx
-                    if y < ny_data2 / 2:
+                    if y < ny_data2 // 2:
                         j1 = y - 1
                         j2 = j1 + ny + 2 * prscy
                     else:
@@ -517,13 +517,13 @@ class Channel(object):
                 x = self.header["%s X" % key]
                 # Y location of output
                 y = self.header["%s Y" % key]
-                if x < nx_data2 / 2:
+                if x < nx_data2 // 2:
                     i1 = x - 1
                     i2 = i1 + nx + 2 * prscx
                 else:
                     i2 = nx_data
                     i1 = i2 - nx - 2 * prscx
-                if y < ny_data2 / 2:
+                if y < ny_data2 // 2:
                     j1 = y - 1
                     j2 = j1 + ny + 2 * prscy
                 else:
@@ -557,13 +557,13 @@ class Channel(object):
             x = self.header["%s X" % key]
             # Y location of output
             y = self.header["%s Y" % key]
-            if x < nx_data2 / 2:
+            if x < nx_data2 // 2:
                 i1 = x - 1 + prscx
                 i2 = i1 + nx
             else:
                 i2 = nx_data - prscx
                 i1 = i2 - nx
-            if y < ny_data2 / 2:
+            if y < ny_data2 // 2:
                 j1 = y - 1 + prscy
                 j2 = j1 + ny
             else:
@@ -613,13 +613,13 @@ class Channel(object):
             x = self.header["%s X" % key]
             # Y location of output
             y = self.header["%s Y" % key]
-            if x < nx_data2 / 2:
+            if x < nx_data2 // 2:
                 i1 = x - 1
                 i2 = i1 + nx + 2 * prscx
             else:
                 i2 = nx_data
                 i1 = i2 - nx - 2 * prscx
-            if y < ny_data2 / 2:
+            if y < ny_data2 // 2:
                 j1 = y - 1
                 j2 = j1 + ny + 2 * prscy
             else:
@@ -670,13 +670,13 @@ class Channel(object):
             x = self.header["%s X" % key]
             # Y location of output
             y = self.header["%s Y" % key]
-            if x < nx_data2 / 2:
+            if x < nx_data2 // 2:
                 i1 = x - 1
                 i2 = i1 + nx + 2 * prscx
             else:
                 i2 = nx_data
                 i1 = i2 - nx - 2 * prscx
-            if y < ny_data2 / 2:
+            if y < ny_data2 // 2:
                 j1 = y - 1
                 j2 = j1 + ny + 2 * prscy
             else:
@@ -1134,9 +1134,9 @@ class RawFile(object):
             nchan = len(channels)
             nrows = int(np.sqrt(nchan))
             if nchan % nrows == 0:
-                ncols = nchan / nrows
+                ncols = nchan // nrows
             else:
-                ncols = int(nchan / nrows) + 1
+                ncols = int(nchan // nrows) + 1
             for i, name in enumerate(channels):
                 chan = self.get_channel(name)
                 ima = chan.get_trimmed_image(det_out=None,
@@ -1224,7 +1224,7 @@ class RawFile(object):
         plt.annotate('%02d' % ifu, xy=(0, (ymin + ymax) / 2.0),
                      xycoords='data', textcoords='data', color='b')
         # plot slice
-        k = np.floor((sli - 1) / NB_SLICES)
+        k = np.floor((sli - 1) // NB_SLICES)
         l = np.mod(sli - 1, NB_SLICES) + 1
         wr_row = NB_SLICES - slit_position[l - 1] + 12 * (24 - ifu) - 0.5
         wr_col = k * NB_SPEC_PER_SLICE - 0.5
@@ -1281,11 +1281,11 @@ class RawFile(object):
     def _onclick(self, event):
         if event.button != 1:
             if event.inaxes is not None:
-                if (event.x < self.fig.canvas.get_width_height()[0] / 2):
+                if (event.x < self.fig.canvas.get_width_height()[0] // 2):
                     p = event.ydata
                     q = event.xdata
-                    ifu = 24 - int(p + 0.5) / NB_SLICES
-                    k = int(q + 0.5) / NB_SPEC_PER_SLICE
+                    ifu = 24 - int(p + 0.5) // NB_SLICES
+                    k = int(q + 0.5) // NB_SPEC_PER_SLICE
                     pos = NB_SLICES + 12 * (24 - ifu) - int(p + 0.5)
                     l = np.where(slit_position == pos)[0][0] + 1
                     sli = k * NB_SLICES + l
@@ -1302,7 +1302,7 @@ class RawFile(object):
                 else:
                     p = event.ydata
                     q = event.xdata
-                    nq = (self.x2 - self.x1) / 48
+                    nq = (self.x2 - self.x1) // 48
                     sli = int((q + 0.5 - self.x1) / nq) + 1
                     ax = plt.subplot(1, 2, 2)
                     ax.clear()

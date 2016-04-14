@@ -1,6 +1,7 @@
-from __future__ import absolute_import
-from scipy import special
+from __future__ import absolute_import, division
+
 import numpy as np
+from scipy import special
 
 
 class LSF(object):
@@ -66,7 +67,7 @@ class LSF(object):
             sig = sigma(x)
             dy_2 = step / 1.25 / 2.0
 
-            k = size / 2
+            k = size // 2
             y = np.arange(-k, k + 1)
 
             y1 = (y - h_2) / sig
