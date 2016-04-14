@@ -88,8 +88,8 @@ class Catalog(Table):
             i += 1
 
         d = {key: value for key, value in d.items() if key not in excluded_cards}
-        names_hdr = d.keys()
-        tuple_hdr = d.values()
+        names_hdr = list(d.keys())
+        tuple_hdr = list(d.values())
         # sort mandatory keywords
         index = names_hdr.index('ID')
         names_hdr.insert(0, names_hdr.pop(index))
@@ -180,7 +180,7 @@ class Catalog(Table):
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
                 dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
-                units_lines = [unit['_'.join(name.split('_')[1:])] for name in names_lines]    
+                units_lines = [unit['_'.join(name.split('_')[1:])] for name in names_lines]
             elif fmt == 'working':
                 lmax = max(llines)
                 d = {}

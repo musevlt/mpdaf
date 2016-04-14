@@ -7,6 +7,7 @@ import logging
 import numpy as np
 import os.path
 import re
+import six
 import shutil
 import warnings
 
@@ -87,7 +88,7 @@ def matchlines(nlines, wl, z, eml):
         (list of wavelengths, errors)
 
     """
-    lbdas = np.array(eml.keys())
+    lbdas = np.array(list(eml.keys()))
     a = (wl[:, np.newaxis] / (1 + z) - lbdas[np.newaxis, :]) ** 2.0
     jfound = np.argmin(a, axis=1)
     error = np.diag(a[:, jfound]).sum()
@@ -132,7 +133,7 @@ def crackz(nlines, wl, flux, eml, zguess=None):
         zmax = 7.0
     if(nlines == 0):
         return -9999.0, -9999.0, 0, [], [], []
-    lnames = np.array(eml.values())
+    lnames = np.array(list(eml.values()))
     if(nlines == 1):
         if zguess:
             (error, jfound) = matchlines(nlines, wl, zguess, eml)
@@ -144,7 +145,7 @@ def crackz(nlines, wl, flux, eml, zguess=None):
             return -9999.0, -9999.0, 1, wl, flux, ["Lya/[OII]"]
     if(nlines > 1):
         found = 0
-        lbdas = np.array(eml.keys())
+        lbdas = np.array(list(eml.keys()))
         for z in np.arange(zmin, zmax, zstep):
             (error, jfound) = matchlines(nlines, wl, z, eml)
             if(error < errmin):
@@ -528,7 +529,7 @@ class Source(object):
             hdulist.append(tbhdu)
 
         # spectra
-        for key, spe in self.spectra.iteritems():
+        for key, spe in six.iteritems(self.spectra):
             ext_name = 'SPE_%s_DATA' % key
             data_hdu = spe.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
@@ -538,7 +539,7 @@ class Source(object):
                 hdulist.append(stat_hdu)
 
         # images
-        for key, ima in self.images.iteritems():
+        for key, ima in six.iteritems(self.images):
             ext_name = 'IMA_%s_DATA' % key
             savemask = 'none' if key.startswith(('MASK_', 'SEG_')) else 'nan'
             data_hdu = ima.get_data_hdu(name=ext_name, savemask=savemask)
@@ -549,7 +550,7 @@ class Source(object):
                 hdulist.append(stat_hdu)
 
         # cubes
-        for key, cub in self.cubes.iteritems():
+        for key, cub in six.iteritems(self.cubes):
             ext_name = 'CUB_%s_DATA' % key
             data_hdu = cub.get_data_hdu(name=ext_name, savemask='nan')
             hdulist.append(data_hdu)
@@ -559,7 +560,7 @@ class Source(object):
                 hdulist.append(stat_hdu)
 
         # tables
-        for key, tab in self.tables.iteritems():
+        for key, tab in six.iteritems(self.tables):
             tbhdu = pyfits.BinTableHDU(name='TAB_%s' % key, data=np.array(tab))
             hdulist.append(tbhdu)
 
@@ -599,7 +600,7 @@ class Source(object):
            len(self.cubes) != 0 or \
            len(self.tables) != 0:
             print('')
-        for key, spe in self.spectra.iteritems():
+        for key, spe in six.iteritems(self.spectra):
             msg = 'spectra[\'%s\']' % key
             msg += ',%i elements (%0.2f-%0.2f A)' % (
                 spe.shape[0], spe.get_start(unit=u.angstrom),
@@ -612,7 +613,7 @@ class Source(object):
                 noise = ''
             msg += ' %s %s ' % (data, noise)
             self._logger.info(msg)
-        for key, ima in self.images.iteritems():
+        for key, ima in six.iteritems(self.images):
             msg = 'images[\'%s\']' % key
             msg += ' %i X %i' % (ima.shape[0], ima.shape[1])
             data = '.data'
@@ -624,7 +625,7 @@ class Source(object):
             msg += ' %s %s ' % (data, noise)
             msg += 'rot=%0.1f deg' % ima.wcs.get_rot()
             self._logger.info(msg)
-        for key, cub in self.cubes.iteritems():
+        for key, cub in six.iteritems(self.cubes):
             msg = 'cubes[\'%s\']' % key
             msg += ' %i X %i X %i' % (cub.shape[0], cub.shape[1], cub.shape[2])
             data = '.data'
@@ -1181,8 +1182,8 @@ class Source(object):
                 all_tags = np.array(['LYALPHA', 'SUMCIII1907', 'SUMOII3726',
                                      'HBETA', 'OIII5007', 'HALPHA'])
             else:
-                all_lines = np.array(eml.keys())
-                all_tags = np.array(eml.values())
+                all_lines = np.array(list(eml.keys()))
+                all_tags = np.array(list(eml.values()))
 
             minl, maxl = subcub.wave.get_range(unit=u.angstrom) / (1 + z)
             useful = np.where((all_lines > minl) & (all_lines < maxl))
@@ -1320,7 +1321,7 @@ class Source(object):
         """
         maps = {}
         if tags is None:
-            for tag, ima in self.images.iteritems():
+            for tag, ima in six.iteritems(self.images):
                 if tag[0:4] == 'SEG_':
                     maps[tag[4:]] = ima.data.data
         else:
@@ -1389,7 +1390,7 @@ class Source(object):
         from ..sdetect.sea import findCentralDetection, union
         r = findCentralDetection(maps, yc, xc, tolerance=3)
         self.images[union_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=union(r['seg'].values()))
+                                        data=union(list(r['seg'].values())))
 
     def find_intersection_mask(self, seg_tags, inter_mask='MASK_INTER'):
         """Use the list of segmentation maps to compute the instersection mask.
@@ -1420,7 +1421,7 @@ class Source(object):
         from ..sdetect.sea import findCentralDetection, intersection
         r = findCentralDetection(maps, yc, xc, tolerance=3)
         self.images[inter_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=intersection(r['seg'].values()))
+                                        data=intersection(list(r['seg'].values())))
 
     def add_table(self, tab, name):
         """Append an astropy table to the tables dictionary.
@@ -1757,7 +1758,7 @@ class Source(object):
             kwargs can be used to set additional plotting properties.
 
         """
-        if name not in self.images.keys():
+        if name not in list(self.images.keys()):
             raise ValueError('Image %s not found' % name)
         zima = self.images[name]
         if cuts is None:

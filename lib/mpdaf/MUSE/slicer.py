@@ -49,7 +49,7 @@ class Slicer(object):
                         37: 45, 38: 44, 39: 37, 40: 46, 41: 43, 42: 38,
                         43: 47, 44: 42, 45: 39, 46: 48, 47: 41, 48: 40})
 
-    __SKY2CCD__ = dict((value, key) for key, value in __CCD2SKY__.iteritems())
+    __SKY2CCD__ = dict((value, key) for key, value in __CCD2SKY__.items())
 
     __SKY2OPTICAL__ = dict({1: (4, 12), 2: (4, 11), 3: (4, 10),
                             4: (4, 9), 5: (4, 8), 6: (4, 7),
@@ -69,7 +69,7 @@ class Slicer(object):
                             46: (1, 3), 47: (1, 2), 48: (1, 1)})
 
     __OPTICAL2SKY__ = dict((value, key)
-                           for key, value in __SKY2OPTICAL__.iteritems())
+                           for key, value in __SKY2OPTICAL__.items())
 
     @staticmethod
     def ccd2sky(s):

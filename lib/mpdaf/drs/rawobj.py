@@ -806,10 +806,8 @@ class RawFile(object):
         else:
             msg = 'NoName'
         self._logger.info(msg)
-        msg = 'Nb extensions:\t%i (loaded:%i %s)' % (self.next,
-                                                     len(self.channels),
-                                                     self.channels.keys())
-        self._logger.info(msg)
+        self._logger.info('Nb extensions:\t%i (loaded:%i %s)', self.next,
+                          len(self.channels), list(self.channels.keys()))
         msg = 'format:\t(%i,%i)' % (self.nx, self.ny)
         self._logger.info(msg)
 
@@ -819,7 +817,7 @@ class RawFile(object):
 
     def get_channels_extname_list(self):
         """Return the list of existing channels names."""
-        return self.channels.keys()
+        return list(self.channels.keys())
 
     def get_channel(self, extname):
         """Return a Channel object.
