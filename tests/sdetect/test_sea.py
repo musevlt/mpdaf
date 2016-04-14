@@ -1,5 +1,6 @@
 """Test on SEA algorythm."""
 
+from __future__ import absolute_import
 import nose.tools
 import os
 from nose.plugins.attrib import attr

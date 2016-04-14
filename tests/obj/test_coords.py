@@ -1,5 +1,6 @@
 """Test on WCS and WaveCoord objects."""
 
+from __future__ import absolute_import
 import nose.tools
 from nose.plugins.attrib import attr
 

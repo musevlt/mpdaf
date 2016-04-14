@@ -1,6 +1,7 @@
 """pixtable.py Manages MUSE pixel table files."""
 
 
+from __future__ import absolute_import
 import ctypes
 import datetime
 import itertools

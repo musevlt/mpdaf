@@ -1,4 +1,5 @@
 """Test on Source objects."""
+from __future__ import absolute_import
 import nose.tools
 from nose.plugins.attrib import attr
 

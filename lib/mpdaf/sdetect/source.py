@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import astropy.units as u
 import datetime
 import glob
@@ -596,7 +598,7 @@ class Source(object):
            len(self.images) != 0 or \
            len(self.cubes) != 0 or \
            len(self.tables) != 0:
-            print ''
+            print('')
         for key, spe in self.spectra.iteritems():
             msg = 'spectra[\'%s\']' % key
             msg += ',%i elements (%0.2f-%0.2f A)' % (
@@ -637,17 +639,17 @@ class Source(object):
         for key in self.tables.keys():
             self._logger.info('tables[\'%s\']' % key)
         if self.lines is not None:
-            print ''
+            print('')
             self._logger.info('lines')
             for l in self.lines.pformat():
                 self._logger.info(l)
         if self.mag is not None:
-            print ''
+            print('')
             self._logger.info('magnitudes')
             for l in self.mag.pformat():
                 self._logger.info(l)
         if self.z is not None:
-            print ''
+            print('')
             self._logger.info('redshifts')
             for l in self.z.pformat():
                 self._logger.info(l)

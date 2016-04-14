@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import astropy.units as u
 import numpy as np
 from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum

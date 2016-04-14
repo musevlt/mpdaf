@@ -1,5 +1,6 @@
 """cube.py manages Cube objects."""
 
+from __future__ import absolute_import
 import astropy.units as u
 import multiprocessing
 import numpy as np
@@ -2542,9 +2543,9 @@ def _process_spe(arglist):
         else:
             return pos, 'other', [out]
     except Exception as inst:
-        raise type(inst), str(inst) + \
+        raise type(inst)(str(inst) + \
             '\n The error occurred for the spectrum '\
-            '[:,%i,%i]' % (pos[0], pos[1])
+            '[:,%i,%i]' % (pos[0], pos[1]))
 
 
 def _process_ima(arglist):
@@ -2569,5 +2570,5 @@ def _process_ima(arglist):
             # f returns dtype -> iterator returns an array of dtype
             return k, 'other', [out]
     except Exception as inst:
-        raise type(inst), str(inst) + '\n The error occurred '\
-            'for the image [%i,:,:]' % k
+        raise type(inst)(str(inst) + '\n The error occurred '\
+            'for the image [%i,:,:]' % k)

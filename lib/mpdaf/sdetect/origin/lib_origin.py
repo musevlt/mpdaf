@@ -10,6 +10,7 @@ Carole for more info at carole.clastres@univ-lyon1.fr
 lib_origin.py contains the methods that compose the ORIGIN software
 """
 
+from __future__ import absolute_import
 from astropy.table import Table, Column, join
 from astropy.utils.console import ProgressBar
 import astropy.units as u

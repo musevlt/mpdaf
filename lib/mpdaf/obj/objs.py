@@ -1,5 +1,6 @@
 """obj.py contains generic methods used in obj package."""
 
+from __future__ import absolute_import
 import numpy as np
 from astropy.constants import c
 

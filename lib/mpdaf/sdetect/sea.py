@@ -12,6 +12,7 @@ which runs sextractor on the images to define spectrum extraction apertures.
 Please contact Jarle for more info at jarle@strw.leidenuniv.nl
 
 """
+from __future__ import absolute_import
 from astropy.io import fits as pyfits
 import astropy.units as u
 
@@ -228,7 +229,7 @@ def segmentation(source, tags, DIR, remove):
             maps[tag] = hdul[0].data
             hdul.close()
         except:
-            raise StandardError("Something went wrong with sextractor!")
+            raise Exception("Something went wrong with sextractor!")
         # remove seg file
         os.remove(segFile)
         # remove catalog file

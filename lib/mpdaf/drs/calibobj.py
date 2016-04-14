@@ -1,5 +1,6 @@
 """calibobj.py Manages calibration FITS files type MASTER_BIAS MASTER_DARK
 MASTER_FLAT OBJECT_RESAMPLED."""
+from __future__ import absolute_import
 import numpy as np
 from astropy.io import fits as pyfits
 import datetime

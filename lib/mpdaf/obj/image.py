@@ -1,5 +1,7 @@
 """image.py manages image objects."""
 
+from __future__ import absolute_import
+from __future__ import print_function
 import logging
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -4678,7 +4680,7 @@ class Image(DataArray):
                         [[y, x]] = self.wcs.pix2sky([i, j], unit=self._unit)
                         val = self.data[i, j]
                         if len(self._clicks.x) == 0:
-                            print ''
+                            print('')
                         self._clicks.add(i, j, x, y, val)
                         self._clicks.iprint(len(self._clicks.x) - 1)
                     except:

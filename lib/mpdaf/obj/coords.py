@@ -1,5 +1,6 @@
 """coords.py Manages coordinates."""
 
+from __future__ import absolute_import
 from astropy.coordinates import Angle
 from astropy.io import fits
 import astropy.units as u
@@ -1824,7 +1825,7 @@ class WaveCoord(object):
             try:
                 self.wcs.wcs.cdelt = self.wcs.wcs.cdelt * factor
             except:
-                raise StandardError("problem in wcs rebinning")
+                raise Exception("problem in wcs rebinning")
         self.wcs.wcs.set()
         cdelt = self.get_step()
 

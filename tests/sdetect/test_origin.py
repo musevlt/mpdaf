@@ -1,4 +1,5 @@
 """Test interface on ORIGIN software."""
+from __future__ import absolute_import
 import nose.tools
 from nose.plugins.attrib import attr
 import shutil

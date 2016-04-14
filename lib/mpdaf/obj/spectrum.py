@@ -1,5 +1,7 @@
 """spectrum.py defines Spectrum objects."""
 
+from __future__ import absolute_import
+from __future__ import print_function
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -2973,7 +2975,7 @@ class Spectrum(DataArray):
                         x = self.wave.coord(i, unit=self._unit)
                         val = self.data[i]
                         if len(self._clicks.k) == 0:
-                            print ''
+                            print('')
                         self._clicks.add(xc, yc, i, x, val)
                         self._clicks.iprint(len(self._clicks.k) - 1)
                     except:
@@ -3020,7 +3022,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     self._clicks.iprint(len(self._clicks.k) - 1)
                     if np.sometrue(np.mod(len(self._clicks.k), 2)) == False:
@@ -3111,7 +3113,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     if np.sometrue(np.mod(len(self._clicks.k), 3)) == False:
                         lmin = self._clicks.lbda[-3]
@@ -3140,7 +3142,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     if np.sometrue(np.mod(len(self._clicks.k), 5)) == False:
                         lmin1 = self._clicks.lbda[-5]
@@ -3252,7 +3254,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     if np.sometrue(np.mod(len(self._clicks.k), 3)) == False:
                         lmin = self._clicks.lbda[-3]
@@ -3284,7 +3286,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     if np.sometrue(np.mod(len(self._clicks.k), 5)) == False:
                         lmin1 = self._clicks.lbda[-5]
