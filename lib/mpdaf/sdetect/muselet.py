@@ -12,6 +12,7 @@ import sys
 from astropy.io import fits as pyfits
 from astropy.table import Table
 from glob import glob
+from io import open
 from six.moves import range
 
 from ..obj import Cube, Image
