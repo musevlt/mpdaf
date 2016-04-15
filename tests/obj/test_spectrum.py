@@ -214,6 +214,7 @@ def test_resampling_slow():
     spnovar2 = spnovar.resample(4, unit=unit)
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2, 0)
+
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.unit
     flux1 = spvar.sum(weight=False) * spvar.wave.get_step(unit=unit)

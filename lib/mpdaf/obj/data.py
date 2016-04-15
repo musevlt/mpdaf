@@ -1048,9 +1048,6 @@ class DataArray(object):
             The slices that were used to extract the sub-array.
 
         """
-        if self._data is None:
-            return
-
         nmasked = ma.count_masked(self.data)
         if nmasked == 0:
             return
