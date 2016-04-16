@@ -1,4 +1,5 @@
 """Test on Cube objects."""
+from __future__ import absolute_import
 import nose.tools
 from nose.plugins.attrib import attr
 
@@ -208,7 +209,7 @@ def test_sum():
 @attr(speed='fast')
 def test_median():
     """Cube class: testing median methods"""
-    cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
+    cube1 = generate_cube(data=1., wave=WaveCoord(crval=1))
     ind = np.arange(10)
     median = np.median(ind)
     cube1.data = (ind[:, np.newaxis,  np.newaxis] *
@@ -228,7 +229,7 @@ def test_median():
 @attr(speed='fast')
 def test_rebin():
     """Cube class: testing rebin methods"""
-    cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
+    cube1 = generate_cube(data=1.0, wave=WaveCoord(crval=1))
     cube2 = cube1.rebin_mean(factor=2)
     assert_equal(cube2[0, 0, 0], 1)
     assert_array_equal(cube2.get_start(), (1.5, 0.5, 0.5))

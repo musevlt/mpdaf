@@ -1,4 +1,5 @@
 """Test on muselet script."""
+from __future__ import absolute_import
 import nose.tools
 import os
 from nose.plugins.attrib import attr

@@ -10,12 +10,14 @@ Carole for more info at carole.clastres@univ-lyon1.fr
 origin.py contains an oriented-object interface to run the ORIGIN software
 """
 
+from __future__ import absolute_import
 import astropy.units as u
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path
 from scipy.io import loadmat
+import shutil
 
 from ...obj import Cube, Image, Spectrum
 from .lib_origin import Compute_PSF, Spatial_Segmentation, \
@@ -88,9 +90,8 @@ class ORIGIN(object):
                         Mean of the fwhm of the PSF in pixel
     """
 
-    def __init__(self, cube, NbSubcube, Edge_xmin=None, Edge_xmax=None,
-                 Edge_ymin=None, Edge_ymax=None, profiles=None, FWHM_profiles=None, PSF=None,
-                 FWHM_PSF=None):
+    def __init__(self, cube, NbSubcube, margins, profiles=None,
+                 FWHM_profiles=None, PSF=None, FWHM_PSF=None):
         """Create a ORIGIN object.
 
         An Origin object is composed by:
@@ -106,18 +107,12 @@ class ORIGIN(object):
                       Cube FITS file name.
         NbSubcube   : integer
                       Number of sub-cubes for the spatial segmentation
-        Edge_xmin   : int
-                      Minimum limits along the x-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_xmax   : int
-                      Maximum limits along the x-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_ymin   : int
-                      Minimum limits along the y-axis in pixel
-                      of the data cube taken to compute p-values
-        Edge_ymax   : int
-                      Maximum limits along the y-axis in pixel
-                      of the data cube taken to compute p-values
+        margin      : (int, int, int, int)
+                      Size in pixels of the margins
+                      at the bottom, top, left and rigth  of the data cube.
+                      (ymin, Ny-ymax, xmin, Nx-xmax)
+                      Pixels in margins will not be taken
+                      into account to compute p-values.
         profiles    : array (Size_profile, N_profile)
                       Dictionary of spectral profiles
                       If None, a default dictionary of 20 profiles is used.
@@ -136,8 +131,7 @@ class ORIGIN(object):
         self.param = {}
         self.param['cubename'] = cube
         self.param['nbsubcube'] = NbSubcube
-        if Edge_xmin is not None:
-            self.param['edgecube'] = [Edge_xmin,Edge_xmax,Edge_ymin,Edge_ymax]
+        self.param['margin'] = margins
         self.param['PSF'] = PSF 
         # Read cube
         self._logger.info('ORIGIN - Read the Data Cube')
@@ -163,23 +157,11 @@ class ORIGIN(object):
 
         self.NbSubcube = NbSubcube
 
-        if Edge_xmin is None:
-            self.Edge_xmin = 0
-        else:
-            self.Edge_xmin = Edge_xmin
-        if Edge_xmax is None:
-            self.Edge_xmax = self.Nx
-        else:
-            self.Edge_xmax = Edge_xmax
-        if Edge_ymin is None:
-            self.Edge_ymin = 0
-        else:
-            self.Edge_ymin = Edge_ymin
-        if Edge_ymax is None:
-            self.Edge_ymax = self.Ny
-        else:
-            self.Edge_ymax = Edge_ymax
-
+        self.Edge_xmin = margins[2]
+        self.Edge_xmax = self.Nx - margins[3]
+        self.Edge_ymin = margins[0]
+        self.Edge_ymax = self.Ny - margins[1]
+        
         # Dictionary of spectral profile
         if profiles is None or FWHM_profiles is None:
             self._logger.info('ORIGIN - Load dictionary of spectral profile')
@@ -576,9 +558,9 @@ class ORIGIN(object):
         Cat4 = Spectral_Merging(Cat3, Cat_est_line_raw, deltaz)
         return Cat4
 
-    def get_sources(self, Cat4, Cat_est_line, correl):
+    def write_sources(self, Cat4, Cat_est_line, correl, name='origin', path='.', overwrite=True, fmt='default'):
         """add corresponding RA/DEC to each referent pixel of each group and
-        create the final catalogue of sources with their parameters
+        write the final sources.
 
 
         Parameters
@@ -592,6 +574,14 @@ class ORIGIN(object):
                            List of estimated lines
         correl           : `~mpdaf.obj.Cube`
                            Cube of T_GLR values
+        name : str
+            Basename for the sources.
+        path : str
+            path where the sources will be saved.
+        overwrite : bool
+            Overwrite the folder if it already exists
+        fmt : str, 'working' or 'default'
+            Format of the catalog. The format differs for the LINES table.
 
         Returns
         -------
@@ -601,26 +591,30 @@ class ORIGIN(object):
         # Add RA-DEC to the catalogue
         self._logger.info('ORIGIN - Add RA-DEC to the catalogue')
         CatF_radec = Add_radec_to_Cat(Cat4, self.wcs)
+        
+        #path
+        if not os.path.exists(path):
+            raise IOError("Invalid path: {0}".format(path))
+
+        path = os.path.normpath(path)
+
+        path2 = path + '/' + name
+        if not os.path.exists(path2):
+            os.makedirs(path2)
+        else:
+            if overwrite:
+                shutil.rmtree(path2)
+                os.makedirs(path2)
 
         # list of source objects
         self._logger.info('ORIGIN - Create the list of sources')
-        sources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
-                                         correl.data.data, self.wave,
-                                         self.filename, self.FWHM_profiles)
-        # save orig parameters in sources
-        for src in sources:
-            src.OP_THRES = (self.param['ThresholdPval'],'Orig Threshold Pval')
-            src.OP_DZ = (self.param['deltaz'],'Orig deltaz')
-            src.OP_R0 = (self.param['r0PCA'],'Orig PCA R0')
-            src.OP_T1 = (self.param['threshT1'],'Orig T1 threshold')
-            src.OP_T1 = (self.param['threshT2'],'Orig T2 threshold')
-            src.OP_NG = (self.param['neighboors'],'Orig Neighboors')
-            src.OP_MP = (self.param['meanestPvalChan'],'Orig Meanest PvalChan')
-            src.OP_NS = (self.param['nbsubcube'],'Orig nb of subcubes')
-            src.OP_DXY = (self.param['grid_dxy'],'Orig Grid Nxy')
-            src.OP_DZ = (self.param['grid_dz'],'Orig Grid Nz')
-            src.OP_FSF = (self.param['PSF'],'Orig FSF cube')
-        return sources
+        nsources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
+                                   correl.data.data, self.wave,
+                                   self.filename, self.FWHM_profiles,
+                                   path2, name, self.param)
+        
+        return nsources
+        
 
     def plot(self, correl, x, y, circle=False, vmin=0, vmax=30, title=None, ax=None):
         """Plot detected emission lines on the 2D map of maximum of the T_GLR

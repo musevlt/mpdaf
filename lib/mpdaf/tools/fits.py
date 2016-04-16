@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import astropy.units as u
 import fnmatch
 import logging
@@ -164,19 +165,36 @@ def is_valid_fits_file(filename):
     return os.path.isfile(filename) and filename.endswith(("fits", "fits.gz"))
 
 
-def read_slice_from_fits(filename, item=None, ext='DATA', mask_ext=None,
+def read_slice_from_fits(filename_or_hdu, item=None, ext='DATA', mask_ext=None,
                          dtype=None):
     """Read data from a FITS file."""
-    hdulist = fits.open(filename)
-    if item is None:
-        data = np.asarray(hdulist[ext].data, dtype=dtype)
-    else:
-        data = np.asarray(hdulist[ext].data[item], dtype=dtype)
 
-    # mask extension
-    if mask_ext is not None and mask_ext in hdulist:
-        mask = ma.make_mask(hdulist[mask_ext].data[item])
-        data = ma.MaskedArray(data, mask=mask)
+    try:
+        if isinstance(filename_or_hdu, fits.HDUList):
+            close_hdu = False
+            hdulist = filename_or_hdu
+        else:
+            hdulist = fits.open(filename_or_hdu)
+            close_hdu = True
 
-    hdulist.close()
-    return data
+        data = hdulist[ext].data
+        if item is not None:
+            data = data[item]
+        data = np.asarray(data, dtype=dtype)
+        # Force data to be in double instead of float
+        if data.dtype == np.float32:
+            data = data.astype(np.float64)
+
+        # mask extension
+        if mask_ext is not None and mask_ext in hdulist:
+            mask = hdulist[mask_ext].data
+            if item is not None:
+                mask = mask[item]
+            mask = np.asarray(mask, dtype=bool)
+        else:
+            mask = None
+    finally:
+        if close_hdu:
+            hdulist.close()
+
+    return data, mask

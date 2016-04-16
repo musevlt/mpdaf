@@ -13,23 +13,78 @@ from datetime import datetime
 from numpy import ma
 
 from .coords import WCS, WaveCoord
-from .objs import UnitMaskedArray
+from .objs import UnitMaskedArray, UnitArray
 from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
-                     fix_unit_read, is_valid_fits_file, read_slice_from_fits,
-                     copy_header)
+                     fix_unit_read, is_valid_fits_file, copy_header,
+                     read_slice_from_fits)
 
 __all__ = ('DataArray', )
 
 
+class LazyData(object):
+
+    def __init__(self, label):
+        self.label = label
+
+    def read_data(self, obj):
+        # print 'read data'
+        obj_dict = obj.__dict__
+        data, mask = read_slice_from_fits(obj.filename, ext=obj._data_ext,
+                                          mask_ext='DQ', dtype=obj.dtype)
+        if mask is None:
+            mask = ~(np.isfinite(data))
+        obj_dict['_data'] = data
+        obj_dict['_mask'] = mask
+        obj._loaded_data = True
+        obj.dtype = data.dtype
+        return mask if self.label == '_mask' else data
+
+    def __get__(self, obj, owner=None):
+        # print '__get__', owner, self.label
+        try:
+            return obj.__dict__[self.label]
+        except KeyError:
+            if obj.filename is None:
+                # if self.label == '_data':
+                #     raise ValueError('empty data array')
+                return
+
+            if self.label in ('_data', '_mask'):
+                val = self.read_data(obj)
+
+            if self.label == '_var':
+                if obj._var_ext is None:
+                    return None
+                # Make sure that data is read because the mask may be needed
+                if not obj._loaded_data:
+                    self.read_data(obj)
+                # print 'read var'
+                val, _ = read_slice_from_fits(obj.filename, ext=obj._var_ext,
+                                              dtype=np.float64)
+                obj.__dict__[self.label] = val
+            return val
+
+    def __set__(self, obj, val):
+        # print '__set__', self.label  # , val
+        label = self.label
+        if label == '_data':
+            obj._loaded_data = True
+        elif (val is not None and val is not np.ma.nomask and
+                obj.shape is not None and
+                not np.array_equal(val.shape, obj.shape)):
+            raise ValueError("Can't set %s with a different shape" % label)
+        obj.__dict__[label] = val
+
+
 class DataArray(object):
 
-    """The DataArray class is the parent of the `~mpdaf.obj.Cube`,
-    `~mpdaf.obj.Image` and `~mpdaf.obj.Spectrum` classes. Its primary
-    purpose is to store pixel values in a masked numpy array. For
-    Cube objects this is a 3D array indexed in the order
-    [wavelength,image_y,image_x]. For Image objects it is a 2D
-    array indexed in the order [image_y,image_x]. For Spectrum
-    objects it is a 1D spectrum.
+    """The DataArray class is the parent of the mpdaf.obj.Cube,
+    mpdaf.obj.Image and mpdaf.obj.Spectrum classes. Its primary
+    purpose is to store pixel values and, optionally, also variances
+    in masked numpy arrays. For Cube objects these are 3D arrays
+    indexed in the order [wavelength,image_y,image_x]. For Image
+    objects they are 2D arrays indexed in the order
+    [image_y,image_x]. For Spectrum objects they are 1D arrays.
 
     Image arrays hold flat 2D map-projections of the sky. The X and Y
     axes of the image arrays are orthogonal on the sky at the tangent
@@ -38,12 +93,63 @@ class DataArray(object):
     declination axis, and the X axis is perpendicular to this, with
     the positive X axis pointing east.
 
-    The DataArray class has a number of optional features. There is
-    a .var member which can optionally hold an array of variances
-    for each value in the data array. For cubes and spectra, the
-    wavelengths of the spectral pixels can be specified in the
-    .wave member. For cubes and images, the world-coordinates of
-    the image pixels can be specified in the .wcs member.
+    Given an object, obj, of a DataArray, Cube, Image or Spectrum
+    object, the data and variance arrays are accessible via the
+    properties, obj.data and obj.var. These two masked arrays share a
+    single array of boolean masking elements, which is also accessible
+    as a simple boolean array via the obj.mask property.
+    The shared mask can be modified through any of the three properties. For
+    example:
+
+      obj.data[20:22] = numpy.ma.masked
+
+    is equivalent to:
+
+      obj.var[20:22] = numpy.ma.masked
+
+    and is also equivalent to:
+
+      obj.mask[20:22] = True
+
+    All three of the above statements mask pixels 20 and 21 of the
+    data and variance arrays, without changing their values.
+
+    Similarly, if one performs an operation on either obj.data or
+    obj.var that modifies the mask, this is reflected in the shared
+    mask of all three properties. For example, the following statement
+    multiplies elements 20 and 21 of the data by 2.0, while changing
+    the shared mask of these pixels to True. In this way the data and
+    the variances of these pixels are consistently masked.
+
+      obj.data[20:22] *= numpy.ma.array([2.0,2.0], mask=[True,True])
+
+    The data and variance arrays can be completely replaced by
+    assigning new arrays to the obj.data and obj.var properties. In
+    general, when doing this, the new data array should be assigned
+    before the new variance array. This is because assigning a new
+    data array completely replaces the current shared mask, whereas
+    assigning a new variance array combines the mask of the variance
+    array with the existing shared mask.
+
+    More specifically, when a new data array is assigned to obj.data,
+    the shared mask becomes a copy of the mask array of the input data
+    array, if it has one.
+    If the new data array is not a masked array, the mask is created
+    by masking any elements that are Inf or Nan in the new data array.
+
+    When a new variance array is assigned to obj.var, the shared mask
+    becomes the union of the mask of the current data array and the
+    mask of the new variance array, if it has a mask.
+
+    Note that the ability to record variances for each element is
+    optional. When no variances are stored, obj.var has the value
+    None. To discard an unwanted variance array, None can be
+    subsequently assigned to obj.var.
+
+    For cubes and spectra, the wavelengths of the spectral pixels are
+    specified in the .wave member. For cubes and images, the
+    world-coordinates of the image pixels are specified in the .wcs
+    member.
 
     When a DataArray object is constructed from a FITS file, the
     name of the file and the file's primary header are recorded. If
@@ -57,6 +163,7 @@ class DataArray(object):
     performing basic arithmetic operations on pixels. Operations
     that are specific to cubes or spectra or images are provided
     elsewhere by derived classes.
+
 
     Parameters
     ----------
@@ -75,12 +182,12 @@ class DataArray(object):
         If True (default), then the data and variance arrays are copied.
         Passed to numpy.ma.MaskedArray.
     dtype : numpy.dtype
-        Type of the data, default to float.
+        Type of the data.
         Passed to numpy.ma.MaskedArray.
     data : numpy.ndarray or list
         Data array, passed to numpy.ma.MaskedArray.
     var : numpy.ndarray or list
-        Variance array, passed to numpy.array().
+        Variance array, passed to numpy.ma.MaskedArray.
     mask : bool or numpy.ma.nomask or numpy.ndarray
         Mask used for the creation of the .data MaskedArray. If mask is
         False (default value), a mask array of the same size of the data array
@@ -112,24 +219,26 @@ class DataArray(object):
         Type of the data (int, float, ...).
     var : numpy.ndarray
         Array containing the variance.
-
     """
 
     _ndim_required = None
     _has_wcs = False
     _has_wave = False
 
+    _data = LazyData('_data')
+    _mask = LazyData('_mask')
+    _var = LazyData('_var')
+
     def __init__(self, filename=None, hdulist=None, data=None, mask=False,
                  var=None, ext=None, unit=u.dimensionless_unscaled, copy=True,
-                 dtype=float, primary_header=None, data_header=None, **kwargs):
+                 dtype=None, primary_header=None, data_header=None, **kwargs):
         self._logger = logging.getLogger(__name__)
-        self.filename = filename
-        self._data = None
+
+        self._loaded_data = False
         self._data_ext = None
-        self._var = None
         self._var_ext = None
-        self._ndim = None
-        self._shape = None
+
+        self.filename = filename
         self.wcs = None
         self.wave = None
         self.dtype = dtype
@@ -145,9 +254,8 @@ class DataArray(object):
             warnings.warn('The notnoise parameter is no longer used. The '
                           'variances wll be read if necessary.', MpdafWarning)
 
-        # Read the data from a FITS file?
-
         if filename is not None and data is None:
+            # Read the data from a FITS file
             if not is_valid_fits_file(filename):
                 raise IOError('Invalid file: %s' % filename)
 
@@ -157,25 +265,19 @@ class DataArray(object):
             else:
                 close_hdu = False
 
-            # primary header
-            self.primary_header = hdulist[0].header
-
-            # Find the hdu of the data. This is either the primary HDU
-            # or a DATA or SCI extension. Also see if there is an extension
-            # that contains variances. This is either a STAT extension,
-            # or the second of a tuple of extensions passed via the ext[]
-            # parameter.
-
+            # Find the hdu of the data. This is either the primary HDU (if the
+            # number of extension is 1) or a DATA or SCI extension. Also see if
+            # there is an extension that contains variances. This is either
+            # a STAT extension, or the second of a tuple of extensions passed
+            # via the ext[] parameter.
             if len(hdulist) == 1:
-                # if the number of extension is 1,
-                # we just read the data from the primary header
                 self._data_ext = 0
             elif ext is None:
                 if 'DATA' in hdulist:
                     self._data_ext = 'DATA'
                 elif 'SCI' in hdulist:
                     self._data_ext = 'SCI'
-                else:   # Use primary data array if no DATA or SCI extension
+                else:
                     raise IOError('No DATA or SCI extension found.\n'
                                   'Please use the `ext` parameter to specify '
                                   'which extension must be loaded.')
@@ -183,14 +285,12 @@ class DataArray(object):
                 if 'STAT' in hdulist:
                     self._var_ext = 'STAT'
             elif isinstance(ext, (list, tuple, np.ndarray)):
-                self._data_ext = ext[0]
-                self._var_ext = ext[1]
+                self._data_ext, self._var_ext = ext
             elif isinstance(ext, (int, str, unicode)):
                 self._data_ext = ext
                 self._var_ext = None
 
-            # Record the data header.
-
+            self.primary_header = hdulist[0].header
             self.data_header = hdr = hdulist[self._data_ext].header
 
             try:
@@ -205,16 +305,8 @@ class DataArray(object):
             if 'FSCALE' in hdr:
                 self.unit *= u.Unit(hdr['FSCALE'])
 
-            self._shape = hdulist[self._data_ext].data.shape
-            self._ndim = hdr['NAXIS']
-            if self._ndim_required is not None and \
-                    hdr['NAXIS'] != self._ndim_required:
-                raise IOError('Wrong dimension number, should be %s'
-                              % self._ndim_required)
-
             # Is this a derived class like Cube and Image that require
             # WCS information?
-
             if self._has_wcs:
                 try:
                     self.wcs = WCS(hdr)  # WCS object from data header
@@ -225,7 +317,6 @@ class DataArray(object):
                     self.wcs = WCS(hdr)
 
             # Get the wavelength coordinates.
-
             wave_ext = 1 if self._ndim_required == 1 else 3
             crpix = 'CRPIX{}'.format(wave_ext)
             crval = 'CRVAL{}'.format(wave_ext)
@@ -235,27 +326,40 @@ class DataArray(object):
             if close_hdu:
                 hdulist.close()
 
-        # There is no FITS file to read the data from.
-
         else:
+            if mask is ma.nomask:
+                self._mask = mask
 
             # Use a specified numpy data array?
-
             if data is not None:
-                # By default, if mask=False create a mask array with False
-                # values. numpy.ma does it but with a np.resize/np.concatenate
-                # which cause a huge memory peak, so a workaround is to create
-                # the mask here.
-                if mask is False:
-                    mask = np.zeros(data.shape, dtype=bool)
-                self._data = ma.MaskedArray(data, mask=mask, dtype=dtype,
-                                            copy=copy)
-                self._shape = self._data.shape
+                if self.dtype is None:
+                    self.dtype = data.dtype
+                # Force data to be in double instead of float
+                if self.dtype == np.float32:
+                    self.dtype = np.float64
+                if isinstance(data, ma.MaskedArray):
+                    self._data = np.array(data.data, dtype=self.dtype,
+                                          copy=copy)
+                    if data.mask is ma.nomask:
+                        self._mask = data.mask
+                    else:
+                        self._mask = np.array(data.mask, dtype=bool, copy=copy)
+                else:
+                    self._data = np.array(data, dtype=self.dtype, copy=copy)
+                    if mask is None or mask is False:
+                        self._mask = ~(np.isfinite(data))
+                    elif mask is True:
+                        self._mask = np.ones(shape=data.shape, dtype=bool)
+                    elif mask is not ma.nomask:
+                        self._mask = np.array(mask, dtype=bool, copy=copy)
 
             # Use a specified variance array?
-
             if var is not None:
-                self._var = np.array(var, dtype=dtype, copy=copy)
+                if isinstance(var, ma.MaskedArray):
+                    self._var = np.array(var.data, dtype=np.float64, copy=copy)
+                    self._mask |= var.mask
+                else:
+                    self._var = np.array(var, dtype=np.float64, copy=copy)
 
         # If a WCS object was specified as an optional parameter, install it.
         wcs = kwargs.pop('wcs', None)
@@ -263,16 +367,16 @@ class DataArray(object):
                 wcs.naxis2 != 1:
             try:
                 self.wcs = wcs.copy()
-                if self._shape is not None:
+                if self.shape is not None:
                     if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
-                        (wcs.naxis1 != self._shape[-1] or
-                         wcs.naxis2 != self._shape[-2])):
+                        (wcs.naxis1 != self.shape[-1] or
+                         wcs.naxis2 != self.shape[-2])):
                         self._logger.warning(
                             'The world coordinates and data have different '
                             'dimensions: Modifying the shape of the WCS '
                             'object')
-                    self.wcs.naxis1 = self._shape[-1]
-                    self.wcs.naxis2 = self._shape[-2]
+                    self.wcs.naxis1 = self.shape[-1]
+                    self.wcs.naxis2 = self.shape[-2]
             except:
                 self._logger.warning('world coordinates not copied',
                                      exc_info=True)
@@ -283,14 +387,14 @@ class DataArray(object):
         if self._has_wave and wave is not None and wave.shape != 1:
             try:
                 self.wave = wave.copy()
-                if self._shape is not None:
+                if self.shape is not None:
                     if wave.shape is not None and \
-                            wave.shape != self._shape[0]:
+                            wave.shape != self.shape[0]:
                         self._logger.warning(
                             'wavelength coordinates and data have different '
                             'dimensions: Modifying the shape of the WaveCoord '
                             'object')
-                    self.wave.shape = self._shape[0]
+                    self.wave.shape = self.shape[0]
             except:
                 self._logger.warning('wavelength solution not copied',
                                      exc_info=True)
@@ -310,7 +414,7 @@ class DataArray(object):
 
         """
         data = obj.data if data is None else data
-        var = obj.var if var is None else var
+        var = obj._var if var is None else var
         kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
                       dtype=obj.dtype, copy=copy, data_header=obj.data_header,
                       primary_header=obj.primary_header)
@@ -323,114 +427,188 @@ class DataArray(object):
     @property
     def ndim(self):
         """ The number of dimensions in the data and variance arrays : int """
-        if self._ndim is not None:
-            return self._ndim
-        elif self.data is not None:
-            return self.data.ndim
+        if self._loaded_data:
+            return self._data.ndim
+        try:
+            return self.data_header['NAXIS']
+        except KeyError:
+            return None
 
     @property
     def shape(self):
         """ The lengths of each of the .ndim data axes. """
-        if self._shape is not None:
-            return self._shape
-        elif self.data is not None:
-            return self.data.shape
+        if self._loaded_data:
+            return self._data.shape
+        try:
+            return tuple(self.data_header['NAXIS%d' % i]
+                         for i in range(self.ndim, 0, -1))
+        except (KeyError, TypeError):
+            return None
 
     @property
     def data(self):
-        """ A masked array of data values : numpy.ma.MaskedArray. """
+        """ The data property contains the values of each pixel as a
+        numpy.ma.MaskedArray.
 
-        # The DataArray constructor postpones reading data from FITS files
-        # until they are first used. Read the data array here if not already
-        # read.
+        The DataArray constructor postpones reading data from FITS files until
+        they are first used. Read the data array here if not already read.
 
-        if self._data is None and self.filename is not None:
-            self._data = read_slice_from_fits(
-                self.filename, ext=self._data_ext, mask_ext='DQ',
-                dtype=self.dtype)
+        Changes can be made to individual elements of the data
+        property. When simple numeric values or numpy array elements
+        are assigned to elements of the data property, the values of
+        these elements are updated and become unmasked.
 
-            # Mask an array where invalid values occur (NaNs or infs).
-            if ma.is_masked(self._data):
-                self._data.mask |= ~(np.isfinite(self._data.data))
-            else:
-                self._data = ma.masked_invalid(self._data)
-            self._shape = self._data.shape
+        When masked numpy values or masked-array elements are assigned
+        to elements of the data property, then these change both the
+        values of the data property and the shared mask of the data
+        and var properties.
 
-        return self._data
+        Completely new arrays can also be assigned to the data
+        property. If the new array has the same shape as the existing
+        data array, then the results are as though the elements were
+        assigned one by one to the data array, with the behavior
+        described above for element assignments.
+        """
+        res = ma.MaskedArray(self._data, mask=self._mask, copy=False)
+        res._sharedmask = False
+        return res
 
     @data.setter
     def data(self, value):
-        self._data = ma.MaskedArray(value)
-        self._shape = self._data.shape
-        self._ndim = self._data.ndim
+        # Handle this case specifically for .data, since it is already done for
+        # ._var and ._mask, but ._data can be used to change the shape
+        if self.shape is not None and \
+                not np.array_equal(value.shape, self.shape):
+            raise ValueError('try to set data with an array with a different '
+                             'shape')
+
+        if isinstance(value, ma.MaskedArray):
+            self._data = value.data
+            self._mask = value.mask
+        else:
+            self._data = value
+            if self._mask is not ma.nomask:
+                self._mask = ~(np.isfinite(value))
 
     @property
     def var(self):
-        """ Either None, or a numpy.ndarray containing the variances
-        of each data value. This has the same shape as the data array. """
+        """ If variances have been provided for each data pixel, then this
+        property can be used to record those variances. Normally this
+        is a masked array which shares the mask of the data
+        property. However if no variances have been provided, then this
+        property is None.
 
-        # The DataArray constructor postpones reading data from FITS
-        # files until they are first used. On the first call to this
-        # function, read the variances if a suitable extension exists.
+        Variances are typically provided along with the data values in
+        the originating FITS file. Alternatively a variance array can
+        be assigned to this property after the data have been read.
 
-        if self._var is None and self._var_ext is not None and \
-                self.filename is not None:
-            var = read_slice_from_fits(
-                self.filename, ext=self._var_ext, dtype=self.dtype)
-            if var.ndim != self.data.ndim:
-                raise IOError('Wrong dimension number in STAT extension')
-            if not np.array_equal(var.shape, self.data.shape):
-                raise IOError('Number of points in STAT not equal to DATA')
-            self._var = var
+        Note that any function that modifies the contents of the data
+        array may need to update the array of variances accordingly.
+        For example, after scaling pixel values by a constant factor
+        c, the variances should be scaled by c**2.
 
-        return self._var
+        Changes can be made to individual elements of the var property
+        in place. When simple numeric values or numpy array elements
+        are assigned to elements of the var property, the values of
+        these elements are updated, but the corresponding elements of
+        the shared mask are not changed.
+
+        When masked-array values are assigned to elements of the var
+        property, the mask of the new values is assigned to the shared
+        mask of the data and variance properties.
+
+        Completely new arrays can also be assigned to the var
+        property. When a masked array is
+        assigned to the var property, its mask is combined with the
+        existing shared mask, rather than replacing it.
+
+        """
+        if self._var is None:
+            return None
+        else:
+            res = ma.MaskedArray(self._var, mask=self._mask, copy=False)
+            res._sharedmask = False
+            return res
 
     @var.setter
     def var(self, value):
         if value is not None:
-            value = np.asarray(value)
-            if not np.array_equal(self.shape, value.shape):
-                raise ValueError('var and data have different dimensions.')
+            if isinstance(value, ma.MaskedArray):
+                self._var = value.data
+                self._mask |= value.mask
+            else:
+                self._var = np.asarray(value)
         else:
             self._var_ext = None
-        self._var = value
+            self._var = value
 
     @deprecated('Variance should now be set with the .var attribute')
     def set_var(self, var):
         """Deprecated: The variance array can simply be assigned to
         the .var attribute"""
-
         self.var = var
 
     @property
-    def masked_var(self):
-        """Return a MaskedArray for the variance with the data mask."""
-        var = ma.masked_invalid(self.var, copy=False)
-        var[self.data.mask] = ma.masked
-        return var
+    def mask(self):
+        """The shared masking array of the data and variance arrays.
+
+        This is a bool array which has the same shape as the data and
+        variance arrays. Setting an element of this array to True,
+        flags the corresponding pixels of the data and variance
+        arrays, so that they don't take part in subsequent
+        calculations. Reverting this element to False, unmasks the
+        pixel again.
+
+        This array can be modified either directly by assignments to
+        elements of this property or by modifying the masks of the
+        .data and .var arrays. An entirely new mask array can also be
+        assigned to this property, provided that it has the same shape
+        as the data array.
+        """
+        return self._mask
+
+    @mask.setter
+    def mask(self, value):
+        # By default, if mask=False create a mask array with False values.
+        # numpy.ma does it but with a np.resize/np.concatenate which cause a
+        # huge memory peak, so a workaround is to create the mask here.
+        # Also we force the creation of a mask array because currently many
+        # method in MPDAF expect that the mask is an array and will not work
+        # with np.ma.nomask. But nomask can still be used explicitly for
+        # specific cases.
+        if value is ma.nomask:
+            self._mask = value
+        else:
+            self._mask = np.asarray(value, dtype=bool)
 
     def copy(self):
         """Return a copy of the object."""
         return self.__class__(
-            filename=self.filename, data=self.data, unit=self.unit,
-            var=self.var, wcs=self.wcs, wave=self.wave, copy=True,
-            data_header=fits.Header(self.data_header),
-            primary_header=fits.Header(self.primary_header))
+            filename=self.filename, data=self._data, mask=self._mask,
+            var=self._var, unit=self.unit, wcs=self.wcs, wave=self.wave,
+            copy=True, data_header=fits.Header(self.data_header),
+            primary_header=fits.Header(self.primary_header),
+            ext=(self._data_ext, self._var_ext), dtype=self.dtype)
 
     def clone(self, var=None, data_init=None, var_init=None):
         """Return a shallow copy with the same header and coordinates.
+
+        Optionally fill the cloned array using values returned by provided
+        functions.
 
         Parameters
         ----------
         var : bool
             **Deprecated**, replaced by var_init.
         data_init : function
-            Function used to create the data array (takes the shape as
-            parameter). For example np.zeros or np.empty. Default to
-            None which means that the data attribute is None.
+            An optional function to use to create the data array
+            (it takes the shape as parameter). For example np.zeros
+            or np.empty can be used. It defaults to None, which results
+            in the data attribute being None.
         var_init : function
-            Function used to create the data array, same as data_init.
-            Default to None which set the var attribute to None.
+            An optional function to use to create the variance array,
+            with the same specifics as data_init. This default to None,
+            which results in the var attribute being assigned None.
 
         """
         if var is not None:
@@ -497,8 +675,7 @@ class DataArray(object):
 
         """
         result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_greater(self.data, item)
+        result.data = np.ma.masked_greater(self.data, item)
         return result
 
     def __lt__(self, item):
@@ -516,8 +693,7 @@ class DataArray(object):
 
         """
         result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_greater_equal(self.data, item)
+        result.data = np.ma.masked_greater_equal(self.data, item)
         return result
 
     def __ge__(self, item):
@@ -534,8 +710,7 @@ class DataArray(object):
 
         """
         result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_less(self.data, item)
+        result.data = np.ma.masked_less(self.data, item)
         return result
 
     def __gt__(self, item):
@@ -553,8 +728,7 @@ class DataArray(object):
 
         """
         result = self.copy()
-        if self.data is not None:
-            result.data = np.ma.masked_less_equal(self.data, item)
+        result.data = np.ma.masked_less_equal(self.data, item)
         return result
 
     def __getitem__(self, item):
@@ -569,55 +743,31 @@ class DataArray(object):
         # The DataArray constructor postpones reading data from FITS files
         # until they are first used. Read the slice from the FITS file if
         # the data array hasn't been read yet.
-
-        if self._data is None and self.filename is not None:
-            data = read_slice_from_fits(self.filename, item=item,
-                                        ext=self._data_ext, mask_ext='DQ',
-                                        dtype=self.dtype)
-
-            # Mask an array where invalid values occur (NaNs or infs).
-            if ma.is_masked(data):
-                data.mask |= ~(np.isfinite(data.data))
-            else:
-                data = ma.masked_invalid(data)
-
-            if np.array_equal(data.shape, self.shape):
-                # Store the data array if the full data has been read
-                self._data = data
+        var = None
+        if self._loaded_data:
+            data = self._data[item]
+            mask = self._mask
+            if mask is not ma.nomask:
+                mask = mask[item]
+            if self._var is not None:
+                var = self._var[item]
+        elif self.filename is not None:
+            with fits.open(self.filename) as hdu:
+                data, mask = read_slice_from_fits(
+                    hdu, ext=self._data_ext, mask_ext='DQ', dtype=self.dtype,
+                    item=item)
+                if self._var_ext is not None:
+                    var = read_slice_from_fits(hdu, ext=self._var_ext,
+                                               dtype=self.dtype, item=item)[0]
+                if mask is None:
+                    mask = ~(np.isfinite(data))
         else:
-            data = self._data[item]  # data = self.data[item].copy()
+            raise ValueError('empty data array')
 
-        # The DataArray constructor postpones reading variances from
-        # FITS files until they are first used. Read the slice of
-        # variances from the FITS file if the variance array hasn't
-        # been read yet.
+        if data.ndim == 0:
+            return data
 
-        if self._var is None:
-            if self.filename is not None:
-                if self._var_ext is None:
-                    var = None
-                else:
-                    var = read_slice_from_fits(
-                        self.filename, item=item, ext=self._var_ext,
-                        dtype=self.dtype)
-                    if var.ndim != data.ndim:
-                        raise IOError('Wrong dimension number in STAT '
-                                      'extension')
-                    if not np.array_equal(var.shape, data.shape):
-                        raise IOError('Number of points in STAT not equal to '
-                                      'DATA')
-
-                    if np.array_equal(var.shape, self.shape):
-                        # Store the var array if the full var has been read
-                        self._var = var
-            else:
-                var = None
-        else:
-            var = self._var[item]  # copy
-
-        # Construct new WCS and wavelength coordinate information for
-        # the slice.
-
+        # Construct new WCS and wavelength coordinate information for the slice
         wave = None
         wcs = None
         if self.ndim == 3 and isinstance(item, (list, tuple)) and \
@@ -642,38 +792,43 @@ class DataArray(object):
             except:
                 wave = None
 
-        if data.shape == ():
-            return data
-        else:
-            return self.__class__(
-                data=data, unit=self.unit, var=var, wcs=wcs, wave=wave,  # copy
-                filename=self.filename,
-                data_header=fits.Header(self.data_header),
-                primary_header=fits.Header(self.primary_header))
+        return self.__class__(
+            data=data, unit=self.unit, var=var, mask=mask, wcs=wcs, wave=wave,
+            filename=self.filename, data_header=fits.Header(self.data_header),
+            primary_header=fits.Header(self.primary_header))
 
     def __setitem__(self, item, other):
         """Set the corresponding part of data."""
-        if self.data is None:
+        if self._data is None:
             raise ValueError('empty data array')
 
         if isinstance(other, DataArray):
-            # FIXME: check only step or full wcs ?
-            if self._has_wave and other._has_wave \
-                    and not self.wave.isEqual(other.wave):
+            # FIXME: check only step
+
+            if self._has_wave and other._has_wave and \
+                    not np.allclose(self.wave.get_step(),
+                                    other.wave.get_step(unit=self.wave.unit),
+                                    atol=1E-2, rtol=0):
                 raise ValueError('Operation forbidden for cubes with different'
                                  ' world coordinates in spectral direction')
-            if self._has_wcs and other._has_wcs \
-                    and not self.wcs.isEqual(other.wcs):
+            if self._has_wcs and other._has_wcs and \
+                    not np.allclose(self.wcs.get_step(),
+                                    other.wcs.get_step(unit=self.wcs.unit),
+                                    atol=1E-3, rtol=0):
                 raise ValueError('Operation forbidden for cubes with different'
                                  ' world coordinates in spatial directions')
 
             if self.unit == other.unit:
-                self.data[item] = other.data
+                if self._var is not None and other._var is not None:
+                    self._var[item] = other._var
+                other = other.data
             else:
-                self.data[item] = UnitMaskedArray(other.data, other.unit,
-                                                  self.unit)
-        else:
-            self.data[item] = other
+                if self._var is not None and other._var is not None:
+                    self._var[item] = UnitArray(other._var,
+                                                other.unit**2, self.unit**2)
+                other = UnitMaskedArray(other.data, other.unit, self.unit)
+
+        self.data[item] = other
 
     def get_wcs_header(self):
         """Return a FITS header containing coordinate descriptions."""
@@ -741,14 +896,14 @@ class DataArray(object):
         out : `astropy.io.fits.ImageHDU`
 
         """
-        if self.var is None:
+        if self._var is None:
             return None
 
-        if self.var.dtype == np.float64:
+        if self._var.dtype == np.float64:
             # Force var to be stored in float instead of double
-            var = self.var.astype(np.float32)
+            var = self._var.astype(np.float32)
         else:
-            var = self.var
+            var = self._var
 
         # world coordinates
         if header is None:
@@ -783,7 +938,7 @@ class DataArray(object):
         hdulist.append(datahdu)
 
         # create spectrum STAT extension
-        if self.var is not None:
+        if self._var is not None:
             hdulist.append(self.get_stat_hdu(header=datahdu.header.copy()))
 
         # create DQ extension
@@ -811,7 +966,7 @@ class DataArray(object):
             By default, a new array is created.
 
         """
-        if self.data is None:
+        if self._data is None:
             raise ValueError('empty data array')
 
         if out is None:
@@ -822,14 +977,14 @@ class DataArray(object):
 
         # Modify the variances to account for the effect of the square root.
 
-        if self.var is not None:
+        if self._var is not None:
             # For a value x, picked from a distribution of
             # variance, vx, the expected variance of sqrt(x), is:
             #
             #  vs = (d[sqrt(x)]/dx)**2 * vx
             #     = (0.5 / sqrt(x))**2 * vx
             #     = 0.25 / x * vx.
-            out.var = 0.25 * self.var / self.data.data
+            out._var = 0.25 * self._var / self._data
         return out
 
     def abs(self, out=None):
@@ -842,21 +997,18 @@ class DataArray(object):
             By default, a new array is created.
 
         """
-        if self.data is None:
-            raise ValueError('empty data array')
-
         if out is None:
             out = self.clone()
 
         out.data = np.ma.abs(self.data)
-        if self.var is not None:
-            out.var = self.var.copy()
+        if self._var is not None:
+            out._var = self._var.copy()
         return out
 
     def unmask(self):
         """Unmask the data (just invalid data (nan,inf) are masked)."""
-        self.data.mask = False
-        self.data = np.ma.masked_invalid(self.data)
+        if self._mask is not ma.nomask:
+            self._mask = ~np.isfinite(self._data)
 
     def mask_variance(self, threshold):
         """Mask pixels with a variance above a threshold value.
@@ -867,10 +1019,9 @@ class DataArray(object):
             Threshold value.
 
         """
-        if self.var is None:
+        if self._var is None:
             raise ValueError('Operation forbidden without variance extension.')
-        else:
-            self.data[self.var > threshold] = np.ma.masked
+        self.data[self._var > threshold] = ma.masked
 
     def mask_selection(self, ksel):
         """Mask selected pixels.
@@ -881,7 +1032,7 @@ class DataArray(object):
             Elements depending on a condition
 
         """
-        self.data[ksel] = np.ma.masked
+        self.data[ksel] = ma.masked
 
     def crop(self):
         """Reduce the size of the array to the smallest sub-array that
@@ -897,9 +1048,6 @@ class DataArray(object):
             The slices that were used to extract the sub-array.
 
         """
-        if self.data is None:
-            return
-
         nmasked = ma.count_masked(self.data)
         if nmasked == 0:
             return
@@ -922,10 +1070,11 @@ class DataArray(object):
             ksel = np.where(~mask)[0]
             item.append(slice(ksel[0], ksel[-1] + 1, None))
 
-        self.data = self.data[item]
-
-        if self.var is not None:
-            self.var = self.var[item]
+        self._data = self._data[item]
+        if self._var is not None:
+            self._var = self._var[item]
+        if self._mask is not ma.nomask:
+            self._mask = self._mask[item]
 
         # Adjust the world-coordinates to match the image slice.
         if self._has_wcs:
@@ -949,3 +1098,7 @@ class DataArray(object):
                                      'attribute set to None', exc_info=True)
 
         return item
+
+    @deprecated('The resize method is deprecated. Please use crop instead.')
+    def resize(self):
+        return self.crop()

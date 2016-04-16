@@ -97,7 +97,7 @@ The following methods correspond to different steps of the algorithm:
 
 `mpdaf.sdetect.ORIGIN.merge_spectraly <mpdaf.sdetect.ORIGIN.merge_spectraly>` applies a spectral merging.
 
-`mpdaf.sdetect.ORIGIN.get_sources <mpdaf.sdetect.ORIGIN.get_sources>` creates the final catalogue of sources.
+`mpdaf.sdetect.ORIGIN.write_sources <mpdaf.sdetect.ORIGIN.get_sources>` creates the final catalogue of sources.
 
 
 The following method can be used to visualize the detected lines at each step.
@@ -121,10 +121,14 @@ In this case, the cube doesn't need to be spatially segmented (generally
 sub-cubes have 70-80 pixels along the spatial axes)::
 
  >>> NbSubcube = 1
+ 
+We will take into account all pixels to compute the p-values (no margins)::
+
+ >>> margins=[0,0,0,0]
 
 First, we create the ORIGIN object::
 
- >>> my_origin = ORIGIN(filename, NbSubcube)
+ >>> my_origin = ORIGIN(filename, NbSubcube, margins)
  [INFO] ORIGIN - Read the Data Cube
  [INFO] ORIGIN - Load dictionary of spectral profile
  [INFO] ORIGIN - Compute PSF
@@ -282,9 +286,9 @@ The ninth step is the spectral merging.
   :align: center
 
 The last step adds corresponding RA/DEC to the catalogue and
-creates a list of `~mpdaf.sdetect.Source` objects::
+writes the `~mpdaf.Source` objects in a folder::
 
- >>> sources = my_origin.get_sources(Cat4, Cat_est_line, correl)
+ >>> sources = my_origin.write_sources(Cat4, Cat_est_line, correl, name='origin', path=path='.')
 
 A source corresponds to a group on detected emission lines and contains:
 
@@ -299,7 +303,9 @@ A source corresponds to a group on detected emission lines and contains:
 
 For example, the first source of the list::
 
- >>> sources[0].info()
+ >>> from mpdaf.sdetect import Source
+ >>> src = Source.from_file('origin/origin-0001.fits')
+ >>> src.info()
  [INFO] ID      =                    1 / object ID u.unitless %d
  [INFO] RA      =    53.15859585425986 / RA u.degree %.7f
  [INFO] DEC     =   -27.77043838806513 / DEC u.degree %.7f

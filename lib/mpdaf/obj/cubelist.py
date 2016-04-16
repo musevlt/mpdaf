@@ -1,5 +1,6 @@
 """cube.py manages Cube objects."""
 
+from __future__ import absolute_import
 import ctypes
 import logging
 import numpy as np

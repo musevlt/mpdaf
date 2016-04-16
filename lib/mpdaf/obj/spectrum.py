@@ -1,5 +1,7 @@
 """spectrum.py defines Spectrum objects."""
 
+from __future__ import absolute_import
+from __future__ import print_function
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -145,10 +147,6 @@ class Spectrum(DataArray):
             var=var, copy=copy, dtype=dtype, **kwargs)
         self._clicks = None
 
-    @deprecated('The resize method is deprecated. Please use crop instead.')
-    def resize(self):
-        return self.crop()
-
     def __add__(self, other):
         """Operator +.
 
@@ -173,13 +171,10 @@ class Spectrum(DataArray):
         -------
         out : Spectrum or Cube object.
         """
-        if self.data is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = self.data + other
+                res._data = self._data + other
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -192,7 +187,7 @@ class Spectrum(DataArray):
 
             if other.ndim == 1:
                 # spectrum1 + spectrum2 = spectrum3
-                if other.data is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 res = self.copy()
@@ -203,19 +198,19 @@ class Spectrum(DataArray):
                     res.data = self.data + UnitMaskedArray(
                         other.data, other.unit, self.unit)
                 # variance
-                if res.var is not None:
-                    if self.var is None:
+                if res._var is not None:
+                    if self._var is None:
                         if other.unit == self.unit:
-                            res.var = other.var
+                            res._var = other._var
                         else:
-                            res.var = UnitArray(other.var, other.unit**2,
+                            res._var = UnitArray(other._var, other.unit**2,
                                                 self.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var
+                            res._var = self._var + other._var
                         else:
-                            res.var = self.var + UnitArray(
-                                other.var, other.unit**2, self.unit**2)
+                            res._var = self._var + UnitArray(
+                                other._var, other.unit**2, self.unit**2)
                 # return
                 return res
             elif other.ndim == 3:
@@ -250,13 +245,10 @@ class Spectrum(DataArray):
         -------
         out : Spectrum or Cube object.
         """
-        if self.data is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = self.data - other
+                res._data = self._data - other
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -269,7 +261,7 @@ class Spectrum(DataArray):
 
             if other.ndim == 1:
                 # spectrum1 + spectrum2 = spectrum3
-                if other.data is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 res = self.copy()
@@ -281,24 +273,24 @@ class Spectrum(DataArray):
                                                            other.unit,
                                                            self.unit)
                 # variance
-                if other.var is not None:
-                    if self.var is None:
+                if other._var is not None:
+                    if self._var is None:
                         if other.unit == self.unit:
-                            res.var = other.var
+                            res._var = other._var
                         else:
-                            res.var = UnitArray(other.var,
+                            res._var = UnitArray(other._var,
                                                 other.unit**2, self.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var
+                            res._var = self._var + other._var
                         else:
-                            res.var = self.var + UnitArray(other.var,
+                            res._var = self._var + UnitArray(other._var,
                                                            other.unit**2,
                                                            self.unit**2)
                 return res
             else:
                 # spectrum - cube1 = cube2
-                if other.data is None or self.shape[0] != other.shape[0]:
+                if self.shape[0] != other.shape[0]:
                     raise IOError('Operation forbidden for objects'
                                   ' with different sizes')
 
@@ -310,29 +302,26 @@ class Spectrum(DataArray):
                     res.data = self.data[:, np.newaxis, np.newaxis] \
                         - UnitMaskedArray(other.data, self.unit, other.unit)
                 # variance
-                if self.var is not None:
-                    if other.var is None:
+                if self._var is not None:
+                    if other._var is None:
                         if other.unit == self.unit:
-                            res.var = self.var
+                            res._var = self._var
                         else:
-                            res.var = UnitArray(self.var, self.unit**2, other.unit**2)
+                            res._var = UnitArray(self._var, self.unit**2, other.unit**2)
                     else:
                         if other.unit == self.unit:
-                            res.var = self.var + other.var
+                            res._var = self._var + other._var
                         else:
-                            res.var = other.var + UnitArray(self.var,
+                            res._var = other._var + UnitArray(self._var,
                                                             self.unit**2,
                                                             other.unit**2)
                 return res
 
     def __rsub__(self, other):
-        if self.data is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = other - self.data
+                res._data = other - self._data
                 return res
             except:
                 raise IOError('Operation forbidden')
@@ -365,23 +354,20 @@ class Spectrum(DataArray):
         -------
         out : Spectrum or Cube object.
         """
-        if self.data is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             # spectrum1 * number = spectrum2
             # (spectrum2[k]=spectrum1[k]*number)
             try:
                 res = self.copy()
-                res.data *= other
-                if self.var is not None:
-                    res.var *= other ** 2
+                res._data *= other
+                if self._var is not None:
+                    res._var *= other ** 2
                 return res
             except:
                 raise IOError('Operation forbidden')
         elif other.ndim == 1:
             # spectrum1 * spectrum2 = spectrum3
-            if other.data is None or self.shape != other.shape:
+            if self.shape != other.shape:
                 raise IOError('Operation forbidden for spectra '
                               'with different sizes')
             # coordinates
@@ -394,15 +380,15 @@ class Spectrum(DataArray):
             # data
             res.data = self.data * other.data
             # variance
-            if self.var is None and other.var is None:
-                res.var = None
-            elif self.var is None:
-                res.var = other.var * self.data.data * self.data.data
-            elif other.var is None:
-                res.var = self.var * other.data.data * other.data.data
+            if self._var is None and other._var is None:
+                res._var = None
+            elif self._var is None:
+                res._var = other._var * self._data * self._data
+            elif other._var is None:
+                res._var = self._var * other._data * other._data
             else:
-                res.var = (other.var * self.data.data * self.data.data +
-                           self.var * other.data.data * other.data.data)
+                res._var = (other._var * self._data * self._data +
+                           self._var * other._data * other._data)
             # unit
             res.unit = self.unit * other.unit
             # return
@@ -442,17 +428,14 @@ class Spectrum(DataArray):
         -------
         out : Spectrum or Cube object.
         """
-        if self.data is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 # spectrum1 / number =
                 # spectrum2 (spectrum2[k]=spectrum1[k]/number)
                 res = self.copy()
-                res.data /= other
-                if self.var is not None:
-                    res.var /= other ** 2
+                res._data /= other
+                if self._var is not None:
+                    res._var /= other ** 2
                     return res
             except:
                 raise IOError('Operation forbidden')
@@ -464,7 +447,7 @@ class Spectrum(DataArray):
                               'with different world coordinates')
             if other.ndim == 1:
                 # spectrum1 / spectrum2 = spectrum3
-                if other.data is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
 
@@ -472,24 +455,24 @@ class Spectrum(DataArray):
                 # data
                 res.data = self.data / other.data
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var * self.data.data * self.data.data \
-                        / (other.data.data ** 4)
-                elif other.var is None:
-                    res.var = self.var * other.data.data * other.data.data \
-                        / (other.data.data ** 4)
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var * self._data * self._data \
+                        / (other._data ** 4)
+                elif other._var is None:
+                    res._var = self._var * other._data * other._data \
+                        / (other._data ** 4)
                 else:
-                    res.var = (other.var * self.data.data * self.data.data +
-                               self.var * other.data.data * other.data.data) \
-                        / (other.data.data ** 4)
+                    res._var = (other._var * self._data * self._data +
+                               self._var * other._data * other._data) \
+                        / (other._data ** 4)
                 # unit
                 res.unit = self.unit / other.unit
                 return res
             else:
                 # spectrum / cube1 = cube2
-                if other.data is None or self.shape[0] != other.shape[0]:
+                if self.shape[0] != other.shape[0]:
                     raise IOError('Operation forbidden for objects '
                                   'with different sizes')
                 # data
@@ -497,56 +480,39 @@ class Spectrum(DataArray):
                 res.data = self.data[:, np.newaxis, np.newaxis] \
                     / other.data
                 # variance
-                if self.var is None and other.var is None:
-                    res.var = None
-                elif self.var is None:
-                    res.var = other.var \
-                        * self.data.data[:, np.newaxis, np.newaxis] \
-                        * self.data.data[:, np.newaxis, np.newaxis] \
-                        / (other.data.data ** 4)
-                elif other.var is None:
-                    res.var = self.var[:, np.newaxis, np.newaxis] \
-                        * other.data.data * other.data.data / (other.data.data ** 4)
+                if self._var is None and other._var is None:
+                    res._var = None
+                elif self._var is None:
+                    res._var = other._var \
+                        * self._data[:, np.newaxis, np.newaxis] \
+                        * self._data[:, np.newaxis, np.newaxis] \
+                        / (other._data ** 4)
+                elif other._var is None:
+                    res._var = self._var[:, np.newaxis, np.newaxis] \
+                        * other._data * other._data / (other._data ** 4)
                 else:
-                    res.var = \
-                        (other.var *
-                         self.data.data[:, np.newaxis, np.newaxis] *
-                         self.data.data[:, np.newaxis, np.newaxis] +
-                         self.var[:, np.newaxis, np.newaxis] *
-                         other.data.data * other.data.data) / (other.data.data ** 4)
+                    res._var = \
+                        (other._var *
+                         self._data[:, np.newaxis, np.newaxis] *
+                         self._data[:, np.newaxis, np.newaxis] +
+                         self._var[:, np.newaxis, np.newaxis] *
+                         other._data * other._data) / (other._data ** 4)
                 # unit
                 res.unit = self.unit / other.unit
                 return res
 
     def __rdiv__(self, other):
-        if self.data is None:
-            raise ValueError('empty data array')
-
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
-                res.data = other / self.data
-                if self.var is not None:
-                    res.var = other ** 2 / self.var
+                res._data = other / self._data
+                if self._var is not None:
+                    res._var = other ** 2 / self._var
                 return res
             except:
                 raise IOError('Operation forbidden')
         else:
             return other.__div__(self)
-
-#     def __pow__(self, other):
-#         """Compute the power exponent of data extensions (operator \*\*).
-#         """
-#         if self.data is None:
-#             raise ValueError('empty data array')
-#         res = self.copy()
-#         if is_float(other) or is_int(other):
-#             res.data = self.data ** other
-#             res.unit *= (res.unit.scale)** (other - 1)
-#             res.var = None
-#         else:
-#             raise ValueError('Operation forbidden')
-#         return res
 
     def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
         """ Return the flux value corresponding to a wavelength,
@@ -721,23 +687,33 @@ class Spectrum(DataArray):
             True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         lbda = self.wave.coord()
-        ksel = np.where(self.data.mask == False)
-        d = np.empty(np.shape(ksel)[1] + 2, dtype=float)
-        d[1:-1] = self.data.data[ksel]
-        w = np.empty(np.shape(ksel)[1] + 2)
-        w[1:-1] = lbda[ksel]
+        if self.mask is np.ma.nomask:
+            d = np.empty(self.shape + 2, dtype=float)
+            d[1:-1] = self._data
+            w = np.empty(self.shape + 2, dtype=float)
+            w[1:-1] = lbda
+        else:
+            ksel = np.where(self.mask == False)
+            d = np.empty(np.shape(ksel)[1] + 2, dtype=float)
+            d[1:-1] = self._data[ksel]
+            w = np.empty(np.shape(ksel)[1] + 2)
+            w[1:-1] = lbda[ksel]
         d[0] = d[1]
         d[-1] = d[-2]
         w[0] = self.get_start() - 0.5 * self.get_step()
         w[-1] = self.get_end() + 0.5 * self.get_step()
 
         if spline:
-            if self.var is not None:
-                weight = np.empty(np.shape(ksel)[1] + 2)
-                weight[1:-1] = 1. / np.sqrt(np.abs(self.var[ksel]))
-                weight[0] = 1. / np.sqrt(np.abs(self.var[1]))
-                weight[-1] = 1. / np.sqrt(np.abs(self.var[-2]))
-                np.ma.fix_invalid(weight, copy=False, fill_value=0)
+            if self._var is not None:
+                _weight = 1. / np.sqrt(np.abs(self.var.filled(np.inf)))
+                if self.mask is np.ma.nomask:
+                    weight = np.empty(self.shape + 2, dtype=float)
+                    weight[1:-1] = _weight
+                else:
+                    weight = np.empty(np.shape(ksel)[1] + 2)
+                    weight[1:-1] = _weight[ksel]
+                weight[0] = weight[1]
+                weight[-1] = weight[-2]
             else:
                 weight = None
             tck = interpolate.splrep(w, d, w=weight)
@@ -759,9 +735,9 @@ class Spectrum(DataArray):
             return self.data.data
         else:
             lbda = self.wave.coord()
-            ksel = np.where(self.data.mask == True)
+            ksel = np.where(self._mask == True)
             wnew = lbda[ksel]
-            data = self.data.data.__copy__()
+            data = self._data.copy()
             data[ksel] = self._interp(wnew, spline)
             return data
 
@@ -788,10 +764,19 @@ class Spectrum(DataArray):
         assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
         sh = self.shape[0] / factor
-        self.data = np.ma.array(self.data.reshape(sh, factor).sum(1) / factor,
-                                mask=self.data.mask.reshape(sh, factor).sum(1))
-        if self.var is not None:
-            self.var = self.var.reshape(sh, factor).sum(1) / (factor * factor)
+
+        if self.mask is np.ma.nomask:
+            self._data = self._data.reshape(sh, factor).sum(1) / factor
+            if self._var is not None:
+                self._var = self._var.reshape(sh, factor).sum(1) / (factor * factor)
+        else:
+            mask_count = (~self.mask).reshape(sh, factor).sum(1)
+            self._data = self.data.reshape(sh, factor).sum(1).data / mask_count
+            if self._var is not None:
+                self._var = self.var.reshape(sh, factor).sum(1).data / (mask_count * mask_count)
+            self._mask = (mask_count==0)
+        self._ndim = self._data.ndim
+
         try:
             self.wave.rebin(factor)
         except:
@@ -850,31 +835,32 @@ class Spectrum(DataArray):
 
             # Slice the data and variance arrays.
 
-            self.data = self.data[sl]
-            if self.var is not None:
-                self.var = self.var[sl]
+            self._data = self._data[sl]
+            if self._var is not None:
+                self._var = self._var[sl]
+            self._mask = self._mask[sl]
 
             # Update the world coordinates to match the truncated
             # array.
 
-            self.wcs = self.wcs[sl]
-
+            self.wave = self.wave[sl]
 
         # At this point the spectrum dimension is an integer multiple of
         # the division factor. What is the shape of the output spectrum?
 
         newshape = self.shape[0] // factor
+        data = self.data.reshape(newshape, factor)
 
         # Compute how many unmasked pixels in the input spectrum will
         # contribute to each mean pixel in the output spectrum.
 
-        unmasked = self.data.reshape(newshape, factor).count(1)
+        unmasked = data.count(1)
 
         # Reduce the size of the data array by taking the mean of
         # successive groups of 'factor' pixels. Note that in the
         # following, np.ma.mean() takes account of masked pixels.
 
-        self.data = self.data.reshape(newshape, factor).mean(1)
+        self._data = data.mean(1).data
 
         # The treatment of the variance array is complicated by the
         # possibility of masked pixels in the data array. A sum of N
@@ -882,13 +868,13 @@ class Spectrum(DataArray):
         # sum(v[i] / N^2), where N^2 is the number of unmasked pixels
         # in that particular sum.
 
-        if self.var is not None:
-            self.var = (self.var.reshape(newshape, factor).sum(1) / unmasked**2)
+        if self._var is not None:
+            self._var = (self.var.reshape(newshape, factor).sum(1) / unmasked**2)
 
         # Mask all pixels in the output array that come from zero
         # unmasked pixels of the input array.
 
-        self.data.mask = unmasked < 1
+        self._mask = unmasked < 1
 
         # Update the world-coordinate information.
 
@@ -896,7 +882,6 @@ class Spectrum(DataArray):
             self.wave.rebin(factor)
         except:
             self.wave = None
-
 
     def rebin_mean(self, factor, margin='center', inplace=False):
         """Return a spectrum that shrinks the size of the current spectrum by
@@ -943,10 +928,11 @@ class Spectrum(DataArray):
         assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
         shape = self.shape[0] / factor
-        self.data = \
-            np.ma.array(np.ma.median(self.data.reshape(shape, factor), 1),
-                        mask=self.data.mask.reshape(shape, factor).sum(1))
+        self._data = np.ma.median(self.data.reshape(shape, factor), 1)
+        if self._mask is not np.ma.nomask:
+            self._mask = ((~self._mask).reshape(shape, factor).sum(1) == 0)
         self.var = None
+        self._ndim = self._data.ndim
         try:
             self.wave.rebin(factor)
         except:
@@ -1034,14 +1020,14 @@ class Spectrum(DataArray):
             newshape = min(shape, newwave.shape)
             newwave.shape = newshape
 
-        dmin = np.min(self.data)
-        dmax = np.max(self.data)
+        dmin = np.ma.min(self.data)
+        dmax = np.ma.max(self.data)
         if dmin == dmax:
-            self.data = np.ones(newshape, dtype=np.float) * dmin
+            self._data = np.ones(newshape, dtype=np.float) * dmin
         else:
             data = self._interp_data(spline)
             f = lambda x: data[self.wave.pixel(x, unit=unit, nearest=True)]
-            self.data = np.empty(newshape, dtype=np.float)
+            self._data = np.empty(newshape, dtype=np.float)
             pix = np.arange(newshape + 1, dtype=np.float)
             x = (pix - newwave.get_crpix() + 1) * newwave.get_step(unit) \
                 + newwave.get_crval(unit) - 0.5 * newwave.get_step(unit)
@@ -1051,27 +1037,33 @@ class Spectrum(DataArray):
                 x[-1] = lbdamax
 
             for i in range(newshape):
-                self.data[i] = \
+                self._data[i] = \
                     integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
                     / newwave.get_step(unit)
 
-        if self.var is not None and not notnoise:
-            dmin = np.min(self.var)
-            dmax = np.max(self.var)
+        if self._mask is not np.ma.nomask:
+            self._mask = ~(np.isfinite(self._data))
+
+        if self._var is not None and not notnoise:
+            dmin = np.min(self._var)
+            dmax = np.max(self._var)
             if dmin == dmax:
-                self.var = np.ones(newshape, dtype=np.float) * dmin
+                self._var = np.ones(newshape, dtype=np.float) * dmin
             else:
-                f = lambda x: self.var[int(self.wave.pixel(x, unit=unit) + 0.5)]
+                f = lambda x: self._var[int(self.wave.pixel(x, unit=unit) + 0.5)]
                 var = np.empty(newshape, dtype=np.float)
                 for i in range(newshape):
                     var[i] = \
                         integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
                         / newwave.get_step(unit)
-                self.var = var
-        else:
-            self.var = None
+                self._var = var
 
-        self.data = np.ma.masked_invalid(self.data)
+            if self._mask is not np.ma.nomask:
+                self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
+
+        else:
+            self._var = None
+
         self.wave = newwave
 
     def resample(self, step, start=None, shape=None,
@@ -1131,7 +1123,7 @@ class Spectrum(DataArray):
         -------
         out : float
         """
-        if self.var is None:
+        if self._var is None:
             weight = False
         if lmin is None:
             i1 = 0
@@ -1151,11 +1143,10 @@ class Spectrum(DataArray):
 
         subspe = self[i1:i2]
         if weight:
-            weights = 1.0 / subspe.var
-            np.ma.fix_invalid(weights, copy=False, fill_value=0)
+            weights = 1.0 / subspe.var.filled(np.inf)
             flux = np.ma.average(subspe.data, weights=weights)
         else:
-            flux = subspe.data.mean()
+            flux = np.ma.average(subspe.data)
         return flux
 
     def sum(self, lmin=None, lmax=None, weight=True, unit=u.angstrom):
@@ -1193,9 +1184,8 @@ class Spectrum(DataArray):
                 i2 = min(self.shape[0], self.wave.pixel(lmax, True, unit) + 1)
 
         subspe = self[i1:i2]
-        if weight and self.var is not None:
-            weights = 1.0 / subspe.var
-            np.ma.fix_invalid(weights, copy=False, fill_value=0)
+        if weight and self._var is not None:
+            weights = 1.0 / subspe.var.filled(np.inf)
 
             # How many unmasked pixels will be averaged?
 
@@ -1257,7 +1247,7 @@ class Spectrum(DataArray):
 
         if u.angstrom in self.unit.bases and unit is not u.angstrom:
             try:
-                return np.sum(subspe.data *
+                return np.ma.sum(subspe.data *
                               ((np.diff(d) * unit).to(u.angstrom).value)
                               ) * self.unit * u.angstrom
             except:
@@ -1290,20 +1280,23 @@ class Spectrum(DataArray):
         if self.shape[0] <= deg + 1:
             raise ValueError('Too few points to perform polynomial fit')
 
-        if self.var is None:
+        if self._var is None:
             weight = False
 
         if weight:
-            vec_weight = 1.0 / np.sqrt(np.abs(self.var))
-            np.ma.fix_invalid(vec_weight, copy=False, fill_value=0)
+            vec_weight = 1.0 / np.sqrt(np.abs(self.var.filled(np.inf)))
         else:
             vec_weight = None
 
-        mask = np.array(1 - self.data.mask, dtype=bool)
-        d = self.data.compress(mask)
-        w = self.wave.coord().compress(mask)
-        if weight:
-            vec_weight = vec_weight.compress(mask)
+        if self._mask is np.ma.nomask:
+            d = self._data
+            w = self.wave.coord()
+        else:
+            mask = np.array(1 - self._mask, dtype=bool)
+            d = self._data.compress(mask)
+            w = self.wave.coord().compress(mask)
+            if weight:
+                vec_weight = vec_weight.compress(mask)
 
         # normalize w
         w0 = np.min(w)
@@ -1357,9 +1350,10 @@ class Spectrum(DataArray):
         w0 = np.min(l)
         dw = np.max(l) - w0
         w = (l - w0) / dw
-        val = np.polynomial.polynomial.polyval(w, z)
-        self.data = np.ma.masked_invalid(val)
-        self.var = None
+        self._data = np.polynomial.polynomial.polyval(w, z)
+        if self._mask is not np.ma.nomask:
+            self._mask = ~(np.isfinite(self._data))
+        self._var = None
 
     def poly_spec(self, deg, weight=True, maxiter=0,
                   nsig=(-3.0, 3.0), verbose=False):
@@ -1560,9 +1554,11 @@ class Spectrum(DataArray):
                              'are outside the spectrum range')
 
         res = self.__getitem__(slice(i1, i2, 1))
-        self.data = res.data
+        self._data = res._data
+        self._var = res._var
+        self._mask = res._mask
         self.wave = res.wave
-        self.var = res.var
+
 
     def fwhm(self, l0, cont=0, spline=False, unit=u.angstrom):
         """Return the fwhm of a peak.
@@ -2427,7 +2423,7 @@ class Spectrum(DataArray):
         data[:ks] = data[ks:2 * ks][::-1]
         data[-ks:] = data[-2 * ks:-ks][::-1]
         data = signal.medfilt(data, ks)
-        self.data = np.ma.array(data[ks:-ks], mask=self.data.mask)
+        self._data = data[ks:-ks]
 
     def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom,
                       inplace=False):
@@ -2470,32 +2466,25 @@ class Spectrum(DataArray):
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
         """
-        if self.data is None:
-            raise ValueError('empty data array')
-
         try:
             if isinstance(other, Spectrum):
-                if other.data is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
-                    data = other.data.data
+                    data = other._data
                     if self.unit != other.unit:
                         data = (data * other.unit).to(self.unit).value
-                    self.data = \
-                        np.ma.array(signal.convolve(self.data, data, mode='same'),
-                                    mask=self.data.mask)
-                    if self.var is not None:
-                        self.var = signal.convolve(self.var, data, mode='same')
+                    self._data = signal.convolve(self._data, data, mode='same')
+                    if self._var is not None:
+                        self._var = signal.convolve(self._var, data, mode='same')
         except IOError as e:
             raise e
         except:
             try:
-                self.data = \
-                    np.ma.array(signal.convolve(self.data, other, mode='same'),
-                                mask=self.data.mask)
-                if self.var is not None:
-                    self.var = signal.convolve(self.var, other, mode='same')
+                self._data = signal.convolve(self._data, other, mode='same')
+                if self._var is not None:
+                    self._var = signal.convolve(self._var, other, mode='same')
             except:
                 raise IOError('Operation forbidden')
                 return None
@@ -2539,32 +2528,25 @@ class Spectrum(DataArray):
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
         """
-        if self.data is None:
-            raise ValueError('empty data array')
-
         try:
             if isinstance(other, Spectrum):
-                if other.data is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden '
                                   'for spectra with different sizes')
                 else:
-                    data = other.data.data
+                    data = other._data
                     if self.unit != other.unit:
                         data = (data * other.unit).to(self.unit).value
-                    self.data = \
-                        np.ma.array(signal.fftconvolve(self.data, data, mode='same'),
-                                    mask=self.data.mask)
-                    if self.var is not None:
-                        self.var = signal.fftconvolve(self.var, data, mode='same')
+                    self._data = signal.fftconvolve(self._data, data, mode='same')
+                    if self._var is not None:
+                        self._var = signal.fftconvolve(self._var, data, mode='same')
         except IOError as e:
             raise e
         except:
             try:
-                self.data = np.ma.array(signal.fftconvolve(self.data, other,
-                                                           mode='same'),
-                                        mask=self.data.mask)
-                if self.var is not None:
-                    self.var = signal.fftconvolve(self.var, other, mode='same')
+                self._data = signal.fftconvolve(self._data, other, mode='same')
+                if self._var is not None:
+                    self._var = signal.fftconvolve(self._var, other, mode='same')
             except:
                 raise IOError('Operation forbidden')
 
@@ -2607,32 +2589,25 @@ class Spectrum(DataArray):
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
         """
-        if self.data is None:
-            raise ValueError('empty data array')
-
         try:
             if isinstance(other, Spectrum):
-                if other.data is None or self.shape != other.shape:
+                if self.shape != other.shape:
                     raise IOError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
-                    data = other.data.data
+                    data = other._data
                     if self.unit != other.unit:
                         data = (data * other.unit).to(self.unit).value
-                    self.data = \
-                        np.ma.array(signal.correlate(self.data, data, mode='same'),
-                                    mask=self.data.mask)
-                    if self.var is not None:
-                        self.var = signal.correlate(self.var, data, mode='same')
+                    self._data = signal.correlate(self._data, data, mode='same')
+                    if self._var is not None:
+                        self._var = signal.correlate(self._var, data, mode='same')
         except IOError as e:
             raise e
         except:
             try:
-                self.data = np.ma.array(signal.correlate(self.data,
-                                                         other, mode='same'),
-                                        mask=self.data.mask)
-                if self.var is not None:
-                    self.var = signal.correlate(self.var, other, mode='same')
+                self._data = signal.correlate(self._data, other, mode='same')
+                if self._var is not None:
+                    self._var = signal.correlate(self._var, other, mode='same')
             except:
                 raise IOError('Operation forbidden')
 
@@ -2690,11 +2665,9 @@ class Spectrum(DataArray):
             + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
         kernel /= kernel.sum()
 
-        self.data = np.ma.array(signal.correlate(self.data, kernel,
-                                                 mode='same'),
-                                mask=self.data.mask)
-        if self.var is not None:
-            self.var = signal.correlate(self.var, kernel, mode='same')
+        self._data = signal.correlate(self._data, kernel, mode='same')
+        if self._var is not None:
+            self._var = signal.correlate(self._var, kernel, mode='same')
 
     def fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom, inplace=False):
         """Return the convolution of the spectrum with a Gaussian using fft.
@@ -2748,7 +2721,7 @@ class Spectrum(DataArray):
         out : `~mpdaf.obj.Spectrum`
         """
         res = self.clone()
-        if self.data.sum() == 0:
+        if self._data.sum() == 0:
             return res
         step = self.get_step(u.angstrom)
         lbda = self.wave.coord(u.angstrom)
@@ -2766,19 +2739,20 @@ class Spectrum(DataArray):
             except:
                 raise ValueError('lsf parameter is not valid')
 
-        data = np.empty(len(self.data) + 2 * k)
-        data[k:-k] = self.data
-        data[:k] = self.data[k:0:-1]
-        data[-k:] = self.data[-2:-k - 2:-1]
+        data = np.empty(len(self._data) + 2 * k)
+        data[k:-k] = self._data
+        data[:k] = self._data[k:0:-1]
+        data[-k:] = self._data[-2:-k - 2:-1]
 
-        res.data = np.ma.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
+        res._data = np.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
                                               * data[i:i + size]).sum(),
-                                   range(self.shape[0])), mask=self.data.mask)
+                                   range(self.shape[0])))
+        res._mask = self._mask
 
-        if self.var is None:
-            res.var = None
+        if self._var is None:
+            res._var = None
         else:
-            res.var = np.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
+            res._var = np.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
                                               * data[i:i + size]).sum(),
                                    range(self.shape[0])))
         return res
@@ -3001,7 +2975,7 @@ class Spectrum(DataArray):
                         x = self.wave.coord(i, unit=self._unit)
                         val = self.data[i]
                         if len(self._clicks.k) == 0:
-                            print ''
+                            print('')
                         self._clicks.add(xc, yc, i, x, val)
                         self._clicks.iprint(len(self._clicks.k) - 1)
                     except:
@@ -3048,7 +3022,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     self._clicks.iprint(len(self._clicks.k) - 1)
                     if np.sometrue(np.mod(len(self._clicks.k), 2)) == False:
@@ -3139,7 +3113,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     if np.sometrue(np.mod(len(self._clicks.k), 3)) == False:
                         lmin = self._clicks.lbda[-3]
@@ -3168,7 +3142,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     if np.sometrue(np.mod(len(self._clicks.k), 5)) == False:
                         lmin1 = self._clicks.lbda[-5]
@@ -3280,7 +3254,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     if np.sometrue(np.mod(len(self._clicks.k), 3)) == False:
                         lmin = self._clicks.lbda[-3]
@@ -3312,7 +3286,7 @@ class Spectrum(DataArray):
                     x = self.wave.coord(i, unit=self._unit)
                     val = self.data[i]
                     if len(self._clicks.k) == 0:
-                        print ''
+                        print('')
                     self._clicks.add(xc, yc, i, x, val)
                     if np.sometrue(np.mod(len(self._clicks.k), 5)) == False:
                         lmin1 = self._clicks.lbda[-5]

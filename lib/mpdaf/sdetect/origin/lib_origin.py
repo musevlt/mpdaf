@@ -10,6 +10,7 @@ Carole for more info at carole.clastres@univ-lyon1.fr
 lib_origin.py contains the methods that compose the ORIGIN software
 """
 
+from __future__ import absolute_import
 from astropy.table import Table, Column, join
 from astropy.utils.console import ProgressBar
 import astropy.units as u
@@ -20,15 +21,13 @@ import time
 import sys
 from scipy.ndimage import measurements, morphology
 from scipy import signal, stats, special
-import logging, warnings
+import logging
 
 from ...obj import Cube, Image, Spectrum
 from ...sdetect import Source, SourceList
 
 from numpy.fft import rfftn, irfftn
 from scipy.signal.signaltools import _next_regular, _centered
-
-import sys
 
 __version__ = 'ORIGIN_18122015'
 
@@ -1500,39 +1499,44 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     logger = logging.getLogger(__name__)
     logger.debug(whoami())
     t0 = time.time()
-    E = Cat0.copy()
-    CatF = Table()
+    
+    colF = []
+    colF_id = []
+    colF_x = []
+    colF_y = []
+    colF_xc = []
+    colF_yc = []
+    colF_nlines = []
+            
     num_source = 0
-    # Add indices of lines
-    col_id = Column(name='ID', data=np.arange(1,len(E)+1))
-    E.add_column(col_id, index=0)
-    Esize = len(E)
-    with ProgressBar(Esize) as bar:
-        while len(E) > 0:
-            # Set the new indices
-            E['ID'] = np.arange(1,len(E)+1)
-
+    col_id = np.arange(len(Cat0))
+    col_x = Cat0['x']
+    col_y = Cat0['y']
+    col_tglr = Cat0['T_GLR']
+    
+    size = len(col_id)
+    with ProgressBar(size) as bar:
+        while len(col_id) > 0:
             Cix, Ciy = np.mgrid[0:Nx,0:Ny]
             Cix = Cix.flatten()
             Ciy = Ciy.flatten()
-            d = (E['x'][:,np.newaxis] - Cix[np.newaxis,:])**2 + \
-                (E['y'][:,np.newaxis] - Ciy[np.newaxis,:])**2
+            d = (col_x[:,np.newaxis] - Cix[np.newaxis,:])**2 + \
+                (col_y[:,np.newaxis] - Ciy[np.newaxis,:])**2
             numi = np.where(d <= np.round(fwhm_fsf/2)**2)
             if len(numi[-1]) != 0:
                 unique, count = np.unique(numi[-1], return_counts=True)
                 ksel = np.where(count==max(count))
                 pix = unique[ksel][0]
                 C0 = [Cix[pix], Ciy[pix]]
-                d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2
-                num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
-                E0 = E[num0]
+                d = (col_x- C0[0])**2 + (col_y - C0[1])**2
+                num0 = (d <= np.round(fwhm_fsf/2)**2)
 
                 if len(ksel[0]) > 1:
                     # T_GLR values of the voxels in this group
-                    correl_temp  = E0['T_GLR']
+                    correl_temp  = col_tglr[num0]
                     # Spatial positions of the voxels
-                    x_gp = E0['x']
-                    y_gp = E0['y']
+                    x_gp = col_x[num0]
+                    y_gp = col_y[num0]
                     # Centroid weighted by the T_GLR of voxels in each group
                     x_centroid = np.sum(correl_temp*x_gp) / np.sum(correl_temp)
                     y_centroid = np.sum(correl_temp*y_gp) / np.sum(correl_temp)
@@ -1542,34 +1546,31 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
                     # Keep the lower distance
                     ksel2 = np.argmin(d_i)
                     C0 = [Cix[pix][ksel2], Ciy[pix][ksel2]]
-                    d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2
-                    num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
-                    E0 = E[num0]
+                    d = (col_x- C0[0])**2 + (col_y - C0[1])**2
+                    num0 = (d <= np.round(fwhm_fsf/2)**2)
             else:
                 x0 = 0
                 y0 = 0
                 C0 = [x0, y0]
                 # Distance from the center of the circle to the pixel
-                d = (E['x']- C0[0])**2 + (E['y'] - C0[1])**2  # d**2 ???????
+                d = (col_x- C0[0])**2 + (col_y - C0[1])**2  # d**2 ???????
                 # Indices of the voxel inside the circle
-                num0 = np.where(d <= np.round(fwhm_fsf/2)**2)
-                # subgroup containing only the voxels inside the cylinder
-                E0 = E[num0]
+                num0 = (d <= np.round(fwhm_fsf/2)**2)
 
             # Number of this source
             num_source = num_source + 1
             # Number of lines for this source
-            nb_lines = len(E0)
+            nb_lines = np.bincount(num0)[1]
             # To fulfill each line of the catalogue
             n_S = np.resize(num_source, nb_lines)
             # Coordinates of the center of the circle
             x_c = np.resize(C0[0], nb_lines)
             y_c = np.resize(C0[1], nb_lines)
             # T_GLR values of the voxels in this group
-            correl_temp  = E0['T_GLR']
+            correl_temp  = col_tglr[num0]
             # Spatial positions of the voxels
-            x_gp = E0['x']
-            y_gp = E0['y']
+            x_gp = col_x[num0]
+            y_gp = col_y[num0]
             # Centroid weighted by the T_GLR of voxels in each group
             x_centroid = np.sum(correl_temp*x_gp) / np.sum(correl_temp)
             y_centroid = np.sum(correl_temp*y_gp) / np.sum(correl_temp)
@@ -1579,28 +1580,37 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
             # Number of lines for this source
             nb_lines = np.resize(int(nb_lines), nb_lines)
             # New catalogue of detected emission lines merged in sources
-            CatF0 = E0.copy()
-            CatF0['ID'] = n_S
-            col_x = Column(name='x_circle', data=x_c)
-            col_y = Column(name='y_circle', data=y_c)
-            col_xc = Column(name='x_centroid', data=x_centroid)
-            col_yc = Column(name='y_centroid', data=y_centroid)
-            col_nlines = Column(name='nb_lines', data=nb_lines)
-            CatF0.add_columns([col_x, col_y, col_xc, col_yc, col_nlines],
-                              indexes=[1, 1, 1, 1, 1])
-            if len(CatF)==0:
-                CatF = CatF0
-            else:
-                CatF = join(CatF, CatF0, join_type='outer')
+            colF.append(col_id[num0])
+            colF_id.append(n_S)
+            colF_x.append(x_c)
+            colF_y.append(y_c)
+            colF_xc.append(x_centroid)
+            colF_yc.append(y_centroid)
+            colF_nlines.append(nb_lines)
+            
             # Suppress the voxels added in the catalogue
-            for k in E0['ID']:
-                E.remove_rows(E['ID']==k)
-                # update the progress bar
-                for k in range(len(E0)):
-                    bar.update()
+            col_id = col_id[~num0]
+            col_x = col_x[~num0]
+            col_y = col_y[~num0]
+            col_tglr = col_tglr[~num0]
+            
+            # update the progress bar
+            bar.update()
+            
+    CatF = Cat0[np.concatenate(colF)].copy()
+    col_id = Column(name='ID', data=np.concatenate(colF_id))
+    col_x = Column(name='x_circle', data=np.concatenate(colF_x))
+    col_y = Column(name='y_circle', data=np.concatenate(colF_y))
+    col_xc = Column(name='x_centroid', data=np.concatenate(colF_xc))
+    col_yc = Column(name='y_centroid', data=np.concatenate(colF_yc))
+    col_nlines = Column(name='nb_lines', data=np.concatenate(colF_nlines))
+    CatF.add_columns([col_id, col_x, col_y, col_xc, col_yc, col_nlines],
+                              indexes=[0, 0, 0, 0, 0, 0])
+    
     nid = len(np.unique(CatF['ID']))
     logger.info('{} sources identified in catalog after spatial merging'.format(nid))
     logger.debug('%s executed in %1.1fs'%(whoami(),time.time()-t0))
+    
     return CatF
 
 def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
@@ -1715,7 +1725,8 @@ def Add_radec_to_Cat(Cat, wcs):
     logger.debug('%s executed in %0.1fs'%(whoami(),time.time()-t0))
     return Cat_radec
 
-def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_profiles):
+def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
+                               fwhm_profiles, path, name, param):
     """Function to create the final catalogue of sources with their parameters
 
     Parameters
@@ -1735,10 +1746,6 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     fwhm_profiles     : array
                         List of fwhm values (in pixels) of the input spectra profiles (DICO).
 
-    Returns
-    -------
-    sources : mpdaf.sdetect.SourceList
-              List of sources
 
     Date  : Dec, 16 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
@@ -1746,7 +1753,6 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
     logger = logging.getLogger(__name__)
     logger.debug(whoami())
     t0 = time.time()
-    sources = SourceList()
     uflux = u.erg/(u.s * u.cm**2)
     unone = u.dimensionless_unscaled
     cols = ['LBDA_ORI','FWHM_ORI','FLUX_ORI','GLR','PVALC','PVALS','PVALF',
@@ -1825,9 +1831,21 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename, fwhm_p
 #    for key in hstlist.keys():
 #        src.add_image(hstlist[key],'HST_'+key, rotate=True)
 
-        sources.append(src)
+        src.OP_THRES = (param['ThresholdPval'],'Orig Threshold Pval')
+        src.OP_DZ = (param['deltaz'],'Orig deltaz')
+        src.OP_R0 = (param['r0PCA'],'Orig PCA R0')
+        src.OP_T1 = (param['threshT1'],'Orig T1 threshold')
+        src.OP_T1 = (param['threshT2'],'Orig T2 threshold')
+        src.OP_NG = (param['neighboors'],'Orig Neighboors')
+        src.OP_MP = (param['meanestPvalChan'],'Orig Meanest PvalChan')
+        src.OP_NS = (param['nbsubcube'],'Orig nb of subcubes')
+        src.OP_DXY = (param['grid_dxy'],'Orig Grid Nxy')
+        src.OP_DZ = (param['grid_dz'],'Orig Grid Nz')
+        src.OP_FSF = (param['PSF'],'Orig FSF cube')
+        src.write('%s/%s-%04d.fits' % (path, name, src.ID))
+
     logger.debug('%s executed in %0.1fs'%(whoami(),time.time()-t0))
-    return sources
+    return len(np.unique(Cat['ID']))
 
 def whoami():
     return sys._getframe(1).f_code.co_name

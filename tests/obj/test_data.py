@@ -1,22 +1,26 @@
 """Test on DataArray objects."""
 
-# Import the recommended python 2 -> 3 compatibility modules.
-
 from __future__ import absolute_import, division
 
-import nose.tools
 from nose.plugins.attrib import attr
 
 import astropy.units as u
 import os
 import tempfile
 import numpy as np
+import warnings
+
 from astropy.io import fits
+from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
+from nose.tools import (assert_true, assert_equal, assert_tuple_equal,
+                        assert_is, assert_false, assert_raises)
 from os.path import join
 
-from ..utils import generate_image, generate_cube, generate_spectrum
+from mpdaf.tools import MpdafWarning
+from ..utils import (generate_image, generate_cube, generate_spectrum,
+                     assert_masked_allclose)
 
 DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', '..')
 TESTIMG = join(DATADIR, 'data', 'obj', 'a370II.fits')
@@ -24,12 +28,34 @@ TESTSPE = join(DATADIR, 'data', 'obj', 'Spectrum_lines.fits')
 
 
 @attr(speed='fast')
+def test_deprecated_warnings():
+    """DataArray class: Testing warnings for deprecated methods"""
+    sp = generate_spectrum()
+
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        sp.set_var(None)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, MpdafWarning)
+        assert "deprecated" in str(w[-1].message)
+
+    for method in (DataArray.get_np_data, DataArray.resize):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            method(sp)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, MpdafWarning)
+            assert "deprecated" in str(w[-1].message)
+
+
+@attr(speed='fast')
 def test_fits_img():
     """DataArray class: Testing FITS image reading"""
     hdu = fits.open(TESTIMG)
     data = DataArray(filename=TESTIMG)
-    nose.tools.assert_equal(data.shape, hdu[0].data.shape)
-    nose.tools.assert_equal(data.ndim, 2)
+    assert_equal(data.shape, hdu[0].data.shape)
+    assert_equal(data.ndim, 2)
     hdu.close()
 
 
@@ -38,18 +64,49 @@ def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
     hdu = fits.open(TESTSPE)
     data = DataArray(filename=TESTSPE)
-    nose.tools.assert_equal(data.shape, hdu[1].data.shape)
-    nose.tools.assert_equal(data.ndim, 1)
+    assert_equal(data.shape, hdu[1].data.shape)
+    assert_equal(data.ndim, 1)
     hdu.close()
+
+
+@attr(speed='fast')
+def test_invalid_file():
+    """DataArray class: Testing invalid file reading"""
+    with assert_raises(IOError) as e:
+        DataArray(filename='missing/file.test')
+        assert_equal(e.exception.message, 'Invalid file: missing/file.test')
 
 
 @attr(speed='fast')
 def test_from_ndarray():
     """DataArray class: Testing initialization from a numpy.ndarray"""
-    data = np.arange(10)
-    d = DataArray(data=data)
-    nose.tools.assert_tuple_equal(d.shape, data.shape)
+
+    nz = 2
+    ny = 3
+    nx = 4
+    ntotal = nz * ny * nx
+    data = np.arange(ntotal).reshape(nz, ny, nx)
+    var = np.random.rand(ntotal).reshape(nz, ny, nx) - 0.5
+    mask = var < 0.0
+
+    # Create a DataArray with the above contents.
+    d = DataArray(data=data, var=var, mask=mask)
+
+    # Is the shape of the DataArray correct?
+    assert_tuple_equal(d.shape, data.shape)
+
+    # Check that the enclosed data and variance arrays match
+    # the arrays that were passed to the constructor.
     assert_allclose(d.data, data)
+    assert_allclose(d.var, var)
+
+    # Make sure that the enclosed data and var arrays are
+    # masked arrays that both have the mask that was passed to the
+    # constructor, and that these and the masked property are in
+    # fact all references to the same mask.
+    assert_array_equal(d.data.mask, mask)
+    assert_array_equal(d.var.mask, mask)
+    assert_true(d.data.mask is d.mask and d.var.mask is d.mask)
 
 
 @attr(speed='fast')
@@ -57,14 +114,14 @@ def test_from_obj():
     """DataArray class: Testing initialization from an object"""
     d = DataArray(data=np.arange(10), var=np.ones(10))
     c = Cube.new_from_obj(d)
-    nose.tools.assert_tuple_equal(c.shape, d.shape)
-    nose.tools.assert_true(np.may_share_memory(c.data, d.data))
+    assert_tuple_equal(c.shape, d.shape)
+    assert_true(np.may_share_memory(c.data, d.data))
     assert_array_equal(c.data, d.data)
     assert_array_equal(c.var, d.var)
 
     data = np.zeros(10)
     c = Cube.new_from_obj(d, data=data, copy=True)
-    nose.tools.assert_false(np.may_share_memory(c.data, data))
+    assert_false(np.may_share_memory(c.data, data))
     assert_array_equal(c.data, data)
     assert_array_equal(c.var, d.var)
 
@@ -74,10 +131,26 @@ def test_copy():
     """DataArray class: Testing the copy method"""
     wcs = WCS(deg=True)
     wave = WaveCoord(cunit=u.angstrom)
-    cube1 = DataArray(data=np.arange(5 * 4 * 3).reshape(5, 4, 3), wave=wave,
-                      wcs=wcs)
+    nz = 5
+    ny = 4
+    nx = 3
+    n = nz * ny * nx
+    data = np.arange(n).reshape(nz, ny, nx)
+    var = np.arange(n).reshape(nz, ny, nx) / 10.0
+    mask = data.astype(int) % 10 == 0
+    cube1 = DataArray(data=data, var=var, mask=mask, wave=wave, wcs=wcs)
     cube2 = cube1.copy()
-    assert_allclose(cube1.data, cube2.data)
+
+    assert_masked_allclose(cube1.data, cube2.data)
+    assert_masked_allclose(cube1.var, cube2.var)
+    assert_array_equal(cube1.data.mask, cube2.data.mask)
+    assert_array_equal(cube1.var.mask, cube2.var.mask)
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+
+    assert_true(cube2.data.mask is cube2.mask and
+                cube2.var.mask is cube2.mask)
 
 
 @attr(speed='fast')
@@ -85,10 +158,11 @@ def test_clone():
     """DataArray class: Testing the clone method"""
     cube1 = generate_cube()
     cube2 = cube1.clone()
-    nose.tools.assert_true(cube1.wcs.isEqual(cube2.wcs))
-    nose.tools.assert_true(cube1.wave.isEqual(cube2.wave))
-    nose.tools.assert_true(cube2.data is None)
-    nose.tools.assert_true(cube2.var is None)
+    assert_true(cube1.wcs.isEqual(cube2.wcs))
+    assert_true(cube1.wave.isEqual(cube2.wave))
+    assert_true(cube2._data is None)
+    assert_true(cube2._var is None)
+    assert_true(cube2._mask is None)
 
 
 @attr(speed='fast')
@@ -99,376 +173,518 @@ def test_clone_with_data():
     # variance arrays of the cloned cube.
 
     def data_fn(shape, dtype=np.float):
-        return np.arange(np.asarray(shape, dtype=int).prod(),
-                         dtype=dtype).reshape(shape) * 0.25
+        n = np.asarray(shape, dtype=int).prod()
+        data = np.arange(n, dtype=dtype).reshape(shape) * 0.25
+        mask = np.arange(n, dtype=int).reshape(shape) % 5 == 0
+        return ma.array(data, mask=mask)
+
     def var_fn(shape, dtype=np.float):
-        return np.arange(np.asarray(shape, dtype=int).prod(),
-                         dtype=dtype).reshape(shape) * 0.5
+        n = np.asarray(shape, dtype=int).prod()
+        var = np.arange(n, dtype=dtype).reshape(shape) * 0.5
+        mask = np.arange(n, dtype=int).reshape(shape) % 2 == 0
+        return ma.array(var, mask=mask)
 
     # Create a generic cube of a specified shape.
-
-    shape = (6,3,2)
-    cube1 = generate_cube(shape = shape)
+    shape = (6, 3, 2)
+    cube1 = generate_cube(shape=shape)
 
     # Create a shallow copy of the cube and fill its data and
     # variance arrays using the functions defined above.
-
     cube2 = cube1.clone(data_init=data_fn, var_init=var_fn)
 
-    # Check that the data and variance arrays ended up containing
-    # the expected ramps of values.
+    # The shared mask should be the union of the data and variance masks.
+    expected_mask = np.logical_or(data_fn(shape).mask, var_fn(shape).mask)
 
-    assert_allclose(data_fn(shape), cube2.data)
-    assert_allclose(var_fn(shape), cube2.var)
+    # Check that the data and variance arrays ended up containing
+    # the expected ramps of values and the expected mask.
+    assert_masked_allclose(cube2.data,
+                           ma.array(data_fn(shape), mask=expected_mask))
+    assert_masked_allclose(cube2.var,
+                           ma.array(var_fn(shape), mask=expected_mask))
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(cube2.data.mask is cube2.mask and
+                cube2.var.mask is cube2.mask)
+
 
 @attr(speed='fast')
 def test_set_var():
     """DataArray class: Testing the set_var method"""
 
-    # Create a cube of a specified shape.
-
-    nz = 3; ny = 4; nx = 5
+    nz = 3
+    ny = 4
+    nx = 5
+    ntotal = nz * ny * nx
     shape = (nz, ny, nx)
-    cube = generate_cube(var = None, shape=shape)
+    data = np.arange(ntotal).reshape(nz, ny, nx)
+    mask = data > ntotal // 2
+    cube = generate_cube(data=data, var=None, mask=mask, shape=shape)
 
     # Create a variance array of the same shape as the cube.
-
-    var = np.arange(nz * ny * nx, dtype=float).reshape(shape)
+    var = np.arange(ntotal, dtype=float).reshape(shape)
 
     # Assign the variance array to the cube and check that the
-    # variance array in the cube then matches it.
-
+    # variance array in the cube matches it and that the assignment of
+    # this unmasked numpy doesn't change the mask.
     cube.var = var
-    assert_allclose(cube.var, var)
+    assert_masked_allclose(cube.var, ma.array(var, mask=mask))
+
+    # Assign the same variance array to the cube, but this time
+    # make it a masked array with the original mask, and check that
+    # both the variance and the mask arrays of the cube match it.
+    cube.var = ma.array(var, mask=mask)
+    assert_masked_allclose(cube.var, ma.array(var, mask=mask))
+
+    # Also check that both the variance and data arrays have the
+    # mask that was passed to generate_cube()
+    assert_array_equal(cube.var.mask, mask)
+    assert_array_equal(cube.data.mask, mask)
 
     # Remove the variance array and check that this worked.
-
     cube.var = None
-    nose.tools.assert_true(cube.var is None)
+    assert_true(cube.var is None)
+
+    # Make sure that removing the variance array didn't affect
+    # the mask of the data array.
+    assert_array_equal(cube.data.mask, mask)
+
+    # Check that the data and masked properties still both hold
+    # references to the same mask array.
+    assert_true(cube.data.mask is cube.mask)
+
 
 @attr(speed='fast')
-def test_le():
-    """DataArray class: Testing __le__ method"""
+def test_comparisons():
+    """DataArray class: Testing comparison methods"""
 
     # Generate a test spectrum initialized with a linear ramp of values.
+    n = 100
+    data = np.arange(n, dtype=float)
+    var = data / 10.0
+    mask = data.astype(int) % 7 == 0
+    spec = generate_spectrum(data=data, var=var, mask=mask)
 
-    n = 10
-    spec = generate_spectrum(data=np.arange(n, dtype=float), var=1.0)
+    # [ __le__ ]
 
-    # Apply the less-than-or-equal method.
+    s = spec <= n // 2
 
-    s = spec <= n//2
+    # Verify that elements that had values <= n//2 are not masked,
+    # (except those that were previously masked), and that values > n//2
+    # are masked.
+    expected_mask = np.logical_or(data > n // 2, mask)
+    assert_masked_allclose(s.data, ma.array(data, mask=expected_mask))
+    assert_masked_allclose(s.var, ma.array(var, mask=expected_mask))
 
-    # Verify that ramp values <= n//2 are not masked,
-    # and that values > n//2 are masked.
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
-    nose.tools.assert_equal(s.data[:n//2+1].count(), n//2 + 1)
-    nose.tools.assert_equal(s.data[n//2+1:].count(), 0)
+    # [ __lt__ ]
 
-@attr(speed='fast')
-def test_lt():
-    """DataArray class: Testing __lt__ method"""
+    s = spec < n // 2
 
-    # Generate a test spectrum initialized with a linear ramp of values.
+    # Verify that elements that had values < n//2 are not masked,
+    # (except those that were previously masked), and that values >= n//2
+    # are masked.
+    expected_mask = np.logical_or(data >= n // 2, mask)
+    assert_masked_allclose(s.data, ma.array(data, mask=expected_mask))
+    assert_masked_allclose(s.var, ma.array(var, mask=expected_mask))
 
-    n = 10
-    spec = generate_spectrum(data=np.arange(n, dtype=float), var=1.0)
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
-    # Apply the less-than method.
+    # [ __ge__ ]
 
-    s = spec < n//2
+    s = spec >= n // 2
 
-    # Verify that ramp values < n//2 are not masked,
-    # and that values >= n//2 are masked.
+    # Verify that elements that had values >= n//2 are not masked,
+    # (except those that were previously masked), and that values < n//2
+    # are masked.
+    expected_mask = np.logical_or(data < n // 2, mask)
+    assert_masked_allclose(s.data, ma.array(data, mask=expected_mask))
+    assert_masked_allclose(s.var, ma.array(var, mask=expected_mask))
 
-    nose.tools.assert_equal(s.data[:n//2+1].count(), n//2)
-    nose.tools.assert_equal(s.data[n//2+1:].count(), 0)
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
-@attr(speed='fast')
-def test_ge():
-    """DataArray class: Testing __ge__ method"""
+    # [ __gt__ ]
 
-    # Generate a test spectrum initialized with a linear ramp of values.
+    s = spec > n // 2
 
-    n = 10
-    spec = generate_spectrum(data=np.arange(n, dtype=float), var=1.0)
+    # Verify that elements that had values > n//2 are not masked,
+    # (except those that were previously masked), and that values <= n//2
+    # are masked.
+    expected_mask = np.logical_or(data <= n // 2, mask)
+    assert_masked_allclose(s.data, ma.array(data, mask=expected_mask))
+    assert_masked_allclose(s.var, ma.array(var, mask=expected_mask))
 
-    # Apply the greater-than-or-equal method.
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
-    s = spec >= n//2
-
-    # Verify that ramp values >= n//2 are not masked,
-    # and that values < n//2 are masked.
-
-    nose.tools.assert_equal(s.data[n//2:].count(), n//2)
-    nose.tools.assert_equal(s.data[:n//2].count(), 0)
-
-@attr(speed='fast')
-def test_gt():
-    """DataArray class: Testing __gt__ method"""
-
-    # Generate a test spectrum initialized with a linear ramp of values.
-
-    n = 10
-    spec = generate_spectrum(data=np.arange(n, dtype=float), var=1.0)
-
-    # Apply the greater-than method.
-
-    s = spec > n//2
-
-    # Verify that ramp values > n//2 are not masked,
-    # and that values <= n//2 are masked.
-
-    nose.tools.assert_equal(s.data[n//2+1:].count(), n//2 - 1)
-    nose.tools.assert_equal(s.data[:n//2+1].count(), 0)
 
 @attr(speed='fast')
 def test_getitem():
     """DataArray class: Testing the __getitem__ method"""
 
-    # Set the dimensions of a test cube.
-
     nz = 50
     ny = 30
     nx = 20
+    ntotal = nz * ny * nx
 
-    # Create a cube, filled with a ramp.
+    data = np.arange(ntotal, dtype=float).reshape((nz, ny, nx))
+    var = np.arange(ntotal, dtype=float).reshape((nz, ny, nx)) / 10.0
+    mask = data.astype(int) % nx > 15
 
-    cube = generate_cube(
-        data = np.arange(nx*ny*nz,dtype=float).reshape((nz,ny,nx)),
-        var = np.arange(nx*ny*nz,dtype=float).reshape((nz,ny,nx)) / 2.0,
-        wcs = WCS(deg=True),
-        wave = WaveCoord(cunit=u.angstrom))
+    cube = generate_cube(data=data, var=var, mask=mask,
+                         wcs=WCS(deg=True), wave=WaveCoord(cunit=u.angstrom))
 
     # Extract a pixel from the cube and check that it has the expected value
     # from its position on the 1D ramp that was used to initialize the cube.
-
     za = 34
     ya = 5
-    xa = 14
-    pixel_a = xa + ya*nx + za*(nx*ny)
-    s = cube[za,ya,xa]
+    xa = 3
+    pixel_a = xa + ya * nx + za * (nx * ny)
+    s = cube[za, ya, xa]
     assert_allclose(s, pixel_a)
 
     # Extract a spectrum from the cube, and check that it has the expected
     # values.
+    dz = 10
+    zb = za + dz
+    s = cube[za:zb, ya, xa]
+    expected_spec = np.arange(pixel_a, pixel_a + dz * (nx * ny), nx * ny)
 
-    zb = za + 10
-    yb = ya
-    xb = xa
-    dz = zb - za
-    pixel_b = xb + yb*nx + zb*(nx*ny)
-    s = cube[za:zb,ya,xa]
-    expected_spec = np.arange(pixel_a, pixel_a + dz*(nx*ny), nx*ny,
-                              dtype=float)
-    assert_allclose(s.data, expected_spec)
+    assert_masked_allclose(s.data, ma.array(expected_spec, mask=False))
+    assert_masked_allclose(s.var, ma.array(expected_spec / 10.0, mask=False))
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
     # Check that the wavelength of the first spectrum pixel matches that
     # of pixel za,ya,xa in the original cube.
-
     expected_wave = cube.wave.coord(za)
     actual_wave = s.wave.coord(0)
     assert_allclose(actual_wave, expected_wave)
 
     # Extract an image from the cube, and check that it has the
     # expected values.
-
-    zb = za
-    yb = ya + 3
-    xb = xa + 5
-    dx = xb - xa
-    dy = yb - ya
-    s = cube[za,ya:yb,xa:xb]
+    dz = 0
+    dy = 3
+    dx = 5
+    zb = za + dz
+    yb = ya + dy
+    xb = xa + dx
+    s = cube[za, ya:yb, xa:xb]
     first_row = np.arange(pixel_a, pixel_a + dx, dtype=float)
-    row_offsets = np.arange(0, dy*nx, nx, dtype=float)
-    expected_image = np.resize(first_row, (dy,dx)) + np.repeat(row_offsets, dx).reshape((dy,dx))
-    assert_allclose(s.data, expected_image)
+    row_offsets = np.arange(0, dy * nx, nx, dtype=float)
+    expected_image = np.resize(first_row, (dy, dx)) + \
+        np.repeat(row_offsets, dx).reshape((dy, dx))
+    assert_masked_allclose(s.data, ma.array(expected_image, mask=False))
+    assert_masked_allclose(s.var, ma.array(expected_image / 10.0, mask=False))
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
     # Check that the world coordinates of the first pixel of the
     # image match those of pixel(za,ya,xa) of the original cube.
-
-    expected_sky = cube.wcs.pix2sky((ya,xa))
-    actual_sky = s.wcs.pix2sky((0,0))
+    expected_sky = cube.wcs.pix2sky((ya, xa))
+    actual_sky = s.wcs.pix2sky((0, 0))
     assert_allclose(actual_sky, expected_sky)
 
     # Extract a sub-cube from the cube, and check that it has the
     # expected values.
+    dz = 2
+    dy = 3
+    dx = 5
+    zb = za + dz
+    yb = ya + dy
+    xb = xa + dx
+    s = cube[za:zb, ya:yb, xa:xb]
+    spec_offsets = np.arange(0, dz * ny * nx, ny * nx, dtype=float)
+    expected_cube = np.resize(expected_image, (dz, dy, dx)) + \
+        np.repeat(spec_offsets, dy * dx).reshape((dz, dy, dx))
+    assert_masked_allclose(s.data, ma.array(expected_cube, mask=False))
+    assert_masked_allclose(s.var, ma.array(expected_cube / 10.0, mask=False))
 
-    zb = za + 2
-    yb = ya + 3
-    xb = xa + 5
-    dx = xb - xa
-    dy = yb - ya
-    dz = zb - za
-    s = cube[za:zb,ya:yb,xa:xb]
-    spec_offsets = np.arange(0, dz*ny*nx, ny*nx, dtype=float)
-    expected_cube = np.resize(expected_image, (dz,dy,dx)) + np.repeat(spec_offsets, dy*dx).reshape((dz,dy,dx))
-    assert_allclose(s.data, expected_cube)
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
     # Check that the world coordinates of the first pixel of the
     # image match those of pixel(za,ya,xa) of the original cube.
-
-    expected_sky = cube.wcs.pix2sky((ya,xa))
-    actual_sky = s.wcs.pix2sky((0,0))
+    expected_sky = cube.wcs.pix2sky((ya, xa))
+    actual_sky = s.wcs.pix2sky((0, 0))
     assert_allclose(actual_sky, expected_sky)
 
     # Check that the wavelength of the first spectrum pixel matches that
     # of pixel za,ya,xa in the original cube.
-
     expected_wave = cube.wave.coord(za)
     actual_wave = s.wave.coord(0)
     assert_allclose(actual_wave, expected_wave)
+
+    # Extract a sub-cube of values from the masked area of the cube
+    # and check that all its data and variances are masked.
+    s = cube[:, :, 16:]
+    expected_mask = np.ones((nz, ny, nx - 16)) > 0
+    assert_array_equal(s.data.mask, expected_mask)
+    assert_array_equal(s.var.mask, expected_mask)
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+
+    # Extract a sub-cube of values from the unmasked area of the cube
+    # and check that all its data and variances are not masked.
+    s = cube[:, :, :16]
+    expected_mask = np.ones((nz, ny, 16)) < 1
+    assert_array_equal(s.data.mask, expected_mask)
+    assert_array_equal(s.var.mask, expected_mask)
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+
+
+@attr(speed='fast')
+def test_setitem():
+    """DataArray class: Testing the __setitem__ method"""
+
+    nz = 50
+    ny = 30
+    nx = 20
+    ntotal = nz * ny * nx
+
+    data = np.arange(ntotal, dtype=float).reshape((nz, ny, nx))
+    var = np.arange(ntotal, dtype=float).reshape((nz, ny, nx)) / 10.0
+    mask = data.astype(int) % 3 == 1
+
+    cube1 = generate_cube(data=data, var=var, mask=mask,
+                          wcs=WCS(deg=True), wave=WaveCoord(cunit=u.angstrom))
+
+    # ---------------------------------
+    # Test the assignment of sub-cubes.
+
+    cnz = 5
+    cny = 3
+    cnx = 2
+    cn = cnz * cny * cnx
+    slices = (slice(0, cnz), slice(0, cny), slice(0, cnx))
+
+    # Start by assigning a 3D unmasked numpy array.
+    cube2 = cube1.copy()
+    d = (np.arange(cn) / 10.0).reshape(cnz, cny, cnx)
+    cube2[slices] = d
+
+    # Were the data assigned correctly without changing the mask?
+    # LP: assigning data must change the mask (it is the case for the masked
+    # array class)
+    #     assert_masked_allclose(cube2.data[slices],
+    #                            ma.array(d,mask=mask[slices]))
+    assert_allclose(cube2._data[slices], d)
+
+    # The corresponding variances aren't expected to change when a
+    # simple data-array is assigned.
+    assert_allclose(cube2._var[slices], cube1._var[slices])
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(cube2.data.mask is cube2.mask and
+                cube2.var.mask is cube2.mask)
+
+    # Next assign the same array, but as part of a 3D DataArray
+    # with variances and a mask.
+    v = d / 10.0
+    m = d.astype(int) % 10 == 0
+    cube2 = cube1.copy()
+    c = generate_cube(data=d, var=v, mask=m, wcs=cube2[slices].wcs,
+                      wave=cube2[slices].wave)
+    cube2[slices] = c
+
+    # Were the data, variances and the mask assigned correctly?
+    assert_masked_allclose(cube2.data[slices], ma.array(d, mask=m))
+    assert_masked_allclose(cube2.var[slices], ma.array(v, mask=m))
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(cube2.data.mask is cube2.mask and
+                cube2.var.mask is cube2.mask)
+
+    # ----------------------------------
+    # Test the assignment of sub-images.
+    cny = 3
+    cnx = 2
+    cn = cny * cnx
+    slices = (slice(0, 1), slice(0, cny), slice(0, cnx))
+
+    # Start by assigning a 2D unmasked numpy array.
+    cube2 = cube1.copy()
+    d = (np.arange(cn) / 10.0).reshape(cny, cnx)
+    cube2[slices] = d
+
+    # Were the data assigned correctly without changing the mask.
+    #     assert_masked_allclose(cube2.data[slices],
+    #                            ma.array(d[np.newaxis,:,:],
+    #                                        mask=mask[slices]))
+    assert_allclose(cube2._data[slices], d[np.newaxis, :, :])
+
+    # The corresponding variances aren't expected to change when a
+    # simple data-array is assigned.
+    assert_allclose(cube2._var[slices], cube1._var[slices])
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(cube2.data.mask is cube2.mask and
+                cube2.var.mask is cube2.mask)
+
+    # Next assign the same array, but as part of a 2D DataArray
+    # with variances and a mask.
+    v = d / 10.0
+    m = d.astype(int) % 10 == 0
+    cube2 = cube1.copy()
+    c = generate_image(data=d, var=v, mask=m, wcs=cube2[slices].wcs)
+    cube2[slices] = c
+
+    # Were the data, variances and the mask assigned correctly?
+    assert_masked_allclose(cube2.data[slices],
+                           ma.array(d[np.newaxis, :, :],
+                                    mask=m[np.newaxis, :, :]))
+    assert_masked_allclose(cube2.var[slices],
+                           ma.array(v[np.newaxis, :, :],
+                                    mask=m[np.newaxis, :, :]))
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(cube2.data.mask is cube2.mask and
+                cube2.var.mask is cube2.mask)
+
+    # -----------------------------------
+    # Test the assignment of sub-spectra.
+
+    cnz = 5
+    cn = cnz
+    slices = (slice(0, cnz), slice(0, 1), slice(0, 1))
+
+    # Start by assigning a 2D unmasked numpy array.
+    cube2 = cube1.copy()
+    d = (np.arange(cnz) / 10.0).reshape(cnz, 1, 1)
+    cube2[slices] = d
+
+    # Were the data assigned correctly, and did the assignment clear
+    # the mask of the corresponding elements?
+    assert_masked_allclose(cube2.data[slices], ma.array(d, mask=False))
+
+    # The corresponding variances aren't expected to change when a
+    # simple data-array is assigned, but their mask should have been cleared.
+    assert_masked_allclose(cube2.var[slices],
+                           ma.array(cube1.var[slices].data, mask=False))
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(cube2.data.mask is cube2.mask and
+                cube2.var.mask is cube2.mask)
+
 
 @attr(speed='fast')
 def test_get_wcs_header():
     """DataArray class: Testing the get_wcs_header method"""
 
-    # Set up a WCS object with non-default values.
-
-    wcs = WCS(crpix=(15.0,10.0), crval=(12.0,14.0), cdelt=(0.1,0.2), deg=True)
-
-    # Create a test image, passing the constructor the above
-    # world-coordinate object.
-
-    im = generate_image(wcs = wcs)
-
-    # Generate a header that describes the world coordinates.
-
+    wcs = WCS(crpix=(15.0, 10.0), crval=(12.0, 14.0), cdelt=(0.1, 0.2),
+              deg=True)
+    im = generate_image(wcs=wcs)
     hdr = im.get_wcs_header()
-
-    # Create a new wcs object from the header.
-
     hdr_wcs = WCS(hdr)
+    assert_true(wcs.isEqual(hdr_wcs))
 
-    # Check that the WCS information taken from the header matches the
-    # WCS information that was passed to the image constructor.
-
-    nose.tools.assert_true(wcs.isEqual(hdr_wcs))
 
 @attr(speed='fast')
 def test_get_data_hdu():
     """DataArray class: Testing the get_data_hdu method"""
 
-    # Set the dimensions of a test cube.
-
-    nz = 5
-    ny = 3
-    nx = 2
-
-    # Set up a WCS object with non-default values.
-
-    wcs = WCS(crpix=(15.0,10.0), crval=(12.0,14.0), cdelt=(0.1,0.2), deg=True)
-
-    # Set up a wavelength coordinate object with non-default values.
-
+    wcs = WCS(crpix=(15.0, 10.0), crval=(12.0, 14.0), cdelt=(0.1, 0.2),
+              deg=True)
     wave = WaveCoord(crpix=2.0, cdelt=1.5, crval=12.5)
-
-    # Create a simple test cube.
-
-    cube = generate_cube(shape=(nz,ny,nx), wcs = wcs, wave = wave)
-
-    # Get a data HDU for the cube.
+    cube = generate_cube(shape=(5, 3, 2), wcs=wcs, wave=wave)
 
     hdu = cube.get_data_hdu()
-
-    # Get the header of the HDU.
-
     hdr = hdu.header
-
-    # Create a new wcs object from the header.
-
     hdr_wcs = WCS(hdr)
 
     # Check that the WCS information taken from the header matches the
     # WCS information stored with the cube.
-
-    nose.tools.assert_true(cube.wcs.isEqual(hdr_wcs))
-
-    # Create a new WaveCoord object from the header.
-
-    hdr_wave = WaveCoord(hdr)
+    assert_true(cube.wcs.isEqual(hdr_wcs))
 
     # Check that the wavelength information taken from the header
     # matches the wavelength information stored with the cube.
+    hdr_wave = WaveCoord(hdr)
+    assert_true(cube.wave.isEqual(hdr_wave))
 
-    nose.tools.assert_true(cube.wave.isEqual(hdr_wave))
 
 @attr(speed='fast')
 def test_get_stat_hdu():
     """DataArray class: Testing the get_stat_hdu method"""
 
-    # Set the dimensions of a test cube.
-
     nz = 5
     ny = 20
     nx = 10
 
-    # Create a cube, with a ramp of values assigned to the variance array.
+    # Create a cube, with a ramp of values assigned to the variance array,
+    # and with some pixels masked.
+    var = np.arange(nx * ny * nz, dtype=float).reshape((nz, ny, nx))
+    mask = var.astype(int) % 7 == 0
 
-    cube = generate_cube(
-        data = 0.1,
-        var = np.arange(nx*ny*nz,dtype=float).reshape((nz,ny,nx)),
-        wcs = WCS(deg=True),
-        wave = WaveCoord(cunit=u.angstrom))
-
-    # Get the STAT HDU.
+    cube = generate_cube(data=0.1, var=var, mask=mask, wcs=WCS(deg=True),
+                         wave=WaveCoord(cunit=u.angstrom))
 
     hdu = cube.get_stat_hdu()
+    hdu_var = np.asarray(hdu.data, dtype=cube.dtype)
+    assert_masked_allclose(ma.array(hdu_var, mask=mask), cube.var)
 
-    # Get the array of variances from the HDU.
-
-    var = np.asarray(hdu.data, dtype=cube.dtype)
-
-    assert_allclose(var, cube.var)
 
 @attr(speed='fast')
 def test_write():
     """DataArray class: Testing the write method"""
 
-    # Set the dimensions of a test cube.
-
     nz = 5
     ny = 20
     nx = 10
 
     # Create a cube, with a ramp of values assigned to the variance array.
 
-    data = np.arange(nx*ny*nz,dtype=float).reshape((nz,ny,nx))
+    data = np.arange(nx * ny * nz, dtype=float).reshape((nz, ny, nx))
     var = data / 10.0
-    mask = np.asarray(data,dtype=int) % 10 == 0
-    cube = generate_cube(
-        data = data, var = var, mask = mask,
-        wcs = WCS(deg=True),
-        wave = WaveCoord(cunit=u.angstrom))
-
-    # To get a temporary filename for the FITS file, create a
-    # temporary file using the tempfile module, then close it and use
-    # the same name for the FITS file. We do it this way because
-    # os.tmpname() outputs a security warning.
+    mask = data.astype(int) % 10 == 0
+    cube = generate_cube(data=data, var=var, mask=mask, wcs=WCS(deg=True),
+                         wave=WaveCoord(cunit=u.angstrom))
 
     tmpfile = tempfile.NamedTemporaryFile(suffix=".fits")
     filename = tmpfile.name
     tmpfile.close()
 
-    # Create the temporary file with the same name as the temporary file.
-
     cube.write(filename, savemask='dq')
 
     # Read the file into a new cube.
-
     cube2 = Cube(filename)
 
     # Verify that the contents of the file match the original cube.
+    assert_masked_allclose(cube2.data, cube.data)
+    assert_masked_allclose(cube2.var, cube.var)
+    assert_true(cube2.wcs.isEqual(cube.wcs))
+    assert_true(cube2.wave.isEqual(cube.wave))
 
-    assert_allclose(cube2.data.data, cube.data.data)
-    assert_array_equal(cube2.data.mask, cube.data.mask)
-    assert_allclose(cube2.var, cube.var)
-    nose.tools.assert_true(cube2.wcs.isEqual(cube.wcs))
-    nose.tools.assert_true(cube2.wave.isEqual(cube.wave))
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(cube2.data.mask is cube2.mask and
+                cube2.var.mask is cube2.mask)
 
     # Delete the temporary file.
-
     os.remove(filename)
+
 
 @attr(speed='fast')
 def test_sqrt():
@@ -483,15 +699,15 @@ def test_sqrt():
     mean = 100.0  # Mean of spectrum pixels.
     sdev = 2.0    # Standard deviation of pixel values around the mean.
     n = 100000    # The number of spectral pixels.
-    spec = generate_spectrum(
-        data = np.random.normal(loc=mean, scale=sdev, size=n), var = sdev**2)
+    data = np.random.normal(loc=mean, scale=sdev, size=n)
+    masked_pixel = 12
+    mask = np.isclose(np.arange(n), masked_pixel)  # Mask just one pixel.
+    spec = generate_spectrum(data=data, mask=mask, var=sdev**2)
 
     # Get the square root of the spectrum.
-
     s = spec.sqrt()
 
     # Determine the mean and variance of the square rooted data.
-
     s_mean = s.data.mean()
     s_var = s.data.var()
 
@@ -499,8 +715,15 @@ def test_sqrt():
     # mean, noting that the standard deviation of the mean of the
     # square rooted data should be sqrt(0.25*sdev**2/mean/n) [for
     # for sdev=2,mean=100 and n=100000, this gives 0.0003.
-
     assert_allclose(s_mean, np.sqrt(mean), rtol=0.001)
+
+    # Check that the mask didn't get changed.
+    assert_array_equal(s.data.mask, mask)
+    assert_array_equal(s.var.mask, mask)
+
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
     # Given a sample of value x, picked from a distribution of variance vx,
     # compute the expected variance, vs, of sqrt(x).
@@ -511,32 +734,31 @@ def test_sqrt():
     #
     # Sanity check this by seeing if the variance of square root of
     # the random pixels matches it.
-
     expected_var = 0.25 * sdev**2 / mean
     assert_allclose(s_var, expected_var, rtol=0.05)
 
     # Check that the recorded variances match the expected variance.
-
-    assert_allclose(np.ones(n)*s_var, expected_var, rtol=0.1)
+    assert_allclose(np.ones(n) * s_var, expected_var, rtol=0.1)
 
     # Generate another spectrum, but this time fill it with positive
     # and negative values.
-
     n = 10        # The number of spectral pixels.
     sdev = 0.5    # The variance to be recorded with each pixel.
-    spec = generate_spectrum(
-        data = np.hstack((np.ones(n//2)*-1.0, np.ones(n//2)*1.0)),
-        var = sdev**2)
-
-    # Get the square root of the spectrum.
+    data = np.hstack((np.ones(n // 2) * -1.0, np.ones(n // 2) * 1.0))
+    spec = generate_spectrum(data=data, var=sdev**2)
 
     s = spec.sqrt()
 
-    # Check that the square-rooted masked values that were negative
+    # Check that the square-root masked the values that were negative
     # and not those that weren't.
+    expected_mask = data < 0.0
+    assert_array_equal(s.data.mask, expected_mask)
+    assert_array_equal(s.var.mask, expected_mask)
 
-    nose.tools.assert_equal(s.data[:n//2].count(), 0)
-    nose.tools.assert_equal(s.data[n//2:].count(), n//2)
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+
 
 @attr(speed='fast')
 def test_abs():
@@ -546,26 +768,25 @@ def test_abs():
     # positive integral values, stored as floats. Assign a constant
     # variance to all points, and mask a couple of points either side
     # of zero.
-
     ramp = np.arange(10.0, dtype=float) - 5
     var = 0.5
     mask = np.logical_and(ramp > -2, ramp < 2)
-    spec1 = generate_spectrum(ramp, var = var, mask = mask)
-
-    # Get the absolute values of the spectrum.
+    spec1 = generate_spectrum(ramp, var=var, mask=mask)
 
     spec2 = spec1.abs()
 
-    # Check that the unmasked elements of the data array contain the
-    # absolute values of the input array, and that the masked elements
-    # are unchanged.
+    # Check that the unmasked values of the data array have been
+    # replaced by their absolute values, that the variance array
+    # hasn't been changed, and that the shared mask has not been
+    # unchanged.
+    assert_masked_allclose(spec2.data, abs(spec1.data))
+    assert_masked_allclose(spec2.var, spec1.var)
 
-    assert_allclose(np.where(mask, ramp, np.abs(ramp)), spec2.data)
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(spec2.data.mask is spec2.mask and
+                spec2.var.mask is spec2.mask)
 
-    # Check that the mask and variance arrays are unchanged.
-
-    assert_array_equal(spec2.data.mask, spec1.data.mask)
-    assert_allclose(spec2.var, spec1.var)
 
 @attr(speed='fast')
 def test_unmask():
@@ -574,23 +795,29 @@ def test_unmask():
     # Create a spectrum containing a simple ramp from negative to
     # positive values, with negative values masked, and one each of
     # the infinity and nan special values.
-
     n = 10
-    ramp = np.arange(n, dtype=float) - 5
-    var = 0.5
-    mask = ramp < 0
-    ramp[0] = np.inf
-    ramp[1] = np.nan
-    spec = generate_spectrum(ramp, var = var, mask = mask)
+    data = np.arange(n, dtype=float) - 5
+    var = data / 10.0
+    mask = data < 0
+    data[0] = np.inf
+    data[1] = np.nan
+    spec = generate_spectrum(data, var=var, mask=mask)
 
     # Clear the mask, keeping just the inf and nan values masked.
-
     spec.unmask()
 
-    # Check that all negative values are unmasked, and that the Inf and
-    # Nan values remain masked.
+    # Check that only the Inf and Nan values are still masked
+    # and that neither the data nor the variance values have been
+    # changed.
+    expected_mask = np.arange(n, dtype=int) < 2
+    assert_masked_allclose(spec.data, ma.array(data, mask=expected_mask))
+    assert_masked_allclose(spec.var, ma.array(var, mask=expected_mask))
 
-    assert_array_equal(spec.data.mask, np.arange(n, dtype=int) < 2)
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
 
 @attr(speed='fast')
 def test_mask_variance():
@@ -600,24 +827,29 @@ def test_mask_variance():
     # of integral values stored as floats, and with a data array where
     # values below a specified threshold, chosen to be half way between
     # data values, are masked.
-
     n = 10
-    var = np.arange(n,dtype=float)
+    data = np.arange(n, dtype=float)
+    var = np.arange(n, dtype=float)
     lower_lim = 1.5
-    spec = generate_spectrum(var = var, mask = var < lower_lim)
+    spec = generate_spectrum(data=data, var=var, mask=var < lower_lim)
 
     # Mask all variances above a second threshold that is again chosen
     # to be half way between two known integral values in the array.
-
     upper_lim = 6.5
     spec.mask_variance(upper_lim)
 
     # Check that the originally masked values are still masked, and that
     # the values above the upper threshold are now also masked, and that
     # values in between them are not masked.
+    expected_mask = np.logical_or(var < lower_lim, var > upper_lim)
+    assert_masked_allclose(spec.data, ma.array(data, mask=expected_mask))
+    assert_masked_allclose(spec.var, ma.array(var, mask=expected_mask))
 
-    assert_array_equal(spec.data.mask,
-                       np.logical_or(var < lower_lim, var > upper_lim))
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
 
 @attr(speed='fast')
 def test_mask_selection():
@@ -625,20 +857,555 @@ def test_mask_selection():
 
     # Create a test spectrum with a ramp for the data array
     # and all values below a specified limit masked.
-
     n = 10
-    ramp = np.arange(n, dtype=float)
+    data = np.arange(n, dtype=float)
+    var = data / 10.0
     lower_lim = 1.5
-    spec = generate_spectrum(data=ramp, mask = ramp < lower_lim)
+    spec = generate_spectrum(data=data, var=var, mask=data < lower_lim)
 
     # Apply the mask_selection method to mask values above a different
     # threshold.
-
     upper_lim = 6.5
-    spec.mask_selection(np.where(ramp > upper_lim))
+    spec.mask_selection(np.where(data > upper_lim))
 
     # Check that the resulting data mask is the union of the
     # originally mask and the newly selected mask.
+    expected_mask = np.logical_or(data < lower_lim, data > upper_lim)
+    assert_masked_allclose(spec.data, ma.array(data, mask=expected_mask))
+    assert_masked_allclose(spec.var, ma.array(var, mask=expected_mask))
 
-    assert_array_equal(spec.data.mask,
-                       np.logical_or(ramp < lower_lim, ramp > upper_lim))
+    # Check that the data, var and masked properties all hold
+    # references to the same mask array.
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+
+@attr(speed='fast')
+def test_shared_masks():
+    """DataArray class: Testing shared masks"""
+
+    n = 50
+    old_data = np.arange(n, dtype=float)
+    old_var = np.arange(n, dtype=float) * 0.5 - n / 4.0
+    old_mask = old_var < 0.0
+
+    # Add infinite values to currently masked elements of the data
+    # and var arrays and create a mask that just masks these values.
+    old_data[0] = np.Inf
+    old_var[1] = np.Inf
+
+    # Create a spectrum DataArray with the above contents.
+    template_spec = DataArray(data=old_data, var=old_var, mask=old_mask)
+
+    # ----------------------------------------------------------------
+    # Assign a numpy.ndarray of the same shape to DataArray.var:
+    #
+    # Create a simple numpy array with values that are chosen to be
+    # distinct from the current variances. Also add an Inf and a Nan
+    # at indexes that are not masked in the original spectrum.
+    new_var = np.arange(n) * 0.01
+    new_var[30] = np.inf
+    new_var[31] = np.nan
+
+    # What should the shared mask of the spectrum be after we assign
+    # the above array to the .var property? When a simple ndarray is
+    # assigned to the var property, the mask should remain the same,
+    # except where the new variance array contains extra Inf or Nan
+    # values.
+    expected_mask = old_mask.copy()
+#    expected_mask[30:32] = True
+# In the end, we decided to create the mask only from the data.
+# But the user can set the var attribute with a masked array,
+# In this case, the given mask will be taken into account.
+
+    # Assign the new array to the var property of the spectrum, then
+    # check the resulting data, var and masked properties.
+    spec = template_spec.copy()
+    spec.var = new_var
+    assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
+    assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+    # ----------------------------------------------------------------
+    # Assign a MaskedArray of the same shape to DataArray.var:
+    #
+    # Create a masked array with values that are chosen to be distinct
+    # from the current variances, and a mask that doesn't flag any
+    # values. Then add an Inf and a Nan at indexes that are not masked
+    # in the original spectrum, along with a single masked value.
+    new_var = ma.array(np.arange(n) * 0.01, mask=False, copy=True)
+    new_var[30] = np.inf
+    new_var[31] = np.nan
+    new_var[32] = ma.masked
+    new_var = np.ma.masked_invalid(new_var, copy=False)
+
+    # What should the shared mask of the spectrum be after we assign
+    # the above array to the .var property? When a masked array of the
+    # same shape is assigned to the var property, the resulting mask
+    # should be the union of the original shared mask, the mask of the
+    # new variance array
+    expected_mask = old_mask.copy()
+    expected_mask[30:33] = True
+    expected_mask[32] = True
+
+    # Assign the new array to the var property of the spectrum, then
+    # check the resulting data, var and masked properties.
+    spec = template_spec.copy()
+    spec.var = new_var
+    assert_masked_allclose(spec.var,
+                           ma.array(new_var.data, mask=expected_mask))
+    assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+    # ----------------------------------------------------------------
+    # Assign a numpy.ndarray of the same shape to DataArray.data:
+    #
+    # Create a simple numpy array with values that are chosen to be
+    # distinct from the current variances. Also add an Inf and a Nan
+    # at indexes that are not masked in the original spectrum.
+    new_data = np.arange(n) * 0.3
+    new_data[30] = np.inf
+    new_data[31] = np.nan
+
+    # What should the shared mask of the spectrum be after we assign
+    # the above array to the .data property? When a simple ndarray is
+    # assigned to the data property, the mask should remain the same,
+    # except where the new data array contains extra Inf or Nan
+    # values.
+    expected_mask = np.zeros(old_mask.shape, dtype=bool)
+    expected_mask[30:32] = True
+
+# NO the mask should not remain the same ...
+
+    # Assign the new array to the data property of the spectrum, then
+    # check the resulting data, var and masked properties.
+    spec = template_spec.copy()
+    spec.data = new_data
+    assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
+    assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+    # ----------------------------------------------------------------
+    # Assign a MaskedArray of the same shape to DataArray.data:
+    #
+    # Create a masked array with values that are chosen to be distinct
+    # from the current spectrum data, and a mask that doesn't flag any
+    # values. Then add an Inf and a Nan at indexes that are not masked
+    # in the original spectrum, along with a single masked value.
+    new_data = np.array(np.arange(n) * 0.3, copy=True)
+    new_data[30] = np.inf
+    new_data[31] = np.nan
+    new_data[32] = ma.masked
+
+    # What should the shared mask of the spectrum be after we assign
+    # the above array to the .data property? When a masked array is
+    # assigned to the data property, the resulting mask should be the
+    # mask of the new array, along with additions for each element in
+    # the new array
+
+# The invalid pixel of the variance are not taken into account
+
+    expected_mask = np.ones(spec.shape) < 1  # All False
+    expected_mask[30:33] = True
+    # expected_mask = np.logical_or(expected_mask, ~(np.isfinite(old_var)))
+
+    # Assign the new array to the data property of the spectrum, then
+    # check the resulting data, var and masked properties.
+
+    spec = template_spec.copy()
+    spec.data = new_data
+    assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
+    assert_masked_allclose(spec.data,
+                           ma.array(new_data, mask=expected_mask))
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+    # ----------------------------------------------------------------
+    # Assign a numpy.ndarray of a different shape to DataArray.var:
+    #
+    # The assignment of a variance array of a different size to the
+    # data array is supposed to raise an exception, so just create
+    # an array that has a different size.
+    new_var = np.arange(n / 2)
+
+    # Try to assign the new array to the var property of the spectrum
+    # and make sure that this generates an exception, because the
+    # shape of the variance array is incompatible with the shape of
+    # the current data array.
+    spec = template_spec.copy()
+    try:
+        spec.var = new_var
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Mismatched variance array shape not caught')
+
+    # ----------------------------------------------------------------
+    # Assign a MaskedArray.ndarray of a different shape to DataArray.var:
+    #
+    # The assignment of a variance array of a different size to the
+    # data array is supposed to raise an exception, so just create
+    # an array that has a different size.
+    new_var = ma.array(np.arange(n / 2), mask=False)
+
+    # Try to assign the new array to the var property of the spectrum
+    # and make sure that this generates an exception, because the
+    # shape of the variance array is incompatible with the shape of
+    # the current data array.
+    spec = template_spec.copy()
+    try:
+        spec.var = new_var
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Mismatched variance array shape not caught')
+
+    # ----------------------------------------------------------------
+    # Assign a numpy.ndarray of a different shape to DataArray.data:
+    #
+    # Create a simple numpy array with a different size and values
+    # that are chosen to be distinct from the current variances. Also
+    # add an Inf and a Nan at indexes that are not masked in the
+    # original spectrum.
+    new_n = n + 5
+    new_data = np.arange(new_n) * 0.3
+    new_data[30] = np.inf
+    new_data[31] = np.nan
+
+    # What should the shared mask of the spectrum be after we assign
+    # the above array to the .data property? When a simple ndarray of
+    # a different size is assigned to the data property, the resulting
+    # mask should be clear except where the new data array contains
+    # Inf or Nan.
+    expected_mask = np.ones(new_n) < 1
+    expected_mask[30:32] = True
+
+    # Assign the new array to the data property of the spectrum, then
+    # check the resulting data, var and masked properties. Note that
+    # in this case the old variance array should remain in place
+    # with the old mask.
+    spec = template_spec.copy()
+
+    try:
+        spec.data = new_data
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Mismatched data array shape not caught')
+
+    # Is it possible to assign data with an array of a different size ?
+
+#     spec.data = new_data
+#     assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
+#     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
+#     assert_true(spec.data.mask is spec.mask)
+#     assert_true(spec.var.mask is not spec.mask)
+#
+#     #. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+#     # Now that the size of the data array has been changed, try assigning
+#     # a new variance array of the same size. Give this a couple of
+#     # invalid values at different places than the newly installed data
+#     # array.
+#
+#     new_var = np.arange(new_n) * 0.01
+#     new_var[35] = np.inf
+#     new_var[36] = np.nan
+#
+#     # What should the shared mask of the spectrum be after we assign
+#     # the above array to the .var property? When a simple ndarray is
+#     # assigned to the var property, the mask should remain the same,
+#     # except where the new variance array contains extra Inf or Nan
+#     # values.
+#
+#     expected_mask = spec.mask.copy()
+#     expected_mask[35:37] = True
+#
+#     # Assign the new array to the var property of the spectrum, then
+#     # check the resulting data, var and masked properties, noting
+#     # that now the final variance array should use a reference to
+#     # the shared mask array.
+#
+#     spec.var = new_var
+#     assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
+#     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
+#     assert_true(spec.data.mask is spec.mask and
+#                 spec.var.mask is spec.mask)
+
+    # ----------------------------------------------------------------
+    # Assign a MaskedArray of a different shape to DataArray.data:
+    #
+    # Create a masked array of a different size, with values that are
+    # chosen to be distinct from the current spectrum data, and a mask
+    # that doesn't flag any values. Then add an Inf and a Nan at
+    # indexes that are not masked in the original spectrum, along with
+    # a single masked value.
+
+#     new_n = n+5
+#     new_data = ma.array(np.arange(new_n)*0.3, mask=False, copy=True)
+#     new_data[30] = np.inf
+#     new_data[31] = np.nan
+#     new_data[32] = ma.masked
+#
+#     # What should the shared mask of the spectrum be after we assign
+#     # the above array to the .data property? When a masked array of a
+#     # different size is assigned to the data property, the resulting
+#     # mask should be the mask of the new array, along with additions
+#     # for each element in the new array that are Inf or Nan.
+#
+#     expected_mask = np.ones(new_n) < 1  # All False
+#     expected_mask[30:33] = True
+#
+#     # Assign the new array to the data property of the spectrum, then
+#     # check the resulting data, var and masked properties. Note that
+#     # in this case the old variance array should remain in place with
+#     # the original mask.
+#
+#     spec = template_spec.copy()
+#     spec.data = new_data
+#     assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
+#     assert_masked_allclose(spec.data,
+#                            ma.array(new_data.data, mask=expected_mask))
+#     assert_true(spec.data.mask is spec.mask)
+#     assert_true(spec.var.mask is not spec.mask)
+#
+#     # ----------------------------------------------------------------
+#     # Directly modify the masks of the data, var and masked properties.
+#     #
+#     # When a new value is assigned to an element of the mask of the
+#     # data, var or masked properties, the change should be visible in
+#     # all of these masks, which must remain as references to a single
+#     # array.
+#
+#     spec = template_spec.copy()
+#
+#     # Try changing the mask of the data property, and check that this
+#     # changes the value of the masks of all of the properties.
+#
+#     toggled_value = not spec.data.mask[2]
+#     expected_mask = spec.mask.copy()
+#     expected_mask[2] = toggled_value
+#     spec.data.mask[2] = toggled_value
+#     assert_array_equal(spec.data.mask, expected_mask)
+#     assert_array_equal(spec.var.mask, expected_mask)
+#     assert_array_equal(spec.mask, expected_mask)
+#     assert_true(spec.data.mask is spec.mask and
+#                 spec.var.mask is spec.mask)
+#
+#     # Now check the effect of changing the mask of the var property.
+#
+#     toggled_value = not spec.var.mask[2]
+#     expected_mask = spec.mask.copy()
+#     expected_mask[2] = toggled_value
+#     spec.var.mask[2] = toggled_value
+#     assert_array_equal(spec.data.mask, expected_mask)
+#     assert_array_equal(spec.var.mask, expected_mask)
+#     assert_array_equal(spec.mask, expected_mask)
+#     assert_true(spec.data.mask is spec.mask and
+#                 spec.var.mask is spec.mask)
+#
+#     # Now check the effect of changing the masked property.
+#
+#     toggled_value = not spec.mask[2]
+#     expected_mask = spec.mask.copy()
+#     expected_mask[2] = toggled_value
+#     spec.mask[2] = toggled_value
+#     assert_array_equal(spec.data.mask, expected_mask)
+#     assert_array_equal(spec.var.mask, expected_mask)
+#     assert_array_equal(spec.mask, expected_mask)
+#     assert_true(spec.data.mask is spec.mask and
+#                 spec.var.mask is spec.mask)
+
+    # ----------------------------------------------------------------
+    # Assign a new mask of the same size to the masked property.
+    spec = template_spec.copy()
+
+    # Create a new mask array.
+    new_mask = np.logical_not(spec.mask.copy())
+
+    # After assigning the above array to the masked property,
+    # the final mask should be this mask plus masked elements
+    # for any invalid values in the data and var properties.
+
+# if user assignes the mask attribute, this mask is simply used
+
+    expected_mask = new_mask
+#     expected_mask = np.logical_or(expected_mask,
+#                                   ~(np.isfinite(spec.data.data)))
+#     expected_mask = np.logical_or(expected_mask,
+#                                   ~(np.isfinite(spec.var.data)))
+
+    # Assign the new mask to the masked property and check that the
+    # expected mask is install and that a reference to a single copy
+    # of this is used by all properties
+
+    spec.mask = new_mask
+    assert_array_equal(spec.data.mask, expected_mask)
+    assert_array_equal(spec.var.mask, expected_mask)
+    assert_array_equal(spec.mask, expected_mask)
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+    # ----------------------------------------------------------------
+    # Attempt to assign a mask of a different size to the masked property.
+
+    spec = template_spec.copy()
+
+    # Create a new mask array.
+    new_mask = ma.make_mask_none(n + 5)
+
+    # It is illegal to assign a mask of a different size than the data
+    # array, so check that an exception is raised if we try to do this.
+    try:
+        spec.mask = new_mask
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Mismatched mask array shape not caught')
+
+    # ----------------------------------------------------------------
+    # Try assigning np.masked to elements of the data and var
+    # properties.
+
+    spec = template_spec.copy()
+
+    # We will use ma.masked to mask a couple of elements of
+    # data. Compute the expected mask.
+    expected_mask = spec.mask.copy()
+    expected_mask[30:34] = True
+
+    # Mask two elements of data and check that this masks those
+    # elements without changing their values, and that the mask
+    # continues to be shared with the var and masked properties.
+    spec.data[30:32] = ma.masked
+    spec.var[32:34] = ma.masked
+    assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
+    assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
+    assert_allclose(spec.data.data[30:32], old_data[30:32])
+    assert_allclose(spec.var.data[32:34], old_var[32:34])
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+    # ----------------------------------------------------------------
+    # Check that in-place arithmetic operations work when they mask
+    # elements.
+
+    spec = template_spec.copy()
+
+    # We will multiply the data and variance arrays by values
+    # that flag two elements each. Compute the expected mask.
+    expected_mask = spec.mask.copy()
+    expected_mask[30] = True
+    expected_mask[32] = True
+
+    # Compute the expected data and variance arrays.
+    new_data = old_data.copy()
+    new_data[30:32] *= 2.0
+    new_var = old_var.copy()
+    new_var[32:34] *= 2.0
+
+    # Multiply two elements each of data and var by masked arrays that
+    # have one element unmasked and the other masked, and check the
+    # results.
+    spec.data[30:32] *= ma.array([2.0, 2.0], mask=[True, False])
+    spec.var[32:34] *= ma.array([2.0, 2.0], mask=[True, False])
+    assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
+    assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+
+@attr(speed='fast')
+def test_non_masked_data():
+    """DataArray class: Testing non-masked data"""
+
+    # Create 1D data, variance and mask arrays with the following
+    # dimensions.
+    n = 50
+    old_data = np.arange(n, dtype=float)
+    old_var = np.arange(n, dtype=float) * 0.5 - n / 4.0
+
+    # Add infinite values to currently masked elements of the data
+    # and var arrays and create a mask that just masks these values.
+    old_data[0] = np.Inf
+    old_var[1] = np.Inf
+
+    # Create a spectrum DataArray with the above contents and explicitly
+    # ask for no mask to be created.
+    template_spec = DataArray(data=old_data, var=old_var, mask=ma.nomask)
+
+    # Check that all of the data, var and masked properties have no mask.
+    assert_masked_allclose(template_spec.data,
+                           ma.array(old_data, mask=ma.nomask))
+    assert_masked_allclose(template_spec.var,
+                           ma.array(old_var, mask=ma.nomask))
+    assert_is(template_spec.mask, ma.nomask)
+
+    # Assign a new ndarray data array and a new ndarray variance array
+    # of the same size, and check that this doesn't trigger masks to be
+    # reinstated.
+    new_data = np.arange(n, dtype=float) * 0.3
+    new_var = np.arange(n, dtype=float) * 0.1
+    spec = template_spec.copy()
+    spec.data = new_data
+    spec.var = new_var
+
+    assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
+    assert_masked_allclose(spec.var, ma.array(new_var, mask=ma.nomask))
+    assert_is(spec.mask, ma.nomask)
+
+    # Assign ndarray arrays of a new size to the data and var properties.
+
+#     new_n = n + 5
+#     new_data = np.arange(new_n, dtype=float) * 0.3
+#     new_var =  np.arange(new_n, dtype=float) * 0.1
+#     spec = template_spec.copy()
+#     spec.data = new_data
+#     spec.var = new_var
+#
+#     assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
+#     assert_masked_allclose(spec.var, ma.array(new_var, mask=ma.nomask))
+#     assert_is(spec.mask, ma.nomask)
+
+    # Assign a masked array of the same size to the data property.
+    new_mask = ma.make_mask_none(n)
+    new_data = ma.array(np.arange(n) * 0.3, mask=new_mask)
+    spec = template_spec.copy()
+    spec.data = new_data
+
+    # The mask of the new data array should trigger a switch to
+    # masking. Compute the expected mask, which should be new_mask
+    # with the addition of an element for the infinity in the original
+    # variance array that is still installed.
+    expected_mask = new_mask
+    expected_mask[1] = True
+
+    assert_masked_allclose(spec.data,
+                           ma.array(new_data.data, mask=expected_mask))
+    assert_masked_allclose(spec.var,
+                           ma.array(old_var, mask=expected_mask))
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)
+
+    # Assign a masked array of the same size to the var property.
+    new_mask = ma.make_mask_none(n)
+    new_var = ma.array(np.arange(n) * 0.1, mask=new_mask)
+    spec = template_spec.copy()
+    spec.var = new_var
+
+    # The mask of the new variance array should trigger a switch to
+    # masking. Compute the expected mask, which should be new_mask
+    # with the addition of a flag for the infinity in the original
+    # data array that is still installed.
+
+    expected_mask = new_mask
+    # expected_mask[0] = True
+
+    assert_masked_allclose(spec.data,
+                           ma.array(old_data, mask=expected_mask))
+    assert_masked_allclose(spec.var,
+                           ma.array(new_var.data, mask=expected_mask))
+    assert_true(spec.data.mask is spec.mask and
+                spec.var.mask is spec.mask)

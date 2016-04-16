@@ -1,6 +1,8 @@
 """Test interface on ORIGIN software."""
+from __future__ import absolute_import
 import nose.tools
 from nose.plugins.attrib import attr
+import shutil
 
 from mpdaf.sdetect import Catalog
 from mpdaf.sdetect import ORIGIN
@@ -17,7 +19,7 @@ class TestORIGIN():
         # Number of subcubes for the spatial segmentation
         NbSubcube = 1
 
-        my_origin = ORIGIN(filename, NbSubcube, Edge_xmin=1, Edge_xmax=37, Edge_ymin=2, Edge_ymax=38)
+        my_origin = ORIGIN(filename, NbSubcube, [2, 2, 1, 3])
 
         # Coefficient of determination for projection during PCA   
         r0 = 0.67
@@ -64,6 +66,7 @@ class TestORIGIN():
         Cat4 = my_origin.merge_spectraly(Cat3, Cat_est_line, deltaz)
     
         # list of source objects
-        sources = my_origin.get_sources(Cat4, Cat_est_line, correl)
+        nsources = my_origin.write_sources(Cat4, Cat_est_line, correl)
 
-        nose.tools.assert_equal(len(sources), 2)
+        nose.tools.assert_equal(nsources, 2)
+        shutil.rmtree('./origin')

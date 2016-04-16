@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from astropy.io import fits as pyfits
 from astropy.table import Table
 import astropy.units as u
