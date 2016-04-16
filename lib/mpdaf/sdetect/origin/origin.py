@@ -188,7 +188,7 @@ class ORIGIN(object):
             cubePSF = Cube(PSF)
             if cubePSF.shape[0] != self.Nz:
                 raise IOError('PSF and data cube have not the same dimensions along the spectral axis.')
-            if np.isclose(cubePSF.wcs.get_step(unit=u.arcsec)[0], step_arcsec):
+            if not np.isclose(cubePSF.wcs.get_step(unit=u.arcsec)[0], step_arcsec):
                 raise IOError('PSF and data cube have not the same pixel sizes.')
 
             self.PSF = cubePSF.data.data
