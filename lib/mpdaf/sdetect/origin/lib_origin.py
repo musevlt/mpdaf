@@ -1278,9 +1278,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
 
     # Loop on emission lines detected
     nit = len(Cat1_T)
-    for it in range(nit):
-        if it%50 == 0:
-            logger.debug('{} working on line {}/{}'.format(whoami(),it+1,nit))
+    for it in ProgressBar(range(nit)):
         # initialization
         line_est_raw = np.zeros((ngrid[it], Nz))
         line_est_std = np.zeros((ngrid[it], Nz))
