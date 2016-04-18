@@ -93,18 +93,17 @@ class ORIGIN(object):
     def __init__(self, cube, NbSubcube, margins, profiles=None,
                  FWHM_profiles=None, PSF=None, FWHM_PSF=None):
         """Create a ORIGIN object.
-
+    
         An Origin object is composed by:
         - cube data (raw data and covariance)
         - 1D dictionary of spectral profiles
         - MUSE PSF
         - parameters used to segment the cube in different zones.
-
-
+    
+    
         Parameters
         ----------
-        cube        : string
-                      Cube FITS file name.
+        cube        : string (Cube FITS file name) or cube object
         NbSubcube   : integer
                       Number of sub-cubes for the spatial segmentation
         margin      : (int, int, int, int)
@@ -127,16 +126,20 @@ class ORIGIN(object):
                       FWHM of the PSFs in pixels.
         """
         self._logger = logging.getLogger(__name__)
+        self._logger.info('ORIGIN - Read the Data Cube')
         # create parameters dictionary
         self.param = {}
         self.param['cubename'] = cube
         self.param['nbsubcube'] = NbSubcube
         self.param['margin'] = margins
         self.param['PSF'] = PSF 
-        # Read cube
-        self._logger.info('ORIGIN - Read the Data Cube')
-        self.filename = cube
-        cub = Cube(self.filename)
+        if type(cube) is Cube:
+            self.filename = cube.filename
+            cub = cube
+        else:
+            # Read cube
+            self.filename = cube
+            cub = Cube(self.filename)
         # Raw data cube
         # Set to 0 the Nan
         self.cube_raw = cub.data.filled(fill_value=0)
@@ -146,22 +149,22 @@ class ORIGIN(object):
         self.wcs = cub.wcs
         # spectral coordinates
         self.wave = cub.wave
-
+    
         #Dimensions
         self.Nz, self.Ny, self.Nx = cub.shape
-
+    
         del cub
-
+    
         # Set to Inf the Nana
         self.var[np.isnan(self.var)] = np.inf
-
+    
         self.NbSubcube = NbSubcube
-
+    
         self.Edge_xmin = margins[2]
         self.Edge_xmax = self.Nx - margins[3]
         self.Edge_ymin = margins[0]
         self.Edge_ymax = self.Ny - margins[1]
-        
+    
         # Dictionary of spectral profile
         if profiles is None or FWHM_profiles is None:
             self._logger.info('ORIGIN - Load dictionary of spectral profile')
@@ -171,17 +174,17 @@ class ORIGIN(object):
         else:
             self.profiles = profiles
             self.FWHM_profiles = FWHM_profiles
-
-
+    
+    
         # 1 pixel in arcsec
         step_arcsec = self.wcs.get_step(unit=u.arcsec)[0]
         if PSF is None or FWHM_PSF is None:
             self._logger.info('ORIGIN - Compute PSF')
             self.PSF, fwhm_pix ,fwhm_arcsec = Compute_PSF(self.wave, self.Nz,
-                                                Nfsf=13, beta=2.6,
-                                                fwhm1=0.76, fwhm2=0.66,
-                                                lambda1=4750, lambda2=7000,
-                                                step_arcsec=step_arcsec)
+                                                          Nfsf=13, beta=2.6,
+                                                          fwhm1=0.76, fwhm2=0.66,
+                                                          lambda1=4750, lambda2=7000,
+                                                          step_arcsec=step_arcsec)
             # mean of the fwhm of the FSF in pixel
             self.FWHM_PSF = np.mean(fwhm_arcsec)/step_arcsec
         else:
@@ -190,11 +193,11 @@ class ORIGIN(object):
                 raise IOError('PSF and data cube have not the same dimensions along the spectral axis.')
             if not np.isclose(cubePSF.wcs.get_step(unit=u.arcsec)[0], step_arcsec):
                 raise IOError('PSF and data cube have not the same pixel sizes.')
-
+    
             self.PSF = cubePSF.data.data
             # mean of the fwhm of the FSF in pixel
             self.FWHM_PSF = np.mean(FWHM_PSF)
-
+    
         #Spatial segmentation
         self._logger.info('ORIGIN - Spatial segmentation')
         self.inty, self.intx = Spatial_Segmentation(self.Nx, self.Ny,
