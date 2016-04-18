@@ -12,7 +12,8 @@ which runs sextractor on the images to define spectrum extraction apertures.
 Please contact Jarle for more info at jarle@strw.leidenuniv.nl
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 from astropy.io import fits as pyfits
 import astropy.units as u
 
@@ -20,6 +21,7 @@ import logging
 import numpy as np
 import os
 import shutil
+import six
 import subprocess
 
 from ..obj import Image
@@ -133,7 +135,7 @@ def findCentralDetection(images, iyc, ixc, tolerance=1):
 
     else:
         # No objects found. Let us create a list of empty images.
-        keys = images.keys()
+        keys = list(images.keys())
         segmentation_maps = {key: np.zeros(images[keys[0]].shape, dtype=bool)
                              for key in keys}
         isUseful = {key: 0 for key in keys}
@@ -239,7 +241,7 @@ def segmentation(source, tags, DIR, remove):
 
     # Save segmentation maps
     if len(maps) > 0:
-        for tag, data in maps.iteritems():
+        for tag, data in six.iteritems(maps):
             ima = Image(wcs=wcs, data=data, dtype=np.uint8, copy=False)
             source.images['SEG_' + tag] = ima
 
@@ -249,11 +251,11 @@ def mask_creation(source, maps):
     yc, xc = wcs.sky2pix((source.DEC, source.RA), unit=u.deg)[0]
     r = findCentralDetection(maps, yc, xc, tolerance=3)
     source.images['MASK_UNION'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=union(r['seg'].values()))
+                                        data=union(list(r['seg'].values())))
     source.images['MASK_SKY'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                      data=findSkyMask(maps.values()))
+                                      data=findSkyMask(list(maps.values())))
     source.images['MASK_INTER'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=intersection(r['seg'].values()))
+                                        data=intersection(list(r['seg'].values())))
 
 
 def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
@@ -359,7 +361,7 @@ def SEA(cat, cube, images=None, size=10, eml=None, width=8, margin=10.,
                                           fband=fband, is_sum=False)
 
             # extract images stamps
-            for tag, ima in images.iteritems():
+            for tag, ima in six.iteritems(images):
                 source.add_image(ima, 'HST_' + tag)
 
             # segmentation maps

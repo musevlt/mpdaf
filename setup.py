@@ -46,6 +46,8 @@ from setuptools import setup, find_packages, Command, Extension
 
 # os.environ['DISTUTILS_DEBUG'] = '1'
 
+PY2 = sys.version_info[0] == 2
+
 # Check if Numpy is available
 try:
     import numpy
@@ -129,10 +131,14 @@ def options(*packages, **kw):
         except subprocess.CalledProcessError:
             sys.exit("package '{}' not found.".format(package))
         else:
+            if not PY2:
+                out = out.decode('utf8')
             print('Found {} {}'.format(package, out))
 
     for token in subprocess.check_output(["pkg-config", "--libs", "--cflags",
                                           ' '.join(packages)]).split():
+        if not PY2:
+            token = token.decode('utf8')
         if token[:2] in flag_map:
             kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
         else:  # throw others to extra_link_args
@@ -147,7 +153,7 @@ def options(*packages, **kw):
     else:
         print("Unable to find OPENMP")
 
-    for k, v in kw.iteritems():  # remove duplicated
+    for k, v in kw.items():  # remove duplicated
         kw[k] = list(set(v))
     return kw
 
@@ -181,7 +187,8 @@ setup(
     'in view of the analysis of MUSE data in the context of the GTO.',
     long_description=README + '\n' + CHANGELOG,
     url='http://urania1.univ-lyon1.fr/mpdaf/login',
-    install_requires=['numpy', 'scipy', 'matplotlib', 'astropy', 'numexpr'],
+    install_requires=['numpy', 'scipy', 'matplotlib', 'astropy', 'numexpr',
+                      'six'],
     tests_require=['nose'],
     extras_require={'Image':  ['Pillow']},
     package_dir={'': 'lib'},

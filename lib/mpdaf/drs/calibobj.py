@@ -1,15 +1,19 @@
 """calibobj.py Manages calibration FITS files type MASTER_BIAS MASTER_DARK
 MASTER_FLAT OBJECT_RESAMPLED."""
-from __future__ import absolute_import
-import numpy as np
-from astropy.io import fits as pyfits
+
+from __future__ import absolute_import, division
+
 import datetime
-import os
-import tempfile
-import multiprocessing
-import sys
-from mpdaf import obj
 import logging
+import multiprocessing
+import numpy as np
+import os
+import sys
+import tempfile
+
+from astropy.io import fits as pyfits
+from mpdaf import obj
+from six.moves import range
 
 
 class CalibFile(object):
@@ -482,6 +486,9 @@ class CalibFile(object):
     def __idiv__(self, other):
         return self.__imul__(1. / other)
 
+    __truediv__ = __div__
+    __itruediv__ = __idiv__
+
 
 STR_FUNCTIONS = {'CalibFile.__mul__': CalibFile.__mul__,
                  'CalibFile.__imul__': CalibFile.__imul__,
@@ -596,6 +603,8 @@ class CalibDir(object):
     def __div__(self, other):
         """Divides by a number."""
         return self.__mul__(1. / other)
+
+    __truediv__ = __div__
 
     def _mp_operator(self, other, funcfile, funcnumber):
         if isinstance(other, CalibDir):

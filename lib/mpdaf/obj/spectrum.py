@@ -1,7 +1,7 @@
 """spectrum.py defines Spectrum objects."""
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,10 +11,11 @@ import warnings
 import astropy.units as u
 from scipy import integrate, interpolate, signal
 from scipy.optimize import leastsq
+from six.moves import range
 
 from . import ABmag_filters
 from .data import DataArray
-from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
+from .objs import flux2mag, UnitMaskedArray, UnitArray
 from ..gui.clicks import SpectrumClicks
 from ..tools import deprecated
 
@@ -514,6 +515,9 @@ class Spectrum(DataArray):
         else:
             return other.__div__(self)
 
+    __truediv__ = __div__
+    __rtruediv__ = __rdiv__
+
     def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
         """ Return the flux value corresponding to a wavelength,
         or return the sub-spectrum corresponding to a wavelength range.
@@ -763,18 +767,19 @@ class Spectrum(DataArray):
         """
         assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
-        sh = self.shape[0] / factor
+        sh = (self.shape[0] // factor, factor)
 
         if self.mask is np.ma.nomask:
-            self._data = self._data.reshape(sh, factor).sum(1) / factor
+            self._data = self._data.reshape(sh).sum(1) / factor
             if self._var is not None:
-                self._var = self._var.reshape(sh, factor).sum(1) / (factor * factor)
+                self._var = self._var.reshape(sh).sum(1) / (factor * factor)
         else:
-            mask_count = (~self.mask).reshape(sh, factor).sum(1)
-            self._data = self.data.reshape(sh, factor).sum(1).data / mask_count
+            mask_count = (~self.mask).reshape(sh).sum(1)
+            self._data = self.data.reshape(sh).sum(1).data / mask_count
             if self._var is not None:
-                self._var = self.var.reshape(sh, factor).sum(1).data / (mask_count * mask_count)
-            self._mask = (mask_count==0)
+                self._var = self.var.reshape(sh).sum(1).data / (
+                    mask_count * mask_count)
+            self._mask = mask_count == 0
         self._ndim = self._data.ndim
 
         try:
@@ -869,7 +874,7 @@ class Spectrum(DataArray):
         # in that particular sum.
 
         if self._var is not None:
-            self._var = (self.var.reshape(newshape, factor).sum(1) / unmasked**2)
+            self._var = self.var.reshape(newshape, factor).sum(1) / unmasked**2
 
         # Mask all pixels in the output array that come from zero
         # unmasked pixels of the input array.
@@ -927,7 +932,7 @@ class Spectrum(DataArray):
         """
         assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
-        shape = self.shape[0] / factor
+        shape = self.shape[0] // factor
         self._data = np.ma.median(self.data.reshape(shape, factor), 1)
         if self._mask is not np.ma.nomask:
             self._mask = ((~self._mask).reshape(shape, factor).sum(1) == 0)
@@ -956,21 +961,22 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out `~mpdaf.obj.Spectrum`
+        out: `~mpdaf.obj.Spectrum`
+
         """
         if factor <= 1 or factor >= self.shape[0]:
             raise ValueError('factor must be in ]1,shape[')
-        # assert not np.sometrue(np.mod( self.shape, factor ))
-        if not np.sometrue(np.mod(self.shape[0], factor)):
+
+        if self.shape[0] % factor == 0:
             # new size is an integer multiple of the original size
             res = self.copy()
         else:
-            newshape = self.shape[0] / factor
+            newshape = self.shape[0] // factor
             n = self.shape[0] - newshape * factor
             if margin == 'center' and n == 1:
                 margin = 'right'
             if margin == 'center':
-                n_left = n / 2
+                n_left = n // 2
                 n_right = self.shape[0] - n + n_left
                 res = self[n_left:n_right]
             elif margin == 'right':
@@ -1483,7 +1489,7 @@ class Spectrum(DataArray):
         return self._filter(l0, lmin, lmax, tck, out)
 
     def _filter(self, l0, lmin, lmax, tck, out=1):
-        """compute AB magnitude.
+        """Compute AB magnitude.
 
         Parameters
         ----------
@@ -1558,7 +1564,6 @@ class Spectrum(DataArray):
         self._var = res._var
         self._mask = res._mask
         self.wave = res.wave
-
 
     def fwhm(self, l0, cont=0, spline=False, unit=u.angstrom):
         """Return the fwhm of a peak.
@@ -1649,14 +1654,14 @@ class Spectrum(DataArray):
         out : `mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
-        if is_int(lmin) or is_float(lmin):
+        if np.isscalar(lmin):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1], unit=unit)
             lmin = (lmin[0] + lmin[1]) / 2.
 
-        if is_int(lmax) or is_float(lmax):
+        if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
@@ -1879,14 +1884,14 @@ class Spectrum(DataArray):
         -------
         out : `mpdaf.obj.Gauss1D`, `mpdaf.obj.Gauss1D`
         """
-        if is_int(lmin) or is_float(lmin):
+        if np.isscalar(lmin):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1], weight=False, unit=unit)
             lmin = lmin[1]
 
-        if is_int(lmax) or is_float(lmax):
+        if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
@@ -2062,14 +2067,14 @@ class Spectrum(DataArray):
             Left and right Gaussian functions.
 
         """
-        if is_int(lmin) or is_float(lmin):
+        if np.isscalar(lmin):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1], weight=False, unit=unit)
             lmin = lmin[1]
 
-        if is_int(lmax) or is_float(lmax):
+        if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
@@ -2283,14 +2288,14 @@ class Spectrum(DataArray):
         out : `mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
-        if is_int(lmin) or is_float(lmin):
+        if np.isscalar(lmin):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1])
             lmin = (lmin[0] + lmin[1]) / 2.
 
-        if is_int(lmax) or is_float(lmax):
+        if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
@@ -2729,7 +2734,7 @@ class Spectrum(DataArray):
         if size % 2 == 0:
             raise ValueError('Size must be an odd number')
         else:
-            k = size / 2
+            k = size // 2
 
         if isinstance(lsf, types.FunctionType):
             f = lsf
@@ -2744,17 +2749,15 @@ class Spectrum(DataArray):
         data[:k] = self._data[k:0:-1]
         data[-k:] = self._data[-2:-k - 2:-1]
 
-        res._data = np.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
-                                              * data[i:i + size]).sum(),
-                                   range(self.shape[0])))
+        res._data = np.array([(f(lbda[i], step, size, **kwargs)
+                                              * data[i:i + size]).sum() for i in range(self.shape[0])])
         res._mask = self._mask
 
         if self._var is None:
             res._var = None
         else:
-            res._var = np.array(map(lambda i: (f(lbda[i], step, size, **kwargs)
-                                              * data[i:i + size]).sum(),
-                                   range(self.shape[0])))
+            res._var = np.array([(f(lbda[i], step, size, **kwargs)
+                                              * data[i:i + size]).sum() for i in range(self.shape[0])])
         return res
 
     def peak_detection(self, kernel_size=None, unit=u.angstrom):

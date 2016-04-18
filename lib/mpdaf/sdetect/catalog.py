@@ -1,15 +1,18 @@
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 import glob
 import logging
 import numpy as np
 import os
+import six
 import sys
 
 from astropy.coordinates import SkyCoord, search_around_sky
 from astropy.table import Table, hstack, vstack
 from astropy import units as u
 from matplotlib.patches import Ellipse
+from six.moves import range, zip
 
 INVALID = {
     type(1): -9999, np.int_: -9999,
@@ -71,25 +74,25 @@ class Catalog(Table):
         # union of all headers keywords without mandatory FITS keywords
         h = sources[0].header
 
-        d = dict(zip(h.keys(), [(type(c[1]), c[2]) for c in h.cards]))
+        d = dict(list(zip(list(h.keys()), [(type(c[1]), c[2]) for c in h.cards])))
         for source in sources[1:]:
             h = source.header
-            d.update(dict(zip(h.keys(), [(type(c[1]), c[2]) for c in h.cards])))
+            d.update(dict(list(zip(list(h.keys()), [(type(c[1]), c[2]) for c in h.cards]))))
 
         excluded_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR']
         i = 1
-        while 'COM%03d' % i in d.keys():
+        while 'COM%03d' % i in list(d.keys()):
             excluded_cards.append('COM%03d' % i)
             i += 1
         i = 1
-        while 'HIST%03d' % i in d.keys():
+        while 'HIST%03d' % i in list(d.keys()):
             excluded_cards.append('HIST%03d' % i)
             i += 1
 
         d = {key: value for key, value in d.items() if key not in excluded_cards}
-        names_hdr = d.keys()
-        tuple_hdr = d.values()
+        names_hdr = list(d.keys())
+        tuple_hdr = list(d.values())
         # sort mandatory keywords
         index = names_hdr.index('ID')
         names_hdr.insert(0, names_hdr.pop(index))
@@ -180,7 +183,7 @@ class Catalog(Table):
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
                 dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
-                units_lines = [unit['_'.join(name.split('_')[1:])] for name in names_lines]    
+                units_lines = [unit['_'.join(name.split('_')[1:])] for name in names_lines]
             elif fmt == 'working':
                 lmax = max(llines)
                 d = {}
@@ -208,7 +211,7 @@ class Catalog(Table):
         for source in sources:
             # header
             h = source.header
-            keys = h.keys()
+            keys = list(h.keys())
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
                 if typ == type('1'):
@@ -419,7 +422,7 @@ class Catalog(Table):
         """
         coord1 = SkyCoord(zip(self[colc1[0]], self[colc1[1]]), unit=(u.degree, u.degree))
         coord2 = SkyCoord(zip(cat2[colc2[0]], cat2[colc2[1]]), unit=(u.degree, u.degree))
-        id2, d2d, d3d = coord1.match_to_catalog_sky(coord2) 
+        id2, d2d, d3d = coord1.match_to_catalog_sky(coord2)
         kmatch = d2d < radius * u.arcsec
         match1 = coord1[kmatch]
         nomatch1 = self[~kmatch]
@@ -486,13 +489,13 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
-        if type(symb) in [list, tuple] and len(symb) == 3:
+        if isinstance(symb, (list, tuple)) and len(symb) == 3:
             stype = 'ellipse'
             fwhm1, fwhm2, angle = symb
-        elif type(symb) is str:
+        elif isinstance(symb, six.string_types):
             stype = 'circle'
             fwhm = symb
-        elif type(symb) in [int, float]:
+        elif np.isscalar(symb):
             stype = 'fix'
             size = symb
         else:

@@ -30,5 +30,5 @@ def test_deprecated():
 
     with warnings.catch_warnings(record=True) as w:
         func()
-        nose.tools.assert_equal(w[0].message.message,
+        nose.tools.assert_equal(w[0].message.args[0],
                                 'Call to deprecated function `func`. ' + msg)

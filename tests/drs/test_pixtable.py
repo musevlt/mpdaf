@@ -11,6 +11,7 @@ import unittest
 from astropy.io import fits
 from mpdaf.drs import PixTable, pixtable
 from numpy.testing import assert_array_equal
+from six.moves import range
 
 MUSE_ORIGIN_SHIFT_XSLICE = 24
 MUSE_ORIGIN_SHIFT_YPIX = 11
@@ -125,7 +126,7 @@ class TestBasicPixTable(unittest.TestCase):
         for pixt in (self.pix, self.pix2):
             pix = pixt.copy()
             with self.assertRaises(AssertionError):
-                pix.set_xpos(range(5))
+                pix.set_xpos(list(range(5)))
 
         for pix in (self.pix, self.pix2):
             new_xpos = np.linspace(2, 3, self.nrows)

@@ -1029,7 +1029,7 @@ def test_shared_masks():
     # The assignment of a variance array of a different size to the
     # data array is supposed to raise an exception, so just create
     # an array that has a different size.
-    new_var = np.arange(n / 2)
+    new_var = np.arange(n // 2)
 
     # Try to assign the new array to the var property of the spectrum
     # and make sure that this generates an exception, because the
@@ -1049,7 +1049,7 @@ def test_shared_masks():
     # The assignment of a variance array of a different size to the
     # data array is supposed to raise an exception, so just create
     # an array that has a different size.
-    new_var = ma.array(np.arange(n / 2), mask=False)
+    new_var = ma.array(np.arange(n // 2), mask=False)
 
     # Try to assign the new array to the var property of the spectrum
     # and make sure that this generates an exception, because the

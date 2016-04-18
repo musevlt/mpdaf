@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 import astropy.units as u
 import numpy as np
 from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum
@@ -11,7 +12,6 @@ DEFAULT_SHAPE = (10, 6, 5)
 
 
 def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
-
     """Raise an assertion error if the characteristics of a given image
        don't match the specified parameters.
 
@@ -39,6 +39,7 @@ def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
     if step is not None:
         assert_array_equal(ima.get_step(), step)
 
+
 def assert_masked_allclose(d1, d2):
     """Compare the values of two masked arrays"""
 
@@ -57,7 +58,8 @@ def assert_masked_allclose(d1, d2):
 
         # Check that unmasked values in the array are approximately equal.
 
-        assert_allclose(np.ma.filled(d1,0.0), np.ma.filled(d2,0.0))
+        assert_allclose(np.ma.filled(d1, 0.0), np.ma.filled(d2, 0.0))
+
 
 def _generate_test_data(data=2.3, var=1.0, mask=None, shape=None, unit=u.ct,
                         uwave=u.angstrom, wcs=None, wave=None, copy=True,
@@ -184,7 +186,6 @@ def generate_image(data=2.0, var=1.0, mask=None, shape=None,
 def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
                       uwave=u.angstrom, crpix=2.0, cdelt=3.0,
                       crval=0.5, wave=None, unit=u.ct, copy=True):
-
     """Generate a simple spectrum for unit tests.
 
     The data array can either be specified explicitly, or its shape
