@@ -4,6 +4,7 @@ import glob
 import logging
 import numpy as np
 import os
+import six
 import sys
 
 from astropy.coordinates import SkyCoord, search_around_sky
@@ -487,13 +488,13 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
-        if type(symb) in [list, tuple] and len(symb) == 3:
+        if isinstance(symb, (list, tuple)) and len(symb) == 3:
             stype = 'ellipse'
             fwhm1, fwhm2, angle = symb
-        elif type(symb) is str:
+        elif isinstance(symb, six.string_types):
             stype = 'circle'
             fwhm = symb
-        elif type(symb) in [int, float]:
+        elif np.isscalar(symb):
             stype = 'fix'
             size = symb
         else:

@@ -1,7 +1,10 @@
 """obj.py contains generic methods used in obj package."""
 
 from __future__ import absolute_import
+
+import numbers
 import numpy as np
+
 from astropy.constants import c
 
 __all__ = ('is_float', 'is_int', 'is_number', 'flux2mag', 'mag2flux',
@@ -10,17 +13,17 @@ __all__ = ('is_float', 'is_int', 'is_number', 'flux2mag', 'mag2flux',
 
 def is_float(x):
     """Test if `x` is a float number."""
-    return isinstance(x, (float, np.float32, np.float64))
+    return isinstance(x, numbers.Real)
 
 
 def is_int(x):
     """Test if `x` is an int number."""
-    return isinstance(x, (int, np.int32, np.int64))
+    return isinstance(x, numbers.Integral)
 
 
 def is_number(x):
     """Test if `x` is a number."""
-    return is_int(x) or is_float(x)
+    return isinstance(x, numbers.Number)
 
 
 def flux2mag(flux, wave):

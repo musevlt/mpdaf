@@ -778,7 +778,7 @@ class Source(object):
         errz : float or (float,float)
             Redshift error (deltaz) or redshift interval (zmin,zmax).
         """
-        if is_float(errz) or is_int(errz):
+        if np.isscalar(errz):
             if errz == -9999:
                 zmin = -9999
                 zmax = -9999

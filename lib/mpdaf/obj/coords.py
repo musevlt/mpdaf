@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import astropy.units as u
 import astropy.wcs as pywcs
 import logging
+import numbers
 import numpy as np
 
 from astropy.coordinates import Angle
@@ -494,7 +495,7 @@ class WCS(object):
             # either a 2-element tuple of float or int, or a float or
             # int scalar which is converted to a 2-element tuple.
 
-            def check_attrs(val, types=(int, float)):
+            def check_attrs(val, types=numbers.Number):
                 """Check attribute dimensions."""
                 if isinstance(val, types):
                     return (val, val)
@@ -1679,7 +1680,7 @@ class WaveCoord(object):
         res = self.wcs.wcs_pix2world(pixelarr, 0)[0]
         if unit is not None:
             res = (res * self.unit).to(unit).value
-        return res[0] if isinstance(pixel, (int, float)) else res
+        return res[0] if np.isscalar(pixel) else res
 
     def pixel(self, lbda, nearest=False, unit=None):
         """Return the decimal pixel corresponding to the wavelength lbda.
@@ -1702,7 +1703,7 @@ class WaveCoord(object):
 
         """
 
-        lbdarr = np.asarray([lbda] if isinstance(lbda, (int, float)) else lbda)
+        lbdarr = np.asarray([lbda] if np.isscalar(lbda) else lbda)
         if unit is not None:
             lbdarr = (lbdarr * unit).to(self.unit).value
         pix = self.wcs.wcs_world2pix(lbdarr, 0)[0]
@@ -1711,7 +1712,7 @@ class WaveCoord(object):
             np.maximum(pix, 0, out=pix)
             if self.shape is not None:
                 np.minimum(pix, self.shape - 1, out=pix)
-        return pix[0] if isinstance(lbda, (int, float)) else pix
+        return pix[0] if np.isscalar(lbda) else pix
 
     def __getitem__(self, item):
         """Return the coordinate corresponding to pixel if item is an integer

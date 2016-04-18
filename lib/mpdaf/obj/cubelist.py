@@ -285,7 +285,7 @@ class CubeList(object):
               NPIX_NAN and NPIX_REJECTED)
 
         """
-        if is_int(nclip) or is_float(nclip):
+        if np.isscalar(nclip):
             nclip_low = nclip
             nclip_up = nclip
         else:
@@ -399,7 +399,7 @@ class CubeList(object):
                                'to use this method')
             raise
 
-        if is_int(nclip) or is_float(nclip):
+        if np.isscalar(nclip):
             nclip_low, nclip_up = nclip, nclip
         else:
             nclip_low, nclip_up = nclip
@@ -599,7 +599,7 @@ class CubeMosaic(CubeList):
                                'to use this method')
             raise
 
-        if is_int(nclip) or is_float(nclip):
+        if np.isscalar(nclip):
             nclip_low, nclip_up = nclip, nclip
         else:
             nclip_low, nclip_up = nclip

@@ -17,7 +17,7 @@ from six.moves import range, zip
 from .coords import WCS, WaveCoord
 from .data import DataArray
 from .image import Image
-from .objs import is_float, is_int, UnitArray, UnitMaskedArray
+from .objs import is_int, UnitArray, UnitMaskedArray
 from .spectrum import Spectrum
 from ..tools import deprecated
 from ..tools.fits import add_mpdaf_method_keywords
@@ -183,7 +183,7 @@ class Cube(DataArray):
 
         center = np.array(center)
 
-        if is_int(radius) or is_float(radius):
+        if np.isscalar(radius):
             circular = True
             radius2 = radius * radius
             radius = (radius, radius)
@@ -2061,7 +2061,7 @@ class Cube(DataArray):
                 result[:, p, q] = spe
 
             else:
-                if is_float(out[0]) or is_int(out[0]):
+                if np.isscalar(out[0]):
                     # f returns a number -> iterator returns an image
                     if init:
                         result = Image(wcs=self.wcs.copy(),
@@ -2171,7 +2171,7 @@ class Cube(DataArray):
                     init = False
                 result[k] = spe
             else:
-                if is_float(out[0]) or is_int(out[0]):
+                if np.isscalar(out[0]):
                     # f returns a number -> iterator returns a spectrum
                     if init:
                         result = Spectrum(wave=self.wave.copy(),

@@ -15,7 +15,7 @@ from six.moves import range
 
 from . import ABmag_filters
 from .data import DataArray
-from .objs import is_float, is_int, flux2mag, UnitMaskedArray, UnitArray
+from .objs import flux2mag, UnitMaskedArray, UnitArray
 from ..gui.clicks import SpectrumClicks
 from ..tools import deprecated
 
@@ -1655,14 +1655,14 @@ class Spectrum(DataArray):
         out : `mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
-        if is_int(lmin) or is_float(lmin):
+        if np.isscalar(lmin):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1], unit=unit)
             lmin = (lmin[0] + lmin[1]) / 2.
 
-        if is_int(lmax) or is_float(lmax):
+        if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
@@ -1885,14 +1885,14 @@ class Spectrum(DataArray):
         -------
         out : `mpdaf.obj.Gauss1D`, `mpdaf.obj.Gauss1D`
         """
-        if is_int(lmin) or is_float(lmin):
+        if np.isscalar(lmin):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1], weight=False, unit=unit)
             lmin = lmin[1]
 
-        if is_int(lmax) or is_float(lmax):
+        if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
@@ -2068,14 +2068,14 @@ class Spectrum(DataArray):
             Left and right Gaussian functions.
 
         """
-        if is_int(lmin) or is_float(lmin):
+        if np.isscalar(lmin):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1], weight=False, unit=unit)
             lmin = lmin[1]
 
-        if is_int(lmax) or is_float(lmax):
+        if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
@@ -2289,14 +2289,14 @@ class Spectrum(DataArray):
         out : `mpdaf.obj.Gauss1D`
         """
         # truncate the spectrum and compute right and left gaussian values
-        if is_int(lmin) or is_float(lmin):
+        if np.isscalar(lmin):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
             fmin = self.mean(lmin[0], lmin[1])
             lmin = (lmin[0] + lmin[1]) / 2.
 
-        if is_int(lmax) or is_float(lmax):
+        if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
