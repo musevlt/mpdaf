@@ -23,8 +23,7 @@ from ..tools.fits import add_mpdaf_method_keywords
 __all__ = ('iter_spe', 'iter_ima', 'Cube')
 
 
-class iter_spe(object):
-
+def iter_spe(cube, index=False):
     """An iterator for iterating over the spectra in a Cube object.
 
     Parameters
@@ -32,70 +31,37 @@ class iter_spe(object):
     cube : `~mpdaf.obj.Cube`
        The cube that contains the spectra to be returned one after another.
     index : boolean
-       If index=False, only return a spectrum at each iteration.
-       If index=True, return both a spectrum and the position of that
-       spectrum in the image. The position is returned as a tuple
-       of image-array indexes along the axes (y,x).
+       If False, only return a spectrum at each iteration.
+       If True, return both a spectrum and the position of that spectrum in the
+       image (a tuple of image-array indexes along the axes (y,x)).
 
     """
-
-    def __init__(self, cube, index=False):
-        self.cube = cube
-        self.p = cube.shape[1]
-        self.q = cube.shape[2]
-        self.index = index
-
-    def next(self):
-        """Return the next spectrum from the cube."""
-        if self.q == 0:
-            self.p -= 1
-            self.q = self.cube.shape[2]
-        self.q -= 1
-        if self.p == 0:
-            raise StopIteration
-        if self.index is False:
-            return self.cube[:, self.p - 1, self.q]
-        else:
-            return (self.cube[:, self.p - 1, self.q], (self.p - 1, self.q))
-
-    def __iter__(self):
-        """Return the iterator itself."""
-        return self
+    if index:
+        for y, x in np.ndindex(*cube.shape[1:]):
+            yield cube[:, y, x], (y, x)
+    else:
+        for y, x in np.ndindex(*cube.shape[1:]):
+            yield cube[:, y, x]
 
 
-class iter_ima(object):
-
-    """An iterator for iterating over the images in a Cube object.
+def iter_ima(cube, index=False):
+    """An iterator for iterating over the images of a Cube object.
 
     Parameters
     ----------
     cube : `~mpdaf.obj.Cube`
-       The cube that contains the spectra to be returned one after another.
+       The cube that contains the images to be returned one after another.
     index : boolean
-       If index=False, only return an image at each iteration.
-       If index=True, return both an image and the spectral pixel
-       of that image in the cube.
+       If False, only return an image at each iteration.
+       If True, return both the image and the spectral index.
 
     """
-
-    def __init__(self, cube, index=False):
-        self.cube = cube
-        self.k = cube.shape[0]
-        self.index = index
-
-    def next(self):
-        """Return the next image."""
-        if self.k == 0:
-            raise StopIteration
-        self.k -= 1
-        if self.index is False:
-            return self.cube[self.k, :, :]
-        else:
-            return (self.cube[self.k, :, :], self.k)
-
-    def __iter__(self):
-        """Return the iterator itself."""
-        return self
+    if index:
+        for l in range(cube.shape[0]):
+            yield cube[l, :, :], l
+    else:
+        for l in range(cube.shape[0]):
+            yield cube[l, :, :]
 
 
 class Cube(DataArray):

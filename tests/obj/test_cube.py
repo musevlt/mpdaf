@@ -75,8 +75,9 @@ def test_get_Cube():
 def test_iter_ima():
     """Cube class: tests Image iterator"""
     cube1 = generate_cube()
+    ones = np.ones(shape=(6, 5))
     for ima, k in iter_ima(cube1, True):
-        cube1[k, :, :] = k * np.ones(shape=(6, 5))
+        cube1[k, :, :] = k * ones
     c = np.arange(cube1.shape[0])[:, np.newaxis, np.newaxis]
     assert_array_equal(*np.broadcast_arrays(cube1.data.data, c))
 
