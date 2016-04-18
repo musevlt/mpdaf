@@ -396,37 +396,41 @@ class Catalog(Table):
             except:
                 pass
 
-    def match(self, cat2, radius=1):
+    def match(self, cat2, radius=1, colc1=('RA','DEC'), colc2=('RA','DEC')):
         """Match elements of the current catalog with an other (in RA, DEC).
 
         Parameters
         ----------
         cat2 : astropy.Table
             Catalog to match
-        radius : float
+        radius : float (default 1)
             Matching size in arcsec
+        colc1: ('RA','DEC') name of ra,dec columns of input table
+        colc2: ('RA','DEC') name of ra,dec columns of table 2
 
         Returns
         -------
-        match, nomatch, nomatch2 : astropy.Table, astropy.Table, astropy.Table
+        dictionary
+        match1,nomatch1,match2,nomatch2,dist : astropy.Table, astropy.Table, astropy.Table, np.array
             1- match table of matched elements in RA,DEC
             2- sub-table of non matched elements of the current catalog
             3- sub-table of non matched elements of the catalog cat2
 
         """
-        coord1 = SkyCoord(zip(self['RA'], self['DEC']), unit=(u.degree, u.degree))
-        coord2 = SkyCoord(zip(cat2['RA'], cat2['DEC']), unit=(u.degree, u.degree))
-        id1, id2, d2d, d3d = search_around_sky(coord1, coord2, radius * u.arcsec)
-        id1_notin_2 = np.in1d(range(len(self)), id1, invert=True)
-        id2_notin_1 = np.in1d(range(len(cat2)), id2, invert=True)
+        coord1 = SkyCoord(zip(self[colc1[0]], self[colc1[1]]), unit=(u.degree, u.degree))
+        coord2 = SkyCoord(zip(cat2[colc2[0]], cat2[colc2[1]]), unit=(u.degree, u.degree))
+        id2, d2d, d3d = coord1.match_to_catalog_sky(coord2) 
+        kmatch = d2d < radius * u.arcsec
+        match1 = coord1[kmatch]
+        nomatch1 = self[~kmatch]
+        id2match = id2[kmatch]
+        match2 = cat2[id2match]
+        nomatch2 = cat2[~id2match]
         self._logger.info('Cat1 Nelt %d Match %d Not Matched %d'
-                          % (len(self), len(id1), len(self[id1_notin_2])))
+                          % (len(self), len(match1), len(nomatch1)))
         self._logger.info('Cat2 Nelt %d Match %d Not Matched %d'
-                          % (len(cat2), len(id2), len(cat2[id2_notin_1])))
-        match = hstack([self[id1], cat2[id2]])
-        nomatch = self[id1_notin_2]
-        nomatch2 = cat2[id2_notin_1]
-        return match, nomatch, nomatch2
+                          % (len(cat2), len(match2), len(nomatch2)))
+        return {'match1':match1, 'match2':match2, 'dist':d2d[kmatch].to(u.arcsec), 'nomatch1':nomatch1, 'nomatch2':nomatch2}
 
     def select(self, wcs, ra='RA', dec='DEC'):
         """Select all sources from catalog which are inside the WCS of image
