@@ -106,11 +106,19 @@ def test_crop():
 def test_multiprocess():
     """Cube class: tests multiprocess"""
     cube1 = generate_cube()
-
     f = Image.sum
-    list_spe = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=True, axis=0)
+    list_spe = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False, axis=0)
     assert_equal(list_spe[8][1], cube1[8, :, :].sum(axis=0)[1])
 
+    f = Spectrum.mean
+    out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=False)
+    assert_equal(out[2, 3], cube1[:, 2, 3].mean())
+
+
+@attr(speed='slow')
+def test_multiprocess2():
+    """Cube class: more tests for multiprocess"""
+    cube1 = generate_cube()
     f = Image.ee
     ee = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=True)
     assert_equal(ee[1], cube1[1, :, :].ee())
@@ -118,10 +126,6 @@ def test_multiprocess():
     f = Image.rotate
     cub2 = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=True, theta=20)
     assert_equal(cub2[4, 3, 2], cube1[4, :, :].rotate(20)[3, 2])
-
-    f = Spectrum.mean
-    out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=True)
-    assert_equal(out[2, 3], cube1[:, 2, 3].mean())
 
     f = Spectrum.resample
     out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=True, step=1)

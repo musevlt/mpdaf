@@ -64,6 +64,21 @@ def iter_ima(cube, index=False):
             yield cube[l, :, :]
 
 
+def _print_multiprocessing_progress(processresult, num_tasks):
+    while True:
+        time.sleep(5)
+        completed = processresult._index
+        if completed == num_tasks:
+            output = ""
+            sys.stdout.write("\r\x1b[K" + output.__str__())
+            sys.stdout.flush()
+            break
+        output = "\r Waiting for %i tasks to complete (%i%% done) ..." % (
+            num_tasks - completed, float(completed) / float(num_tasks) * 100.0)
+        sys.stdout.write("\r\x1b[K" + output.__str__())
+        sys.stdout.flush()
+
+
 class Cube(DataArray):
 
     """This class manages Cube objects.
@@ -1992,8 +2007,8 @@ class Cube(DataArray):
             cpu_count = CPU
         else:
             cpu_count = multiprocessing.cpu_count() - 1
+
         pool = multiprocessing.Pool(processes=cpu_count)
-        processlist = list()
 
         if isinstance(f, types.MethodType):
             f = f.__name__
@@ -2002,47 +2017,27 @@ class Cube(DataArray):
         var = self._var
         mask = self._mask
         header = self.wave.to_header()
-        pv, qv = np.meshgrid(range(self.shape[1]),
-                             range(self.shape[2]),
+        pv, qv = np.meshgrid(range(self.shape[1]), range(self.shape[2]),
                              sparse=False, indexing='ij')
         pv = pv.ravel()
         qv = qv.ravel()
         if var is None:
-            for p, q in zip(pv, qv):
-                processlist.append([(p, q), f, header,
-                                    data[:, p, q],
-                                    mask[:, p, q],
-                                    None,
-                                    self.unit, kargs])
+            processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
+                           None, self.unit, kargs)
+                           for p, q in zip(pv, qv)]
         else:
-            for p, q in zip(pv, qv):
-                processlist.append([(p, q), f, header,
-                                    data[:, p, q],
-                                    mask[:, p, q],
-                                    var[:, p, q],
-                                    self.unit, kargs])
-        num_tasks = len(processlist)
+            processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
+                           var[:, p, q], self.unit, kargs)
+                           for p, q in zip(pv, qv)]
 
         processresult = pool.imap_unordered(_process_spe, processlist)
         pool.close()
 
         if verbose:
-            msg = "loop_spe_multiprocessing (%s): %i tasks" % (f, num_tasks)
-            self._logger.info(msg)
-
-            while (True):
-                time.sleep(5)
-                completed = processresult._index
-                if completed == num_tasks:
-                    output = ""
-                    sys.stdout.write("\r\x1b[K" + output.__str__())
-                    sys.stdout.flush()
-                    break
-                output = ("\r Waiting for %i tasks to complete (%i%% done) ..."
-                          % (num_tasks - completed, float(completed) /
-                             float(num_tasks) * 100.0))
-                sys.stdout.write("\r\x1b[K" + output.__str__())
-                sys.stdout.flush()
+            ntasks = len(processlist)
+            self._logger.info('loop_spe_multiprocessing (%s): %i tasks', f,
+                              ntasks)
+            _print_multiprocessing_progress(processresult, ntasks)
 
         init = True
         for pos, dtype, out in processresult:
@@ -2054,8 +2049,8 @@ class Cube(DataArray):
                 spe = Spectrum(wave=wave, unit=unit, data=data, var=var,
                                mask=mask, copy=False)
 
-                cshape = (data.shape[0], self.shape[1], self.shape[2])
                 if init:
+                    cshape = (data.shape[0], self.shape[1], self.shape[2])
                     if self.var is None:
                         result = Cube(wcs=self.wcs.copy(), wave=wave,
                                       data=np.zeros(cshape), unit=unit)
@@ -2121,7 +2116,6 @@ class Cube(DataArray):
             cpu_count = multiprocessing.cpu_count() - 1
 
         pool = multiprocessing.Pool(processes=cpu_count)
-        processlist = list()
 
         if isinstance(f, types.MethodType):
             f = f.__name__
@@ -2131,49 +2125,29 @@ class Cube(DataArray):
         mask = self._mask
         var = self._var
         if var is None:
-            for k in range(self.shape[0]):
-                processlist.append([k, f, header, data[k, :, :],
-                                    mask[k, :, :], None,
-                                    self.unit, kargs])
+            processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
+                           None, self.unit, kargs)
+                           for k in range(self.shape[0])]
         else:
-            for k in range(self.shape[0]):
-                processlist.append([k, f, header, data[k, :, :],
-                                    mask[k, :, :], var[k, :, :],
-                                    self.unit, kargs])
-        num_tasks = len(processlist)
+            processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
+                           var[k, :, :], self.unit, kargs)
+                           for k in range(self.shape[0])]
 
         processresult = pool.imap_unordered(_process_ima, processlist)
         pool.close()
 
         if verbose:
-            msg = "loop_ima_multiprocessing (%s): %i tasks" % (f, num_tasks)
-            self._logger.info(msg)
-
-            while (True):
-                time.sleep(5)
-                completed = processresult._index
-                if completed == num_tasks:
-                    output = ""
-                    sys.stdout.write("\r\x1b[K" + output.__str__())
-                    sys.stdout.flush()
-                    break
-                output = "\r Waiting for %i tasks to complete '\
-                '(%i%% done) ..." % (num_tasks - completed,
-                                     float(completed) / num_tasks * 100.0)
-                sys.stdout.write("\r\x1b[K" + output.__str__())
-                sys.stdout.flush()
+            ntasks = len(processlist)
+            self._logger.info('loop_ima_multiprocessing (%s): %i tasks', f,
+                              ntasks)
+            _print_multiprocessing_progress(processresult, ntasks)
 
         init = True
         for k, dtype, out in processresult:
             if dtype == 'image':
                 # f returns an image -> iterator returns a cube
-                data = out[1]
-                mask = out[2]
-                var = out[3]
+                header, data, mask, var, unit = out
                 if init:
-                    header = out[0]
-                    unit = out[4]
-
                     wcs = WCS(header, shape=data.shape)
                     cshape = (self.shape[0], data.shape[0], data.shape[1])
                     if self.var is None:
