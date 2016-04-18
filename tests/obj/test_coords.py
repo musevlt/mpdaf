@@ -1,6 +1,7 @@
 """Test on WCS and WaveCoord objects."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 import nose.tools
 from nose.plugins.attrib import attr
 
@@ -85,6 +86,7 @@ class TestWCS(object):
 
         wcs2.set_crval2(-2, unit=2 * u.pix)
         assert_array_equal(wcs2.get_crval2(), -4.0)
+
 
 class TestWaveCoord(object):
 
