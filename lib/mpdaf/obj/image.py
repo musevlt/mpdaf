@@ -2986,7 +2986,7 @@ class Image(DataArray):
 
         # At this point the image dimensions are integer multiples of
         # the reduction factors. What is the shape of the output image?
-        newshape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
+        newshape = (self.shape[0] // factor[0], self.shape[1] // factor[1])
 
         # Compute the number of unmasked pixels of the input image
         # that will contribute to each mean pixel in the output image.

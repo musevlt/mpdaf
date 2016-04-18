@@ -1,6 +1,7 @@
 """cube.py manages Cube objects."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 import ctypes
 import logging
 import numpy as np
@@ -14,7 +15,6 @@ from numpy import allclose, array_equal
 from six.moves import range, zip
 
 from .cube import Cube
-from .objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
 
 __all__ = ('CubeList', 'CubeMosaic')

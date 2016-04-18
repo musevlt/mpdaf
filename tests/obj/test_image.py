@@ -431,7 +431,7 @@ def test_rebin_mean():
     data = np.arange(30).reshape(6, 5)
     image1 = Image(data=data, wcs=wcs, var=np.ones(data.shape) * 0.5)
     image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
-                unit_radius=None)
+                       unit_radius=None)
 
     # The test data array looks as follows:
     #

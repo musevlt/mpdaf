@@ -1,6 +1,6 @@
 """coords.py Manages coordinates."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import astropy.units as u
 import astropy.wcs as pywcs
@@ -1836,7 +1836,7 @@ class WaveCoord(object):
         crpix = self.wcs.wcs.crpix[0]
         crpix = (crpix * old_cdelt - old_cdelt / 2.0 + cdelt / 2.0) / cdelt
         self.wcs.wcs.crpix[0] = crpix
-        self.shape = self.shape / factor
+        self.shape = self.shape // factor
         self.wcs.wcs.set()
 
     def get_step(self, unit=None):
