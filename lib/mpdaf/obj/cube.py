@@ -1,6 +1,6 @@
 """cube.py manages Cube objects."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import astropy.units as u
 import multiprocessing
@@ -76,7 +76,7 @@ def _print_multiprocessing_progress(processresult, num_tasks):
             sys.stdout.flush()
             break
         output = "\r Waiting for %i tasks to complete (%i%% done) ..." % (
-            num_tasks - completed, float(completed) / float(num_tasks) * 100.0)
+            num_tasks - completed, completed / num_tasks * 100.0)
         sys.stdout.write("\r\x1b[K" + output.__str__())
         sys.stdout.flush()
 
@@ -787,9 +787,9 @@ class Cube(DataArray):
                         / (other._data[:, np.newaxis, np.newaxis] ** 4)
                 else:
                     res._var = (other._var[:, np.newaxis, np.newaxis] *
-                               self._data * self._data + self._var *
-                               other._data[:, np.newaxis, np.newaxis] *
-                               other._data[:, np.newaxis, np.newaxis]) \
+                                self._data * self._data + self._var *
+                                other._data[:, np.newaxis, np.newaxis] *
+                                other._data[:, np.newaxis, np.newaxis]) \
                         / (other._data[:, np.newaxis, np.newaxis] ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -816,9 +816,9 @@ class Cube(DataArray):
                         / (other._data[np.newaxis, :, :] ** 4)
                 else:
                     res._var = (other._var[np.newaxis, :, :] *
-                               self._data * self._data + self._var *
-                               other._data[np.newaxis, :, :] *
-                               other._data[np.newaxis, :, :]) \
+                                self._data * self._data + self._var *
+                                other._data[np.newaxis, :, :] *
+                                other._data[np.newaxis, :, :]) \
                         / (other._data[np.newaxis, :, :] ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -844,7 +844,7 @@ class Cube(DataArray):
                         / (other._data ** 4)
                 else:
                     res._var = (other._var * self._data * self._data +
-                               self._var * other._data * other._data) \
+                                self._var * other._data * other._data) \
                         / (other._data ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -2211,6 +2211,7 @@ class Cube(DataArray):
                 # or if is_sum is True:
                 sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                 flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
+
         margin : float
             This off-band is offseted by margin wrt narrow-band limit.
         fband : float

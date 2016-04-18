@@ -12,7 +12,8 @@ which runs sextractor on the images to define spectrum extraction apertures.
 Please contact Jarle for more info at jarle@strw.leidenuniv.nl
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 from astropy.io import fits as pyfits
 import astropy.units as u
 

@@ -10,7 +10,8 @@ Carole for more info at carole.clastres@univ-lyon1.fr
 origin.py contains an oriented-object interface to run the ORIGIN software
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 import astropy.units as u
 import logging
 import matplotlib.pyplot as plt

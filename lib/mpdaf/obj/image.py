@@ -1,6 +1,6 @@
 """image.py manages image objects."""
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import logging
 import matplotlib as mpl
@@ -1594,7 +1594,7 @@ class Image(DataArray):
         def _struct(n):
             struct = np.zeros([n, n])
             for i in range(0, n):
-                dist = abs(i - (n / 2))
+                dist = abs(i - (n // 2))
                 struct[i][dist: abs(n - dist)] = 1
             return struct
 
@@ -1849,17 +1849,16 @@ class Image(DataArray):
               Radius array, EER array
         """
         if center is None:
-            i = self.shape[0] / 2
-            j = self.shape[1] / 2
+            i = self.shape[0] // 2
+            j = self.shape[1] // 2
+        elif unit_center is None:
+            i = center[0]
+            j = center[1]
         else:
-            if unit_center is None:
-                i = center[0]
-                j = center[1]
-            else:
-                pixcrd = self.wcs.sky2pix([center[0], center[1]],
-                                          nearest=True, unit=unit_center)
-                i = pixcrd[0][0]
-                j = pixcrd[0][1]
+            pixcrd = self.wcs.sky2pix([center[0], center[1]],
+                                      nearest=True, unit=unit_center)
+            i = pixcrd[0][0]
+            j = pixcrd[0][1]
 
         nmax = min(self.shape[0] - i, self.shape[1] - j, i, j)
         if etot is None:
@@ -1908,17 +1907,17 @@ class Image(DataArray):
         out : float array
         """
         if center is None:
-            i = self.shape[0] / 2
-            j = self.shape[1] / 2
+            i = self.shape[0] // 2
+            j = self.shape[1] // 2
+        elif unit_center is None:
+            i = center[0]
+            j = center[1]
         else:
-            if unit_center is None:
-                i = center[0]
-                j = center[1]
-            else:
-                pixcrd = self.wcs.sky2pix([[center[0], center[1]]],
-                                          unit=unit_center)
-                i = int(pixcrd[0][0] + 0.5)
-                j = int(pixcrd[0][1] + 0.5)
+            pixcrd = self.wcs.sky2pix([[center[0], center[1]]],
+                                      unit=unit_center)
+            i = int(pixcrd[0][0] + 0.5)
+            j = int(pixcrd[0][1] + 0.5)
+
         nmax = min(self.shape[0] - i, self.shape[1] - j, i, j)
         if etot is None:
             etot = (self.data - cont).sum()

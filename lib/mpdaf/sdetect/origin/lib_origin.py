@@ -10,7 +10,7 @@ Carole for more info at carole.clastres@univ-lyon1.fr
 lib_origin.py contains the methods that compose the ORIGIN software
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import astropy.units as u
 import logging
@@ -1053,12 +1053,12 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         profil1 = profil0[profil0>1e-13]
         long0 = profil1.shape[0]
         # half-length of the spectral profile
-        longz = long0/2
+        longz = long0 // 2
         # spectral range
         intz1 = max(0, z0 - longz)
         intz2 = min(cube_raw.shape[0], z0 + longz + 1)
         # Subcube on test
-        longxy = PSF_Moffat.shape[1]/2
+        longxy = PSF_Moffat.shape[1] // 2
         inty1 = max(0, y0 - longxy)
         inty2 = min(cube_raw.shape[1], y0 + longxy + 1)
         intx1 = max(0, x0 - longxy)
@@ -1257,7 +1257,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     Cat2_flux = []
     Cat_est_line_raw = []
     Cat_est_line_std = []
-    longxy = PSF_Moffat.shape[1]/2
+    longxy = PSF_Moffat.shape[1] // 2
 
     # Spatio-spectral grid
     grid_x1 = np.maximum(0, Cat1_T['x'] - grid_dxy)
@@ -1420,7 +1420,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     profil0 = Dico[:, num_prof]
     profil1 = profil0[profil0>1e-20]
     long0 = profil1.shape[0]
-    longz = long0/2
+    longz = long0 // 2
 
     # size of the 3D atom along the spectral axis
     intz1 = max(0, z0 - longz)

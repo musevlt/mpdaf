@@ -1,6 +1,6 @@
 """spectrum.py defines Spectrum objects."""
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import logging
 import matplotlib.pyplot as plt
@@ -976,7 +976,7 @@ class Spectrum(DataArray):
             if margin == 'center' and n == 1:
                 margin = 'right'
             if margin == 'center':
-                n_left = n / 2
+                n_left = n // 2
                 n_right = self.shape[0] - n + n_left
                 res = self[n_left:n_right]
             elif margin == 'right':
@@ -1564,7 +1564,6 @@ class Spectrum(DataArray):
         self._var = res._var
         self._mask = res._mask
         self.wave = res.wave
-
 
     def fwhm(self, l0, cont=0, spline=False, unit=u.angstrom):
         """Return the fwhm of a peak.
@@ -2735,7 +2734,7 @@ class Spectrum(DataArray):
         if size % 2 == 0:
             raise ValueError('Size must be an odd number')
         else:
-            k = size / 2
+            k = size // 2
 
         if isinstance(lsf, types.FunctionType):
             f = lsf
