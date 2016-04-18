@@ -767,18 +767,19 @@ class Spectrum(DataArray):
         """
         assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
-        sh = self.shape[0] / factor
+        sh = (self.shape[0] // factor, factor)
 
         if self.mask is np.ma.nomask:
-            self._data = self._data.reshape(sh, factor).sum(1) / factor
+            self._data = self._data.reshape(sh).sum(1) / factor
             if self._var is not None:
-                self._var = self._var.reshape(sh, factor).sum(1) / (factor * factor)
+                self._var = self._var.reshape(sh).sum(1) / (factor * factor)
         else:
-            mask_count = (~self.mask).reshape(sh, factor).sum(1)
-            self._data = self.data.reshape(sh, factor).sum(1).data / mask_count
+            mask_count = (~self.mask).reshape(sh).sum(1)
+            self._data = self.data.reshape(sh).sum(1).data / mask_count
             if self._var is not None:
-                self._var = self.var.reshape(sh, factor).sum(1).data / (mask_count * mask_count)
-            self._mask = (mask_count==0)
+                self._var = self.var.reshape(sh).sum(1).data / (
+                    mask_count * mask_count)
+            self._mask = mask_count == 0
         self._ndim = self._data.ndim
 
         try:
@@ -873,7 +874,7 @@ class Spectrum(DataArray):
         # in that particular sum.
 
         if self._var is not None:
-            self._var = (self.var.reshape(newshape, factor).sum(1) / unmasked**2)
+            self._var = self.var.reshape(newshape, factor).sum(1) / unmasked**2
 
         # Mask all pixels in the output array that come from zero
         # unmasked pixels of the input array.
@@ -931,7 +932,7 @@ class Spectrum(DataArray):
         """
         assert not np.sometrue(np.mod(self.shape[0], factor))
         # new size is an integer multiple of the original size
-        shape = self.shape[0] / factor
+        shape = self.shape[0] // factor
         self._data = np.ma.median(self.data.reshape(shape, factor), 1)
         if self._mask is not np.ma.nomask:
             self._mask = ((~self._mask).reshape(shape, factor).sum(1) == 0)
@@ -960,16 +961,17 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out `~mpdaf.obj.Spectrum`
+        out: `~mpdaf.obj.Spectrum`
+
         """
         if factor <= 1 or factor >= self.shape[0]:
             raise ValueError('factor must be in ]1,shape[')
-        # assert not np.sometrue(np.mod( self.shape, factor ))
-        if not np.sometrue(np.mod(self.shape[0], factor)):
+
+        if self.shape[0] % factor == 0:
             # new size is an integer multiple of the original size
             res = self.copy()
         else:
-            newshape = self.shape[0] / factor
+            newshape = self.shape[0] // factor
             n = self.shape[0] - newshape * factor
             if margin == 'center' and n == 1:
                 margin = 'right'
@@ -1487,7 +1489,7 @@ class Spectrum(DataArray):
         return self._filter(l0, lmin, lmax, tck, out)
 
     def _filter(self, l0, lmin, lmax, tck, out=1):
-        """compute AB magnitude.
+        """Compute AB magnitude.
 
         Parameters
         ----------
