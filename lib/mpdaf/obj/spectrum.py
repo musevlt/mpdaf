@@ -533,25 +533,27 @@ class Spectrum(DataArray):
 
         Returns
         -------
-        out : float or Spectrum
+        out : float or `~mpdaf.obj.Spectrum`
+
         """
-        if lmax is None:
-            lmax = lmin
         if self.wave is None:
             raise ValueError('Operation forbidden without world coordinates '
                              'along the spectral direction')
+
+        if lmax is None:
+            lmax = lmin
+
+        if unit is None:
+            pix_min = max(0, int(lmin + 0.5))
+            pix_max = min(self.shape[0], int(lmax + 0.5))
         else:
-            if unit is None:
-                pix_min = max(0, int(lmin + 0.5))
-                pix_max = min(self.shape[0], int(lmax + 0.5))
-            else:
-                pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
-                pix_max = min(self.shape[0],
-                              self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
-            if (pix_min + 1) == pix_max:
-                return self[pix_min]
-            else:
-                return self[pix_min:pix_max]
+            pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
+            pix_max = min(self.shape[0],
+                          self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+        if (pix_min + 1) == pix_max:
+            return self[pix_min]
+        else:
+            return self[pix_min:pix_max]
 
     def get_step(self, unit=None):
         """Return the wavelength step.
@@ -1535,22 +1537,22 @@ class Spectrum(DataArray):
             Maximum wavelength.
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
+
         """
         if lmin is None:
             i1 = 0
+        elif unit is None:
+            i1 = max(0, int(lmin + 0.5))
         else:
-            if unit is None:
-                i1 = max(0, int(lmin + 0.5))
-            else:
-                i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
+            i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
+
         if lmax is None:
             i2 = self.shape[0]
+        elif unit is None:
+            i2 = min(self.shape[0], int(lmax + 0.5))
         else:
-            if unit is None:
-                i2 = min(self.shape[0], int(lmax + 0.5))
-            else:
-                i2 = min(self.shape[0],
-                         self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+            i2 = min(self.shape[0],
+                     self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
 
         if i1 == i2:
             raise ValueError('Minimum and maximum wavelengths are equal')
@@ -2845,6 +2847,9 @@ class Spectrum(DataArray):
             ax.semilogy(x, data, **kwargs)
         else:
             raise ValueError("Unknow stretch '{}'".format(stretch))
+
+        lmin, lmax = res.get_range()
+        ax.set_xlim(lmin, lmax)
 
         if noise:
             sigma = np.sqrt(res.var)
