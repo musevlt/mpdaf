@@ -1,7 +1,7 @@
 """pixtable.py Manages MUSE pixel table files."""
 
+from __future__ import absolute_import, division
 
-from __future__ import absolute_import
 import ctypes
 import datetime
 import itertools
@@ -13,9 +13,9 @@ import warnings
 import astropy.units as u
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
+from six.moves import range
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
-from ..obj.objs import is_float, is_int
 from ..tools.fits import add_mpdaf_method_keywords, copy_header
 
 try:
@@ -1264,11 +1264,11 @@ class PixTable(object):
             sky = [sky]
         if isinstance(lbda, tuple):
             lbda = [lbda]
-        if isinstance(ifu, (int, float)):
+        if np.isscalar(ifu):
             ifu = [ifu]
-        if isinstance(sl, (int, float)):
+        if np.isscalar(sl):
             sl = [sl]
-        if isinstance(stack, (int, float)):
+        if np.isscalar(stack):
             stack = [stack]
 
         if method == 'and':
@@ -1787,12 +1787,11 @@ class PixTable(object):
             mask = pixmask.maskcol
 
         # sigma clipped parameters
-        if is_int(nclip) or is_float(nclip):
-            nclip_low = nclip
-            nclip_up = nclip
+        if np.isscalar(nclip):
+            nclip_low, nclip_up = nclip, nclip
         else:
-            nclip_low = nclip[0]
-            nclip_up = nclip[1]
+            nclip_low, nclip_up = nclip
+
         # wavelength step
         lbda = self.get_lambda(unit=u.angstrom)
         lmin = np.min(lbda) - dlbda / 2.0

@@ -1,20 +1,26 @@
 """Test on Cube objects."""
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 import nose.tools
 from nose.plugins.attrib import attr
 
 import astropy.units as u
 import numpy as np
+import six
 
 from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
 from numpy import ma
 from numpy.testing import assert_almost_equal, assert_array_equal
 from nose.tools import assert_equal
-from operator import add, sub, mul, div
 from tempfile import NamedTemporaryFile
 
 from ..utils import generate_cube, generate_image, generate_spectrum
+
+if six.PY2:
+    from operator import add, sub, mul, div
+else:
+    from operator import add, sub, mul, truediv as div
 
 
 @attr(speed='fast')

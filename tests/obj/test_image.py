@@ -1,16 +1,26 @@
 """Test on Image objects."""
-from __future__ import absolute_import
+
+from __future__ import absolute_import, division
+
 import nose.tools
 from nose.plugins.attrib import attr
 
 import astropy.units as u
 import numpy as np
+import scipy.ndimage as ndi
+import six
+
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import assert_almost_equal
-from operator import add, sub, mul, div
+from six.moves import range
+
 from ..utils import (assert_image_equal, generate_image, generate_cube,
                      generate_spectrum, assert_masked_allclose)
-import scipy.ndimage as ndi
+
+if six.PY2:
+    from operator import add, sub, mul, div
+else:
+    from operator import add, sub, mul, truediv as div
 
 
 @attr(speed='fast')
@@ -423,7 +433,7 @@ def test_rebin_mean():
     data = np.arange(30).reshape(6, 5)
     image1 = Image(data=data, wcs=wcs, var=np.ones(data.shape) * 0.5)
     image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
-                unit_radius=None)
+                       unit_radius=None)
 
     # The test data array looks as follows:
     #
@@ -462,7 +472,7 @@ def test_rebin_mean():
     expected = np.ma.array(data=[[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]],
                            mask=[[False,False], [False,False], [True,True]])
     assert_masked_allclose(image2.var, expected)
-    
+
     # Check the WCS information.
 
     start = image2.get_start()

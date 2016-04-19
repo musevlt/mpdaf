@@ -10,24 +10,26 @@ Carole for more info at carole.clastres@univ-lyon1.fr
 lib_origin.py contains the methods that compose the ORIGIN software
 """
 
-from __future__ import absolute_import
-from astropy.table import Table, Column, join
-from astropy.utils.console import ProgressBar
+from __future__ import absolute_import, division
+
 import astropy.units as u
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path
-import time
 import sys
-from scipy.ndimage import measurements, morphology
+import time
+
+from astropy.table import Table, Column, join
+from astropy.utils.console import ProgressBar
+from numpy.fft import rfftn, irfftn
 from scipy import signal, stats, special
-import logging
+from scipy.ndimage import measurements, morphology
+from scipy.signal.signaltools import _next_regular, _centered
+from six.moves import range
 
 from ...obj import Cube, Image, Spectrum
-from ...sdetect import Source, SourceList
-
-from numpy.fft import rfftn, irfftn
-from scipy.signal.signaltools import _next_regular, _centered
+from ...sdetect import Source
 
 __version__ = 'ORIGIN_18122015'
 
@@ -528,7 +530,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
                    - np.mean(PSF_Moffat, axis=(1,2))[:, np.newaxis, np.newaxis]
     cube_fsf = np.empty(shape)
 
-    for i in ProgressBar(range(Nz)):
+    for i in ProgressBar(list(range(Nz))):
         cube_fsf[i,:,:] = signal.fftconvolve(cube_var[i,:,:],
                                   PSF_Moffat_m[i,:,:][::-1, ::-1], mode='same')
     del cube_var
@@ -538,7 +540,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     # Spatial part of the norm of the 3D atom
     logger.info('Step 2/5 Computing Spatial part of the norm of the 3D atoms')
     norm_fsf = np.empty(shape)
-    for i in ProgressBar(range(Nz)):
+    for i in ProgressBar(list(range(Nz))):
         norm_fsf[i,:,:] = signal.fftconvolve(inv_var[i,:,:],
                                   fsf_square[i,:,:][::-1, ::-1], mode='same')
     del fsf_square, inv_var
@@ -613,7 +615,7 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
 
     logger.info('Step 5/5 Computing second cube of correlation values')
 
-    for k in ProgressBar(range(1, Dico.shape[1])):
+    for k in ProgressBar(list(range(1, Dico.shape[1]))):
         # Second cube of correlation values
         d_j = Dico[:,k]
         d_j = d_j - np.mean(d_j)
@@ -979,8 +981,8 @@ def Compute_Referent_Voxel(correl, profile, cube_pval_correl,
     grp = measurements.find_objects(labeled_cube)
     argmax = [np.argmax(correl[grp[i]]) for i in range(Ngp)]
     correl_max = np.array([np.ravel(correl[grp[i]])[argmax[i]] for i in range(Ngp)])
-    z, y, x = np.meshgrid(range(correl.shape[0]), range(correl.shape[1]),
-                          range(correl.shape[2]), indexing='ij')
+    z, y, x = np.meshgrid(list(range(correl.shape[0])), list(range(correl.shape[1])),
+                          list(range(correl.shape[2])), indexing='ij')
     zpixRef = np.array([np.ravel(z[grp[i]])[argmax[i]] for i in range(Ngp)])
     ypixRef = np.array([np.ravel(y[grp[i]])[argmax[i]] for i in range(Ngp)])
     xpixRef = np.array([np.ravel(x[grp[i]])[argmax[i]] for i in range(Ngp)])
@@ -1051,12 +1053,12 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         profil1 = profil0[profil0>1e-13]
         long0 = profil1.shape[0]
         # half-length of the spectral profile
-        longz = long0/2
+        longz = long0 // 2
         # spectral range
         intz1 = max(0, z0 - longz)
         intz2 = min(cube_raw.shape[0], z0 + longz + 1)
         # Subcube on test
-        longxy = PSF_Moffat.shape[1]/2
+        longxy = PSF_Moffat.shape[1] // 2
         inty1 = max(0, y0 - longxy)
         inty2 = min(cube_raw.shape[1], y0 + longxy + 1)
         intx1 = max(0, x0 - longxy)
@@ -1255,7 +1257,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     Cat2_flux = []
     Cat_est_line_raw = []
     Cat_est_line_std = []
-    longxy = PSF_Moffat.shape[1]/2
+    longxy = PSF_Moffat.shape[1] // 2
 
     # Spatio-spectral grid
     grid_x1 = np.maximum(0, Cat1_T['x'] - grid_dxy)
@@ -1286,9 +1288,9 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
         flux = np.zeros(ngrid[it])
 
         # Estimation of a line on each voxel of the grid
-        z_f, y_f, x_f = np.meshgrid(range(grid_z1[it], grid_z2[it]),
-                                    range(grid_y1[it], grid_y2[it]),
-                                    range(grid_x1[it], grid_x2[it]),
+        z_f, y_f, x_f = np.meshgrid(list(range(grid_z1[it], grid_z2[it])),
+                                    list(range(grid_y1[it], grid_y2[it])),
+                                    list(range(grid_x1[it], grid_x2[it])),
                                     indexing='ij')
         z_f = z_f.ravel()
         y_f = y_f.ravel()
@@ -1418,7 +1420,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     profil0 = Dico[:, num_prof]
     profil1 = profil0[profil0>1e-20]
     long0 = profil1.shape[0]
-    longz = long0/2
+    longz = long0 // 2
 
     # size of the 3D atom along the spectral axis
     intz1 = max(0, z0 - longz)
@@ -1497,7 +1499,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     logger = logging.getLogger(__name__)
     logger.debug(whoami())
     t0 = time.time()
-    
+
     colF = []
     colF_id = []
     colF_x = []
@@ -1505,13 +1507,13 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     colF_xc = []
     colF_yc = []
     colF_nlines = []
-            
+
     num_source = 0
     col_id = np.arange(len(Cat0))
     col_x = Cat0['x']
     col_y = Cat0['y']
     col_tglr = Cat0['T_GLR']
-    
+
     size = len(col_id)
     with ProgressBar(size) as bar:
         while len(col_id) > 0:
@@ -1585,16 +1587,16 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
             colF_xc.append(x_centroid)
             colF_yc.append(y_centroid)
             colF_nlines.append(nb_lines)
-            
+
             # Suppress the voxels added in the catalogue
             col_id = col_id[~num0]
             col_x = col_x[~num0]
             col_y = col_y[~num0]
             col_tglr = col_tglr[~num0]
-            
+
             # update the progress bar
             bar.update()
-            
+
     CatF = Cat0[np.concatenate(colF)].copy()
     col_id = Column(name='ID', data=np.concatenate(colF_id))
     col_x = Column(name='x_circle', data=np.concatenate(colF_x))
@@ -1604,11 +1606,11 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     col_nlines = Column(name='nb_lines', data=np.concatenate(colF_nlines))
     CatF.add_columns([col_id, col_x, col_y, col_xc, col_yc, col_nlines],
                               indexes=[0, 0, 0, 0, 0, 0])
-    
+
     nid = len(np.unique(CatF['ID']))
     logger.info('{} sources identified in catalog after spatial merging'.format(nid))
     logger.debug('%s executed in %1.1fs'%(whoami(),time.time()-t0))
-    
+
     return CatF
 
 def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):

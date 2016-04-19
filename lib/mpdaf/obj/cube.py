@@ -1,6 +1,7 @@
 """cube.py manages Cube objects."""
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
+
 import astropy.units as u
 import multiprocessing
 import numpy as np
@@ -11,11 +12,12 @@ import types
 
 from astropy.io import fits as pyfits
 from numpy import ma
+from six.moves import range, zip
 
 from .coords import WCS, WaveCoord
 from .data import DataArray
 from .image import Image
-from .objs import is_float, is_int, UnitArray, UnitMaskedArray
+from .objs import is_int, UnitArray, UnitMaskedArray
 from .spectrum import Spectrum
 from ..tools import deprecated
 from ..tools.fits import add_mpdaf_method_keywords
@@ -74,7 +76,7 @@ def _print_multiprocessing_progress(processresult, num_tasks):
             sys.stdout.flush()
             break
         output = "\r Waiting for %i tasks to complete (%i%% done) ..." % (
-            num_tasks - completed, float(completed) / float(num_tasks) * 100.0)
+            num_tasks - completed, completed / num_tasks * 100.0)
         sys.stdout.write("\r\x1b[K" + output.__str__())
         sys.stdout.flush()
 
@@ -181,7 +183,7 @@ class Cube(DataArray):
 
         center = np.array(center)
 
-        if is_int(radius) or is_float(radius):
+        if np.isscalar(radius):
             circular = True
             radius2 = radius * radius
             radius = (radius, radius)
@@ -785,9 +787,9 @@ class Cube(DataArray):
                         / (other._data[:, np.newaxis, np.newaxis] ** 4)
                 else:
                     res._var = (other._var[:, np.newaxis, np.newaxis] *
-                               self._data * self._data + self._var *
-                               other._data[:, np.newaxis, np.newaxis] *
-                               other._data[:, np.newaxis, np.newaxis]) \
+                                self._data * self._data + self._var *
+                                other._data[:, np.newaxis, np.newaxis] *
+                                other._data[:, np.newaxis, np.newaxis]) \
                         / (other._data[:, np.newaxis, np.newaxis] ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -814,9 +816,9 @@ class Cube(DataArray):
                         / (other._data[np.newaxis, :, :] ** 4)
                 else:
                     res._var = (other._var[np.newaxis, :, :] *
-                               self._data * self._data + self._var *
-                               other._data[np.newaxis, :, :] *
-                               other._data[np.newaxis, :, :]) \
+                                self._data * self._data + self._var *
+                                other._data[np.newaxis, :, :] *
+                                other._data[np.newaxis, :, :]) \
                         / (other._data[np.newaxis, :, :] ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -842,7 +844,7 @@ class Cube(DataArray):
                         / (other._data ** 4)
                 else:
                     res._var = (other._var * self._data * self._data +
-                               self._var * other._data * other._data) \
+                                self._var * other._data * other._data) \
                         / (other._data ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -860,6 +862,9 @@ class Cube(DataArray):
                 raise IOError('Operation forbidden')
         else:
             return other.__div__(self)
+
+    __truediv__ = __div__
+    __rtruediv__ = __rdiv__
 
     def __getitem__(self, item):
         """Return the corresponding object:
@@ -1352,30 +1357,21 @@ class Cube(DataArray):
         """
         assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
         # new size is an integer multiple of the original size
-        sh = self.shape / np.asarray(factor)
+        sh = self.shape // np.asarray(factor)
+        newsh = (sh[0], factor[0], sh[1], factor[1], sh[2], factor[2])
+
         if self.mask is np.ma.nomask:
-            self._data = self._data.reshape(sh[0], factor[0], sh[1],
-                                            factor[1], sh[2], factor[2])\
-                                            .sum(1).sum(2).sum(3) \
-                                            / np.prod(factor)
+            n = np.prod(factor)
+            self._data = self._data.reshape(newsh).sum(1).sum(2).sum(3) / n
             if self._var is not None:
-                self._var = self._var.reshape(sh[0], factor[0], sh[1],
-                                            factor[1], sh[2], factor[2])\
-                                            .sum(1).sum(2).sum(3) \
-                                            / np.prod(factor)**2
+                self._var = self._var.reshape(newsh).sum(1).sum(2).sum(3) / n**2
         else:
-            mask_count = (~self.mask).reshape(sh[0], factor[0], sh[1],
-                                            factor[1], sh[2], factor[2])\
-                                            .sum(1).sum(2).sum(3)
-            self._data = self.data.reshape(sh[0], factor[0], sh[1],
-                                            factor[1], sh[2], factor[2])\
-                                            .sum(1).sum(2).sum(3).data / mask_count
+            mask_count = (~self.mask).reshape(newsh).sum(1).sum(2).sum(3)
+            self._data = self.data.reshape(newsh).sum(1).sum(2).sum(3).data / mask_count
             if self._var is not None:
-                self._var = self.var.reshape(sh[0], factor[0], sh[1],
-                                            factor[1], sh[2], factor[2])\
-                                            .sum(1).sum(2).sum(3).data \
-                                            / (mask_count * mask_count)
-            self._mask = (mask_count==0)
+                self._var = self.var.reshape(newsh).sum(1).sum(2).sum(3).data / \
+                    (mask_count * mask_count)
+            self._mask = mask_count == 0
         self._ndim = self._data.ndim
 
         # coordinates
@@ -1411,15 +1407,14 @@ class Cube(DataArray):
         """
         if is_int(factor):
             factor = (factor, factor, factor)
-        if not np.sometrue(np.mod(self.shape[0], factor[0])) \
-                and not np.sometrue(np.mod(self.shape[1], factor[1])) \
-                and not np.sometrue(np.mod(self.shape[2], factor[2])):
+
+        if not np.any(np.mod(self.shape, factor)):
             # new size is an integer multiple of the original size
             self._rebin_mean_(factor)
             return None
         else:
             factor = np.array(factor)
-            newshape = self.shape / factor
+            newshape = self.shape // factor
             n = self.shape - newshape * factor
 
             if n[0] == 0:
@@ -1430,8 +1425,9 @@ class Cube(DataArray):
                     n0_left = 0
                     n0_right = -n[0]
                 else:
-                    n0_left = n[0] / 2
+                    n0_left = n[0] // 2
                     n0_right = self.shape[0] - n[0] + n0_left
+
             if n[1] == 0:
                 n1_left = 0
                 n1_right = self.shape[1]
@@ -1440,8 +1436,9 @@ class Cube(DataArray):
                     n1_left = 0
                     n1_right = -n[1]
                 else:
-                    n1_left = n[1] / 2
+                    n1_left = n[1] // 2
                     n1_right = self.shape[1] - n[1] + n1_left
+
             if n[2] == 0:
                 n2_left = 0
                 n2_right = self.shape[2]
@@ -1450,7 +1447,7 @@ class Cube(DataArray):
                     n2_left = 0
                     n2_right = -n[2]
                 else:
-                    n2_left = n[2] / 2
+                    n2_left = n[2] // 2
                     n2_right = self.shape[2] - n[2] + n2_left
 
             cub = self[n0_left:n0_right, n1_left:n1_right, n2_left:n2_right]
@@ -1894,8 +1891,8 @@ class Cube(DataArray):
         vfunc = np.vectorize(self._med_)
         data = vfunc(g[0], g[1], g[2], factor[0], factor[1], factor[2])
         mask = self._mask.reshape(self.shape[0], factor[0],
-                                      self.shape[1], factor[1],
-                                      self.shape[2], factor[2])\
+                                  self.shape[1], factor[1],
+                                  self.shape[2], factor[2])\
             .sum(1).sum(2).sum(3)
         self._data = data
         self._mask = mask
@@ -1931,13 +1928,11 @@ class Cube(DataArray):
         factor = np.array(factor)
         factor = np.maximum(factor, [1, 1, 1])
         factor = np.minimum(factor, self.shape)
-        if not np.sometrue(np.mod(self.shape[0], factor[0])) \
-                and not np.sometrue(np.mod(self.shape[1], factor[1])) \
-                and not np.sometrue(np.mod(self.shape[2], factor[2])):
+        if not np.any(np.mod(self.shape, factor)):
             # new size is an integer multiple of the original size
             res = self.copy()
         else:
-            newshape = self.shape / factor
+            newshape = self.shape // factor
             n = self.shape - newshape * factor
 
             if n[0] == 0:
@@ -1948,7 +1943,7 @@ class Cube(DataArray):
                     n0_left = 0
                     n0_right = -n[0]
                 else:
-                    n0_left = n[0] / 2
+                    n0_left = n[0] // 2
                     n0_right = self.shape[0] - n[0] + n0_left
             if n[1] == 0:
                 n1_left = 0
@@ -1958,7 +1953,7 @@ class Cube(DataArray):
                     n1_left = 0
                     n1_right = -n[1]
                 else:
-                    n1_left = n[1] / 2
+                    n1_left = n[1] // 2
                     n1_right = self.shape[1] - n[1] + n1_left
             if n[2] == 0:
                 n2_left = 0
@@ -1968,7 +1963,7 @@ class Cube(DataArray):
                     n2_left = 0
                     n2_right = -n[2]
                 else:
-                    n2_left = n[2] / 2
+                    n2_left = n[2] // 2
                     n2_right = self.shape[2] - n[2] + n2_left
 
             res = self[n0_left:n0_right, n1_left:n1_right, n2_left:n2_right]
@@ -2017,7 +2012,8 @@ class Cube(DataArray):
         var = self._var
         mask = self._mask
         header = self.wave.to_header()
-        pv, qv = np.meshgrid(range(self.shape[1]), range(self.shape[2]),
+        pv, qv = np.meshgrid(list(range(self.shape[1])),
+                             list(range(self.shape[2])),
                              sparse=False, indexing='ij')
         pv = pv.ravel()
         qv = qv.ravel()
@@ -2065,7 +2061,7 @@ class Cube(DataArray):
                 result[:, p, q] = spe
 
             else:
-                if is_float(out[0]) or is_int(out[0]):
+                if np.isscalar(out[0]):
                     # f returns a number -> iterator returns an image
                     if init:
                         result = Image(wcs=self.wcs.copy(),
@@ -2175,7 +2171,7 @@ class Cube(DataArray):
                     init = False
                 result[k] = spe
             else:
-                if is_float(out[0]) or is_int(out[0]):
+                if np.isscalar(out[0]):
                     # f returns a number -> iterator returns a spectrum
                     if init:
                         result = Spectrum(wave=self.wave.copy(),
@@ -2215,6 +2211,7 @@ class Cube(DataArray):
                 # or if is_sum is True:
                 sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                 flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
+
         margin : float
             This off-band is offseted by margin wrt narrow-band limit.
         fband : float

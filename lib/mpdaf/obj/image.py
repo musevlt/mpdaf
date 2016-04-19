@@ -1,7 +1,7 @@
 """image.py manages image objects."""
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import logging
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -17,6 +17,7 @@ from scipy import ndimage as ndi
 from scipy.ndimage.interpolation import affine_transform
 from scipy.optimize import leastsq
 from scipy.stats import threshold
+from six.moves import range, zip
 
 from .coords import WCS, WaveCoord
 from .data import DataArray, is_valid_fits_file
@@ -661,6 +662,9 @@ class Image(DataArray):
         else:
             return other.__div__(self)
 
+    __truediv__ = __div__
+    __rtruediv__ = __rdiv__
+
     def get_step(self, unit=None):
         """Return the angular height and width of a pixel along the
         Y and X axes of the image array.
@@ -984,7 +988,7 @@ class Image(DataArray):
                  self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][1]]
                 for val in poly])
 
-        P, Q = np.meshgrid(range(self.shape[0]), range(self.shape[1]))
+        P, Q = np.meshgrid(list(range(self.shape[0])), list(range(self.shape[1])))
         b = np.dstack([P.ravel(), Q.ravel()])
 
         # use the matplotlib method to create a path wich is the polygon we
@@ -1590,7 +1594,7 @@ class Image(DataArray):
         def _struct(n):
             struct = np.zeros([n, n])
             for i in range(0, n):
-                dist = abs(i - (n / 2))
+                dist = abs(i - (n // 2))
                 struct[i][dist: abs(n - dist)] = 1
             return struct
 
@@ -1845,17 +1849,16 @@ class Image(DataArray):
               Radius array, EER array
         """
         if center is None:
-            i = self.shape[0] / 2
-            j = self.shape[1] / 2
+            i = self.shape[0] // 2
+            j = self.shape[1] // 2
+        elif unit_center is None:
+            i = center[0]
+            j = center[1]
         else:
-            if unit_center is None:
-                i = center[0]
-                j = center[1]
-            else:
-                pixcrd = self.wcs.sky2pix([center[0], center[1]],
-                                          nearest=True, unit=unit_center)
-                i = pixcrd[0][0]
-                j = pixcrd[0][1]
+            pixcrd = self.wcs.sky2pix([center[0], center[1]],
+                                      nearest=True, unit=unit_center)
+            i = pixcrd[0][0]
+            j = pixcrd[0][1]
 
         nmax = min(self.shape[0] - i, self.shape[1] - j, i, j)
         if etot is None:
@@ -1904,17 +1907,17 @@ class Image(DataArray):
         out : float array
         """
         if center is None:
-            i = self.shape[0] / 2
-            j = self.shape[1] / 2
+            i = self.shape[0] // 2
+            j = self.shape[1] // 2
+        elif unit_center is None:
+            i = center[0]
+            j = center[1]
         else:
-            if unit_center is None:
-                i = center[0]
-                j = center[1]
-            else:
-                pixcrd = self.wcs.sky2pix([[center[0], center[1]]],
-                                          unit=unit_center)
-                i = int(pixcrd[0][0] + 0.5)
-                j = int(pixcrd[0][1] + 0.5)
+            pixcrd = self.wcs.sky2pix([[center[0], center[1]]],
+                                      unit=unit_center)
+            i = int(pixcrd[0][0] + 0.5)
+            j = int(pixcrd[0][1] + 0.5)
+
         nmax = min(self.shape[0] - i, self.shape[1] - j, i, j)
         if etot is None:
             etot = (self.data - cont).sum()
@@ -2296,7 +2299,7 @@ class Image(DataArray):
                 / float(factor) + 1. / float(factor * 2) - 0.5
             fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis, :]).ravel()
             fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
-            pixcrd = np.array(zip(fp, fq))
+            pixcrd = np.array(list(zip(fp, fq)))
 
             e_gauss_fit = lambda v, p, q, data, w: \
                 w * (((gaussfit(v, p, q)).reshape(N, factor * factor).sum(1)
@@ -2725,7 +2728,7 @@ class Image(DataArray):
                 + 1 / float(factor * 2)
             fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis, :]).ravel()
             fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
-            pixcrd = np.array(zip(fp, fq))
+            pixcrd = np.array(list(zip(fp, fq)))
 
             e_moffat_fit = lambda v, p, q, data, w: \
                 w * (((moffatfit(v, p, q)).reshape(N, factor * factor).sum(1)
@@ -2982,7 +2985,7 @@ class Image(DataArray):
 
         # At this point the image dimensions are integer multiples of
         # the reduction factors. What is the shape of the output image?
-        newshape = (self.shape[0] / factor[0], self.shape[1] / factor[1])
+        newshape = (self.shape[0] // factor[0], self.shape[1] // factor[1])
 
         # Compute the number of unmasked pixels of the input image
         # that will contribute to each mean pixel in the output image.
@@ -4367,7 +4370,7 @@ class Image(DataArray):
         t.add_column(Column(np.zeros((len(t), 2)), name='offset_pix'))
         t.add_column(Column(np.zeros((len(t), 2)), name='offset_arc'))
         t.add_column(Column(np.zeros(len(t)), name='offset_peak'))
-        centers = zip(t['dec'], t['ra'])
+        centers = list(zip(t['dec'], t['ra']))
         info('%d centering sources found in catalog for %s', len(t), field)
 
         if plot:
@@ -5288,13 +5291,13 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
         if rot == 0:
             from scipy import special
 
-            X, Y = np.meshgrid(xrange(shape[0]), xrange(shape[1]))
-            pixcrd_min = np.array(zip(X.ravel(), Y.ravel())) - 0.5
+            X, Y = np.meshgrid(range(shape[0]), range(shape[1]))
+            pixcrd_min = np.array(list(zip(X.ravel(), Y.ravel()))) - 0.5
             # pixsky_min = wcs.pix2sky(pixcrd)
             xmin = (pixcrd_min[:, 1] - center[1]) / np.sqrt(2.0) / q_width
             ymin = (pixcrd_min[:, 0] - center[0]) / np.sqrt(2.0) / p_width
 
-            pixcrd_max = np.array(zip(X.ravel(), Y.ravel())) + 0.5
+            pixcrd_max = np.array(list(zip(X.ravel(), Y.ravel()))) + 0.5
             # pixsky_max = wcs.pix2sky(pixcrd)
             xmax = (pixcrd_max[:, 1] - center[1]) / np.sqrt(2.0) / q_width
             ymax = (pixcrd_max[:, 0] - center[0]) / np.sqrt(2.0) / p_width
@@ -5306,17 +5309,17 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
                 * (special.erf(ymax) - special.erf(ymin))
             data = np.reshape(data, (shape[1], shape[0])).T
         else:
-            X, Y = np.meshgrid(xrange(shape[0] * factor),
-                               xrange(shape[1] * factor))
+            X, Y = np.meshgrid(range(shape[0] * factor),
+                               range(shape[1] * factor))
             factor = float(factor)
-            pixcrd = np.array(zip(X.ravel() / factor, Y.ravel() / factor))
+            pixcrd = np.array(list(zip(X.ravel() / factor, Y.ravel() / factor)))
             # pixsky = wcs.pix2sky(pixcrd)
             data = gauss(pixcrd[:, 0], pixcrd[:, 1])
             data = (data.reshape(shape[1], factor, shape[0], factor)
                     .sum(1).sum(2) / factor / factor).T
     else:
-        X, Y = np.meshgrid(xrange(shape[0]), xrange(shape[1]))
-        pixcrd = np.array(zip(X.ravel(), Y.ravel()))
+        X, Y = np.meshgrid(range(shape[0]), range(shape[1]))
+        pixcrd = np.array(list(zip(X.ravel(), Y.ravel())))
         # data = gauss(pixcrd[:,1],pixcrd[:,0])
         data = gauss(pixcrd[:, 0], pixcrd[:, 1])
         data = np.reshape(data, (shape[1], shape[0])).T
@@ -5427,16 +5430,16 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
                  + (q - center[1]) * np.cos(theta)) / a / e) ** 2) ** (-n)
 
     if factor > 1:
-        X, Y = np.meshgrid(xrange(shape[0] * factor),
-                           xrange(shape[1] * factor))
+        X, Y = np.meshgrid(range(shape[0] * factor),
+                           range(shape[1] * factor))
         factor = float(factor)
-        pixcrd = np.array(zip(X.ravel() / factor, Y.ravel() / factor))
+        pixcrd = np.array(list(zip(X.ravel() / factor, Y.ravel() / factor)))
         data = moffat(pixcrd[:, 0], pixcrd[:, 1])
         data = (data.reshape(shape[1], factor, shape[0], factor)
                 .sum(1).sum(2) / factor / factor).T
     else:
-        X, Y = np.meshgrid(xrange(shape[0]), xrange(shape[1]))
-        pixcrd = np.array(zip(X.ravel(), Y.ravel()))
+        X, Y = np.meshgrid(range(shape[0]), range(shape[1]))
+        pixcrd = np.array(list(zip(X.ravel(), Y.ravel())))
         data = moffat(pixcrd[:, 0], pixcrd[:, 1])
         data = np.reshape(data, (shape[1], shape[0])).T
 

@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+
 import astropy.units as u
 import fnmatch
 import logging
 import numpy as np
 import os
+
 from astropy.io import fits
-from numpy import ma
+from six.moves import range
 
 from ..version import __version__
 
