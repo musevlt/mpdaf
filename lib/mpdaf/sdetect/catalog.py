@@ -7,7 +7,7 @@ import os
 import sys
 
 from astropy.coordinates import SkyCoord, search_around_sky
-from astropy.table import Table, hstack, vstack
+from astropy.table import Table, Column, hstack, vstack
 from astropy import units as u
 from matplotlib.patches import Ellipse
 
@@ -396,7 +396,7 @@ class Catalog(Table):
             except:
                 pass
 
-    def match(self, cat2, radius=1, colc1=('RA','DEC'), colc2=('RA','DEC')):
+    def match(self, cat2, radius=1, colc1=('RA','DEC'), colc2=('RA','DEC'), full_output=True):
         """Match elements of the current catalog with an other (in RA, DEC).
 
         Parameters
@@ -410,27 +410,54 @@ class Catalog(Table):
 
         Returns
         -------
-        dictionary
-        match1,nomatch1,match2,nomatch2,dist : astropy.Table, astropy.Table, astropy.Table, np.array
-            1- match table of matched elements in RA,DEC
-            2- sub-table of non matched elements of the current catalog
-            3- sub-table of non matched elements of the catalog cat2
+        if full_output is True
+        return match,nomatch1,nomatch2: astropy.Table, astropy.Table, astropy.Table
+        else return match: astropy.Table
+            match - match table of matched elements in RA,DEC
+            nomatch1 - sub-table of non matched elements of the current catalog
+            nomatch2 - sub-table of non matched elements of the catalog cat2
 
         """
         coord1 = SkyCoord(zip(self[colc1[0]], self[colc1[1]]), unit=(u.degree, u.degree))
         coord2 = SkyCoord(zip(cat2[colc2[0]], cat2[colc2[1]]), unit=(u.degree, u.degree))
         id2, d2d, d3d = coord1.match_to_catalog_sky(coord2) 
         kmatch = d2d < radius * u.arcsec
-        match1 = coord1[kmatch]
-        nomatch1 = self[~kmatch]
         id2match = id2[kmatch]
-        match2 = cat2[id2match]
-        nomatch2 = cat2[~id2match]
-        self._logger.info('Cat1 Nelt %d Match %d Not Matched %d'
-                          % (len(self), len(match1), len(nomatch1)))
-        self._logger.info('Cat2 Nelt %d Match %d Not Matched %d'
+        d2match = d2d[kmatch]
+        id1match = np.arange(len(id2match))     
+        # search non unique index
+        m = np.zeros_like(id2match, dtype=bool)
+        m[np.unique(id2match, return_index=True)[1]] = True
+        duplicate = id2match[~m]
+        if len(duplicate) > 0:
+            self._logger.debug('Found {} duplicate in matching catalogs'.format(len(duplicate)))
+            to_remove = []
+            for k in duplicate:
+                mask = id2match == k
+                idlist = np.arange(len(id2match))[mask]
+                to_remove.append(idlist[d2match[mask].argsort()[1:]].tolist())
+            id2match = np.delete(id2match, to_remove)
+            id1match = np.delete(id1match, to_remove)
+            d2match = np.delete(d2match, to_remove) 
+        match1 = self[id1match]
+        match2 = cat2[id2match]           
+        match = hstack([match1,match2], join_type='exact')
+        match.add_column(Column(data=d2match.to(u.arcsec), name='Distance', dtype=float))
+        if full_output:
+            id1notmatch = np.in1d(range(len(self)), id1match, assume_unique=True, invert=True)
+            id2notmatch = np.in1d(range(len(cat2)), id2match, assume_unique=True, invert=True)
+            nomatch2 = cat2[id2notmatch]
+            nomatch1 = self[id1notmatch]
+            self._logger.debug('Cat1 Nelt %d Matched %d Not Matched %d'
+                               % (len(self), len(match1), len(nomatch1)))
+            self._logger.debug('Cat2 Nelt %d Matched %d Not Matched %d'
                           % (len(cat2), len(match2), len(nomatch2)))
-        return {'match1':match1, 'match2':match2, 'dist':d2d[kmatch].to(u.arcsec), 'nomatch1':nomatch1, 'nomatch2':nomatch2}
+            return match, nomatch1, nomatch2
+        else:
+            self._logger.debug('Cat1 Nelt %d Cat2 Nelt %d Matched %d'
+                               % (len(self), len(cat2), len(match1)))
+            return match
+        
 
     def select(self, wcs, ra='RA', dec='DEC'):
         """Select all sources from catalog which are inside the WCS of image
