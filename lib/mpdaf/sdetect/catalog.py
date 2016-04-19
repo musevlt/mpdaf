@@ -421,8 +421,8 @@ class Catalog(Table):
             nomatch2 - sub-table of non matched elements of the catalog cat2
 
         """
-        coord1 = SkyCoord(zip(self[colc1[0]], self[colc1[1]]), unit=(u.degree, u.degree))
-        coord2 = SkyCoord(zip(cat2[colc2[0]], cat2[colc2[1]]), unit=(u.degree, u.degree))
+        coord1 = SkyCoord(self[colc1[0]], self[colc1[1]], unit=(u.degree, u.degree))
+        coord2 = SkyCoord(cat2[colc2[0]], cat2[colc2[1]], unit=(u.degree, u.degree))
         id2, d2d, d3d = coord1.match_to_catalog_sky(coord2)
         kmatch = d2d < radius * u.arcsec
         id2match = id2[kmatch]
@@ -487,6 +487,31 @@ class Catalog(Table):
                     and cen[1] <= wcs.naxis2:
                 ksel.append(k)
         return self[ksel]
+    
+    def edgedist(self, wcs, ra='RA', dec='DEC'):
+        """Return the smallest distance of all catalog sources center to the edge of the WCS of the given image
+
+        Parameters
+        ----------
+        wcs : `mpdaf.obj.WCS`
+            Image WCS
+        ra : string
+            Name of the column that contains RA values in degrees
+        dec : string
+            Name of the column that contains DEC values in degrees
+
+        Returns
+        -------
+        out : `numpy.array` in arcsec units
+
+        """
+        dim = np.array([wcs.naxis1,wcs.naxis2])
+        pix = wcs.sky2pix(np.array([self[dec],self[ra]]).T, unit=u.deg)
+        dist = np.hstack([pix,dim-pix]).min(axis=1)
+        step = wcs.get_step()[0]*u.deg
+        dist *= step.to(u.arcsec) 
+        return dist
+    
 
     def plot_symb(self, ax, wcs, ra='RA', dec='DEC',
                   symb=0.4, col='k', alpha=1.0, **kwargs):
