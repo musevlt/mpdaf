@@ -205,7 +205,7 @@ class Spectrum(DataArray):
                             res._var = other._var
                         else:
                             res._var = UnitArray(other._var, other.unit**2,
-                                                self.unit**2)
+                                                 self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res._var = self._var + other._var
@@ -280,14 +280,14 @@ class Spectrum(DataArray):
                             res._var = other._var
                         else:
                             res._var = UnitArray(other._var,
-                                                other.unit**2, self.unit**2)
+                                                 other.unit**2, self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res._var = self._var + other._var
                         else:
                             res._var = self._var + UnitArray(other._var,
-                                                           other.unit**2,
-                                                           self.unit**2)
+                                                             other.unit**2,
+                                                             self.unit**2)
                 return res
             else:
                 # spectrum - cube1 = cube2
@@ -314,8 +314,8 @@ class Spectrum(DataArray):
                             res._var = self._var + other._var
                         else:
                             res._var = other._var + UnitArray(self._var,
-                                                            self.unit**2,
-                                                            other.unit**2)
+                                                              self.unit**2,
+                                                              other.unit**2)
                 return res
 
     def __rsub__(self, other):
@@ -389,7 +389,7 @@ class Spectrum(DataArray):
                 res._var = self._var * other._data * other._data
             else:
                 res._var = (other._var * self._data * self._data +
-                           self._var * other._data * other._data)
+                            self._var * other._data * other._data)
             # unit
             res.unit = self.unit * other.unit
             # return
@@ -466,7 +466,7 @@ class Spectrum(DataArray):
                         / (other._data ** 4)
                 else:
                     res._var = (other._var * self._data * self._data +
-                               self._var * other._data * other._data) \
+                                self._var * other._data * other._data) \
                         / (other._data ** 4)
                 # unit
                 res.unit = self.unit / other.unit
@@ -825,12 +825,12 @@ class Spectrum(DataArray):
             # Calculate the index of the first pixel of the spectrum
             # that will be re-binned.
 
-            if margin == 'left' or n==1:
+            if margin == 'left' or n == 1:
                 ia = 0
             elif margin == 'right':
                 ia = n
             elif margin == 'center':
-                ia = n//2
+                ia = n // 2
             else:
                 raise ValueError('Unsupported margin: %s' % margin)
 
@@ -1065,7 +1065,7 @@ class Spectrum(DataArray):
                 self._var = var
 
             if self._mask is not np.ma.nomask:
-                self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var<=0)
+                self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var <= 0)
 
         else:
             self._var = None
@@ -1254,8 +1254,8 @@ class Spectrum(DataArray):
         if u.angstrom in self.unit.bases and unit is not u.angstrom:
             try:
                 return np.ma.sum(subspe.data *
-                              ((np.diff(d) * unit).to(u.angstrom).value)
-                              ) * self.unit * u.angstrom
+                                 ((np.diff(d) * unit).to(u.angstrom).value)
+                                 ) * self.unit * u.angstrom
             except:
                 return (subspe.data * np.diff(d)).sum() * self.unit * unit
         else:
@@ -2750,14 +2750,14 @@ class Spectrum(DataArray):
         data[-k:] = self._data[-2:-k - 2:-1]
 
         res._data = np.array([(f(lbda[i], step, size, **kwargs)
-                                              * data[i:i + size]).sum() for i in range(self.shape[0])])
+                               * data[i:i + size]).sum() for i in range(self.shape[0])])
         res._mask = self._mask
 
         if self._var is None:
             res._var = None
         else:
             res._var = np.array([(f(lbda[i], step, size, **kwargs)
-                                              * data[i:i + size]).sum() for i in range(self.shape[0])])
+                                  * data[i:i + size]).sum() for i in range(self.shape[0])])
         return res
 
     def peak_detection(self, kernel_size=None, unit=u.angstrom):

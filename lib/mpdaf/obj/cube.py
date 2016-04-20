@@ -216,7 +216,8 @@ class Cube(DataArray):
         imax += 1
         jmax += 1
 
-        mask = np.zeros((lmax-lmin, self.shape[1], self.shape[2]), dtype=bool)
+        mask = np.zeros((lmax - lmin, self.shape[1], self.shape[2]),
+                        dtype=bool)
         if circular:
             xx = np.arange(imin, imax) - center[0]
             yy = np.arange(jmin, jmax) - center[1]
@@ -420,7 +421,7 @@ class Cube(DataArray):
                             res._var = self._var + other._var[np.newaxis, :, :]
                         else:
                             res._var = self._var + UnitArray(other._var[np.newaxis, :, :],
-                                                           other.unit**2, self.unit**2)
+                                                             other.unit**2, self.unit**2)
 
                 return res
             else:
@@ -445,14 +446,14 @@ class Cube(DataArray):
                             res._var = other._var
                         else:
                             res._var = UnitArray(other._var, other.unit**2,
-                                                self.unit**2)
+                                                 self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res._var = self._var + other._var
                         else:
                             res._var = self._var + UnitArray(other._var,
-                                                           other.unit**2,
-                                                           self.unit**2)
+                                                             other.unit**2,
+                                                             self.unit**2)
                 return res
 
     def __radd__(self, other):
@@ -557,7 +558,7 @@ class Cube(DataArray):
                             res._var = self._var + other._var[np.newaxis, :, :]
                         else:
                             res._var = self._var + UnitArray(other._var[np.newaxis, :, :],
-                                                           other.unit**2, self.unit**2)
+                                                             other.unit**2, self.unit**2)
                 return res
             else:
                 # cube1 - cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]-cube2[k,j,i])
@@ -580,14 +581,14 @@ class Cube(DataArray):
                             res._var = other._var
                         else:
                             res._var = UnitArray(other._var, other.unit**2,
-                                                self.unit**2)
+                                                 self.unit**2)
                     else:
                         if other.unit == self.unit:
                             res._var = self._var + other._var
                         else:
                             res._var = self._var + UnitArray(other._var,
-                                                           other.unit**2,
-                                                           self.unit**2)
+                                                             other.unit**2,
+                                                             self.unit**2)
                 return res
 
     def __rsub__(self, other):
@@ -663,9 +664,9 @@ class Cube(DataArray):
                         * other._data[:, np.newaxis, np.newaxis]
                 else:
                     res._var = (other._var[:, np.newaxis, np.newaxis] *
-                               self._data * self._data + self._var *
-                               other._data[:, np.newaxis, np.newaxis] *
-                               other._data[:, np.newaxis, np.newaxis])
+                                self._data * self._data + self._var *
+                                other._data[:, np.newaxis, np.newaxis] *
+                                other._data[:, np.newaxis, np.newaxis])
                 # unit
                 res.unit = self.unit * other.unit
                 return res
@@ -689,14 +690,14 @@ class Cube(DataArray):
                         * other._data[np.newaxis, :, :]
                 else:
                     res._var = (other._var[np.newaxis, :, :] *
-                               self._data * self._data +
-                               self._var * other._data[np.newaxis, :, :] *
-                               other._data[np.newaxis, :, :])
+                                self._data * self._data +
+                                self._var * other._data[np.newaxis, :, :] *
+                                other._data[np.newaxis, :, :])
                 # unit
                 res.unit = self.unit * other.unit
                 return res
             else:
-                # cube1 * cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]*cube2[k,j,i])
+                # cube1 * cube2 = cube3
                 if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
@@ -714,7 +715,7 @@ class Cube(DataArray):
                     res._var = self._var * other._data * other._data
                 else:
                     res._var = (other._var * self._data * self._data +
-                               self._var * other._data * other._data)
+                                self._var * other._data * other._data)
                 # unit
                 res.unit = self.unit * other.unit
                 return res
@@ -824,7 +825,7 @@ class Cube(DataArray):
                 res.unit = self.unit / other.unit
                 return res
             else:
-                # cube1 / cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]/cube2[k,j,i])
+                # cube1 / cube2 = cube3
                 if self.shape[0] != other.shape[0] \
                         or self.shape[1] != other.shape[1] \
                         or self.shape[2] != other.shape[2]:
@@ -1204,7 +1205,7 @@ class Cube(DataArray):
             data = ma.mean(self.data, axis)
             if self._var is not None:
                 var = ma.sum(self.var, axis).filled(np.inf) \
-                      / ma.count(self.data, axis) ** 2
+                    / ma.count(self.data, axis) ** 2
             else:
                 var = None
             return Image.new_from_obj(self, data=data, var=var)
@@ -2019,11 +2020,11 @@ class Cube(DataArray):
         qv = qv.ravel()
         if var is None:
             processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
-                           None, self.unit, kargs)
+                            None, self.unit, kargs)
                            for p, q in zip(pv, qv)]
         else:
             processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
-                           var[:, p, q], self.unit, kargs)
+                            var[:, p, q], self.unit, kargs)
                            for p, q in zip(pv, qv)]
 
         processresult = pool.imap_unordered(_process_spe, processlist)
@@ -2122,11 +2123,11 @@ class Cube(DataArray):
         var = self._var
         if var is None:
             processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
-                           None, self.unit, kargs)
+                            None, self.unit, kargs)
                            for k in range(self.shape[0])]
         else:
             processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
-                           var[k, :, :], self.unit, kargs)
+                            var[k, :, :], self.unit, kargs)
                            for k in range(self.shape[0])]
 
         processresult = pool.imap_unordered(_process_ima, processlist)
@@ -2480,9 +2481,9 @@ def _process_spe(arglist):
         else:
             return pos, 'other', [out]
     except Exception as inst:
-        raise type(inst)(str(inst) + \
-            '\n The error occurred for the spectrum '\
-            '[:,%i,%i]' % (pos[0], pos[1]))
+        raise type(inst)(str(inst) +
+                         '\n The error occurred for the spectrum '
+                         '[:,%i,%i]' % (pos[0], pos[1]))
 
 
 def _process_ima(arglist):
@@ -2507,5 +2508,5 @@ def _process_ima(arglist):
             # f returns dtype -> iterator returns an array of dtype
             return k, 'other', [out]
     except Exception as inst:
-        raise type(inst)(str(inst) + '\n The error occurred '\
-            'for the image [%i,:,:]' % k)
+        raise type(inst)(str(inst) + '\n The error occurred '
+                         'for the image [%i,:,:]' % k)

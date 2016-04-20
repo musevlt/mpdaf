@@ -399,7 +399,7 @@ class Catalog(Table):
             except:
                 pass
 
-    def match(self, cat2, radius=1, colc1=('RA','DEC'), colc2=('RA','DEC'), full_output=True):
+    def match(self, cat2, radius=1, colc1=('RA', 'DEC'), colc2=('RA', 'DEC'), full_output=True):
         """Match elements of the current catalog with an other (in RA, DEC).
 
         Parameters
@@ -428,7 +428,7 @@ class Catalog(Table):
         kmatch = d2d < radius * u.arcsec
         id2match = id2[kmatch]
         d2match = d2d[kmatch]
-        id1match = id1[kmatch]     
+        id1match = id1[kmatch]
         # search non unique index
         m = np.zeros_like(id2match, dtype=bool)
         m[np.unique(id2match, return_index=True)[1]] = True
@@ -442,10 +442,10 @@ class Catalog(Table):
                 to_remove.append(idlist[d2match[mask].argsort()[1:]].tolist())
             id2match = np.delete(id2match, to_remove)
             id1match = np.delete(id1match, to_remove)
-            d2match = np.delete(d2match, to_remove) 
+            d2match = np.delete(d2match, to_remove)
         match1 = self[id1match]
-        match2 = cat2[id2match]           
-        match = hstack([match1,match2], join_type='exact')
+        match2 = cat2[id2match]
+        match = hstack([match1, match2], join_type='exact')
         match.add_column(Column(data=d2match.to(u.arcsec), name='Distance', dtype=float))
         if full_output:
             id1notmatch = np.in1d(range(len(self)), id1match, assume_unique=True, invert=True)
@@ -455,13 +455,12 @@ class Catalog(Table):
             self._logger.debug('Cat1 Nelt %d Matched %d Not Matched %d'
                                % (len(self), len(match1), len(nomatch1)))
             self._logger.debug('Cat2 Nelt %d Matched %d Not Matched %d'
-                          % (len(cat2), len(match2), len(nomatch2)))
+                               % (len(cat2), len(match2), len(nomatch2)))
             return match, nomatch1, nomatch2
         else:
             self._logger.debug('Cat1 Nelt %d Cat2 Nelt %d Matched %d'
                                % (len(self), len(cat2), len(match1)))
             return match
-        
 
     def select(self, wcs, ra='RA', dec='DEC'):
         """Select all sources from catalog which are inside the WCS of image
@@ -488,7 +487,7 @@ class Catalog(Table):
                     and cen[1] <= wcs.naxis2:
                 ksel.append(k)
         return self[ksel]
-    
+
     def edgedist(self, wcs, ra='RA', dec='DEC'):
         """Return the smallest distance of all catalog sources center to the edge of the WCS of the given image
 
@@ -506,13 +505,12 @@ class Catalog(Table):
         out : `numpy.array` in arcsec units
 
         """
-        dim = np.array([wcs.naxis1,wcs.naxis2])
-        pix = wcs.sky2pix(np.array([self[dec],self[ra]]).T, unit=u.deg)
-        dist = np.hstack([pix,dim-pix]).min(axis=1)
-        step = wcs.get_step()[0]*u.deg
-        dist *= step.to(u.arcsec) 
+        dim = np.array([wcs.naxis1, wcs.naxis2])
+        pix = wcs.sky2pix(np.array([self[dec], self[ra]]).T, unit=u.deg)
+        dist = np.hstack([pix, dim - pix]).min(axis=1)
+        step = wcs.get_step()[0] * u.deg
+        dist *= step.to(u.arcsec)
         return dist
-    
 
     def plot_symb(self, ax, wcs, ra='RA', dec='DEC',
                   symb=0.4, col='k', alpha=1.0, **kwargs):
