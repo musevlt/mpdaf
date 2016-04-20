@@ -11,62 +11,67 @@ import sys
 
 from astropy.io import fits as pyfits
 from astropy.table import Table
-from glob import glob
-from io import open
+from os.path import join
 from six.moves import range
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
+from ..tools import chdir
 
 __version__ = 2.1
 
+DATADIR = join(os.path.abspath(os.path.dirname(__file__)), 'muselet_data')
+CONFIG_FILES = ('default.sex', 'default.conv', 'default.nnw', 'default.param')
+CONFIG_FILES_NB = ('nb_default.sex', 'nb_default.conv', 'nb_default.nnw',
+                   'nb_default.param')
+
 
 def setup_config_files():
-    DIR = os.path.dirname(__file__) + '/muselet_data/'
-    files = ['default.sex', 'default.conv', 'default.nnw', 'default.param']
-    for f in files:
+    for f in CONFIG_FILES:
         try:
             if not os.path.isfile(f):
-                shutil.copy(DIR + f, './' + f)
+                shutil.copy(join(DATADIR, f), f)
         except:
             pass
 
 
 def setup_config_files_nb():
-    DIR = os.path.dirname(__file__) + '/muselet_data/'
-    files = ['nb_default.sex', 'nb_default.conv', 'nb_default.nnw', 'nb_default.param']
-    for f in files:
+    for f in CONFIG_FILES_NB:
         try:
             if not os.path.isfile(f[3:]):
-                shutil.copy(DIR + f, './' + f[3:])
+                shutil.copy(join(DATADIR, f), f[3:])
         except:
             pass
 
 
 def remove_files():
     files = ['default.sex', 'default.conv', 'default.nnw', 'default.param',
-             'emlines', 'emlines_small', 'BGR.cat', 'inv_variance.fits', 'segment.fits',
-             'white.fits', 'whiteb.fits', 'whiteg.fits', 'whiter.fits', 'detect.cat']
+             'emlines', 'emlines_small', 'BGR.cat', 'inv_variance.fits',
+             'segment.fits', 'white.fits', 'whiteb.fits', 'whiteg.fits',
+             'whiter.fits', 'detect.cat']
 
     for f in files:
         try:
             os.remove(f)
         except:
             pass
-    for f in glob('nb/*'):
-        os.remove(f)
-    os.removedirs('nb')
+    shutil.rmtree('nb')
+
 
 def write_white(data, mvar, size1, wcs, unit):
-    weight_data = np.ma.average(data[1:size1 - 1, :, :], weights=1. / mvar[1:size1 - 1, :, :], axis=0)
-    weight = Image(wcs=wcs, data=np.ma.filled(weight_data, np.nan), unit=unit, copy=False)
+    weight_data = np.ma.average(data[1:size1 - 1, :, :],
+                                weights=1. / mvar[1:size1 - 1, :, :], axis=0)
+    weight = Image(wcs=wcs, data=np.ma.filled(weight_data, np.nan), unit=unit,
+                   copy=False)
     weight.write('white.fits', savemask='nan')
+
 
 def write_inv_variance(expmap, mvar, size1, wcs, unit):
     if not expmap:
         mcentralvar = mvar[2: size1 - 3, :, :]
         fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
-        fullvar = Image(wcs=wcs, data=np.ma.filled(fullvar_data, np.nan), unit=u.Unit(1) / (unit**2), copy=False)
+        fullvar = Image(wcs=wcs, data=np.ma.filled(fullvar_data, np.nan),
+                        unit=u.Unit(1) / (unit**2), copy=False)
     else:
         fullvar = expmap.mean(axis=0)
     fullvar.write('inv_variance.fits', savemask='nan')
@@ -74,11 +79,16 @@ def write_inv_variance(expmap, mvar, size1, wcs, unit):
 
 def write_rgb(data, mvar, size1, wcs, unit):
     nsfilter = int(size1 / 3.0)
-    bdata = np.ma.average(data[1:nsfilter, :, :], weights=1. / mvar[1:nsfilter, :, :], axis=0)
+    bdata = np.ma.average(data[1:nsfilter, :, :],
+                          weights=1. / mvar[1:nsfilter, :, :], axis=0)
     bdata = np.ma.filled(bdata, np.nan)
-    gdata = np.ma.average(data[nsfilter:2 * nsfilter, :, :], weights=1. / mvar[nsfilter:2 * nsfilter, :, :], axis=0)
+    gdata = np.ma.average(data[nsfilter:2 * nsfilter, :, :],
+                          weights=1. / mvar[nsfilter:2 * nsfilter, :, :],
+                          axis=0)
     gdata = np.ma.filled(gdata, np.nan)
-    rdata = np.ma.average(data[2 * nsfilter:size1 - 1, :, :], weights=1. / mvar[2 * nsfilter:size1 - 1, :, :], axis=0)
+    rdata = np.ma.average(data[2 * nsfilter:size1 - 1, :, :],
+                          weights=1. / mvar[2 * nsfilter:size1 - 1, :, :],
+                          axis=0)
     rdata = np.ma.filled(rdata, np.nan)
     r = Image(wcs=wcs, data=rdata, unit=unit, copy=False)
     g = Image(wcs=wcs, data=gdata, unit=unit, copy=False)
@@ -87,14 +97,16 @@ def write_rgb(data, mvar, size1, wcs, unit):
     g.write('whiteg.fits', savemask='nan')
     b.write('whiteb.fits', savemask='nan')
 
-def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs, unit, cmd_sex, cubename, data_header):
+
+def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
+             unit, cmd_sex, cubename, data_header):
 
     try:
         os.mkdir("nb")
     except:
         pass
 
-    if(nbcube):
+    if nbcube:
         outnbcube = np.empty(data.shape, dtype=np.float32)
 
     f2 = open("nb/dosex", 'w')
@@ -102,48 +114,60 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs, un
     fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
 
     for k in range(2, size1 - 3):
-        sys.stdout.write("Narrow band:%d/%d" % (k, size1 - 3) + "\r")
+        sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
         leftmin = max(0, k - 2 - delta)
         leftmax = k - 2
         rightmin = k + 3
         rightmax = min(size1, k + 3 + delta)
-        imslice = np.ma.average(data[k - 2:k + 3, :, :], weights=fwcube / mvar[k - 2:k + 3, :, :], axis=0)
-        if(leftmax == 1):
+        imslice = np.ma.average(data[k - 2:k + 3, :, :],
+                                weights=fwcube / mvar[k - 2:k + 3, :, :],
+                                axis=0)
+        if leftmax == 1:
             contleft = data[0, :, :]
-        elif(leftmax > leftmin + 1):
+        elif leftmax > leftmin + 1:
             contleft = np.ma.median(data[leftmin:leftmax, :, :], axis=0)
-        elif(rightmax == size1):
+        elif rightmax == size1:
             contleft = data[-1, :, :]
         else:
             contleft = data[0, :, :]
-        if(rightmax > rightmin):
+
+        if rightmax > rightmin:
             contright = np.ma.median(data[rightmin:rightmax, :, :], axis=0)
         else:
             contright = data[0, :, :]
+
         sizeleft = leftmax - leftmin
         sizeright = rightmax - rightmin
-        contmean = (sizeleft * contleft + sizeright * contright) / (sizeleft + sizeright)
+        contmean = ((sizeleft * contleft + sizeright * contright) /
+                    (sizeleft + sizeright))
         imnb = Image(wcs=wcs, data=np.ma.filled(imslice - contmean, np.nan),
-                         unit=unit, copy=False)
+                     unit=unit, copy=False)
         kstr = "%04d" % k
         imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
-        if(nbcube):
+
+        if nbcube:
             outnbcube[k, :, :] = imnb.data.data[:, :]
+
         if expmap is None:
-            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat nb' + kstr + '.fits\n')
+            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
+                     kstr + '.cat nb' + kstr + '.fits\n')
         else:
             expmap[k, :, :].write('nb/exp' + kstr + '.fits', savemask='nan')
-            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' + kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' + kstr + '.fits\n')
+            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
+                     kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' +
+                     kstr + '.fits\n')
 
     sys.stdout.write("\n")
     sys.stdout.flush()
     f2.close()
-    if(nbcube):
+
+    if nbcube:
         outnbcubename = 'NB_' + os.path.basename(cubename)
         pyfits.writeto(outnbcubename, outnbcube, data_header, clobber=True)
 
 
-def step1(logger, cubename, expmapcube, fw, nbcube, cmd_sex, delta):
+def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
+    logger = logging.getLogger(__name__)
     logger.info("muselet - Opening: " + cubename)
     c = Cube(cubename, copy=False, dtype=np.float32)
 
@@ -151,9 +175,7 @@ def step1(logger, cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     mvar[np.isnan(mvar)] = np.inf
     c._var = None
 
-    size1 = c.shape[0]
-    size2 = c.shape[1]
-    size3 = c.shape[2]
+    size1, size2, size3 = c.shape
 
     if not expmapcube:
         expmap = None
@@ -161,17 +183,22 @@ def step1(logger, cubename, expmapcube, fw, nbcube, cmd_sex, delta):
         logger.info("muselet - Opening exposure map cube: " + expmapcube)
         expmap = Cube(expmapcube)
 
-    logger.info("muselet - STEP 1: creates white light, variance, RGB and narrow-band images")
+    logger.info("muselet - STEP 1: creates white light, variance, RGB and "
+                "narrow-band images")
 
     write_white(c.data, mvar, size1, c.wcs, c.unit)
     write_inv_variance(expmap, mvar, size1, c.wcs, c.unit)
     write_rgb(c.data, mvar, size1, c.wcs, c.unit)
-    write_nb(c.data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, c.wcs, c.unit, cmd_sex, cubename, c.data_header)
+    write_nb(c.data, mvar, expmap, size1, size2, size3, fw, nbcube, delta,
+             c.wcs, c.unit, cmd_sex, cubename, c.data_header)
 
-def step2(logger, cmd_sex):
-    logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and narrow-band images")
-    # tests here if the files default.sex, default.conv, default.nnw and default.param exist.
-    # Otherwise copy them
+
+def step2(cmd_sex):
+    logger = logging.getLogger(__name__)
+    logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and "
+                "narrow-band images")
+    # tests here if the files default.sex, default.conv, default.nnw and
+    # default.param exist.  Otherwise copy them
     setup_config_files()
 
     subprocess.Popen(cmd_sex + ' white.fits', shell=True).wait()
@@ -197,23 +224,20 @@ def step2(logger, cmd_sex):
     os.remove('G.cat')
     os.remove('R.cat')
 
-    try:
-        os.chdir("nb")
-    except:
-        logger.error("muselet - ERROR: missing nb directory")
-        return
+    with chdir('nb'):
+        # tests here if the files default.sex, default.conv, default.nnw and
+        # default.param exist.  Otherwise copy them
+        setup_config_files_nb()
+        shutil.copy('../inv_variance.fits', 'inv_variance.fits')
+        st = os.stat('dosex')
+        os.chmod('dosex', st.st_mode | stat.S_IEXEC)
+        subprocess.Popen('./dosex', shell=True).wait()
 
-    # tests here if the files default.sex, default.conv, default.nnw and default.param exist.
-    # Otherwise copy them
-    setup_config_files_nb()
-    shutil.copy('../inv_variance.fits', 'inv_variance.fits')
-    st = os.stat('dosex')
-    os.chmod('dosex', st.st_mode | stat.S_IEXEC)
-    subprocess.Popen('./dosex', shell=True).wait()
-    os.chdir("..")
 
-def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
-    logger.info("muselet - STEP 3: merge SExtractor catalogs and measure redshifts")
+def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
+    logger = logging.getLogger(__name__)
+    logger.info("muselet - STEP 3: merge SExtractor catalogs and measure "
+                "redshifts")
 
     c = Cube(cubename)
 
@@ -253,29 +277,34 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
     S_xline = []
     S_yline = []
     S_catID = []
+
     for i in range(3, nslices - 14):
         ll = wlmin + dw * i
         flagsky = 0
+
         if len(skyclean) > 0:
             for (skylmin, skylmax) in skyclean:
-                if(ll > skylmin and ll < skylmax):
+                if ll > skylmin and ll < skylmax:
                     flagsky = 1
-        if(flagsky == 0):
+
+        if flagsky == 0:
             slicename = "nb/nb%04d.cat" % i
             t = Table.read(slicename, format='ascii.sextractor')
             for line in t:
                 xline = line['X_IMAGE']
                 yline = line['Y_IMAGE']
-                if(fullvar.data[int(yline - 1), int(xline - 1)] > cleanlimit):
+                if fullvar.data[int(yline - 1), int(xline - 1)] > cleanlimit:
                     fline = 10.0 ** (0.4 * (25. - float(line['MAG_APER'])))
                     eline = float(line['MAGERR_APER']) * fline * (2.3 / 2.5)
                     flag = 0
                     distmin = -1
-                    distlist = (xline - tBGR['X_IMAGE']) ** 2.0 + (yline - tBGR['Y_IMAGE']) ** 2.0
+                    distlist = ((xline - tBGR['X_IMAGE']) ** 2.0 +
+                                (yline - tBGR['Y_IMAGE']) ** 2.0)
                     ksel = np.where(distlist < radius ** 2.0)
+
                     for j in ksel[0]:
                         if(fline > 5.0 * eline):
-                            if((flag <= 0)or(distlist[j] < distmin)):
+                            if flag <= 0 or distlist[j] < distmin:
                                 idmin = tBGR['NUMBER'][j]
                                 distmin = distlist[j]
                                 magB = tBGR['MAG_APER_B'][j]
@@ -288,13 +317,14 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
                                 yline = tBGR['Y_IMAGE'][j]
                                 flag = 1
                         else:
-                            if(fline < -5 * eline):
+                            if fline < -5 * eline:
                                 idmin = tBGR['NUMBER'][j]
                                 distmin = distlist[j]
                                 flag = -2
                             else:
                                 flag = -1
-                    if(flag == 1):
+
+                    if flag == 1:
                         C_ll.append(ll)
                         C_idmin.append(idmin)
                         C_fline.append(fline)
@@ -310,7 +340,8 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
                         C_catID.append(i)
                         if(idmin > maxidc):
                             maxidc = idmin
-                    if (flag == 0) and (ll < 9300.0):
+
+                    if flag == 0 and ll < 9300.0:
                         S_ll.append(ll)
                         S_fline.append(fline)
                         S_eline.append(eline)
@@ -325,11 +356,12 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
     for i in range(nC):
         fl = 0
         for j in range(nC):
-            if((i != j) and (C_idmin[i] == C_idmin[j]) and (np.abs(C_ll[j] - C_ll[i]) < (3.00))):
+            if ((i != j) and (C_idmin[i] == C_idmin[j]) and
+                    (np.abs(C_ll[j] - C_ll[i]) < (3.00))):
                 if(C_fline[i] < C_fline[j]):
                     flags[i] = 0
                 fl = 1
-        if(fl == 0):  # identification of single line emissions
+        if fl == 0:  # identification of single line emissions
             flags[i] = 2
 
     # Sources list
@@ -340,9 +372,10 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
     raw_catalog = SourceList()
     idraw = 0
     for i in range(nC):
-        if (flags[i] == 1):
+        if flags[i] == 1:
             idraw = idraw + 1
-            dec, ra = c.wcs.pix2sky([C_yline[i] - 1, C_xline[i] - 1], unit=u.deg)[0]
+            dec, ra = c.wcs.pix2sky([C_yline[i] - 1, C_xline[i] - 1],
+                                    unit=u.deg)[0]
             s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
             s.add_mag('MUSEB', C_magB[i], C_emagB[i])
             s.add_mag('MUSEG', C_magG[i], C_emagG[i])
@@ -373,7 +406,8 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
         for i in range(nC):
             if (C_idmin[i] == r) and (flags[i] == 1):
                 if len(lbdas) == 0:
-                    dec, ra = c.wcs.pix2sky([C_yline[i] - 1, C_xline[i] - 1], unit=u.deg)[0]
+                    dec, ra = c.wcs.pix2sky([C_yline[i] - 1, C_xline[i] - 1],
+                                            unit=u.deg)[0]
                     s = Source.from_data(ID=r, ra=ra, dec=dec, origin=origin)
                     s.add_mag('MUSEB', C_magB[i], C_emagB[i])
                     s.add_mag('MUSEG', C_magG[i], C_emagG[i])
@@ -399,11 +433,11 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
             continuum_lines.append(s)
 
     if len(continuum_lines) > 0:
-        logger.info("muselet - %d continuum lines detected" % len(continuum_lines))
+        logger.info("muselet - %d continuum lines detected",
+                    len(continuum_lines))
     else:
         logger.info("muselet - no continuum lines detected")
 
-    #
     singflags = np.ones(nS)
     S2_ll = []
     S2_fline = []
@@ -416,7 +450,8 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
         fl = 0
         xref = S_xline[i]
         yref = S_yline[i]
-        ksel = np.where((xref - S_xline) ** 2.0 + (yref - S_yline) ** 2.0 < (radius / 2.0) ** 2.0)  # spatial distance
+        ksel = np.where((xref - S_xline) ** 2.0 + (yref - S_yline) ** 2.0 <
+                        (radius / 2.0) ** 2.0)  # spatial distance
         for j in ksel[0]:
             if (i != j) and (np.abs(S_ll[j] - S_ll[i]) < 3.0):
                 if S_fline[i] < S_fline[j]:
@@ -432,11 +467,13 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
             S2_yline.append(S_yline[i])
             S2_catID.append(S_catID[i])
 
-    # output single lines catalogs here:S2_ll,S2_fline,S2_eline,S2_xline,S2_yline,S2_catID
+    # output single lines catalogs here:S2_ll,S2_fline,S2_eline,S2_xline,
+    # S2_yline,S2_catID
     nlines = len(S2_ll)
     for i in range(nlines):
         idraw = idraw + 1
-        dec, ra = c.wcs.pix2sky([S2_yline[i] - 1, S2_xline[i] - 1], unit=u.deg)[0]
+        dec, ra = c.wcs.pix2sky([S2_yline[i] - 1, S2_xline[i] - 1],
+                                unit=u.deg)[0]
         s = Source.from_data(ID=idraw, ra=ra, dec=dec, origin=origin)
         lbdas = [S2_ll[i]]
         fluxes = [S2_fline[i]]
@@ -469,14 +506,17 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
             fluxes = []
             err_fluxes = []
 
-            dec, ra = c.wcs.pix2sky([S2_yline[i] - 1, S2_xline[i] - 1], unit=u.deg)[0]
+            dec, ra = c.wcs.pix2sky([S2_yline[i] - 1, S2_xline[i] - 1],
+                                    unit=u.deg)[0]
             s = Source.from_data(ID=ising, ra=ra, dec=dec, origin=origin)
             lbdas.append(S2_ll[i])
             fluxes.append(S2_fline[i])
             err_fluxes.append(S2_eline[i])
             ima = Image('nb/nb%04d.fits' % S2_catID[i])
             s.add_image(ima, 'NB%04d' % int(S2_ll[i]), ima_size)
-            ksel = np.where(((S2_xline[i] - S2_xline) ** 2.0 + (S2_yline[i] - S2_yline) ** 2.0 < radius ** 2.0) & (flags == 0))
+            ksel = np.where(((S2_xline[i] - S2_xline) ** 2.0 +
+                             (S2_yline[i] - S2_yline) ** 2.0 <
+                             radius ** 2.0) & (flags == 0))
             for j in ksel[0]:
                 if(j != i):
                     lbdas.append(S2_ll[j])
@@ -506,13 +546,17 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
         logger.info("muselet - no single lines detected")
 
     # redshift of continuum objects
-    path = os.path.dirname(__file__) + '/muselet_data/'
     if not os.path.isfile('emlines'):
-        shutil.copy(path + 'emlines', 'emlines')
+        shutil.copy(join(DATADIR, 'emlines'), 'emlines')
     if not os.path.isfile('emlines_small'):
-        shutil.copy(path + 'emlines_small', 'emlines_small')
-    eml = dict(np.loadtxt("emlines", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')}))
-    eml2 = dict(np.loadtxt("emlines_small", dtype={'names': ('lambda', 'lname'), 'formats': ('f', 'S20')}))
+        shutil.copy(join(DATADIR, 'emlines_small'), 'emlines_small')
+
+    eml = dict(np.loadtxt("emlines",
+                          dtype={'names': ('lambda', 'lname'),
+                                 'formats': ('f', 'S20')}))
+    eml2 = dict(np.loadtxt("emlines_small",
+                           dtype={'names': ('lambda', 'lname'),
+                                  'formats': ('f', 'S20')}))
 
     logger.info("muselet - estimating the best redshift")
     for source in continuum_lines:
@@ -541,93 +585,104 @@ def step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max):
     return continuum_lines, single_lines, raw_catalog
 
 
-def muselet(cubename, step=1, delta=20, fw=[0.26, 0.7, 1., 0.7, 0.26], radius=4.0, ima_size=21, nlines_max=25, clean=0.5, nbcube=True, expmapcube=None, skyclean=[(5573.5, 5578.8), (6297.0, 6300.5)], del_sex=False):
-    """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based python tool
-    to detect emission lines in a datacube. It has been developed by Johan Richard
-    (johan.richard@univ-lyon1.fr)
+def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
+            radius=4.0, ima_size=21, nlines_max=25, clean=0.5, nbcube=True,
+            expmapcube=None, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
+            del_sex=False, workdir='.'):
+    """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based
+    python tool to detect emission lines in a datacube. It has been developed
+    by Johan Richard (johan.richard@univ-lyon1.fr)
 
     Parameters
     ----------
-    cubename : string
-               Name of the MUSE cube.
-    step   : integer in {1,2,3}
-             Starting step for MUSELET to run.
-             (1) produces the narrow-band images
-             (2) runs SExtractor
-             (3) merges catalogs and measure redshifts,
-    delta  : integer
-             Size of the two median continuum estimates to be taken
-             on each side of the narrow-band image (in MUSE wavelength planes).
-             Default is 20 planes, or 25 Angstroms.
-    fw     : list of 5 floats
-             Define the weights on the 5 central wavelength planes
-             when estimated the line-profile-weighted flux
-             in the narrow-band images
-    radius : double
-             Radius in spatial pixels (default=4) within which emission lines
-             are merged spatially into the same object.
-    ima_size : integer
-               Size of the extracted images in pixels.
-    nlines_max : integer
-                 Maximum number of lines detected per object.
-    clean  : Float
-             Removing sources at a fraction of the the max_weight level.
-    nbcube : Boolean
-             Flag to produce an output datacube containing all narrow-band images
-    expmapcube : string
-             Name of the associated exposure map cube (to be used as a weight map for SExtractor)
+    cubename : str
+        Name of the MUSE cube.
+    step : int in {1,2,3}
+        Starting step for MUSELET to run:
+
+        - (1) produces the narrow-band images
+        - (2) runs SExtractor
+        - (3) merges catalogs and measure redshifts
+
+    delta : int
+        Size of the two median continuum estimates to be taken
+        on each side of the narrow-band image (in MUSE wavelength planes).
+        Default is 20 planes, or 25 Angstroms.
+    fw : list of 5 floats
+        Define the weights on the 5 central wavelength planes when estimated
+        the line-profile-weighted flux in the narrow-band images.
+    radius : float
+        Radius in spatial pixels (default=4) within which emission lines
+        are merged spatially into the same object.
+    ima_size : int
+        Size of the extracted images in pixels.
+    nlines_max : int
+        Maximum number of lines detected per object.
+    clean : float
+        Removing sources at a fraction of the the max_weight level.
+    nbcube : bool
+        Flag to produce an output datacube containing all narrow-band images
+    expmapcube : str
+        Name of the associated exposure map cube (to be used as a weight map
+        for SExtractor)
     skyclean : array of float tuples
-             List of wavelength ranges to exclude from the raw detections
-    del_sex  : boolean
-              If True, configuration files and intermediate files used by sextractor are removed.
+        List of wavelength ranges to exclude from the raw detections
+    del_sex : bool
+        If True, configuration files and intermediate files used by sextractor
+        are removed.
+    workdir : str
+        Working directory, default is the current directory.
 
     Returns
     -------
-    continuum,single,raw : `mpdaf.sdetect.SourceList`, `mpdaf.sdetect.SourceList`, `mpdaf.sdetect.SourceList`
-    continuum             : List of detected sources that contains emission lines associated with continuum detection
-    single                : List of detected sources that contains emission lines not associated with continuum detection
-    raw                   : List of detected sources  before the merging procedure.
+    continuum, single, raw : `~mpdaf.sdetect.SourceList`, `~mpdaf.sdetect.SourceList`, `~mpdaf.sdetect.SourceList`
+        - continuum : List of detected sources that contains emission lines
+            associated with continuum detection
+        - single : List of detected sources that contains emission lines not
+            associated with continuum detection
+        - raw : List of detected sources  before the merging procedure.
+
     """
     logger = logging.getLogger(__name__)
 
-    if(step != 1 and step != 2 and step != 3):
+    if step not in (1, 2, 3):
         logger.error("muselet - ERROR: step must be 1, 2 or 3")
         logger.error("muselet - STEP 1: creates images from cube")
         logger.error("muselet - STEP 2: runs SExtractor")
         logger.error("muselet - STEP 3: merge catalogs and measure redshifts")
         return
+
     if len(fw) != 5:
         logger.error("muselet - len(fw) != 5")
+
     try:
         fw = np.array(fw, dtype=np.float)
     except:
         logger.error('muselet - fw is not an array of float')
 
     try:
-        subprocess.check_call(['sex'])
+        subprocess.check_call(['sex', '-v'])
         cmd_sex = 'sex'
     except OSError:
         try:
-            subprocess.check_call(['sextractor'])
+            subprocess.check_call(['sextractor', '-v'])
             cmd_sex = 'sextractor'
         except OSError:
             raise OSError('SExtractor not found')
 
-    if(step == 1):
+    with chdir(workdir):
+        if step == 1:
+            step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta)
 
-        step1(logger, cubename, expmapcube, fw, nbcube, cmd_sex, delta)
+        if step <= 2:
+            step2(cmd_sex)
 
-    if(step <= 2):
+        if step <= 3:
+            continuum_lines, single_lines, raw_catalog = step3(
+                cubename, ima_size, clean, skyclean, radius, nlines_max)
 
-        step2(logger, cmd_sex)
-
-    if(step <= 3):
-
-        continuum_lines, single_lines, raw_catalog = step3(logger, cubename, ima_size, clean, skyclean, radius, nlines_max)
-
-
-    if del_sex:
-        remove_files()
+        if del_sex:
+            remove_files()
 
     return continuum_lines, single_lines, raw_catalog
 
