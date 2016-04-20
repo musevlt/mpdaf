@@ -1726,11 +1726,12 @@ class Source(object):
         if self.lines is not None:
             if isinstance(self.lines['LINE'], MaskedColumn):
                 self.lines['LINE'] = self.lines['LINE'].filled('')
-            subtab1 = self.lines[self.lines['LINE'] != ""]
+
+            subtab1 = self.lines[self.lines['LINE'] != b'']
             subtab1.sort('FLUX')
             subtab1.reverse()
             n1 = len(subtab1)
-            subtab2 = self.lines[self.lines['LINE'] == ""]
+            subtab2 = self.lines[self.lines['LINE'] == b'']
             subtab2.sort('FLUX')
             subtab2.reverse()
             n2 = len(subtab2)
