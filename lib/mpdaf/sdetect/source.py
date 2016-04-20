@@ -929,7 +929,7 @@ class Source(object):
                     matchkey, matchval, add_if_not_matched = match
 
             if match is not None and matchkey in self.lines.colnames:
-                l = np.argwhere(self.lines[matchkey] == matchval)
+                l = np.argwhere(self.lines[matchkey] == six.b(matchval))
                 if len(l) > 0:
                     for col, val, unit in zip(cols, values, units):
                         if unit is None or unit == self.lines[col].unit:
@@ -1175,7 +1175,7 @@ class Source(object):
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
 
-        z = self.z['Z'][self.z['Z_DESC'] == z_desc]
+        z = self.z['Z'][self.z['Z_DESC'] == six.b(z_desc)]
 
         if z > 0:
             if eml is None:
