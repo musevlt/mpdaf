@@ -424,10 +424,11 @@ class Catalog(Table):
         coord1 = SkyCoord(self[colc1[0]], self[colc1[1]], unit=(u.degree, u.degree))
         coord2 = SkyCoord(cat2[colc2[0]], cat2[colc2[1]], unit=(u.degree, u.degree))
         id2, d2d, d3d = coord1.match_to_catalog_sky(coord2)
+        id1 = np.arange(len(self))
         kmatch = d2d < radius * u.arcsec
         id2match = id2[kmatch]
         d2match = d2d[kmatch]
-        id1match = np.arange(len(id2match))     
+        id1match = id1[kmatch]     
         # search non unique index
         m = np.zeros_like(id2match, dtype=bool)
         m[np.unique(id2match, return_index=True)[1]] = True
