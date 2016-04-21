@@ -8,7 +8,7 @@ import os
 import six
 import sys
 
-from astropy.coordinates import SkyCoord, search_around_sky
+from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, hstack, vstack
 from astropy import units as u
 from matplotlib.patches import Ellipse
@@ -32,12 +32,9 @@ class Catalog(Table):
     def __init__(self, *args, **kwargs):
         super(Catalog, self).__init__(*args, **kwargs)
         self._logger = logging.getLogger(__name__)
-        if self.colnames.count('ra') != 0:
-            self.rename_column('ra', 'RA')
-        if self.colnames.count('dec') != 0:
-            self.rename_column('dec', 'DEC')
-        if self.colnames.count('z') != 0:
-            self.rename_column('z', 'Z')
+        for name in ('ra', 'dec', 'z'):
+            if name in self.colnames:
+                self.rename_column(name, name.upper())
         self.masked_invalid()
 
     @classmethod
@@ -462,7 +459,7 @@ class Catalog(Table):
                                % (len(self), len(cat2), len(match1)))
             return match
 
-    def select(self, wcs, ra='RA', dec='DEC'):
+    def select(self, wcs, ra='RA', dec='DEC', margin=0):
         """Select all sources from catalog which are inside the WCS of image
         and return a new catalog.
 
@@ -470,34 +467,34 @@ class Catalog(Table):
         ----------
         wcs : `mpdaf.obj.WCS`
             Image WCS
-        ra : string
-            Name of the column that contains RA values in degrees
-        dec : string
-            Name of the column that contains DEC values in degrees
+        ra, dec : str
+            Name of the column that contains RA/DEC values in degrees.
+        margin : int
+            Margin from the edges.
 
         Returns
         -------
         out : `mpdaf.sdetect.Catalog`
 
         """
-        ksel = []
-        for k, src in enumerate(self):
-            cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
-            if cen[0] >= 0 and cen[0] <= wcs.naxis1 and cen[1] >= 0 \
-                    and cen[1] <= wcs.naxis2:
-                ksel.append(k)
-        return self[ksel]
+        arr = self[[dec, ra]].as_array()
+        arr = arr.view(float).reshape(arr.shape + (-1,))
+        cen = wcs.sky2pix(arr, unit=u.deg).T
+        sel = ((cen[0] > margin) & (cen[0] < wcs.naxis1 - margin) &
+               (cen[1] > margin) & (cen[1] < wcs.naxis2 - margin))
+        return self[sel]
 
     def edgedist(self, wcs, ra='RA', dec='DEC'):
-        """Return the smallest distance of all catalog sources center to the edge of the WCS of the given image
+        """Return the smallest distance of all catalog sources center to the
+        edge of the WCS of the given image.
 
         Parameters
         ----------
         wcs : `mpdaf.obj.WCS`
             Image WCS
-        ra : string
+        ra : str
             Name of the column that contains RA values in degrees
-        dec : string
+        dec : str
             Name of the column that contains DEC values in degrees
 
         Returns
@@ -522,17 +519,17 @@ class Catalog(Table):
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         wcs : `mpdaf.obj.WCS`
             Image WCS
-        ra : string
+        ra : str
             Name of the column that contains RA values (in degrees)
-        dec : string
+        dec : str
             Name of the column that contains DEC values (in degrees)
-        symb : list or string or float
+        symb : list or str or float
             - List of 3 columns names containing FWHM1,
                 FWHM2 and ANGLE values to define the ellipse of each source.
             - Column name containing value that will be used
                 to define the circle size of each source.
             - float in the case of circle with constant size in arcsec
-        col : string
+        col : str
             Symbol color.
         alpha : float
             Symbol transparency
@@ -588,15 +585,15 @@ class Catalog(Table):
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         wcs : `mpdaf.obj.WCS`
             Image WCS
-        iden : string
+        iden : str
             Name of the column that contains ID values
-        ra : string
+        ra : str
             Name of the column that contains RA values
-        dec : string
+        dec : str
             Name of the column that contains DEC values
         symb : float
             Size of the circle in arcsec
-        col : string
+        col : str
             Symbol color.
         alpha : float
             Symbol transparency
