@@ -1330,10 +1330,14 @@ class Image(DataArray):
                                    output_shape=newdims, output=np.float,
                                    order=order, prefilter=prefilter)
 
-        # Create new boolean mask in which all pixels that had an
+        # Create a new boolean mask in which all pixels that had an
         # integrated contribution of more than 'cutoff' originally
-        # masked pixels are masked.
-        newmask = np.greater(newmask, cutoff)
+        # masked pixels are masked. Note that setting the cutoff to
+        # the "obvious" value of zero results in lots of pixels being
+        # masked that are far away from any masked pixels, due to
+        # precision errors in the affine_transform() function.
+        # Limit the minimum value of the cutoff to avoid this.
+        newmask = np.greater(newmask, max(cutoff,1e-6))
 
         # If the image has an associated array of variances, rotate it too.
         if self._var is not None:
@@ -1462,9 +1466,9 @@ class Image(DataArray):
             For images whose units are flux per pixel, this keeps the
             total flux of an area is unchanged.
         cutoff : float
-            After rotation, if the interpolated value of a pixel
-            has an integrated contribution of this many masked pixels,
-            mask the pixel.
+            Mask each output pixel where at least this fraction of the
+            pixel was interpolated from dummy values given to masked
+            input pixels.
         inplace : bool
             If False, return a rotated copy of the image (the default).
             If True, rotate the original image in-place, and return that.
@@ -3487,8 +3491,12 @@ class Image(DataArray):
 
         # Create new boolean mask in which all pixels that had an
         # integrated contribution of more than 'cutoff' originally
-        # masked pixels are masked.
-        mask = np.greater(mask, cutoff)
+        # masked pixels are masked. Note that setting the cutoff to
+        # the "obvious" value of zero results in lots of pixels being
+        # masked that are far away from any masked pixels, due to
+        # precision errors in the affine_transform() function.
+        # Limit the minimum value of the cutoff to avoid this.
+        mask = np.greater(mask, max(cutoff, 1.0e-6))
 
         # Also repeat the procedure for the array of variances, if any.
         if image._var is not None:
