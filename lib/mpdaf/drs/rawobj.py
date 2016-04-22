@@ -1346,7 +1346,7 @@ class RawFile(object):
         self._plot_slice_on_raw_image(selected_ifu, 1)
         self.fig.canvas.mpl_connect('button_press_event', self._onclick)
         print('To select on other channel/slice, '\
-            'click on the images with the right mouse button.')
+              'click on the images with the right mouse button.')
 
 
 def _process_operator(arglist):

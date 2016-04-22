@@ -525,7 +525,7 @@ class Image(DataArray):
                     raise IOError('Operation forbidden for images '
                                   'with different world coordinates')
                 if other.ndim == 2:
-                    # image1 * image2 = image3 (image3[j,i]=image1[j,i]*image2[j,i])
+                    # image1 * image2 = image3
                     if self.shape[0] != other.shape[0] \
                             or self.shape[1] != other.shape[1]:
                         raise IOError('Operation forbidden for images '
@@ -541,8 +541,8 @@ class Image(DataArray):
                     elif other._var is None:
                         res._var = self._var * other._data * other._data
                     else:
-                        res._var = (other._var * self._data * self._data
-                                    + self._var * other._data * other._data)
+                        res._var = (other._var * self._data * self._data +
+                                    self._var * other._data * other._data)
                     # unit
                     res.unit = self.unit * other.unit
                     return res
@@ -948,10 +948,10 @@ class Image(DataArray):
 
         if inside:
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1], indexing='ij')
-            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
-                    + ((grid[0] * cospa - grid[1] * sinpa)
-                       / radius[1]) ** 2 < 1)
+                               np.arange(jmin, jmax) - center[1],
+                               indexing='ij')
+            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
+                    ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2 < 1)
             self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
         if not inside:
             self.data[0:imin, :] = np.ma.masked
@@ -959,10 +959,10 @@ class Image(DataArray):
             self.data[imin:imax, 0:jmin] = np.ma.masked
             self.data[imin:imax:, jmax:] = np.ma.masked
             grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1], indexing='ij')
-            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
-                    + ((grid[0] * cospa - grid[1] * sinpa)
-                       / radius[1]) ** 2 > 1)
+                               np.arange(jmin, jmax) - center[1],
+                               indexing='ij')
+            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
+                    ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2 > 1)
             self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
 
     def mask_polygon(self, poly, unit=u.deg, inside=True):
@@ -988,7 +988,8 @@ class Image(DataArray):
                  self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][1]]
                 for val in poly])
 
-        P, Q = np.meshgrid(list(range(self.shape[0])), list(range(self.shape[1])))
+        P, Q = np.meshgrid(list(range(self.shape[0])),
+                           list(range(self.shape[1])))
         b = np.dstack([P.ravel(), Q.ravel()])
 
         # use the matplotlib method to create a path wich is the polygon we
@@ -3320,8 +3321,8 @@ class Image(DataArray):
             # If necessary convert refpos to a numpy array and convert
             # it's units to the current WCS units.
             if unit_pos is not None:
-                refpos = (np.asarray(refpos, dtype=np.float)
-                          * unit_pos).to(image.wcs.unit).value
+                refpos = (np.asarray(refpos, dtype=np.float) *
+                          unit_pos).to(image.wcs.unit).value
             else:
                 refpos = np.asarray(refpos, dtype=np.float)
 
@@ -3345,8 +3346,8 @@ class Image(DataArray):
         # Ensure that newinc is an array of values that have the
         # same units as the WCS object.
         if unit_inc is not None:
-            newinc = (np.asarray(newinc, dtype=np.float)
-                      * unit_inc).to(image.wcs.unit).value
+            newinc = (np.asarray(newinc, dtype=np.float) *
+                      unit_inc).to(image.wcs.unit).value
         else:
             newinc = np.asarray(newinc, dtype=np.float)
 
@@ -3410,8 +3411,8 @@ class Image(DataArray):
         # affine_transform() is:
         #
         #   offset = sky2pix(refpos) - new2old * refpix
-        offset = (image.wcs.sky2pix(refpos).T[:, :1]
-                  - np.dot(new2old, refpix[np.newaxis, :].T))
+        offset = (image.wcs.sky2pix(refpos).T[:, :1] -
+                  np.dot(new2old, refpix[np.newaxis, :].T))
 
         # For each pixel of the output image, map its index to the
         # equivalent index of the input image and interpolate a value
@@ -5027,11 +5028,13 @@ class Image(DataArray):
             fig = plt.gcf()
             fig.canvas.stop_event_loop_default()
 
-    @deprecated('The rebin_factor method is deprecated: Use rebin_mean instead')
+    @deprecated('The rebin_factor method is deprecated: Use rebin_mean '
+                'instead')
     def rebin_factor(self, factor, margin='center'):
         return self.rebin_mean(factor, margin)
 
-    @deprecated('The rebin method is deprecated: Use resample or regrid instead')
+    @deprecated('The rebin method is deprecated: Use resample or regrid '
+                'instead')
     def rebin(self, newdim, newstart, newstep, flux=False,
               order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
         return self.resample(newdim, newstart, newstep, flux,
@@ -5278,14 +5281,14 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
     else:
         I = flux
 
-    gauss = lambda p, q: I * (1 / np.sqrt(2 * np.pi * (p_width ** 2))) \
-        * np.exp(-((p - center[0]) * np.cos(theta)
-                   - (q - center[1]) * np.sin(theta)) ** 2
-                 / (2 * p_width ** 2)) \
-        * (1 / np.sqrt(2 * np.pi * (q_width ** 2))) \
-        * np.exp(-((p - center[0]) * np.sin(theta)
-                   + (q - center[1]) * np.cos(theta)) ** 2
-                 / (2 * q_width ** 2))
+    gauss = lambda p, q: (
+        I * (1 / np.sqrt(2 * np.pi * (p_width ** 2))) *
+        np.exp(-((p - center[0]) * np.cos(theta) -
+                 (q - center[1]) * np.sin(theta)) ** 2 / (2 * p_width ** 2)) *
+        (1 / np.sqrt(2 * np.pi * (q_width ** 2))) *
+        np.exp(-((p - center[0]) * np.sin(theta) +
+                 (q - center[1]) * np.cos(theta)) ** 2 / (2 * q_width ** 2))
+    )
 
     if factor > 1:
         if rot == 0:
@@ -5312,7 +5315,8 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
             X, Y = np.meshgrid(range(shape[0] * factor),
                                range(shape[1] * factor))
             factor = float(factor)
-            pixcrd = np.array(list(zip(X.ravel() / factor, Y.ravel() / factor)))
+            pixcrd = np.array(list(zip(X.ravel() / factor,
+                                       Y.ravel() / factor)))
             # pixsky = wcs.pix2sky(pixcrd)
             data = gauss(pixcrd[:, 0], pixcrd[:, 1])
             data = (data.reshape(shape[1], factor, shape[0], factor)
@@ -5423,11 +5427,12 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
     # rotation angle in rad
     theta = np.pi * rot / 180.0
 
-    moffat = lambda p, q: \
-        I * (1 + (((p - center[0]) * np.cos(theta)
-                   - (q - center[1]) * np.sin(theta)) / a) ** 2
-             + (((p - center[0]) * np.sin(theta)
-                 + (q - center[1]) * np.cos(theta)) / a / e) ** 2) ** (-n)
+    moffat = lambda p, q: (
+        I * (1 + (((p - center[0]) * np.cos(theta) -
+                   (q - center[1]) * np.sin(theta)) / a) ** 2 +
+             (((p - center[0]) * np.sin(theta) +
+               (q - center[1]) * np.cos(theta)) / a / e) ** 2) ** (-n)
+    )
 
     if factor > 1:
         X, Y = np.meshgrid(range(shape[0] * factor),
@@ -5600,7 +5605,8 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
         for i in range(ima.shape[0]):
             for j in range(ima.shape[1]):
                 p2.putpixel((i, j), ImageColor.getrgb(
-                    'hsl(%d,%d%%,%d%%)' % (int(col), int(sat), int(lum[i, j]))))
+                    'hsl(%d,%d%%,%d%%)' % (int(col), int(sat),
+                                           int(lum[i, j]))))
         p1 = ImageChops.add(p1, p2)
 
     if bar:

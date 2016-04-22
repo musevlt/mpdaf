@@ -27,14 +27,14 @@ from astropy.stats import gaussian_fwhm_to_sigma
 
 from ...obj import Cube, Image, Spectrum
 from .lib_origin import Compute_PSF, Spatial_Segmentation, \
-                        Compute_PCA_SubCube, Compute_Number_Eigenvectors_Zone, \
-                        Compute_Proj_Eigenvector_Zone, Correlation_GLR_test, \
-                        Compute_pval_correl_zone, Compute_pval_channel_Zone, \
-                        Compute_pval_final, Compute_Connected_Voxel, \
-                        Compute_Referent_Voxel, Narrow_Band_Test, \
-                        Narrow_Band_Threshold, Estimation_Line, \
-                        Spatial_Merging_Circle, Spectral_Merging, \
-                        Add_radec_to_Cat, Construct_Object_Catalogue
+    Compute_PCA_SubCube, Compute_Number_Eigenvectors_Zone, \
+    Compute_Proj_Eigenvector_Zone, Correlation_GLR_test, \
+    Compute_pval_correl_zone, Compute_pval_channel_Zone, \
+    Compute_pval_final, Compute_Connected_Voxel, \
+    Compute_Referent_Voxel, Narrow_Band_Test, \
+    Narrow_Band_Threshold, Estimation_Line, \
+    Spatial_Merging_Circle, Spectral_Merging, \
+    Add_radec_to_Cat, Construct_Object_Catalogue
 
 
 class ORIGIN(object):
@@ -157,7 +157,7 @@ class ORIGIN(object):
         # spectral coordinates
         self.wave = cub.wave
 
-        #Dimensions
+        # Dimensions
         self.Nz, self.Ny, self.Nx = cub.shape
 
         del cub
@@ -176,24 +176,23 @@ class ORIGIN(object):
         if profiles is None or FWHM_profiles is None:
             self._logger.info('ORIGIN - Load dictionary of spectral profile')
             DIR = os.path.dirname(__file__)
-            self.profiles =  loadmat(DIR+'/Dico_FWHM_2_12.mat')['Dico']
-            self.FWHM_profiles = np.linspace(2, 12, 20) #pixels
+            self.profiles = loadmat(DIR + '/Dico_FWHM_2_12.mat')['Dico']
+            self.FWHM_profiles = np.linspace(2, 12, 20)  # pixels
         else:
             self.profiles = profiles
             self.FWHM_profiles = FWHM_profiles
-
 
         # 1 pixel in arcsec
         step_arcsec = self.wcs.get_step(unit=u.arcsec)[0]
         if PSF is None or FWHM_PSF is None:
             self._logger.info('ORIGIN - Compute PSF')
-            self.PSF, fwhm_pix ,fwhm_arcsec = Compute_PSF(self.wave, self.Nz,
+            self.PSF, fwhm_pix, fwhm_arcsec = Compute_PSF(self.wave, self.Nz,
                                                           Nfsf=13, beta=2.6,
                                                           fwhm1=0.76, fwhm2=0.66,
                                                           lambda1=4750, lambda2=7000,
                                                           step_arcsec=step_arcsec)
             # mean of the fwhm of the FSF in pixel
-            self.FWHM_PSF = np.mean(fwhm_arcsec)/step_arcsec
+            self.FWHM_PSF = np.mean(fwhm_arcsec) / step_arcsec
         else:
             cubePSF = Cube(PSF)
             if cubePSF.shape[0] != self.Nz:
@@ -205,7 +204,7 @@ class ORIGIN(object):
             # mean of the fwhm of the FSF in pixel
             self.FWHM_PSF = np.mean(FWHM_PSF)
 
-        #Spatial segmentation
+        # Spatial segmentation
         self._logger.info('ORIGIN - Spatial segmentation')
         self.inty, self.intx = Spatial_Segmentation(self.Nx, self.Ny,
                                                     NbSubcube)
@@ -253,9 +252,9 @@ class ORIGIN(object):
         # Parameter set to 1 if we want to plot the results
         # Parameters for projection during PCA
         self._logger.info('ORIGIN - Compute the number of eigenvectors to keep for the projection')
-        list_r0  = np.resize(r0, self.NbSubcube**2)
+        list_r0 = np.resize(r0, self.NbSubcube**2)
         nbkeep = Compute_Number_Eigenvectors_Zone(self.NbSubcube, list_r0, eig_val,
-                                              plot_lambda)
+                                                  plot_lambda)
         # Adaptive projection of the cube on the eigenvectors
         self._logger.info('ORIGIN - Adaptive projection of the cube on the eigenvectors')
         cube_faint, cube_cont = Compute_Proj_Eigenvector_Zone(nbkeep,
@@ -269,7 +268,7 @@ class ORIGIN(object):
         cube_faint = Cube(data=cube_faint, wave=self.wave, wcs=self.wcs,
                           mask=np.ma.nomask)
         cube_cont = Cube(data=cube_cont, wave=self.wave, wcs=self.wcs,
-                          mask=np.ma.nomask)
+                         mask=np.ma.nomask)
         return cube_faint, cube_cont
 
     def compute_TGLR(self, cube_faint):
@@ -294,9 +293,9 @@ class ORIGIN(object):
         correl, profile = Correlation_GLR_test(cube_faint.data.data, self.var,
                                                self.PSF, self.profiles)
         correl = Cube(data=correl, wave=self.wave, wcs=self.wcs,
-                          mask=np.ma.nomask)
+                      mask=np.ma.nomask)
         profile = Cube(data=profile, wave=self.wave, wcs=self.wcs,
-                          mask=np.ma.nomask, dtype=int)
+                       mask=np.ma.nomask, dtype=int)
         return correl, profile
 
     def compute_pvalues(self, correl, threshold=8):
@@ -362,8 +361,8 @@ class ORIGIN(object):
         return cube_pval_correl, cube_pval_channel, cube_pval_final
 
     def compute_ref_pix(self, correl, profile, cube_pval_correl,
-                                  cube_pval_channel, cube_pval_final,
-                                  neighboors=26):
+                        cube_pval_channel, cube_pval_final,
+                        neighboors=26):
         """compute the groups of connected voxels with a flood-fill algorithm
         on the cube of final thresholded p-values. Then compute referent
         voxel of each group of connected voxels using the voxel with the
@@ -396,12 +395,12 @@ class ORIGIN(object):
         self._logger.info('ORIGIN - Compute connected voxels')
         self.param['neighboors'] = neighboors
         labeled_cube, Ngp = Compute_Connected_Voxel(cube_pval_final.data.data, neighboors)
-        self._logger.info('ORIGIN - %d connected voxels detected'%Ngp)
+        self._logger.info('ORIGIN - %d connected voxels detected' % Ngp)
         # Referent pixel
         self._logger.info('ORIGIN - Compute referent pixels')
         Cat0 = Compute_Referent_Voxel(correl.data.data, profile.data.data, cube_pval_correl.data.data,
-                                  cube_pval_channel.data.data, cube_pval_final.data.data, Ngp,
-                                  labeled_cube)
+                                      cube_pval_channel.data.data, cube_pval_final.data.data, Ngp,
+                                      labeled_cube)
         return Cat0
 
     def compute_NBtests(self, Cat0, nb_ranges=3, plot_narrow=False):
@@ -463,8 +462,8 @@ class ORIGIN(object):
         self.param['threshT2'] = thresh_T2
         # Thresholded narrow bands tests
         Cat1_T1, Cat1_T2 = Narrow_Band_Threshold(Cat1, thresh_T1, thresh_T2)
-        self._logger.info('ORIGIN - %d emission lines selected with the test 1'%len(Cat1_T1))
-        self._logger.info('ORIGIN - %d emission lines selected with the test 2'%len(Cat1_T2))
+        self._logger.info('ORIGIN - %d emission lines selected with the test 1' % len(Cat1_T1))
+        self._logger.info('ORIGIN - %d emission lines selected with the test 2' % len(Cat1_T2))
         return Cat1_T1, Cat1_T2
 
     def estimate_line(self, Cat1_T, profile, cube_faint,
@@ -505,8 +504,8 @@ class ORIGIN(object):
         self.param['grid_dxy'] = grid_dxy
         self.param['grid_dz'] = grid_dz
         Cat2_T, Cat_est_line_raw_T, Cat_est_line_std_T = \
-        Estimation_Line(Cat1_T, profile.data.data, self.Nx, self.Ny, self.Nz, self.var, cube_faint.data.data,
-                    grid_dxy, grid_dz, self.PSF, self.profiles)
+            Estimation_Line(Cat1_T, profile.data.data, self.Nx, self.Ny, self.Nz, self.var, cube_faint.data.data,
+                            grid_dxy, grid_dz, self.PSF, self.profiles)
         Cat_est_line = []
         for data, var in zip(Cat_est_line_raw_T, Cat_est_line_std_T):
             spe = Spectrum(data=data, var=var, wave=self.wave, mask=np.ma.nomask)
@@ -602,7 +601,7 @@ class ORIGIN(object):
         self._logger.info('ORIGIN - Add RA-DEC to the catalogue')
         CatF_radec = Add_radec_to_Cat(Cat4, self.wcs)
 
-        #path
+        # path
         if not os.path.exists(path):
             raise IOError("Invalid path: {0}".format(path))
 
@@ -619,9 +618,9 @@ class ORIGIN(object):
         # list of source objects
         self._logger.info('ORIGIN - Create the list of sources')
         nsources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
-                                   correl.data.data, self.wave,
-                                   self.filename, self.FWHM_profiles,
-                                   path2, name, self.param)
+                                              correl.data.data, self.wave,
+                                              self.filename, self.FWHM_profiles,
+                                              path2, name, self.param)
 
         return nsources
 
@@ -659,7 +658,7 @@ class ORIGIN(object):
         ax.plot(x, y, 'k+')
         if circle:
             for px, py in zip(x, y):
-                c = plt.Circle((px, py), np.round(self.FWHM_PSF/2), color='k',
+                c = plt.Circle((px, py), np.round(self.FWHM_PSF / 2), color='k',
                                fill=False)
                 ax.add_artist(c)
         carte_2D_correl_.plot(vmin=vmin, vmax=vmax, title=title, ax=ax)

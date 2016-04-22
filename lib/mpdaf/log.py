@@ -64,6 +64,7 @@ def clear_loggers(name='mpdaf'):
 
 
 class ColoredFormatter(logging.Formatter):
+
     def format(self, record):
         level = record.levelname
         process = record.process
