@@ -667,7 +667,7 @@ class ORIGIN(object):
     def merge_extended_objects(self, incat, ima, fwhm=0.7, threshold=2.0, kernel_size=3, minsize=5.0):
         self._logger.info('ORIGIN - Extended Objects Merging')
         
-        logger.debug('Creating segmentation image with threshold {}'.format(threshold))
+        self._logger.debug('Creating segmentation image with threshold {}'.format(threshold))
         sigma = gaussian_fwhm_to_sigma * 0.7/0.2
         kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
         kernel.normalize()
@@ -676,12 +676,12 @@ class ORIGIN(object):
         segm.data = segobj.data
         props = source_properties(ima.data, segm.data)
         tab = properties_table(props)
-        logger.info('{} detected objects'.format(len(tab)))
+        self._logger.info('{} detected objects'.format(len(tab)))
         
         stab = tab[tab['area']>minsize**2]
         stab.sort('area')
         stab.reverse()
-        logger.info('Selected {} sources with linear size > {} spaxels'.format(len(stab),minsize))
+        self._logger.info('Selected {} sources with linear size > {} spaxels'.format(len(stab),minsize))
         
         vals = segm.data[incat['y_circle'],incat['x_circle']]
         
@@ -691,21 +691,21 @@ class ORIGIN(object):
             mask = vals==k
             srclist = incat[mask]
             if len(srclist) > 0:
-                logger.debug('merging {} sources for id {}'.format(len(srclist),k))  
+                self._logger.debug('merging {} sources for id {}'.format(len(srclist),k))  
                 iden = srclist['ID'].min()
                 xc = np.average(srclist['x_centroid'], weights=np.clip(srclist['flux'],0,np.infty))
                 yc = np.average(srclist['y_centroid'], weights=np.clip(srclist['flux'],0,np.infty)) 
                 incat['ID'][mask] = iden
                 incat['x_centroid'][mask] = xc
                 incat['y_centroid'][mask] = yc  
-        logger.info('Recreate IDs for the catalog')
+        self._logger.info('Recreate IDs for the catalog')
         current_ids = np.unique(incat['ID'])
         current_ids.sort()
         for k,iden in enumerate(current_ids):
             mask = incat['ID'] == iden
             incat['ID'][mask] = k + 1
             
-        logger.debug('{} sources in catalog'.format(len(current_ids)))
+        self._logger.debug('{} sources in catalog'.format(len(current_ids)))
             
         return incat, segm
         
