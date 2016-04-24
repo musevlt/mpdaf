@@ -1459,12 +1459,15 @@ class Image(DataArray):
 
             If this option is left with its default value of None,
             then it is given the value of the reshape option.
-        flux : boolean
-            When this argument is True and the regrid option is also True,
-            the flux of each pixel is multiplied by the ratio
-            of the areas of the pixels in the output and input images.
-            For images whose units are flux per pixel, this keeps the
-            total flux of an area is unchanged.
+        flux : bool
+            This tells the function whether the pixel units of the
+            image are flux densities (flux=True), such as
+            erg/s/cm2/Hz, or whether they are per-steradian brightness
+            units (flux=False), such as erg/s/cm2/Hz/steradian. It
+            needs to know this when it changes the pixel size, because
+            when pixel sizes change, resampled flux densities need to
+            be corrected for the change in the area per pixel, where
+            resampled brightnesses don't.
         cutoff : float
             Mask each output pixel where at least this fraction of the
             pixel was interpolated from dummy values given to masked
@@ -3112,10 +3115,14 @@ class Image(DataArray):
             numbers are the size along the Y axis of the image array
             followed by the size along the X axis.
         flux : bool
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the resampled and original pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area unchanged.
+            This tells the function whether the pixel units of the
+            image are flux densities (flux=True), such as
+            erg/s/cm2/Hz, or whether they are per-steradian brightness
+            units (flux=False), such as erg/s/cm2/Hz/steradian. It
+            needs to know this when it changes the pixel size, because
+            when pixel sizes change, resampled flux densities need to
+            be corrected for the change in the area per pixel, where
+            resampled brightnesses don't.
         order : int
             The order of the spline interpolation. This can take any
             value from 0-5. The default is 1 (linear interpolation).
@@ -3281,10 +3288,14 @@ class Image(DataArray):
             increments are kept the same as the pixel increments
             of the original image.
         flux : bool
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the resampled and original pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area unchanged.
+            This tells the function whether the pixel units of the
+            image are flux densities (flux=True), such as
+            erg/s/cm2/Hz, or whether they are per-steradian brightness
+            units (flux=False), such as erg/s/cm2/Hz/steradian. It
+            needs to know this when it changes the pixel size, because
+            when pixel sizes change, resampled flux densities need to
+            be corrected for the change in the area per pixel, where
+            resampled brightnesses don't.
         order : int
             The order of the spline interpolation. This can take any
             value from 0-5. The default is 1 (linear interpolation).
@@ -3621,11 +3632,15 @@ class Image(DataArray):
         ----------
         other : `~mpdaf.obj.Image`
             The image to be aligned with.
-        flux : boolean
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the resampled and original pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area unchanged.
+        flux : bool
+            This tells the function whether the pixel units of the
+            image are flux densities (flux=True), such as
+            erg/s/cm2/Hz, or whether they are per-steradian brightness
+            units (flux=False), such as erg/s/cm2/Hz/steradian. It
+            needs to know this when it changes the pixel size, because
+            when pixel sizes change, resampled flux densities need to
+            be corrected for the change in the area per pixel, where
+            resampled brightnesses don't.
         inplace : bool
             If False, return an aligned copy of the image (the default).
             If True, align the original image in-place, and return that.
