@@ -27,7 +27,7 @@ def test_copy():
 
 
 @attr(speed='fast')
-def test_selectionOperator_Spectrum():
+def test_selection():
     """Spectrum class: testing operators > and < """
     spectrum1 = generate_spectrum(uwave=u.nm)
     spectrum2 = spectrum1 > 6
@@ -42,7 +42,7 @@ def test_selectionOperator_Spectrum():
 
 
 @attr(speed='fast')
-def test_arithmetricOperator_Spectrum():
+def test_arithmetric():
     """Spectrum class: testing arithmetic functions"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
@@ -90,11 +90,11 @@ def test_arithmetricOperator_Spectrum():
     assert_array_almost_equal(cube2.data, sp1data / cube1.data)
 
     # spectrum * image
-    data = np.ones(shape=(6, 5)) * 2
-    image1 = Image(data=data, wcs=wcs)
-    cube2 = spectrum1 * image1
-    assert_array_almost_equal(cube2.data,
-                              sp1data * image1.data[np.newaxis, :, :])
+    # data = np.ones(shape=(6, 5)) * 2
+    # image1 = Image(data=data, wcs=wcs)
+    # cube2 = spectrum1 * image1
+    # assert_array_almost_equal(cube2.data,
+    #                           sp1data * image1.data[np.newaxis, :, :])
 
 
 @attr(speed='fast')

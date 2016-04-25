@@ -658,66 +658,6 @@ class DataArray(object):
         """Deprecated: use the .data attribute instead."""
         return self.data
 
-    def __add__(self, other):
-        if not isinstance(other, DataArray):
-            res = self.copy()
-            res._data = self._data + other
-            return res
-        else:
-            raise NotImplementedError
-
-    def __sub__(self, other):
-        if not isinstance(other, DataArray):
-            res = self.copy()
-            res._data = self._data - other
-            return res
-        else:
-            raise NotImplementedError
-
-    def __rsub__(self, other):
-        if not isinstance(other, DataArray):
-            res = self.copy()
-            res._data = other - self._data
-            return res
-        else:
-            return other.__sub__(self)
-
-    def __mul__(self, other):
-        if not isinstance(other, DataArray):
-            res = self.copy()
-            res._data *= other
-            if self._var is not None:
-                res._var *= other ** 2
-            return res
-        else:
-            raise NotImplementedError
-
-    def __div__(self, other):
-        if not isinstance(other, DataArray):
-            res = self.copy()
-            res._data /= other
-            if self._var is not None:
-                res._var /= other ** 2
-            return res
-        else:
-            raise NotImplementedError
-
-    def __rdiv__(self, other):
-        # FIXME ??
-        if not isinstance(other, DataArray):
-            res = self.copy()
-            res._data = other / res._data
-            if self._var is not None:
-                res._var = other ** 2 / res._var
-            return res
-        else:
-            return other.__div__(self)
-
-    __radd__ = __add__
-    __rmul__ = __mul__
-    __truediv__ = __div__
-    __rtruediv__ = __rdiv__
-
     def __le__(self, item):
         """Mask data elements whose values are greater than a
            given value (<=).
