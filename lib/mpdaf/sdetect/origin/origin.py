@@ -20,11 +20,6 @@ import os.path
 from scipy.io import loadmat
 import shutil
 
-from photutils import detect_sources, source_properties, properties_table
-from astropy.convolution import Gaussian2DKernel
-from astropy.stats import gaussian_fwhm_to_sigma
-
-
 from ...obj import Cube, Image, Spectrum
 from .lib_origin import Compute_PSF, Spatial_Segmentation, \
     Compute_PCA_SubCube, Compute_Number_Eigenvectors_Zone, \
@@ -666,6 +661,10 @@ class ORIGIN(object):
         
     def merge_extended_objects(self, incat, ima, fwhm=0.7, threshold=2.0, kernel_size=3, minsize=5.0):
         self._logger.info('ORIGIN - Extended Objects Merging')
+        
+        from photutils import detect_sources, source_properties, properties_table
+        from astropy.convolution import Gaussian2DKernel
+        from astropy.stats import gaussian_fwhm_to_sigma
         
         self._logger.debug('Creating segmentation image with threshold {}'.format(threshold))
         sigma = gaussian_fwhm_to_sigma * 0.7/0.2
