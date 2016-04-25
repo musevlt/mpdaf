@@ -1,0 +1,16 @@
+before_script:
+  - python -v
+  - which python
+  - which tox
+
+py27:
+  - script: tox -e py27
+
+py34:
+  - script: tox -e py27
+
+astropy10:
+  - script: tox -e astropy10
+
+numpy110:
+  - script: numpy110
