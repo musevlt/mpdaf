@@ -2817,12 +2817,10 @@ class Spectrum(DataArray):
         if ax is None:
             ax = plt.gca()
 
+        res = self.copy()
         if lmin is not None or lmax is not None:
-            res = self.copy()
             res.truncate(lmin, lmax, unit)
-        else:
-            res = self
-
+        
         try:
             x = res.wave.coord(unit=unit)
         except u.UnitConversionError:
