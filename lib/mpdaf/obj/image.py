@@ -273,7 +273,6 @@ class Image(DataArray):
         obj = super(Image, self).copy()
 
         # Make a deep copy of the spatial-frequency limits.
-
         if self._spflims is not None:
             obj._spflims = self._spflims.deepcopy()
         return obj
@@ -349,9 +348,6 @@ class Image(DataArray):
                 # image + cube1 = cube2 (cube2[k,j,i]=cube1[k,j,i]+image[j,i])
                 res = other.__add__(self)
                 return res
-
-    def __radd__(self, other):
-        return self.__add__(other)
 
     def __sub__(self, other):
         """Operator -.
@@ -452,17 +448,6 @@ class Image(DataArray):
                                                               other.unit**2)
                 return res
 
-    def __rsub__(self, other):
-        if not isinstance(other, DataArray):
-            try:
-                res = self.copy()
-                res._data = other - self._data
-                return res
-            except:
-                raise IOError('Operation forbidden')
-        else:
-            return other.__sub__(self)
-
     def __mul__(self, other):
         """Operator \*.
 
@@ -553,9 +538,6 @@ class Image(DataArray):
                     # image * cube1 = cube2
                     res = other.__mul__(self)
                     return res
-
-    def __rmul__(self, other):
-        return self.__mul__(other)
 
     def __div__(self, other):
         """Operator /.
@@ -651,6 +633,7 @@ class Image(DataArray):
                             var=var, copy=False)
 
     def __rdiv__(self, other):
+        # FIXME ??
         if not isinstance(other, DataArray):
             try:
                 res = self.copy()
@@ -664,9 +647,6 @@ class Image(DataArray):
                 raise IOError('Operation forbidden')
         else:
             return other.__div__(self)
-
-    __truediv__ = __div__
-    __rtruediv__ = __rdiv__
 
     def get_step(self, unit=None):
         """Return the angular height and width of a pixel along the

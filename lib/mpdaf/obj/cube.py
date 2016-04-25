@@ -645,9 +645,6 @@ class Cube(DataArray):
                                                              self.unit**2)
                 return res
 
-    def __radd__(self, other):
-        return self.__add__(other)
-
     def __sub__(self, other):
         """Subtracted a specified other object from a Cube.
 
@@ -802,17 +799,6 @@ class Cube(DataArray):
                                                              other.unit**2,
                                                              self.unit**2)
                 return res
-
-    def __rsub__(self, other):
-        if not isinstance(other, DataArray):
-            try:
-                res = self.copy()
-                res._data = other - self._data
-                return res
-            except:
-                raise IOError('Operation forbidden')
-        else:
-            return other.__sub__(self)
 
     def __mul__(self, other):
         """Multiply a Cube by a specified other object.
@@ -970,9 +956,6 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit * other.unit
                 return res
-
-    def __rmul__(self, other):
-        return self.__mul__(other)
 
     def __div__(self, other):
         """Divide a Cube by a specified other object.
@@ -1138,22 +1121,6 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit / other.unit
                 return res
-
-    def __rdiv__(self, other):
-        if not isinstance(other, DataArray):
-            try:
-                res = self.copy()
-                res._data = other / res._data
-                if self._var is not None:
-                    res._var = other ** 2 / res._var
-                return res
-            except:
-                raise IOError('Operation forbidden')
-        else:
-            return other.__div__(self)
-
-    __truediv__ = __div__
-    __rtruediv__ = __rdiv__
 
     def __getitem__(self, item):
         """Return the corresponding object:

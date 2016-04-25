@@ -229,9 +229,6 @@ class Spectrum(DataArray):
                 res = other.__add__(self)
                 return res
 
-    def __radd__(self, other):
-        return self.__add__(other)
-
     def __sub__(self, other):
         """ Operator -.
 
@@ -328,17 +325,6 @@ class Spectrum(DataArray):
                                                               other.unit**2)
                 return res
 
-    def __rsub__(self, other):
-        if not isinstance(other, DataArray):
-            try:
-                res = self.copy()
-                res._data = other - self._data
-                return res
-            except:
-                raise IOError('Operation forbidden')
-        else:
-            return other.__sub__(self)
-
     def __mul__(self, other):
         """ Operator \*.
 
@@ -407,9 +393,6 @@ class Spectrum(DataArray):
         else:
             res = other.__mul__(self)
             return res
-
-    def __rmul__(self, other):
-        return self.__mul__(other)
 
     def __div__(self, other):
         """Operator /.
@@ -511,22 +494,6 @@ class Spectrum(DataArray):
                 # unit
                 res.unit = self.unit / other.unit
                 return res
-
-    def __rdiv__(self, other):
-        if not isinstance(other, DataArray):
-            try:
-                res = self.copy()
-                res._data = other / self._data
-                if self._var is not None:
-                    res._var = other ** 2 / self._var
-                return res
-            except:
-                raise IOError('Operation forbidden')
-        else:
-            return other.__div__(self)
-
-    __truediv__ = __div__
-    __rtruediv__ = __rdiv__
 
     def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
         """ Return the flux value corresponding to a wavelength,
