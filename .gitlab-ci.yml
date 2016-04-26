@@ -1,5 +1,5 @@
 before_script:
-  - python -v
+  - python --version
   - which python
   - which tox
 
@@ -7,7 +7,7 @@ py27:
   script: tox -e py27
 
 py34:
-  script: tox -e py27
+  script: tox -e py34
 
 astropy10:
   script: tox -e astropy10
