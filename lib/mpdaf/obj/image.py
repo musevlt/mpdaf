@@ -5833,29 +5833,33 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     window : str
         The type of window function to use to filter the
         FFT, chosen from:
-              blackman - This window suppresses ringing better than any
-                         other window, at the expense of lowered image
-                         resolution. In the image plane, the PSF of this
-                         window is approximately gaussian, with a
-                         standard deviation of around 0.96*newstep, and a
-                         FWHM of about 2.3*newstep.
-              gaussian - A truncated gaussian window. This has a smaller
-                         PSF than the blackman window, but the truncation
-                         of the infinite extent of the gaussian leads to
-                         significant ringing in the form of an airy profile,
-                         so it should only be used for images without bright
-                         point sources or CCD saturation lines. It is
-                         equivalent to a convolution of the image with both
-                         an airy profile and a gaussian of standard deviation
-                         0.724*newstep (FWHM 1.704*newstep).
-             rectangle - This window simply zeros all spatial
-                         frequencies above the highest that can be
-                         correctly sampled by the new pixel size.
-                         This gives the best resolution of any of
-                         the windows, but this is marred by the strong
-                         sidelobes of the resulting airy-profile,
-                         especially near bright point sources and
-                         CCD saturation lines.
+
+        blackman
+           This window suppresses ringing better than any other
+           window, at the expense of lowered image resolution. In
+           the image plane, the PSF of this window is
+           approximately gaussian, with a standard deviation of
+           around 0.96*newstep, and a FWHM of about 2.3*newstep.
+
+        gaussian
+           A truncated gaussian window. This has a smaller PSF
+           than the blackman window, but the truncation of the
+           infinite extent of the gaussian leads to significant
+           ringing in the form of an airy profile, so it should
+           only be used for images without bright point sources or
+           CCD saturation lines. It is equivalent to a convolution
+           of the image with both an airy profile and a gaussian
+           of standard deviation 0.724*newstep (FWHM
+           1.704*newstep).
+
+        rectangle
+           This window simply zeros all spatial frequencies above
+           the highest that can be correctly sampled by the new
+           pixel size.  This gives the best resolution of any of
+           the windows, but this is marred by the strong sidelobes
+           of the resulting airy-profile, especially near bright
+           point sources and CCD saturation lines.
+
     Returns
     -------
     out : numpy.ndarray, numpy.ndarray
