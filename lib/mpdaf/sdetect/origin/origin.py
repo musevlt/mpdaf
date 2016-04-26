@@ -204,7 +204,7 @@ class ORIGIN(object):
         self.inty, self.intx = Spatial_Segmentation(self.Nx, self.Ny,
                                                     NbSubcube)
 
-    def compute_PCA(self, r0=0.67, plot_lambda=False):
+    def compute_PCA(self, r0=0.67, fig=None):
         """ Loop on each zone of the data cube and compute the PCA,
         the number of eigenvectors to keep for the projection
         (with a linear regression and its associated determination
@@ -215,8 +215,8 @@ class ORIGIN(object):
         ----------
         r0          : float
                       Coefficient of determination for projection during PCA
-        plot_lambda : bool
-                      If True, plot the eigenvalues and the separation point.
+        fig : figure instance
+                      If not None, plot the eigenvalues and the separation point.
 
         Returns
         -------
@@ -248,8 +248,7 @@ class ORIGIN(object):
         # Parameters for projection during PCA
         self._logger.info('ORIGIN - Compute the number of eigenvectors to keep for the projection')
         list_r0 = np.resize(r0, self.NbSubcube**2)
-        nbkeep = Compute_Number_Eigenvectors_Zone(self.NbSubcube, list_r0, eig_val,
-                                                  plot_lambda)
+        nbkeep = Compute_Number_Eigenvectors_Zone(self.NbSubcube, list_r0, eig_val, fig)
         # Adaptive projection of the cube on the eigenvectors
         self._logger.info('ORIGIN - Adaptive projection of the cube on the eigenvectors')
         cube_faint, cube_cont = Compute_Proj_Eigenvector_Zone(nbkeep,

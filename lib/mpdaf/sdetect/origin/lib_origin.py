@@ -273,7 +273,7 @@ def Compute_PCA_edge(cube, cube_edge):
     return A, eig_vec, eig_val
 
 
-def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
+def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, fig):
     """Function to compute the number of eigenvectors to keep for the
     projection for each zone by calling the function
     Compute_Number_Eigenvectors.
@@ -286,8 +286,8 @@ def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
                   List of the determination coefficient for each zone
     eig_val     : dict
                   eigenvalues of each spatio-spectral zone
-    plot_lambda : bool
-                  if True, plot the eigenvalues and the separation
+    fig : figure instance
+                  if not None, plot the eigenvalues and the separation
                   point
 
     Returns
@@ -316,8 +316,7 @@ def Compute_Number_Eigenvectors_Zone(NbSubcube, list_r0, eig_val, plot_lambda):
             zone = zone + 1
 
     # plot the ln of the eigenvalues and the separation point for each zone
-    if plot_lambda == 1:
-        plt.figure()
+    if fig is not None:
         zone = 0
         for numy in range(NbSubcube):
             for numx in range(NbSubcube):
