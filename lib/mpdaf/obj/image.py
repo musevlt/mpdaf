@@ -1330,10 +1330,14 @@ class Image(DataArray):
                                    output_shape=newdims, output=np.float,
                                    order=order, prefilter=prefilter)
 
-        # Create new boolean mask in which all pixels that had an
+        # Create a new boolean mask in which all pixels that had an
         # integrated contribution of more than 'cutoff' originally
-        # masked pixels are masked.
-        newmask = np.greater(newmask, cutoff)
+        # masked pixels are masked. Note that setting the cutoff to
+        # the "obvious" value of zero results in lots of pixels being
+        # masked that are far away from any masked pixels, due to
+        # precision errors in the affine_transform() function.
+        # Limit the minimum value of the cutoff to avoid this.
+        newmask = np.greater(newmask, max(cutoff,1e-6))
 
         # If the image has an associated array of variances, rotate it too.
         if self._var is not None:
@@ -1455,16 +1459,19 @@ class Image(DataArray):
 
             If this option is left with its default value of None,
             then it is given the value of the reshape option.
-        flux : boolean
-            When this argument is True and the regrid option is also True,
-            the flux of each pixel is multiplied by the ratio
-            of the areas of the pixels in the output and input images.
-            For images whose units are flux per pixel, this keeps the
-            total flux of an area is unchanged.
+        flux : bool
+            This tells the function whether the pixel units of the
+            image are flux densities (flux=True), such as
+            erg/s/cm2/Hz, or whether they are per-steradian brightness
+            units (flux=False), such as erg/s/cm2/Hz/steradian. It
+            needs to know this when it changes the pixel size, because
+            when pixel sizes change, resampled flux densities need to
+            be corrected for the change in the area per pixel, where
+            resampled brightnesses don't.
         cutoff : float
-            After rotation, if the interpolated value of a pixel
-            has an integrated contribution of this many masked pixels,
-            mask the pixel.
+            Mask each output pixel where at least this fraction of the
+            pixel was interpolated from dummy values given to masked
+            input pixels.
         inplace : bool
             If False, return a rotated copy of the image (the default).
             If True, rotate the original image in-place, and return that.
@@ -3066,7 +3073,7 @@ class Image(DataArray):
 
     def resample(self, newdim, newstart, newstep, flux=False,
                  order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
-                 antialias=True, inplace=False):
+                 antialias=True, inplace=False, window="blackman"):
         """Resample an image of the sky to select its angular resolution and
         to specify which sky position appears at the center of pixel [0,0].
 
@@ -3108,10 +3115,14 @@ class Image(DataArray):
             numbers are the size along the Y axis of the image array
             followed by the size along the X axis.
         flux : bool
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the resampled and original pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area unchanged.
+            This tells the function whether the pixel units of the
+            image are flux densities (flux=True), such as
+            erg/s/cm2/Hz, or whether they are per-steradian brightness
+            units (flux=False), such as erg/s/cm2/Hz/steradian. It
+            needs to know this when it changes the pixel size, because
+            when pixel sizes change, resampled flux densities need to
+            be corrected for the change in the area per pixel, where
+            resampled brightnesses don't.
         order : int
             The order of the spline interpolation. This can take any
             value from 0-5. The default is 1 (linear interpolation).
@@ -3144,6 +3155,35 @@ class Image(DataArray):
         inplace : bool
             If False, return a rotated copy of the image (the default).
             If True, rotate the original image in-place, and return that.
+        window : str
+            The type of window function to use for antialiasing
+            in the Fourier plane. The following windows are supported:
+
+            blackman
+               This window suppresses ringing better than any other
+               window, at the expense of lowered image resolution. In
+               the image plane, the PSF of this window is
+               approximately gaussian, with a standard deviation of
+               around 0.96*newstep, and a FWHM of about 2.3*newstep.
+
+            gaussian
+               A truncated gaussian window. This has a smaller PSF
+               than the blackman window, but the truncation of the
+               infinite extent of the gaussian leads to significant
+               ringing in the form of an airy profile, so it should
+               only be used for images without bright point sources or
+               CCD saturation lines. It is equivalent to a convolution
+               of the image with both an airy profile and a gaussian
+               of standard deviation 0.724*newstep (FWHM
+               1.704*newstep).
+
+            rectangle
+               This window simply zeros all spatial frequencies above
+               the highest that can be correctly sampled by the new
+               pixel size.  This gives the best resolution of any of
+               the windows, but this is marred by the strong sidelobes
+               of the resulting airy-profile, especially near bright
+               point sources and CCD saturation lines.
 
         Returns
         -------
@@ -3173,11 +3213,11 @@ class Image(DataArray):
         return self.regrid(newdim, refpos, refpix, newinc, flux=flux,
                            order=order, interp=interp, unit_pos=unit_start,
                            unit_inc=unit_step, antialias=antialias,
-                           inplace=inplace)
+                           inplace=inplace, window=window)
 
     def regrid(self, newdim, refpos, refpix, newinc, flux=False, order=1,
                interp='no', unit_pos=u.deg, unit_inc=u.arcsec, antialias=True,
-               inplace=False, cutoff=0.25):
+               inplace=False, cutoff=0.25, window="blackman"):
         """Resample an image of the sky to select its angular resolution,
         to specify the position of the sky in the image array, and
         optionally to reflect one or more of its axes.
@@ -3251,10 +3291,14 @@ class Image(DataArray):
             increments are kept the same as the pixel increments
             of the original image.
         flux : bool
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the resampled and original pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area unchanged.
+            This tells the function whether the pixel units of the
+            image are flux densities (flux=True), such as
+            erg/s/cm2/Hz, or whether they are per-steradian brightness
+            units (flux=False), such as erg/s/cm2/Hz/steradian. It
+            needs to know this when it changes the pixel size, because
+            when pixel sizes change, resampled flux densities need to
+            be corrected for the change in the area per pixel, where
+            resampled brightnesses don't.
         order : int
             The order of the spline interpolation. This can take any
             value from 0-5. The default is 1 (linear interpolation).
@@ -3288,9 +3332,38 @@ class Image(DataArray):
             If False, return a resampled copy of the image (the default).
             If True, resample the original image in-place, and return that.
         cutoff : float
-            After resampling, if the interpolated value of a pixel
-            has an integrated contribution of this many masked pixels,
-            mask the pixel.
+            Mask each output pixel where at least this fraction of the
+            pixel was interpolated from dummy values given to masked
+            input pixels.
+        window : str
+            The type of window function to use for antialiasing
+            in the Fourier plane. The following windows are supported:
+
+            blackman
+               This window suppresses ringing better than any other
+               window, at the expense of lowered image resolution. In
+               the image plane, the PSF of this window is
+               approximately gaussian, with a standard deviation of
+               around 0.96*newstep, and a FWHM of about 2.3*newstep.
+
+            gaussian
+               A truncated gaussian window. This has a smaller PSF
+               than the blackman window, but the truncation of the
+               infinite extent of the gaussian leads to significant
+               ringing in the form of an airy profile, so it should
+               only be used for images without bright point sources or
+               CCD saturation lines. It is equivalent to a convolution
+               of the image with both an airy profile and a gaussian
+               of standard deviation 0.724*newstep (FWHM
+               1.704*newstep).
+
+            rectangle
+               This window simply zeros all spatial frequencies above
+               the highest that can be correctly sampled by the new
+               pixel size.  This gives the best resolution of any of
+               the windows, but this is marred by the strong sidelobes
+               of the resulting airy-profile, especially near bright
+               point sources and CCD saturation lines.
 
         Returns
         -------
@@ -3359,7 +3432,8 @@ class Image(DataArray):
         # prevent aliasing in the resampled data.
         if antialias:
             data, newfmax = _antialias_filter_image(
-                data, abs(oldinc), abs(newinc), image.get_spatial_fmax())
+                data, abs(oldinc), abs(newinc), image.get_spatial_fmax(),
+                window)
         else:
             newfmax = 0.5 / abs(newinc)
 
@@ -3434,8 +3508,12 @@ class Image(DataArray):
 
         # Create new boolean mask in which all pixels that had an
         # integrated contribution of more than 'cutoff' originally
-        # masked pixels are masked.
-        mask = np.greater(mask, cutoff)
+        # masked pixels are masked. Note that setting the cutoff to
+        # the "obvious" value of zero results in lots of pixels being
+        # masked that are far away from any masked pixels, due to
+        # precision errors in the affine_transform() function.
+        # Limit the minimum value of the cutoff to avoid this.
+        mask = np.greater(mask, max(cutoff, 1.0e-6))
 
         # Also repeat the procedure for the array of variances, if any.
         if image._var is not None:
@@ -3534,7 +3612,8 @@ class Image(DataArray):
 
         return image
 
-    def align_with_image(self, other, flux=False, inplace=False):
+    def align_with_image(self, other, flux=False, inplace=False, cutoff=0.25,
+                         antialias=True, window="blackman"):
         """Resample the image to give it the same orientation, position,
         resolution and size as a given image.
 
@@ -3559,14 +3638,61 @@ class Image(DataArray):
         ----------
         other : `~mpdaf.obj.Image`
             The image to be aligned with.
-        flux : boolean
-            If True, the flux of each pixel is multiplied by the ratio
-            of the areas of the resampled and original pixels. For images
-            whose units are flux per pixel, this keeps the total flux
-            in an area unchanged.
+        flux : bool
+            This tells the function whether the pixel units of the
+            image are flux densities (flux=True), such as
+            erg/s/cm2/Hz, or whether they are per-steradian brightness
+            units (flux=False), such as erg/s/cm2/Hz/steradian. It
+            needs to know this when it changes the pixel size, because
+            when pixel sizes change, resampled flux densities need to
+            be corrected for the change in the area per pixel, where
+            resampled brightnesses don't.
         inplace : bool
             If False, return an aligned copy of the image (the default).
             If True, align the original image in-place, and return that.
+        cutoff : float
+            Mask each output pixel where at least this fraction of the
+            pixel was interpolated from dummy values given to masked
+            input pixels.
+        antialias : bool
+            By default, when the resolution of an image axis is about
+            to be reduced, a low pass filter is first applied to suppress
+            high spatial frequencies that can not be represented by the
+            reduced sampling interval. If this is not done, high-frequency
+            noise and sharp edges get folded back to lower frequencies,
+            where they increase the noise level of the image and introduce
+            ringing artefacts next to sharp edges, such as CCD saturation
+            spikes and bright unresolved stars. This filtering can be
+            disabled by passing False to the antialias argument.
+        window : str
+            The type of window function to use for antialiasing
+            in the Fourier plane. The following windows are supported:
+
+            blackman
+               This window suppresses ringing better than any other
+               window, at the expense of lowered image resolution. In
+               the image plane, the PSF of this window is
+               approximately gaussian, with a standard deviation of
+               around 0.96*newstep, and a FWHM of about 2.3*newstep.
+
+            gaussian
+               A truncated gaussian window. This has a smaller PSF
+               than the blackman window, but the truncation of the
+               infinite extent of the gaussian leads to significant
+               ringing in the form of an airy profile, so it should
+               only be used for images without bright point sources or
+               CCD saturation lines. It is equivalent to a convolution
+               of the image with both an airy profile and a gaussian
+               of standard deviation 0.724*newstep (FWHM
+               1.704*newstep).
+
+            rectangle
+               This window simply zeros all spatial frequencies above
+               the highest that can be correctly sampled by the new
+               pixel size.  This gives the best resolution of any of
+               the windows, but this is marred by the strong sidelobes
+               of the resulting airy-profile, especially near bright
+               point sources and CCD saturation lines.
 
         """
 
@@ -3581,7 +3707,7 @@ class Image(DataArray):
         # correcting the image for shear terms in the CD matrix, so we
         # perform this step even if no rotation is otherwise needed.
         out._rotate(other.wcs.get_rot() - out.wcs.get_rot(), reshape=True,
-                    regrid=True, flux=flux)
+                    regrid=True, flux=flux, cutoff=cutoff)
 
         # Get the pixel index and Dec,Ra coordinate at the center of
         # the image that we are aligning with.
@@ -3593,7 +3719,8 @@ class Image(DataArray):
         # are aligning it with.
         out.regrid(other.shape, centersky, centerpix,
                    other.wcs.get_axis_increments(unit=u.deg),
-                   flux, unit_inc=u.deg, inplace=True)
+                   flux, unit_inc=u.deg, inplace=True, cutoff=cutoff,
+                   antialias=antialias, window=window)
         return out
 
     def estimate_coordinate_offset(self, ref, nsigma=1.0):
@@ -5677,8 +5804,8 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
             (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
     return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)
 
-
-def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
+def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
+                            window="blackman"):
     """ Apply an anti-aliasing prefilter to an image to prepare
     it for subsampling.
 
@@ -5703,6 +5830,36 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
         filtered will then not be refiltered redundantly. If no
         band-limits have previously been established, pass this
         argument as None.
+    window : str
+        The type of window function to use to filter the
+        FFT, chosen from:
+
+        blackman
+           This window suppresses ringing better than any other
+           window, at the expense of lowered image resolution. In
+           the image plane, the PSF of this window is
+           approximately gaussian, with a standard deviation of
+           around 0.96*newstep, and a FWHM of about 2.3*newstep.
+
+        gaussian
+           A truncated gaussian window. This has a smaller PSF
+           than the blackman window, but the truncation of the
+           infinite extent of the gaussian leads to significant
+           ringing in the form of an airy profile, so it should
+           only be used for images without bright point sources or
+           CCD saturation lines. It is equivalent to a convolution
+           of the image with both an airy profile and a gaussian
+           of standard deviation 0.724*newstep (FWHM
+           1.704*newstep).
+
+        rectangle
+           This window simply zeros all spatial frequencies above
+           the highest that can be correctly sampled by the new
+           pixel size.  This gives the best resolution of any of
+           the windows, but this is marred by the strong sidelobes
+           of the resulting airy-profile, especially near bright
+           point sources and CCD saturation lines.
+
     Returns
     -------
     out : numpy.ndarray, numpy.ndarray
@@ -5732,9 +5889,6 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
     # the new pixel sizes along the Y and X axes.
     newfmax = 0.5 / newstep
 
-    # Get the dimensions of the image to be filtered.
-    nya, nxa = data.shape
-
     # Which axes need to be filtered?
     filter_axes = newfmax < oldfmax
 
@@ -5742,76 +5896,72 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None):
     if np.all(np.logical_not(filter_axes)):
         return data, oldfmax
 
-    # Obtain the FFT of the input image.
+    # Get the extent of the input image as a pair of slices.
+    image_slice = [slice(0,data.shape[0]), slice(0,data.shape[1])]
+
+    # FFT algorithms can be extremely slow for arrays whose
+    # dimensions are not powers of 2. The conventional way to avoid this
+    # is to copy the image into a new array whose dimensions
+    # are powers of 2, and fill the extra pixels with zeros.
+
+    shape = 2**(np.ceil(np.log(np.asarray(data.shape)) / np.log(2.0))).astype(int)
+    if data.shape[0] != shape[0] or data.shape[1] != shape[1]:
+        tmp = np.zeros(shape)
+        tmp[image_slice] = data
+        data = tmp
+
+    # Get the new dimensions of the zero-padded image.
+    ny, nx = shape
+
+    # Obtain the FFT of the image.
     fft = np.fft.rfft2(data)
 
-    # If newstep[1] is in degrees, then the pixel interval of that
-    # size along the X axis can correctly sample spatial frequencies
-    # of up to 1/(2*newstep[1]) cycles per degree along the X-axis. We
-    # need a window function for the X-axis that will cut-off all
-    # frequencies in the FFT above that frequency. The pixel width of
-    # the FFT is 1/(nxa*oldstep[1]), so we need the window to go
-    # to zero at pixel ix, relative to the FFT origin, where
-    # ix/(nxa*oldstep[1]) = 1/(2*newstep[1]). This gives:
-    #
-    #  ix = (nxa * oldstep[1]) / (2*newstep[1])
-    #
-    # We want a window function that is symmetric with (ix-1)+1+(ix-1)
-    # pixels in width (ix window function pixels on either side of the
-    # origin, including one with value unity at the origin. So we need
-    # a window function of width:
-    #
-    #  wx = (nxa*oldstep[1]) / newstep[1]
-    #
-    # In practice we round wx down down to the nearest odd number, so
-    # that the window function is symmetric either side of a central
-    # value of unity.
-    #
-    # Start by filtering the Y axis if needed.
-    if filter_axes[0]:
-        nyw = max(int((oldstep[0] * nya) / newstep[0]), 1)
-        if nyw % 2 == 0:
-            nyw -= 1
+    # The new pixel sizes along the X and Y axes can only correctly
+    # sample spatial frequencies up to the values in newfmax. Set the
+    # cutoff frequencies for the window functions along the x and y
+    # axes to those frequencies.
+    fycut,fxcut = newfmax
 
-        y_window = np.blackman(nyw)
+    # Create an array which, for each pixel in the FFT image, holds
+    # the radial spatial-frequency of the pixel center, divided by
+    # the cutoff frequency. These values will later be used to index
+    # the 1D window-function.
 
-        # Multiply the positive Y-axis frequencies by the positive
-        # frequency side of the window, transposed to a column vector.
-        fft[0:nyw // 2 + 1, :] *= y_window[np.newaxis, nyw // 2:].T
+    wr = np.sqrt((np.fft.rfftfreq(nx,oldstep[1]) / fxcut)**2 +
+                 (np.fft.fftfreq(ny,oldstep[0]) / fycut)[np.newaxis,:].T**2)
 
-        # Multiply the negative Y-axis frequencies (not including
-        # zero, which was multiplied above) by the pixels 1 and above
-        # of the window, transposed to a column vector.
-        fft[nya - nyw // 2:nya, :] *= y_window[np.newaxis, 1:nyw // 2 + 1].T
+    # Get the requested window function as a function of frequency
+    # divided by its cutoff frequency.
 
-        # Zero all pixels along the Y-axis that lie outside the window.
-        fft[nyw // 2 + 1:nya - nyw // 2, :] = 0.0 + 0.0j
+    if window is None or window == "blackman":
+        winfn = lambda r: np.where(r <= 1.0, 0.42 + 0.5 * np.cos(np.pi*r) + 0.08 * np.cos(2*np.pi*r), 0.0)
 
-    # Filter the X axis?
-    if filter_axes[1]:
+    # For the gaussian window the standard deviation, sigma, is
+    # as a fraction of the normalized cutoff frequency. Note that
+    # in the image plane the corresponding gaussian standard
+    # deviation should be newstep/(pi*sigma).
 
-        nxw = max(int((oldstep[1] * nxa) / newstep[1]), 1)
-        if nxw % 2 == 0:
-            nxw -= 1
+    elif window == "gaussian":
+        sigma = 0.44
+        winfn = lambda r: np.where(r <= 1.0, np.exp(-0.5 * (r/sigma)**2), 0.0)
 
-        # Get Blackman window functions for the X and Y directions.
-        x_window = np.blackman(nxw)
+    # For the rectangular window, just multiply all pixels below the
+    # cutoff frequency by one, and the rest by zero.
 
-        # Multiply the positive X-axis frequencies by the positive
-        # frequency side of the window.
-        fft[:, 0:nxw // 2 + 1] *= x_window[nxw // 2:]
+    elif window == "rectangle":
+        winfn = lambda r: np.where(r <= 1.0, 1.0, 0.0)
 
-        # Note that there aren't any negative X-axis frequencies to
-        # window, because we are using a real-only FFT which only
-        # computes the positive frequencies.
-        #
-        # Zero all pixels along the X-axis that lie outside the window.
-        fft[:, nxw // 2 + 1:] = 0.0 + 0.0j
+    # Apply the window function to the FFT to remove frequencies above the
+    # cutoff frequencies.
+
+    fft *= winfn(wr)
 
     # Perform an inverse Fourier transform to get the filtered image
     data = np.fft.irfft2(fft)
 
-    return data, np.where(filter_axes, newfmax, oldfmax)
+    # Crop the antialiased image to remove the zero-padded pixels, and
+    # return this along with the new spatial-frequency limits.
+    return data[image_slice], np.where(filter_axes, newfmax, oldfmax)
 
 
 def _find_quadratic_peak(y):
