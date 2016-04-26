@@ -83,7 +83,6 @@ class TestBasicPixTable(unittest.TestCase):
 
     @attr(speed='fast')
     def test_getters(self):
-        """Image class: tests getters"""
         self.assertEqual(self.nrows, self.pix.nrows)
         for name in ('xpos', 'ypos', 'data', 'dq', 'stat', 'origin'):
             assert_array_equal(getattr(self.pix, 'get_' + name)(),
