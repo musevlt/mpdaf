@@ -2349,7 +2349,7 @@ class Cube(DataArray):
         sensitivities = np.asarray(sensitivities, dtype=float)
 
         # The sensitivities and wavelengths arrays must be one
-        # dimensionsal and have the same length.
+        # dimensional and have the same length.
 
         if (wavelengths.ndim != 1 or sensitivities.ndim != 1 or
             len(wavelengths) != len(sensitivities)):
