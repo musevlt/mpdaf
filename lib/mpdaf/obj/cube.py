@@ -2422,10 +2422,9 @@ class Cube(DataArray):
         # weights, but with masked pixels given zero weight.
 
         if subcube._mask is ma.nomask:
-            wcube = np.ones(subcube.shape)
+            wcube = w[:,np.newaxis,np.newaxis] * np.ones(subcube.shape)
         else:
-            wcube = np.ones(subcube.shape) * ~subcube._mask
-        wcube = np.ones(subcube.shape) * w[:,np.newaxis,np.newaxis]
+            wcube = w[:,np.newaxis,np.newaxis] * ~subcube._mask
 
         # Get an image which is the sum of the weights along the spectral
         # axis.
