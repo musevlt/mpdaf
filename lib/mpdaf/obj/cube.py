@@ -13,6 +13,7 @@ import types
 from astropy.io import fits as pyfits
 from numpy import ma
 from six.moves import range, zip
+from scipy import integrate, interpolate
 
 from .coords import WCS, WaveCoord
 from .data import DataArray
@@ -2289,6 +2290,166 @@ class Cube(DataArray):
                                    'off_band size'])
 
         return ima
+
+    def bandpass_image(self, wavelengths, sensitivities, unit_wave=u.angstrom):
+
+        """Given a cube of images versus wavelength and the bandpass
+        filter-curve of a wide-band monochromatic instrument, extract
+        an image from the cube that has the spectral response of the
+        monochromatic instrument.
+
+        For example, this can be used to create a MUSE image that has
+        the same spectral characteristics as an HST image. The MUSE
+        image can then be compared to the HST image without having to
+        worry about any differences caused by different spectral
+        sensitivities.
+
+        Note that the bandpass of the monochromatic instrument must be
+        fully encompassed by the wavelength coverage of the cube.
+
+        For each channel n of the cube, the filter-curve is integrated
+        over the width of that channel to obtain a weight, w[n]. The
+        output image is then given by the following weighted mean:
+
+        output_image = sum(w[n] * cube_image[n]) / sum(w[n])
+
+        In practice, to accomodate masked pixels, the w[n] array is
+        expanded into a cube w[n,y,x], and the weights of individual
+        masked pixels in the cube are zeroed before the above equation
+        is applied.
+
+        Parameters
+        ----------
+        wavelengths : numpy.ndarray
+            An array of the wavelengths of the filter curve,
+            listed in ascending order of wavelength. The lowest
+            and highest wavelengths must be within the range of
+            wavelengths of the data cube. Outside the listed
+            wavelengths the filter-curve is assumed to be zero.
+        sensitivities : numpy.ndarray
+            The relative flux sensitivities at the wavelengths
+            in the wavelengths array. These sensititivies will be
+            normalized, so only their relative values are important.
+        unit_wave : `astropy.units.Unit`
+            The units used in the array of wavelengths. The default is
+            angstroms. To specify pixel units, pass None.
+
+        Returns
+        -------
+        out : `~mpdaf.obj.Image`
+            An image formed from the filter-weighted sum or mean
+            of all of the channels in the cube.
+
+        """
+
+        # Where needed, convert the wavelengths and sensitivities
+        # sequences into numpy arrays.
+
+        wavelengths = np.asarray(wavelengths, dtype=float)
+        sensitivities = np.asarray(sensitivities, dtype=float)
+
+        # The sensititivities as wavelengths arrays must be one
+        # dimensionsal and have the same length.
+
+        if (wavelengths.ndim != 1 or sensitivities.ndim != 1 or
+            len(wavelengths) != len(sensitivities)):
+            raise ValueError('The wavelengths and sensititivies arguments'
+                             ' should be 1D arrays of equal length')
+
+        # Convert the array of wavelengths to floating point pixel indexes.
+
+        if unit_wave is None:
+            pixels = wavelengths.copy()
+        else:
+            pixels = self.wave.pixel(wavelengths, unit=unit_wave)
+
+        # Obtain the range of indexes along the wavelength axis that
+        # encompass the wavelengths in the cube, remembering that
+        # integer values returned by wave.pixel() correspond to pixel
+        # centers.
+
+        kmin = int(np.floor(0.5 + pixels[0]))
+        kmax = int(np.floor(0.5 + pixels[-1]))
+
+        # The filter-curve must be fully encompassed by the wavelength range
+        # of the cube.
+
+        if kmin < 0 or kmax > self.shape[0] - 1:
+            raise ValueError('The bandpass exceeds the wavelength coverage of'
+                             ' the cube.')
+
+        # Obtain a cubic interpolator of the bandpass curve.
+
+        spline = interpolate.interp1d(x=pixels, y=sensitivities, kind='cubic')
+
+        # Compute weights to give for each channel of the cube between
+        # kmin and kmax by integrating the spline interpolation of the
+        # bandpass curve over the wavelength range of each pixel and
+        # dividing this by the sum of the weights.
+
+        k = np.arange(kmin, kmax+1, dtype=int)
+        w = np.empty((kmax+1 - kmin))
+
+        # Integrate the bandpass over the range of each spectral pixel
+        # to determine the weights of each pixel. For the moment skip
+        # the first and last pixels, which need special treatment.
+        # Integer pixel indexes refer to the centers of pixels,
+        # so for integer pixel index k, we need to integrate from
+        # k-0.5 to k+0.5.
+
+        for k in range(kmin+1, kmax):
+            w[k-kmin], err = integrate.quad(spline, k-0.5, k+0.5)
+
+        # Start the integration of the weight of the first channel
+        # from the lower limit of the bandpass.
+
+        w[0], err = integrate.quad(spline, pixels[0], kmin + 0.5)
+
+        # End the integration of the weight of the final channel
+        # at the upper limit of the bandpass.
+
+        w[-1], err = integrate.quad(spline, kmax - 0.5, pixels[-1])
+
+        # Normalize the weights.
+
+        w /= w.sum()
+
+        # Create a sub-cube of the selected channels.
+
+        subcube = self[kmin:kmax+1, :, :]
+
+        # To accomodate masked pixels, create a cube of the above
+        # weights, but with masked pixels given zero weight.
+
+        if subcube._mask is ma.nomask:
+            wcube = np.ones(subcube.shape)
+        else:
+            wcube = np.ones(subcube.shape) * ~subcube._mask
+        wcube = np.ones(subcube.shape) * w[:,np.newaxis,np.newaxis]
+
+        # Get an image which is the sum of the weights along the spectral
+        # axis.
+
+        wsum = wcube.sum(axis=0)
+
+        # The output image is the weighted mean of the selected
+        # channels. For each map pixel perform the following
+        # calculation over spectral channels, k.
+        #
+        #  mean = sum(weights[k] * data[k]) / sum(weights[k]
+
+        data = np.ma.sum(subcube.data * wcube, axis=0) / wsum
+
+        # The variance of a weighted means is:
+        #
+        #  var = sum(weights[k]**2 * var[k]) / (sum(weights[k]))**2
+
+        if subcube._var is not None:
+            var = np.ma.sum(subcube.var * wcube**2) / wsum**2
+        else:
+            var = None
+
+        return Image.new_from_obj(subcube, data=data, var=var)
 
     def subcube(self, center, size, lbda=None, unit_center=u.deg,
                 unit_size=u.arcsec, unit_wave=u.angstrom):
