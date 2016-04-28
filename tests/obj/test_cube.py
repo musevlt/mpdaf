@@ -15,8 +15,8 @@ from numpy.testing import assert_almost_equal, assert_array_equal
 from nose.tools import assert_equal
 from tempfile import NamedTemporaryFile
 
-from ..utils import generate_cube, generate_image, generate_spectrum
-
+from ..utils import (generate_cube, generate_image, generate_spectrum,
+                     assert_masked_allclose)
 if six.PY2:
     from operator import add, sub, mul, div
 else:
@@ -361,3 +361,102 @@ def test_get_item():
     nose.tools.assert_true(isinstance(r, Spectrum))
     nose.tools.assert_true(r.wave.isEqual(c.wave))
     nose.tools.assert_is_none(r.wcs)
+
+def test_bandpass_image():
+    """Cube class: testing bandpass_image"""
+
+    shape=(7, 2, 2)
+
+    # Create a rectangular shaped bandpass response whose ends are half
+    # way into pixels.
+
+    wavelengths   = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    sensitivities = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
+
+    # Specify a ramp for the values of the pixels in the cube versus
+    # wavelength.
+
+    spectral_values = np.arange(shape[0], dtype=float)
+
+    # Specify a ramp for the variances of the pixels in the cube
+    # versus wavelength.
+
+    spectral_vars = np.arange(shape[0], dtype=float) * 0.5
+
+    # Calculate the expected weights versus wavelength for each
+    # spectral pixels. The weight of each pixel is supposed to be
+    # integral of the sensitivity function over the width of the pixel.
+    #
+    #| 0  |  1  |  2  |  3  |  4  |  5  |  6  |  Pixel indexes
+    #         _______________________
+    # _______|                       |_________  Sensitivities
+    #
+    #  0.0  0.5   1.0   1.0   1.0   0.5   0.0    Weights
+    #  0.0  1.0   2.0   3.0   4.0   5.0   6.0    Pixel values vs wavelength
+    #  0.0  0.5   2.0   3.0   4.0   2.5   0.0    Pixel values * weights
+
+    weights = np.array([0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0])
+
+    # Compute the expected weighted mean of the spectral pixel values,
+    # assuming that no pixels are unmasked.
+
+    unmasked_mean = (weights * spectral_values).sum() / weights.sum()
+
+    # Compute the expected weighted mean if pixel 1 is masked.
+
+    masked_pixel = 1
+    masked_mean = ((weights * spectral_values).sum() - weights[masked_pixel] * spectral_values[masked_pixel]) / (weights.sum() - weights[masked_pixel])
+
+    # Compute the expected variances of the unmasked and masked means.
+
+    unmasked_var = (weights**2 * spectral_vars).sum() / weights.sum()**2
+    masked_var = ((weights**2 * spectral_vars).sum() - weights[masked_pixel]**2 * spectral_vars[masked_pixel]) / (weights.sum() - weights[masked_pixel])**2
+
+    # Create the data array of the cube, giving all map pixels the
+    # same data and variance spectrums.
+
+    data = spectral_values[:,np.newaxis, np.newaxis] * np.ones(shape)
+    var = spectral_vars[:,np.newaxis, np.newaxis] * np.ones(shape)
+
+    # Create a mask with all pixels unmasked.
+
+    mask = np.zeros(shape)
+
+    # Mask spectral pixel 'masked_pixel' of map index 1,1.
+
+    mask[masked_pixel,1,1] = True
+
+    # Also mask all pixels of map pixel 0,0.
+
+    mask[:,0,0] = True
+
+    # Create a test cube with the above data and mask arrays.
+
+    c = generate_cube(shape=shape, data=data, mask=mask, var=var,
+                      wave=WaveCoord(crval=0.0, cdelt=1.0, crpix=1.0,
+                                     cunit=u.angstrom))
+
+    # Extract an image that has the above bandpass response.
+
+    im = c.bandpass_image(wavelengths, sensitivities)
+
+    # Only the map pixel in which all spectral pixels are masked should
+    # be masked in the output, so just map pixel [0,0] should be masked.
+
+    expected_mask = np.array([[True,  False],
+                              [False, False]], dtype=bool)
+
+    # What do we expect?
+
+    expected_data = np.ma.array(
+        data=[[unmasked_mean, unmasked_mean], [unmasked_mean,   masked_mean]],
+        mask=expected_mask)
+
+    expected_var = np.ma.array(
+        data=[[unmasked_var, unmasked_var], [unmasked_var,   masked_var]],
+        mask=expected_mask)
+
+    # Are the results consistent with the predicted values?
+
+    assert_masked_allclose(im.data, expected_data)
+    assert_masked_allclose(im.var,  expected_var)
