@@ -1,6 +1,11 @@
 before_script:
   - which tox
 
+cache:
+  paths:
+  - .coverage
+  - .tox
+
 coverage-clean:
   script: tox -e clean
 
