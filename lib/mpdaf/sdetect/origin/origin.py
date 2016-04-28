@@ -681,7 +681,8 @@ class ORIGIN(object):
         stab.reverse()
         self._logger.info('Selected {} sources with linear size > {} spaxels'.format(len(stab),minsize))
         
-        vals = segm.data[incat['y_circle'],incat['x_circle']]
+        k,l = (np.round(incat['y_circle']).astype(int), np.round(incat['x_circle']).astype(int))
+        vals = segm.data[k,l]
         
         incat['OLD_ID'] = incat['ID']
         
@@ -691,8 +692,12 @@ class ORIGIN(object):
             if len(srclist) > 0:
                 self._logger.debug('merging {} sources for id {}'.format(len(srclist),k))  
                 iden = srclist['ID'].min()
-                xc = np.average(srclist['x_centroid'], weights=np.clip(srclist['flux'],0,np.infty))
-                yc = np.average(srclist['y_centroid'], weights=np.clip(srclist['flux'],0,np.infty)) 
+                clipflux = np.clip(srclist['flux'],0,np.infty)
+                if clipflux.sum() == 0: 
+                    self._logger.warning('all line flux are <=0, skipped')
+                    continue
+                xc = np.average(srclist['x_centroid'], weights=clipflux)
+                yc = np.average(srclist['y_centroid'], weights=clipflux) 
                 incat['ID'][mask] = iden
                 incat['x_centroid'][mask] = xc
                 incat['y_centroid'][mask] = yc  
