@@ -527,7 +527,7 @@ class ORIGIN(object):
                x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
         """
         self._logger.info('ORIGIN - Spatial merging')
-        Cat3 = Spatial_Merging_Circle(Cat2_T, self.FWHM_PSF, self.Nx, self.Ny)
+        Cat3 = Spatial_Merging_Circle(Cat2_T, self.FWHM_PSF)
         return Cat3
 
     def merge_spectraly(self, Cat3, Cat_est_line, deltaz=1):

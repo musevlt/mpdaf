@@ -26,6 +26,7 @@ from numpy.fft import rfftn, irfftn
 from scipy import signal, stats, special
 from scipy.ndimage import measurements, morphology
 from scipy.signal.signaltools import _next_regular, _centered
+from scipy.spatial import KDTree
 from six.moves import range
 
 from ...obj import Cube, Image, Spectrum
@@ -1477,7 +1478,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     return flux, res, line_est_raw, line_est
 
 
-def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
+def Spatial_Merging_Circle(Cat0, fwhm_fsf):
     """Construct a catalogue of sources by spatial merging of the detected
     emission lines in a circle with a diameter equal to the mean over the
     wavelengths of the FWHM of the FSF
@@ -1491,10 +1492,6 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
                residual flux num_line
     fwhm_fsf : float
                The mean over the wavelengths of the FWHM of the FSF
-    Nx       : integer
-               Size of the cube along the x-axis
-    Ny       : integer
-               Size of the cube along the y-axis
 
     Returns
     -------
@@ -1503,8 +1500,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
            ID x_circle y_circle x_centroid y_centroid nb_lines
            x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
 
-    Date : Dec,16 2015
-    Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
+    Date : Apr,28 2016
     """
     logger = logging.getLogger(__name__)
     logger.debug(whoami())
@@ -1517,95 +1513,48 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf, Nx, Ny):
     colF_xc = []
     colF_yc = []
     colF_nlines = []
-
-    num_source = 0
+    
+    points = np.empty((len(Cat0),2))
+    points[:,0] = Cat0['x'].data
+    points[:,1] = Cat0['y'].data
+    
+    col_tglr = Cat0['T_GLR'].data
     col_id = np.arange(len(Cat0))
-    col_x = Cat0['x']
-    col_y = Cat0['y']
-    col_tglr = Cat0['T_GLR']
-
-    size = len(col_id)
-    with ProgressBar(size) as bar:
-        while len(col_id) > 0:
-            Cix, Ciy = np.mgrid[0:Nx, 0:Ny]
-            Cix = Cix.flatten()
-            Ciy = Ciy.flatten()
-            d = (col_x[:, np.newaxis] - Cix[np.newaxis, :])**2 + \
-                (col_y[:, np.newaxis] - Ciy[np.newaxis, :])**2
-            numi = np.where(d <= np.round(fwhm_fsf / 2)**2)
-            if len(numi[-1]) != 0:
-                unique, count = np.unique(numi[-1], return_counts=True)
-                ksel = np.where(count == max(count))
-                pix = unique[ksel][0]
-                C0 = [Cix[pix], Ciy[pix]]
-                d = (col_x - C0[0])**2 + (col_y - C0[1])**2
-                num0 = (d <= np.round(fwhm_fsf / 2)**2)
-
-                if len(ksel[0]) > 1:
-                    # T_GLR values of the voxels in this group
-                    correl_temp = col_tglr[num0]
-                    # Spatial positions of the voxels
-                    x_gp = col_x[num0]
-                    y_gp = col_y[num0]
-                    # Centroid weighted by the T_GLR of voxels in each group
-                    x_centroid = np.sum(correl_temp * x_gp) / np.sum(correl_temp)
-                    y_centroid = np.sum(correl_temp * y_gp) / np.sum(correl_temp)
-                    # Distances of the centroids to the center of the circle
-                    pix = unique[ksel]
-                    d_i = (x_centroid - Cix[pix])**2 + (y_centroid - Ciy[pix])**2
-                    # Keep the lower distance
-                    ksel2 = np.argmin(d_i)
-                    C0 = [Cix[pix][ksel2], Ciy[pix][ksel2]]
-                    d = (col_x - C0[0])**2 + (col_y - C0[1])**2
-                    num0 = (d <= np.round(fwhm_fsf / 2)**2)
-            else:
-                x0 = 0
-                y0 = 0
-                C0 = [x0, y0]
-                # Distance from the center of the circle to the pixel
-                d = (col_x - C0[0])**2 + (col_y - C0[1])**2  # d**2 ???????
-                # Indices of the voxel inside the circle
-                num0 = (d <= np.round(fwhm_fsf / 2)**2)
-
-            # Number of this source
-            num_source = num_source + 1
-            # Number of lines for this source
-            nb_lines = np.bincount(num0)[1]
-            # To fulfill each line of the catalogue
-            n_S = np.resize(num_source, nb_lines)
-            # Coordinates of the center of the circle
-            x_c = np.resize(C0[0], nb_lines)
-            y_c = np.resize(C0[1], nb_lines)
-            # T_GLR values of the voxels in this group
-            correl_temp = col_tglr[num0]
-            # Spatial positions of the voxels
-            x_gp = col_x[num0]
-            y_gp = col_y[num0]
-            # Centroid weighted by the T_GLR of voxels in each group
-            x_centroid = np.sum(correl_temp * x_gp) / np.sum(correl_temp)
-            y_centroid = np.sum(correl_temp * y_gp) / np.sum(correl_temp)
-            # To fulfill each line of the catalogue
-            x_centroid = np.resize(x_centroid, nb_lines)
-            y_centroid = np.resize(y_centroid, nb_lines)
-            # Number of lines for this source
-            nb_lines = np.resize(int(nb_lines), nb_lines)
-            # New catalogue of detected emission lines merged in sources
-            colF.append(col_id[num0])
-            colF_id.append(n_S)
-            colF_x.append(x_c)
-            colF_y.append(y_c)
-            colF_xc.append(x_centroid)
-            colF_yc.append(y_centroid)
-            colF_nlines.append(nb_lines)
-
-            # Suppress the voxels added in the catalogue
-            col_id = col_id[~num0]
-            col_x = col_x[~num0]
-            col_y = col_y[~num0]
-            col_tglr = col_tglr[~num0]
-
-            # update the progress bar
-            bar.update()
+    
+    t = KDTree(points)
+    r = t.query_ball_tree(t, np.round(fwhm_fsf/2))
+    
+    centroid = np.array([np.sum(col_tglr[r[i]][:,np.newaxis] * points[r[i]], axis=0) / np.sum(col_tglr[r[i]]) for i in range(len(r))])
+    unique_centroid = np.array(list(set(tuple(p) for p in centroid)))
+    
+    t_centroid = KDTree(unique_centroid)
+    r = t_centroid.query_ball_tree(t, np.round(fwhm_fsf/2))
+    
+    for i in range(len(r)):
+        # Number of this source
+        num_source = i + 1
+        # Number of lines for this source
+        nb_lines = len(r[i])
+        # To fulfill each line of the catalogue
+        n_S = np.resize(num_source, nb_lines)
+        # Coordinates of the center of the circle
+        x_c = np.resize(unique_centroid[i][0], nb_lines)
+        y_c = np.resize(unique_centroid[i][1], nb_lines)
+        # Centroid weighted by the T_GLR of voxels in each group
+        centroid = np.sum(col_tglr[r[i]][:,np.newaxis] * points[r[i]], axis=0) / np.sum(col_tglr[r[i]])
+        # To fulfill each line of the catalogue
+        x_centroid = np.resize(centroid[0], nb_lines)
+        y_centroid = np.resize(centroid[1], nb_lines)
+        # Number of lines for this source
+        nb_lines = np.resize(int(nb_lines), nb_lines)
+        # New catalogue of detected emission lines merged in sources
+        colF.append(col_id[r[i]])
+        colF_id.append(n_S)
+        colF_x.append(x_c)
+        colF_y.append(y_c)
+        colF_xc.append(x_centroid)
+        colF_yc.append(y_centroid)
+        colF_nlines.append(nb_lines)
 
     CatF = Cat0[np.concatenate(colF)].copy()
     col_id = Column(name='ID', data=np.concatenate(colF_id))
