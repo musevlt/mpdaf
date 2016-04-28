@@ -2444,7 +2444,7 @@ class Cube(DataArray):
         #  var = sum(weights[k]**2 * var[k]) / (sum(weights[k]))**2
 
         if subcube._var is not None:
-            var = np.ma.sum(subcube.var * wcube**2) / wsum**2
+            var = np.ma.sum(subcube.var * wcube**2, axis=0) / wsum**2
         else:
             var = None
 
