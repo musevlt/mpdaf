@@ -258,7 +258,7 @@ def Compute_PCA_edge(cube, cube_edge):
     Date  : Dec,3 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
     # logger.debug(whoami())
     # data cube converted to dictionary of spectra
     cube_v = cube.reshape(cube.shape[0], cube.shape[1] * cube.shape[2])
@@ -353,7 +353,7 @@ def Compute_Number_Eigenvectors(eig_val, r0):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
     # Initialization
     nl = eig_val.shape[0]
     coeffr = np.zeros(nl - 4)
@@ -481,7 +481,7 @@ def Compute_Proj_Eigenvector(A, V, r):
     Date  : Dec,7 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
     # logger.debug(whoami())
     # initialization
     cube_proj_low_v = np.dot(V[:, :r + 1], A[:r + 1, :])
@@ -749,7 +749,7 @@ def Compute_pval_correl(correl_temp_edge):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
     # logger.debug(whoami())
     moy_est = np.mean(correl_temp_edge)
     std_est = np.std(correl_temp_edge)
@@ -848,7 +848,7 @@ def Compute_pval_channel(X, n_lambda, mean_est):
     Date  : Dec,10 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
     # initialization
     N = np.sum(np.array(X != 0, dtype=np.int))
     # Estimation of p parameter with the mean of the distribution set by the
@@ -1424,7 +1424,7 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     Date  : Dec, 11 2015
     Author: Carole Clastre (carole.clastres@univ-lyon1.fr)
     """
-    logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
     # spectral profile
     num_prof = profile[z0, y0, x0]
     profil0 = Dico[:, num_prof]
@@ -1641,7 +1641,6 @@ def Spectral_Merging(Cat, Cat_est_line_raw, deltaz=1):
             CatF = join(CatF, CatF_temp, join_type='outer')
 
     CatF.remove_columns(['z2'])
-    nid = len(np.unique(CatF['ID']))
     logger.debug('%s executed in %0.1fs' % (whoami(), time.time() - t0))
     return CatF
 
