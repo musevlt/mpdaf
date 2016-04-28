@@ -4,13 +4,13 @@ before_script:
   - which tox
 
 py27:
-  script: tox -e py27
+  script: tox -v -e py27
 
 py34:
-  script: tox -e py34
+  script: tox -v -e py34
 
 astropy10:
-  script: tox -e astropy10
+  script: tox -v -e astropy10
 
 numpy110:
-  script: tox -e numpy110
+  script: tox -v -e numpy110
