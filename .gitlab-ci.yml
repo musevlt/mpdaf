@@ -1,25 +1,31 @@
 before_script:
   - which tox
 
-cache:
-  paths:
-  - .coverage
-  - .tox
+stages:
+  - clean
+  - test
+  - report
 
 coverage-clean:
+  stage: clean
   script: tox -e clean
 
 py27:
+  stage: test
   script: tox -v -e py27
 
 py34:
+  stage: test
   script: tox -v -e py34
 
 astropy10:
+  stage: test
   script: tox -v -e astropy10
 
 numpy110:
+  stage: test
   script: tox -v -e numpy110
 
 coverage-report:
+  stage: report
   script: tox -e report
