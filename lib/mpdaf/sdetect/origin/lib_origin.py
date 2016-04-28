@@ -1505,7 +1505,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf):
     logger = logging.getLogger(__name__)
     logger.debug(whoami())
     t0 = time.time()
-
+    
     colF = []
     colF_id = []
     colF_x = []
@@ -1522,39 +1522,62 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf):
     col_id = np.arange(len(Cat0))
     
     t = KDTree(points)
-    r = t.query_ball_tree(t, np.round(fwhm_fsf/2))
+    r = t.query_ball_tree(t, fwhm_fsf/2)
+    r = [list(x) for x in set(tuple(x) for x in r)]
     
     centroid = np.array([np.sum(col_tglr[r[i]][:,np.newaxis] * points[r[i]], axis=0) / np.sum(col_tglr[r[i]]) for i in range(len(r))])
     unique_centroid = np.array(list(set(tuple(p) for p in centroid)))
     
     t_centroid = KDTree(unique_centroid)
-    r = t_centroid.query_ball_tree(t, np.round(fwhm_fsf/2))
+    r = t_centroid.query_ball_tree(t, fwhm_fsf/2)
+    
+#    while True:
+#        ncentroid = len(unique_centroid)
+#        t_centroid = KDTree(unique_centroid)
+#        r = t_centroid.query_ball_tree(t, np.round(fwhm_fsf/2))
+#        centroid = np.array([np.sum(col_tglr[r[i]][:,np.newaxis] * points[r[i]], axis=0) / np.sum(col_tglr[r[i]]) for i in range(len(r))])
+#        uniq = np.array(list(set(tuple(p) for p in centroid)))
+#        if len(uniq) >= ncentroid:
+#            break
+#        else:
+#            unique_centroid = uniq
+            
+    sorted_lists = zip(r,unique_centroid)
+    sorted_lists.sort(key=lambda t: len(t[0]), reverse=True)
+    r = [p[0] for p in sorted_lists]
+    unique_centroid = [p[1] for p in sorted_lists]
+    
+    used_lines = []
     
     for i in range(len(r)):
-        # Number of this source
-        num_source = i + 1
         # Number of lines for this source
-        nb_lines = len(r[i])
-        # To fulfill each line of the catalogue
-        n_S = np.resize(num_source, nb_lines)
-        # Coordinates of the center of the circle
-        x_c = np.resize(unique_centroid[i][0], nb_lines)
-        y_c = np.resize(unique_centroid[i][1], nb_lines)
-        # Centroid weighted by the T_GLR of voxels in each group
-        centroid = np.sum(col_tglr[r[i]][:,np.newaxis] * points[r[i]], axis=0) / np.sum(col_tglr[r[i]])
-        # To fulfill each line of the catalogue
-        x_centroid = np.resize(centroid[0], nb_lines)
-        y_centroid = np.resize(centroid[1], nb_lines)
-        # Number of lines for this source
-        nb_lines = np.resize(int(nb_lines), nb_lines)
-        # New catalogue of detected emission lines merged in sources
-        colF.append(col_id[r[i]])
-        colF_id.append(n_S)
-        colF_x.append(x_c)
-        colF_y.append(y_c)
-        colF_xc.append(x_centroid)
-        colF_yc.append(y_centroid)
-        colF_nlines.append(nb_lines)
+        lines = [l for l in r[i] if col_id[l] not in used_lines]
+        if len(lines) > 0:
+            # Number of this source
+            num_source = i + 1
+            
+            used_lines += lines
+            nb_lines = len(lines)
+            # To fulfill each line of the catalogue
+            n_S = np.resize(num_source, nb_lines)
+            # Coordinates of the center of the circle
+            x_c = np.resize(unique_centroid[i][0], nb_lines)
+            y_c = np.resize(unique_centroid[i][1], nb_lines)
+            # Centroid weighted by the T_GLR of voxels in each group
+            centroid = np.sum(col_tglr[lines][:,np.newaxis] * points[lines], axis=0) / np.sum(col_tglr[lines])
+            # To fulfill each line of the catalogue
+            x_centroid = np.resize(centroid[0], nb_lines)
+            y_centroid = np.resize(centroid[1], nb_lines)
+            # Number of lines for this source
+            nb_lines = np.resize(int(nb_lines), nb_lines)
+            # New catalogue of detected emission lines merged in sources
+            colF.append(col_id[lines])
+            colF_id.append(n_S)
+            colF_x.append(x_c)
+            colF_y.append(y_c)
+            colF_xc.append(x_centroid)
+            colF_yc.append(y_centroid)
+            colF_nlines.append(nb_lines)
 
     CatF = Cat0[np.concatenate(colF)].copy()
     col_id = Column(name='ID', data=np.concatenate(colF_id))
