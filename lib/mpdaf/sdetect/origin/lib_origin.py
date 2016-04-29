@@ -27,7 +27,7 @@ from scipy import signal, stats, special
 from scipy.ndimage import measurements, morphology
 from scipy.signal.signaltools import _next_regular, _centered
 from scipy.spatial import KDTree
-from six.moves import range
+from six.moves import range, zip
 
 from ...obj import Cube, Image, Spectrum
 from ...sdetect import Source
@@ -95,8 +95,8 @@ def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
     for i in range(Nz):
         for dx in range(Nfsf):
             for dy in range(Nfsf):
-                PSF_Moffat[i, dx, dy] = (1 + (np.sqrt(x[dx]**2 + y[dy]**2)\
-                                              / alpha[i])**2)**(-beta)
+                PSF_Moffat[i, dx, dy] = (1 + (np.sqrt(x[dx]**2 + y[dy]**2) /
+                                              alpha[i])**2)**(-beta)
     # Normalization
     PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
         [:, np.newaxis, np.newaxis]
@@ -361,14 +361,15 @@ def Compute_Number_Eigenvectors(eig_val, r0):
     # Start with the 5 first eigenvalues for the linear regression
     for r in range(5, nl + 1):
         Y = np.log(eig_val[:r] + 0j)
-        #Y[np.isnan(Y)] = 0
+        # Y[np.isnan(Y)] = 0
         X = np.array([np.ones(r), eig_val[:r]])
         beta = np.linalg.lstsq(X.T, Y)[0]
         Yest = np.dot(X.T, beta)
         # Determination coefficient
         Y = np.real(Y)
         Yest = np.real(Yest)
-        coeffr[r - 5] = 1 - (np.sum((Y - Yest)**2) / np.sum((Y - np.mean(Y))**2))
+        coeffr[r - 5] = 1 - (np.sum((Y - Yest)**2) /
+                             np.sum((Y - np.mean(Y))**2))
 
     # Find the coefficient closer of r0
     rt = 4 + np.where(coeffr >= r0)[0]
@@ -441,7 +442,7 @@ def Compute_Proj_Eigenvector_Zone(nbkeep, NbSubcube, Nx, Ny, Nz, A, V,
             At = A[(numx, numy)]
             Vt = V[(numx, numy)]
             r = nbkeep[numx, numy]
-            cube_proj_faint_v , cube_proj_cont_v = \
+            cube_proj_faint_v, cube_proj_cont_v = \
                 Compute_Proj_Eigenvector(At, Vt, r)
             # Resize the subcube
             cube_faint[:, y1:y2, x1:x2] = \
@@ -529,14 +530,16 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     Nx = cube_var.shape[2]
 
     # Spatial convolution of the weighted data with the zero-mean FSF
-    logger.info('Step 1/5 Spatial convolution of the weighted data with the zero-mean FSF')
+    logger.info('Step 1/5 Spatial convolution of the weighted data with the '
+                'zero-mean FSF')
     PSF_Moffat_m = PSF_Moffat \
         - np.mean(PSF_Moffat, axis=(1, 2))[:, np.newaxis, np.newaxis]
     cube_fsf = np.empty(shape)
 
     for i in ProgressBar(list(range(Nz))):
         cube_fsf[i, :, :] = signal.fftconvolve(cube_var[i, :, :],
-                                               PSF_Moffat_m[i, :, :][::-1, ::-1], mode='same')
+                                               PSF_Moffat_m[i, :, :][::-1, ::-1],
+                                               mode='same')
     del cube_var
 
     fsf_square = PSF_Moffat_m**2
@@ -546,7 +549,8 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     norm_fsf = np.empty(shape)
     for i in ProgressBar(list(range(Nz))):
         norm_fsf[i, :, :] = signal.fftconvolve(inv_var[i, :, :],
-                                               fsf_square[i, :, :][::-1, ::-1], mode='same')
+                                               fsf_square[i, :, :][::-1, ::-1],
+                                               mode='same')
     del fsf_square, inv_var
 
     # First cube of correlation values
@@ -984,8 +988,10 @@ def Compute_Referent_Voxel(correl, profile, cube_pval_correl,
     t0 = time.time()
     grp = measurements.find_objects(labeled_cube)
     argmax = [np.argmax(correl[grp[i]]) for i in range(Ngp)]
-    correl_max = np.array([np.ravel(correl[grp[i]])[argmax[i]] for i in range(Ngp)])
-    z, y, x = np.meshgrid(list(range(correl.shape[0])), list(range(correl.shape[1])),
+    correl_max = np.array([np.ravel(correl[grp[i]])[argmax[i]]
+                           for i in range(Ngp)])
+    z, y, x = np.meshgrid(list(range(correl.shape[0])),
+                          list(range(correl.shape[1])),
                           list(range(correl.shape[2])), indexing='ij')
     zpixRef = np.array([np.ravel(z[grp[i]])[argmax[i]] for i in range(Ngp)])
     ypixRef = np.array([np.ravel(y[grp[i]])[argmax[i]] for i in range(Ngp)])
@@ -1436,9 +1442,10 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     line_est = np.zeros(Nz)
 
     # Deconvolution
-    line_est[intz1:intz2] = np.sum((PSF_Moffat[intz1:intz2, :, :] * \
-                                    cube_faint_pad[intz1:intz2, :, :]) , axis=(1, 2)) \
-        / np.sum((PSF_Moffat[intz1:intz2, :, :] * \
+    line_est[intz1:intz2] = np.sum((PSF_Moffat[intz1:intz2, :, :] *
+                                    cube_faint_pad[intz1:intz2, :, :]),
+                                   axis=(1, 2)) \
+        / np.sum((PSF_Moffat[intz1:intz2, :, :] *
                   PSF_Moffat[intz1:intz2, :, :]), axis=(1, 2))
 
     # Estimated line in data space
@@ -1501,7 +1508,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf):
     logger = logging.getLogger(__name__)
     logger.debug(whoami())
     t0 = time.time()
-    
+
     colF = []
     colF_id = []
     colF_x = []
@@ -1509,24 +1516,24 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf):
     colF_xc = []
     colF_yc = []
     colF_nlines = []
-    
-    points = np.empty((len(Cat0),2))
-    points[:,0] = Cat0['x'].data
-    points[:,1] = Cat0['y'].data
-    
+
+    points = np.empty((len(Cat0), 2))
+    points[:, 0] = Cat0['x'].data
+    points[:, 1] = Cat0['y'].data
+
     col_tglr = Cat0['T_GLR'].data
     col_id = np.arange(len(Cat0))
-    
+
     t = KDTree(points)
-    r = t.query_ball_tree(t, fwhm_fsf/2)
+    r = t.query_ball_tree(t, fwhm_fsf / 2)
     r = [list(x) for x in set(tuple(x) for x in r)]
-    
-    centroid = np.array([np.sum(col_tglr[r[i]][:,np.newaxis] * points[r[i]], axis=0) / np.sum(col_tglr[r[i]]) for i in range(len(r))])
+
+    centroid = np.array([np.sum(col_tglr[r[i]][:, np.newaxis] * points[r[i]], axis=0) / np.sum(col_tglr[r[i]]) for i in range(len(r))])
     unique_centroid = np.array(list(set(tuple(p) for p in centroid)))
-    
+
     t_centroid = KDTree(unique_centroid)
-    r = t_centroid.query_ball_tree(t, fwhm_fsf/2)
-    
+    r = t_centroid.query_ball_tree(t, fwhm_fsf / 2)
+
 #    while True:
 #        ncentroid = len(unique_centroid)
 #        t_centroid = KDTree(unique_centroid)
@@ -1537,21 +1544,21 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf):
 #            break
 #        else:
 #            unique_centroid = uniq
-            
-    sorted_lists = zip(r,unique_centroid)
-    sorted_lists.sort(key=lambda t: len(t[0]), reverse=True)
+
+    sorted_lists = sorted(zip(r, unique_centroid), key=lambda t: len(t[0]),
+                          reverse=True)
     r = [p[0] for p in sorted_lists]
     unique_centroid = [p[1] for p in sorted_lists]
-    
+
     used_lines = []
-    
+
     for i in range(len(r)):
         # Number of lines for this source
         lines = [l for l in r[i] if col_id[l] not in used_lines]
         if len(lines) > 0:
             # Number of this source
             num_source = i + 1
-            
+
             used_lines += lines
             nb_lines = len(lines)
             # To fulfill each line of the catalogue
@@ -1560,7 +1567,8 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf):
             x_c = np.resize(unique_centroid[i][0], nb_lines)
             y_c = np.resize(unique_centroid[i][1], nb_lines)
             # Centroid weighted by the T_GLR of voxels in each group
-            centroid = np.sum(col_tglr[lines][:,np.newaxis] * points[lines], axis=0) / np.sum(col_tglr[lines])
+            centroid = np.sum(col_tglr[lines][:, np.newaxis] * points[lines],
+                              axis=0) / np.sum(col_tglr[lines])
             # To fulfill each line of the catalogue
             x_centroid = np.resize(centroid[0], nb_lines)
             y_centroid = np.resize(centroid[1], nb_lines)
@@ -1586,7 +1594,7 @@ def Spatial_Merging_Circle(Cat0, fwhm_fsf):
                      indexes=[0, 0, 0, 0, 0, 0])
 
     nid = len(np.unique(CatF['ID']))
-    logger.info('{} sources identified in catalog after spatial merging'.format(nid))
+    logger.info('%d sources identified in catalog after spatial merging', nid)
     logger.debug('%s executed in %1.1fs' % (whoami(), time.time() - t0))
 
     return CatF
@@ -1735,10 +1743,10 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
     t0 = time.time()
     uflux = u.erg / (u.s * u.cm**2)
     unone = u.dimensionless_unscaled
-    cols = ['LBDA_ORI', 'FWHM_ORI', 'FLUX_ORI', 'GLR', 'PVALC', 'PVALS', 'PVALF',
-            'T1', 'T2', 'PROF']
-    units = [u.Angstrom, u.Angstrom, uflux, unone, unone, unone, unone, unone, unone,
-             unone]
+    cols = ['LBDA_ORI', 'FWHM_ORI', 'FLUX_ORI', 'GLR', 'PVALC', 'PVALS',
+            'PVALF', 'T1', 'T2', 'PROF']
+    units = [u.Angstrom, u.Angstrom, uflux, unone, unone, unone, unone, unone,
+             unone, unone]
     desc = None
     fmt = ['.2f', '.2f', '.1f', '.1f', '.1e', '.1e', '.1e', '.1f', '.1f', 'd']
 
@@ -1786,13 +1794,13 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
             # Estimated line
             sp = sp_est[z1:z2]
             # Wavelength in angstrom of estimated line
-            #wave_ang = wave.coord(ksel[0], unit=u.angstrom)
+            # wave_ang = wave.coord(ksel[0], unit=u.angstrom)
             # T_GLR centered around this line
             c = correl[z1:z2, E['y'][j], E['x'][j]]
             # FWHM in arcsec of the profile
             profile_num = num_profil[j]
             profil_FWHM = step_wave * fwhm_profiles[profile_num]
-            #profile_dico = Dico[:, profile_num]
+            # profile_dico = Dico[:, profile_num]
             flux = E['flux'][j]
             w = wave.coord(wave_pix[j], unit=u.angstrom)
             vals = [w, profil_FWHM, flux, GLR[j], pvalC[j], pvalS[j],
