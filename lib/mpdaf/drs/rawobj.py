@@ -4,7 +4,6 @@ from __future__ import absolute_import, print_function, division
 
 import datetime
 import logging
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import multiprocessing
 import numpy as np
@@ -12,10 +11,11 @@ import os.path
 import sys
 import warnings
 
-from astropy.io import fits as pyfits
-from mpdaf import obj
+from astropy.io import fits
 from scipy import integrate
 from six.moves import range
+
+from ..obj import Image, WCS
 
 NB_SUBSLICERS = 4  # number of sub-slicers
 NB_SPEC_PER_SLICE = 75  # number of pixels per slice
@@ -40,13 +40,13 @@ class Channel(object):
     ----------
     extname : str
         The extension name
-    header : pyfits.Header
+    header : `astropy.io.fits.Header`
         The extension header
     data : array
         Array containing the pixel values of the image extension
-    nx : integer
+    nx : int
         Lengths of data in X
-    ny : integer
+    ny : int
         Lengths of data in Y
     mask : array of booleans
         Arrays that contents TRUE for overscanned pixels, FALSE for the others.
@@ -57,7 +57,7 @@ class Channel(object):
         self._logger = logging.getLogger(__name__)
         self.extname = extname
         if filename is not None:
-            hdulist = pyfits.open(filename)
+            hdulist = fits.open(filename)
             self.header = hdulist[extname].header
             self.nx = hdulist[extname].header["NAXIS1"]
             self.ny = hdulist[extname].header["NAXIS2"]
@@ -70,14 +70,14 @@ class Channel(object):
                 self.data = None
             hdulist.close()
         elif data is not None:
-            self.header = pyfits.Header()
+            self.header = fits.Header()
             shape = np.shape(data)
             self.data = np.ndarray(shape)
             self.data[:] = data[:]
             self.nx = shape[1]
             self.ny = shape[0]
         else:
-            self.header = pyfits.Header()
+            self.header = fits.Header()
             self.nx = 0
             self.ny = 0
             self.data = None
@@ -139,7 +139,7 @@ class Channel(object):
     def copy(self):
         """Return a copy of the Channel object."""
         result = Channel(self.extname)
-        result.header = pyfits.Header(self.header)
+        result.header = fits.Header(self.header)
         try:
             result.data = self.data.__copy__()
         except:
@@ -330,7 +330,7 @@ class Channel(object):
 
         Parameters
         ----------
-        det_out : integer in [1,4]
+        det_out : int in [1,4]
             Number of output detector. If None, all image is returned.
         bias    : boolean
             If True, median value of the overscanned pixels is subtracted.
@@ -339,8 +339,8 @@ class Channel(object):
         -------
         out : `~mpdaf.obj.Image`
         """
-        wcs = obj.WCS(self.header)
-        ima = obj.Image(wcs=wcs, data=self.data.__copy__())
+        wcs = WCS(self.header)
+        ima = Image(wcs=wcs, data=self.data.__copy__())
 
         if det_out is not None:
             # length of data in X
@@ -424,7 +424,7 @@ class Channel(object):
 
         Parameters
         ----------
-        det_out : integer in [1,4]
+        det_out : int in [1,4]
             Number of detector taken into account.
 
         Returns
@@ -441,7 +441,7 @@ class Channel(object):
 
         Parameters
         ----------
-        det_out : integer in [1,4]
+        det_out : int in [1,4]
             Number of output detector. If None, all image is returned.
         bias_substract : boolean
             If True, median value of the overscanned pixels is substracted.
@@ -539,8 +539,8 @@ class Channel(object):
 
         data = np.ma.compressed(work)
         data = np.reshape(data, (ny_data2, nx_data2))
-        wcs = obj.WCS(crpix=(1.0, 1.0), shape=(ny_data2, nx_data2))
-        ima = obj.Image(wcs=wcs, data=data)
+        wcs = WCS(crpix=(1.0, 1.0), shape=(ny_data2, nx_data2))
+        ima = Image(wcs=wcs, data=data)
 
         if det_out is not None:
             # length of data in X
@@ -581,7 +581,7 @@ class Channel(object):
 
         Parameters
         ----------
-        det_out : integer in [1,4]
+        det_out : int in [1,4]
                   Number of output detector.
                   If None, all image is returned.
 
@@ -589,8 +589,8 @@ class Channel(object):
         -------
         out : `~mpdaf.obj.Image`
         """
-        wcs = obj.WCS(pyfits.Header(self.header))
-        ima = obj.Image(wcs=wcs, data=self.data)
+        wcs = WCS(fits.Header(self.header))
+        ima = Image(wcs=wcs, data=self.data)
         ima.data = np.ma.MaskedArray(self.data.__copy__(),
                                      mask=self.mask, copy=True)
 
@@ -638,15 +638,15 @@ class Channel(object):
 
         Parameters
         ----------
-        det_out : integer in [1,4]
+        det_out : int in [1,4]
             Number of output detector. If None, all image is returned.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
         """
-        wcs = obj.WCS(pyfits.Header(self.header))
-        ima = obj.Image(wcs=wcs, data=self.data)
+        wcs = WCS(fits.Header(self.header))
+        ima = Image(wcs=wcs, data=self.data)
         ima.data = np.ma.MaskedArray(self.data.__copy__(),
                                      mask=np.logical_not(self.mask),
                                      copy=True)
@@ -743,13 +743,13 @@ class RawFile(object):
         The raw FITS file name. None if any.
     channels : dict
         List of extension (extname,Channel)
-    primary_header : pyfits.Header
+    primary_header : `astropy.io.fits.Header`
         The primary header
-    nx : integer
+    nx : int
         Lengths of data in X
-    ny : integer
+    ny : int
         Lengths of data in Y
-    next : integer
+    next : int
         Number of extensions
     progress : boolean
         If True, progress of multiprocessing tasks are displayed. True by
@@ -760,7 +760,7 @@ class RawFile(object):
     def __init__(self, filename=None):
         self._logger = logging.getLogger(__name__)
         self.filename = filename
-        self.primary_header = pyfits.Header()
+        self.primary_header = fits.Header()
         self.progress = True
         self.channels = dict()
         self.nx = 0
@@ -768,7 +768,7 @@ class RawFile(object):
         self.next = 0
 
         if filename is not None:
-            hdulist = pyfits.open(self.filename)
+            hdulist = fits.open(self.filename)
             self.primary_header = hdulist[0].header
             for hdu in hdulist[1:]:
                 extname = hdu.header["EXTNAME"]
@@ -792,7 +792,7 @@ class RawFile(object):
         """Return a copy of the RawFile object."""
         result = RawFile(self.filename)
         if result.filename is None:
-            result.primary_header = pyfits.Header(self.primary_header)
+            result.primary_header = fits.Header(self.primary_header)
             result.nx = self.nx
             result.ny = self.ny
             result.next = self.next
@@ -849,7 +849,7 @@ class RawFile(object):
 
         Parameters
         ----------
-        key : integer
+        key : int
             The extension number.
 
         Returns
@@ -866,7 +866,7 @@ class RawFile(object):
 
         Parameters
         ----------
-        key : integer
+        key : int
             The extension number.
         value : `mpdaf.drs.Channel` or array
             Channel object or image
@@ -1034,7 +1034,7 @@ class RawFile(object):
 
         """
         # create primary header
-        prihdu = pyfits.PrimaryHDU()
+        prihdu = fits.PrimaryHDU()
         if self.primary_header is not None:
             for card in self.primary_header.cards:
                 try:
@@ -1059,9 +1059,9 @@ class RawFile(object):
                 chan = self.get_channel(name)
                 try:
                     if isinstance(chan.data, np.ma.core.MaskedArray):
-                        dhdu = pyfits.ImageHDU(name=name, data=chan.data.data)
+                        dhdu = fits.ImageHDU(name=name, data=chan.data.data)
                     else:
-                        dhdu = pyfits.ImageHDU(name=name, data=chan.data)
+                        dhdu = fits.ImageHDU(name=name, data=chan.data)
                     if chan.header is not None:
                         for card in chan.header.cards:
                             try:
@@ -1077,7 +1077,7 @@ class RawFile(object):
                 except:
                     pass
         # save to disk
-        hdu = pyfits.HDUList(hdulist)
+        hdu = fits.HDUList(hdulist)
         hdu.writeto(filename, clobber=True, output_verify='fix')
         # update attributes
         self.filename = filename
@@ -1219,7 +1219,7 @@ class RawFile(object):
                     white_ima[wr_row, wr_col - NB_SPEC_PER_SLICE:wr_col] = \
                         data[noslice - 1, :]
 
-        return obj.Image(data=white_ima, wcs=obj.WCS())
+        return Image(data=white_ima, wcs=WCS())
 
     def _plot_ifu_slice_on_white_image(self, ifu, sli):
         # plot channel
@@ -1240,7 +1240,7 @@ class RawFile(object):
         plt.plot(np.ones(2) * wr_col, np.arange(wr_row, wr_row + 2), 'r-')
         plt.plot(np.ones(2) * (wr_col + 75),
                  np.arange(wr_row, wr_row + 2), 'r-')
-        self.whiteima.plot(cmap=cm.copper)
+        self.whiteima.plot(cmap='copper')
 
     def _plot_slice_on_raw_image(self, ifu, sli, same_raw=False):
         mask_raw = RawFile(self.mask_file)
@@ -1281,7 +1281,7 @@ class RawFile(object):
                      xycoords='data', textcoords='data', color='r')
         if same_raw is False:
             self.rawima = self.get_channel(chan).get_trimmed_image()
-        self.rawima.plot(title='CHAN%02d' % ifu, cmap=cm.copper)
+        self.rawima.plot(title='CHAN%02d' % ifu, cmap='copper')
         self.plotted_chan = ifu
 
     def _onclick(self, event):
