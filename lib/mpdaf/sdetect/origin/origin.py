@@ -195,7 +195,7 @@ class ORIGIN(object):
             if not np.isclose(cubePSF.wcs.get_step(unit=u.arcsec)[0], step_arcsec):
                 raise IOError('PSF and data cube have not the same pixel sizes.')
 
-            self.PSF = cubePSF.data.data
+            self.PSF = cubePSF._data
             # mean of the fwhm of the FSF in pixel
             self.FWHM_PSF = np.mean(FWHM_PSF)
 
@@ -284,7 +284,7 @@ class ORIGIN(object):
         """
         # TGLR computing (normalized correlations)
         self._logger.info('ORIGIN - Compute the GLR test')
-        correl, profile = Correlation_GLR_test(cube_faint.data.data, self.var,
+        correl, profile = Correlation_GLR_test(cube_faint._data, self.var,
                                                self.PSF, self.profiles)
         correl = Cube(data=correl, wave=self.wave, wcs=self.wcs,
                       mask=np.ma.nomask)
@@ -323,7 +323,7 @@ class ORIGIN(object):
         # p-values of correlation values
         self._logger.info('ORIGIN - Compute p-values of correlation values')
         self.param['ThresholdPval'] = threshold
-        cube_pval_correl = Compute_pval_correl_zone(correl.data.data, self.intx,
+        cube_pval_correl = Compute_pval_correl_zone(correl._data, self.intx,
                                                     self.inty, self.NbSubcube,
                                                     self.Edge_xmin,
                                                     self.Edge_xmax,
@@ -388,12 +388,12 @@ class ORIGIN(object):
         # connected voxels
         self._logger.info('ORIGIN - Compute connected voxels')
         self.param['neighboors'] = neighboors
-        labeled_cube, Ngp = Compute_Connected_Voxel(cube_pval_final.data.data, neighboors)
+        labeled_cube, Ngp = Compute_Connected_Voxel(cube_pval_final._data, neighboors)
         self._logger.info('ORIGIN - %d connected voxels detected' % Ngp)
         # Referent pixel
         self._logger.info('ORIGIN - Compute referent pixels')
-        Cat0 = Compute_Referent_Voxel(correl.data.data, profile.data.data, cube_pval_correl.data.data,
-                                      cube_pval_channel.data.data, cube_pval_final.data.data, Ngp,
+        Cat0 = Compute_Referent_Voxel(correl._data, profile._data, cube_pval_correl._data,
+                                      cube_pval_channel._data, cube_pval_final._data, Ngp,
                                       labeled_cube)
         return Cat0
 
@@ -498,7 +498,7 @@ class ORIGIN(object):
         self.param['grid_dxy'] = grid_dxy
         self.param['grid_dz'] = grid_dz
         Cat2_T, Cat_est_line_raw_T, Cat_est_line_std_T = \
-            Estimation_Line(Cat1_T, profile.data.data, self.Nx, self.Ny, self.Nz, self.var, cube_faint.data.data,
+            Estimation_Line(Cat1_T, profile._data, self.Nx, self.Ny, self.Nz, self.var, cube_faint._data,
                             grid_dxy, grid_dz, self.PSF, self.profiles)
         Cat_est_line = []
         for data, var in zip(Cat_est_line_raw_T, Cat_est_line_std_T):
@@ -557,7 +557,7 @@ class ORIGIN(object):
         """
         self._logger.info('ORIGIN - Spectral merging')
         self.param['deltaz'] = deltaz
-        Cat_est_line_raw = [spe.data.data for spe in Cat_est_line]
+        Cat_est_line_raw = [spe._data for spe in Cat_est_line]
         Cat4 = Spectral_Merging(Cat3, Cat_est_line_raw, deltaz)
         return Cat4
 
@@ -612,7 +612,7 @@ class ORIGIN(object):
         # list of source objects
         self._logger.info('ORIGIN - Create the list of sources')
         nsources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
-                                              correl.data.data, self.wave,
+                                              correl._data, self.wave,
                                               self.filename, self.FWHM_profiles,
                                               path2, name, self.param)
 
@@ -642,7 +642,7 @@ class ORIGIN(object):
         ax : matplotlib.Axes
                 the Axes instance in which the image is drawn
         """
-        carte_2D_correl = np.amax(correl.data.data, axis=0)
+        carte_2D_correl = np.amax(correl._data, axis=0)
         carte_2D_correl_ = Image(data=carte_2D_correl, wcs=self.wcs)
 
         if ax is None:
