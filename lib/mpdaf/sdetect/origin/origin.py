@@ -665,8 +665,9 @@ class ORIGIN(object):
         from astropy.convolution import Gaussian2DKernel
         from astropy.stats import gaussian_fwhm_to_sigma
         
-        self._logger.debug('Creating segmentation image with threshold {}'.format(threshold))
-        sigma = gaussian_fwhm_to_sigma * 0.7/0.2
+        self._logger.info('Creating segmentation image with threshold {}'.format(threshold))
+        nsource_init = len(np.unique(incat['ID']))
+        sigma = gaussian_fwhm_to_sigma * fwhm/0.2
         kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
         kernel.normalize()
         segm = ima.clone()
@@ -690,7 +691,7 @@ class ORIGIN(object):
             mask = vals==k
             srclist = incat[mask]
             if len(srclist) > 0:
-                self._logger.debug('merging {} sources for id {}'.format(len(srclist),k))  
+                #self._logger.debug('merging {} sources for id {}'.format(len(srclist),k))  
                 iden = srclist['ID'].min()
                 clipflux = np.clip(srclist['flux'],0,np.infty)
                 if clipflux.sum() == 0: 
@@ -701,14 +702,15 @@ class ORIGIN(object):
                 incat['ID'][mask] = iden
                 incat['x_centroid'][mask] = xc
                 incat['y_centroid'][mask] = yc  
-        self._logger.info('Recreate IDs for the catalog')
+        self._logger.debug('Recreate IDs for the catalog')
         current_ids = np.unique(incat['ID'])
         current_ids.sort()
         for k,iden in enumerate(current_ids):
             mask = incat['ID'] == iden
             incat['ID'][mask] = k + 1
-            
-        self._logger.debug('{} sources in catalog'.format(len(current_ids)))
+        nsource_final = len(np.unique(incat['ID']))   
+        nmerged = nsource_init - nsource_final
+        self._logger.info('{}/{} sources merged in catalog [{}]'.format(nmerged,nsource_init,nsource_final))
             
         return incat, segm
         
