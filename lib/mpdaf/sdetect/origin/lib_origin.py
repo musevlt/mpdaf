@@ -725,10 +725,8 @@ def Compute_pval_correl_zone(correl, intx, inty, NbSubcube, Edge_xmin,
 
     # Threshold the pvalues
     threshold_log = 10**(-threshold)
-    cube_pval_correl = cube_pval_correl * (cube_pval_correl < threshold_log)
-    # The pvalues equals to zero correspond to the values flag to zero because
-    # they are higher than the threshold so actually they have to be set to 1
-    cube_pval_correl[cube_pval_correl == 0] = 1
+    cube_pval_correl[cube_pval_correl >= threshold_log] = 1
+    
     logger.debug('%s executed in %0.1fs' % (whoami(), time.time() - t0))
     return cube_pval_correl
 
@@ -756,10 +754,6 @@ def Compute_pval_correl(correl_temp_edge):
     # hypothesis : T_GLR are distributed according a normal distribution
     rv = stats.norm(loc=moy_est, scale=std_est)
     cube_pval_correl = 1 - rv.cdf(correl_temp_edge)
-
-    # Set the pvalues equals to zero to an arbitrary very low value, but not
-    # zero (eps in Matlab =~ 2.2204.10^(-16))
-    cube_pval_correl[cube_pval_correl == 0] = np.spacing(1)**6
 
     return cube_pval_correl
 
@@ -799,11 +793,7 @@ def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
     t0 = time.time()
     # initialization
     cube_pval_channel = np.zeros(cube_pval_correl.shape)
-    # The p-values higher than the thresholded are previously set to 1, here
-    # we set them to 0 because we want to count the number of pvalues
-    # thresholded.
     cube_pval_correl_threshold = cube_pval_correl.copy()
-    cube_pval_correl_threshold[cube_pval_correl == 1] = 0
 
     for numy in range(NbSubcube):
         for numx in range(NbSubcube):
@@ -816,7 +806,7 @@ def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
             X = cube_pval_correl_threshold[:, y1:y2, x1:x2]
 
             # How many thresholded pvalues in each spectral channel
-            n_lambda = np.sum(np.array(X != 0, dtype=np.int), axis=(1, 2))
+            n_lambda = np.sum(np.array(X != 1, dtype=np.int), axis=(1, 2))
             # pvalues computed for each spectral channel
             pval_channel_temp = Compute_pval_channel(X, n_lambda, mean_est)
             # cube of p-values
@@ -850,16 +840,14 @@ def Compute_pval_channel(X, n_lambda, mean_est):
     """
     # logger = logging.getLogger(__name__)
     # initialization
-    N = np.sum(np.array(X != 0, dtype=np.int))
+    N = np.sum(np.array(X != 1, dtype=np.int))
     # Estimation of p parameter with the mean of the distribution set by the
     # FSF size
     p_est = mean_est / N
     # Hypothesis : Binomial distribution for each channel
     pval_channel = special.bdtr(N - 1, N, p_est) - \
         special.bdtr(n_lambda, N, p_est)
-    # Set the pvalues equals to zero to an arbitrary very low value, but not
-    # zero (eps in Matlab ~= 2.2204.10^(-16))
-    pval_channel[pval_channel <= 0] = np.spacing(1)**6
+    pval_channel[pval_channel <= 0] = 0
     return pval_channel
 
 
@@ -894,7 +882,15 @@ def Compute_pval_final(cube_pval_correl, cube_pval_channel, threshold):
     logger.debug(whoami())
     t0 = time.time()
     # probability : Pr(line|not nuisance) = Pr(line)/Pr(not nuisance)
+    ksel_correl = (cube_pval_correl==0)
+    ksel_channel = (cube_pval_channel==0)
+    # Set the pvalues equals to zero to an arbitrary very low value, but not
+    # zero
+    cube_pval_correl[ksel_correl] = np.spacing(1)**6
+    cube_pval_channel[ksel_channel] = np.spacing(1)**6
     probafinale = cube_pval_correl / cube_pval_channel
+    cube_pval_correl[ksel_correl] = 0
+    cube_pval_channel[ksel_channel] = 0
     # pvalue = probability/2
     cube_pval_final = probafinale / 2
     # Set the nan to 1
