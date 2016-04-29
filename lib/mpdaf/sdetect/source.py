@@ -1196,8 +1196,8 @@ class Source(object):
                 tags = all_tags[useful]
                 for l1, l2, tag in zip(lambda_ranges[0, :],
                                        lambda_ranges[1, :], tags):
-                    self._logger.debug('Generate narrow band image for NB_%s'
-                                       ' with z=%s', tag, z[0])
+                    #self._logger.debug('Generate narrow band image for NB_%s'
+                    #                   ' with z=%s', tag, z[0])
                     self.images['NB_' + tag] = subcub.get_image(
                         wave=(l1, l2), is_sum=is_sum,
                         subtract_off=subtract_off, margin=margin,
@@ -1239,8 +1239,8 @@ class Source(object):
             The size of the off-band is fband*narrow-band width (in angstrom).
 
         """
-        self._logger.debug('Generate narrow band image for %s, lamdba: %s',
-                           tag, lbda)
+        #self._logger.debug('Generate narrow band image for %s, lamdba: %s',
+        #                   tag, lbda)
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
