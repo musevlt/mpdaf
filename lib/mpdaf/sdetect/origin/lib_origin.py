@@ -1713,7 +1713,7 @@ def Add_radec_to_Cat(Cat, wcs):
     logger.debug('%s executed in %0.1fs' % (whoami(), time.time() - t0))
     return Cat_radec
 
-def Construct_Object(uflux, unone, cols, units, desc, fmt, step_wave,
+def Construct_Object(bar, uflux, unone, cols, units, desc, fmt, step_wave,
                      origin, filename, maxmap, correl, fwhm_profiles, 
                      param, path, name, i, ra, dec, x_centroid,
                      y_centroid, wave_pix, GLR, num_profil, pvalC, pvalS,
@@ -1785,7 +1785,8 @@ def Construct_Object(uflux, unone, cols, units, desc, fmt, step_wave,
         src.OP_DXY = (param['grid_dxy'], 'Orig Grid Nxy')
         src.OP_DZ = (param['grid_dz'], 'Orig Grid Nz')
         src.OP_FSF = (param['PSF'], 'Orig FSF cube')
-        src.write('%s/%s-%04d.fits' % (path, name, src.ID))
+        src.write('%s/%s-%05d.fits' % (path, name, src.ID))
+        bar.update()
 
 
 def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
@@ -1866,8 +1867,10 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
         sources_arglist.append(source_arglist)
         
     # run in parallel
-    errmsg = Parallel(max_nbytes=1e6)(
-            delayed(Construct_Object)(uflux, unone, cols, units, desc,
+    # add progress bar
+    with ProgressBar(len(sources_arglist)) as bar:
+        errmsg = Parallel(max_nbytes=1e6)(
+            delayed(Construct_Object)(bar, uflux, unone, cols, units, desc,
                                       fmt, step_wave, origin, filename,
                                       maxmap, correl, fwhm_profiles, 
                                       param, path, name, *source_arglist)
