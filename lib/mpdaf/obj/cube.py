@@ -2007,7 +2007,7 @@ class Cube(DataArray):
 
         pool = multiprocessing.Pool(processes=cpu_count)
 
-        if isinstance(f, types.MethodType):
+        if _is_method(f, Spectrum):
             f = f.__name__
 
         data = self._data
@@ -2115,7 +2115,7 @@ class Cube(DataArray):
 
         pool = multiprocessing.Pool(processes=cpu_count)
 
-        if isinstance(f, types.MethodType):
+        if _is_method(f, Image):
             f = f.__name__
 
         header = self.wcs.to_header()
@@ -2621,6 +2621,23 @@ class Cube(DataArray):
                          unit_radius=u.angstrom):
         return self.subcube_circle_aperture(center, radius,
                                             unit_center, unit_radius)
+
+
+def _is_method(func, cls):
+    """Check if func is a method of cls.
+
+    The previous way to do this using isinstance(types.MethodType) is not
+    compatible with Python 3 (which no more has unbound methods). So one way to
+    do this is to check if func is an attribute of cls, and has a __name__
+    attribute.
+
+    """
+    try:
+        getattr(cls, func.__name__)
+    except AttributeError:
+        return False
+    else:
+        return True
 
 
 def _process_spe(arglist):

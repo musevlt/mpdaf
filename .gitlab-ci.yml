@@ -1,16 +1,31 @@
 before_script:
-  - python --version
-  - which python
   - which tox
 
+stages:
+  - clean
+  - test
+  - report
+
+coverage-clean:
+  stage: clean
+  script: tox -e clean
+
 py27:
-  script: tox -e py27
+  stage: test
+  script: tox -v -e py27
 
 py34:
-  script: tox -e py34
+  stage: test
+  script: tox -v -e py34
 
 astropy10:
-  script: tox -e astropy10
+  stage: test
+  script: tox -v -e astropy10
 
 numpy110:
-  script: tox -e numpy110
+  stage: test
+  script: tox -v -e numpy110
+
+coverage-report:
+  stage: report
+  script: tox -e report
