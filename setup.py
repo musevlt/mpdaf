@@ -188,7 +188,7 @@ setup(
     long_description=README + '\n' + CHANGELOG,
     url='http://urania1.univ-lyon1.fr/mpdaf/login',
     install_requires=['numpy', 'scipy', 'matplotlib', 'astropy', 'numexpr',
-                      'six'],
+                      'six', 'joblib'],
     tests_require=['nose'],
     extras_require={'Image':  ['Pillow']},
     package_dir={'': 'lib'},
