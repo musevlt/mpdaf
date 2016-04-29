@@ -22,6 +22,7 @@ import time
 
 from astropy.table import Table, Column, join
 from astropy.utils.console import ProgressBar
+from joblib import Parallel, delayed
 from numpy.fft import rfftn, irfftn
 from scipy import signal, stats, special
 from scipy.ndimage import measurements, morphology
@@ -1712,6 +1713,80 @@ def Add_radec_to_Cat(Cat, wcs):
     logger.debug('%s executed in %0.1fs' % (whoami(), time.time() - t0))
     return Cat_radec
 
+def Construct_Object(uflux, unone, cols, units, desc, fmt, step_wave,
+                     origin, filename, maxmap, correl, fwhm_profiles, 
+                     param, path, name, i, ra, dec, x_centroid,
+                     y_centroid, wave_pix, GLR, num_profil, pvalC, pvalS,
+                     pvalF, T1, T2, nb_lines, Cat_est_line_data,
+                     Cat_est_line_var, y, x, flux):
+    """Function to create the final source
+
+    Parameters
+    ----------
+    """
+
+    cube = Cube(filename)
+    cubevers = cube.primary_header.get('CUBE_V')
+
+    maxmap = Image(data=maxmap, wcs=cube.wcs)
+
+    src = Source.from_data(i, ra, dec, origin)
+    src.add_attr('x', x_centroid, desc='x position in pixel',
+                 unit=u.pix, fmt='d')
+    src.add_attr('y', y_centroid, desc='y position in pixel',
+                 unit=u.pix, fmt='d')
+
+    src.add_white_image(cube)
+    src.add_cube(cube, 'MUSE_CUBE')
+    src.add_image(maxmap, 'MAXMAP')
+    src.add_attr('SRC_VERS', '0.1', desc='Source version')
+    if cubevers is not None:
+        src.add_attr('CUBE_V', cubevers, desc='Cube version')
+    src.add_history('[{}] Source created with Origin'.format(src.SRC_VERS), 'RBA')
+    
+    for j in range(nb_lines):
+        sp_est = Spectrum(data=Cat_est_line_data[j, :],
+                          var=Cat_est_line_data[j, :], 
+                          wave=cube.wave)
+        ksel = np.where(sp_est._data != 0)
+        z1 = ksel[0][0]
+        z2 = ksel[0][-1] + 1
+        # Estimated line
+        sp = sp_est[z1:z2]
+        # Wavelength in angstrom of estimated line
+        #wave_ang = wave.coord(ksel[0], unit=u.angstrom)
+        # T_GLR centered around this line
+        c = correl[z1:z2, y[j], x[j]]
+        # FWHM in arcsec of the profile
+        profile_num = num_profil[j]
+        profil_FWHM = step_wave * fwhm_profiles[profile_num]
+        #profile_dico = Dico[:, profile_num]
+        fl = flux[j]
+        w = cube.wave.coord(wave_pix[j], unit=u.angstrom)
+        vals = [w, profil_FWHM, fl, GLR[j], pvalC[j], pvalS[j],
+                    pvalF[j], T1[j], T2[j], profile_num]
+        src.add_line(cols, vals, units, desc, fmt)
+        src.spectra['LINE{:04d}'.format(j + 1)] = sp
+        sp = Spectrum(wave=cube.wave[z1:z2], data=c)
+        src.spectra['CORR{:04d}'.format(j + 1)] = sp
+        src.add_narrow_band_image_lbdaobs(cube,
+                                        'NB_LINE{:04d}'.format(j + 1),
+                                        w, width=2 * profil_FWHM,
+                                        is_sum=True, subtract_off=True)
+
+        src.OP_THRES = (param['ThresholdPval'], 'Orig Threshold Pval')
+        src.OP_DZ = (param['deltaz'], 'Orig deltaz')
+        src.OP_R0 = (param['r0PCA'], 'Orig PCA R0')
+        src.OP_T1 = (param['threshT1'], 'Orig T1 threshold')
+        src.OP_T1 = (param['threshT2'], 'Orig T2 threshold')
+        src.OP_NG = (param['neighboors'], 'Orig Neighboors')
+        src.OP_MP = (param['meanestPvalChan'], 'Orig Meanest PvalChan')
+        src.OP_NS = (param['nbsubcube'], 'Orig nb of subcubes')
+        src.OP_DXY = (param['grid_dxy'], 'Orig Grid Nxy')
+        src.OP_DZ = (param['grid_dz'], 'Orig Grid Nz')
+        src.OP_FSF = (param['PSF'], 'Orig FSF cube')
+        src.write('%s/%s-%04d.fits' % (path, name, src.ID))
+
 
 def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
                                fwhm_profiles, path, name, param):
@@ -1753,27 +1828,17 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
     step_wave = wave.get_step(unit=u.angstrom)
     origin = ('ORIGIN', 'V1.1', os.path.basename(filename))
 
-    cube = Cube(filename)
-    cubevers = cube.primary_header.get('CUBE_V')
+    maxmap = np.amax(correl, axis=0)
+    
+    sources_arglist = []  
 
-    maxmap = Image(data=np.amax(correl, axis=0), wcs=cube.wcs)
-
-    for i in ProgressBar(np.unique(Cat['ID'])):
+    for i in np.unique(Cat['ID']):
         # Source = group
         E = Cat[Cat['ID'] == i]
-        src = Source.from_data(i, E['RA'][0], E['DEC'][0], origin)
-        src.add_attr('x', E['x_centroid'][0], desc='x position in pixel',
-                     unit=u.pix, fmt='d')
-        src.add_attr('y', E['y_centroid'][0], desc='y position in pixel',
-                     unit=u.pix, fmt='d')
-
-        src.add_white_image(cube)
-        src.add_cube(cube, 'MUSE_CUBE')
-        src.add_image(maxmap, 'MAXMAP')
-        src.add_attr('SRC_VERS', '0.1', desc='Source version')
-        if cubevers is not None:
-            src.add_attr('CUBE_V', cubevers, desc='Cube version')
-        src.add_history('[{}] Source created with Origin'.format(src.SRC_VERS), 'RBA')
+        ra = E['RA'][0]
+        dec = E['DEC'][0]
+        x_centroid = E['x_centroid'][0]
+        y_centroid = E['y_centroid'][0]
         # Lines of this group
         wave_pix = E['z']
         GLR = E['T_GLR']
@@ -1783,54 +1848,35 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
         pvalF = E['pvalF']
         T1 = E['T1']
         T2 = E['T2']
-
         # Number of lines in this group
         nb_lines = E['nb_lines'][0]
+        Cat_est_line_data = np.empty((nb_lines, wave.shape))
+        Cat_est_line_var = np.empty((nb_lines, wave.shape))
         for j in range(nb_lines):
-            sp_est = Cat_est_line[E['num_line'][j]]
-            ksel = np.where(sp_est.data.data != 0)
-            z1 = ksel[0][0]
-            z2 = ksel[0][-1] + 1
-            # Estimated line
-            sp = sp_est[z1:z2]
-            # Wavelength in angstrom of estimated line
-            # wave_ang = wave.coord(ksel[0], unit=u.angstrom)
-            # T_GLR centered around this line
-            c = correl[z1:z2, E['y'][j], E['x'][j]]
-            # FWHM in arcsec of the profile
-            profile_num = num_profil[j]
-            profil_FWHM = step_wave * fwhm_profiles[profile_num]
-            # profile_dico = Dico[:, profile_num]
-            flux = E['flux'][j]
-            w = wave.coord(wave_pix[j], unit=u.angstrom)
-            vals = [w, profil_FWHM, flux, GLR[j], pvalC[j], pvalS[j],
-                    pvalF[j], T1[j], T2[j], profile_num]
-            src.add_line(cols, vals, units, desc, fmt)
-            src.spectra['LINE{:04d}'.format(j + 1)] = sp
-            sp = Spectrum(wave=wave[z1:z2], data=c)
-            src.spectra['CORR{:04d}'.format(j + 1)] = sp
-            src.add_narrow_band_image_lbdaobs(cube,
-                                              'NB_LINE{:04d}'.format(j + 1),
-                                              w, width=2 * profil_FWHM,
-                                              is_sum=True, subtract_off=True)
-
-
-#    for key in hstlist.keys():
-#        src.add_image(hstlist[key],'HST_'+key, rotate=True)
-
-        src.OP_THRES = (param['ThresholdPval'], 'Orig Threshold Pval')
-        src.OP_DZ = (param['deltaz'], 'Orig deltaz')
-        src.OP_R0 = (param['r0PCA'], 'Orig PCA R0')
-        src.OP_T1 = (param['threshT1'], 'Orig T1 threshold')
-        src.OP_T1 = (param['threshT2'], 'Orig T2 threshold')
-        src.OP_NG = (param['neighboors'], 'Orig Neighboors')
-        src.OP_MP = (param['meanestPvalChan'], 'Orig Meanest PvalChan')
-        src.OP_NS = (param['nbsubcube'], 'Orig nb of subcubes')
-        src.OP_DXY = (param['grid_dxy'], 'Orig Grid Nxy')
-        src.OP_DZ = (param['grid_dz'], 'Orig Grid Nz')
-        src.OP_FSF = (param['PSF'], 'Orig FSF cube')
-        src.write('%s/%s-%04d.fits' % (path, name, src.ID))
-
+            Cat_est_line_data[j,:] = Cat_est_line[E['num_line'][j]]._data
+            Cat_est_line_var[j,:] = Cat_est_line[E['num_line'][j]]._var
+        y = E['y']
+        x = E['x']
+        flux = E['flux']
+        
+        source_arglist = (i, ra, dec, x_centroid,
+                     y_centroid, wave_pix, GLR, num_profil, pvalC, pvalS,
+                     pvalF, T1, T2, nb_lines, Cat_est_line_data,
+                     Cat_est_line_var, y, x, flux)
+        sources_arglist.append(source_arglist)
+        
+    # run in parallel
+    errmsg = Parallel(max_nbytes=1e6)(
+            delayed(Construct_Object)(uflux, unone, cols, units, desc,
+                                      fmt, step_wave, origin, filename,
+                                      maxmap, correl, fwhm_profiles, 
+                                      param, path, name, *source_arglist)
+            for source_arglist in sources_arglist)
+    # print error messages if any
+    for msg in errmsg:
+        if msg is None: continue
+        logger.error(msg)
+        
     logger.debug('%s executed in %0.1fs' % (whoami(), time.time() - t0))
     return len(np.unique(Cat['ID']))
 
