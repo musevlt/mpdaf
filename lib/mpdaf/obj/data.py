@@ -79,91 +79,83 @@ class LazyData(object):
 
 class DataArray(object):
 
-    """The DataArray class is the parent of the mpdaf.obj.Cube,
-    mpdaf.obj.Image and mpdaf.obj.Spectrum classes. Its primary
-    purpose is to store pixel values and, optionally, also variances
-    in masked numpy arrays. For Cube objects these are 3D arrays
-    indexed in the order [wavelength,image_y,image_x]. For Image
-    objects they are 2D arrays indexed in the order
-    [image_y,image_x]. For Spectrum objects they are 1D arrays.
+    """Parent class for `~mpdaf.obj.Cube`, `~mpdaf.obj.Image` and
+    `~mpdaf.obj.Spectrum`.
 
-    Image arrays hold flat 2D map-projections of the sky. The X and Y
-    axes of the image arrays are orthogonal on the sky at the tangent
-    point of the projection. When the rotation angle of the projection
-    on the sky is zero, the Y axis of the image arrays is along the
-    declination axis, and the X axis is perpendicular to this, with
-    the positive X axis pointing east.
+    Its primary purpose is to store pixel values and, optionally, also
+    variances in masked Numpy arrays. For Cube objects these are 3D arrays
+    indexed in the order ``[wavelength, image_y, image_x]``. For Image objects
+    they are 2D arrays indexed in the order ``[image_y, image_x]``. For
+    Spectrum objects they are 1D arrays.
 
-    Given an object, obj, of a DataArray, Cube, Image or Spectrum
-    object, the data and variance arrays are accessible via the
-    properties, obj.data and obj.var. These two masked arrays share a
-    single array of boolean masking elements, which is also accessible
-    as a simple boolean array via the obj.mask property.
-    The shared mask can be modified through any of the three properties. For
-    example:
+    Image arrays hold flat 2D map-projections of the sky. The X and Y axes of
+    the image arrays are orthogonal on the sky at the tangent point of the
+    projection. When the rotation angle of the projection on the sky is zero,
+    the Y axis of the image arrays is along the declination axis, and the
+    X axis is perpendicular to this, with the positive X axis pointing east.
 
-      obj.data[20:22] = numpy.ma.masked
+    Given a DataArray object ``obj``, the data and variance arrays are
+    accessible via the properties ``obj.data`` and ``obj.var``. These two
+    masked arrays share a single array of boolean masking elements, which is
+    also accessible as a simple boolean array via the ``obj.mask property``.
+    The shared mask can be modified through any of the three properties::
 
-    is equivalent to:
+        obj.data[20:22] = numpy.ma.masked
 
-      obj.var[20:22] = numpy.ma.masked
+    Is equivalent to::
 
-    and is also equivalent to:
+        obj.var[20:22] = numpy.ma.masked
 
-      obj.mask[20:22] = True
+    And is also equivalent to::
 
-    All three of the above statements mask pixels 20 and 21 of the
-    data and variance arrays, without changing their values.
+        obj.mask[20:22] = True
 
-    Similarly, if one performs an operation on either obj.data or
-    obj.var that modifies the mask, this is reflected in the shared
-    mask of all three properties. For example, the following statement
-    multiplies elements 20 and 21 of the data by 2.0, while changing
-    the shared mask of these pixels to True. In this way the data and
-    the variances of these pixels are consistently masked.
+    All three of the above statements mask pixels 20 and 21 of the data and
+    variance arrays, without changing their values.
 
-      obj.data[20:22] *= numpy.ma.array([2.0,2.0], mask=[True,True])
+    Similarly, if one performs an operation on either ``obj.data`` or
+    ``obj.var`` that modifies the mask, this is reflected in the shared mask of
+    all three properties. For example, the following statement multiplies
+    elements 20 and 21 of the data by 2.0, while changing the shared mask of
+    these pixels to True. In this way the data and the variances of these
+    pixels are consistently masked::
 
-    The data and variance arrays can be completely replaced by
-    assigning new arrays to the obj.data and obj.var properties. In
-    general, when doing this, the new data array should be assigned
-    before the new variance array. This is because assigning a new
-    data array completely replaces the current shared mask, whereas
-    assigning a new variance array combines the mask of the variance
-    array with the existing shared mask.
+        obj.data[20:22] *= numpy.ma.array([2.0,2.0], mask=[True,True])
 
-    More specifically, when a new data array is assigned to obj.data,
-    the shared mask becomes a copy of the mask array of the input data
-    array, if it has one.
-    If the new data array is not a masked array, the mask is created
+    The data and variance arrays can be completely replaced by assigning new
+    arrays to the ``obj.data`` and ``obj.var`` properties. In general, when
+    doing this, the new data array should be assigned before the new variance
+    array. This is because assigning a new data array completely replaces the
+    current shared mask, whereas assigning a new variance array combines the
+    mask of the variance array with the existing shared mask.
+
+    More specifically, when a new data array is assigned to ``obj.data``, the
+    shared mask becomes a copy of the mask array of the input data array, if it
+    has one.  If the new data array is not a masked array, the mask is created
     by masking any elements that are Inf or Nan in the new data array.
 
-    When a new variance array is assigned to obj.var, the shared mask
-    becomes the union of the mask of the current data array and the
-    mask of the new variance array, if it has a mask.
+    When a new variance array is assigned to ``obj.var``, the shared mask
+    becomes the union of the mask of the current data array and the mask of the
+    new variance array, if it has a mask.
 
-    Note that the ability to record variances for each element is
-    optional. When no variances are stored, obj.var has the value
-    None. To discard an unwanted variance array, None can be
-    subsequently assigned to obj.var.
+    Note that the ability to record variances for each element is optional.
+    When no variances are stored, ``obj.var`` has the value None. To discard an
+    unwanted variance array, None can be subsequently assigned to ``obj.var``.
 
-    For cubes and spectra, the wavelengths of the spectral pixels are
-    specified in the .wave member. For cubes and images, the
-    world-coordinates of the image pixels are specified in the .wcs
-    member.
+    For cubes and spectra, the wavelengths of the spectral pixels are specified
+    in the ``.wave`` member. For cubes and images, the world-coordinates of the
+    image pixels are specified in the ``.wcs`` member.
 
-    When a DataArray object is constructed from a FITS file, the
-    name of the file and the file's primary header are recorded. If
-    the data are read from a FITS extension, the header of this
-    extension is also recorded. Alternatively, the primary header
-    and data header can be passed to the DataArray constructor.
-    Where FITS headers are neither provided, nor available in a
-    provided FITS file, generic headers are substituted.
+    When a DataArray object is constructed from a FITS file, the name of the
+    file and the file's primary header are recorded. If the data are read from
+    a FITS extension, the header of this extension is also recorded.
+    Alternatively, the primary header and data header can be passed to the
+    DataArray constructor.  Where FITS headers are neither provided, nor
+    available in a provided FITS file, generic headers are substituted.
 
-    Methods are provided for masking and unmasking pixels, and
-    performing basic arithmetic operations on pixels. Operations
-    that are specific to cubes or spectra or images are provided
-    elsewhere by derived classes.
+    Methods are provided for masking and unmasking pixels, and performing basic
+    arithmetic operations on pixels. Operations that are specific to cubes or
+    spectra or images are provided elsewhere by derived classes.
 
 
     Parameters
@@ -177,20 +169,18 @@ class DataArray(object):
         Number/name of the data extension or numbers/names of the data and
         variance extensions.
     unit : `astropy.units.Unit`
-        Physical units of the data values, default to
-        u.dimensionless_unscaled.
+        Physical units of the data values, default to u.dimensionless_unscaled.
     copy : bool
         If True (default), then the data and variance arrays are copied.
-        Passed to numpy.ma.MaskedArray.
+        Passed to `numpy.ma.MaskedArray`.
     dtype : numpy.dtype
-        Type of the data.
-        Passed to numpy.ma.MaskedArray.
+        Type of the data. Passed to `numpy.ma.MaskedArray`.
     data : numpy.ndarray or list
-        Data array, passed to numpy.ma.MaskedArray.
+        Data array, passed to `numpy.ma.MaskedArray`.
     var : numpy.ndarray or list
-        Variance array, passed to numpy.ma.MaskedArray.
+        Variance array, passed to `numpy.ma.MaskedArray`.
     mask : bool or numpy.ma.nomask or numpy.ndarray
-        Mask used for the creation of the .data MaskedArray. If mask is
+        Mask used for the creation of the ``.data`` MaskedArray. If mask is
         False (default value), a mask array of the same size of the data array
         is created. To avoid creating an array, it is possible to use
         numpy.ma.nomask, but in this case several methods will break if
@@ -220,6 +210,7 @@ class DataArray(object):
         Type of the data (int, float, ...).
     var : numpy.ndarray
         Array containing the variance.
+
     """
 
     _ndim_required = None
@@ -253,7 +244,7 @@ class DataArray(object):
 
         if kwargs.pop('notnoise', None) is not None:
             warnings.warn('The notnoise parameter is no longer used. The '
-                          'variances wll be read if necessary.', MpdafWarning)
+                          'variances will be read if necessary.', MpdafWarning)
 
         if filename is not None and data is None:
             # Read the data from a FITS file
@@ -448,27 +439,25 @@ class DataArray(object):
 
     @property
     def data(self):
-        """ The data property contains the values of each pixel as a
-        numpy.ma.MaskedArray.
+        """Return data as a `numpy.ma.MaskedArray`.
 
         The DataArray constructor postpones reading data from FITS files until
         they are first used. Read the data array here if not already read.
 
-        Changes can be made to individual elements of the data
-        property. When simple numeric values or numpy array elements
-        are assigned to elements of the data property, the values of
-        these elements are updated and become unmasked.
+        Changes can be made to individual elements of the data property. When
+        simple numeric values or Numpy array elements are assigned to elements
+        of the data property, the values of these elements are updated and
+        become unmasked.
 
-        When masked numpy values or masked-array elements are assigned
-        to elements of the data property, then these change both the
-        values of the data property and the shared mask of the data
-        and var properties.
+        When masked Numpy values or masked-array elements are assigned to
+        elements of the data property, then these change both the values of the
+        data property and the shared mask of the data and var properties.
 
-        Completely new arrays can also be assigned to the data
-        property. If the new array has the same shape as the existing
-        data array, then the results are as though the elements were
-        assigned one by one to the data array, with the behavior
-        described above for element assignments.
+        Completely new arrays can also be assigned to the data property. If the
+        new array has the same shape as the existing data array, then the
+        results are as though the elements were assigned one by one to the data
+        array, with the behavior described above for element assignments.
+
         """
         res = ma.MaskedArray(self._data, mask=self._mask, copy=False)
         res._sharedmask = False
@@ -499,29 +488,28 @@ class DataArray(object):
         property. However if no variances have been provided, then this
         property is None.
 
-        Variances are typically provided along with the data values in
-        the originating FITS file. Alternatively a variance array can
-        be assigned to this property after the data have been read.
+        Variances are typically provided along with the data values in the
+        originating FITS file. Alternatively a variance array can be assigned
+        to this property after the data have been read.
 
-        Note that any function that modifies the contents of the data
-        array may need to update the array of variances accordingly.
-        For example, after scaling pixel values by a constant factor
-        c, the variances should be scaled by c**2.
+        Note that any function that modifies the contents of the data array may
+        need to update the array of variances accordingly.  For example, after
+        scaling pixel values by a constant factor c, the variances should be
+        scaled by c**2.
 
-        Changes can be made to individual elements of the var property
-        in place. When simple numeric values or numpy array elements
-        are assigned to elements of the var property, the values of
-        these elements are updated, but the corresponding elements of
-        the shared mask are not changed.
+        Changes can be made to individual elements of the var property in
+        place. When simple numeric values or numpy array elements are assigned
+        to elements of the var property, the values of these elements are
+        updated, but the corresponding elements of the shared mask are not
+        changed.
 
-        When masked-array values are assigned to elements of the var
-        property, the mask of the new values is assigned to the shared
-        mask of the data and variance properties.
+        When masked-array values are assigned to elements of the var property,
+        the mask of the new values is assigned to the shared mask of the data
+        and variance properties.
 
-        Completely new arrays can also be assigned to the var
-        property. When a masked array is
-        assigned to the var property, its mask is combined with the
-        existing shared mask, rather than replacing it.
+        Completely new arrays can also be assigned to the var property. When
+        a masked array is assigned to the var property, its mask is combined
+        with the existing shared mask, rather than replacing it.
 
         """
         if self._var is None:
@@ -553,18 +541,17 @@ class DataArray(object):
     def mask(self):
         """The shared masking array of the data and variance arrays.
 
-        This is a bool array which has the same shape as the data and
-        variance arrays. Setting an element of this array to True,
-        flags the corresponding pixels of the data and variance
-        arrays, so that they don't take part in subsequent
-        calculations. Reverting this element to False, unmasks the
-        pixel again.
+        This is a bool array which has the same shape as the data and variance
+        arrays. Setting an element of this array to True, flags the
+        corresponding pixels of the data and variance arrays, so that they
+        don't take part in subsequent calculations. Reverting this element to
+        False, unmasks the pixel again.
 
-        This array can be modified either directly by assignments to
-        elements of this property or by modifying the masks of the
-        .data and .var arrays. An entirely new mask array can also be
-        assigned to this property, provided that it has the same shape
-        as the data array.
+        This array can be modified either directly by assignments to elements
+        of this property or by modifying the masks of the .data and .var
+        arrays. An entirely new mask array can also be assigned to this
+        property, provided that it has the same shape as the data array.
+
         """
         return self._mask
 
@@ -603,8 +590,8 @@ class DataArray(object):
             **Deprecated**, replaced by var_init.
         data_init : function
             An optional function to use to create the data array
-            (it takes the shape as parameter). For example np.zeros
-            or np.empty can be used. It defaults to None, which results
+            (it takes the shape as parameter). For example ``np.zeros``
+            or ``np.empty`` can be used. It defaults to None, which results
             in the data attribute being None.
         var_init : function
             An optional function to use to create the variance array,

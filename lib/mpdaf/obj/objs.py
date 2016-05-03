@@ -27,8 +27,10 @@ def is_number(x):
 
 
 def flux2mag(flux, wave):
-    """ convert flux from erg.s-1.cm-2.A-1 to AB mag
+    """Convert flux from erg.s-1.cm-2.A-1 to AB mag.
+
     wave is the wavelength in A
+
     """
     if flux > 0:
         cs = c.to('Angstrom/s').value  # speed of light in A/s
@@ -38,8 +40,10 @@ def flux2mag(flux, wave):
 
 
 def mag2flux(mag, wave):
-    """ convert flux from AB mag to erg.s-1.cm-2.A-1
+    """Convert flux from AB mag to erg.s-1.cm-2.A-1
+
     wave is the wavelength in A
+
     """
     cs = c.to('Angstrom/s').value  # speed of light in A/s
     return 10 ** (-0.4 * (mag + 48.60)) * cs / wave ** 2

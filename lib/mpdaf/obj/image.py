@@ -4789,7 +4789,7 @@ class Image(DataArray):
             self._clicks.filename = filename
 
     def _on_click(self, event):
-        """prints dec,ra,i,j and data corresponding to the cursor position."""
+        """Print dec,ra,i,j and data corresponding to the cursor position."""
         if event.key == 'd':
             if event.button == 1:
                 if event.inaxes is not None:
@@ -4980,7 +4980,7 @@ class Image(DataArray):
             warnings.filterwarnings(action="default")
 
     def _on_select_fwhm(self, eclick, erelease):
-        """Print image peak location in windows defined'\ 'by 2 cursor
+        """Print image peak location in windows defined by 2 cursor
         positions."""
         if eclick.button == 1:
             try:
@@ -5441,7 +5441,6 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
         else:
             X, Y = np.meshgrid(range(shape[0] * factor),
                                range(shape[1] * factor))
-            factor = float(factor)
             pixcrd = np.array(list(zip(X.ravel() / factor,
                                        Y.ravel() / factor)))
             # pixsky = wcs.pix2sky(pixcrd)
@@ -5804,9 +5803,10 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
             (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
     return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)
 
+
 def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
                             window="blackman"):
-    """ Apply an anti-aliasing prefilter to an image to prepare
+    """Apply an anti-aliasing prefilter to an image to prepare
     it for subsampling.
 
     Parameters
@@ -6006,32 +6006,30 @@ def _find_quadratic_peak(y):
 
 class SpatialFrequencyLimits(object):
 
-    """The Image class uses an object of this class to keep track of the
-    spatial frequency limits of the current image, such that before
-    resampling an image it can see if anything needs to be done to
-    avoid undersampling and generating aliasing artefacts in the
-    output image.
+    """Allow to keep track of the spatial frequency limits of an image.
 
-    The band-limits are recorded as an ellipse. Most telescopes have
-    circularly symmetric PSFs and thus circularly symmetric
-    spatial-frequency band limits, but this spatial-frequency profile
-    may become elliptical if an image is resampled to have a lower
-    resolution along one axis.
+    Such that before resampling an image it can see if anything needs to be
+    done to avoid undersampling and generating aliasing artefacts in the output
+    image.
 
-    The ellipse is defined in its own X,Y coordinate system as
-    follows:
+    The band-limits are recorded as an ellipse. Most telescopes have circularly
+    symmetric PSFs and thus circularly symmetric spatial-frequency band limits,
+    but this spatial-frequency profile may become elliptical if an image is
+    resampled to have a lower resolution along one axis.
 
-      xe(t)=xs*cos(t)    ye(t)=ys*sin(t)
+    The ellipse is defined in its own X,Y coordinate system as follows::
 
-    The ye axis of the ellipse is at self.rot degrees west of
-    north in the image. For the Y axis of a coordinate system
-    where Y is rot degrees west of north, the ellipse thus has
-    to be rotated by psi=(rot - self.rot) degrees anticlockwise
-    to calculate the X and Y values of the ellipse in that
-    coordinate system
+        xe(t)=xs*cos(t)
+        ye(t)=ys*sin(t)
 
-      |x(t)| = |cos(psi), -sin(psi)| |xe(t)|
-      |y(t)|   |sin(psi),  cos(psi)| |ye(t)|
+    The ye axis of the ellipse is at self.rot degrees west of north in the
+    image. For the Y axis of a coordinate system where Y is rot degrees west of
+    north, the ellipse thus has to be rotated by ``psi = (rot - self.rot)``
+    degrees anticlockwise to calculate the X and Y values of the ellipse in
+    that coordinate system::
+
+        |x(t)| = |cos(psi), -sin(psi)| |xe(t)|
+        |y(t)|   |sin(psi),  cos(psi)| |ye(t)|
 
     Parameters
     ----------
