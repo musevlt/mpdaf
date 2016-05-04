@@ -6,6 +6,7 @@ import numbers
 import numpy as np
 
 from astropy.constants import c
+from astropy.units import Quantity
 
 __all__ = ('is_float', 'is_int', 'is_number', 'flux2mag', 'mag2flux',
            'UnitArray', 'UnitMaskedArray', 'circular_bounding_box')
@@ -62,12 +63,12 @@ def UnitArray(array, old_unit, new_unit):
     if new_unit == old_unit:
         return array
     else:
-        return (array * old_unit).to(new_unit).value
+        return Quantity(array, old_unit, copy=False).to(new_unit).value
 
 
 def UnitMaskedArray(mask_array, old_unit, new_unit):
     if new_unit == old_unit:
         return mask_array
     else:
-        return np.ma.array((mask_array.data[:] * old_unit).to(new_unit).value,
-                           mask=mask_array.mask)
+        return np.ma.array(Quantity(mask_array.data, old_unit, copy=False)
+                           .to(new_unit).value, mask=mask_array.mask)
