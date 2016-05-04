@@ -53,10 +53,8 @@ def circular_bounding_box(center, radius, shape):
     center = np.asarray(center)
     radius = np.asarray(radius)
     shape = np.asarray(shape) - 1
-    imin, jmin = np.maximum(
-        np.minimum((center - radius + 0.5).astype(int), shape), [0, 0])
-    imax, jmax = np.maximum(
-        np.minimum((center + radius + 0.5).astype(int), shape), [0, 0])
+    imin, jmin = np.clip((center - radius + 0.5).astype(int), (0, 0), shape)
+    imax, jmax = np.clip((center + radius + 0.5).astype(int), (0, 0), shape)
     return slice(imin, imax + 1), slice(jmin, jmax + 1)
 
 
