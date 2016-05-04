@@ -59,9 +59,15 @@ def circular_bounding_box(center, radius, shape):
 
 
 def UnitArray(array, old_unit, new_unit):
-    return (array * old_unit).to(new_unit).value
+    if new_unit == old_unit:
+        return array
+    else:
+        return (array * old_unit).to(new_unit).value
 
 
 def UnitMaskedArray(mask_array, old_unit, new_unit):
-    return np.ma.array((mask_array.data[:] * old_unit).to(new_unit).value,
-                       mask=mask_array.mask)
+    if new_unit == old_unit:
+        return mask_array
+    else:
+        return np.ma.array((mask_array.data[:] * old_unit).to(new_unit).value,
+                           mask=mask_array.mask)

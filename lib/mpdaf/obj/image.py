@@ -4241,10 +4241,7 @@ class Image(DataArray):
             # Get copies of the data arrays with masked values filled.
             data = out._prepare_data(interp)
             other_data = other._prepare_data(interp)
-
-            if out.unit != other.unit:
-                other_data = UnitMaskedArray(other_data, other.unit, out.unit)
-
+            other_data = UnitMaskedArray(other_data, other.unit, out.unit)
             out._data = signal.fftconvolve(data, other_data, mode='same')
 
             if out._var is not None:
@@ -4390,9 +4387,7 @@ class Image(DataArray):
             # Get copies of the data arrays with masked values filled.
             data = self._prepare_data(interp)
             other_data = other._prepare_data(interp)
-
-            if self.unit != other.unit:
-                other_data = UnitMaskedArray(other_data, other.unit, self.unit)
+            other_data = UnitMaskedArray(other_data, other.unit, self.unit)
             res = self.copy()
             res._data = signal.correlate2d(data, other_data, mode='same')
 
