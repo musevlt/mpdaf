@@ -11,6 +11,7 @@ import time
 import types
 
 from astropy.io import fits
+from astropy.nddata import overlap_slices
 from numpy import ma
 from six.moves import range, zip
 from scipy import integrate, interpolate
@@ -18,7 +19,7 @@ from scipy import integrate, interpolate
 from .coords import WCS, WaveCoord
 from .data import DataArray
 from .image import Image
-from .objs import is_int, UnitArray, UnitMaskedArray
+from .objs import is_int, UnitArray, UnitMaskedArray, circular_bounding_box
 from .spectrum import Spectrum
 from ..tools import deprecated
 from ..tools.fits import add_mpdaf_method_keywords
@@ -202,23 +203,16 @@ class Cube(DataArray):
         elif unit_wave is not None:
             lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
-        ny, nx = self.shape[1:]
-        imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int),
-                                           [ny - 1, nx - 1]), [0, 0])
-        imax, jmax = np.maximum(np.minimum((center + radius + 0.5).astype(int),
-                                           [ny - 1, nx - 1]), [0, 0])
-        imax += 1
-        jmax += 1
+        sy, sx = circular_bounding_box(center, radius, self.shape[1:])
 
         mask = np.zeros((lmax - lmin, self.shape[1], self.shape[2]),
                         dtype=bool)
         if circular:
-            xx = np.arange(imin, imax) - center[0]
-            yy = np.arange(jmin, jmax) - center[1]
-            grid = (xx[:, np.newaxis]**2 + yy[np.newaxis, :]**2) < radius2
-            mask[:, imin:imax, jmin:jmax] = grid[np.newaxis, :, :]
+            yy, xx = np.mgrid[sy, sx] - center[:, np.newaxis, np.newaxis]
+            grid = (yy**2 + xx**2) < radius2
+            mask[:, sy, sx] = grid[np.newaxis, :, :]
         else:
-            mask[:, imin:imax, jmin:jmax] = True
+            mask[:, sy, sx] = True
 
         if inside:
             self.data[lmin:lmax, :, :][mask] = ma.masked
@@ -278,44 +272,28 @@ class Cube(DataArray):
                 lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
         maxradius = max(radius[0], radius[1])
-
-        imin, jmin = np.maximum(np.minimum((center - maxradius + 0.5).astype(int),
-                                           [self.shape[1] - 1, self.shape[2] - 1]),
-                                [0, 0])
-        imax, jmax = np.maximum(np.minimum((center + maxradius + 0.5).astype(int),
-                                           [self.shape[1] - 1, self.shape[2] - 1]),
-                                [0, 0])
-        imax += 1
-        jmax += 1
+        sy, sx = circular_bounding_box(center, maxradius, self.shape[1:])
 
         cospa = np.cos(np.radians(posangle))
         sinpa = np.sin(np.radians(posangle))
 
+        grid = np.mgrid[sy, sx] - center[:, np.newaxis, np.newaxis]
+        ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
+                ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2)
+
         if inside:
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1], indexing='ij')
-            grid3d = np.resize(((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
-                               + ((grid[0] * cospa - grid[1] * sinpa)
-                                  / radius[1]) ** 2 < 1,
-                               (lmax - lmin, imax - imin, jmax - jmin))
-            self.data[lmin:lmax, imin:imax, jmin:jmax][grid3d] = ma.masked
-        if not inside:
+            grid3d = np.resize(ksel < 1, (lmax - lmin, ) + ksel.shape)
+            self.data[lmin:lmax, sy, sx][grid3d] = ma.masked
+        else:
             self.data[:lmin, :, :] = ma.masked
             self.data[lmax:, :, :] = ma.masked
-            self.data[:, :imin, :] = ma.masked
-            self.data[:, imax:, :] = ma.masked
-            self.data[:, :, :jmin] = ma.masked
-            self.data[:, :, jmax:] = ma.masked
+            self.data[:, :sy.start, :] = ma.masked
+            self.data[:, sy.stop:, :] = ma.masked
+            self.data[:, :, :sx.start] = ma.masked
+            self.data[:, :, sx.stop:] = ma.masked
 
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1],
-                               indexing='ij')
-
-            grid3d = np.resize(((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2
-                               + ((grid[0] * cospa - grid[1] * sinpa)
-                                  / radius[1]) ** 2 > 1,
-                               (lmax - lmin, imax - imin, jmax - jmin))
-            self.data[lmin:lmax, imin:imax, jmin:jmax][grid3d] = ma.masked
+            grid3d = np.resize(ksel > 1, (lmax - lmin, ) + ksel.shape)
+            self.data[lmin:lmax, sy, sx][grid3d] = ma.masked
 
     def __add__(self, other):
         """Add other.
@@ -2481,16 +2459,8 @@ class Cube(DataArray):
             raise ValueError('Region is outside of the cube limits.')
 
         size = int(size + 0.5)
-        i, j = (center - radius + 0.5).astype(int)
-        ny, nx = self.shape[1:]
-        imin, jmin = np.maximum(np.minimum([i, j], [ny - 1, nx - 1]), [0, 0])
-        imax, jmax = np.maximum(np.minimum([i + size, j + size],
-                                           [ny - 1, nx - 1]), [0, 0])
-        i0, j0 = - np.minimum([i, j], [0, 0])
-
-        slin = [slice(None), slice(imin, imax), slice(jmin, jmax)]
-        slout = [slice(None), slice(i0, i0 + imax - imin),
-                 slice(j0, j0 + jmax - jmin)]
+        slin, slout = overlap_slices(self.shape[1:], (size, size), center)
+        slout = (slice(None), ) + slout
 
         if lbda is not None:
             lmin, lmax = lbda
@@ -2502,25 +2472,25 @@ class Cube(DataArray):
                 kmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1
             nk = kmax - kmin
             wave = self.wave[kmin:kmax]
-            slin[0] = slice(kmin, kmax)
+            slin = (slice(kmin, kmax), ) + slin
         else:
             nk = self.shape[0]
             wave = self.wave
+            slin = (slice(None), ) + slin
 
         subcub = self[slin]
-        var = None
         data = np.ma.empty((nk, size, size))
         data[:] = np.nan
         data[slout] = subcub.data
 
+        var = None
         if subcub.var is not None:
-            var = np.empty((nk, size, size))
-            var[:] = np.nan
-            var[slout] = subcub.var
+            var = np.full((nk, size, size), np.nan)
+            var[slout] = subcub._var
 
         wcs = subcub.wcs
-        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + j0)
-        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + i0)
+        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + slout[2].start)
+        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + slout[1].start)
         wcs.set_naxis1(size)
         wcs.set_naxis2(size)
 
