@@ -6,8 +6,8 @@ import numpy as np
 from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
 
-from mpdaf.obj.objs import (is_float, is_int, circular_bounding_box,
-                            UnitArray, UnitMaskedArray)
+from mpdaf.obj.objs import (is_float, is_int, circular_bounding_box, flux2mag,
+                            mag2flux, UnitArray, UnitMaskedArray)
 
 
 @attr(speed='fast')
@@ -20,6 +20,11 @@ def test_is_float():
 def test_is_int():
     nose.tools.assert_true(is_int(1))
     nose.tools.assert_false(is_int(1.2))
+
+
+@attr(speed='fast')
+def test_mag_flux():
+    nose.tools.assert_almost_equal(flux2mag(mag2flux(20, 7000), 7000), 20)
 
 
 @attr(speed='fast')
