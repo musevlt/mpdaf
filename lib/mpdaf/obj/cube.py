@@ -11,7 +11,7 @@ import time
 import types
 
 from astropy.io import fits
-from astropy.nddata import overlap_slices
+from astropy.nddata.utils import overlap_slices
 from numpy import ma
 from six.moves import range, zip
 from scipy import integrate, interpolate
