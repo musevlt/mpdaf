@@ -871,32 +871,24 @@ class Image(DataArray):
             radius = radius / self.wcs.get_step(unit=unit_radius)
             radius2 = radius[0] * radius[1]
 
-        imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int),
-                                           [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-        imax, jmax = np.maximum(np.minimum((center + radius + 0.5).astype(int),
-                                           [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-        imax += 1
-        jmax += 1
+        sy, sx = circular_bounding_box(center, radius, self.shape)
 
-        if inside and not circular:
-            self.data[imin:imax, jmin:jmax] = np.ma.masked
-        elif inside and circular:
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1], indexing='ij')
-            self.data[imin:imax, jmin:jmax][(grid[0] ** 2 + grid[1] ** 2) < radius2] = np.ma.masked
-        elif not inside and circular:
-            self.data[0:imin, :] = np.ma.masked
-            self.data[imax:, :] = np.ma.masked
-            self.data[imin:imax, 0:jmin] = np.ma.masked
-            self.data[imin:imax:, jmax:] = np.ma.masked
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1], indexing='ij')
-            self.data[imin:imax, jmin:jmax][(grid[0] ** 2 + grid[1] ** 2) > radius2] = np.ma.masked
+        if circular:
+            grid = np.mgrid[sy, sx]
+            ind = ((grid[0] - center[0])**2 + (grid[1] - center[1])**2)
+
+        if inside:
+            if circular:
+                self.data[sy, sx][ind < radius2] = np.ma.masked
+            else:
+                self.data[sy, sx] = np.ma.masked
         else:
-            self.data[0:imin, :] = np.ma.masked
-            self.data[imax:, :] = np.ma.masked
-            self.data[imin:imax, 0:jmin] = np.ma.masked
-            self.data[imin:imax:, jmax:] = np.ma.masked
+            self.data[0:sy.start, :] = np.ma.masked
+            self.data[sy.stop:, :] = np.ma.masked
+            self.data[sy, 0:sx.start] = np.ma.masked
+            self.data[sy, sx.stop:] = np.ma.masked
+            if circular:
+                self.data[sy, sx][ind > radius2] = np.ma.masked
 
     def mask_ellipse(self, center, radius, posangle, unit_center=u.deg,
                      unit_radius=u.arcsec, inside=True):
@@ -932,34 +924,23 @@ class Image(DataArray):
 
         maxradius = max(radius[0], radius[1])
 
-        imin, jmin = np.maximum(np.minimum((center - maxradius + 0.5).astype(int),
-                                           [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-        imax, jmax = np.maximum(np.minimum((center + maxradius + 0.5).astype(int),
-                                           [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-        imax += 1
-        jmax += 1
+        sy, sx = circular_bounding_box(center, maxradius, self.shape)
 
         cospa = np.cos(np.radians(posangle))
         sinpa = np.sin(np.radians(posangle))
 
+        grid = np.mgrid[sy, sx] - center[:, np.newaxis, np.newaxis]
+        ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
+                ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2)
+
         if inside:
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1],
-                               indexing='ij')
-            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
-                    ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2 < 1)
-            self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
-        if not inside:
-            self.data[0:imin, :] = np.ma.masked
-            self.data[imax:, :] = np.ma.masked
-            self.data[imin:imax, 0:jmin] = np.ma.masked
-            self.data[imin:imax:, jmax:] = np.ma.masked
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1],
-                               indexing='ij')
-            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
-                    ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2 > 1)
-            self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
+            self.data[sy, sx][ksel < 1] = np.ma.masked
+        else:
+            self.data[0:sy.start, :] = np.ma.masked
+            self.data[sy.stop:, :] = np.ma.masked
+            self.data[sy, 0:sx.start] = np.ma.masked
+            self.data[sy, sx.stop:] = np.ma.masked
+            self.data[sy, sx][ksel > 1] = np.ma.masked
 
     def mask_polygon(self, poly, unit=u.deg, inside=True):
         """Mask values inside/outside a polygonal region.
