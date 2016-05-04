@@ -1856,9 +1856,7 @@ class Cube(DataArray):
         """
         if is_int(factor):
             factor = (factor, factor, factor)
-        factor = np.array(factor)
-        factor = np.maximum(factor, [1, 1, 1])
-        factor = np.minimum(factor, self.shape)
+        factor = np.clip(factor, (1, 1, 1), self.shape)
         res = self if inplace else self.copy()
         res._rebin_mean(factor, margin, flux)
         return res
@@ -1920,9 +1918,7 @@ class Cube(DataArray):
         """
         if is_int(factor):
             factor = (factor, factor, factor)
-        factor = np.array(factor)
-        factor = np.maximum(factor, [1, 1, 1])
-        factor = np.minimum(factor, self.shape)
+        factor = np.clip(factor, (1, 1, 1), self.shape)
         if not np.any(np.mod(self.shape, factor)):
             # new size is an integer multiple of the original size
             res = self.copy()

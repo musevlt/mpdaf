@@ -667,8 +667,7 @@ class WCS(object):
         if nearest:
             res = (res + 0.5).astype(int)
             if self.naxis1 != 0 and self.naxis2 != 0:
-                np.minimum(res, [self.naxis2 - 1, self.naxis1 - 1], out=res)
-                np.maximum(res, [0, 0], out=res)
+                np.clip(res, (0, 0), (self.naxis2-1, self.naxis1-1), out=res)
         return res
 
     def pix2sky(self, x, unit=None):
