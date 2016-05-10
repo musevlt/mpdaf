@@ -501,8 +501,8 @@ class ORIGIN(object):
             Estimation_Line(Cat1_T, profile._data, self.Nx, self.Ny, self.Nz, self.var, cube_faint._data,
                             grid_dxy, grid_dz, self.PSF, self.profiles)
         Cat_est_line = []
-        for data, var in zip(Cat_est_line_raw_T, Cat_est_line_std_T):
-            spe = Spectrum(data=data, var=var, wave=self.wave, mask=np.ma.nomask)
+        for data, std in zip(Cat_est_line_raw_T, Cat_est_line_std_T):
+            spe = Spectrum(data=data, var=std**2, wave=self.wave, mask=np.ma.nomask)
             Cat_est_line.append(spe)
         return Cat2_T, Cat_est_line
 
