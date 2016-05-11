@@ -1850,6 +1850,8 @@ class SourceList(list):
 
     """Handles a list of `mpdaf.sdetect.Source` objects."""
 
+    source_class = Source
+
     def write(self, name, path='.', overwrite=True, fmt='default'):
         """Create the directory and saves all sources files and the catalog
         file in this folder.
@@ -1914,6 +1916,6 @@ class SourceList(list):
 
         slist = cls()
         for f in glob.glob(path + '/*.fits'):
-            slist.append(Source.from_file(f))
+            slist.append(self.source_class.from_file(f))
 
         return slist
