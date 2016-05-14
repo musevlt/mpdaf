@@ -561,7 +561,7 @@ class ORIGIN(object):
         Cat4 = Spectral_Merging(Cat3, Cat_est_line_raw, deltaz)
         return Cat4
 
-    def write_sources(self, Cat4, Cat_est_line, correl, name='origin', path='.', overwrite=True, fmt='default'):
+    def write_sources(self, Cat4, Cat_est_line, correl, name='origin', path='.', overwrite=True, fmt='default', src_vers='0.1', author='undef',ncpu=1):
         """add corresponding RA/DEC to each referent pixel of each group and
         write the final sources.
 
@@ -614,7 +614,8 @@ class ORIGIN(object):
         nsources = Construct_Object_Catalogue(CatF_radec, Cat_est_line,
                                               correl._data, self.wave,
                                               self.filename, self.FWHM_profiles,
-                                              path2, name, self.param)
+                                              path2, name, self.param,
+                                              src_vers, author,ncpu)
 
         return nsources
 

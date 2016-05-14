@@ -33,7 +33,7 @@ from six.moves import range, zip
 from ...obj import Cube, Image, Spectrum
 from ...sdetect import Source
 
-__version__ = 'ORIGIN_18122015'
+__version__ = 'ORIGIN_18122015_02'
 
 
 def Compute_PSF(wave, Nz, Nfsf, beta, fwhm1, fwhm2, lambda1, lambda2,
@@ -1713,18 +1713,20 @@ def Add_radec_to_Cat(Cat, wcs):
     logger.debug('%s executed in %0.1fs' % (whoami(), time.time() - t0))
     return Cat_radec
 
-def Construct_Object(bar, uflux, unone, cols, units, desc, fmt, step_wave,
+def Construct_Object(k, ktot, uflux, unone, cols, units, desc, fmt, step_wave,
                      origin, filename, maxmap, correl, fwhm_profiles, 
                      param, path, name, i, ra, dec, x_centroid,
                      y_centroid, wave_pix, GLR, num_profil, pvalC, pvalS,
                      pvalF, T1, T2, nb_lines, Cat_est_line_data,
-                     Cat_est_line_var, y, x, flux):
+                     Cat_est_line_var, y, x, flux, src_vers, author):
     """Function to create the final source
 
     Parameters
     ----------
     """
 
+    logger = logging.getLogger(__name__)
+    logger.info('{}/{} source ID {}'.format(k+1,ktot,i))
     cube = Cube(filename)
     cubevers = cube.primary_header.get('CUBE_V')
 
@@ -1739,10 +1741,10 @@ def Construct_Object(bar, uflux, unone, cols, units, desc, fmt, step_wave,
     src.add_white_image(cube)
     src.add_cube(cube, 'MUSE_CUBE')
     src.add_image(maxmap, 'MAXMAP')
-    src.add_attr('SRC_VERS', '0.1', desc='Source version')
+    src.add_attr('SRC_VERS', src_vers, desc='Source version')
     if cubevers is not None:
         src.add_attr('CUBE_V', cubevers, desc='Cube version')
-    src.add_history('[{}] Source created with Origin'.format(src.SRC_VERS), 'RBA')
+    src.add_history('[{}] Source created with Origin'.format(src.SRC_VERS), author)
     
     for j in range(nb_lines):
         sp_est = Spectrum(data=Cat_est_line_data[j, :],
@@ -1774,23 +1776,33 @@ def Construct_Object(bar, uflux, unone, cols, units, desc, fmt, step_wave,
                                         w, width=2 * profil_FWHM,
                                         is_sum=True, subtract_off=True)
 
-        src.OP_THRES = (param['ThresholdPval'], 'Orig Threshold Pval')
-        src.OP_DZ = (param['deltaz'], 'Orig deltaz')
-        src.OP_R0 = (param['r0PCA'], 'Orig PCA R0')
-        src.OP_T1 = (param['threshT1'], 'Orig T1 threshold')
-        src.OP_T1 = (param['threshT2'], 'Orig T2 threshold')
-        src.OP_NG = (param['neighboors'], 'Orig Neighboors')
-        src.OP_MP = (param['meanestPvalChan'], 'Orig Meanest PvalChan')
-        src.OP_NS = (param['nbsubcube'], 'Orig nb of subcubes')
-        src.OP_DXY = (param['grid_dxy'], 'Orig Grid Nxy')
-        src.OP_DZ = (param['grid_dz'], 'Orig Grid Nz')
-        src.OP_FSF = (param['PSF'], 'Orig FSF cube')
+        if 'ThresholdPval' in param.keys():
+            src.OP_THRES = (param['ThresholdPval'], 'Orig Threshold Pval')
+        if 'deltaz' in param.keys():
+            src.OP_DZ = (param['deltaz'], 'Orig deltaz')
+        if 'r0PCA' in param.keys():
+            src.OP_R0 = (param['r0PCA'], 'Orig PCA R0')
+        if 'threshT1' in param.keys():
+            src.OP_T1 = (param['threshT1'], 'Orig T1 threshold')
+        if 'threshT2' in param.keys():
+            src.OP_T2 = (param['threshT2'], 'Orig T2 threshold')
+        if 'neighboors' in param.keys():
+            src.OP_NG = (param['neighboors'], 'Orig Neighboors')
+        if 'meanestPvalChan' in param.keys():
+            src.OP_MP = (param['meanestPvalChan'], 'Orig Meanest PvalChan')
+        if 'nbsubcube' in param.keys():
+            src.OP_NS = (param['nbsubcube'], 'Orig nb of subcubes')
+        if 'grid_dxy' in param.keys():
+            src.OP_DXY = (param['grid_dxy'], 'Orig Grid Nxy')
+        if 'grid_dz' in param.keys():
+            src.OP_DZ = (param['grid_dz'], 'Orig Grid Nz')
+        if 'PSF' in param.keys():
+            src.OP_FSF = (param['PSF'], 'Orig FSF cube')
         src.write('%s/%s-%05d.fits' % (path, name, src.ID))
-        bar.update()
 
 
 def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
-                               fwhm_profiles, path, name, param):
+                               fwhm_profiles, path, name, param, src_vers, author, ncpu=1):
     """Function to create the final catalogue of sources with their parameters
 
     Parameters
@@ -1827,7 +1839,7 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
     fmt = ['.2f', '.2f', '.1f', '.1f', '.1e', '.1e', '.1e', '.1f', '.1f', 'd']
 
     step_wave = wave.get_step(unit=u.angstrom)
-    origin = ('ORIGIN', 'V1.1', os.path.basename(filename))
+    origin = ('ORIGIN', __version__, os.path.basename(filename))
 
     maxmap = np.amax(correl, axis=0)
     
@@ -1863,22 +1875,29 @@ def Construct_Object_Catalogue(Cat, Cat_est_line, correl, wave, filename,
         source_arglist = (i, ra, dec, x_centroid,
                      y_centroid, wave_pix, GLR, num_profil, pvalC, pvalS,
                      pvalF, T1, T2, nb_lines, Cat_est_line_data,
-                     Cat_est_line_var, y, x, flux)
+                     Cat_est_line_var, y, x, flux, src_vers, author)
         sources_arglist.append(source_arglist)
         
-    # run in parallel
-    # add progress bar
-    with ProgressBar(len(sources_arglist)) as bar:
-        errmsg = Parallel(max_nbytes=1e6)(
-            delayed(Construct_Object)(bar, uflux, unone, cols, units, desc,
+    if ncpu > 1:
+        # run in parallel
+        errmsg = Parallel(n_jobs=ncpu, max_nbytes=1e6)(
+            delayed(Construct_Object)(k, len(sources_arglist), uflux, unone, cols, units, desc,
                                       fmt, step_wave, origin, filename,
                                       maxmap, correl, fwhm_profiles, 
                                       param, path, name, *source_arglist)
-            for source_arglist in sources_arglist)
-    # print error messages if any
-    for msg in errmsg:
-        if msg is None: continue
-        logger.error(msg)
+            for k,source_arglist in enumerate(sources_arglist))
+        # print error messages if any
+        for msg in errmsg:
+            if msg is None: continue
+            logger.error(msg)
+    else:
+        for k,source_arglist in enumerate(sources_arglist):
+            msg = Construct_Object(k, len(sources_arglist), uflux, unone, cols, units, desc,
+                                      fmt, step_wave, origin, filename,
+                                      maxmap, correl, fwhm_profiles, 
+                                      param, path, name, *source_arglist)
+            if msg is not None:
+                logger.error(msg)
         
     logger.debug('%s executed in %0.1fs' % (whoami(), time.time() - t0))
     return len(np.unique(Cat['ID']))
