@@ -209,13 +209,14 @@ class Image(DataArray):
         of the data and variance extensions.
     wcs : `mpdaf.obj.WCS`
         World coordinates.
-    unit : str
-        Data unit type. u.dimensionless_unscaled by default.
+    unit : str or `astropy.units.Unit`
+        The physical units of the data values. Defaults to
+        `astropy.units.dimensionless_unscaled`.
     data : float array
         Array containing the pixel values of the image.  None by default.
     var : float array
         Array containing the variance. None by default.
-    copy : boolean
+    copy : bool
         If true (default), then the data and variance arrays are copied.
     dtype : numpy.dtype
         Type of the data (int, float)
@@ -226,20 +227,14 @@ class Image(DataArray):
         Possible FITS filename.
     primary_header : `astropy.io.fits.Header`
         FITS primary header instance.
+    data_header : `astropy.io.fits.Header`
+        FITS data header instance.
     wcs : `mpdaf.obj.WCS`
         World coordinates.
-    shape : tuple
-        Lengths of data (python notation (nz,ny,nx)).
-    data : masked array numpy.ma
-        Masked array containing the cube pixel values.
-    data_header : pyfits.Header
-        FITS data header instance.
     unit : `astropy.units.Unit`
         Physical units of the data values.
     dtype : numpy.dtype
         Type of the data (int, float)
-    var : float array
-        Array containing the variance.
 
     """
 
@@ -855,7 +850,7 @@ class Image(DataArray):
             Degrees by default (use None for coordinates in pixels).
         unit_radius : `astropy.units.Unit`
             Radius unit. Arcseconds by default (use None for radius in pixels)
-        inside : boolean
+        inside : bool
             If inside is True, pixels inside the described region are masked.
             If inside is False, pixels outside the described region are masked.
 
@@ -922,7 +917,7 @@ class Image(DataArray):
             Degrees by default (use None for coordinates in pixels).
         unit_radius : `astropy.units.Unit`
             Radius unit. Arcseconds by default (use None for radius in pixels)
-        inside : boolean
+        inside : bool
             If inside is True, pixels inside the described region are masked.
 
         """
@@ -976,7 +971,7 @@ class Image(DataArray):
         pix : `astropy.units.Unit`
             Type of the polygon coordinates (by default in degrees).
             Use unit=None to have polygon coordinates in pixels.
-        inside : boolean
+        inside : bool
             If inside is True, pixels inside the described region are masked.
 
         """
@@ -1026,7 +1021,7 @@ class Image(DataArray):
             Minimum value of x.
         x_max : float
             Maximum value of x.
-        mask : boolean
+        mask : bool
             if True, pixels outside ``[x_min, x_max]`` and ``[y_min, y_max]``
             are masked.
         unit : `astropy.units.Unit`
@@ -1643,7 +1638,7 @@ class Image(DataArray):
             gravity.
         background : float
             background value. If None, it is computed.
-        plot : boolean
+        plot : bool
             If True, the peak center is overplotted on the image.
 
         Returns
@@ -1766,7 +1761,7 @@ class Image(DataArray):
             Degrees by default (use None for coordinates in pixels).
         unit_radius : `astropy.units.Unit`
             Radius unit. Arcseconds by default (use None for radius in pixels)
-        frac : boolean
+        frac : bool
             If frac is True, result is given relative to the total energy of
             the full image.
         cont : float
@@ -2116,24 +2111,24 @@ class Image(DataArray):
             Initial gaussian fwhm (fwhm_y,fwhm_x). If None, they are estimated.
             The unit is given by the unit_fwhm parameter (arcseconds by
             default).
-        circular : boolean
+        circular : bool
             True: circular gaussian, False: elliptical gaussian
         cont : float
             continuum value, 0 by default.
-        fit_back : boolean
+        fit_back : bool
             False: continuum value is fixed,
             True: continuum value is a fit parameter.
         rot : float
             Initial rotation in degree.
             If None, rotation is fixed to 0.
-        peak : boolean
+        peak : bool
             If true, flux contains a gaussian peak value.
         factor : int
             If factor<=1, gaussian value is computed in the center of each
             pixel. If factor>1, for each pixel, gaussian value is the sum of
             the gaussian values on the factor*factor pixels divided by the
             pixel area.
-        weight : boolean
+        weight : bool
             If weight is True, the weight is computed as the inverse of
             variance.
         unit_center : `astropy.units.Unit`
@@ -2144,9 +2139,9 @@ class Image(DataArray):
         maxiter : int
             The maximum number of iterations during the sum of square
             minimization.
-        plot : boolean
+        plot : bool
             If True, the gaussian is plotted.
-        verbose : boolean
+        verbose : bool
             If True, the Gaussian parameters are printed at the end of the
             method.
         full_output : int
@@ -2491,26 +2486,26 @@ class Image(DataArray):
             default).
         n : int
             Initial atmospheric scattering coefficient.
-        circular : boolean
+        circular : bool
             True: circular moffat, False: elliptical moffat
         cont : float
             continuum value, 0 by default.
-        fit_back : boolean
+        fit_back : bool
             False: continuum value is fixed,
             True: continuum value is a fit parameter.
         rot : float
             Initial angle position in degree.
-        peak : boolean
+        peak : bool
             If true, flux contains a gaussian peak value.
         factor : int
             If factor<=1, gaussian is computed in the center of each pixel.
             If factor>1, for each pixel, gaussian value is the sum of the
             gaussian values on the factor*factor pixels divided by the pixel
             area.
-        weight : boolean
+        weight : bool
             If weight is True, the weight is computed as the inverse of
             variance.
-        plot : boolean
+        plot : bool
             If True, the gaussian is plotted.
         unit_center : `astropy.units.Unit`
             type of the center and position coordinates.
@@ -2520,7 +2515,7 @@ class Image(DataArray):
         full_output : int
             non-zero to return a `mpdaf.obj.Moffat2D`
             object containing the moffat image
-        fit_n : boolean
+        fit_n : bool
             False: n value is fixed,
             True: n value is a fit parameter.
         maxiter : int
@@ -4210,7 +4205,7 @@ class Image(DataArray):
 
         Returns
         -------
-        out : boolean
+        out : bool
         """
         if unit is not None:
             pixcrd = self.wcs.sky2pix([coord[0], coord[1]], unit=unit)[0]
@@ -4297,7 +4292,7 @@ class Image(DataArray):
         fwhm : (float,float)
             Gaussian fwhm (fwhm_y,fwhm_x). The unit is given by the unit_fwhm
             parameter (arcseconds by default).
-        peak : boolean
+        peak : bool
             If true, flux contains a gaussian peak value.
         rot : float
             Angle position in degree.
@@ -4360,7 +4355,7 @@ class Image(DataArray):
             If factor>1, for each pixel, moffat value is the sum
             of the moffat values on the factor*factor pixels
             divided by the pixel area.
-        peak : boolean
+        peak : bool
             If true, flux contains a gaussian peak value.
         unit_center : `astropy.units.Unit`
             type of the center and position coordinates.
@@ -4635,9 +4630,9 @@ class Image(DataArray):
         zscale : bool
                 If true, vmin and vmax are computed
                 using the IRAF zscale algorithm.
-        colorbar : boolean
+        colorbar : bool
                 If 'h'/'v', a horizontal/vertical colorbar is added.
-        var : boolean
+        var : bool
                 If var is True, the inverse of variance
                 is overplotted.
         ax : matplotlib.Axes
@@ -5346,7 +5341,7 @@ def gauss_image(shape=(101, 101), wcs=WCS(), factor=1, gauss=None,
     fwhm : (float,float)
         Gaussian fwhm (fwhm_y,fwhm_x).
         The unit is given by the unit_fwhm parameter (arcseconds by default).
-    peak : boolean
+    peak : bool
         If true, flux contains a gaussian peak value.
     rot : float
         Angle position in degree.
@@ -5489,7 +5484,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
     fwhm : (float,float)
         Gaussian fwhm (fwhm_y,fwhm_x).
         The unit is given by the parameter unit_fwhm (arcseconds by default)
-    peak : boolean
+    peak : bool
         If true, flux contains a gaussian peak value.
     n : int
         Atmospheric scattering coefficient. 2 by default.
@@ -5591,7 +5586,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
         Input data.
     steps : (float,float)
         Steps of the output image (dy,dRx).
-    deg : boolean
+    deg : bool
         If True, world coordinates are in decimal degrees
         (CTYPE1='RA---TAN',CTYPE2='DEC--TAN',CUNIT1=CUNIT2='deg').
         If False (by default), world coordinates are linear
@@ -5599,7 +5594,7 @@ def make_image(x, y, z, steps, deg=True, limits=None, spline=False, order=3,
     limits : (float,float,float,float)
         Limits of the image (y_min,x_min,y_max,x_max).
         If None, minum and maximum values of x,y arrays are used.
-    spline : boolean
+    spline : bool
         False: bilinear interpolation (uses `scipy.interpolate.griddata`)
         True: spline interpolation (uses `scipy.interpolate.bisplrep` and
         `scipy.interpolate.bisplev`).
@@ -5659,7 +5654,7 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
         Intensity mode. Use 'lin' for linear and 'sqrt' for root square.
     cuts : (float,float)
         Minimum and maximum in percent.
-    bar : boolean
+    bar : bool
         If bar is True a color bar image is created.
     interp : 'no' | 'linear' | 'spline'
         if 'no', data median value replaced masked values.

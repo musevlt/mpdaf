@@ -10,7 +10,7 @@ import sys
 import time
 import types
 
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from numpy import ma
 from six.moves import range, zip
 from scipy import integrate, interpolate
@@ -33,7 +33,7 @@ def iter_spe(cube, index=False):
     ----------
     cube : `~mpdaf.obj.Cube`
        The cube that contains the spectra to be returned one after another.
-    index : boolean
+    index : bool
        If False, only return a spectrum at each iteration.
        If True, return both a spectrum and the position of that spectrum in the
        image (a tuple of image-array indexes along the axes (y,x)).
@@ -54,7 +54,7 @@ def iter_ima(cube, index=False):
     ----------
     cube : `~mpdaf.obj.Cube`
        The cube that contains the images to be returned one after another.
-    index : boolean
+    index : bool
        If False, only return an image at each iteration.
        If True, return both the image and the spectral index.
 
@@ -88,18 +88,18 @@ class Cube(DataArray):
 
     Parameters
     ----------
-    filename : string
+    filename : str
         Optional FITS file name. None by default.
-    ext : integer or (integer,integer) or string or (string,string)
+    ext : int or (int,int) or str or (str,str)
         The optional number/name of the data extension
         or the numbers/names of the data and variance extensions.
     wcs : `mpdaf.obj.WCS`
         The world coordinates of the image pixels.
     wave : `mpdaf.obj.WaveCoord`
         The wavelength coordinates of the spectral pixels.
-    unit : `astropy.units.Unit`
+    unit : str or `astropy.units.Unit`
         The physical units of the data values. Defaults to
-        u.dimensionless_unscaled.
+        `astropy.units.dimensionless_unscaled`.
     data : numpy.ndarray or list
         An optional array containing the values of each pixel in the
         cube (None by default). Where given, this array should be
@@ -110,34 +110,27 @@ class Cube(DataArray):
         cube (None by default). Where given, this array should be
         3 dimensional, and the python ordering of its axes should be
         (wavelength,image_y,image_x).
-    copy : boolean
+    copy : bool
         If true (default), then the data and variance arrays are copied.
     dtype : numpy.dtype
-        The type of the data (integer, float)
+        The type of the data (int, float)
 
     Attributes
     ----------
-    filename : string
+    filename : str
         The name of the originating FITS file, if any. Otherwise None.
-    primary_header : pyfits.Header
-        The FITS primary header instance, if a FITS file was
-        provided. Otherwise None.
+    primary_header : `astropy.io.fits.Header`
+        The FITS primary header instance, if a FITS file was provided.
+    data_header : `astropy.io.fits.Header`
+        The FITS header of the DATA extension.
     wcs : `mpdaf.obj.WCS`
         The world coordinates of the image pixels.
     wave : `mpdaf.obj.WaveCoord`
         The wavelength coordinates of the spectral pixels.
-    shape : tuple
-        The dimensions of the data axes (python axis ordering (nz,ny,nx)).
-    data : numpy.ma.MaskedArray
-        A masked array containing the pixel values of the cube.
-    data_header : pyfits.Header
-        The FITS header of the DATA extension.
     unit : `astropy.units.Unit`
         The physical units of the data values.
     dtype : numpy.dtype
-        The type of the data (integer, float)
-    var : float array
-        An optional array containing the variance, or None.
+        The type of the data (int, float)
 
     """
 
@@ -165,7 +158,7 @@ class Cube(DataArray):
             The minimum wavelength of the region.
         lmax : float
             The maximum wavelength of the region.
-        inside : boolean
+        inside : bool
             If inside is True, pixels inside the described region are masked.
             If inside is False, pixels outside the described region are masked.
         unit_wave : `astropy.units.Unit`
@@ -254,7 +247,7 @@ class Cube(DataArray):
             minimum wavelength.
         lmax : float
             maximum wavelength.
-        inside : boolean
+        inside : bool
             If inside is True, pixels inside the described region are masked.
         unit_wave : `astropy.units.Unit`
             Type of the wavelengths coordinates (Angstrom by default)
@@ -1273,7 +1266,7 @@ class Cube(DataArray):
             array containing the sub-cube boundaries
             [lbda_min,y_min,x_min,lbda_max,y_max,x_max]
             (output of mpdaf.obj.cube.get_range)
-        mask : boolean
+        mask : bool
             if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
         unit_wave : `astropy.units.Unit`
             wavelengths unit.  If None, inputs are in pixels
@@ -1353,7 +1346,7 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        factor : (integer,integer,integer)
+        factor : (int,int,int)
             Factor in z, y and x.  Python notation: (nz,ny,nx)
 
         """
@@ -1385,9 +1378,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        factor : integer or (integer,integer,integer)
+        factor : int or (int,int,int)
             Factor in z, y and x. Python notation: (nz,ny,nx).
-        flux : boolean
+        flux : bool
             This parameters is used if new size is not an integer
             multiple of the original size.
 
@@ -1835,9 +1828,9 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        factor : integer or (integer,integer,integer)
+        factor : int or (int,int,int)
             Factor in z, y and x. Python notation: (nz,ny,nx).
-        flux : boolean
+        flux : bool
             This parameters is used if new size is
             not an integer multiple of the original size.
 
@@ -1881,7 +1874,7 @@ class Cube(DataArray):
 
         Parameter
         ---------
-        factor : (integer,integer,integer)
+        factor : (int,int,int)
             Factor in z, y and x.  Python notation: (nz,ny,nx)
 
         """
@@ -1909,7 +1902,7 @@ class Cube(DataArray):
 
         Parameters
         ----------
-        factor : integer or (integer,integer,integer)
+        factor : int or (int,int,int)
             Factor in z, y and x. Python notation: (nz,ny,nx).
 
         margin : 'center' or 'origin'
@@ -1982,10 +1975,10 @@ class Cube(DataArray):
         f : function or `~mpdaf.obj.Spectrum` method
             Spectrum method or function that the first argument
             is a spectrum object.
-        cpu : integer
+        cpu : int
             number of CPUs. It is also possible to set
             the mpdaf.CPU global variable.
-        verbose : boolean
+        verbose : bool
             if True, progression is printed.
         kargs : kargs
             can be used to set function arguments.
@@ -2058,8 +2051,8 @@ class Cube(DataArray):
                                       var=np.zeros(cshape), unit=unit)
                     init = False
 
-                result.data_header = pyfits.Header(self.data_header)
-                result.primary_header = pyfits.Header(self.primary_header)
+                result.data_header = fits.Header(self.data_header)
+                result.primary_header = fits.Header(self.primary_header)
                 result[:, p, q] = spe
 
             else:
@@ -2091,9 +2084,9 @@ class Cube(DataArray):
         f : function or `~mpdaf.obj.Image` method
             Image method or function that the first argument
             is a Image object. It should return an Image object.
-        cpu : integer
+        cpu : int
             number of CPUs. It is also possible to set
-        verbose : boolean
+        verbose : bool
             if True, progression is printed.
         kargs : kargs
             can be used to set function arguments.
@@ -2160,8 +2153,8 @@ class Cube(DataArray):
                 result._mask[k, :, :] = mask
                 if self.var is not None:
                     result._var[k, :, :] = var
-                result.data_header = pyfits.Header(self.data_header)
-                result.primary_header = pyfits.Header(self.primary_header)
+                result.data_header = fits.Header(self.data_header)
+                result.primary_header = fits.Header(self.primary_header)
             elif dtype == 'spectrum':
                 # f return a Spectrum -> iterator return a list of spectra
                 header, data, mask, var, unit = out
@@ -2200,9 +2193,9 @@ class Cube(DataArray):
         unit_wave : `astropy.units.Unit`
             wavelengths unit (angstrom by default).
             If None, inputs are in pixels
-        is_sum : boolean
+        is_sum : bool
             if True the sum is computes, otherwise this is the average.
-        subtract_off : boolean
+        subtract_off : bool
             If True, subtracting off nearby data.
             The method computes the subtracted flux by using the algorithm
             from Jarle Brinchmann (jarle@strw.leidenuniv.nl)::
@@ -2537,8 +2530,8 @@ class Cube(DataArray):
 
         return Cube(wcs=wcs, wave=wave, unit=self.unit, copy=False,
                     data=np.ma.masked_invalid(data), var=var,
-                    data_header=pyfits.Header(self.data_header),
-                    primary_header=pyfits.Header(self.primary_header),
+                    data_header=fits.Header(self.data_header),
+                    primary_header=fits.Header(self.primary_header),
                     filename=self.filename)
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,

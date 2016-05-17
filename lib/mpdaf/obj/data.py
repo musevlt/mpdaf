@@ -428,7 +428,7 @@ class DataArray(object):
 
     @property
     def shape(self):
-        """ The lengths of each of the .ndim data axes. """
+        """The lengths of each of the data axes."""
         if self._loaded_data:
             return self._data.shape
         try:
@@ -482,11 +482,12 @@ class DataArray(object):
 
     @property
     def var(self):
-        """ If variances have been provided for each data pixel, then this
-        property can be used to record those variances. Normally this
-        is a masked array which shares the mask of the data
-        property. However if no variances have been provided, then this
-        property is None.
+        """Return variance as a `numpy.ma.MaskedArray`.
+
+        If variances have been provided for each data pixel, then this property
+        can be used to record those variances. Normally this is a masked array
+        which shares the mask of the data property. However if no variances
+        have been provided, then this property is None.
 
         Variances are typically provided along with the data values in the
         originating FITS file. Alternatively a variance array can be assigned
@@ -496,12 +497,6 @@ class DataArray(object):
         need to update the array of variances accordingly.  For example, after
         scaling pixel values by a constant factor c, the variances should be
         scaled by c**2.
-
-        Changes can be made to individual elements of the var property in
-        place. When simple numeric values or numpy array elements are assigned
-        to elements of the var property, the values of these elements are
-        updated, but the corresponding elements of the shared mask are not
-        changed.
 
         When masked-array values are assigned to elements of the var property,
         the mask of the new values is assigned to the shared mask of the data

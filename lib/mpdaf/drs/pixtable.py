@@ -302,19 +302,14 @@ class PixTable(object):
     ----------
     filename : str
         The FITS file name. None if any.
-    primary_header : fits.Header
+    primary_header : `astropy.io.fits.Header`
         The primary header.
     nrows : int
         Number of rows.
     nifu : int
         Number of merged IFUs that went into this pixel table.
-    skysub : bool
-        If True, this pixel table was sky-subtracted.
-    fluxcal : bool
-        If True, this pixel table was flux-calibrated.
     wcs : `astropy.units.Unit`
-        Type of spatial coordinates of this pixel table
-        (u.pix, u.deg or u.rad)
+        Type of spatial coordinates of this pixel table (u.pix, u.deg or u.rad)
     wave : `astropy.units.Unit`
         Type of spectral coordinates of this pixel table
     ima : bool

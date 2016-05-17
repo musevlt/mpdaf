@@ -97,20 +97,20 @@ class Gauss1D(object):
 
 class Spectrum(DataArray):
 
-    """Spectrum class manages spectrum, optionally including a variance and a
-    bad pixel mask.
+    """Manages spectrum, optionally including a variance and a bad pixel mask.
 
     Parameters
     ----------
     filename : string
         Possible FITS filename.
-    ext : integer or (integer,integer) or string or (string,string)
+    ext : int or (int,int) or string or (string,string)
         Number/name of the data extension or numbers/names
         of the data and variance extensions.
     wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates.
-    unit : string
-        Data unit type. u.dimensionless_unscaled by default.
+    unit : str or `astropy.units.Unit`
+        The physical units of the data values. Defaults to
+        `astropy.units.dimensionless_unscaled`.
     data : float array
         Array containing the pixel values of the spectrum. None by default.
     var : float array
@@ -122,16 +122,10 @@ class Spectrum(DataArray):
         Possible FITS filename.
     unit : `astropy.units.Unit`
         Data unit type.
-    primary_header : pyfits.Header
+    primary_header : `astropy.io.fits.Header`
         Possible FITS primary header instance.
-    data_header : pyfits.Header
+    data_header : `astropy.io.fits.Header`
         Possible FITS data header instance.
-    data : masked array
-        Array containing the pixel values of the spectrum.
-    shape : tuple
-        Size of spectrum.
-    var : array
-        Array containing the variance.
     wave : `mpdaf.obj.WaveCoord`
         Wavelength coordinates.
 
@@ -648,7 +642,7 @@ class Spectrum(DataArray):
             maximum wavelength.
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
-        inside : boolean
+        inside : bool
             If inside is True, pixels inside [lmin,lmax] are masked.
             If inside is False, pixels outside [lmin,lmax] are masked.
         """
@@ -688,7 +682,7 @@ class Spectrum(DataArray):
             wavelength values
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates
-        spline : boolean
+        spline : bool
             False: linear interpolation (`scipy.interpolate.interp1d` used),
             True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
@@ -733,7 +727,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        spline : boolean
+        spline : bool
             False: linear interpolation (`scipy.interpolate.interp1d` used),
             True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
@@ -752,7 +746,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        spline : boolean
+        spline : bool
             False: linear interpolation (`scipy.interpolate.interp1d` used),
             True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
@@ -764,7 +758,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        factor : integer
+        factor : int
             Factor.
         """
         assert not np.sometrue(np.mod(self.shape[0], factor))
@@ -794,7 +788,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        factor : integer
+        factor : int
             factor
         margin : string in 'center'|'right'|'left'
             This parameters is used if new size is not an integer multiple of
@@ -896,7 +890,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        factor : integer
+        factor : int
             factor
         margin : string in 'center'|'right'|'left'
             This parameters is used if new size is not an integer multiple of
@@ -929,7 +923,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        factor : integer
+        factor : int
             factor
         """
         assert not np.sometrue(np.mod(self.shape[0], factor))
@@ -950,7 +944,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        factor : integer
+        factor : int
             factor
         margin : string in 'center'|'right'|'left'
             This parameters is used if new size is not
@@ -1005,11 +999,11 @@ class Spectrum(DataArray):
             It can be set or kept at the edge of the old first one.
         unit : `astropy.units.Unit`
             type of the wavelength coordinates
-        shape : integer
+        shape : int
             Size of the new spectrum.
-        spline : boolean
+        spline : bool
             Linear/spline interpolation to interpolate masked values.
-        notnoise : boolean
+        notnoise : bool
             True if the noise Variance spectrum is not interpolated
             (if it exists).
 
@@ -1090,11 +1084,11 @@ class Spectrum(DataArray):
             It can be set or kept at the edge of the old first one.
         unit : `astropy.units.Unit`
             type of the wavelength coordinates
-        shape : integer
+        shape : int
             Size of the new spectrum.
-        spline : boolean
+        spline : bool
             Linear/spline interpolation to interpolate masked values.
-        notnoise : boolean
+        notnoise : bool
         inplace : bool
             If False, return a resampled copy of the spectrum (the default).
             If True, resample the original spectrum in-place, and return that.
@@ -1123,7 +1117,7 @@ class Spectrum(DataArray):
             Maximum wavelength.
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
-        weight : boolean
+        weight : bool
             If weight is True, compute the weighted average
             with the inverse of variance as weight.
 
@@ -1168,7 +1162,7 @@ class Spectrum(DataArray):
             Maximum wavelength.
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
-        weight : boolean
+        weight : bool
             If weight is True, compute the weighted average
             with the inverse of variance as weight.
 
@@ -1270,12 +1264,12 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        deg : integer
+        deg : int
             Polynomial degree.
-        weight : boolean
+        weight : bool
             If weight is True, the weight is computed as the inverse of
             variance.
-        maxiter : integer
+        maxiter : int
             Maximum allowed iterations (0)
         nsig : (float,float)
             The low and high rejection factor in std units (-3.0,3.0)
@@ -1369,12 +1363,12 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        deg : integer
+        deg : int
             Polynomial degree.
-        weight : boolean
+        weight : bool
             If weight is True, the weight is computed as the inverse of
             variance.
-        maxiter : integer
+        maxiter : int
             Maximum allowed iterations (0)
         nsig : (float,float)
             The low and high rejection factor in std units (-3.0,3.0)
@@ -1576,9 +1570,9 @@ class Spectrum(DataArray):
             Wavelength value corresponding to the peak position.
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
-        cont : integer
+        cont : int
             The continuum [default 0].
-        spline : boolean
+        spline : bool
             Linear/spline interpolation to interpolate masked values.
 
         Returns
@@ -1636,17 +1630,17 @@ class Spectrum(DataArray):
             Integrated gaussian flux or gaussian peak value if peak is True.
         fwhm : float
             Input gaussian fwhm (in angstrom), if None it is estimated.
-        peak : boolean
+        peak : bool
             If true, flux contains the gaussian peak value .
         cont : float
             Continuum value, if None it is estimated by the line through points
             (max(lmin),mean(data[lmin])) and (min(lmax),mean(data[lmax])).
-        spline : boolean
+        spline : bool
             Linear/spline interpolation to interpolate masked values.
-        weight : boolean
+        weight : bool
             If weight is True, the weight is computed as the inverse of
             variance.
-        plot : boolean
+        plot : bool
             If True, the Gaussian is plotted.
         plot_factor : double
             oversampling factor for the overplotted fit
@@ -1800,7 +1794,7 @@ class Spectrum(DataArray):
             Gaussian fwhm.
         cont : float
             Continuum value.
-        peak : boolean
+        peak : bool
             If true, flux contains the gaussian peak value
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
@@ -1865,17 +1859,17 @@ class Spectrum(DataArray):
             Ratio between the two integrated gaussian fluxes.
         fwhm : float
             Input gaussian fwhm, if None it is estimated.
-        peak : boolean
+        peak : bool
             If true, flux contains the gaussian peak value .
         cont : float
             Continuum value, if None it is estimated by the line through points
             (max(lmin),mean(data[lmin])) and (min(lmax),mean(data[lmax])).
-        spline : boolean
+        spline : bool
             Linear/spline interpolation to interpolate masked values.
-        weight : boolean
+        weight : bool
             If weight is True, the weight is computed as the inverse of
             variance.
-        plot : boolean
+        plot : bool
             If True, the resulted fit is plotted.
         plot_factor : double
             oversampling factor for the overplotted fit
@@ -2046,19 +2040,19 @@ class Spectrum(DataArray):
             Integrated gaussian flux or gaussian peak value if peak is True.
         fwhm : float
             Input gaussian fwhm, if None it is estimated.
-        peak : boolean
+        peak : bool
             If true, flux contains the gaussian peak value .
         cont : float
             Continuum value, if None it is estimated by the line through points
             (max(lmin),mean(data[lmin])) and (min(lmax),mean(data[lmax])).
-        spline : boolean
+        spline : bool
             Linear/spline interpolation to interpolate masked values.
-        weight : boolean
+        weight : bool
             If weight is True, the weight is computed as the inverse of
             variance.
         unit : `astropy.units.Unit`
             type of the wavelength coordinates. If None, inputs are in pixels.
-        plot : boolean
+        plot : bool
             If True, the resulted fit is plotted.
         plot_factor : double
             oversampling factor for the overplotted fit
@@ -2212,7 +2206,7 @@ class Spectrum(DataArray):
             Gaussian fwhm on the right (red) side
         cont : float
             Continuum value.
-        peak : boolean
+        peak : bool
             If true, flux contains the gaussian peak value.
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
@@ -2269,18 +2263,18 @@ class Spectrum(DataArray):
             Integrated gaussian flux or gaussian peak value if peak is True.
         fwhm : float
             Input gaussian fwhm, if None it is estimated.
-        peak : boolean
+        peak : bool
             If true, flux contains the gaussian peak value .
         cont : float
             Continuum value, if None it is estimated
             by the line through points (max(lmin),mean(data[lmin]))
             and (min(lmax),mean(data[lmax])).
-        spline : boolean
+        spline : bool
             Linear/spline interpolation to interpolate masked values.
-        weight : boolean
+        weight : bool
             If weight is True, the weight is computed as the inverse of
             variance.
-        plot : boolean
+        plot : bool
             If True, the Gaussian is plotted.
         plot_factor : double
             oversampling factor for the overplotted fit
@@ -2653,7 +2647,7 @@ class Spectrum(DataArray):
         ----------
         fwhm : float
             Gaussian fwhm in angstrom
-        nsig : integer
+        nsig : int
             Number of standard deviations.
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
@@ -2683,7 +2677,7 @@ class Spectrum(DataArray):
         ----------
         fwhm : float
             Gaussian fwhm.
-        nsig : integer
+        nsig : int
             Number of standard deviations.
         unit : `astropy.units.Unit`
             type of the wavelength coordinates
@@ -2718,7 +2712,7 @@ class Spectrum(DataArray):
             f returns an np.array with shape=2*(size/2)+1 and centered in lbda
 
             Example: from mpdaf.MUSE import LSF
-        size : odd integer
+        size : odd int
             size of LSF in pixels.
         kwargs : kwargs
             it can be used to set function arguments.
@@ -2790,13 +2784,13 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        max : boolean
+        max : bool
             If max is True, the plot is normalized to peak at max value.
         title : string
             Figure title (None by default).
-        noise : boolean
+        noise : bool
             If noise is True, the +/- standard deviation is overplotted.
-        snr : boolean
+        snr : bool
             If snr is True, data/sqrt(var) is plotted.
         lmin : float
             Minimum wavelength.
@@ -2820,7 +2814,7 @@ class Spectrum(DataArray):
         res = self.copy()
         if lmin is not None or lmax is not None:
             res.truncate(lmin, lmax, unit)
-        
+
         try:
             x = res.wave.coord(unit=unit)
         except u.UnitConversionError:
@@ -2878,13 +2872,13 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        max : boolean
+        max : bool
             If max is True, the plot is normalized to peak at max value.
         title : string
             Figure title (None by default).
-        noise : boolean
+        noise : bool
             If noise is True, the +/- standard deviation is overplotted.
-        snr : boolean
+        snr : bool
             If snr is True, data/sqrt(var) is plotted.
         lmin : float
             Minimum wavelength.
@@ -3057,7 +3051,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        nclicks : integer (3 or 5)
+        nclicks : int (3 or 5)
             3 or 5 clicks.
 
             Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
@@ -3198,7 +3192,7 @@ class Spectrum(DataArray):
 
         Parameters
         ----------
-        nclicks : integer (3 or 5)
+        nclicks : int (3 or 5)
             3 or 5 clicks.
 
             Use 3 mouse clicks to get minimim, peak and maximum wavelengths.
