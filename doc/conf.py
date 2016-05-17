@@ -65,10 +65,15 @@ intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None)
 }
 
-# autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance']
+# autodoc_default_flags = ['members', 'special-members',
+#                          'inherited-members']
+autodoc_member_order = 'bysource'
+
 autosummary_generate = True
 
 automodapi_toctreedirnm = 'api'
+
+automodsumm_inherited_members = True
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
