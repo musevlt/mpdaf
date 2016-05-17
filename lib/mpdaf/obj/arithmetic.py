@@ -7,6 +7,27 @@ from .data import DataArray
 from .objs import UnitMaskedArray, UnitArray
 
 
+# Docstring templates for add, subtract, multiply, divide methods.
+_arit_doc = """
+    Performs {name} by evaluating ``self`` {op} ``operand``.
+
+    If ``self`` and ``operand`` have compatible shapes, they will be
+    broadcasted together. So it is possible to perfom an operation between
+    a `~mpdaf.obj.Cube` and an a `~mpdaf.obj.Image` or a `~mpdaf.obj.Spectrum`.
+
+    Parameters
+    ----------
+    operand : `DataArray`-like instance or convertible to one.
+        The second operand in the operation.
+
+    Returns
+    -------
+    result : `~DataArray`-like
+        The resulting object.
+
+    """
+
+
 def _check_compatible_coordinates(a, b):
     if a.wave is not None and b.wave is not None and \
             not a.wave.isEqual(b.wave):
@@ -159,3 +180,7 @@ class ArithmeticMixin(object):
     __rmul__ = __mul__
     __truediv__ = __div__
     __rtruediv__ = __rdiv__
+    __add__.__doc__ = _arit_doc.format(name='addition', op='+')
+    __sub__.__doc__ = _arit_doc.format(name='subtraction', op='-')
+    __mul__.__doc__ = _arit_doc.format(name='multiplication', op='*')
+    __div__.__doc__ = _arit_doc.format(name='division', op='/')
