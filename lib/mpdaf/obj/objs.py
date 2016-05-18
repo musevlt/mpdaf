@@ -6,9 +6,10 @@ import numbers
 import numpy as np
 
 from astropy.constants import c
+from astropy.units import Quantity
 
 __all__ = ('is_float', 'is_int', 'is_number', 'flux2mag', 'mag2flux',
-           'UnitArray', 'UnitMaskedArray')
+           'UnitArray', 'UnitMaskedArray', 'circular_bounding_box')
 
 
 def is_float(x):
@@ -49,10 +50,25 @@ def mag2flux(mag, wave):
     return 10 ** (-0.4 * (mag + 48.60)) * cs / wave ** 2
 
 
+def circular_bounding_box(center, radius, shape):
+    center = np.asarray(center)
+    radius = np.asarray(radius)
+    shape = np.asarray(shape) - 1
+    imin, jmin = np.clip((center - radius + 0.5).astype(int), (0, 0), shape)
+    imax, jmax = np.clip((center + radius + 0.5).astype(int), (0, 0), shape)
+    return slice(imin, imax + 1), slice(jmin, jmax + 1)
+
+
 def UnitArray(array, old_unit, new_unit):
-    return (array * old_unit).to(new_unit).value
+    if new_unit == old_unit:
+        return array
+    else:
+        return Quantity(array, old_unit, copy=False).to(new_unit).value
 
 
 def UnitMaskedArray(mask_array, old_unit, new_unit):
-    return np.ma.array((mask_array.data[:] * old_unit).to(new_unit).value,
-                       mask=mask_array.mask)
+    if new_unit == old_unit:
+        return mask_array
+    else:
+        return np.ma.array(Quantity(mask_array.data, old_unit, copy=False)
+                           .to(new_unit).value, mask=mask_array.mask)

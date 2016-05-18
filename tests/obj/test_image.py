@@ -10,8 +10,8 @@ import numpy as np
 import scipy.ndimage as ndi
 import six
 
-from mpdaf.obj import Image, WCS, gauss_image, moffat_image
-from numpy.testing import assert_almost_equal
+from mpdaf.obj import Image, WCS, gauss_image, moffat_image, mask_image
+from numpy.testing import assert_almost_equal, assert_array_equal
 from six.moves import range
 
 from ..utils import (assert_image_equal, generate_image, generate_cube,
@@ -497,15 +497,32 @@ def test_fftconvolve():
     data[19, 14] = 1
     ima = Image(wcs=wcs, data=data)
     ima2 = ima.fftconvolve_gauss(center=None, flux=1., fwhm=(20000., 10000.),
-                                 peak=False, rot=60., factor=1, unit_center=u.deg,
-                                 unit_fwhm=u.arcsec)
+                                 peak=False, rot=60., factor=1,
+                                 unit_center=u.deg, unit_fwhm=u.arcsec)
     g = ima2.gauss_fit(verbose=False)
     nose.tools.assert_almost_equal(g.fwhm[0], 20000, 2)
     nose.tools.assert_almost_equal(g.fwhm[1], 10000, 2)
     nose.tools.assert_almost_equal(g.center[0], 8.5)
     nose.tools.assert_almost_equal(g.center[1], 12)
-    ima2 = ima.fftconvolve_moffat(center=None, flux=1., a=10000, q=1, n=2, peak=False, rot=60., factor=1, unit_center=u.deg, unit_a=u.arcsec)
+    ima2 = ima.fftconvolve_moffat(center=None, flux=1., a=10000, q=1, n=2,
+                                  peak=False, rot=60., factor=1,
+                                  unit_center=u.deg, unit_a=u.arcsec)
     m = ima2.moffat_fit(verbose=False)
     nose.tools.assert_almost_equal(m.center[0], 8.5)
     nose.tools.assert_almost_equal(m.center[1], 12)
-    ima3 = ima.correlate2d(np.ones((40, 30)))
+    # ima3 = ima.correlate2d(np.ones((40, 30)))
+
+
+@attr(speed='fast')
+def test_mask_image():
+    """Image class: testing mask_image."""
+    im = mask_image(objects=[(1, 1, 1)], unit_center=None, unit_radius=None,
+                    shape=(3, 3))
+    assert_array_equal(im.data.data, np.array([[0, 0, 0],
+                                               [0, 1, 0],
+                                               [0, 0, 0]]))
+    im = mask_image(objects=[(1, 1, 1.1)], unit_center=None, unit_radius=None,
+                    shape=(3, 3))
+    assert_array_equal(im.data.data, np.array([[0, 1, 0],
+                                               [1, 1, 1],
+                                               [0, 1, 0]]))

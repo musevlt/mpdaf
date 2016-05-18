@@ -21,7 +21,8 @@ from six.moves import range, zip
 
 from .coords import WCS, WaveCoord
 from .data import DataArray, is_valid_fits_file
-from .objs import is_int, is_number, UnitArray, UnitMaskedArray
+from .objs import (is_int, is_number, circular_bounding_box,
+                   UnitArray, UnitMaskedArray)
 from ..tools import deprecated
 
 __all__ = ('Gauss2D', 'Moffat2D', 'Image', 'gauss_image', 'moffat_image',
@@ -870,32 +871,24 @@ class Image(DataArray):
             radius = radius / self.wcs.get_step(unit=unit_radius)
             radius2 = radius[0] * radius[1]
 
-        imin, jmin = np.maximum(np.minimum((center - radius + 0.5).astype(int),
-                                           [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-        imax, jmax = np.maximum(np.minimum((center + radius + 0.5).astype(int),
-                                           [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-        imax += 1
-        jmax += 1
+        sy, sx = circular_bounding_box(center, radius, self.shape)
 
-        if inside and not circular:
-            self.data[imin:imax, jmin:jmax] = np.ma.masked
-        elif inside and circular:
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1], indexing='ij')
-            self.data[imin:imax, jmin:jmax][(grid[0] ** 2 + grid[1] ** 2) < radius2] = np.ma.masked
-        elif not inside and circular:
-            self.data[0:imin, :] = np.ma.masked
-            self.data[imax:, :] = np.ma.masked
-            self.data[imin:imax, 0:jmin] = np.ma.masked
-            self.data[imin:imax:, jmax:] = np.ma.masked
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1], indexing='ij')
-            self.data[imin:imax, jmin:jmax][(grid[0] ** 2 + grid[1] ** 2) > radius2] = np.ma.masked
+        if circular:
+            grid = np.mgrid[sy, sx]
+            ind = ((grid[0] - center[0])**2 + (grid[1] - center[1])**2)
+
+        if inside:
+            if circular:
+                self.data[sy, sx][ind < radius2] = np.ma.masked
+            else:
+                self.data[sy, sx] = np.ma.masked
         else:
-            self.data[0:imin, :] = np.ma.masked
-            self.data[imax:, :] = np.ma.masked
-            self.data[imin:imax, 0:jmin] = np.ma.masked
-            self.data[imin:imax:, jmax:] = np.ma.masked
+            self.data[0:sy.start, :] = np.ma.masked
+            self.data[sy.stop:, :] = np.ma.masked
+            self.data[sy, 0:sx.start] = np.ma.masked
+            self.data[sy, sx.stop:] = np.ma.masked
+            if circular:
+                self.data[sy, sx][ind > radius2] = np.ma.masked
 
     def mask_ellipse(self, center, radius, posangle, unit_center=u.deg,
                      unit_radius=u.arcsec, inside=True):
@@ -931,34 +924,23 @@ class Image(DataArray):
 
         maxradius = max(radius[0], radius[1])
 
-        imin, jmin = np.maximum(np.minimum((center - maxradius + 0.5).astype(int),
-                                           [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-        imax, jmax = np.maximum(np.minimum((center + maxradius + 0.5).astype(int),
-                                           [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-        imax += 1
-        jmax += 1
+        sy, sx = circular_bounding_box(center, maxradius, self.shape)
 
         cospa = np.cos(np.radians(posangle))
         sinpa = np.sin(np.radians(posangle))
 
+        grid = np.mgrid[sy, sx] - center[:, np.newaxis, np.newaxis]
+        ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
+                ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2)
+
         if inside:
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1],
-                               indexing='ij')
-            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
-                    ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2 < 1)
-            self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
-        if not inside:
-            self.data[0:imin, :] = np.ma.masked
-            self.data[imax:, :] = np.ma.masked
-            self.data[imin:imax, 0:jmin] = np.ma.masked
-            self.data[imin:imax:, jmax:] = np.ma.masked
-            grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                               np.arange(jmin, jmax) - center[1],
-                               indexing='ij')
-            ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
-                    ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2 > 1)
-            self.data[imin:imax, jmin:jmax][ksel] = np.ma.masked
+            self.data[sy, sx][ksel < 1] = np.ma.masked
+        else:
+            self.data[0:sy.start, :] = np.ma.masked
+            self.data[sy.stop:, :] = np.ma.masked
+            self.data[sy, 0:sx.start] = np.ma.masked
+            self.data[sy, sx.stop:] = np.ma.masked
+            self.data[sy, sx][ksel > 1] = np.ma.masked
 
     def mask_polygon(self, poly, unit=u.deg, inside=True):
         """Mask values inside/outside a polygonal region.
@@ -1101,32 +1083,28 @@ class Image(DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        if size > 0:
-            if not self.inside(center, unit_center):
-                return None
+        if size <= 0:
+            raise ValueError('size must be positive')
 
-            if unit_center is not None:
-                center = self.wcs.sky2pix(center, unit=unit_center)[0]
-            else:
-                center = np.array(center)
-            if unit_size is not None:
-                step0 = self.wcs.get_step(unit=unit_size)[0]
-                size = size / step0
-                minsize = minsize / step0
-            radius = np.array(size) / 2.
-
-            imin, jmin = np.maximum(np.minimum(
-                (center - radius + 0.5).astype(int),
-                [self.shape[0] - 1, self.shape[1] - 1]), [0, 0])
-            imax, jmax = np.minimum([imin + int(size + 0.5),
-                                     jmin + int(size + 0.5)],
-                                    [self.shape[0], self.shape[1]])
-
-            if (imax - imin + 1) < minsize or (jmax - jmin + 1) < minsize:
-                return None
-            return self[imin:imax, jmin:jmax]
-        else:
+        if not self.inside(center, unit_center):
             return None
+
+        center = np.asarray(center)
+        if unit_center is not None:
+            center = self.wcs.sky2pix(center, unit=unit_center)[0]
+
+        if unit_size is not None:
+            step0 = self.wcs.get_step(unit=unit_size)[0]
+            size = size / step0
+            minsize = minsize / step0
+
+        radius = np.array(size) / 2.
+        sy, sx = circular_bounding_box(center, radius, self.shape)
+
+        if (sy.stop - sy.start + 1) < minsize or \
+                (sx.stop - sx.start + 1) < minsize:
+            return None
+        return self[sy, sx]
 
     def _rotate(self, theta=0.0, interp='no', reshape=False, order=1,
                 pivot=None, unit=u.deg, regrid=None, flux=False, cutoff=0.25):
@@ -4263,10 +4241,7 @@ class Image(DataArray):
             # Get copies of the data arrays with masked values filled.
             data = out._prepare_data(interp)
             other_data = other._prepare_data(interp)
-
-            if out.unit != other.unit:
-                other_data = UnitMaskedArray(other_data, other.unit, out.unit)
-
+            other_data = UnitMaskedArray(other_data, other.unit, out.unit)
             out._data = signal.fftconvolve(data, other_data, mode='same')
 
             if out._var is not None:
@@ -4412,9 +4387,7 @@ class Image(DataArray):
             # Get copies of the data arrays with masked values filled.
             data = self._prepare_data(interp)
             other_data = other._prepare_data(interp)
-
-            if self.unit != other.unit:
-                other_data = UnitMaskedArray(other_data, other.unit, self.unit)
+            other_data = UnitMaskedArray(other_data, other.unit, self.unit)
             res = self.copy()
             res._data = signal.correlate2d(data, other_data, mode='same')
 
@@ -5751,7 +5724,8 @@ def composite_image(ImaColList, mode='lin', cuts=(10, 90),
 
 
 def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
-               unit=u.dimensionless_unscaled):
+               unit=u.dimensionless_unscaled, unit_center=u.deg,
+               unit_radius=u.arcsec):
     """Create a new image from a table of apertures.
 
     ra(deg), dec(deg) and radius(arcsec).
@@ -5779,23 +5753,20 @@ def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
     if wcs.naxis1 == 1. and wcs.naxis2 == 1.:
         wcs.naxis1 = shape[1]
         wcs.naxis2 = shape[0]
-    else:
-        if wcs.naxis1 != 0. or wcs.naxis2 != 0.:
-            shape[1] = wcs.naxis1
-            shape[0] = wcs.naxis2
-    data = np.zeros(shape)
-    for y, x, r in objects:
-        center = wcs.sky2pix([y, x], unit=u.deg)[0]
-        r = np.array(r) / wcs.get_step(unit=u.arcsec)
-        r2 = r[0] * r[1]
-        imin = max(0, center[0] - r[0])
-        imax = min(center[0] + r[0] + 1, shape[0])
-        jmin = max(0, center[1] - r[1])
-        jmax = min(center[1] + r[1] + 1, shape[1])
-        grid = np.meshgrid(np.arange(imin, imax) - center[0],
-                           np.arange(jmin, jmax) - center[1], indexing='ij')
-        data[imin:imax, jmin:jmax] = np.array(
-            (grid[0] ** 2 + grid[1] ** 2) < r2, dtype=int)
+    elif wcs.naxis1 != 0. or wcs.naxis2 != 0.:
+        shape = (wcs.naxis2, wcs.naxis1)
+    data = np.zeros(shape, dtype=np.uint8)
+    for y, x, radius in objects:
+        radius = (radius, radius)
+        center = (y, x)
+        if unit_center is not None:
+            center = wcs.sky2pix(center, unit=unit_center)[0]
+        if unit_radius is not None:
+            radius = np.array(radius) / wcs.get_step(unit=unit_radius)
+        r2 = radius[0] * radius[1]
+        sy, sx = circular_bounding_box(center, radius, shape)
+        y, x = np.mgrid[sy, sx]
+        data[sy, sx] = ((y - center[0]) ** 2 + (x - center[1]) ** 2) < r2
     return Image(data=data, wcs=wcs, unit=unit, copy=False, dtype=None)
 
 
