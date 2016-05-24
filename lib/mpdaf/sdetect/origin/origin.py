@@ -190,6 +190,10 @@ class ORIGIN(object):
             self.FWHM_PSF = np.mean(fwhm_arcsec) / step_arcsec
         else:
             cubePSF = Cube(PSF)
+            if cubePSF.shape[1] != cubePSF.shape[2]:
+                raise IOError('PSF must be a square image.')
+            if not cubePSF.shape[1]%2:
+                raise IOError('The spatial size of the PSF must be odd.')
             if cubePSF.shape[0] != self.Nz:
                 raise IOError('PSF and data cube have not the same dimensions along the spectral axis.')
             if not np.isclose(cubePSF.wcs.get_step(unit=u.arcsec)[0], step_arcsec):
