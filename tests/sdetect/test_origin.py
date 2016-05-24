@@ -67,7 +67,7 @@ class TestORIGIN():
         Cat4 = my_origin.merge_spectraly(Cat3, Cat_est_line, deltaz)
 
         # list of source objects
-        nsources = my_origin.write_sources(Cat4, Cat_est_line, correl)
+        nsources = my_origin.write_sources(Cat4, Cat_est_line, correl, ncpu=2)
 
         nose.tools.assert_equal(nsources, 2)
         shutil.rmtree('./origin')
