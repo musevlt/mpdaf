@@ -1747,8 +1747,7 @@ def Construct_Object(k, ktot, uflux, unone, cols, units, desc, fmt, step_wave,
     src.add_history('[{}] Source created with Origin'.format(src.SRC_VERS), author)
     
     for j in range(nb_lines):
-        sp_est = Spectrum(data=Cat_est_line_data[j, :],
-                          var=Cat_est_line_var[j, :], 
+        sp_est = Spectrum(data=Cat_est_line_data[j, :], 
                           wave=cube.wave)
         ksel = np.where(sp_est._data != 0)
         z1 = ksel[0][0]
