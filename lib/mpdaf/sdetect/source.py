@@ -638,7 +638,7 @@ class Source(object):
             msg += ' %s %s ' % (data, noise)
             msg += 'rot=%0.1f deg' % cub.wcs.get_rot()
             self._logger.info(msg)
-        for key in self.tables.keys():
+        for key in self.tables:
             self._logger.info('tables[\'%s\']' % key)
         if self.lines is not None:
             print('')
@@ -1291,7 +1291,7 @@ class Source(object):
         """
         if 'MUSE_WHITE' in self.images:
             if tags is None:
-                tags = [tag for tag in self.images.keys()
+                tags = [tag for tag in self.images
                         if tag[0:4] != 'SEG_' and 'MASK' not in tag]
 
             from ..sdetect.sea import segmentation
@@ -1554,7 +1554,7 @@ class Source(object):
 
         # extract spectra
         # select narrow bands images
-        nb_tags = list(set(tags_to_try) & set(self.images.keys()))
+        nb_tags = list(set(tags_to_try) & set(self.images))
 
         # No weighting
         spec = subcub.sum(axis=(1, 2), weights=object_mask)
@@ -1760,7 +1760,7 @@ class Source(object):
             kwargs can be used to set additional plotting properties.
 
         """
-        if name not in list(self.images.keys()):
+        if name not in self.images:
             raise ValueError('Image %s not found' % name)
         zima = self.images[name]
         if cuts is None:
