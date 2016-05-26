@@ -242,8 +242,8 @@ class Source(object):
 
     """
 
-    def __init__(self, header, lines=None, mag=None, z=None,
-                 spectra=None, images=None, cubes=None, tables=None):
+    def __init__(self, header, lines=None, mag=None, z=None, spectra=None,
+                 images=None, cubes=None, tables=None, mask_invalid=True):
         # Check required keywords in the FITS header
         for key in ('RA', 'DEC', 'ID', 'CUBE', 'ORIGIN', 'ORIGIN_V'):
             if key not in header:
@@ -268,12 +268,13 @@ class Source(object):
         # logger
         self._logger = logging.getLogger(__name__)
         # mask invalid
-        self.masked_invalid()
+        if mask_invalid:
+            self.masked_invalid()
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confi=None,
                   extras=None, lines=None, mag=None, z=None, spectra=None,
-                  images=None, cubes=None, tables=None):
+                  images=None, cubes=None, tables=None, mask_invalid=True):
         """Source constructor from a list of data.
 
         Parameters
@@ -318,6 +319,9 @@ class Source(object):
             Dictionary containing tables
             Keys give a description of each table
             Values are `astropy.table.Table` objects
+        mask_invalid: bool
+            If True (default), iterate on all columns of all tables to mask
+            invalid values (Inf, NaN, and -9999).
 
         """
         header = pyfits.Header()
@@ -334,10 +338,11 @@ class Source(object):
         if extras is not None:
             header.update(extras)
 
-        return cls(header, lines, mag, z, spectra, images, cubes, tables)
+        return cls(header, lines, mag, z, spectra, images, cubes, tables,
+                   mask_invalid=mask_invalid)
 
     @classmethod
-    def from_file(cls, filename, ext=None):
+    def from_file(cls, filename, ext=None, mask_invalid=True):
         """Source constructor from a FITS file.
 
         Parameters
@@ -347,6 +352,10 @@ class Source(object):
         ext : str or list of str
               Names of the FITS extensions that will be loaded in the source
               object. Regular expression accepted.
+        mask_invalid: bool
+            If True (default), iterate on all columns of all tables to mask
+            invalid values (Inf, NaN, and -9999).
+
         """
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
@@ -439,7 +448,8 @@ class Source(object):
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
         hdulist.close()
-        return cls(hdr, lines, mag, z, spectra, images, cubes, tables)
+        return cls(hdr, lines, mag, z, spectra, images, cubes, tables,
+                   mask_invalid=mask_invalid)
 
     @classmethod
     def _light_from_file(cls, filename):
@@ -1826,24 +1836,21 @@ class Source(object):
                 ax.axvline(lbda, color='r')
         return
 
-    def masked_invalid(self):
+    def masked_invalid(self, tables=None):
         """Mask where invalid values occur (NaNs or infs or -9999 or '')."""
+        if tables is not None:
+            tables = [tables] if isinstance(tables, Table) else tables
+        else:
+            tables = [self.lines, self.mag, self.z] + self.tables.values()
 
-        for tab in [self.lines, self.mag, self.z]:
+        for tab in tables:
             if tab is not None:
-                for col in tab.colnames:
+                for name, col in tab.columns.items():
                     try:
-                        tab[col] = ma.masked_invalid(tab[col])
-                        tab[col] = ma.masked_equal(tab[col], -9999)
+                        tab[name] = ma.masked_invalid(col)
+                        tab[name] = ma.masked_equal(col, -9999)
                     except:
                         pass
-        for tab in self.tables.values():
-            for col in tab.colnames:
-                try:
-                    tab[col] = ma.masked_invalid(tab[col])
-                    tab[col] = ma.masked_equal(tab[col], -9999)
-                except:
-                    pass
 
 
 class SourceList(list):
