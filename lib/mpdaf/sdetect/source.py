@@ -196,9 +196,9 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
     return obj
 
 
-def _read_masked_table(hdulist, extname, **kwargs):
+def _read_table(hdulist, extname, masked=True, **kwargs):
     """Read a masked Table from a FITS HDUList."""
-    t = _read_ext(Table, hdulist, extname, masked=True)
+    t = _read_ext(Table, hdulist, extname, masked=masked)
     h = hdulist[extname].header
     for i in range(h['TFIELDS']):
         try:
@@ -207,7 +207,6 @@ def _read_masked_table(hdulist, extname, **kwargs):
             pass
     return t
 
-# _read_masked_table = partial(_read_ext, Table, masked=True)
 _read_spectrum = partial(_read_mpdaf_obj, Spectrum)
 _read_image = partial(_read_mpdaf_obj, Image)
 _read_cube = partial(_read_mpdaf_obj, Cube)
@@ -374,8 +373,8 @@ class Source(object):
                 extnames += [h.name for h in hdulist[1:]
                              if re.findall(e, h.name)]
 
-        lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in extnames
-                 else None)
+        lines = (_read_table(hdulist, 'LINES', masked=mask_invalid)
+                 if 'LINES' in extnames else None)
         if lines is not None:
             for name in lines.colnames:
                 if 'LBDA' in name or 'EQW' in name:
@@ -383,7 +382,8 @@ class Source(object):
                 if 'FLUX' in name or 'FWHM' in name:
                     lines[name].format = '.1f'
 
-        mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in extnames else None
+        mag = (_read_table(hdulist, 'MAG', masked=mask_invalid)
+               if 'MAG' in extnames else None)
         if mag is not None:
             for name in mag.colnames:
                 mag[name].unit = 'unitless'
@@ -396,7 +396,8 @@ class Source(object):
                     mag[name].format = '.3f'
                     mag[name].description = 'AB Magnitude'
 
-        z = _read_masked_table(hdulist, 'Z') if 'Z' in extnames else None
+        z = (_read_table(hdulist, 'Z', masked=mask_invalid)
+             if 'Z' in extnames else None)
         if z is not None:
             for name in z.colnames:
                 z[name].unit = 'unitless'
@@ -442,8 +443,8 @@ class Source(object):
                         elif start == 'CUB':
                             cubes[name] = _read_cube(hdulist, ext, ima=False)
                     elif start == 'TAB':
-                        tables[extname[4:]] = _read_masked_table(hdulist,
-                                                                 extname)
+                        tables[extname[4:]] = _read_table(hdulist, extname,
+                                                          masked=mask_invalid)
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
@@ -465,10 +466,10 @@ class Source(object):
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
 
-        lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in hdulist
+        lines = (_read_table(hdulist, 'LINES') if 'LINES' in hdulist
                  else None)
-        mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in hdulist else None
-        z = _read_masked_table(hdulist, 'Z') if 'Z' in hdulist else None
+        mag = _read_table(hdulist, 'MAG') if 'MAG' in hdulist else None
+        z = _read_table(hdulist, 'Z') if 'Z' in hdulist else None
 
         tables = {}
         for i in range(1, len(hdulist)):
@@ -481,7 +482,7 @@ class Source(object):
                 extname = hdu.header['EXTNAME']
                 # tables
                 if extname[:3] == 'TAB':
-                    tables[extname[4:]] = _read_masked_table(hdulist, extname)
+                    tables[extname[4:]] = _read_table(hdulist, extname)
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
@@ -1845,13 +1846,19 @@ class Source(object):
                       list(self.tables.values()))
 
         for tab in tables:
-            if tab is not None:
+            if tab is None:
+                continue
+            if not tab.masked:
+                tab._set_masked(True)
                 for name, col in tab.columns.items():
-                    try:
-                        tab[name] = ma.masked_invalid(col)
-                        tab[name] = ma.masked_equal(col, -9999)
-                    except:
-                        pass
+                    tab.replace_column(name, MaskedColumn(col))
+
+            for name, col in tab.columns.items():
+                try:
+                    tab[name] = ma.masked_invalid(col)
+                    tab[name] = ma.masked_equal(col, -9999)
+                except:
+                    pass
 
 
 class SourceList(list):
