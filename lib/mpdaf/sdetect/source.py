@@ -1841,7 +1841,8 @@ class Source(object):
         if tables is not None:
             tables = [tables] if isinstance(tables, Table) else tables
         else:
-            tables = [self.lines, self.mag, self.z] + self.tables.values()
+            tables = ([self.lines, self.mag, self.z] +
+                      list(self.tables.values()))
 
         for tab in tables:
             if tab is not None:
