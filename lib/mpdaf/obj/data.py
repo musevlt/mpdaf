@@ -778,7 +778,7 @@ class DataArray(object):
         return self.__class__(
             data=data, unit=self.unit, var=var, mask=mask, wcs=wcs, wave=wave,
             filename=self.filename, data_header=fits.Header(self.data_header),
-            primary_header=fits.Header(self.primary_header))
+            primary_header=fits.Header(self.primary_header), copy=False)
 
     def __setitem__(self, item, other):
         """Set the corresponding part of data."""

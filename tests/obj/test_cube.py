@@ -83,7 +83,7 @@ def test_iter_ima():
     cube1 = generate_cube()
     ones = np.ones(shape=(6, 5))
     for ima, k in iter_ima(cube1, True):
-        cube1[k, :, :] = k * ones
+        ima[:, :] = k * ones
     c = np.arange(cube1.shape[0])[:, np.newaxis, np.newaxis]
     assert_array_equal(*np.broadcast_arrays(cube1.data.data, c))
 
@@ -93,7 +93,7 @@ def test_iter_spe():
     """Cube class: tests Spectrum iterator"""
     cube1 = generate_cube(data=0.)
     for (spe, (p, q)) in iter_spe(cube1, True):
-        cube1[:, p, q] = spe + p + q
+        spe[:] = spe + p + q
 
     y, x = np.mgrid[:cube1.shape[1], :cube1.shape[2]]
     assert_array_equal(*np.broadcast_arrays(cube1.data.data, y + x))
