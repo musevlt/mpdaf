@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import astropy.units as u
 import datetime
 import glob
+import itertools
 import logging
 import numpy as np
 import os.path
@@ -582,89 +583,46 @@ class Source(object):
 
     def info(self):
         """Print information."""
-        excluded_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
-                          'AUTHOR']
-        icom = 1
-        while 'COM%03d' % icom in self.header:
-            excluded_cards.append('COM%03d' % icom)
-            icom += 1
-        ihist = 1
-        while 'HIST%03d' % ihist in self.header:
-            excluded_cards.append('HIST%03d' % ihist)
-            ihist += 1
-        for card in self.header.cards:
-            if card[0] not in excluded_cards:
-                self._logger.info(card)
+        info = self._logger.info
+        excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
+                          'AUTHOR'}
+        keys = set(self.header.keys())
+        coms = set(filter(lambda k: re.match('COM\d\d\d', k), keys))
+        hist = set(filter(lambda k: re.match('HIST\d\d\d', k), keys))
+        keys = keys - excluded_cards - coms - hist
 
-        for i in range(1, icom):
-            # self._logger.info(self.header.cards['COM%03d' % i])
-            card = self.header.cards['COM%03d' % i]
-            self._logger.info('%s = %s / %s', card[0], card[1], card[2])
+        for key in itertools.chain(keys, coms, hist):
+            info(self.header.cards[key])
 
-        for i in range(1, ihist):
-            # self._logger.info(self.header.cards['HIST%03d' % i])
-            card = self.header.cards['HIST%03d' % i]
-            self._logger.info('%s = %s / %s', card[0], card[1], card[2])
-
-        if len(self.spectra) != 0 or \
-           len(self.images) != 0 or \
-           len(self.cubes) != 0 or \
-           len(self.tables) != 0:
+        if any([self.spectra, self.images, self.cubes, self.tables]):
             print('')
+
         for key, spe in six.iteritems(self.spectra):
-            msg = 'spectra[\'%s\']' % key
-            msg += ',%i elements (%0.2f-%0.2f A)' % (
-                spe.shape[0], spe.get_start(unit=u.angstrom),
-                spe.get_end(unit=u.angstrom))
-            data = '.data'
-            if spe.data is None:
-                data = ''
-            noise = '.var'
-            if spe.var is None:
-                noise = ''
-            msg += ' %s %s ' % (data, noise)
-            self._logger.info(msg)
+            data = '' if spe.data is None else '.data'
+            noise = '' if spe.var is None else '.var'
+            start, end = spe.get_range(unit=u.angstrom)
+            info("spectra['%s'], %i elements (%0.2f-%0.2f A) %s %s",
+                 key, spe.shape[0], start, end, data, noise)
+
         for key, ima in six.iteritems(self.images):
-            msg = 'images[\'%s\']' % key
-            msg += ' %i X %i' % (ima.shape[0], ima.shape[1])
-            data = '.data'
-            if ima.data is None:
-                data = ''
-            noise = '.var'
-            if ima.var is None:
-                noise = ''
-            msg += ' %s %s ' % (data, noise)
-            msg += 'rot=%0.1f deg' % ima.wcs.get_rot()
-            self._logger.info(msg)
+            info("images['%s'], %i X %i %s %s rot=%0.1f deg", key,
+                 ima.shape[0], ima.shape[1], data, noise, ima.wcs.get_rot())
+
         for key, cub in six.iteritems(self.cubes):
-            msg = 'cubes[\'%s\']' % key
-            msg += ' %i X %i X %i' % (cub.shape[0], cub.shape[1], cub.shape[2])
-            data = '.data'
-            if cub.data is None:
-                data = ''
-            noise = '.var'
-            if cub.var is None:
-                noise = ''
-            msg += ' %s %s ' % (data, noise)
-            msg += 'rot=%0.1f deg' % cub.wcs.get_rot()
-            self._logger.info(msg)
+            info("cubes['%s'], %i X %i X %i %s %s rot=%0.1f deg", key,
+                 cub.shape[0], cub.shape[1], cub.shape[2], data, noise,
+                 cub.wcs.get_rot())
+
         for key in self.tables:
-            self._logger.info('tables[\'%s\']' % key)
-        if self.lines is not None:
-            print('')
-            self._logger.info('lines')
-            for l in self.lines.pformat():
-                self._logger.info(l)
-        if self.mag is not None:
-            print('')
-            self._logger.info('magnitudes')
-            for l in self.mag.pformat():
-                self._logger.info(l)
-        if self.z is not None:
-            print('')
-            self._logger.info('redshifts')
-            for l in self.z.pformat():
-                self._logger.info(l)
+            info('tables[\'%s\']' % key)
+
+        for name, table in (('lines', self.lines), ('magnitudes', self.mag),
+                            ('redshifts', self.z)):
+            if table is not None:
+                print('')
+                info(name)
+                for l in table.pformat():
+                    info(l)
 
     def __getattr__(self, item):
         """Map values to attributes."""
