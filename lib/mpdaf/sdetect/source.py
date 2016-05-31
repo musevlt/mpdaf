@@ -1249,8 +1249,6 @@ class Source(object):
             The size of the off-band is fband*narrow-band width (in angstrom).
 
         """
-        #self._logger.debug('Generate narrow band image for %s, lamdba: %s',
-        #                   tag, lbda)
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']

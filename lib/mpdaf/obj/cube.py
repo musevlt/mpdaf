@@ -2168,7 +2168,7 @@ class Cube(DataArray):
             wavelengths unit (angstrom by default).
             If None, inputs are in pixels
         is_sum : bool
-            if True the sum is computes, otherwise this is the average.
+            if True, compute the sum, otherwise compute the average.
         subtract_off : bool
             If True, subtracting off nearby data.
             The method computes the subtracted flux by using the algorithm
@@ -2197,19 +2197,16 @@ class Cube(DataArray):
         else:
             l1, l2 = wave
             k1, k2 = self.wave.pixel(wave, unit=unit_wave)
+
         if k1 - int(k1) > 0.01:
             k1 = int(k1) + 1
         else:
             k1 = int(k1)
         k2 = int(k2)
 
-        if k1 < 0:
-            k1 = 0
-        if k2 > (self.shape[0] - 1):
-            k2 = self.shape[0] - 1
+        k1 = max(k1, 0)
+        k2 = min(k2, self.shape[0] - 1)
 
-        #msg = 'Computing image for lbda %g-%g [%d-%d]' % (l1, l2, k1, k2 + 1)
-        #self._logger.debug(msg)
         if is_sum:
             ima = self[k1:k2 + 1, :, :].sum(axis=0)
         else:
@@ -2234,14 +2231,8 @@ class Cube(DataArray):
                 ima._var += off_im._var
 
         # add input in header
-        if unit_wave is None:
-            unit = 'pix'
-        else:
-            unit = str(unit_wave)
-        if self.filename is None:
-            f = ''
-        else:
-            f = os.path.basename(self.filename)
+        unit = 'pix' if unit_wave is None else str(unit_wave)
+        f = '' if self.filename is None else os.path.basename(self.filename)
         add_mpdaf_method_keywords(ima.primary_header,
                                   "cube.get_image",
                                   ['cube', 'lbda1', 'lbda2', 'is_sum',
