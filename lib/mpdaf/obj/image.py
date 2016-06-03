@@ -1309,7 +1309,7 @@ class Image(DataArray):
         # masked that are far away from any masked pixels, due to
         # precision errors in the affine_transform() function.
         # Limit the minimum value of the cutoff to avoid this.
-        newmask = np.greater(newmask, max(cutoff,1e-6))
+        newmask = np.greater(newmask, max(cutoff, 1e-6))
 
         # If the image has an associated array of variances, rotate it too.
         if self._var is not None:
@@ -5678,7 +5678,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
         return data, oldfmax
 
     # Get the extent of the input image as a pair of slices.
-    image_slice = [slice(0,data.shape[0]), slice(0,data.shape[1])]
+    image_slice = [slice(0, data.shape[0]), slice(0, data.shape[1])]
 
     # FFT algorithms can be extremely slow for arrays whose
     # dimensions are not powers of 2. The conventional way to avoid this
@@ -5701,21 +5701,21 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # sample spatial frequencies up to the values in newfmax. Set the
     # cutoff frequencies for the window functions along the x and y
     # axes to those frequencies.
-    fycut,fxcut = newfmax
+    fycut, fxcut = newfmax
 
     # Create an array which, for each pixel in the FFT image, holds
     # the radial spatial-frequency of the pixel center, divided by
     # the cutoff frequency. These values will later be used to index
     # the 1D window-function.
 
-    wr = np.sqrt((np.fft.rfftfreq(nx,oldstep[1]) / fxcut)**2 +
-                 (np.fft.fftfreq(ny,oldstep[0]) / fycut)[np.newaxis,:].T**2)
+    wr = np.sqrt((np.fft.rfftfreq(nx, oldstep[1]) / fxcut)**2 +
+                 (np.fft.fftfreq(ny, oldstep[0]) / fycut)[np.newaxis, :].T**2)
 
     # Get the requested window function as a function of frequency
     # divided by its cutoff frequency.
 
     if window is None or window == "blackman":
-        winfn = lambda r: np.where(r <= 1.0, 0.42 + 0.5 * np.cos(np.pi*r) + 0.08 * np.cos(2*np.pi*r), 0.0)
+        winfn = lambda r: np.where(r <= 1.0, 0.42 + 0.5 * np.cos(np.pi * r) + 0.08 * np.cos(2 * np.pi * r), 0.0)
 
     # For the gaussian window the standard deviation, sigma, is
     # as a fraction of the normalized cutoff frequency. Note that
@@ -5724,7 +5724,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
     elif window == "gaussian":
         sigma = 0.44
-        winfn = lambda r: np.where(r <= 1.0, np.exp(-0.5 * (r/sigma)**2), 0.0)
+        winfn = lambda r: np.where(r <= 1.0, np.exp(-0.5 * (r / sigma)**2), 0.0)
 
     # For the rectangular window, just multiply all pixels below the
     # cutoff frequency by one, and the rest by zero.

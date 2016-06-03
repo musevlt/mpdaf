@@ -396,17 +396,20 @@ class Catalog(Table):
             except:
                 pass
 
-    def match(self, cat2, radius=1, colc1=('RA', 'DEC'), colc2=('RA', 'DEC'), full_output=True):
+    def match(self, cat2, radius=1, colc1=('RA', 'DEC'), colc2=('RA', 'DEC'),
+              full_output=True):
         """Match elements of the current catalog with an other (in RA, DEC).
 
         Parameters
         ----------
-        cat2 : astropy.Table
+        cat2 : `astropy.table.Table`
             Catalog to match
         radius : float (default 1)
             Matching size in arcsec
-        colc1: ('RA','DEC') name of ra,dec columns of input table
-        colc2: ('RA','DEC') name of ra,dec columns of table 2
+        colc1: tuple
+            ('RA','DEC') name of ra,dec columns of input table
+        colc2: tuple
+            ('RA','DEC') name of ra,dec columns of table 2
 
         Returns
         -------
@@ -418,8 +421,10 @@ class Catalog(Table):
             nomatch2 - sub-table of non matched elements of the catalog cat2
 
         """
-        coord1 = SkyCoord(self[colc1[0]], self[colc1[1]], unit=(u.degree, u.degree))
-        coord2 = SkyCoord(cat2[colc2[0]], cat2[colc2[1]], unit=(u.degree, u.degree))
+        coord1 = SkyCoord(self[colc1[0]], self[colc1[1]],
+                          unit=(u.degree, u.degree))
+        coord2 = SkyCoord(cat2[colc2[0]], cat2[colc2[1]],
+                          unit=(u.degree, u.degree))
         id2, d2d, d3d = coord1.match_to_catalog_sky(coord2)
         id1 = np.arange(len(self))
         kmatch = d2d < radius * u.arcsec
@@ -431,7 +436,8 @@ class Catalog(Table):
         m[np.unique(id2match, return_index=True)[1]] = True
         duplicate = id2match[~m]
         if len(duplicate) > 0:
-            self._logger.debug('Found {} duplicate in matching catalogs'.format(len(duplicate)))
+            self._logger.debug('Found %d duplicate in matching catalogs',
+                               len(duplicate))
             to_remove = []
             for k in duplicate:
                 mask = id2match == k
@@ -443,10 +449,13 @@ class Catalog(Table):
         match1 = self[id1match]
         match2 = cat2[id2match]
         match = hstack([match1, match2], join_type='exact')
-        match.add_column(Column(data=d2match.to(u.arcsec), name='Distance', dtype=float))
+        match.add_column(Column(data=d2match.to(u.arcsec), name='Distance',
+                                dtype=float))
         if full_output:
-            id1notmatch = np.in1d(range(len(self)), id1match, assume_unique=True, invert=True)
-            id2notmatch = np.in1d(range(len(cat2)), id2match, assume_unique=True, invert=True)
+            id1notmatch = np.in1d(range(len(self)), id1match,
+                                  assume_unique=True, invert=True)
+            id2notmatch = np.in1d(range(len(cat2)), id2match,
+                                  assume_unique=True, invert=True)
             nomatch2 = cat2[id2notmatch]
             nomatch1 = self[id1notmatch]
             self._logger.debug('Cat1 Nelt %d Matched %d Not Matched %d'

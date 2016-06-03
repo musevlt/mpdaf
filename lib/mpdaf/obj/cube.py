@@ -2250,7 +2250,6 @@ class Cube(DataArray):
         return ima
 
     def bandpass_image(self, wavelengths, sensitivities, unit_wave=u.angstrom):
-
         """Given a cube of images versus wavelength and the bandpass
         filter-curve of a wide-band monochromatic instrument, extract
         an image from the cube that has the spectral response of the
@@ -2267,9 +2266,9 @@ class Cube(DataArray):
 
         For each channel n of the cube, the filter-curve is integrated
         over the width of that channel to obtain a weight, w[n]. The
-        output image is then given by the following weighted mean:
+        output image is then given by the following weighted mean::
 
-        output_image = sum(w[n] * cube_image[n]) / sum(w[n])
+            output_image = sum(w[n] * cube_image[n]) / sum(w[n])
 
         In practice, to accomodate masked pixels, the w[n] array is
         expanded into a cube w[n,y,x], and the weights of individual
@@ -2310,7 +2309,7 @@ class Cube(DataArray):
         # dimensional and have the same length.
 
         if (wavelengths.ndim != 1 or sensitivities.ndim != 1 or
-            len(wavelengths) != len(sensitivities)):
+                len(wavelengths) != len(sensitivities)):
             raise ValueError('The wavelengths and sensititivies arguments'
                              ' should be 1D arrays of equal length')
 
@@ -2345,8 +2344,8 @@ class Cube(DataArray):
         # bandpass curve over the wavelength range of each pixel and
         # dividing this by the sum of the weights.
 
-        k = np.arange(kmin, kmax+1, dtype=int)
-        w = np.empty((kmax+1 - kmin))
+        k = np.arange(kmin, kmax + 1, dtype=int)
+        w = np.empty((kmax + 1 - kmin))
 
         # Integrate the bandpass over the range of each spectral pixel
         # to determine the weights of each pixel. For the moment skip
@@ -2355,8 +2354,8 @@ class Cube(DataArray):
         # so for integer pixel index k, we need to integrate from
         # k-0.5 to k+0.5.
 
-        for k in range(kmin+1, kmax):
-            w[k-kmin], err = integrate.quad(spline, k-0.5, k+0.5)
+        for k in range(kmin + 1, kmax):
+            w[k - kmin], err = integrate.quad(spline, k - 0.5, k + 0.5)
 
         # Start the integration of the weight of the first channel
         # from the lower limit of the bandpass.
@@ -2374,15 +2373,15 @@ class Cube(DataArray):
 
         # Create a sub-cube of the selected channels.
 
-        subcube = self[kmin:kmax+1, :, :]
+        subcube = self[kmin:kmax + 1, :, :]
 
         # To accomodate masked pixels, create a cube of the above
         # weights, but with masked pixels given zero weight.
 
         if subcube._mask is ma.nomask:
-            wcube = w[:,np.newaxis,np.newaxis] * np.ones(subcube.shape)
+            wcube = w[:, np.newaxis, np.newaxis] * np.ones(subcube.shape)
         else:
-            wcube = w[:,np.newaxis,np.newaxis] * ~subcube._mask
+            wcube = w[:, np.newaxis, np.newaxis] * ~subcube._mask
 
         # Get an image which is the sum of the weights along the spectral
         # axis.
