@@ -248,14 +248,6 @@ class Image(DataArray):
         self._selector = None
         self._spflims = None
 
-        if filename is not None and not is_valid_fits_file(filename):
-            from PIL import Image as PILImage
-            im = PILImage.open(filename)
-            data = np.array(im.getdata(), dtype=dtype, copy=False)\
-                .reshape(im.size[1], im.size[0])
-            self.filename = filename
-            filename = None
-
         super(Image, self).__init__(
             filename=filename, ext=ext, wcs=wcs, unit=unit, data=data, var=var,
             copy=copy, dtype=dtype, **kwargs)
