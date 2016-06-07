@@ -110,7 +110,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'MPDAF CoreLib'
+project = u'MPDAF'
 copyright = u'2013-2016, CRAL'
 
 # The version info for the project you're documenting, acts as replacement for
