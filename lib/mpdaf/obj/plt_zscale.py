@@ -1,159 +1,109 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+
+# Adapted from code from the Numdisplay package (see NUMDISPLAY_LICENSE.rst)
+
+"""
+Zscale implementation based on the one from the STScI Numdisplay package.
+
+Original implementation from Numdisplay is BSD licensed:
+https://trac.stsci.edu/ssb/stsci_python/browser/stsci_python/trunk/numdisplay/lib/stsci/numdisplay/zscale.py?rev=19347
+https://trac.stsci.edu/ssb/stsci_python/browser/stsci_python/trunk/numdisplay/LICENSE.txt?rev=19347
+
+"""
+
 from __future__ import absolute_import, division
 
-import math
-import numpy
+import numpy as np
 
-# PyRAF - stsci_python
-
-MAX_REJECT = 0.5
-MIN_NPIXELS = 5
-GOOD_PIXEL = 0
-BAD_PIXEL = 1
-KREJ = 2.5
-MAX_ITERATIONS = 5
+__all__ = ['zscale']
 
 
-def zscale(image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
-    """Implement IRAF zscale algorithm
-    nsamples=1000 and contrast=0.25 are the IRAF display task defaults
-    bpmask and zmask not implemented yet
-    image is a 2-d numpy array
-    returns (z1, z2)
+def zscale(image, nsamples=1000, contrast=0.25, max_reject=0.5, min_npixels=5,
+           krej=2.5, max_iterations=5):
+    """Implement IRAF zscale algorithm.
+
+    Parameters
+    ----------
+    image : array_like
+        Input array.
+    nsamples : int, optional
+        Number of points in array to sample for determining scaling factors.
+        Default to 1000.
+    contrast : float, optional
+        Scaling factor (between 0 and 1) for determining min and max. Larger
+        values increase the difference between min and max values used for
+        display. Default to 0.25.
+    max_reject : float, optional
+        If more than ``max_reject * npixels`` pixels are rejected, then the
+        returned values are the min and max of the data. Default to 0.5.
+    min_npixels : int, optional
+        If less than ``min_npixels`` pixels are rejected, then the
+        returned values are the min and max of the data. Default to 5.
+    krej : float, optional
+        Number of sigma used for the rejection. Default to 2.5.
+    max_iterations : int, optional
+        Maximum number of iterations for the rejection. Default to 5.
+
+    Returns
+    -------
+    zmin, zmax: float
+        Computed min and max values.
+
     """
+
     # Sample the image
-    samples = zsc_sample(image, nsamples, bpmask, zmask)
-    npix = len(samples)
+    image = np.asarray(image)
+    image = image[np.isfinite(image)]
+    stride = int(image.size / nsamples)
+    samples = image[::stride][:nsamples]
     samples.sort()
+
+    npix = len(samples)
     zmin = samples[0]
     zmax = samples[-1]
-    # For a zero-indexed array
-    center_pixel = (npix - 1) // 2
-    if npix % 2 == 1:
-        median = samples[center_pixel]
-    else:
-        median = 0.5 * (samples[center_pixel] + samples[center_pixel + 1])
 
-    #
     # Fit a line to the sorted array of samples
-    minpix = max(MIN_NPIXELS, int(npix * MAX_REJECT))
-    ngrow = max(1, int(npix * 0.01))
-    ngoodpix, zstart, zslope = zsc_fit_line(samples, npix, KREJ, ngrow,
-                                            MAX_ITERATIONS)
-
-    if ngoodpix < minpix:
-        z1 = zmin
-        z2 = zmax
-    else:
-        if contrast > 0:
-            zslope = zslope / contrast
-        z1 = max(zmin, median - (center_pixel - 1) * zslope)
-        z2 = min(zmax, median + (npix - center_pixel) * zslope)
-    return z1, z2
-
-
-def zsc_sample(image, maxpix, bpmask=None, zmask=None):
-    # Figure out which pixels to use for the zscale algorithm
-    # Returns the 1-d array samples
-    # Don't worry about the bad pixel mask or zmask for the moment
-    # Sample in a square grid, and return the first maxpix in the sample
-    nc = image.shape[0]
-    nl = image.shape[1]
-    stride = max(1.0, math.sqrt((nc - 1) * (nl - 1) / float(maxpix)))
-    stride = int(stride)
-    samples = image[::stride, ::stride].flatten()
-    return samples[:maxpix]
-
-
-def zsc_fit_line(samples, npix, krej, ngrow, maxiter):
-    #
-    # First re-map indices from -1.0 to 1.0
-    xscale = 2.0 / (npix - 1)
-    xnorm = numpy.arange(npix)
-    xnorm = xnorm * xscale - 1.0
-
+    minpix = max(min_npixels, int(npix * max_reject))
+    x = np.arange(npix)
     ngoodpix = npix
-    minpix = max(MIN_NPIXELS, int(npix * MAX_REJECT))
     last_ngoodpix = npix + 1
 
-    # This is the mask used in k-sigma clipping.  0 is good, 1 is bad
-    badpix = numpy.zeros(npix, dtype="int32")
+    # Bad pixels mask used in k-sigma clipping
+    badpix = np.zeros(npix, dtype=bool)
 
-    #
-    #  Iterate
+    # Kernel used to dilate the bad pixels mask
+    ngrow = max(1, int(npix * 0.01))
+    kernel = np.ones(ngrow, dtype=bool)
 
-    for niter in range(maxiter):
-
-        if (ngoodpix >= last_ngoodpix) or (ngoodpix < minpix):
+    for niter in range(max_iterations):
+        if ngoodpix >= last_ngoodpix or ngoodpix < minpix:
             break
 
-        # Accumulate sums to calculate straight line fit
-        goodpixels = numpy.where(badpix == GOOD_PIXEL)
-        sumx = xnorm[goodpixels].sum()
-        sumxx = (xnorm[goodpixels] * xnorm[goodpixels]).sum()
-        sumxy = (xnorm[goodpixels] * samples[goodpixels]).sum()
-        sumy = samples[goodpixels].sum()
-        sum = len(goodpixels[0])
-
-        delta = sum * sumxx - sumx * sumx
-        # Slope and intercept
-        intercept = (sumxx * sumy - sumx * sumxy) / delta
-        slope = (sum * sumxy - sumx * sumy) / delta
+        fit = np.polyfit(x, samples, deg=1, w=(~badpix).astype(int))
+        fitted = np.poly1d(fit)(x)
 
         # Subtract fitted line from the data array
-        fitted = xnorm * slope + intercept
         flat = samples - fitted
 
         # Compute the k-sigma rejection threshold
-        ngoodpix, mean, sigma = zsc_compute_sigma(flat, badpix, npix)
-
-        threshold = sigma * krej
+        threshold = krej * flat[~badpix].std()
 
         # Detect and reject pixels further than k*sigma from the fitted line
-        lcut = -threshold
-        hcut = threshold
-        below = numpy.where(flat < lcut)
-        above = numpy.where(flat > hcut)
-
-        badpix[below] = BAD_PIXEL
-        badpix[above] = BAD_PIXEL
+        badpix[(flat < - threshold) | (flat > threshold)] = True
 
         # Convolve with a kernel of length ngrow
-        kernel = numpy.ones(ngrow, dtype="int32")
-        badpix = numpy.convolve(badpix, kernel, mode='same')
+        badpix = np.convolve(badpix, kernel, mode='same')
 
-        ngoodpix = len(numpy.where(badpix == GOOD_PIXEL)[0])
+        last_ngoodpix = ngoodpix
+        ngoodpix = np.sum(~badpix)
 
-        niter += 1
+    slope, intercept = fit
 
-    # Transform the line coefficients back to the X range [0:npix-1]
-    zstart = intercept - slope
-    zslope = slope * xscale
-
-    return ngoodpix, zstart, zslope
-
-
-def zsc_compute_sigma(flat, badpix, npix):
-    # Compute the rms deviation from the mean of a flattened array.
-    # Ignore rejected pixels
-
-    # Accumulate sum and sum of squares
-    goodpixels = numpy.where(badpix == GOOD_PIXEL)
-    sumz = flat[goodpixels].sum()
-    sumsq = (flat[goodpixels] * flat[goodpixels]).sum()
-    ngoodpix = len(goodpixels[0])
-    if ngoodpix == 0:
-        mean = None
-        sigma = None
-    elif ngoodpix == 1:
-        mean = sumz
-        sigma = None
-    else:
-        mean = sumz / ngoodpix
-        temp = sumsq / (ngoodpix - 1) - sumz * sumz \
-            / (ngoodpix * (ngoodpix - 1))
-        if temp < 0:
-            sigma = 0.0
-        else:
-            sigma = math.sqrt(temp)
-
-    return ngoodpix, mean, sigma
+    if ngoodpix >= minpix:
+        if contrast > 0:
+            slope = slope / contrast
+        center_pixel = (npix - 1) // 2
+        median = np.median(samples)
+        zmin = max(zmin, median - (center_pixel - 1) * slope)
+        zmax = min(zmax, median + (npix - center_pixel) * slope)
+    return zmin, zmax
