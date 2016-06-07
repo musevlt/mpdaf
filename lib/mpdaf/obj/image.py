@@ -19,7 +19,7 @@ from scipy.stats import threshold
 from six.moves import range, zip
 
 from .coords import WCS, WaveCoord
-from .data import DataArray, is_valid_fits_file
+from .data import DataArray
 from .objs import (is_int, is_number, circular_bounding_box,
                    UnitArray, UnitMaskedArray)
 from ..tools import deprecated

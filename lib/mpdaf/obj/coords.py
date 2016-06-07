@@ -1717,6 +1717,8 @@ class WaveCoord(object):
         """Return the coordinate corresponding to pixel if item is an integer
         Return the corresponding WaveCoord object if item is a slice."""
 
+        noshape_msg = 'negative index cannot be used without a shape'
+
         if item is None:
             return self
         elif isinstance(item, int):
@@ -1724,7 +1726,7 @@ class WaveCoord(object):
                 lbda = self.coord(pixel=item)
             else:
                 if self.shape is None:
-                    raise ValueError('wavelength coordinates without dimension')
+                    raise ValueError(noshape_msg)
                 else:
                     lbda = self.coord(pixel=self.shape + item)
             return WaveCoord(crpix=1.0, cdelt=0, crval=lbda,
@@ -1737,19 +1739,19 @@ class WaveCoord(object):
                 start = item.start
             else:
                 if self.shape is None:
-                    raise ValueError('wavelength coordinates without dimension')
+                    raise ValueError(noshape_msg)
                 else:
                     start = self.shape + item.start
             if item.stop is None:
                 if self.shape is None:
-                    raise ValueError('wavelength coordinates without dimension')
+                    raise ValueError(noshape_msg)
                 else:
                     stop = self.shape
             elif item.stop >= 0:
                 stop = item.stop
             else:
                 if self.shape is None:
-                    raise ValueError('wavelength coordinates without dimension')
+                    raise ValueError(noshape_msg)
                 else:
                     stop = self.shape + item.stop
             newlbda = self.coord(pixel=np.arange(start, stop, item.step))

@@ -367,7 +367,7 @@ class Source(object):
 
         if ext is None:
             extnames = [h.name for h in hdulist[1:]]
-        elif isinstance(ext, (str, six.text_type)):
+        elif isinstance(ext, six.string_types):
             extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
         else:
             extnames = []
