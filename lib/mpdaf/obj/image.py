@@ -3183,14 +3183,15 @@ class Image(DataArray):
 
             gaussian
                A truncated gaussian window. This has a smaller PSF
-               than the blackman window, but the truncation of the
-               infinite extent of the gaussian leads to significant
-               ringing in the form of an airy profile, so it should
-               only be used for images without bright point sources or
-               CCD saturation lines. It is equivalent to a convolution
-               of the image with both an airy profile and a gaussian
-               of standard deviation 0.724*newstep (FWHM
-               1.704*newstep).
+               than the blackman window, however gaussians never fall
+               to zero, so either significant ringing will be seen due
+               to truncation of the gaussian, or low-level aliasing
+               will occur, depending on the spatial frequency coverage
+               of the image beyond the folding frequency. It can be a
+               good choice for images that only contain smoothly
+               varying features. It is equivalent to a convolution of
+               the image with both an airy profile and a gaussian of
+               standard deviation 0.724*newstep (FWHM 1.704*newstep).
 
             rectangle
                This window simply zeros all spatial frequencies above
@@ -3363,14 +3364,15 @@ class Image(DataArray):
 
             gaussian
                A truncated gaussian window. This has a smaller PSF
-               than the blackman window, but the truncation of the
-               infinite extent of the gaussian leads to significant
-               ringing in the form of an airy profile, so it should
-               only be used for images without bright point sources or
-               CCD saturation lines. It is equivalent to a convolution
-               of the image with both an airy profile and a gaussian
-               of standard deviation 0.724*newstep (FWHM
-               1.704*newstep).
+               than the blackman window, however gaussians never fall
+               to zero, so either significant ringing will be seen due
+               to truncation of the gaussian, or low-level aliasing
+               will occur, depending on the spatial frequency coverage
+               of the image beyond the folding frequency. It can be a
+               good choice for images that only contain smoothly
+               varying features. It is equivalent to a convolution of
+               the image with both an airy profile and a gaussian of
+               standard deviation 0.724*newstep (FWHM 1.704*newstep).
 
             rectangle
                This window simply zeros all spatial frequencies above
@@ -3692,14 +3694,15 @@ class Image(DataArray):
 
             gaussian
                A truncated gaussian window. This has a smaller PSF
-               than the blackman window, but the truncation of the
-               infinite extent of the gaussian leads to significant
-               ringing in the form of an airy profile, so it should
-               only be used for images without bright point sources or
-               CCD saturation lines. It is equivalent to a convolution
-               of the image with both an airy profile and a gaussian
-               of standard deviation 0.724*newstep (FWHM
-               1.704*newstep).
+               than the blackman window, however gaussians never fall
+               to zero, so either significant ringing will be seen due
+               to truncation of the gaussian, or low-level aliasing
+               will occur, depending on the spatial frequency coverage
+               of the image beyond the folding frequency. It can be a
+               good choice for images that only contain smoothly
+               varying features. It is equivalent to a convolution of
+               the image with both an airy profile and a gaussian of
+               standard deviation 0.724*newstep (FWHM 1.704*newstep).
 
             rectangle
                This window simply zeros all spatial frequencies above
@@ -5667,14 +5670,15 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
         gaussian
            A truncated gaussian window. This has a smaller PSF
-           than the blackman window, but the truncation of the
-           infinite extent of the gaussian leads to significant
-           ringing in the form of an airy profile, so it should
-           only be used for images without bright point sources or
-           CCD saturation lines. It is equivalent to a convolution
-           of the image with both an airy profile and a gaussian
-           of standard deviation 0.724*newstep (FWHM
-           1.704*newstep).
+           than the blackman window, however gaussians never fall
+           to zero, so either significant ringing will be seen due
+           to truncation of the gaussian, or low-level aliasing
+           will occur, depending on the spatial frequency coverage
+           of the image beyond the folding frequency. It can be a
+           good choice for images that only contain smoothly
+           varying features. It is equivalent to a convolution of
+           the image with both an airy profile and a gaussian of
+           standard deviation 0.724*newstep (FWHM 1.704*newstep).
 
         rectangle
            This window simply zeros all spatial frequencies above
@@ -5690,6 +5694,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
         The filtered version of the 2D input image, followed by
         a 2-element array that contains the new band-limits
         along the Y and X axes, respectively.
+
     """
 
     # Convert oldstep into a numpy array of two float elements.
@@ -5767,7 +5772,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
     elif window == "gaussian":
         sigma = 0.44
-        winfn = lambda r: np.where(r <= 1.0, np.exp(-0.5 * (r / sigma)**2), 0.0)
+        winfn = lambda r: np.exp(-0.5 * (r/sigma)**2)
 
     # For the rectangular window, just multiply all pixels below the
     # cutoff frequency by one, and the rest by zero.
