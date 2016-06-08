@@ -982,23 +982,38 @@ class Image(DataArray):
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg,
                  inplace=False):
-        """Return a truncated version of an image.
+        """Return a sub-image that contains a specified area of the sky.
+
+        The ranges x_min to x_max and y_min to y_max, specify a
+        rectangular region of the sky in world coordinates. The
+        truncate function returns the sub-image that just encloses
+        this region. Note that if the world coordinate axes are not
+        parallel to the array axes, the region will appear to be a
+        rotated rectangle within the sub-image. In such cases, the
+        corners of the sub-image will contain pixels that are outside
+        the region. By default these pixels are masked. However this
+        can be disabled by changing the optional mask argument to
+        False.
 
         Parameters
         ----------
         y_min : float
-            Minimum value of y.
+            The minimum Y-axis world-coordinate of the selected
+            region. The Y-axis is usually Declination, which may not
+            be parallel to the Y-axis of the image array.
         y_max : float
-            Maximum value of y.
+            The maximum Y-axis world coordinate of the selected region.
         x_min : float
-            Minimum value of x.
+            The minimum X-axis world-coordinate of the selected
+            region. The X-axis is usually Right Ascension, which may
+            not be parallel to the X-axis of the image array.
         x_max : float
-            Maximum value of x.
+            The maximum X-axis world coordinate of the selected region.
         mask : bool
-            if True, pixels outside ``[x_min, x_max]`` and ``[y_min, y_max]``
-            are masked.
+            If True, any pixels in the sub-image that remain outside the
+            range x_min to x_max and y_min to y_max, will be masked.
         unit : `astropy.units.Unit`
-            Type of the coordinates x and y (degrees by default).
+            The units of the X and Y world-coordinates (degrees by default).
         inplace : bool
             If False, return a truncated copy of the image (the default).
             If True, truncate the original image in-place, and return that.
@@ -1011,15 +1026,31 @@ class Image(DataArray):
 
         out = self if inplace else self.copy()
 
-        skycrd = np.array([[y_min, x_min], [y_min, x_max],
-                           [y_max, x_min], [y_max, x_max]])
+        # Get the sky coordinates of the corners of the rectangular
+        # region that is bounded by x_min..x_max and y_min..y_max.
+
+        skycrd = np.array([[y_min, x_min],
+                           [y_min, x_max],
+                           [y_max, x_min],
+                           [y_max, x_max]])
+
+        # Find the pixel indexes of the corners of the same region.
+
         if unit is not None:
             pixcrd = out.wcs.sky2pix(skycrd, unit=unit)
+        else:
+            pixcrd = skycrd
+
+        # The sides of the selected region may not be parallel with the
+        # array axes. Determine the pixel bounds of a rectangular
+        # region of the array that contains the requested region.
 
         imin = max(0, int(np.min(pixcrd[:, 0]) + 0.5))
         imax = min(out.shape[0], int(np.max(pixcrd[:, 0]) + 0.5) + 1)
         jmin = max(0, int(np.min(pixcrd[:, 1]) + 0.5))
         jmax = min(out.shape[1], int(np.max(pixcrd[:, 1]) + 0.5) + 1)
+
+        # Extract the rectangular area that contains the requested region.
 
         subima = out[imin:imax, jmin:jmax]
         out._data = subima._data
@@ -1028,23 +1059,43 @@ class Image(DataArray):
         out._mask = subima._mask
         out.wcs = subima.wcs
 
+        # If the region is rotated relative to the image array axes
+        # then the rectangular sub-image that contains this will has
+        # some pixels outside this region. Should these be masked?
+
         if mask:
-            # mask outside pixels
-            grid = np.meshgrid(np.arange(0, out.shape[0]),
-                               np.arange(0, out.shape[1]), indexing='ij')
-            shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]),
-                                                      np.ravel(grid[1]))])
+
+            # Get the indexes of all of the pixels in the "out" array,
+            # ordered like: [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]...]
+
+            py,px = np.meshgrid(np.arange(0, out.shape[0]),
+                                np.arange(0, out.shape[1]), indexing='ij')
+            pixcrd = np.column_stack((np.ravel(py), np.ravel(px)))
+
+            # Look up the sky coordinates of each pixel.
+
             if unit is None:
                 skycrd = pixcrd
             else:
                 skycrd = np.array(out.wcs.pix2sky(pixcrd, unit=unit))
-            x = skycrd[:, 1].reshape(shape)
-            y = skycrd[:, 0].reshape(shape)
+
+            # Reshape the array of coordinates to have the shape of
+            # the output array.
+
+            x = skycrd[:, 1].reshape(out.shape)
+            y = skycrd[:, 0].reshape(out.shape)
+
+            # Test the X and Y coordinates of each pixel against the
+            # requested range of X and Y coordinates, and mask pixels
+            # that are outside this range.
+
             test_x = np.logical_or(x < x_min, x > x_max)
             test_y = np.logical_or(y < y_min, y > y_max)
             test = np.logical_or(test_x, test_y)
             out._mask = np.logical_or(out._mask, test)
+
+            # Remove any array margins that are now completely masked.
+
             out.crop()
 
         return out
