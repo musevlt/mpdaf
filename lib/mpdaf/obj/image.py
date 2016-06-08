@@ -4021,87 +4021,73 @@ class Image(DataArray):
         out._data = ndi.minimum_filter(data, size)
         return out
 
-    def add(self, other):
-        """Add the image other to the current image in-place. The coordinate
-        are taken into account.
+    def add(self, other, flux=True, inplace=True):
+        """Add an image to self, after rotating and resampling
+        the other image onto the coordinate grid of self.
 
         Parameters
         ----------
         other : Image
-            Second image to add.
+            The image to be added to self.
+        flux  : bool
+            True if the pixel units of the two images are flux
+            densities such as erg/s/cm2/Hz. False means that they are
+            per-steradian brightness units, such as
+            erg/s/cm2/Hz/steradian. This needs to be known, because
+            when the other image is resampled onto the grid of self,
+            and this changes its pixel size, then resampled flux
+            densities need to be corrected for the change in the area
+            per pixel, whereas resampled brightnesses don't.
+        inplace : bool
+            By default, this is True, which tells the function to add
+            the other image to self. Alternatively, if it is False,
+            a copy of the sum of self with the other image is returned,
+            and self is left unchanged.
+
         """
         if not isinstance(other, Image):
             raise IOError('Operation forbidden')
 
-        ima = other.copy()
-        self_rot = self.wcs.get_rot()
-        ima_rot = ima.wcs.get_rot()
-        theta = 0
-        if self_rot != ima_rot:
-            if ima.wcs.get_cd()[0, 0] * self.wcs.get_cd()[0, 0] < 0:
-                theta = 180 - self_rot + ima_rot
-                ima = ima.rotate(theta)
-            else:
-                theta = -self_rot + ima_rot
-                ima = ima.rotate(theta)
+        # Perform the operation in-place, or on a copy of self?
 
-        unit = ima.wcs.unit
-        self_cdelt = self.wcs.get_step(unit=unit)
-        ima_cdelt = ima.wcs.get_step()
+        out = self if inplace else self.copy()
 
-        if (self_cdelt != ima_cdelt).all():
-            factor = self_cdelt / ima_cdelt
-            try:
-                if not np.sometrue(np.mod(self_cdelt[0],
-                                          ima_cdelt[0])) \
-                    and not np.sometrue(np.mod(self_cdelt[1],
-                                               ima_cdelt[1])):
-                    # ima.step is an integer multiple of the self.step
-                    ima = ima.rebin_mean(factor)
+        # Rotate, if needed, and resample the other image onto the
+        # coordinate grid of self.
+
+        ima = other.align_with_image(self, flux=flux, inplace=False)
+
+        # Are the pixel units of the two images the same?
+
+        same_units = ima.unit == out.unit
+
+        # Sum the pixels of the two images.
+
+        if same_units:
+            out.data += ima.data
+        else:
+            out.data += UnitMaskedArray(ima.data, ima.unit, out.unit)
+
+        # Also add the variances of the other image, if it has any.
+
+        if ima._var is not None:
+
+            # Sum the variances of the two images if both have them.
+
+            if out._var is not None:
+                if same_units:
+                    out.var += ima.var
                 else:
-                    raise ValueError('steps are not integer multiple')
-            except:
-                newdim = np.array(0.5 + ima.shape / factor, dtype=np.int)
-                newstart = self.wcs.get_start(unit=unit)
-                ima = ima.resample(newdim, newstart, self_cdelt, flux=True,
-                                   unit_step=unit, unit_start=unit)
+                    out.var += UnitMaskedArray(ima.var, ima.unit**2,
+                                               out.unit**2)
 
-        # here ima and self have the same step and the same rotation
+            # If self had no variances, assign it those of the other image.
 
-        [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky(
-            [[0, 0]], unit=self.wcs.unit))
-        l1 = int(l1 + 0.5)
-        k1 = int(k1 + 0.5)
-        k2 = k1 + ima.shape[0]
-        if k1 < 0:
-            nk1 = -k1
-            k1 = 0
-        else:
-            nk1 = 0
+            else:
+                out.var = ima_var
 
-        if k2 > self.shape[0]:
-            nk2 = ima.shape[0] - (k2 - self.shape[0])
-            k2 = self.shape[0]
-        else:
-            nk2 = ima.shape[0]
+        return out
 
-        l2 = l1 + ima.shape[1]
-        if l1 < 0:
-            nl1 = -l1
-            l1 = 0
-        else:
-            nl1 = 0
-
-        if l2 > self.shape[1]:
-            nl2 = ima.shape[1] - (l2 - self.shape[1])
-            l2 = self.shape[1]
-        else:
-            nl2 = ima.shape[1]
-
-        mask = self._mask.__copy__()
-        self.data[k1:k2, l1:l2] += UnitMaskedArray(ima.data[nk1:nk2, nl1:nl2],
-                                                   ima.unit, self.unit)
-        self._mask = mask | self._mask
 
     def segment(self, shape=(2, 2), minsize=20, minpts=None,
                 background=20, interp='no', median=None):

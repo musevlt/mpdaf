@@ -487,7 +487,7 @@ def test_add():
     ima = astronomical_image()
     subima = ima.subimage(center=(790, 875), size=40, unit_center=None, unit_size=None)
     ima.add(subima * 4)
-    nose.tools.assert_equal(ima[800, 885], subima[30, 30] * 5)
+    assert_almost_equal(ima.data[800,885], subima.data[30,30] * 5, decimal=5)
 
 
 @attr(speed='fast')
