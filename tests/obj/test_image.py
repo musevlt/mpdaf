@@ -15,7 +15,8 @@ from numpy.testing import assert_almost_equal, assert_array_equal
 from six.moves import range
 
 from ..utils import (assert_image_equal, generate_image, generate_cube,
-                     generate_spectrum, assert_masked_allclose)
+                     generate_spectrum, assert_masked_allclose,
+                     astronomical_image)
 
 if six.PY2:
     from operator import add, sub, mul, div
@@ -237,7 +238,7 @@ def test_background():
     (background, std) = image1.background()
     nose.tools.assert_equal(background, 2)
     nose.tools.assert_equal(std, 0)
-    ima = Image("data/obj/a370II.fits")
+    ima = astronomical_image()
     (background, std) = ima[1647:1732, 618:690].background()
     # compare with IRAF results
     nose.tools.assert_true((background - std < 1989) & (background + std > 1989))
@@ -253,7 +254,7 @@ def test_peak():
     p = image1.peak()
     nose.tools.assert_equal(p['p'], 2)
     nose.tools.assert_equal(p['q'], 3)
-    ima = Image("data/obj/a370II.fits")
+    ima = astronomical_image()
     p = ima.peak(center=(790, 875), radius=20, plot=False, unit_center=None,
                  unit_radius=None)
     nose.tools.assert_almost_equal(p['p'], 793.1, 1)
@@ -266,7 +267,7 @@ def test_rotate():
 
     # Read a test image.
 
-    before = Image("data/obj/a370II.fits")
+    before = astronomical_image()
 
     # Get the maximum of the image.
 
@@ -331,7 +332,7 @@ def test_resample():
 
     # Read a test image.
 
-    before = Image("data/obj/a370II.fits")
+    before = astronomical_image()
 
     # What scale factors shall we multiply the input step size by?
 
@@ -394,14 +395,14 @@ def test_resample():
 @attr(speed='fast')
 def test_inside():
     """Image class: testing inside method."""
-    ima = Image("data/obj/a370II.fits")
+    ima = astronomical_image()
     nose.tools.assert_equal(ima.inside((39.951088, -1.4977398), unit=ima.wcs.unit), False)
 
 
 @attr(speed='fast')
 def test_subimage():
     """Image class: testing sub-image extraction."""
-    ima = Image("data/obj/a370II.fits")
+    ima = astronomical_image()
     subima = ima.subimage(center=(790, 875), size=40, unit_center=None, unit_size=None)
     nose.tools.assert_equal(subima.peak()['data'], 3035.0)
 
@@ -483,7 +484,7 @@ def test_rebin_mean():
 @attr(speed='fast')
 def test_add():
     """Image class: testing add method."""
-    ima = Image("data/obj/a370II.fits")
+    ima = astronomical_image()
     subima = ima.subimage(center=(790, 875), size=40, unit_center=None, unit_size=None)
     ima.add(subima * 4)
     nose.tools.assert_equal(ima[800, 885], subima[30, 30] * 5)
