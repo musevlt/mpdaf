@@ -215,16 +215,6 @@ Plotting
 
 `mpdaf.obj.Spectrum.log_plot <mpdaf.obj.Spectrum.log_plot>` plots the spectrum with a logarithmic scale on the y-axis.
 
-`mpdaf.obj.Spectrum.ipos <mpdaf.obj.Spectrum.ipos>` prints cursor position in interactive mode.
-
-`mpdaf.obj.Spectrum.idist <mpdaf.obj.Spectrum.idist>` gets distance and center from 2 cursor positions (interactive mode).
-
-`mpdaf.obj.Spectrum.imask <mpdaf.obj.Spectrum.imask>` over-plots masked values (interactive mode).
-
-`mpdaf.obj.Spectrum.igauss_fit <mpdaf.obj.Spectrum.igauss_fit>` performs and plots a Gaussian fit on spectrum.
-
-`mpdaf.obj.Spectrum.igauss_asymfit <mpdaf.obj.Spectrum.igauss_asymfit>` performs and plots an asymetric Gaussian fit on spectrum.
-
 
 Tutorial
 ========
@@ -374,7 +364,7 @@ The result of the fit is overploted in red:
 Now, we move to the fainter line (Hbeta) and we perform the same analysis, again using variance weighting::
 
   >>> specline.plot(lmin=8090,lmax=8210, unit=specline.wave.unit)
-  >>> specline.igauss_fit()
+  >>> specline.gauss_fit()
 
 
 The result of the fit is given below:

@@ -270,24 +270,6 @@ Plotting
 
 `mpdaf.obj.Image.plot <mpdaf.obj.Image.plot>` plots the image.
 
-`mpdaf.obj.Image.ipos <mpdaf.obj.Image.ipos>` prints cursor position in interactive mode.
-
-`mpdaf.obj.Image.idist <mpdaf.obj.Image.idist>` gets distance and center from 2 cursor positions on the plot.
-
-`mpdaf.obj.Image.istat <mpdaf.obj.Image.istat>` computes image statistics from windows defined on the plot.
-
-`mpdaf.obj.Image.ipeak <mpdaf.obj.Image.ipeak>` finds peak location in windows defined on the plot.
-
-`mpdaf.obj.Image.ifwhm <mpdaf.obj.Image.ifwhm>` computes fwhm in windows defined on the plot.
-
-`mpdaf.obj.Image.imask <mpdaf.obj.Image.imask>` over-plots masked values.
-
-`mpdaf.obj.Image.iee <mpdaf.obj.Image.iee>` computes enclosed energy in windows defined on the plot.
-
-`mpdaf.obj.Image.igauss_fit <mpdaf.obj.Image.igauss_fit>` performs Gaussian fit in windows defined with left mouse button.
-
-`mpdaf.obj.Image.imoffat_fit <mpdaf.obj.Image.imoffat_fit>` performs Moffat fit in windows defined with left mouse button.
-
 
 Functions to create a new image
 ===============================
@@ -418,13 +400,6 @@ We plot one of the sub-images to analyse the corresponding source::
 
 .. figure:: _static/image/Image_source8.png
   :align: center
-
-We find the location of the peak interactively::
-
-    >>> source.ipeak()
-    [INFO] Use left mouse button to define the box.
-    [INFO] To quit the interactive mode, click on the right mouse button.
-    [INFO] peak: y=-1.51735 x=39.9904       p=15    q=10    data=3201
 
 We perform a 2D Gaussian fitting of the source, and plot the isocontours::
 
