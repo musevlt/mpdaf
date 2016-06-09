@@ -321,8 +321,6 @@ Functions to create a new image
 
 `mpdaf.obj.moffat_image <mpdaf.obj.moffat_image>` creates a new image from a 2D Moffat function.
 
-`mpdaf.obj.make_image <mpdaf.obj.make_image>` interpolates z(x,y) and returns an image.
-
 `mpdaf.obj.composite_image <mpdaf.obj.composite_image>` builds composite image from a list of image and colors.
 
 `mpdaf.obj.mask_image <mpdaf.obj.mask_image>` creates a new image from a table of sky apertures.
