@@ -6,19 +6,7 @@ Installation
 Download the code
 =================
 
-Trac system
------------
-
-The `Trac repository browser <http://urania1.univ-lyon1.fr/mpdaf/browser>`_ can
-be used to navigate through the directory structure.
-
-
-Wiki page
----------
-
-You can browse tarball of specific revisions in the wiki page `CoreLib
-<http://urania1.univ-lyon1.fr/mpdaf/wiki/WikiCoreLib>`_.
-
+TODO
 
 Prerequisites
 =============
