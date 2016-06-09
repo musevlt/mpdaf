@@ -69,21 +69,6 @@ Then it is possible to fit a Gaussian::
     >>> gauss.print_param()
 
 
-Annother example to generate a composite image::
-
-    import numpy as np
-    from mpdaf.obj import Image
-    from mpdaf.obj import composite_image
-
-    stars = Image(filename="stars.fits")
-    lowz = Image(filename="lowz.fits")
-    highz = Image(filename="highz.fits")
-    imalist = [stars, lowz, highz]
-    tab = zip(imalist, linspace(250,0,3), ones(3)*100)
-    p1 = composite_image(tab, cuts=(0,99.5), mode='sqrt')
-    p1.show()
-    p1.save('test_composite.jpg')
-
 
 Image object format
 ===================
@@ -320,8 +305,6 @@ Functions to create a new image
 `mpdaf.obj.gauss_image <mpdaf.obj.gauss_image>` creates a new image from a 2D gaussian.
 
 `mpdaf.obj.moffat_image <mpdaf.obj.moffat_image>` creates a new image from a 2D Moffat function.
-
-`mpdaf.obj.composite_image <mpdaf.obj.composite_image>` builds composite image from a list of image and colors.
 
 `mpdaf.obj.mask_image <mpdaf.obj.mask_image>` creates a new image from a table of sky apertures.
 

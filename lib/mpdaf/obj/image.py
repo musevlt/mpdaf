@@ -25,7 +25,7 @@ from .objs import (is_int, is_number, circular_bounding_box,
 from ..tools import deprecated
 
 __all__ = ('Gauss2D', 'Moffat2D', 'Image', 'gauss_image', 'moffat_image',
-           'composite_image', 'mask_image', 'SpatialFrequencyLimits')
+           'mask_image', 'SpatialFrequencyLimits')
 
 
 class Gauss2D(object):
@@ -5390,115 +5390,6 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
         data = np.reshape(data, (shape[1], shape[0])).T
 
     return Image(data=data + cont, wcs=wcs, unit=unit, copy=False, dtype=None)
-
-
-def composite_image(ImaColList, mode='lin', cuts=(10, 90),
-                    bar=False, interp='no'):
-    """Build composite image from a list of image and colors.
-
-    Parameters
-    ----------
-    ImaColList : list of tuple (Image,float,float)
-        List of images and colors [(Image, hue, saturation)].
-    mode : 'lin' or 'sqrt'
-        Intensity mode. Use 'lin' for linear and 'sqrt' for root square.
-    cuts : (float,float)
-        Minimum and maximum in percent.
-    bar : bool
-        If bar is True a color bar image is created.
-    interp : 'no' | 'linear' | 'spline'
-        if 'no', data median value replaced masked values.
-        if 'linear', linear interpolation of the masked values.
-        if 'spline', spline interpolation of the masked values.
-
-    Returns
-    -------
-    out : Returns a PIL RGB image (or 2 PIL images if bar is True).
-
-    """
-    from PIL import Image as PILima
-    from PIL import ImageColor
-    from PIL import ImageChops
-
-    # compute statistic of intensity and derive cuts
-    first = True
-    for ImaCol in ImaColList:
-        ima, col, sat = ImaCol
-
-        # Get a copy of the data array with masked values filled.
-        data = ima._prepare_data(interp)
-
-        if mode == 'lin':
-            f = data
-        elif mode == 'sqrt':
-            f = np.sqrt(np.clip(data, 0, 1.e99))
-        else:
-            raise ValueError('Wrong cut mode')
-        if first:
-            d = f.ravel()
-            first = False
-        else:
-            d = np.concatenate([d, f.ravel()])
-    d.sort()
-    k1, k2 = cuts
-    d1 = d[max(int(0.01 * k1 * len(d) + 0.5), 0)]
-    d2 = d[min(int(0.01 * k2 * len(d) + 0.5), len(d) - 1)]
-
-    # first image
-    ima, col, sat = ImaColList[0]
-    p1 = PILima.new('RGB', (ima.shape[0], ima.shape[1]))
-
-    # Get a copy of the data array with masked values filled.
-    data = ima._prepare_data(interp)
-
-    if mode == 'lin':
-        f = data
-    elif mode == 'sqrt':
-        f = np.sqrt(np.clip(data, 0, 1.e99))
-    lum = np.clip((f - d1) * 100 / (d2 - d1), 0, 100)
-    for i in range(ima.shape[0]):
-        for j in range(ima.shape[1]):
-            p1.putpixel((i, j), ImageColor.getrgb(
-                'hsl(%d,%d%%,%d%%)' % (int(col), int(sat), int(lum[i, j]))))
-
-    for ImaCol in ImaColList[1:]:
-        ima, col, sat = ImaCol
-        p2 = PILima.new('RGB', (ima.shape[0], ima.shape[1]))
-
-        # Get a copy of the data array with masked values filled.
-        data = ima._prepare_data(interp)
-
-        if mode == 'lin':
-            f = data
-        elif mode == 'sqrt':
-            f = np.sqrt(np.clip(data, 0, 1.e99))
-        lum = np.clip((f - d1) * 100 / (d2 - d1), 0, 100)
-        for i in range(ima.shape[0]):
-            for j in range(ima.shape[1]):
-                p2.putpixel((i, j), ImageColor.getrgb(
-                    'hsl(%d,%d%%,%d%%)' % (int(col), int(sat),
-                                           int(lum[i, j]))))
-        p1 = ImageChops.add(p1, p2)
-
-    if bar:
-        nxb = ima.shape[0]
-        nyb = 50
-        dx = nxb / len(ImaColList)
-        p3 = PILima.new('RGB', (nxb, nyb))
-        i1 = 0
-        for ImaCol in ImaColList:
-            ima, col, sat = ImaCol
-            for i in range(i1, i1 + dx):
-                for j in range(nyb):
-                    p3.putpixel((i, j), ImageColor.getrgb(
-                        'hsl(%d,%d%%,%d%%)' % (int(col), int(sat), 50)))
-            i1 += dx
-
-    if bar:
-        return p1, p3
-    else:
-        return p1
-
 
 def mask_image(shape=(101, 101), wcs=WCS(), objects=[],
                unit=u.dimensionless_unscaled, unit_center=u.deg,
