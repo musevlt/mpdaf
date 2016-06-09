@@ -472,6 +472,8 @@ def Compute_Proj_Eigenvector_Zone(nbkeep, NbSubcube, Nx, Ny, Nz, A, V,
                 cube_proj_cont_v.reshape((nz[numx, numy],
                                           ny[numx, numy],
                                           nx[numx, numy]))
+#             cube_faint[cube_faint==np.NaN] = 0
+#             cube_cont[cube_cont==np.NaN] = 0
     logger.debug('%s executed in %0.1fs' % (whoami(), time.time() - t0))
     return cube_faint, cube_cont
 
@@ -1311,6 +1313,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
 
     # Loop on emission lines detected
     nit = len(Cat1_T)
+    col_del = []
     for it in ProgressBar(range(nit)):
         # initialization
         line_est_raw = np.zeros((ngrid[it], Nz))
@@ -1355,7 +1358,7 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
                                                     cube_faint_pad[spad],
                                                     PSF_Moffat, longxy, Dico,
                                                     xmin[n], ymin[n])
-
+            
             flux[n] = f
             residual[n] = res
             line_est_raw[n, :] = lraw
@@ -1363,16 +1366,20 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
 
         # Take the estimated line with the minimum absolute value of the residual
         ind_n = np.argmin(np.abs(residual))
-        Cat2_x.append(x_f[ind_n])
-        Cat2_y.append(y_f[ind_n])
-        Cat2_z.append(z_f[ind_n])
-        Cat2_res_min.append(np.abs(residual[ind_n]))
-        Cat2_flux.append(flux[ind_n])
-        Cat_est_line_raw.append(line_est_raw[ind_n, :])
-        Cat_est_line_std.append(line_est_std[ind_n, :])
+        if not np.isnan(flux[ind_n]) and not np.ma.isMaskedArray(flux[ind_n]):
+            Cat2_x.append(x_f[ind_n])
+            Cat2_y.append(y_f[ind_n])
+            Cat2_z.append(z_f[ind_n])
+            Cat2_res_min.append(np.abs(residual[ind_n]))
+            Cat2_flux.append(flux[ind_n])
+            Cat_est_line_raw.append(line_est_raw[ind_n, :])
+            Cat_est_line_std.append(line_est_std[ind_n, :])
+        else:
+            col_del.append(it)
     sys.stdout.write("\n")
 
     Cat2 = Cat1_T.copy()
+    Cat2.remove_rows(col_del)
     Cat2['x'] = Cat2_x
     Cat2['y'] = Cat2_y
     Cat2['z'] = Cat2_z
@@ -1493,9 +1500,9 @@ def Compute_Estim_Grid(x0, y0, z0, grid_dxy, profile, Nx, Ny, Nz,
     # Estimated detected emitters
     atom_alpha_est = alpha_est * atom_est_std
     # Residual of the estimation
-    res = np.sum((cube_faint_t[intz1:intz2, :, :] - atom_alpha_est)**2)
+    res = np.ma.sum(np.ma.masked_invalid((cube_faint_t[intz1:intz2, :, :] - atom_alpha_est)**2, copy=False))
     # Flux
-    flux = np.sum(line_est_raw)
+    flux = np.ma.sum(np.ma.masked_invalid(line_est_raw, copy=False))
 
     return flux, res, line_est_raw, line_est
 
