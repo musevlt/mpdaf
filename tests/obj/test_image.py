@@ -10,7 +10,7 @@ import numpy as np
 import scipy.ndimage as ndi
 import six
 
-from mpdaf.obj import Image, WCS, gauss_image, moffat_image, mask_image
+from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import assert_almost_equal, assert_array_equal
 from six.moves import range
 
@@ -512,18 +512,3 @@ def test_fftconvolve():
     nose.tools.assert_almost_equal(m.center[0], 8.5)
     nose.tools.assert_almost_equal(m.center[1], 12)
     # ima3 = ima.correlate2d(np.ones((40, 30)))
-
-
-@attr(speed='fast')
-def test_mask_image():
-    """Image class: testing mask_image."""
-    im = mask_image(objects=[(1, 1, 1)], unit_center=None, unit_radius=None,
-                    shape=(3, 3))
-    assert_array_equal(im.data.data, np.array([[0, 0, 0],
-                                               [0, 1, 0],
-                                               [0, 0, 0]]))
-    im = mask_image(objects=[(1, 1, 1.1)], unit_center=None, unit_radius=None,
-                    shape=(3, 3))
-    assert_array_equal(im.data.data, np.array([[0, 1, 0],
-                                               [1, 1, 1],
-                                               [0, 1, 0]]))

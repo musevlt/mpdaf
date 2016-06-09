@@ -306,8 +306,6 @@ Functions to create a new image
 
 `mpdaf.obj.moffat_image <mpdaf.obj.moffat_image>` creates a new image from a 2D Moffat function.
 
-`mpdaf.obj.mask_image <mpdaf.obj.mask_image>` creates a new image from a table of sky apertures.
-
 
 Tutorial
 ========
