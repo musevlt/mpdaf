@@ -254,8 +254,6 @@ Filter
 
 `mpdaf.obj.Image.gaussian_filter <mpdaf.obj.Image.gaussian_filter>` applies gaussian filter to the image.
 
-`mpdaf.obj.Image.maximum_filter <mpdaf.obj.Image.maximum_filter>` applies maximum filter to the image.
-
 `mpdaf.obj.Image.minimum_filter <mpdaf.obj.Image.minimum_filter>` applies minimum filter to the image.
 
 `mpdaf.obj.Image.fftconvolve <mpdaf.obj.Image.fftconvolve>` convolves the image with an other image using fft.
