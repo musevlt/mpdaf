@@ -359,8 +359,6 @@ Getters and setters
 
 `mpdaf.drs.PixTable.get_pos_sky <mpdaf.drs.PixTable.get_pos_sky>` gets the absolute position on the sky.
 
-`mpdaf.drs.PixTable.get_slices <mpdaf.drs.PixTable.get_slices>` returns slices dictionary.
-
 `mpdaf.drs.PixTable.get_keywords <mpdaf.drs.PixTable.get_keywords>` returns the keyword value corresponding to a key.
 
 
