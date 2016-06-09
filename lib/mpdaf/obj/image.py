@@ -982,23 +982,38 @@ class Image(DataArray):
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg,
                  inplace=False):
-        """Return a truncated version of an image.
+        """Return a sub-image that contains a specified area of the sky.
+
+        The ranges x_min to x_max and y_min to y_max, specify a
+        rectangular region of the sky in world coordinates. The
+        truncate function returns the sub-image that just encloses
+        this region. Note that if the world coordinate axes are not
+        parallel to the array axes, the region will appear to be a
+        rotated rectangle within the sub-image. In such cases, the
+        corners of the sub-image will contain pixels that are outside
+        the region. By default these pixels are masked. However this
+        can be disabled by changing the optional mask argument to
+        False.
 
         Parameters
         ----------
         y_min : float
-            Minimum value of y.
+            The minimum Y-axis world-coordinate of the selected
+            region. The Y-axis is usually Declination, which may not
+            be parallel to the Y-axis of the image array.
         y_max : float
-            Maximum value of y.
+            The maximum Y-axis world coordinate of the selected region.
         x_min : float
-            Minimum value of x.
+            The minimum X-axis world-coordinate of the selected
+            region. The X-axis is usually Right Ascension, which may
+            not be parallel to the X-axis of the image array.
         x_max : float
-            Maximum value of x.
+            The maximum X-axis world coordinate of the selected region.
         mask : bool
-            if True, pixels outside ``[x_min, x_max]`` and ``[y_min, y_max]``
-            are masked.
+            If True, any pixels in the sub-image that remain outside the
+            range x_min to x_max and y_min to y_max, will be masked.
         unit : `astropy.units.Unit`
-            Type of the coordinates x and y (degrees by default).
+            The units of the X and Y world-coordinates (degrees by default).
         inplace : bool
             If False, return a truncated copy of the image (the default).
             If True, truncate the original image in-place, and return that.
@@ -1011,15 +1026,31 @@ class Image(DataArray):
 
         out = self if inplace else self.copy()
 
-        skycrd = np.array([[y_min, x_min], [y_min, x_max],
-                           [y_max, x_min], [y_max, x_max]])
+        # Get the sky coordinates of the corners of the rectangular
+        # region that is bounded by x_min..x_max and y_min..y_max.
+
+        skycrd = np.array([[y_min, x_min],
+                           [y_min, x_max],
+                           [y_max, x_min],
+                           [y_max, x_max]])
+
+        # Find the pixel indexes of the corners of the same region.
+
         if unit is not None:
             pixcrd = out.wcs.sky2pix(skycrd, unit=unit)
+        else:
+            pixcrd = skycrd
+
+        # The sides of the selected region may not be parallel with the
+        # array axes. Determine the pixel bounds of a rectangular
+        # region of the array that contains the requested region.
 
         imin = max(0, int(np.min(pixcrd[:, 0]) + 0.5))
         imax = min(out.shape[0], int(np.max(pixcrd[:, 0]) + 0.5) + 1)
         jmin = max(0, int(np.min(pixcrd[:, 1]) + 0.5))
         jmax = min(out.shape[1], int(np.max(pixcrd[:, 1]) + 0.5) + 1)
+
+        # Extract the rectangular area that contains the requested region.
 
         subima = out[imin:imax, jmin:jmax]
         out._data = subima._data
@@ -1028,23 +1059,43 @@ class Image(DataArray):
         out._mask = subima._mask
         out.wcs = subima.wcs
 
+        # If the region is rotated relative to the image array axes
+        # then the rectangular sub-image that contains this will has
+        # some pixels outside this region. Should these be masked?
+
         if mask:
-            # mask outside pixels
-            grid = np.meshgrid(np.arange(0, out.shape[0]),
-                               np.arange(0, out.shape[1]), indexing='ij')
-            shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]),
-                                                      np.ravel(grid[1]))])
+
+            # Get the indexes of all of the pixels in the "out" array,
+            # ordered like: [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]...]
+
+            py,px = np.meshgrid(np.arange(0, out.shape[0]),
+                                np.arange(0, out.shape[1]), indexing='ij')
+            pixcrd = np.column_stack((np.ravel(py), np.ravel(px)))
+
+            # Look up the sky coordinates of each pixel.
+
             if unit is None:
                 skycrd = pixcrd
             else:
                 skycrd = np.array(out.wcs.pix2sky(pixcrd, unit=unit))
-            x = skycrd[:, 1].reshape(shape)
-            y = skycrd[:, 0].reshape(shape)
+
+            # Reshape the array of coordinates to have the shape of
+            # the output array.
+
+            x = skycrd[:, 1].reshape(out.shape)
+            y = skycrd[:, 0].reshape(out.shape)
+
+            # Test the X and Y coordinates of each pixel against the
+            # requested range of X and Y coordinates, and mask pixels
+            # that are outside this range.
+
             test_x = np.logical_or(x < x_min, x > x_max)
             test_y = np.logical_or(y < y_min, y > y_max)
             test = np.logical_or(test_x, test_y)
             out._mask = np.logical_or(out._mask, test)
+
+            # Remove any array margins that are now completely masked.
+
             out.crop()
 
         return out
@@ -3132,14 +3183,15 @@ class Image(DataArray):
 
             gaussian
                A truncated gaussian window. This has a smaller PSF
-               than the blackman window, but the truncation of the
-               infinite extent of the gaussian leads to significant
-               ringing in the form of an airy profile, so it should
-               only be used for images without bright point sources or
-               CCD saturation lines. It is equivalent to a convolution
-               of the image with both an airy profile and a gaussian
-               of standard deviation 0.724*newstep (FWHM
-               1.704*newstep).
+               than the blackman window, however gaussians never fall
+               to zero, so either significant ringing will be seen due
+               to truncation of the gaussian, or low-level aliasing
+               will occur, depending on the spatial frequency coverage
+               of the image beyond the folding frequency. It can be a
+               good choice for images that only contain smoothly
+               varying features. It is equivalent to a convolution of
+               the image with both an airy profile and a gaussian of
+               standard deviation 0.724*newstep (FWHM 1.704*newstep).
 
             rectangle
                This window simply zeros all spatial frequencies above
@@ -3312,14 +3364,15 @@ class Image(DataArray):
 
             gaussian
                A truncated gaussian window. This has a smaller PSF
-               than the blackman window, but the truncation of the
-               infinite extent of the gaussian leads to significant
-               ringing in the form of an airy profile, so it should
-               only be used for images without bright point sources or
-               CCD saturation lines. It is equivalent to a convolution
-               of the image with both an airy profile and a gaussian
-               of standard deviation 0.724*newstep (FWHM
-               1.704*newstep).
+               than the blackman window, however gaussians never fall
+               to zero, so either significant ringing will be seen due
+               to truncation of the gaussian, or low-level aliasing
+               will occur, depending on the spatial frequency coverage
+               of the image beyond the folding frequency. It can be a
+               good choice for images that only contain smoothly
+               varying features. It is equivalent to a convolution of
+               the image with both an airy profile and a gaussian of
+               standard deviation 0.724*newstep (FWHM 1.704*newstep).
 
             rectangle
                This window simply zeros all spatial frequencies above
@@ -3641,14 +3694,15 @@ class Image(DataArray):
 
             gaussian
                A truncated gaussian window. This has a smaller PSF
-               than the blackman window, but the truncation of the
-               infinite extent of the gaussian leads to significant
-               ringing in the form of an airy profile, so it should
-               only be used for images without bright point sources or
-               CCD saturation lines. It is equivalent to a convolution
-               of the image with both an airy profile and a gaussian
-               of standard deviation 0.724*newstep (FWHM
-               1.704*newstep).
+               than the blackman window, however gaussians never fall
+               to zero, so either significant ringing will be seen due
+               to truncation of the gaussian, or low-level aliasing
+               will occur, depending on the spatial frequency coverage
+               of the image beyond the folding frequency. It can be a
+               good choice for images that only contain smoothly
+               varying features. It is equivalent to a convolution of
+               the image with both an airy profile and a gaussian of
+               standard deviation 0.724*newstep (FWHM 1.704*newstep).
 
             rectangle
                This window simply zeros all spatial frequencies above
@@ -3967,87 +4021,73 @@ class Image(DataArray):
         out._data = ndi.minimum_filter(data, size)
         return out
 
-    def add(self, other):
-        """Add the image other to the current image in-place. The coordinate
-        are taken into account.
+    def add(self, other, flux=True, inplace=True):
+        """Add an image to self, after rotating and resampling
+        the other image onto the coordinate grid of self.
 
         Parameters
         ----------
         other : Image
-            Second image to add.
+            The image to be added to self.
+        flux  : bool
+            True if the pixel units of the two images are flux
+            densities such as erg/s/cm2/Hz. False means that they are
+            per-steradian brightness units, such as
+            erg/s/cm2/Hz/steradian. This needs to be known, because
+            when the other image is resampled onto the grid of self,
+            and this changes its pixel size, then resampled flux
+            densities need to be corrected for the change in the area
+            per pixel, whereas resampled brightnesses don't.
+        inplace : bool
+            By default, this is True, which tells the function to add
+            the other image to self. Alternatively, if it is False,
+            a copy of the sum of self with the other image is returned,
+            and self is left unchanged.
+
         """
         if not isinstance(other, Image):
             raise IOError('Operation forbidden')
 
-        ima = other.copy()
-        self_rot = self.wcs.get_rot()
-        ima_rot = ima.wcs.get_rot()
-        theta = 0
-        if self_rot != ima_rot:
-            if ima.wcs.get_cd()[0, 0] * self.wcs.get_cd()[0, 0] < 0:
-                theta = 180 - self_rot + ima_rot
-                ima = ima.rotate(theta)
-            else:
-                theta = -self_rot + ima_rot
-                ima = ima.rotate(theta)
+        # Perform the operation in-place, or on a copy of self?
 
-        unit = ima.wcs.unit
-        self_cdelt = self.wcs.get_step(unit=unit)
-        ima_cdelt = ima.wcs.get_step()
+        out = self if inplace else self.copy()
 
-        if (self_cdelt != ima_cdelt).all():
-            factor = self_cdelt / ima_cdelt
-            try:
-                if not np.sometrue(np.mod(self_cdelt[0],
-                                          ima_cdelt[0])) \
-                    and not np.sometrue(np.mod(self_cdelt[1],
-                                               ima_cdelt[1])):
-                    # ima.step is an integer multiple of the self.step
-                    ima = ima.rebin_mean(factor)
+        # Rotate, if needed, and resample the other image onto the
+        # coordinate grid of self.
+
+        ima = other.align_with_image(self, flux=flux, inplace=False)
+
+        # Are the pixel units of the two images the same?
+
+        same_units = ima.unit == out.unit
+
+        # Sum the pixels of the two images.
+
+        if same_units:
+            out.data += ima.data
+        else:
+            out.data += UnitMaskedArray(ima.data, ima.unit, out.unit)
+
+        # Also add the variances of the other image, if it has any.
+
+        if ima._var is not None:
+
+            # Sum the variances of the two images if both have them.
+
+            if out._var is not None:
+                if same_units:
+                    out.var += ima.var
                 else:
-                    raise ValueError('steps are not integer multiple')
-            except:
-                newdim = np.array(0.5 + ima.shape / factor, dtype=np.int)
-                newstart = self.wcs.get_start(unit=unit)
-                ima = ima.resample(newdim, newstart, self_cdelt, flux=True,
-                                   unit_step=unit, unit_start=unit)
+                    out.var += UnitMaskedArray(ima.var, ima.unit**2,
+                                               out.unit**2)
 
-        # here ima and self have the same step and the same rotation
+            # If self had no variances, assign it those of the other image.
 
-        [[k1, l1]] = self.wcs.sky2pix(ima.wcs.pix2sky(
-            [[0, 0]], unit=self.wcs.unit))
-        l1 = int(l1 + 0.5)
-        k1 = int(k1 + 0.5)
-        k2 = k1 + ima.shape[0]
-        if k1 < 0:
-            nk1 = -k1
-            k1 = 0
-        else:
-            nk1 = 0
+            else:
+                out.var = ima_var
 
-        if k2 > self.shape[0]:
-            nk2 = ima.shape[0] - (k2 - self.shape[0])
-            k2 = self.shape[0]
-        else:
-            nk2 = ima.shape[0]
+        return out
 
-        l2 = l1 + ima.shape[1]
-        if l1 < 0:
-            nl1 = -l1
-            l1 = 0
-        else:
-            nl1 = 0
-
-        if l2 > self.shape[1]:
-            nl2 = ima.shape[1] - (l2 - self.shape[1])
-            l2 = self.shape[1]
-        else:
-            nl2 = ima.shape[1]
-
-        mask = self._mask.__copy__()
-        self.data[k1:k2, l1:l2] += UnitMaskedArray(ima.data[nk1:nk2, nl1:nl2],
-                                                   ima.unit, self.unit)
-        self._mask = mask | self._mask
 
     def segment(self, shape=(2, 2), minsize=20, minpts=None,
                 background=20, interp='no', median=None):
@@ -5616,14 +5656,15 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
         gaussian
            A truncated gaussian window. This has a smaller PSF
-           than the blackman window, but the truncation of the
-           infinite extent of the gaussian leads to significant
-           ringing in the form of an airy profile, so it should
-           only be used for images without bright point sources or
-           CCD saturation lines. It is equivalent to a convolution
-           of the image with both an airy profile and a gaussian
-           of standard deviation 0.724*newstep (FWHM
-           1.704*newstep).
+           than the blackman window, however gaussians never fall
+           to zero, so either significant ringing will be seen due
+           to truncation of the gaussian, or low-level aliasing
+           will occur, depending on the spatial frequency coverage
+           of the image beyond the folding frequency. It can be a
+           good choice for images that only contain smoothly
+           varying features. It is equivalent to a convolution of
+           the image with both an airy profile and a gaussian of
+           standard deviation 0.724*newstep (FWHM 1.704*newstep).
 
         rectangle
            This window simply zeros all spatial frequencies above
@@ -5639,6 +5680,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
         The filtered version of the 2D input image, followed by
         a 2-element array that contains the new band-limits
         along the Y and X axes, respectively.
+
     """
 
     # Convert oldstep into a numpy array of two float elements.
@@ -5716,7 +5758,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
     elif window == "gaussian":
         sigma = 0.44
-        winfn = lambda r: np.where(r <= 1.0, np.exp(-0.5 * (r / sigma)**2), 0.0)
+        winfn = lambda r: np.exp(-0.5 * (r/sigma)**2)
 
     # For the rectangular window, just multiply all pixels below the
     # cutoff frequency by one, and the rest by zero.
