@@ -254,8 +254,6 @@ Filter
 
 `mpdaf.obj.Image.gaussian_filter <mpdaf.obj.Image.gaussian_filter>` applies gaussian filter to the image.
 
-`mpdaf.obj.Image.median_filter <mpdaf.obj.Image.median_filter>` applies median filter to the image.
-
 `mpdaf.obj.Image.maximum_filter <mpdaf.obj.Image.maximum_filter>` applies maximum filter to the image.
 
 `mpdaf.obj.Image.minimum_filter <mpdaf.obj.Image.minimum_filter>` applies minimum filter to the image.

@@ -3890,38 +3890,6 @@ class Image(DataArray):
             out._var = ndi.gaussian_filter(out._var, sigma)
         return out
 
-    def median_filter(self, size=3, interp='no', inplace=False):
-        """Return an image containing median filter applied to the current
-        image.
-
-        Uses `scipy.ndimage.median_filter`.
-
-        Parameters
-        ----------
-        size : float
-            Shape that is taken from the input array, at every element
-            position, to define the input to the filter function. Default is 3.
-        interp : 'no' | 'linear' | 'spline'
-            if 'no', data median value replaced masked values.
-            if 'linear', linear interpolation of the masked values.
-            if 'spline', spline interpolation of the masked values.
-        inplace : bool
-            If False, return a filtered copy of the image (the default).
-            If True, filter the original image in-place, and return that.
-
-        Returns
-        -------
-        out : `~mpdaf.obj.Image`
-
-        """
-
-        out = self if inplace else self.copy()
-        data = out._prepare_data(interp)
-        out._data = ndi.median_filter(data, size)
-        if out._var is not None:
-            out._var = ndi.median_filter(out._var, size)
-        return out
-
     def maximum_filter(self, size=3, interp='no', inplace=False):
         """Return an image containing maximum filter applied to the current
         image.
