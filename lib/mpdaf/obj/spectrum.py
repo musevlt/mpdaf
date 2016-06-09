@@ -2753,27 +2753,6 @@ class Spectrum(DataArray):
                                   * data[i:i + size]).sum() for i in range(self.shape[0])])
         return res
 
-    def peak_detection(self, kernel_size=None, unit=u.angstrom):
-        """Return a list of peak locations.
-
-        Uses `scipy.signal.medfilt`.
-
-        Parameters
-        ----------
-        kernel_size : float
-            size of the median filter window
-        unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
-        """
-        d = np.abs(self.data - signal.medfilt(self.data, kernel_size))
-        cont = self.poly_spec(5)
-        ksel = np.where(d > cont.data)
-        if unit is None:
-            return ksel[0]
-        else:
-            wave = self.wave.coord(unit=unit)
-            return wave[ksel]
-
     def plot(self, max=None, title=None, noise=False, snr=False,
              lmin=None, lmax=None, ax=None, stretch='linear', unit=u.angstrom,
              noise_kwargs=None, **kwargs):
