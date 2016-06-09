@@ -201,8 +201,6 @@ Arithmetic
 
 `mpdaf.obj.Image.abs <mpdaf.obj.DataArray.abs>` computes the absolute value of data extension.
 
-`mpdaf.obj.Image.sum <mpdaf.obj.Image.sum>` returns the sum over the given axis.
-
 `mpdaf.obj.Image.add <mpdaf.obj.Image.add>` adds an other image to the current image (in place).
 
 

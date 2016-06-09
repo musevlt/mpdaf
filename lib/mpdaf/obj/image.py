@@ -1503,45 +1503,6 @@ class Image(DataArray):
                     cutoff=cutoff)
         return res
 
-    def sum(self, axis=None):
-        """Return the sum over the given axis.
-
-        Parameters
-        ----------
-        axis : None, 0 or 1
-            axis = None returns a float
-            axis=0 or 1 returns a Spectrum object corresponding to a line or a
-            column, other cases return None.
-
-        Returns
-        -------
-        out : float or Image
-        """
-        if axis is None:
-            return self.data.sum()
-        elif axis == 0 or axis == 1:
-            # return a spectrum
-            data = np.ma.sum(self.data, axis)
-            var = None
-            if self.var is not None:
-                var = np.ma.sum(self.var, axis).data
-            if axis == 0:
-                step = self.wcs.get_step()[1]
-                start = self.wcs.get_start()[1]
-                cunit = self.wcs.unit
-            else:
-                step = self.wcs.get_step()[0]
-                start = self.wcs.get_start()[0]
-                cunit = self.wcs.unit
-
-            from .spectrum import Spectrum
-            wave = WaveCoord(crpix=1.0, cdelt=step, crval=start,
-                             cunit=cunit, shape=data.shape[0])
-            return Spectrum(wave=wave, unit=self.unit, data=data, var=var,
-                            copy=False)
-        else:
-            return None
-
     def norm(self, typ='flux', value=1.0):
         """Normalize in place total flux to value (default 1).
 
