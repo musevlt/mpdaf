@@ -823,16 +823,18 @@ class Image(DataArray):
 
     def mask_region(self, center, radius, unit_center=u.deg,
                     unit_radius=u.arcsec, inside=True):
-        """Mask values inside/outside the described region.
+        """Mask values inside or outside a circular or rectangular region.
 
         Parameters
         ----------
         center : (float,float)
-            Center (y,x) of the explored region.
+            Center (y,x) of the region, where y,x are usually
+            Declination and Right Ascension, but are interpretted
+            as Y,X array indexes if unit_center is None.
         radius : float or (float,float)
-            Radius defined the explored region.
-            If radius is float, it defined a circular region.
-            If radius is (float,float), it defined a rectangular region.
+            The radius or radii of the region.
+            If radius is a single float, it defines a circular region.
+            If radius is (float,float), it defines a rectangular region.
         unit_center : `astropy.units.Unit`
             type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
@@ -844,6 +846,10 @@ class Image(DataArray):
 
         """
         center = np.array(center)
+
+        # If radius is scalar, convert it to a 2 element array that
+        # has the same radius for the X and Y axes, but keep a record
+        # of the fact that this was a single radius describing a circle.
         if is_number(radius):
             circular = True
             radius2 = radius * radius
@@ -852,23 +858,34 @@ class Image(DataArray):
             circular = False
         radius = np.array(radius)
 
+        # If the units of the center are not already in pixels, convert
+        # them to pixels.
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
+
+        # If the radius units are not already pixels, convert them into
+        # pixels, taking account of the possibility that pixels can be
+        # rectangular.
         if unit_radius is not None:
             radius = radius / self.wcs.get_step(unit=unit_radius)
             radius2 = radius[0] * radius[1]
 
+        # Get Y and X axis slice objects that bound the specified region.
         sy, sx = circular_bounding_box(center, radius, self.shape)
 
+        # Obtain the radius squared of each pixel from the center.
         if circular:
             grid = np.mgrid[sy, sx]
             ind = ((grid[0] - center[0])**2 + (grid[1] - center[1])**2)
 
+        # Mask pixels inside the region.
         if inside:
             if circular:
                 self.data[sy, sx][ind < radius2] = np.ma.masked
             else:
                 self.data[sy, sx] = np.ma.masked
+
+        # Mask pixels outside the region.
         else:
             self.data[0:sy.start, :] = np.ma.masked
             self.data[sy.stop:, :] = np.ma.masked
