@@ -80,8 +80,8 @@ def circular_bounding_box(center, radius, shape):
     center = np.asarray(center)
     radius = np.asarray(radius)
     shape = np.asarray(shape) - 1
-    imin, jmin = np.clip((center - radius + 0.5).astype(int), (0, 0), shape)
-    imax, jmax = np.clip((center + radius + 0.5).astype(int), (0, 0), shape)
+    imin, jmin = np.clip((center - radius).astype(int), (0, 0), shape)
+    imax, jmax = np.clip((center + radius).astype(int), (0, 0), shape)
     return slice(imin, imax + 1), slice(jmin, jmax + 1)
 
 def elliptical_bounding_box(center, radii, posangle, shape):
@@ -161,8 +161,8 @@ def elliptical_bounding_box(center, radii, posangle, shape):
     # Determine the index ranges along the X and Y axes of the image
     # array that enclose the extent of the ellipse centered at center.
     shape = np.asarray(shape) - 1
-    imin, jmin = np.clip((center - r + 0.5).astype(int), (0, 0), shape)
-    imax, jmax = np.clip((center + r + 0.5).astype(int), (0, 0), shape)
+    imin, jmin = np.clip((center - r).astype(int), (0, 0), shape)
+    imax, jmax = np.clip((center + r).astype(int), (0, 0), shape)
 
     # Turn these ranges into slice objects.
     return slice(imin, imax + 1), slice(jmin, jmax + 1)
