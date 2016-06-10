@@ -1771,6 +1771,14 @@ def Construct_Object(k, ktot, uflux, unone, cols, units, desc, fmt, step_wave,
         src.add_attr('CUBE_V', cubevers, desc='Cube version')
     src.add_history('[{}] Source created with Origin'.format(src.SRC_VERS), author)
     
+    w = cube.wave.coord(wave_pix, unit=u.angstrom)
+    names = np.array(['%04d'%w[j] for j in range(nb_lines)])
+    if np.unique(names).shape != names.shape:
+        names = names.astype(np.int)
+        while(not ((names[1:]-names[:-1]) == 0).all()):
+            names[1:][(names[:-1]-names[1:]) == 0] += 1
+        names = names.astype(np.str)
+    
     for j in range(nb_lines):
         sp_est = Spectrum(data=Cat_est_line_data[j, :], 
                           wave=cube.wave)
@@ -1788,16 +1796,15 @@ def Construct_Object(k, ktot, uflux, unone, cols, units, desc, fmt, step_wave,
         profil_FWHM = step_wave * fwhm_profiles[profile_num]
         #profile_dico = Dico[:, profile_num]
         fl = flux[j]
-        w = cube.wave.coord(wave_pix[j], unit=u.angstrom)
-        vals = [w, profil_FWHM, fl, GLR[j], pvalC[j], pvalS[j],
+        vals = [w[j], profil_FWHM, fl, GLR[j], pvalC[j], pvalS[j],
                     pvalF[j], T1[j], T2[j], profile_num]
         src.add_line(cols, vals, units, desc, fmt)
-        src.spectra['LINE{:04d}'.format(j + 1)] = sp
+        src.spectra['LINE_{:s}'.format(names[j])] = sp
         sp = Spectrum(wave=cube.wave[z1:z2], data=c)
-        src.spectra['CORR{:04d}'.format(j + 1)] = sp
+        src.spectra['CORR_{:s}'.format(names[j])] = sp
         src.add_narrow_band_image_lbdaobs(cube,
-                                        'NB_LINE{:04d}'.format(j + 1),
-                                        w, width=2 * profil_FWHM,
+                                        'NB_LINE_{:s}'.format(names[j]),
+                                        w[j], width=2 * profil_FWHM,
                                         is_sum=True, subtract_off=True)
 
         if 'ThresholdPval' in param.keys():
