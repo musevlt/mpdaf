@@ -1,14 +1,23 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Copyright (C) 2005 Association of Universities for Research in Astronomy (AURA)
+Copyright 2010-2016 CNRS/CRAL
 
-# Adapted from code from the Numdisplay package (see NUMDISPLAY_LICENSE.rst)
+This file is part of MPDAF.
 
-"""
+MPDAF is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+// (at your option) any later version
+
+MPDAF is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MPDAF.  If not, see <http://www.gnu.org/licenses/>.
+
+
 Zscale implementation based on the one from the STScI Numdisplay package.
-
-Original implementation from Numdisplay is BSD licensed:
-https://trac.stsci.edu/ssb/stsci_python/browser/stsci_python/trunk/numdisplay/lib/stsci/numdisplay/zscale.py?rev=19347
-https://trac.stsci.edu/ssb/stsci_python/browser/stsci_python/trunk/numdisplay/LICENSE.txt?rev=19347
-
 """
 
 from __future__ import absolute_import, division

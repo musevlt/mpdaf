@@ -1,18 +1,29 @@
+"""Copyright 2010-2016 CNRS/CRAL
+
+This file is part of MPDAF.
+
+MPDAF is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+// (at your option) any later version
+
+MPDAF is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MPDAF.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 from __future__ import absolute_import
 import numpy as np
-from scipy import interpolate
 
 
 def mag_RJohnson():
     lbda = 6940.
     lmin = 5200.
     lmax = 9600.
-
-#    lbdafilter = np.arange(23)*200. + 5200.
-#    filter = np.array([0.,0.06,0.28,0.50,0.69,0.79,0.88,\
-#                       0.94,0.98,1.00,0.94,0.85,0.73,\
-#                       0.57,0.42,0.31,0.17,0.11,0.06,0.04,0.02,0.01,0.])
-#    tck = interpolate.splrep(lbdafilter,filter)
 
     tck = (np.array([5200., 5200., 5200., 5200.,
                      5600., 5800., 6000., 6200.,
@@ -39,19 +50,6 @@ def mag_F606W():
     lbda = 6060.
     lmin = 4630.02
     lmax = 7473.17
-#    lbdafilter = 10. * np.array([463.002,472.740,482.683,\
-#                                 492.836,503.203,513.787,\
-#                                 524.594,535.628,546.894,\
-#                                 558.398,570.142,582.135,\
-#                                 594.379,606.881,619.647,\
-#                                 632.680,645.987,659.575,\
-#                                 673.448,687.614,702.077,\
-#                                 716.844,731.922,747.317])
-#    filter = np.array([0.,0.08491,0.41222,0.47381,0.54226,0.64802,0.61459,\
-#                          0.73709,0.80079,0.88083,0.85044,0.86536,0.97286,\
-#                        0.95384,0.99959,0.93865,0.97476,0.93506,0.90266,\
-#                        0.67442,0.47353,0.37916,0.01105,0.])
-#    tck = interpolate.splrep(lbdafilter,filter)
 
     tck = (np.array([4630.02, 4630.02, 4630.02, 4630.02, 4826.83, 4928.36,
                      5032.03, 5137.87, 5245.94, 5356.28, 5468.94, 5583.98,
@@ -70,22 +68,3 @@ def mag_F606W():
                      0.00000000e+00]),
            3)
     return (lbda, lmin, lmax, tck)
-
-
-if __name__ == '__main__':
-    (lbda, lmin, lmax, tck) = mag_RJohnson()
-
-    lbda = np.arange(20) * 100. + 5200.
-
-    f = interpolate.splev(lbda, tck, der=0)
-
-    lbdafilter = np.arange(23) * 200. + 5200.
-    filter = np.array([0., 0.06, 0.28, 0.50, 0.69, 0.79, 0.88,
-                       0.94, 0.98, 1.00, 0.94, 0.85, 0.73,
-                       0.57, 0.42, 0.31, 0.17, 0.11, 0.06,
-                       0.04, 0.02, 0.01, 0.])
-
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.plot(lbdafilter, filter, 'x', lbda, f)
-    plt.show()
