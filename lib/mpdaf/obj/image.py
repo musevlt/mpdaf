@@ -4362,35 +4362,87 @@ class Image(DataArray):
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
              show_ylabel=True, ax=None, unit=u.deg, **kwargs):
-        """Plot the image.
+        """Plot the image with axes labeled in pixels. If either axis
+        has just one pixel, plot a line instead of an image.
+
+        Colors are assigned to each pixel value as follows. First each
+        pixel value, pv, is normalized over the range vmin to vmax,
+        to have a value nv, that goes from 0 to 1, as follows:
+
+           nv = (pv - vmin) / (vmax - vmin)
+
+        This value is then mapped to another number between 0 and 1
+        which determines a position along the colorbar, and thus the
+        color to give the displayed pixel. The mapping from normalized
+        values to colorbar position, color, can be chosen using the
+        scale argument, from the following options:
+
+           'linear'   =>  color = nv
+           'log'      =>  color = log(1000 * nv + 1) / log(1000 + 1)
+           'sqrt'     =>  color = sqrt(nv)
+           'arcsinh'  =>  color = arcsinh(10*nv) / arcsinh(10.0)
+
+        A colorbar can optionally be drawn. If the colorbar
+        argument is given the value 'h', then a colorbar is drawn
+        horizontally, above the plot. If it is 'v', the colorbar
+        is drawn vertically, to the right of the plot.
+
+        By default the image image is displayed in its own
+        plot. Alternatively to make it a subplot of a larger figure, a
+        suitable matplotlib.axes.Axes object can be passed via the ax
+        argument. Note that unless matplotlib interative mode has
+        previously been enabled by calling matplotlib.pyplot.ion(),
+        the plot window will not appear until the next time that
+        matplotlib.pyplot.show() is called. So to arrange that a new
+        window appears as soon as Image.plot() is called, do the
+        following before the first call to Image.plot().
+
+           import matplotlib.pyplot as plt
+           plt.ion()
 
         Parameters
         ----------
         title : str
-                Figure title (None by default).
-        scale : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-                The stretch function to use for the scaling
-                (default is 'linear').
+            An optional title for the figure (None by default).
+        scale : 'linear' | 'log' | 'sqrt' | 'arcsinh'
+            The stretch function to use mapping pixel values to
+            colors (The default is 'linear'). The pixel values are
+            first normalized to range from 0 for values <= vmin,
+            to 1 for values >= vmax, then the stretch algorithm maps
+            these normalized values, nv, to a position p from 0 to 1
+            along the colorbar, as follows:
+               linear:  p = nv
+               log:     p = log(1000 * nv + 1) / log(1000 + 1)
+               sqrt:    p = sqrt(nv)
+               arcsinh: p = arcsinh(10*nv) / arcsinh(10.0)
         vmin : float
-                Minimum pixel value to use for the scaling.
-                If None, vmin is set to min of data.
+            Pixels that have values <= vmin are given the color
+            at the dark end of the color bar. Pixel values between
+            vmin and vmax are given colors along the colorbar according
+            to the mapping algorithm specified by the scale argument.
         vmax : float
-                Maximum pixel value to use for the scaling.
-                If None, vmax is set to max of data.
+            Pixels that have values >= vmax are given the color
+            at the bright end of the color bar. If None, vmax is
+            set to the maximum pixel value in the image.
         zscale : bool
-                If true, vmin and vmax are computed
-                using the IRAF zscale algorithm.
-        colorbar : bool
-                If 'h'/'v', a horizontal/vertical colorbar is added.
-        var : bool
-                If var is True, the inverse of variance
-                is overplotted.
+            If True, vmin and vmax are automatically computed
+            using the IRAF zscale algorithm.
+        colorbar : str
+            If 'h', a horizontal colorbar is drawn above the image.
+            If 'v', a vertical colorbar is drawn to the right of the image.
+            If None (the default), no colorbar is drawn.
         ax : matplotlib.Axes
-                the Axes instance in which the image is drawn
+            An optional Axes instance in which to draw the image,
+            or None to have one created using matplotlib.pyplot.gca().
         unit : `astropy.units.Unit`
-                   type of the world coordinates (degrees by default)
+            The units to use for displaying world coordinates
+            (degrees by default). In the interactive plot, when
+            the mouse pointer is over a pixel in the image the
+            coordinates of the pixel are shown using these units,
+            along with the pixel value.
         kwargs : matplotlib.artist.Artist
-                kwargs can be used to set additional Artist properties.
+            Optional extra keyword/value arguments to be passed to
+            the ax.imshow() function.
 
         Returns
         -------
@@ -4399,58 +4451,55 @@ class Image(DataArray):
         if ax is None:
             ax = plt.gca()
 
+        # The X and Y axes are labeled in pixels.
         xunit = yunit = 'pixel'
         xlabel = 'q (%s)' % xunit
         ylabel = 'p (%s)' % yunit
 
+        # If either axis has just one pixel, plot it as a line-graph.
         if self.shape[1] == 1:
-            # plot a column
+            # Plot a column as a line-graph
             yaxis = np.arange(self.shape[0], dtype=np.float)
             ax.plot(yaxis, self.data)
             xlabel = 'p (%s)' % yunit
             ylabel = self.unit
         elif self.shape[0] == 1:
-            # plot a line
+            # Plot a row as a line-graph
             xaxis = np.arange(self.shape[1], dtype=np.float)
             ax.plot(xaxis, self.data)
             ylabel = self.unit
         else:
+            # Plot a 2D image.
             from astropy import visualization as viz
             from astropy.visualization.mpl_normalize import ImageNormalize
+
+            # Choose vmin and vmax automatically?
             if zscale:
                 from . import plt_zscale
                 vmin, vmax = plt_zscale.zscale(self.data.filled(0))
 
+            # How are values between vmin and vmax mapped to corresponding
+            # positions along the colorbar?
             if scale == 'linear':
                 stretch = viz.LinearStretch
             elif scale == 'log':
                 stretch = viz.LogStretch
             elif scale in ('asinh', 'arcsinh'):
                 stretch = viz.AsinhStretch
-            elif scale == 'power':
-                stretch = viz.PowerStretch
             elif scale == 'sqrt':
                 stretch = viz.SqrtStretch
             else:
                 raise ValueError('Unknown scale: {}'.format(scale))
 
+            # Create an object that will be used to map pixel values
+            # in the range vmin..vmax to normalized colormap indexes.
             norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch())
 
-            if var and self.var is not None:
-                wght = 1.0 / self.var
-                np.ma.fix_invalid(wght, copy=False, fill_value=0)
+            # Display the image.
+            cax = ax.imshow(self.data, interpolation='nearest',
+                            origin='lower', norm=norm, **kwargs)
 
-                normalpha = mpl.colors.Normalize(wght.min(), wght.max())
-
-                data = plt.get_cmap('jet')(norm(self.data))
-                data[:, :, 3] = 1 - normalpha(wght) / 2
-            else:
-                data = self.data
-
-            cax = ax.imshow(data, interpolation='nearest', origin='lower',
-                            norm=norm, **kwargs)
-
-            # create colorbar
+            # Create a colorbar
             from mpl_toolkits.axes_grid1 import make_axes_locatable
             divider = make_axes_locatable(ax)
             if colorbar == "h":
@@ -4465,8 +4514,11 @@ class Image(DataArray):
                 cax2 = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(cax, cax=cax2)
 
+            # Keep the axis to allow other functions to overplot
+            # the image with contours etc.
             self._ax = ax
 
+        # Label the axes if requested.
         if show_xlabel:
             ax.set_xlabel(xlabel)
         if show_ylabel:
@@ -4474,13 +4526,40 @@ class Image(DataArray):
         if title is not None:
             ax.set_title(title)
 
+        # Change the way that plt.show() displays coordinates
+        # when the pointer is over the image, such that
+        # world coordinates are displayed with the specified unit,
+        # and pixel values are displayed with their native units.
         ax.format_coord = self._format_coord
         self._unit = unit
         return cax
 
     def _format_coord(self, x, y):
+        """A function that can be assigned to
+        matplotlib.axes.Axes.format_coord to tell the interactive
+        plotting window how to display the sky coordinates and
+        pixel values of an image.
+
+        Parameters
+        ----------
+        x   : float
+           The X-axis pixel index of the mouse pointer.
+        y   : float
+           The Y-axis pixel index of the mouse pointer.
+
+        Returns
+        -------
+        out : str
+           The string to be displayed when the mouse pointer is
+           over pixel x,y.
+
+        """
+
+        # Find the pixel indexes closest to the specified position.
         col = int(x + 0.5)
         row = int(y + 0.5)
+
+        # Is the mouse pointer within the image?
         if col >= 0 and col < self.shape[0] and \
                 row >= 0 and row < self.shape[1]:
             pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
