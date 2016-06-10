@@ -976,22 +976,23 @@ class Image(DataArray):
             self.data[sy, sx][ksel > 1] = np.ma.masked
 
     def mask_polygon(self, poly, unit=u.deg, inside=True):
-        """Mask values inside/outside a polygonal region.
+        """Mask values inside or outside a polygonal region.
 
         Parameters
         ----------
         poly : (float, float)
-            array of (float,float) containing a set of (p,q) or (dec,ra)
-            values for the polygon vertices
-        pix : `astropy.units.Unit`
-            Type of the polygon coordinates (by default in degrees).
+            An array of (float,float) containing a set of (p,q) or (dec,ra)
+            values for the polygon vertices.
+        unit : `astropy.units.Unit`
+            The units of the polygon coordinates (by default in degrees).
             Use unit=None to have polygon coordinates in pixels.
         inside : bool
-            If inside is True, pixels inside the described region are masked.
+            If inside is True, pixels inside the polygonal region are masked.
+            If inside is False, pixels outside the polygonal region are masked.
 
         """
 
-        # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
+        # Convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
         if unit is not None:
             poly = np.array([
                 [self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][0],
@@ -1002,23 +1003,23 @@ class Image(DataArray):
                            list(range(self.shape[1])))
         b = np.dstack([P.ravel(), Q.ravel()])
 
-        # use the matplotlib method to create a path wich is the polygon we
-        # want to use
+        # Use a matplotlib method to create a path, which is the polygon we
+        # want to use.
         polymask = Path(poly)
-        # go through all pixels in the image to see if there are in the
-        # polygon, ouput is a boolean table
+
+        # Go through all pixels in the image to see if they are within the
+        # polygon. The ouput is a boolean table.
         c = polymask.contains_points(b[0])
 
-        # invert the boolean table to ''mask'' the outside part of the polygon,
-        # if it's False I mask the inside part
+        # Invert the boolean table to mask pixels outside the polygon?
         if not inside:
             c = ~np.array(c)
 
-        # convert the boolean table into a matrix
+        # Convert the boolean table into a matrix.
         c = c.reshape(self.shape[1], self.shape[0])
         c = c.T
 
-        # combine the previous mask with the new one
+        # Combine the previous mask with the new one.
         self._mask = np.logical_or(c, self._mask)
         return poly
 
