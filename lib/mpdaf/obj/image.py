@@ -19,6 +19,7 @@ from six.moves import range, zip
 from .coords import WCS
 from .data import DataArray
 from .objs import (is_int, is_number, circular_bounding_box,
+                   elliptical_bounding_box,
                    UnitArray, UnitMaskedArray)
 from ..tools import deprecated
 
@@ -896,26 +897,32 @@ class Image(DataArray):
 
     def mask_ellipse(self, center, radius, posangle, unit_center=u.deg,
                      unit_radius=u.arcsec, inside=True):
-        """Mask values inside/outside the described region. Uses an elliptical
-        shape.
+        """Mask values inside or outside an elliptical region.
 
         Parameters
         ----------
         center : (float,float)
-            Center (y,x) of the explored region.
+            The center (y,x) of the region, where y,x are usually
+            Declination and Right Ascension, but are interpretted
+            as Y,X array indexes if unit_center is None.
         radius : (float,float)
-            Radius defined the explored region.  radius is (float,float), it
-            defines an elliptical region with semi-major and semi-minor axes.
+            The two radii of the orthogonal axes of the ellipse.
+            When posangle is zero, radius[0] is the radius along
+            the X axis of the image-array, and radius[1] is
+            the radius along the Y axis of the image-array.
         posangle : float
-            Position angle of the first axis. It is defined in degrees against
-            the horizontal (q) axis of the image, counted counterclockwise.
+            The counter-clockwise position angle of the ellipse in
+            degrees. When posangle is zero, the X and Y axes of the
+            ellipse are along the X and Y axes of the image.
         unit_center : `astropy.units.Unit`
-            type of the center coordinates.
+            The units of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
         unit_radius : `astropy.units.Unit`
-            Radius unit. Arcseconds by default (use None for radius in pixels)
+            The units of the radius argument. Arcseconds by default.
+            (use None for radius in pixels)
         inside : bool
             If inside is True, pixels inside the described region are masked.
+            If inside is False, pixels outside the described region are masked.
 
         """
         center = np.array(center)
@@ -923,16 +930,38 @@ class Image(DataArray):
 
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
+
+        # Convert the radii from world-coordinates to pixel counts.
         if unit_radius is not None:
             radius = radius / self.wcs.get_step(unit=unit_radius)
 
-        maxradius = max(radius[0], radius[1])
+        # Obtain Y and X axis slice objects that select the rectangular
+        # region that just encloses the rotated ellipse.
+        sy, sx = elliptical_bounding_box(center, radius, posangle, self.shape)
 
-        sy, sx = circular_bounding_box(center, maxradius, self.shape)
-
+        # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
         sinpa = np.sin(np.radians(posangle))
 
+        # When the position angle is zero, such that the
+        # xe and ye axes of the ellipse are along the X and Y axes
+        # of the image-array, the equation of the ellipse is:
+        #
+        #   (xe / rx)**2 + (ye / ry)**2 = 1
+        #
+        # Before we can use this equation with the rotated ellipse, we
+        # have to rotate the pixel coordinates clockwise by the
+        # counterclockwise position angle of the ellipse to align the
+        # rotated axes of the ellipse along the image X and Y axes:
+        #
+        #   xp  =  | cos(pa),  sin(pa)| |x|
+        #   yp     |-sin(pa),  cos(pa)| |y|
+        #
+        # The value of k returned by the following equation will then
+        # be < 1 for pixels inside the ellipse, == 1 for pixels on the
+        # ellipse and > 1 for pixels outside the ellipse.
+        #
+        #   k = (xp / rx)**2 + (yp / ry)**2
         grid = np.mgrid[sy, sx] - center[:, np.newaxis, np.newaxis]
         ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
                 ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2)
