@@ -51,6 +51,31 @@ def mag2flux(mag, wave):
 
 
 def circular_bounding_box(center, radius, shape):
+    """Return Y-axis and X-axis slice objects that select a square
+       image region that just encloses a circle of a specified center
+       and radius.
+
+       If the circle is partly outside of the image array, the
+       returned slices are clipped at the edges of the array.
+
+    Parameters
+    ----------
+    center : float, float
+       The floating point array indexes of the centre of the circle,
+       in the order, y,x.
+    radius : float
+       The radius of the circle (number of pixels).
+    shape  : int, int
+       The dimensions of the image array.
+
+    Returns
+    -------
+    out : slice, slice
+       The Y-axis and X-axis slices needed to select a square region
+       of the image that just encloses the circle.
+
+    """
+
     center = np.asarray(center)
     radius = np.asarray(radius)
     shape = np.asarray(shape) - 1
