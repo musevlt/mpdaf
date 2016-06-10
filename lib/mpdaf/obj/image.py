@@ -1196,6 +1196,8 @@ class Image(DataArray):
             step = self.wcs.get_step(unit=unit_size)
             size = size / step
             minsize = minsize / step
+        elif is_number(minsize):
+            minsize = np.array([minsize, minsize])
 
         # Convert the width and height of the region to radii, and
         # get Y-axis and X-axis slice objects that select this region.
