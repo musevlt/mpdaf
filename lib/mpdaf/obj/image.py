@@ -1144,50 +1144,69 @@ class Image(DataArray):
 
     def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec,
                  minsize=2.0):
-        """Extract a sub-image around a given position.
+        """Extract a square or rectangular sub-image whose center and size
+        are specified in world coordinates.
 
         Parameters
         ----------
         center : (float,float)
-            Center (dec, ra) of the aperture.
-        size : float
-            The size to extract. It corresponds to the size along the delta
-            axis and the image is square.
+            The center (dec, ra) of the square region. If this position
+            is not within the parent image, None is returned.
+        size : float or (float,float)
+            The width of a square region, or the height and width of
+            a rectangular region.
         unit_center : `astropy.units.Unit`
-            type of the center coordinates.
-            Degrees by default (use None for coordinates in pixels).
+            The units of the center coordinates.
+            Degrees are assumed by default. To specify the center
+            in pixels, assign None to unit_center.
         unit_size : `astropy.units.Unit`
-            Size and minsize unit.
-            Arcseconds by default (use None for size in pixels)
+            The units of the size and minsize arguments.
+            Arcseconds are assumed by default (use None to specify
+            sizes in pixels).
         minsize : float
-            The minimum size of the output image.
+            The minimum width of the output image along both the Y and
+            X axes. This function returns None if size is smaller than
+            minsize, or if the part of the square that lies within the
+            parent image is smaller than minsize along either axis.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        if size <= 0:
+
+        # If just one size is given, use it for both axes.
+        size = np.array([size, size]) if is_number(size) else np.asarray(size)
+        if size[0] <= 0 or size[1] <= 0:
             raise ValueError('size must be positive')
 
+        # Require the center to be within the parent image.
         if not self.inside(center, unit_center):
             return None
 
+        # Convert the center position from world-coordinates to pixel indexes.
         center = np.asarray(center)
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
 
+        # Convert the sizes from world coordinates to pixel counts,
+        # taking account of the possibility that pixels can be rectangular.
         if unit_size is not None:
-            step0 = self.wcs.get_step(unit=unit_size)[0]
-            size = size / step0
-            minsize = minsize / step0
+            step = self.wcs.get_step(unit=unit_size)
+            size = size / step
+            minsize = minsize / step
 
-        radius = np.array(size) / 2.
+        # Convert the width and height of the region to radii, and
+        # get Y-axis and X-axis slice objects that select this region.
+        radius = size / 2.
         sy, sx = circular_bounding_box(center, radius, self.shape)
 
+        # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize or \
-                (sx.stop - sx.start + 1) < minsize:
+           (sx.stop - sx.start + 1) < minsize:
             return None
+
+        # Return the selected region.
         return self[sy, sx]
 
     def _rotate(self, theta=0.0, interp='no', reshape=False, order=1,
