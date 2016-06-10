@@ -38,6 +38,7 @@ from six.moves import range, zip
 from .coords import WCS
 from .data import DataArray
 from .objs import (is_int, is_number, circular_bounding_box,
+                   elliptical_bounding_box,
                    UnitArray, UnitMaskedArray)
 from ..tools import deprecated
 
@@ -842,16 +843,18 @@ class Image(DataArray):
 
     def mask_region(self, center, radius, unit_center=u.deg,
                     unit_radius=u.arcsec, inside=True):
-        """Mask values inside/outside the described region.
+        """Mask values inside or outside a circular or rectangular region.
 
         Parameters
         ----------
         center : (float,float)
-            Center (y,x) of the explored region.
+            Center (y,x) of the region, where y,x are usually
+            Declination and Right Ascension, but are interpretted
+            as Y,X array indexes if unit_center is None.
         radius : float or (float,float)
-            Radius defined the explored region.
-            If radius is float, it defined a circular region.
-            If radius is (float,float), it defined a rectangular region.
+            The radius or radii of the region.
+            If radius is a single float, it defines a circular region.
+            If radius is (float,float), it defines a rectangular region.
         unit_center : `astropy.units.Unit`
             type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
@@ -863,6 +866,10 @@ class Image(DataArray):
 
         """
         center = np.array(center)
+
+        # If radius is scalar, convert it to a 2 element array that
+        # has the same radius for the X and Y axes, but keep a record
+        # of the fact that this was a single radius describing a circle.
         if is_number(radius):
             circular = True
             radius2 = radius * radius
@@ -871,23 +878,34 @@ class Image(DataArray):
             circular = False
         radius = np.array(radius)
 
+        # If the units of the center are not already in pixels, convert
+        # them to pixels.
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
+
+        # If the radius units are not already pixels, convert them into
+        # pixels, taking account of the possibility that pixels can be
+        # rectangular.
         if unit_radius is not None:
             radius = radius / self.wcs.get_step(unit=unit_radius)
             radius2 = radius[0] * radius[1]
 
+        # Get Y and X axis slice objects that bound the specified region.
         sy, sx = circular_bounding_box(center, radius, self.shape)
 
+        # Obtain the radius squared of each pixel from the center.
         if circular:
             grid = np.mgrid[sy, sx]
             ind = ((grid[0] - center[0])**2 + (grid[1] - center[1])**2)
 
+        # Mask pixels inside the region.
         if inside:
             if circular:
                 self.data[sy, sx][ind < radius2] = np.ma.masked
             else:
                 self.data[sy, sx] = np.ma.masked
+
+        # Mask pixels outside the region.
         else:
             self.data[0:sy.start, :] = np.ma.masked
             self.data[sy.stop:, :] = np.ma.masked
@@ -898,26 +916,32 @@ class Image(DataArray):
 
     def mask_ellipse(self, center, radius, posangle, unit_center=u.deg,
                      unit_radius=u.arcsec, inside=True):
-        """Mask values inside/outside the described region. Uses an elliptical
-        shape.
+        """Mask values inside or outside an elliptical region.
 
         Parameters
         ----------
         center : (float,float)
-            Center (y,x) of the explored region.
+            The center (y,x) of the region, where y,x are usually
+            Declination and Right Ascension, but are interpretted
+            as Y,X array indexes if unit_center is None.
         radius : (float,float)
-            Radius defined the explored region.  radius is (float,float), it
-            defines an elliptical region with semi-major and semi-minor axes.
+            The two radii of the orthogonal axes of the ellipse.
+            When posangle is zero, radius[0] is the radius along
+            the X axis of the image-array, and radius[1] is
+            the radius along the Y axis of the image-array.
         posangle : float
-            Position angle of the first axis. It is defined in degrees against
-            the horizontal (q) axis of the image, counted counterclockwise.
+            The counter-clockwise position angle of the ellipse in
+            degrees. When posangle is zero, the X and Y axes of the
+            ellipse are along the X and Y axes of the image.
         unit_center : `astropy.units.Unit`
-            type of the center coordinates.
+            The units of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
         unit_radius : `astropy.units.Unit`
-            Radius unit. Arcseconds by default (use None for radius in pixels)
+            The units of the radius argument. Arcseconds by default.
+            (use None for radius in pixels)
         inside : bool
             If inside is True, pixels inside the described region are masked.
+            If inside is False, pixels outside the described region are masked.
 
         """
         center = np.array(center)
@@ -925,16 +949,38 @@ class Image(DataArray):
 
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
+
+        # Convert the radii from world-coordinates to pixel counts.
         if unit_radius is not None:
             radius = radius / self.wcs.get_step(unit=unit_radius)
 
-        maxradius = max(radius[0], radius[1])
+        # Obtain Y and X axis slice objects that select the rectangular
+        # region that just encloses the rotated ellipse.
+        sy, sx = elliptical_bounding_box(center, radius, posangle, self.shape)
 
-        sy, sx = circular_bounding_box(center, maxradius, self.shape)
-
+        # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
         sinpa = np.sin(np.radians(posangle))
 
+        # When the position angle is zero, such that the
+        # xe and ye axes of the ellipse are along the X and Y axes
+        # of the image-array, the equation of the ellipse is:
+        #
+        #   (xe / rx)**2 + (ye / ry)**2 = 1
+        #
+        # Before we can use this equation with the rotated ellipse, we
+        # have to rotate the pixel coordinates clockwise by the
+        # counterclockwise position angle of the ellipse to align the
+        # rotated axes of the ellipse along the image X and Y axes:
+        #
+        #   xp  =  | cos(pa),  sin(pa)| |x|
+        #   yp     |-sin(pa),  cos(pa)| |y|
+        #
+        # The value of k returned by the following equation will then
+        # be < 1 for pixels inside the ellipse, == 1 for pixels on the
+        # ellipse and > 1 for pixels outside the ellipse.
+        #
+        #   k = (xp / rx)**2 + (yp / ry)**2
         grid = np.mgrid[sy, sx] - center[:, np.newaxis, np.newaxis]
         ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
                 ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2)
@@ -949,22 +995,23 @@ class Image(DataArray):
             self.data[sy, sx][ksel > 1] = np.ma.masked
 
     def mask_polygon(self, poly, unit=u.deg, inside=True):
-        """Mask values inside/outside a polygonal region.
+        """Mask values inside or outside a polygonal region.
 
         Parameters
         ----------
         poly : (float, float)
-            array of (float,float) containing a set of (p,q) or (dec,ra)
-            values for the polygon vertices
-        pix : `astropy.units.Unit`
-            Type of the polygon coordinates (by default in degrees).
+            An array of (float,float) containing a set of (p,q) or (dec,ra)
+            values for the polygon vertices.
+        unit : `astropy.units.Unit`
+            The units of the polygon coordinates (by default in degrees).
             Use unit=None to have polygon coordinates in pixels.
         inside : bool
-            If inside is True, pixels inside the described region are masked.
+            If inside is True, pixels inside the polygonal region are masked.
+            If inside is False, pixels outside the polygonal region are masked.
 
         """
 
-        # convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
+        # Convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
         if unit is not None:
             poly = np.array([
                 [self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][0],
@@ -975,23 +1022,23 @@ class Image(DataArray):
                            list(range(self.shape[1])))
         b = np.dstack([P.ravel(), Q.ravel()])
 
-        # use the matplotlib method to create a path wich is the polygon we
-        # want to use
+        # Use a matplotlib method to create a path, which is the polygon we
+        # want to use.
         polymask = Path(poly)
-        # go through all pixels in the image to see if there are in the
-        # polygon, ouput is a boolean table
+
+        # Go through all pixels in the image to see if they are within the
+        # polygon. The ouput is a boolean table.
         c = polymask.contains_points(b[0])
 
-        # invert the boolean table to ''mask'' the outside part of the polygon,
-        # if it's False I mask the inside part
+        # Invert the boolean table to mask pixels outside the polygon?
         if not inside:
             c = ~np.array(c)
 
-        # convert the boolean table into a matrix
+        # Convert the boolean table into a matrix.
         c = c.reshape(self.shape[1], self.shape[0])
         c = c.T
 
-        # combine the previous mask with the new one
+        # Combine the previous mask with the new one.
         self._mask = np.logical_or(c, self._mask)
         return poly
 
@@ -1117,50 +1164,71 @@ class Image(DataArray):
 
     def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec,
                  minsize=2.0):
-        """Extract a sub-image around a given position.
+        """Extract a square or rectangular sub-image whose center and size
+        are specified in world coordinates.
 
         Parameters
         ----------
         center : (float,float)
-            Center (dec, ra) of the aperture.
-        size : float
-            The size to extract. It corresponds to the size along the delta
-            axis and the image is square.
+            The center (dec, ra) of the square region. If this position
+            is not within the parent image, None is returned.
+        size : float or (float,float)
+            The width of a square region, or the height and width of
+            a rectangular region.
         unit_center : `astropy.units.Unit`
-            type of the center coordinates.
-            Degrees by default (use None for coordinates in pixels).
+            The units of the center coordinates.
+            Degrees are assumed by default. To specify the center
+            in pixels, assign None to unit_center.
         unit_size : `astropy.units.Unit`
-            Size and minsize unit.
-            Arcseconds by default (use None for size in pixels)
+            The units of the size and minsize arguments.
+            Arcseconds are assumed by default (use None to specify
+            sizes in pixels).
         minsize : float
-            The minimum size of the output image.
+            The minimum width of the output image along both the Y and
+            X axes. This function returns None if size is smaller than
+            minsize, or if the part of the square that lies within the
+            parent image is smaller than minsize along either axis.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-        if size <= 0:
+
+        # If just one size is given, use it for both axes.
+        size = np.array([size, size]) if is_number(size) else np.asarray(size)
+        if size[0] <= 0 or size[1] <= 0:
             raise ValueError('size must be positive')
 
+        # Require the center to be within the parent image.
         if not self.inside(center, unit_center):
             return None
 
+        # Convert the center position from world-coordinates to pixel indexes.
         center = np.asarray(center)
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
 
+        # Convert the sizes from world coordinates to pixel counts,
+        # taking account of the possibility that pixels can be rectangular.
         if unit_size is not None:
-            step0 = self.wcs.get_step(unit=unit_size)[0]
-            size = size / step0
-            minsize = minsize / step0
+            step = self.wcs.get_step(unit=unit_size)
+            size = size / step
+            minsize = minsize / step
+        elif is_number(minsize):
+            minsize = np.array([minsize, minsize])
 
-        radius = np.array(size) / 2.
+        # Convert the width and height of the region to radii, and
+        # get Y-axis and X-axis slice objects that select this region.
+        radius = size / 2.
         sy, sx = circular_bounding_box(center, radius, self.shape)
 
-        if (sy.stop - sy.start + 1) < minsize or \
-                (sx.stop - sx.start + 1) < minsize:
+        # Require that the image be at least minsize x minsize pixels.
+        if (sy.stop - sy.start + 1) < minsize[0] or \
+           (sx.stop - sx.start + 1) < minsize[1]:
             return None
+
+        # Return the selected region.
         return self[sy, sx]
 
     def _rotate(self, theta=0.0, interp='no', reshape=False, order=1,
@@ -4316,35 +4384,87 @@ class Image(DataArray):
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
              show_ylabel=True, ax=None, unit=u.deg, **kwargs):
-        """Plot the image.
+        """Plot the image with axes labeled in pixels. If either axis
+        has just one pixel, plot a line instead of an image.
+
+        Colors are assigned to each pixel value as follows. First each
+        pixel value, pv, is normalized over the range vmin to vmax,
+        to have a value nv, that goes from 0 to 1, as follows:
+
+           nv = (pv - vmin) / (vmax - vmin)
+
+        This value is then mapped to another number between 0 and 1
+        which determines a position along the colorbar, and thus the
+        color to give the displayed pixel. The mapping from normalized
+        values to colorbar position, color, can be chosen using the
+        scale argument, from the following options:
+
+           'linear'   =>  color = nv
+           'log'      =>  color = log(1000 * nv + 1) / log(1000 + 1)
+           'sqrt'     =>  color = sqrt(nv)
+           'arcsinh'  =>  color = arcsinh(10*nv) / arcsinh(10.0)
+
+        A colorbar can optionally be drawn. If the colorbar
+        argument is given the value 'h', then a colorbar is drawn
+        horizontally, above the plot. If it is 'v', the colorbar
+        is drawn vertically, to the right of the plot.
+
+        By default the image image is displayed in its own
+        plot. Alternatively to make it a subplot of a larger figure, a
+        suitable matplotlib.axes.Axes object can be passed via the ax
+        argument. Note that unless matplotlib interative mode has
+        previously been enabled by calling matplotlib.pyplot.ion(),
+        the plot window will not appear until the next time that
+        matplotlib.pyplot.show() is called. So to arrange that a new
+        window appears as soon as Image.plot() is called, do the
+        following before the first call to Image.plot().
+
+           import matplotlib.pyplot as plt
+           plt.ion()
 
         Parameters
         ----------
         title : str
-                Figure title (None by default).
-        scale : 'linear' | 'log' | 'sqrt' | 'arcsinh' | 'power'
-                The stretch function to use for the scaling
-                (default is 'linear').
+            An optional title for the figure (None by default).
+        scale : 'linear' | 'log' | 'sqrt' | 'arcsinh'
+            The stretch function to use mapping pixel values to
+            colors (The default is 'linear'). The pixel values are
+            first normalized to range from 0 for values <= vmin,
+            to 1 for values >= vmax, then the stretch algorithm maps
+            these normalized values, nv, to a position p from 0 to 1
+            along the colorbar, as follows:
+               linear:  p = nv
+               log:     p = log(1000 * nv + 1) / log(1000 + 1)
+               sqrt:    p = sqrt(nv)
+               arcsinh: p = arcsinh(10*nv) / arcsinh(10.0)
         vmin : float
-                Minimum pixel value to use for the scaling.
-                If None, vmin is set to min of data.
+            Pixels that have values <= vmin are given the color
+            at the dark end of the color bar. Pixel values between
+            vmin and vmax are given colors along the colorbar according
+            to the mapping algorithm specified by the scale argument.
         vmax : float
-                Maximum pixel value to use for the scaling.
-                If None, vmax is set to max of data.
+            Pixels that have values >= vmax are given the color
+            at the bright end of the color bar. If None, vmax is
+            set to the maximum pixel value in the image.
         zscale : bool
-                If true, vmin and vmax are computed
-                using the IRAF zscale algorithm.
-        colorbar : bool
-                If 'h'/'v', a horizontal/vertical colorbar is added.
-        var : bool
-                If var is True, the inverse of variance
-                is overplotted.
+            If True, vmin and vmax are automatically computed
+            using the IRAF zscale algorithm.
+        colorbar : str
+            If 'h', a horizontal colorbar is drawn above the image.
+            If 'v', a vertical colorbar is drawn to the right of the image.
+            If None (the default), no colorbar is drawn.
         ax : matplotlib.Axes
-                the Axes instance in which the image is drawn
+            An optional Axes instance in which to draw the image,
+            or None to have one created using matplotlib.pyplot.gca().
         unit : `astropy.units.Unit`
-                   type of the world coordinates (degrees by default)
+            The units to use for displaying world coordinates
+            (degrees by default). In the interactive plot, when
+            the mouse pointer is over a pixel in the image the
+            coordinates of the pixel are shown using these units,
+            along with the pixel value.
         kwargs : matplotlib.artist.Artist
-                kwargs can be used to set additional Artist properties.
+            Optional extra keyword/value arguments to be passed to
+            the ax.imshow() function.
 
         Returns
         -------
@@ -4353,58 +4473,55 @@ class Image(DataArray):
         if ax is None:
             ax = plt.gca()
 
+        # The X and Y axes are labeled in pixels.
         xunit = yunit = 'pixel'
         xlabel = 'q (%s)' % xunit
         ylabel = 'p (%s)' % yunit
 
+        # If either axis has just one pixel, plot it as a line-graph.
         if self.shape[1] == 1:
-            # plot a column
+            # Plot a column as a line-graph
             yaxis = np.arange(self.shape[0], dtype=np.float)
             ax.plot(yaxis, self.data)
             xlabel = 'p (%s)' % yunit
             ylabel = self.unit
         elif self.shape[0] == 1:
-            # plot a line
+            # Plot a row as a line-graph
             xaxis = np.arange(self.shape[1], dtype=np.float)
             ax.plot(xaxis, self.data)
             ylabel = self.unit
         else:
+            # Plot a 2D image.
             from astropy import visualization as viz
             from astropy.visualization.mpl_normalize import ImageNormalize
+
+            # Choose vmin and vmax automatically?
             if zscale:
                 from . import plt_zscale
                 vmin, vmax = plt_zscale.zscale(self.data.filled(0))
 
+            # How are values between vmin and vmax mapped to corresponding
+            # positions along the colorbar?
             if scale == 'linear':
                 stretch = viz.LinearStretch
             elif scale == 'log':
                 stretch = viz.LogStretch
             elif scale in ('asinh', 'arcsinh'):
                 stretch = viz.AsinhStretch
-            elif scale == 'power':
-                stretch = viz.PowerStretch
             elif scale == 'sqrt':
                 stretch = viz.SqrtStretch
             else:
                 raise ValueError('Unknown scale: {}'.format(scale))
 
+            # Create an object that will be used to map pixel values
+            # in the range vmin..vmax to normalized colormap indexes.
             norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch())
 
-            if var and self.var is not None:
-                wght = 1.0 / self.var
-                np.ma.fix_invalid(wght, copy=False, fill_value=0)
+            # Display the image.
+            cax = ax.imshow(self.data, interpolation='nearest',
+                            origin='lower', norm=norm, **kwargs)
 
-                normalpha = mpl.colors.Normalize(wght.min(), wght.max())
-
-                data = plt.get_cmap('jet')(norm(self.data))
-                data[:, :, 3] = 1 - normalpha(wght) / 2
-            else:
-                data = self.data
-
-            cax = ax.imshow(data, interpolation='nearest', origin='lower',
-                            norm=norm, **kwargs)
-
-            # create colorbar
+            # Create a colorbar
             from mpl_toolkits.axes_grid1 import make_axes_locatable
             divider = make_axes_locatable(ax)
             if colorbar == "h":
@@ -4419,8 +4536,11 @@ class Image(DataArray):
                 cax2 = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(cax, cax=cax2)
 
+            # Keep the axis to allow other functions to overplot
+            # the image with contours etc.
             self._ax = ax
 
+        # Label the axes if requested.
         if show_xlabel:
             ax.set_xlabel(xlabel)
         if show_ylabel:
@@ -4428,13 +4548,40 @@ class Image(DataArray):
         if title is not None:
             ax.set_title(title)
 
+        # Change the way that plt.show() displays coordinates
+        # when the pointer is over the image, such that
+        # world coordinates are displayed with the specified unit,
+        # and pixel values are displayed with their native units.
         ax.format_coord = self._format_coord
         self._unit = unit
         return cax
 
     def _format_coord(self, x, y):
+        """A function that can be assigned to
+        matplotlib.axes.Axes.format_coord to tell the interactive
+        plotting window how to display the sky coordinates and
+        pixel values of an image.
+
+        Parameters
+        ----------
+        x   : float
+           The X-axis pixel index of the mouse pointer.
+        y   : float
+           The Y-axis pixel index of the mouse pointer.
+
+        Returns
+        -------
+        out : str
+           The string to be displayed when the mouse pointer is
+           over pixel x,y.
+
+        """
+
+        # Find the pixel indexes closest to the specified position.
         col = int(x + 0.5)
         row = int(y + 0.5)
+
+        # Is the mouse pointer within the image?
         if col >= 0 and col < self.shape[0] and \
                 row >= 0 and row < self.shape[1]:
             pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
