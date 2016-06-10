@@ -101,12 +101,13 @@ class TestSource():
         self.source1.add_line(cols, values, match=('LINE', 'TEST'))
         assert_equal(lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')], 4807.)
 
+    @attr(speed='fast')
     def test_add_image(self):
         """Source class: testing add_image method"""
         cube = Cube('data/sdetect/minicube.fits', dtype=np.float64)
         self.source2.add_white_image(cube)
         ima = cube.mean(axis=0)
-        assert_equal(ima[15, 25], self.source2.images['MUSE_WHITE'][9, 5])
+        assert_equal(ima[15, 25], self.source2.images['MUSE_WHITE'][8, 5])
         hst = Image('data/sdetect/a478hst.fits')
         self.source2.add_image(hst, 'HST1')
         size = self.source2.images['HST1'].shape[0]
@@ -117,6 +118,7 @@ class TestSource():
         nose.tools.assert_almost_equal(self.source2.images['HST3'].get_rot(),
                                        self.source2.images['MUSE_WHITE'].get_rot(), 3)
 
+    @attr(speed='fast')
     def test_add_narrow_band_image(self):
         """Source class: testing methods on narrow bands images"""
         cube = Cube('data/sdetect/minicube.fits')
@@ -160,6 +162,7 @@ class TestSource():
         nose.tools.assert_true('MUSE_WHITE' in src.spectra)
         nose.tools.assert_true('NB_HALPHA' in src.spectra)
 
+    @attr(speed='fast')
     def test_sort_lines(self):
         """Source class: testing sort_lines method"""
         self.source1.sort_lines()
