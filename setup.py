@@ -190,7 +190,6 @@ setup(
     install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0',
                       'numexpr', 'six', 'joblib'],
     tests_require=['nose'],
-    extras_require={'Image':  ['Pillow']},
     package_dir={'': 'lib'},
     packages=find_packages('lib'),
     zip_safe=False,

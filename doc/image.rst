@@ -69,21 +69,6 @@ Then it is possible to fit a Gaussian::
     >>> gauss.print_param()
 
 
-Annother example to generate a composite image::
-
-    import numpy as np
-    from mpdaf.obj import Image
-    from mpdaf.obj import composite_image
-
-    stars = Image(filename="stars.fits")
-    lowz = Image(filename="lowz.fits")
-    highz = Image(filename="highz.fits")
-    imalist = [stars, lowz, highz]
-    tab = zip(imalist, linspace(250,0,3), ones(3)*100)
-    p1 = composite_image(tab, cuts=(0,99.5), mode='sqrt')
-    p1.show()
-    p1.save('test_composite.jpg')
-
 
 Image object format
 ===================
@@ -216,8 +201,6 @@ Arithmetic
 
 `mpdaf.obj.Image.abs <mpdaf.obj.DataArray.abs>` computes the absolute value of data extension.
 
-`mpdaf.obj.Image.sum <mpdaf.obj.Image.sum>` returns the sum over the given axis.
-
 `mpdaf.obj.Image.add <mpdaf.obj.Image.add>` adds an other image to the current image (in place).
 
 
@@ -271,12 +254,6 @@ Filter
 
 `mpdaf.obj.Image.gaussian_filter <mpdaf.obj.Image.gaussian_filter>` applies gaussian filter to the image.
 
-`mpdaf.obj.Image.median_filter <mpdaf.obj.Image.median_filter>` applies median filter to the image.
-
-`mpdaf.obj.Image.maximum_filter <mpdaf.obj.Image.maximum_filter>` applies maximum filter to the image.
-
-`mpdaf.obj.Image.minimum_filter <mpdaf.obj.Image.minimum_filter>` applies minimum filter to the image.
-
 `mpdaf.obj.Image.fftconvolve <mpdaf.obj.Image.fftconvolve>` convolves the image with an other image using fft.
 
 `mpdaf.obj.Image.fftconvolve_gauss <mpdaf.obj.Image.fftconvolve_gauss>` convolves the image with a 2D gaussian.
@@ -293,24 +270,6 @@ Plotting
 
 `mpdaf.obj.Image.plot <mpdaf.obj.Image.plot>` plots the image.
 
-`mpdaf.obj.Image.ipos <mpdaf.obj.Image.ipos>` prints cursor position in interactive mode.
-
-`mpdaf.obj.Image.idist <mpdaf.obj.Image.idist>` gets distance and center from 2 cursor positions on the plot.
-
-`mpdaf.obj.Image.istat <mpdaf.obj.Image.istat>` computes image statistics from windows defined on the plot.
-
-`mpdaf.obj.Image.ipeak <mpdaf.obj.Image.ipeak>` finds peak location in windows defined on the plot.
-
-`mpdaf.obj.Image.ifwhm <mpdaf.obj.Image.ifwhm>` computes fwhm in windows defined on the plot.
-
-`mpdaf.obj.Image.imask <mpdaf.obj.Image.imask>` over-plots masked values.
-
-`mpdaf.obj.Image.iee <mpdaf.obj.Image.iee>` computes enclosed energy in windows defined on the plot.
-
-`mpdaf.obj.Image.igauss_fit <mpdaf.obj.Image.igauss_fit>` performs Gaussian fit in windows defined with left mouse button.
-
-`mpdaf.obj.Image.imoffat_fit <mpdaf.obj.Image.imoffat_fit>` performs Moffat fit in windows defined with left mouse button.
-
 
 Functions to create a new image
 ===============================
@@ -320,12 +279,6 @@ Functions to create a new image
 `mpdaf.obj.gauss_image <mpdaf.obj.gauss_image>` creates a new image from a 2D gaussian.
 
 `mpdaf.obj.moffat_image <mpdaf.obj.moffat_image>` creates a new image from a 2D Moffat function.
-
-`mpdaf.obj.make_image <mpdaf.obj.make_image>` interpolates z(x,y) and returns an image.
-
-`mpdaf.obj.composite_image <mpdaf.obj.composite_image>` builds composite image from a list of image and colors.
-
-`mpdaf.obj.mask_image <mpdaf.obj.mask_image>` creates a new image from a table of sky apertures.
 
 
 Tutorial
@@ -447,13 +400,6 @@ We plot one of the sub-images to analyse the corresponding source::
 
 .. figure:: _static/image/Image_source8.png
   :align: center
-
-We find the location of the peak interactively::
-
-    >>> source.ipeak()
-    [INFO] Use left mouse button to define the box.
-    [INFO] To quit the interactive mode, click on the right mouse button.
-    [INFO] peak: y=-1.51735 x=39.9904       p=15    q=10    data=3201
 
 We perform a 2D Gaussian fitting of the source, and plot the isocontours::
 

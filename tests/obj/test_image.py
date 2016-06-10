@@ -10,7 +10,7 @@ import numpy as np
 import scipy.ndimage as ndi
 import six
 
-from mpdaf.obj import Image, WCS, gauss_image, moffat_image, mask_image
+from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import assert_almost_equal, assert_array_equal
 from six.moves import range
 
@@ -161,18 +161,6 @@ def test_truncate():
 
 
 @attr(speed='fast')
-def test_sum():
-    """Image class: testing sum"""
-    image1 = generate_image()
-    sum1 = image1.sum()
-    nose.tools.assert_equal(sum1, 6 * 5 * 2)
-    sum2 = image1.sum(axis=0)
-    nose.tools.assert_equal(sum2.shape[0], 5)
-    nose.tools.assert_equal(sum2.get_start(), 0)
-    nose.tools.assert_equal(sum2.get_end(), 4)
-
-
-@attr(speed='fast')
 def test_gauss():
     """Image class: testing Gaussian fit"""
     wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30))
@@ -211,22 +199,22 @@ def test_mask():
     image1 = Image(data=data, wcs=wcs)
     image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
                        unit_radius=None)
-    nose.tools.assert_equal(image1.sum(), 2 * 9)
+    nose.tools.assert_equal(image1.data.sum(), 2 * 9)
     image1.unmask()
     wcs = WCS(deg=True)
     image1 = Image(data=data, wcs=wcs)
     image1.mask_region(wcs.pix2sky([2, 2]), (3600, 3600), inside=False)
-    nose.tools.assert_equal(image1.sum(), 2 * 9)
+    nose.tools.assert_equal(image1.data.sum(), 2 * 9)
     image1.unmask()
     image1.mask_region(wcs.pix2sky([2, 2]), 4000, inside=False)
-    nose.tools.assert_equal(image1.sum(), 2 * 5)
+    nose.tools.assert_equal(image1.data.sum(), 2 * 5)
     image1.unmask()
     image1.mask_ellipse(wcs.pix2sky([2, 2]), (10000, 3000), 20, inside=False)
-    nose.tools.assert_equal(image1.sum(), 2 * 7)
+    nose.tools.assert_equal(image1.data.sum(), 2 * 7)
     ksel = np.where(image1.data.mask)
     image1.unmask()
     image1.mask_selection(ksel)
-    nose.tools.assert_equal(image1.sum(), 2 * 7)
+    nose.tools.assert_equal(image1.data.sum(), 2 * 7)
 
 
 @attr(speed='fast')
@@ -512,18 +500,3 @@ def test_fftconvolve():
     nose.tools.assert_almost_equal(m.center[0], 8.5)
     nose.tools.assert_almost_equal(m.center[1], 12)
     # ima3 = ima.correlate2d(np.ones((40, 30)))
-
-
-@attr(speed='fast')
-def test_mask_image():
-    """Image class: testing mask_image."""
-    im = mask_image(objects=[(1, 1, 1)], unit_center=None, unit_radius=None,
-                    shape=(3, 3))
-    assert_array_equal(im.data.data, np.array([[0, 0, 0],
-                                               [0, 1, 0],
-                                               [0, 0, 0]]))
-    im = mask_image(objects=[(1, 1, 1.1)], unit_center=None, unit_radius=None,
-                    shape=(3, 3))
-    assert_array_equal(im.data.data, np.array([[0, 1, 0],
-                                               [1, 1, 1],
-                                               [0, 1, 0]]))

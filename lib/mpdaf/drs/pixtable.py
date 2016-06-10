@@ -4,7 +4,6 @@ from __future__ import absolute_import, division
 
 import ctypes
 import datetime
-import itertools
 import logging
 import os.path
 import numpy as np
@@ -1487,47 +1486,6 @@ class PixTable(object):
         else:
             return self._get_pos_sky(xpos, ypos)
 
-    def get_slices(self, verbose=True):
-        """Return slices dictionary.
-
-        Parameters
-        ----------
-        verbose : bool
-            If True, progression is printed.
-
-        Returns
-        -------
-        out : dict
-        """
-        col_origin = self.get_origin()
-        col_xpos = self.get_xpos()
-        col_ypos = self.get_ypos()
-
-        ifupix, slicepix, ypix, xpix = self.origin2coords(col_origin)
-        ifus = np.unique(ifupix)
-        slices = np.unique(slicepix)
-
-        # build the slicelist
-        slicelist = np.array(list(itertools.product(ifus, slices)))
-
-        # compute mean sky position of each slice
-        skypos = []
-        for ifu, sl in slicelist:
-            k = ((ifupix == ifu) & (slicepix == sl))
-            skypos.append((col_xpos[k].mean(), col_ypos[k].mean()))
-        skypos = np.array(skypos)
-
-        slices = {'list': slicelist, 'skypos': skypos,
-                  'ifupix': ifupix, 'slicepix': slicepix,
-                  'xpix': xpix, 'ypix': ypix}
-
-        if verbose:
-            msg = '%d slices found, structure returned in \
-                   slices dictionary ' % len(slicelist)
-            self._logger.info(msg)
-
-        return slices
-
     def get_keywords(self, key):
         """Return the keyword value corresponding to key.
 
@@ -1554,88 +1512,6 @@ class PixTable(object):
             else:
                 raise
             return self.primary_header[alternate_key]
-
-#     def reconstruct_sky_image(self, lbda=None, step=None):
-#         """Reconstructs the image on the sky from the pixtable.
-#
-#         Parameters
-#         ----------
-#         lbda : (float,float)
-#                (min, max) wavelength range in Angstrom.
-#                If None, the image is reconstructed for all wavelengths.
-#         step : (float,float)
-#                Pixel steps of the final image
-#                (in arcsec if the coordinates of this pixel table
-#                are world coordinates on the sky ).
-#                If None, the value corresponding to the keyword
-#                "HIERARCH ESO INS PIXSCALE" is used.
-#
-#         Returns
-#         -------
-#         out : `~mpdaf.obj.Image`
-#         """
-#         # TODO replace by DRS
-#         # step in arcsec
-#
-#         if step is None:
-#             step = self.get_keywords('HIERARCH ESO OCS IPS PIXSCALE')
-#             if step <= 0:
-#                 raise ValueError('INS PIXSCALE not valid')
-#             xstep = step
-#             ystep = step
-#         else:
-#             ystep, xstep = step
-#
-#         col_dq = self.get_dq()
-#         if lbda is None:
-#             ksel = np.where((col_dq == 0))
-#         else:
-#             l1, l2 = lbda
-#             l1 = l1 * (u.angstrom).to(self.wave)
-#             l2 = l2 * (u.angstrom).to(self.wave)
-#             col_lambda = self.get_lambda()
-#             ksel = np.where((col_dq == 0) & (col_lambda > l1) &
-#                             (col_lambda < l2))
-#             del col_lambda
-#         del col_dq
-#
-#         x = self.get_xpos(ksel) # deg ???
-#         y = self.get_ypos(ksel)
-#         data = self.get_data(ksel)
-#
-#         xmin = np.min(x)
-#         xmax = np.max(x)
-#         ymin = np.min(y)
-#         ymax = np.max(y)
-#
-#         if self.wcs == u.deg:  # arcsec to deg
-#             xstep /= (-3600. * np.cos((ymin + ymax) * np.pi / 180. / 2.))
-#             ystep /= 3600.
-#         elif self.wcs == u.rad:  # arcsec to rad
-#             xstep /= (-3600. * 180. / np.pi * np.cos((ymin + ymax) / 2.))
-#             ystep /= (3600. * 180. / np.pi)
-#         else:  # pix
-#             pass
-#
-#         nx = 1 + int((xmin - xmax) / xstep)
-#         grid_x = np.arange(nx) * xstep + xmax
-#         ny = 1 + int((ymax - ymin) / ystep)
-#         grid_y = np.arange(ny) * ystep + ymin
-#         shape = (ny, nx)
-#
-#         points = np.empty((len(ksel[0]), 2), dtype=float)
-#         points[:, 0] = y
-#         points[:, 1] = x
-#
-#         from scipy import interpolate
-#         new_data = interpolate.griddata(points, data,
-#                                         np.meshgrid(grid_y, grid_x),
-#                                         method='linear').T
-#
-#         wcs = WCS(crpix=(1.0, 1.0), crval=(ymin, xmax),
-#                   cdelt=(ystep, xstep), shape=shape)
-#         ima = Image(data=new_data, wcs=wcs, unit=self.data_unit)
-#         return ima
 
     def reconstruct_det_image(self, xstart=None, ystart=None,
                               xstop=None, ystop=None):

@@ -23,7 +23,6 @@ The various software required are:
 Some additional libraries can be installed for optional features:
 
  * `Nose <http://pypi.python.org/pypi/nose/>`_, to run the unit tests.
- * `Pillow <http://pypi.python.org/pypi/Pillow>`_, Python imaging library, to read jpg or png images.
  * `Numexpr <http://pypi.python.org/pypi/numexpr>`_, to optimize some computations with pixtables.
  * ``pkg-config`` tool (helper tool used when compiling C libraries)
  * `CFITSIO <http://heasarc.gsfc.nasa.gov/fitsio/>`_ (C library for reading and writing FITS files)
