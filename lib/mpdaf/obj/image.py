@@ -1203,8 +1203,8 @@ class Image(DataArray):
         sy, sx = circular_bounding_box(center, radius, self.shape)
 
         # Require that the image be at least minsize x minsize pixels.
-        if (sy.stop - sy.start + 1) < minsize or \
-           (sx.stop - sx.start + 1) < minsize:
+        if (sy.stop - sy.start + 1) < minsize[0] or \
+           (sx.stop - sx.start + 1) < minsize[1]:
             return None
 
         # Return the selected region.
