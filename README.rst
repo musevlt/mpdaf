@@ -9,3 +9,11 @@ A `Gitlab <https://git-cral.univ-lyon1.fr/MUSE/mpdaf>`_ instance is used for
 development, download and tickets.
 
 
+MPDAF documentation
+-------------------
+
+`MPDAF v1.2 <http://urania1.univ-lyon1.fr/mpdaf/chrome/site/DocCoreLib/index.html>`_
+
+`MPDAF dev <http://urania1.univ-lyon1.fr/mpdaf/chrome/site/DocCoreLib_dev/index.html>`_
+
+
