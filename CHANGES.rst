@@ -62,6 +62,15 @@ New Features
 Breaking changes
 ~~~~~~~~~~~~~~~~
 
+* Remove unused methods
+
+   - remove the peak detection on a spectrum (peak_detection)
+   - remove iterative methods of Spectrum and Image classes
+   - remove filter methods on images (minimum_filter, maximum_filter, median_filter)
+   - remove Image.sum
+   - remove methods to create images (mask_image, composite_image, make_image)
+   - remove PixTable.get_slices
+
 * Remove submodules *ZAP* and *GALPAK*.
 
   - `ZAP <https://github.com/ktsoto/zap>`_ is now publicly available.
