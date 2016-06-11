@@ -103,7 +103,7 @@ def circular_bounding_box(center, radius, shape):
     imax, jmax = np.clip((center + radius).astype(int), (0, 0), shape)
     return slice(imin, imax + 1), slice(jmin, jmax + 1)
 
-def elliptical_bounding_box(center, radii, posangle, shape):
+def elliptical_bounding_box(center, radii, posangle, shape, step):
     """Return Y-axis and X-axis slice objects that select a rectangular
        image region that just encloses an ellipse of a specified center
        position and specified Y-axis and X-axis radii.
@@ -117,8 +117,9 @@ def elliptical_bounding_box(center, radii, posangle, shape):
        The floating point array indexes of the centre of the circle,
        in the order, y,x.
     radii : float,float
-       The radii of the orthogonal axes of the ellipse.  When posangle
-       is zero, radius[0] is the radius along the X axis of the
+       The radii of the orthogonal axes of the ellipse, in the same
+       world-coordinate units as the step argument.  When posangle is
+       zero, radius[0] is the radius along the X axis of the
        image-array, and radius[1] is the radius along the Y axis of
        the image-array.
     posangle : float
@@ -129,6 +130,9 @@ def elliptical_bounding_box(center, radii, posangle, shape):
        respectively.
     shape  : int, int
        The dimensions of the image array.
+    step   : float, float
+       The world-coordinate pixel size along the Y and X axes of
+       the image array.
 
     Returns
     -------
@@ -140,13 +144,16 @@ def elliptical_bounding_box(center, radii, posangle, shape):
 
     # If only one radius is specified, treat this as a cirle.
     if is_number(radii):
-        return circular_bounding_box(center, radii, shape)
+        rx, ry = r, r
     else:
         rx, ry = radii
 
     # Ensure that the Y and X coordinates of the central position
     # can be used in numpy array equations.
     center = np.asarray(center)
+
+    # Ensure that the pixel sizes are in a numpy array as well.
+    step = np.asarray(step)
 
     # Convert the position angle to radians and precompute the sine and
     # cosine of this.
@@ -174,14 +181,16 @@ def elliptical_bounding_box(center, radii, posangle, shape):
     xmax = np.abs(rx * np.cos(t_xmax) * cos_pa - ry * np.sin(t_xmax) * sin_pa)
     ymax = np.abs(rx * np.cos(t_ymax) * sin_pa + ry * np.sin(t_ymax) * cos_pa)
 
-    # Place these values in an array.
-    r = np.array([ymax, xmax])
+    # Place the half-height and half-width in an array, then divide them
+    # by the pixel sizes along the Y and X axes to convert them to
+    # pixel counts.
+    w = np.array([ymax, xmax]) / step
 
     # Determine the index ranges along the X and Y axes of the image
     # array that enclose the extent of the ellipse centered at center.
     shape = np.asarray(shape) - 1
-    imin, jmin = np.clip((center - r).astype(int), (0, 0), shape)
-    imax, jmax = np.clip((center + r).astype(int), (0, 0), shape)
+    imin, jmin = np.clip((center - w).astype(int), (0, 0), shape)
+    imax, jmax = np.clip((center + w).astype(int), (0, 0), shape)
 
     # Turn these ranges into slice objects.
     return slice(imin, imax + 1), slice(jmin, jmax + 1)

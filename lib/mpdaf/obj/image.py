@@ -950,13 +950,22 @@ class Image(DataArray):
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
 
-        # Convert the radii from world-coordinates to pixel counts.
-        if unit_radius is not None:
-            radius = radius / self.wcs.get_step(unit=unit_radius)
+        # Get the pixel sizes in the units of the radii.
+        if unit_radius is None:
+            step = np.array([1.0, 1.0])     # Pixel counts
+        else:
+            step = self.wcs.get_step(unit=unit_radius)
+
+        # Get the two radii in the form of a numpy array.
+        if is_number(radius):
+            radii = np.array([radius, radius])
+        else:
+            radii = np.asarray(radius)
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        sy, sx = elliptical_bounding_box(center, radius, posangle, self.shape)
+        sy, sx = elliptical_bounding_box(center, radii, posangle, self.shape,
+                                         step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
@@ -981,9 +990,10 @@ class Image(DataArray):
         # ellipse and > 1 for pixels outside the ellipse.
         #
         #   k = (xp / rx)**2 + (yp / ry)**2
-        grid = np.mgrid[sy, sx] - center[:, np.newaxis, np.newaxis]
-        ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
-                ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2)
+        x, y = np.meshgrid((np.arange(sx.start, sx.stop) - center[1]) * step[1],
+                           (np.arange(sy.start, sy.stop) - center[0]) * step[0])
+        ksel = (((x * cospa + y * sinpa) / radii[0]) ** 2 +
+                ((y * cospa - x * sinpa) / radii[1]) ** 2)
 
         if inside:
             self.data[sy, sx][ksel < 1] = np.ma.masked
