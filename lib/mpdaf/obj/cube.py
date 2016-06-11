@@ -104,12 +104,37 @@ def _print_multiprocessing_progress(processresult, num_tasks):
 
 class Cube(DataArray):
 
-    """This class manages Cube objects.
+    """This class manages Cube objects, which contain images at multiple
+    wavelengths. The images are stored in 3D numpy.ndarray arrays. The
+    axes of these arrays are, image wavelength, image y-axis, image
+    x-axis. For MUSE images, the y-axis is typically aligned with the
+    declination axis on the sky, but in general the y and x axes are
+    not aligned with either declination or right-ascension. The actual
+    orientation can be queried via the get_rot() method.
+
+    The 3D cube of images is contained in a property of the cube
+    called .data. There is also a .var member. When variances are
+    available, .var is a 3D array that contains the variances of each
+    pixel in the .data array. When variances have not been provided,
+    the .var member is given the value, None.
+
+    The .data and the .var are either numpy masked arrays or numpy
+    ndarrays. When they are masked arrays, their shared mask can also
+    be accessed separately via the .mask member, which holds a 3D
+    array of bool elements. When .data and .var are normal
+    numpy.ndarrays, the .mask member is given the value
+    numpy.ma.nomask.
+
+    When a new DataArray object is created, the data, variance and
+    mask arrays can either be specified as arguments, or the name
+    of a FITS file can be provided to load them from.
 
     Parameters
     ----------
     filename : str
-        Optional FITS file name. None by default.
+        An optional FITS file name from which to load the cube.
+        None by default. This argument is ignored if the data
+        argument is not None.
     ext : int or (int,int) or str or (str,str)
         The optional number/name of the data extension
         or the numbers/names of the data and variance extensions.
