@@ -552,24 +552,36 @@ class Cube(DataArray):
         return self.__add__(other)
 
     def __sub__(self, other):
-        """Subtract other.
+        """Subtracted a specified other object from a Cube.
 
-        cube1 - number = cube2 (cube2[k,p,q]=cube1[k,p,q]-number)
+        When subtracting a non-MPDAF item from a cube, the subtracted
+        item can be a scalar number, or it can be a numpy ndarray or
+        masked array whose dimensions are either equal to those of the
+        Cube, or can be broadcast to those dimensions.
 
-        cube1 - cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]-cube2[k,p,q])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
+          cube1 - number = cube2  (cube2[k,p,q] = cube1[k,p,q] - number)
 
-        cube1 - image = cube2 (cube2[k,p,q]=cube1[k,p,q]-image[p,q])
-        The first two dimensions of cube1 must be equal
-        to the image dimensions.
-        If not equal to None, world coordinates
-        in spatial directions must be the same.
+        When the other object to be subtracted is an MPDAF Cube, this
+        Cube must have the same dimensions, the same wavelength
+        world-coordinates and the same spatial world-coordinates as
+        the Cube that is being subtracted from.
 
-        cube1 - spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]-spectrum[k])
-        The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates
-        in spectral direction must be the same.
+          cube1 - cube2 = cube3  (cube3[k,p,q] = cube1[k,p,q] - cube2[k,p,q])
+
+        When the other object to be subtracted is an MPDAF Image, the
+        dimensions and spatial world-coordinates of this image must
+        equal the dimensions and spatial world-coordinates of the
+        images in the cube. The image is then subtracted separately
+        from each image in the cube.
+
+          cube1 - image = cube2  (cube2[k,p,q] = cube1[k,p,q] - image[p,q])
+
+        When the other object to be subtracted is an MPDAF Spectrum,
+        the array-dimension and wavelength world-coordinates of this
+        spectrum must match those of the wavelength axis of the cube.
+
+          cube1 - spectrum = cube2  (cube2[k,p,q] = cube1[k,p,q] - spectrum[k])
+
         """
         if not isinstance(other, DataArray):
             try:
@@ -579,12 +591,18 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
+
+            # When subtracting a Spectrum or a Cube, check that its
+            # wavelength dimension and world-coordinates match.
             if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
                         and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes '
                                   'with different world coordinates '
                                   'in spectral direction')
+
+            # When subtracting an Image or Cube, check that its spatial
+            # dimensions and spatial world-coordinates match.
             if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
                         and not self.wcs.isEqual(other.wcs):
@@ -592,6 +610,7 @@ class Cube(DataArray):
                                   'with different world coordinates '
                                   'in spatial directions')
 
+            # Subtract a Spectrum from the Cube?
             if other.ndim == 1:
                 # cube1 - spectrum = cube2
                 if other.shape[0] != self.shape[0]:
@@ -623,6 +642,8 @@ class Cube(DataArray):
                                 + UnitArray(other._var[:, np.newaxis, np.newaxis],
                                             other.unit**2, self.unit**2)
                 return res
+
+            # Subtract an Image from the Cube?
             elif other.ndim == 2:
                 # cube1 - image = cube2 (cube2[k,j,i]=cube1[k,j,i]-image[j,i])
                 if self.shape[2] != other.shape[1] \
@@ -652,6 +673,8 @@ class Cube(DataArray):
                             res._var = self._var + UnitArray(other._var[np.newaxis, :, :],
                                                              other.unit**2, self.unit**2)
                 return res
+
+            # Subtract a Cube from the Cube?
             else:
                 # cube1 - cube2 = cube3 (cube3[k,j,i]=cube1[k,j,i]-cube2[k,j,i])
                 if self.shape[0] != other.shape[0] \
