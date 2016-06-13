@@ -28,8 +28,7 @@ from astropy.constants import c
 from astropy.units import Quantity
 
 __all__ = ('is_float', 'is_int', 'is_number', 'flux2mag', 'mag2flux',
-           'UnitArray', 'UnitMaskedArray', 'circular_bounding_box',
-           'elliptical_bounding_box')
+           'UnitArray', 'UnitMaskedArray', 'bounding_box')
 
 
 def is_float(x):
@@ -70,65 +69,45 @@ def mag2flux(mag, wave):
     return 10 ** (-0.4 * (mag + 48.60)) * cs / wave ** 2
 
 
-def circular_bounding_box(center, radius, shape):
-    """Return Y-axis and X-axis slice objects that select a square
-       image region that just encloses a circle of a specified center
-       and radius.
+def bounding_box(form, center, radii, posangle, shape, step):
 
-       If the circle is partly outside of the image array, the
-       returned slices are clipped at the edges of the array.
+    """Return Y-axis and X-axis slice objects that bound a rectangular
+    image region that just encloses either an ellipse or a rectangle,
+    that has a specified center position, Y-axis and X-axis
+    radii, and a given rotation angle relative to the image axes.
 
-    Parameters
-    ----------
-    center : float, float
-       The floating point array indexes of the centre of the circle,
-       in the order, y,x.
-    radius : float
-       The radius of the circle (number of pixels).
-    shape  : int, int
-       The dimensions of the image array.
-
-    Returns
-    -------
-    out : slice, slice
-       The Y-axis and X-axis slices needed to select a square region
-       of the image that just encloses the circle.
-
-    """
-
-    center = np.asarray(center)
-    radius = np.asarray(radius)
-    shape = np.asarray(shape) - 1
-    imin, jmin = np.clip((center - radius).astype(int), (0, 0), shape)
-    imax, jmax = np.clip((center + radius).astype(int), (0, 0), shape)
-    return slice(imin, imax + 1), slice(jmin, jmax + 1)
-
-def elliptical_bounding_box(center, radii, posangle, shape):
-    """Return Y-axis and X-axis slice objects that select a rectangular
-       image region that just encloses an ellipse of a specified center
-       position and specified Y-axis and X-axis radii.
-
-       If the ellipse is partly outside of the image array, the
-       returned slices are clipped at the edges of the array.
+    If the ellipse or rectangle is partly outside of the image array,
+    the returned slices are clipped at the edges of the array.
 
     Parameters
     ----------
+    form   : str
+       The type of region whose rectangle image bounds are needed,
+       chosen from:
+         "rectangle" -  A rotated rectangle or square.
+         "ellipse"   -  A rotated ellipse or circle.
     center : float, float
        The floating point array indexes of the centre of the circle,
        in the order, y,x.
-    radii : float,float
-       The radii of the orthogonal axes of the ellipse.  When posangle
-       is zero, radius[0] is the radius along the X axis of the
-       image-array, and radius[1] is the radius along the Y axis of
-       the image-array.
+    radii : float or float,float
+       The half-width and half-height of the ellipse or
+       rectangle. When the posangle is zero, the width and height are
+       parallel to the X and Y axes of the image array, respectively.
+       More generally, the width and height are along directions that
+       are posangle degrees counterclockwise of the X axis and Y axis,
+       respectively. If only one number is specified, then the width
+       and the height are both given that value.
     posangle : float
-       The counterclockwise position angle of the ellipse.  When
-       posangle is 0 degrees (the default), the X and Y axes of the
-       ellipse lie along the X and Y axes of the image, and the radius
-       values in the radii argument lie along the X and Y axes,
-       respectively.
+       The counterclockwise rotation angle of the chosen shape, in
+       degrees. When posangle is 0 degrees, the width and height of
+       the shape are along the X and Y axes of the image. Non-zero
+       values of posangle rotate the chosen shape anti-clockwise
+       of that position.
     shape  : int, int
        The dimensions of the image array.
+    step   : float, float
+       The per-pixel world-coordinate increments along the Y and X axes
+       of the image array, or [1.0,1.0] if radii is in pixels.
 
     Returns
     -------
@@ -138,9 +117,10 @@ def elliptical_bounding_box(center, radii, posangle, shape):
 
     """
 
-    # If only one radius is specified, treat this as a cirle.
-    if is_number(radii):
-        return circular_bounding_box(center, radii, shape)
+    # If only one radius is specified, use it as both the half-width and
+    # the half-height.
+    if np.isscalar(radii):
+        rx, ry = radii, radii
     else:
         rx, ry = radii
 
@@ -148,42 +128,61 @@ def elliptical_bounding_box(center, radii, posangle, shape):
     # can be used in numpy array equations.
     center = np.asarray(center)
 
+    # Ensure that the pixel sizes are in a numpy array as well.
+    step = np.asarray(step)
+
     # Convert the position angle to radians and precompute the sine and
     # cosine of this.
     pa = np.radians(posangle)
     sin_pa = np.sin(pa)
     cos_pa = np.cos(pa)
 
-    # We use the following parametric equations for an unrotated
-    # ellipse with x and y along the image-array X and Y axes, where t
-    # is a parametric angle with no physical equivalent:
-    #   x(pa=0) = rx * cos(t)
-    #   y(pa=0) = ry * sin(t)
-    # We then rotate this anti-clockwise by pa:
-    #   x(pa)  =  |cos(pa), -sin(pa)| |rx * cos(t)|
-    #   y(pa)     |sin(pa),  cos(pa)| |ry * cos(t)|
-    # By differentiating the resulting equations of x(pa) and y(pa) by
-    # dt and setting the derivatives to zero, we obtain the following
-    # values for the angle t at which x(pa) and y(pa) are maximized.
-    t_xmax = np.arctan2(-ry * sin_pa, rx * cos_pa)
-    t_ymax = np.arctan2( ry * cos_pa, rx * sin_pa)
+    # Get the bounding box of a rotated rectangle?
+    if form=="rectangle":
+        # Calculate the maximum of the X-axis and Y-axis distances of the
+        # corners of the rotated rectangle from the rectangle's center.
+        xmax = abs(rx * cos_pa) + abs(ry * sin_pa)
+        ymax = abs(rx * sin_pa) + abs(ry * cos_pa)
 
-    # Compute the half-width and half-height of the rectangle that
-    # encloses the ellipse, by computing the X and Y values,
-    # respectively, of the ellipse at the above angles.
-    xmax = np.abs(rx * np.cos(t_xmax) * cos_pa - ry * np.sin(t_xmax) * sin_pa)
-    ymax = np.abs(rx * np.cos(t_ymax) * sin_pa + ry * np.sin(t_ymax) * cos_pa)
+    # Get the bounding box of a rotated ellipse?
+    elif form=="ellipse":
+        # We use the following parametric equations for an unrotated
+        # ellipse with x and y along the image-array X and Y axes, where t
+        # is a parametric angle with no physical equivalent:
+        #   x(pa=0) = rx * cos(t)
+        #   y(pa=0) = ry * sin(t)
+        # We then rotate this anti-clockwise by pa:
+        #   x(pa)  =  |cos(pa), -sin(pa)| |rx * cos(t)|
+        #   y(pa)     |sin(pa),  cos(pa)| |ry * cos(t)|
+        # By differentiating the resulting equations of x(pa) and y(pa) by
+        # dt and setting the derivatives to zero, we obtain the following
+        # values for the angle t at which x(pa) and y(pa) are maximized.
+        t_xmax = np.arctan2(-ry * sin_pa, rx * cos_pa)
+        t_ymax = np.arctan2( ry * cos_pa, rx * sin_pa)
 
-    # Place these values in an array.
-    r = np.array([ymax, xmax])
+        # Compute the half-width and half-height of the rectangle that
+        # encloses the ellipse, by computing the X and Y values,
+        # respectively, of the ellipse at the above angles.
+        xmax = np.abs(rx * np.cos(t_xmax) * cos_pa -
+                      ry * np.sin(t_xmax) * sin_pa)
+        ymax = np.abs(rx * np.cos(t_ymax) * sin_pa +
+                      ry * np.sin(t_ymax) * cos_pa)
+    else:
+        raise ValueError("The form argument should be 'rectangle' or 'ellipse'")
+
+    # Arrange the half-height and half-width in an array, then divide
+    # them by the pixel sizes along the Y and X axes to convert them
+    # to pixel counts.
+    w = np.array([ymax, xmax]) / step
 
     # Determine the index ranges along the X and Y axes of the image
-    # array that enclose the extent of the ellipse centered at center.
-    shape = np.asarray(shape) - 1
-    imin, jmin = np.clip((center - r).astype(int), (0, 0), shape)
-    imax, jmax = np.clip((center + r).astype(int), (0, 0), shape)
+    # array that enclose the rotated width and height of the rotated
+    # shape.
+    max_indexes = np.asarray(shape) - 1
+    imin, jmin = np.clip((center - w).astype(int), (0, 0), max_indexes)
+    imax, jmax = np.clip((center + w).astype(int), (0, 0), max_indexes)
 
-    # Turn these ranges into slice objects.
+    # Return the ranges as slice objects.
     return slice(imin, imax + 1), slice(jmin, jmax + 1)
 
 

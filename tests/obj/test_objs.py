@@ -6,7 +6,7 @@ import numpy as np
 from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
 
-from mpdaf.obj.objs import (is_float, is_int, circular_bounding_box, flux2mag,
+from mpdaf.obj.objs import (is_float, is_int, bounding_box, flux2mag,
                             mag2flux, UnitArray, UnitMaskedArray)
 
 
@@ -42,27 +42,32 @@ def test_unit_masked_array():
 
 
 @attr(speed='fast')
-def test_circular_bounding_box():
+def test_bounding_box():
     shape = (4, 5)
     center = (2, 2)
 
     for radius in (1, (1, 1)):
-        sy, sx = circular_bounding_box(center, radius, shape)
+        sy, sx = bounding_box("rectangle", center, radius, posangle=0.0,
+                              shape=shape, step=[1.0,1.0])
         nose.tools.assert_equal(sx, slice(1, 4))
         nose.tools.assert_equal(sy, slice(1, 4))
 
-    sy, sx = circular_bounding_box((2, 2), (3, 3), shape)
+    sy, sx = bounding_box("rectangle", (2, 2), (3, 3), posangle=0.0, shape=shape,
+                          step=[1.0,1.0])
     nose.tools.assert_equal(sy, slice(0, 4))
     nose.tools.assert_equal(sx, slice(0, 5))
 
-    sy, sx = circular_bounding_box((0, 0), 1, shape)
+    sy, sx = bounding_box("rectangle", (0, 0), 1, posangle=0.0, shape=shape,
+                          step=[1.0,1.0])
     nose.tools.assert_equal(sy, slice(0, 2))
     nose.tools.assert_equal(sx, slice(0, 2))
 
-    sy, sx = circular_bounding_box((-1, -1), 1, shape)
+    sy, sx = bounding_box("rectangle", (-1, -1), 1, posangle=0.0, shape=shape,
+                          step=[1.0,1.0])
     nose.tools.assert_equal(sy, slice(0, 1))
     nose.tools.assert_equal(sx, slice(0, 1))
 
-    sy, sx = circular_bounding_box((3, 4), 1, shape)
+    sy, sx = bounding_box("rectangle", (3, 4), 1, posangle=0.0, shape=shape,
+                          step=[1.0,1.0])
     nose.tools.assert_equal(sy, slice(2, 4))
     nose.tools.assert_equal(sx, slice(3, 5))

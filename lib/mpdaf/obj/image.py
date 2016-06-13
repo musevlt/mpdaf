@@ -37,9 +37,7 @@ from six.moves import range, zip
 
 from .coords import WCS
 from .data import DataArray
-from .objs import (is_int, is_number, circular_bounding_box,
-                   elliptical_bounding_box,
-                   UnitArray, UnitMaskedArray)
+from .objs import (is_int, is_number, bounding_box, UnitArray, UnitMaskedArray)
 from ..tools import deprecated
 
 __all__ = ('Gauss2D', 'Moffat2D', 'Image', 'gauss_image', 'moffat_image',
@@ -842,68 +840,76 @@ class Image(DataArray):
                                  'the same dimensions')
 
     def mask_region(self, center, radius, unit_center=u.deg,
-                    unit_radius=u.arcsec, inside=True):
+                    unit_radius=u.arcsec, inside=True, posangle=0.0):
         """Mask values inside or outside a circular or rectangular region.
 
         Parameters
         ----------
         center : (float,float)
-            Center (y,x) of the region, where y,x are usually
-            Declination and Right Ascension, but are interpretted
-            as Y,X array indexes if unit_center is None.
+            Center (y,x) of the region, where y,x are usually celestial
+            coordinates along the Y and X axes of the image, but are
+            interpretted as Y,X array-indexes if unit_center is changed
+            to None.
         radius : float or (float,float)
-            The radius or radii of the region.
-            If radius is a single float, it defines a circular region.
-            If radius is (float,float), it defines a rectangular region.
+            The radius of a circular region, or the half-width and
+            half-height of a rectangular region, respectively.
         unit_center : `astropy.units.Unit`
-            type of the center coordinates.
-            Degrees by default (use None for coordinates in pixels).
+            The units of the coordinates of the center argument
+            (degrees by default).  If None, the units of the center
+            argument are assumed to be pixels.
         unit_radius : `astropy.units.Unit`
-            Radius unit. Arcseconds by default (use None for radius in pixels)
+            The units of the radius argument (arcseconds by default).
+            If None, the units are assumed to be pixels.
         inside : bool
-            If inside is True, pixels inside the described region are masked.
-            If inside is False, pixels outside the described region are masked.
+            If inside is True, pixels inside the region are masked.
+            If inside is False, pixels outside the region are masked.
+        posangle : float
+            When the region is rectangular, this is the counter-clockwise
+            rotation angle of the rectangle in degrees. When posangle is
+            0.0 (the default), the X and Y axes of the ellipse are along
+            the X and Y axes of the image.
 
         """
         center = np.array(center)
 
-        # If radius is scalar, convert it to a 2 element array that
-        # has the same radius for the X and Y axes, but keep a record
-        # of the fact that this was a single radius describing a circle.
-        if is_number(radius):
-            circular = True
-            radius2 = radius * radius
-            radius = (radius, radius)
-        else:
-            circular = False
-        radius = np.array(radius)
+        # If the radius argument is a scalar value, this requests
+        # that a circular region be masked. Delegate this to mask_ellipse().
+        if np.isscalar(radius):
+            return self.mask_ellipse(center=center, radius=radius, posangle=0.0,
+                                     unit_center=unit_center,
+                                     unit_radius=unit_radius,
+                                     inside=inside)
 
         # If the units of the center are not already in pixels, convert
         # them to pixels.
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
 
-        # If the radius units are not already pixels, convert them into
-        # pixels, taking account of the possibility that pixels can be
-        # rectangular.
-        if unit_radius is not None:
-            radius = radius / self.wcs.get_step(unit=unit_radius)
-            radius2 = radius[0] * radius[1]
+        # Get the pixel sizes in the units of the radius argument.
+        if unit_radius is None:
+            step = np.array([1.0, 1.0])     # Pixel counts
+        else:
+            step = self.wcs.get_step(unit=unit_radius)
 
-        # Get Y and X axis slice objects that bound the specified region.
-        sy, sx = circular_bounding_box(center, radius, self.shape)
+        # Treat rotated rectangles as polygons.
+        if not np.isclose(posangle, 0.0):
+            c = np.cos(np.radians(posangle))
+            s = np.sin(np.radians(posangle))
+            hw = radius[0]
+            hh = radius[1]
+            poly = np.array([[-hw*s-hh*c, -hw*c+hh*s],
+                             [-hw*s+hh*c, -hw*c-hh*s],
+                             [+hw*s+hh*c, +hw*c-hh*s],
+                             [+hw*s-hh*c, +hw*c+hh*s]]) / step + center
+            return self.mask_polygon(poly, unit=None, inside=inside)
 
-        # Obtain the radius squared of each pixel from the center.
-        if circular:
-            grid = np.mgrid[sy, sx]
-            ind = ((grid[0] - center[0])**2 + (grid[1] - center[1])**2)
+        # Get Y-axis and X-axis slice objects that bound the rectangular area.
+        sy, sx = bounding_box(form="rectangle", center=center, radii=radius,
+                              posangle=0.0, shape=self.shape, step=step)
 
         # Mask pixels inside the region.
         if inside:
-            if circular:
-                self.data[sy, sx][ind < radius2] = np.ma.masked
-            else:
-                self.data[sy, sx] = np.ma.masked
+            self.data[sy, sx] = np.ma.masked
 
         # Mask pixels outside the region.
         else:
@@ -911,8 +917,6 @@ class Image(DataArray):
             self.data[sy.stop:, :] = np.ma.masked
             self.data[sy, 0:sx.start] = np.ma.masked
             self.data[sy, sx.stop:] = np.ma.masked
-            if circular:
-                self.data[sy, sx][ind > radius2] = np.ma.masked
 
     def mask_ellipse(self, center, radius, posangle, unit_center=u.deg,
                      unit_radius=u.arcsec, inside=True):
@@ -921,16 +925,17 @@ class Image(DataArray):
         Parameters
         ----------
         center : (float,float)
-            The center (y,x) of the region, where y,x are usually
-            Declination and Right Ascension, but are interpretted
-            as Y,X array indexes if unit_center is None.
+            Center (y,x) of the region, where y,x are usually celestial
+            coordinates along the Y and X axes of the image, but are
+            interpretted as Y,X array-indexes if unit_center is changed
+            to None.
         radius : (float,float)
-            The two radii of the orthogonal axes of the ellipse.
+            The radii of the two orthogonal axes of the ellipse.
             When posangle is zero, radius[0] is the radius along
             the X axis of the image-array, and radius[1] is
             the radius along the Y axis of the image-array.
         posangle : float
-            The counter-clockwise position angle of the ellipse in
+            The counter-clockwise rotation angle of the ellipse in
             degrees. When posangle is zero, the X and Y axes of the
             ellipse are along the X and Y axes of the image.
         unit_center : `astropy.units.Unit`
@@ -945,18 +950,26 @@ class Image(DataArray):
 
         """
         center = np.array(center)
-        radius = np.array(radius)
-
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
 
-        # Convert the radii from world-coordinates to pixel counts.
-        if unit_radius is not None:
-            radius = radius / self.wcs.get_step(unit=unit_radius)
+        # Get the pixel sizes in the units of the radius argument.
+        if unit_radius is None:
+            step = np.array([1.0, 1.0])     # Pixel counts
+        else:
+            step = self.wcs.get_step(unit=unit_radius)
+
+        # Get the two radii in the form of a numpy array.
+        if np.isscalar(radius):
+            radii = np.array([radius, radius])
+        else:
+            radii = np.asarray(radius)
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        sy, sx = elliptical_bounding_box(center, radius, posangle, self.shape)
+        sy, sx = bounding_box(form="ellipse", center=center, radii=radii,
+                              posangle=posangle,
+                              shape=self.shape, step=step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
@@ -981,9 +994,10 @@ class Image(DataArray):
         # ellipse and > 1 for pixels outside the ellipse.
         #
         #   k = (xp / rx)**2 + (yp / ry)**2
-        grid = np.mgrid[sy, sx] - center[:, np.newaxis, np.newaxis]
-        ksel = (((grid[1] * cospa + grid[0] * sinpa) / radius[0]) ** 2 +
-                ((grid[0] * cospa - grid[1] * sinpa) / radius[1]) ** 2)
+        x, y = np.meshgrid((np.arange(sx.start, sx.stop) - center[1]) * step[1],
+                           (np.arange(sy.start, sy.stop) - center[0]) * step[0])
+        ksel = (((x * cospa + y * sinpa) / radii[0]) ** 2 +
+                ((y * cospa - x * sinpa) / radii[1]) ** 2)
 
         if inside:
             self.data[sy, sx][ksel < 1] = np.ma.masked
@@ -1173,7 +1187,7 @@ class Image(DataArray):
             The center (dec, ra) of the square region. If this position
             is not within the parent image, None is returned.
         size : float or (float,float)
-            The width of a square region, or the height and width of
+            The width of a square region, or the width and height of
             a rectangular region.
         unit_center : `astropy.units.Unit`
             The units of the center coordinates.
@@ -1209,19 +1223,21 @@ class Image(DataArray):
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
 
-        # Convert the sizes from world coordinates to pixel counts,
-        # taking account of the possibility that pixels can be rectangular.
-        if unit_size is not None:
+        # Get the pixel sizes in the units of the size argument.
+        if unit_size is None:
+            step = np.array([1.0, 1.0])     # Pixel counts
+        else:
             step = self.wcs.get_step(unit=unit_size)
-            size = size / step
-            minsize = minsize / step
-        elif is_number(minsize):
-            minsize = np.array([minsize, minsize])
+
+        # Convert the minimum size from world coordinates to pixel counts,
+        # taking account of the possibility that pixels can be rectangular.
+        minsize /= step
 
         # Convert the width and height of the region to radii, and
         # get Y-axis and X-axis slice objects that select this region.
         radius = size / 2.
-        sy, sx = circular_bounding_box(center, radius, self.shape)
+        sy, sx = bounding_box(form="rectangle", center=center, radii=radius,
+                              posangle=0.0, shape=self.shape, step=step)
 
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \
