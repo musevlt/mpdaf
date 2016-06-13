@@ -623,10 +623,14 @@ class Source(object):
                  key, spe.shape[0], start, end, data, noise)
 
         for key, ima in six.iteritems(self.images):
+            data = '' if ima.data is None else '.data'
+            noise = '' if ima.var is None else '.var'
             info("images['%s'], %i X %i %s %s rot=%0.1f deg", key,
                  ima.shape[0], ima.shape[1], data, noise, ima.wcs.get_rot())
 
         for key, cub in six.iteritems(self.cubes):
+            data = '' if cub.data is None else '.data'
+            noise = '' if cub.var is None else '.var'
             info("cubes['%s'], %i X %i X %i %s %s rot=%0.1f deg", key,
                  cub.shape[0], cub.shape[1], cub.shape[2], data, noise,
                  cub.wcs.get_rot())
