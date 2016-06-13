@@ -718,24 +718,52 @@ class Cube(DataArray):
             return other.__sub__(self)
 
     def __mul__(self, other):
-        """Multiply by other.
+        """Multiply a Cube by a specified other object.
 
-        cube1 * number = cube2 (cube2[k,p,q]=cube1[k,p,q]*number)
+        When multiplying the Cube by a non-MPDAF object, the
+        object can be a scalar number, or it can be a numpy ndarray or
+        masked array whose dimensions are either equal to those of the
+        Cube, or can be broadcast to those dimensions. The data is scaled
+        by the specified number(s). Any variances in the cube
+        are scaled by the square of the number(s).
 
-        cube1 * cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]*cube2[k,p,q])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
+          cube1 * number = cube2  (cube2[k,p,q] = cube1[k,p,q] * number)
 
-        cube1 * image = cube2 (cube2[k,p,q]=cube1[k,p,q]*image[p,q])
-        The first two dimensions of cube1 must be equal
-        to the image dimensions.
-        If not equal to None, world coordinates
-        in spatial directions must be the same.
+        When multiplying the Cube by another MPDAF Cube, the two cubes
+        must have the same dimensions, the same wavelength
+        world-coordinates and the same spatial world-coordinates. The
+        resulting Cube contains the product of the data in the two
+        cubes. The corresponding variances, if any, are propagated
+        under the assumption that the data in the two Cubes are
+        independent. The final pixel units are the product of the
+        units of the two input Cubes.
 
-        cube1 * spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]*spectrum[k])
-        The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates
-        in spectral direction must be the same.
+          cube1 * cube2 = cube3  (cube3[k,p,q] = cube1[k,p,q] * cube2[k,p,q])
+
+        When multiplying the Cube by an MPDAF Image, the dimensions
+        and spatial world-coordinates of this image must equal the
+        dimensions and spatial world-coordinates of the images in the
+        cube. Each image in the cube is then multiplied by the other
+        image. For each channel this is done by recording the products
+        of the two images, then combining any variances recorded with
+        the input Cube and Image, under the assumption that the data
+        in the two Cubes are independent. The final pixel units are
+        the product of the units of the Cube and the Image.
+
+          cube1 * image = cube2  (cube2[k,p,q] = cube1[k,p,q] * image[p,q])
+
+        When multiplying the Cube by an MPDAF Spectrum, the
+        array-dimension and wavelength world-coordinates of this
+        spectrum must match those of the wavelength axis of the cube.
+        The spectrum of each image pixel in the cube is separately
+        multiplied by the specified Spectrum. This involves
+        multiplying the pixel values of the two spectra, and
+        propagating their variances, if any, under the assumption that
+        they are independent measurements. The final pixel units are the
+        product of the units of the Cube and the Spectrum.
+
+          cube1 * spectrum = cube2  (cube2[k,p,q] = cube1[k,p,q] * spectrum[k])
+
         """
         if not isinstance(other, DataArray):
             try:
@@ -747,18 +775,25 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
+            # When multiplying by a Spectrum or a Cube, check that its
+            # wavelength dimension and world-coordinates match.
             if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
                         and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spectral direction')
+
+            # When multiplying by an Image or Cube, check that its spatial
+            # dimensions and spatial world-coordinates match.
             if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
                         and not self.wcs.isEqual(other.wcs):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spatial directions')
+
+            # Multiply the Cube by a Spectrum?
             if other.ndim == 1:
                 # cube1 * spectrum = cube2
                 if other.shape[0] != self.shape[0]:
@@ -785,6 +820,8 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit * other.unit
                 return res
+
+            # Multiply the Cube by an Image?
             elif other.ndim == 2:
                 # cube1 * image = cube2 (cube2[k,j,i]=cube1[k,j,i]*image[j,i])
                 if self.shape[2] != other.shape[1] \
@@ -811,6 +848,8 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit * other.unit
                 return res
+
+            # Multiply the Cube by another Cube?
             else:
                 # cube1 * cube2 = cube3
                 if self.shape[0] != other.shape[0] \
@@ -839,25 +878,52 @@ class Cube(DataArray):
         return self.__mul__(other)
 
     def __div__(self, other):
-        """Divide by other.
+        """Divide a Cube by a specified other object.
 
-        cube1 / number = cube2 (cube2[k,p,q]=cube1[k,p,q]/number)
+        When dividing the Cube by a non-MPDAF object, the object can
+        be a scalar number, or it can be a numpy ndarray or masked
+        array whose dimensions are either equal to those of the Cube,
+        or can be broadcast to those dimensions. The data is divided
+        by the specified number(s). Any variances in the cube are
+        divided by the square of the number(s).
 
-        cube1 / cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]/cube2[k,p,q])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
+          cube1 / number = cube2  (cube2[k,p,q] = cube1[k,p,q] / number)
 
-        cube1 / image = cube2
-        (cube2[k,p,q]=cube1[k,p,q]/image[p,q])
-        The first two dimensions of cube1 must be equal
-        to the image dimensions.
-        If not equal to None, world coordinates
-        in spatial directions must be the same.
+        When dividing the Cube by another MPDAF Cube, the two cubes
+        must have the same dimensions, the same wavelength
+        world-coordinates and the same spatial world-coordinates. The
+        resulting Cube contains the quotient of the data in the two
+        cubes. The corresponding variances, if any, are propagated
+        under the assumption that the data in the two Cubes are
+        independent. The final pixel units are the quotient of the
+        units of the parent Cube with the units of the other Cube.
 
-        cube1 / spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]/spectrum[k])
-        The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates
-        in spectral direction must be the same.
+          cube1 / cube2 = cube3  (cube3[k,p,q] = cube1[k,p,q] / cube2[k,p,q])
+
+        When dividing the Cube by an MPDAF Image, the dimensions
+        and spatial world-coordinates of this image must equal the
+        dimensions and spatial world-coordinates of the images in the
+        cube. Each image in the cube is then divided by the other
+        image. For each channel this is done by recording the quotient
+        of the two images, then combining any variances recorded with
+        the input Cube and Image, under the assumption that the data
+        in the two Cubes are independent. The final pixel units are
+        the quotient of the units of the Cube and the Image.
+
+          cube1 / image = cube2  (cube2[k,p,q] = cube1[k,p,q] / image[p,q])
+
+        When dividing the Cube by an MPDAF Spectrum, the
+        array-dimension and wavelength world-coordinates of this
+        spectrum must match those of the wavelength axis of the cube.
+        The spectrum of each image pixel in the cube is separately
+        divided by the specified Spectrum. This involves
+        dividing the pixel values of the two spectra, and
+        propagating their variances, if any, under the assumption that
+        they are independent measurements. The final pixel units are the
+        quotient of the units of the Cube and the Spectrum.
+
+          cube1 / spectrum = cube2  (cube2[k,p,q] = cube1[k,p,q] / spectrum[k])
+
         """
         if not isinstance(other, DataArray):
             try:
@@ -869,18 +935,24 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
+            # When dividing by a Spectrum or a Cube, check that its
+            # wavelength dimension and world-coordinates match.
             if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
                         and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spectral direction')
+
+            # When dividing by an Image or Cube, check that its spatial
+            # dimensions and spatial world-coordinates match.
             if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
                         and not self.wcs.isEqual(other.wcs):
                     raise ValueError('Operation forbidden for cubes '
                                      'with different world coordinates'
                                      ' in spatial directions')
+            # Divide the Cube by a Spectrum?
             if other.ndim == 1:
                 # cube1 / spectrum = cube2
                 if other.shape[0] != self.shape[0]:
@@ -910,6 +982,8 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit / other.unit
                 return res
+
+            # Divide the Cube by an Image?
             elif other.ndim == 2:
                 # cube1 / image = cube2 (cube2[k,j,i]=cube1[k,j,i]/image[j,i])
                 if self.shape[2] != other.shape[1] \
@@ -939,6 +1013,8 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit / other.unit
                 return res
+
+            # Divide the Cube by another Cube?
             else:
                 # cube1 / cube2 = cube3
                 if self.shape[0] != other.shape[0] \
