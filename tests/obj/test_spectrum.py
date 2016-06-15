@@ -198,7 +198,7 @@ def test_resample():
     nose.tools.assert_almost_equal(flux1, flux2)
 
 
-@attr(speed='slow')
+@attr(speed='veryslow')
 def test_resampling_slow():
     """Spectrum class: heavy test of resampling function"""
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
