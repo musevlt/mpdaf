@@ -2740,7 +2740,8 @@ class Cube(DataArray):
         return Image.new_from_obj(subcube, data=data, var=var)
 
     def subcube(self, center, size, lbda=None, unit_center=u.deg,
-                unit_size=u.arcsec, unit_wave=u.angstrom):
+                unit_size=u.arcsec, unit_wave=u.angstrom, posangle=0.0,
+                mask=True):
         """Extracts a sub-cube around a position.
 
         Parameters
@@ -2759,68 +2760,91 @@ class Cube(DataArray):
         unit_wave : `astropy.units.Unit`
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
+        posangle : float
+            The counter-clockwise rotation angle of the selected
+            rectangular region in degrees. When posangle is
+            0.0 (the default), the X and Y axes of the rectangle are
+            along the X and Y axes of the image.
+        mask : bool
+            When the rotation angle is not zero, the images will
+            include some pixels that are not in the requested region.
+            This option controls whether they should be masked. The
+            default is True.
 
         Returns
         -------
         out : `~mpdaf.obj.Cube`
 
         """
-        if size <= 0:
+        # If only the width is given, give the height the same size.
+        if np.isscalar(size):
+            size = np.array([size, size])
+        else:
+            size = np.asarray(size)
+        if size[0] <= 0.0 or size[1] <= 0.0:
             return None
 
+        # Get the central position in pixels.
+        center = np.asarray(center)
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
+
+        # Get the image pixel steps in the units of the size argument.
+        if unit_size is None:
+            step = np.array([1.0, 1.0])     # Pixel counts
         else:
-            center = np.array(center)
-        if unit_size is not None:
-            size = size / self.wcs.get_step(unit=unit_size)[0]
-        radius = size / 2.
+            step = self.wcs.get_step(unit=unit_size)
 
-        if np.any((center - radius + 0.5).astype(int) > self.shape[1:]) or \
-                np.any((center + radius + 0.5).astype(int) < 0):
-            raise ValueError('Region is outside of the cube limits.')
-
-        size = int(size + 0.5)
-        slin, slout = overlap_slices(self.shape[1:], (size, size), center)
-        slout = (slice(None), ) + slout
-
-        if lbda is not None:
+        # Select the whole wavelength range?
+        if lbda is None:
+            lmin = 0
+            lmax = self.shape[0]
+        else:
+            # Get the wavelength range.
             lmin, lmax = lbda
-            if unit_wave is None:
-                kmin = int(lmin + 0.5)
-                kmax = int(lmax + 0.5)
-            else:
-                kmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
-                kmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1
-            nk = kmax - kmin
-            wave = self.wave[kmin:kmax]
-            slin = (slice(kmin, kmax), ) + slin
-        else:
-            nk = self.shape[0]
-            wave = self.wave
-            slin = (slice(None), ) + slin
 
-        subcub = self[slin]
-        data = np.ma.empty((nk, size, size))
-        data[:] = np.nan
-        data[slout] = subcub.data
+            # Convert the minimum wavelength to a wavelength pixel-index.
+            if unit_wave is not None:
+                lmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
 
-        var = None
-        if subcub.var is not None:
-            var = np.full((nk, size, size), np.nan)
-            var[slout] = subcub._var
+            # Convert the maximum wavelength to a wavelength pixel-index.
+            if unit_wave is not None:
+                lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1
 
-        wcs = subcub.wcs
-        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + slout[2].start)
-        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + slout[1].start)
-        wcs.set_naxis1(size)
-        wcs.set_naxis2(size)
+            # Check that the wavelength bounds are usable.
+            if lmin >= self.shape[0] or lmax <= 0:
+                raise ValueError("Wavelength range not in cube")
+            if lmin == lmax:
+                lmax = lmin+1
+            if lmin < 0:
+                lmin = 0
+            if lmax > self.shape[0]:
+                lmax = self.shape[0]
 
-        return Cube(wcs=wcs, wave=wave, unit=self.unit, copy=False,
-                    data=np.ma.masked_invalid(data), var=var,
-                    data_header=self.data_header.copy(),
-                    primary_header=self.primary_header.copy(),
-                    filename=self.filename)
+        # Get Y-axis and X-axis slice objects that bound the rectangular area.
+        sy, sx, center = bounding_box(form="rectangle", center=center,
+                                      radii=size / 2.0, posangle=posangle,
+                                      shape=self.shape[1:], step=step)
+        if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start==sx.stop or
+            sy.start >= self.shape[1] or sy.stop < 0 or sy.start==sy.stop):
+            raise ValueError('sub-cube boundaries are outside the cube')
+
+        # Extract the requested part of the cube.
+        res = self[lmin:lmax, sy, sx]
+
+        # If the area is rotated relative to the image axes, should
+        # we mask pixels outside the requested region?
+        if not np.isclose(posangle, 0.0) and mask:
+
+            # Get the center of the region in the sub-cube.
+            center -= np.array([sy.start, sx.start])
+
+            # Mask pixels outside the selected rectangular region of the sky.
+            res.mask_region(center=center, radius=size / 2.0,
+                            inside=False, unit_center=None,
+                            unit_radius=unit_size, unit_wave=unit_wave,
+                            posangle=posangle)
+        return res
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
                                 unit_radius=u.arcsec):
