@@ -188,7 +188,7 @@ class Cube(DataArray):
 
     def mask_region(self, center, radius, lmin=None, lmax=None, inside=True,
                     unit_center=u.deg, unit_radius=u.arcsec,
-                    unit_wave=u.angstrom):
+                    unit_wave=u.angstrom, posangle=0.0):
         """Mask values inside or outside a circular or rectangular region.
 
         Parameters
@@ -219,10 +219,13 @@ class Cube(DataArray):
         unit_radius : `astropy.units.Unit`
             The units of the radius argument (arcseconds by default).
             If None, the units are assumed to be pixels.
+        posangle : float
+            When the region is rectangular, this is the counter-clockwise
+            rotation angle of the rectangle in degrees. When posangle is
+            0.0 (the default), the X and Y axes of the rectangle are along
+            the X and Y axes of the image.
 
         """
-
-        center = np.array(center)
 
         # If the radius argument is a scalar value, this requests
         # that a circular region be masked. Delegate this to mask_ellipse().
@@ -234,14 +237,30 @@ class Cube(DataArray):
                                      unit_wave=unit_wave)
 
 
+        # Convert the central position to a floating-point pixel index.
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
+        else:
+            center = np.asarray(center)
 
         # Get the image pixel sizes in the units of the radius argument.
         if unit_radius is None:
             step = np.array([1.0, 1.0])     # Pixel counts
         else:
             step = self.wcs.get_step(unit=unit_radius)
+
+        # Treat rotated rectangles as polygons.
+        if not np.isclose(posangle, 0.0):
+            c = np.cos(np.radians(posangle))
+            s = np.sin(np.radians(posangle))
+            hw = radius[0]
+            hh = radius[1]
+            poly = np.array([[-hw*s-hh*c, -hw*c+hh*s],
+                             [-hw*s+hh*c, -hw*c-hh*s],
+                             [+hw*s+hh*c, +hw*c-hh*s],
+                             [+hw*s-hh*c, +hw*c+hh*s]]) / step + center
+            return self.mask_polygon(poly, lmin, lmax, unit_poly=None,
+                                     unit_wave=unit_wave, inside=inside)
 
         # Get the minimum wavelength in the specified units.
         if lmin is None:
@@ -256,8 +275,9 @@ class Cube(DataArray):
             lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        sy, sx = bounding_box(form="rectangle", center=center, radii=radius,
-                              posangle=0.0, shape=self.shape[1:], step=step)
+        sy, sx, center = bounding_box(form="rectangle", center=center,
+                                      radii=radius, posangle=0.0,
+                                      shape=self.shape[1:], step=step)
 
         # Mask pixels inside the region.
         if inside:
