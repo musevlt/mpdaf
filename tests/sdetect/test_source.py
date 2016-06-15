@@ -107,13 +107,42 @@ class TestSource():
         cube = Cube('data/sdetect/minicube.fits', dtype=np.float64)
         self.source2.add_white_image(cube)
         ima = cube.mean(axis=0)
+
+        # The position self.source2.dec, self.source2.ra corresponds
+        # to pixel index 18.817,32.432 in the cube. The default 5
+        # arcsecond requested size of the white-light image corresponds
+        # to 25 pixels. There will thus be 12 pixels on either side of
+        # a central pixel. The nearest pixel to the center is 19,32, so
+        # we expect add_white_image() to have selected the following
+        # range of pixels cube[19-12:19+12+1, 32-12:32+12+1], which
+        # is cube[7:32, 20:45]. However the cube only has 40 pixels
+        # along the X-axis, so the white-light image should correspond
+        # to:
+        #
+        #  white[:,:] = cube[7:32, 20:40]
+        #  white.shape=(25,20)
+        #
+        # So: cube[15,25] = white[15-7, 25-20] = white[8, 5]
         assert_equal(ima[15, 25], self.source2.images['MUSE_WHITE'][8, 5])
+
+        # Add a square patch of an HST image equal in width and height
+        # to the height of the white-light image, which has a height
+        # of 25 white-light pixels.
         hst = Image('data/sdetect/a478hst.fits')
         self.source2.add_image(hst, 'HST1')
+
+        # Add the same HST image, but this time set the width and height
+        # equal to the height of the above HST patch (ie. 50 pixels). This
+        # should have the same result as giving it the same size as the
+        # white-light image.
         size = self.source2.images['HST1'].shape[0]
         self.source2.add_image(hst, 'HST2', size=size, minsize=size, unit_size=None)
         assert_equal(self.source2.images['HST1'][10, 10],
                      self.source2.images['HST2'][10, 10])
+
+        # Add the HST image again, but this time rotate it to the same
+        # orientation as the white-light image, then check that they end
+        # up with the same rotation angles.
         self.source2.add_image(hst, 'HST3', rotate=True)
         nose.tools.assert_almost_equal(self.source2.images['HST3'].get_rot(),
                                        self.source2.images['MUSE_WHITE'].get_rot(), 3)
