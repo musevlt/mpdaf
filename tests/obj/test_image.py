@@ -11,7 +11,8 @@ import scipy.ndimage as ndi
 import six
 
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
-from numpy.testing import assert_almost_equal, assert_array_equal
+from numpy.testing import (assert_almost_equal, assert_array_equal,
+                           assert_allclose)
 from six.moves import range
 
 from ..utils import (assert_image_equal, generate_image, generate_cube,
@@ -196,25 +197,74 @@ def test_mask():
     """Image class: testing mask functionalities"""
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
+
+    # A region of half-width=1 and half-height=1 should have a size of
+    # 2x2 pixels. A 2x2 region of pixels has a center at the shared
+    # corner of the 4 pixels, and the closest corner to the requested
+    # center of 2.1,1.8 is 2.5,1.5, so we expect the square of unmasked pixels
+    # to be pixels 2,3 along the Y axis, and pixels 1,2 along the X axis.
     image1 = Image(data=data, wcs=wcs)
-    image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
+    image1.mask_region((2.1, 1.8), (1, 1), inside=False, unit_center=None,
                        unit_radius=None)
-    nose.tools.assert_equal(image1.data.sum(), 2 * 9)
-    image1.unmask()
+    expected_mask = np.array([[True,  True,  True,  True,  True],
+                              [True,  True,  True,  True,  True],
+                              [True,  False, False, True,  True],
+                              [True,  False, False, True,  True],
+                              [True,  True,  True,  True,  True],
+                              [True,  True,  True,  True,  True]], dtype=bool)
+    assert_array_equal(image1._mask, expected_mask)
+
+    # Try exactly the same experiment as the above, except that the center
+    # and size of the region are specified in world-coordinates instead of
+    # pixels.
     wcs = WCS(deg=True)
     image1 = Image(data=data, wcs=wcs)
-    image1.mask_region(wcs.pix2sky([2, 2]), (3600, 3600), inside=False)
-    nose.tools.assert_equal(image1.data.sum(), 2 * 9)
+    image1.mask_region(wcs.pix2sky([2.1, 1.8]), (3600, 3600), inside=False)
+    assert_array_equal(image1._mask, expected_mask)
+
+    # Mask around a region of half-width and half-height 1.1 pixels,
+    # specified in arcseconds, centered close to pixel 2.4,3.8. This
+    # ideally corresponds to a region of 2.2x2.2 pixels. The closest
+    # possible size is 2x2 pixels. A region of 2x2 pixels has its
+    # center at the shared corner of these 4 pixels, and the nearest
+    # corner to the desired central index of (2.4,3.8) is (2.5,3.5).
+    # So all of the image should be masked, except for a 2x2 area of
+    # pixel indexes 2,3 along the Y axis and pixel indexes 3,4 along
+    # the X axis.
     image1.unmask()
-    image1.mask_region(wcs.pix2sky([2, 2]), 4000, inside=False)
-    nose.tools.assert_equal(image1.data.sum(), 2 * 5)
-    image1.unmask()
-    image1.mask_ellipse(wcs.pix2sky([2, 2]), (10000, 3000), 20, inside=False)
-    nose.tools.assert_equal(image1.data.sum(), 2 * 7)
+    image1.mask_region(wcs.pix2sky([2.4, 3.8]), 1.1*3600.0, inside=False)
+    expected_mask = np.array([[True,  True,  True,  True,  True],
+                              [True,  True,  True,  True,  True],
+                              [True,  True,  True,  False, False],
+                              [True,  True,  True,  False, False],
+                              [True,  True,  True,  True,  True],
+                              [True,  True,  True,  True,  True]], dtype=bool)
+    assert_array_equal(image1._mask, expected_mask)
+
+    # Mask outside an elliptical region centered at pixel 3.5,3.5.
+    # The boolean expected_mask array given below was a verified
+    # output of mask_ellipse() for the specified ellipse parameters.
+    data = np.ones(shape=(8, 8))
+    image1 = Image(data=data, wcs=wcs)
+    image1.mask_ellipse([3.5,3.5], (2.5,3.5), 45.0, unit_radius=None,
+                        unit_center=None, inside=False)
+    expected_mask = np.array([[True, True, True, True, True, True, True, True],
+                              [True, True, True,False,False,False, True, True],
+                              [True, True,False,False,False,False,False, True],
+                              [True,False,False,False,False,False,False, True],
+                              [True,False,False,False,False,False,False, True],
+                              [True,False,False,False,False,False, True, True],
+                              [True, True,False,False,False, True, True, True],
+                              [True, True, True, True, True, True, True, True]],
+                             dtype=bool)
+    assert_array_equal(image1._mask, expected_mask)
+
+    # Use np.where to select the masked pixels and check that mask_selection()
+    # then reproduces the same mask.
     ksel = np.where(image1.data.mask)
     image1.unmask()
     image1.mask_selection(ksel)
-    nose.tools.assert_equal(image1.data.sum(), 2 * 7)
+    assert_array_equal(image1._mask, expected_mask)
 
 
 @attr(speed='fast')
@@ -401,7 +451,7 @@ def test_ee():
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
     image1 = Image(data=data, wcs=wcs)
-    image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
+    image1.mask_region((2, 2), (1.5, 1.5), inside=False, unit_center=None,
                        unit_radius=None)
     nose.tools.assert_equal(image1.ee(), 9 * 2)
     ee = image1.ee(center=(2, 2), unit_center=None, radius=1, unit_radius=None)
@@ -421,7 +471,7 @@ def test_rebin_mean():
     wcs = WCS(crval=(0, 0))
     data = np.arange(30).reshape(6, 5)
     image1 = Image(data=data, wcs=wcs, var=np.ones(data.shape) * 0.5)
-    image1.mask_region((2, 2), (1, 1), inside=False, unit_center=None,
+    image1.mask_region((2, 2), (1.5, 1.5), inside=False, unit_center=None,
                        unit_radius=None)
 
     # The test data array looks as follows:
@@ -473,9 +523,16 @@ def test_rebin_mean():
 def test_add():
     """Image class: testing add method."""
     ima = astronomical_image()
-    subima = ima.subimage(center=(790, 875), size=40, unit_center=None, unit_size=None)
+    # Extract a 40x40 area of the above image, centered at pixel
+    # position 790.5, 875.5. This should select a square arrea that is
+    # 20 pixels either side of this position and 20 pixel above and
+    # below this position. This should be the sub-image
+    # ima[771:811, 856:896]. Thus when we add this back to the original
+    # image, multiplied by 4, that area of ima should be 5 times its original
+    # value.
+    subima = ima.subimage(center=(790.5, 875.5), size=40, unit_center=None, unit_size=None)
     ima.add(subima * 4)
-    assert_almost_equal(ima.data[800,885], subima.data[30,30] * 5, decimal=5)
+    assert_allclose(ima.data[771:811, 856:896], subima.data * 5)
 
 
 @attr(speed='fast')
