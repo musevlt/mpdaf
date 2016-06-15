@@ -2870,13 +2870,15 @@ class Cube(DataArray):
         -------
         out : `~mpdaf.obj.Cube`
         """
+
+        # Extract a subcube of a square image area of 2*radius x 2*radius.
         subcub = self.subcube(center, radius * 2, unit_center=unit_center,
                               unit_size=unit_radius)
-        if unit_center is None:
-            center = np.array(center)
-            center -= (subcub.get_start() - self.get_start())[1:]
+
+        # Mask the region outside the circle.
+        center = np.array(subcub.shape[1:]) / 2.0
         subcub.mask_region(center, radius, inside=False,
-                           unit_center=unit_center, unit_radius=unit_radius)
+                           unit_center=None, unit_radius=unit_radius)
         return subcub
 
     def aperture(self, center, radius, unit_center=u.deg,
