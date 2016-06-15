@@ -181,7 +181,6 @@ def bounding_box(form, center, radii, posangle, shape, step):
 
     # Are the members of w even numbers of pixels?
     iseven = np.mod(w, 2) == 0
-    print("\n ymax=", ymax, " xmax=", xmax, "w=", w, "ISEVEN=",iseven)
 
     # For each axis calculate the pixel index of the central pixel of
     # the region where w is odd, or the index of the first of the two
