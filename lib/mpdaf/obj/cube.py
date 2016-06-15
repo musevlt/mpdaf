@@ -333,6 +333,8 @@ class Cube(DataArray):
             If None, the units are assumed to be pixels.
 
         """
+
+        # Convert the central position to floating-point pixel indexes.
         center = np.array(center)
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
@@ -363,9 +365,9 @@ class Cube(DataArray):
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        sy, sx = bounding_box(form="ellipse", center=center, radii=radii,
-                              posangle=posangle, shape=self.shape[1:],
-                              step=step)
+        sy, sx, center = bounding_box(form="ellipse", center=center, radii=radii,
+                                      posangle=posangle, shape=self.shape[1:],
+                                      step=step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
