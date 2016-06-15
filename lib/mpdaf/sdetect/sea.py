@@ -192,11 +192,11 @@ def findSkyMask(images):
 def segmentation(source, tags, DIR, remove):
     # suppose that MUSE_WHITE image exists
     try:
-        subprocess.check_call(['sex'])
+        subprocess.check_call(['sex', '-v'])
         cmd_sex = 'sex'
     except OSError:
         try:
-            subprocess.check_call(['sextractor'])
+            subprocess.check_call(['sextractor', '-v'])
             cmd_sex = 'sextractor'
         except OSError:
             raise OSError('SExtractor not found')
