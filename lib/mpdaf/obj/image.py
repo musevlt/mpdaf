@@ -904,9 +904,10 @@ class Image(DataArray):
             return self.mask_polygon(poly, unit=None, inside=inside)
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        sy, sx = bounding_box(form="rectangle", center=center, radii=radius,
-                              posangle=0.0, shape=self.shape, step=step)
-
+        sy, sx, center = bounding_box(form="rectangle", center=center,
+                                      radii=radius, posangle=0.0,
+                                      shape=self.shape, step=step)
+        print("\n", sy, sy, center)
         # Mask pixels inside the region.
         if inside:
             self.data[sy, sx] = np.ma.masked
@@ -967,9 +968,9 @@ class Image(DataArray):
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        sy, sx = bounding_box(form="ellipse", center=center, radii=radii,
-                              posangle=posangle,
-                              shape=self.shape, step=step)
+        sy, sx, center = bounding_box(form="ellipse", center=center, radii=radii,
+                                      posangle=posangle, shape=self.shape,
+                                      step=step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
@@ -1236,8 +1237,9 @@ class Image(DataArray):
         # Convert the width and height of the region to radii, and
         # get Y-axis and X-axis slice objects that select this region.
         radius = size / 2.
-        sy, sx = bounding_box(form="rectangle", center=center, radii=radius,
-                              posangle=0.0, shape=self.shape, step=step)
+        sy, sx, center = bounding_box(form="rectangle", center=center,
+                                      radii=radius, posangle=0.0,
+                                      shape=self.shape, step=step)
 
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \
