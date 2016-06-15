@@ -73,11 +73,13 @@ def bounding_box(form, center, radii, posangle, shape, step):
 
     """Return Y-axis and X-axis slice objects that bound a rectangular
     image region that just encloses either an ellipse or a rectangle,
-    that has a specified center position, Y-axis and X-axis
-    radii, and a given rotation angle relative to the image axes.
+    where the rectangle has a specified center position, Y-axis and X-axis
+    radii, and a given rotation angle relative to the image axes. The
+    effective center of the region is also returned.
 
     If the ellipse or rectangle is partly outside of the image array,
-    the returned slices are clipped at the edges of the array.
+    the returned slices are clipped at the edges of the array. The
+    effective center that is returned, is the center before clipping.
 
     Parameters
     ----------
@@ -111,9 +113,11 @@ def bounding_box(form, center, radii, posangle, shape, step):
 
     Returns
     -------
-    out : slice, slice
+    out : slice, slice, center
        The Y-axis and X-axis slices needed to select a rectangular region
-       of the image that just encloses the ellipse.
+       of the image that just encloses the part of the ellipse or rectangle
+       that is within the image area, along with the effective
+       center of the region before any clipping was performed on the slices.
 
     """
 
@@ -170,20 +174,37 @@ def bounding_box(form, center, radii, posangle, shape, step):
     else:
         raise ValueError("The form argument should be 'rectangle' or 'ellipse'")
 
-    # Arrange the half-height and half-width in an array, then divide
-    # them by the pixel sizes along the Y and X axes to convert them
-    # to pixel counts.
-    w = np.array([ymax, xmax]) / step
+    # Put the height and width in an array, divide them by
+    # the pixel sizes along the Y and X axes to convert them to pixel
+    # counts, then convert them to the nearest integers.
+    w = np.floor(np.abs(np.array([2*ymax, 2*xmax]) / step) + 0.5).astype(int)
 
-    # Determine the index ranges along the X and Y axes of the image
-    # array that enclose the rotated width and height of the rotated
-    # shape.
+    # Are the members of w even numbers of pixels?
+    iseven = np.mod(w, 2) == 0
+    print("\n ymax=", ymax, " xmax=", xmax, "w=", w, "ISEVEN=",iseven)
+
+    # For each axis calculate the pixel index of the central pixel of
+    # the region where w is odd, or the index of the first of the two
+    # central pixels when w is even.
+    c = np.where(iseven, np.floor(center), np.floor(center+0.5)).astype(int)
+
+    # Determine the indexes of the first and last pixels of the region
+    # along each axis, using integer arithmetic to avoid surprises.
+    first = np.where(iseven, c - w//2 + 1,  c - (w - 1)//2)
+    last  = np.where(iseven, c + w//2,      c + (w - 1)//2)
+
+    # Calculate the effective center of the bounded region.
+    center = (first + last) / 2.0
+
+    # Clip the first and last pixels to ensure that they lie within
+    # the bounds of the image.
     max_indexes = np.asarray(shape) - 1
-    imin, jmin = np.clip((center - w).astype(int), (0, 0), max_indexes)
-    imax, jmax = np.clip((center + w).astype(int), (0, 0), max_indexes)
+    imin, jmin = np.clip(first, (0, 0), max_indexes)
+    imax, jmax = np.clip(last,  (0, 0), max_indexes)
 
-    # Return the ranges as slice objects.
-    return slice(imin, imax + 1), slice(jmin, jmax + 1)
+    # Return the ranges as slice objects, along with the effective
+    # center of the region.
+    return slice(imin, imax + 1), slice(jmin, jmax + 1), center
 
 
 def UnitArray(array, old_unit, new_unit):
