@@ -118,6 +118,10 @@ def bounding_box(form, center, radii, posangle, shape, step):
        of the image that just encloses the part of the ellipse or rectangle
        that is within the image area, along with the effective
        center of the region before any clipping was performed on the slices.
+       If the selected range an axis is entirely outside the
+       array a zero-pixel slice is returned for that axis, with a start
+       value that is 0 if the pixels were all below pixel 0, or shape-1
+       if they were all off the upper end of the range.
 
     """
 
@@ -195,15 +199,24 @@ def bounding_box(form, center, radii, posangle, shape, step):
     # Calculate the effective center of the bounded region.
     center = (first + last) / 2.0
 
+    # Are the selected pixels of the axes outside the bounds of the array?
+    max_indexes = np.asarray(shape) - 1
+    outside = np.logical_or(last < 0, first > max_indexes)
+
     # Clip the first and last pixels to ensure that they lie within
     # the bounds of the image.
-    max_indexes = np.asarray(shape) - 1
     imin, jmin = np.clip(first, (0, 0), max_indexes)
     imax, jmax = np.clip(last,  (0, 0), max_indexes)
 
+    # Compute the corresponding slices, replacing the clipped
+    # values by a zero-pixel range where the pre-clipped indexes
+    # were entirely outside the array.
+    yslice = slice(imin, (imax + 1) if not outside[0] else imax)
+    xslice = slice(jmin, (jmax + 1) if not outside[1] else jmax)
+
     # Return the ranges as slice objects, along with the effective
     # center of the region.
-    return slice(imin, imax + 1), slice(jmin, jmax + 1), center
+    return yslice, xslice, center
 
 
 def UnitArray(array, old_unit, new_unit):
