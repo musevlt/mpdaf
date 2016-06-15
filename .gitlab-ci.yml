@@ -20,6 +20,7 @@ py34:
 
 astropy10:
   stage: test
+  allow_failure: true
   script: tox -v -e astropy10
 
 numpy110:
