@@ -30,6 +30,7 @@ import time
 import types
 
 from astropy.io import fits
+from matplotlib.path import Path
 from astropy.nddata.utils import overlap_slices
 from numpy import ma
 from six.moves import range, zip
@@ -410,6 +411,80 @@ class Cube(DataArray):
 
             grid3d = np.resize(ksel > 1, (lmax - lmin, ) + ksel.shape)
             self.data[lmin:lmax, sy, sx][grid3d] = ma.masked
+
+    def mask_polygon(self, poly, lmin=None, lmax=None,
+                     unit_poly=u.deg, unit_wave=u.angstrom, inside=True):
+        """Mask values inside or outside a polygonal region.
+
+        Parameters
+        ----------
+        poly : (float, float)
+            An array of (float,float) containing a set of (p,q) or (dec,ra)
+            values for the polygon vertices.
+        lmin : float
+            The minimum wavelength of the region.
+        lmax : float
+            The maximum wavelength of the region.
+        unit_poly : `astropy.units.Unit`
+            The units of the polygon coordinates (degrees by default).
+            Use unit_poly=None for polygon coordinates in pixels.
+        unit_wave : `astropy.units.Unit`
+            The units of the wavelengths lmin and lmax (angstrom by default).
+        inside : bool
+            If inside is True, pixels inside the polygonal region are masked.
+            If inside is False, pixels outside the polygonal region are masked.
+
+        """
+
+        # Convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
+        if unit_poly is not None:
+            poly = np.array([
+                [self.wcs.sky2pix((val[0], val[1]), unit=unit_poly)[0][0],
+                 self.wcs.sky2pix((val[0], val[1]), unit=unit_poly)[0][1]]
+                for val in poly])
+
+        P, Q = np.meshgrid(list(range(self.shape[1])),
+                           list(range(self.shape[2])))
+        b = np.dstack([P.ravel(), Q.ravel()])
+
+        # Use a matplotlib method to create a path, which is the polygon we
+        # want to use.
+        polymask = Path(poly)
+
+        # Go through all pixels in the image to see if they are within the
+        # polygon. The ouput is a boolean table.
+        c = polymask.contains_points(b[0])
+
+        # Invert the boolean table to mask pixels outside the polygon?
+        if not inside:
+            c = ~np.array(c)
+
+        # Convert the boolean table into a matrix.
+        c = c.reshape(self.shape[2], self.shape[1])
+        c = c.T
+
+        # Convert the minimum wavelength to a spectral pixel index.
+        if lmin is None:
+            lmin = 0
+        elif unit_wave is not None:
+            lmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
+
+        # Convert the maximum wavelength to a spectral pixel index.
+        if lmax is None:
+            lmax = self.shape[0]
+        elif unit_wave is not None:
+            lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
+
+        # Combine the previous mask with the new one between lmin and lmax.
+        self._mask[lmin:lmax,:,:] = np.logical_or(self._mask[lmin:lmax,:,:], c)
+
+        # When masking pixels outside the region, mask all pixels
+        # outside the specified wavelength range.
+        if not inside:
+            self.data[:lmin, :, :] = ma.masked
+            self.data[lmax:, :, :] = ma.masked
+
+        return poly
 
     def __add__(self, other):
         """Add a specified other object to a Cube.
