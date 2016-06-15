@@ -18,6 +18,10 @@ py34:
   stage: test
   script: tox -v -e py34
 
+muselet:
+  stage: test
+  script: tox -v -e muselet
+
 astropy10:
   stage: test
   allow_failure: true
