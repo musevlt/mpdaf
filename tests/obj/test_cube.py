@@ -107,6 +107,7 @@ def test_crop():
     cube1.crop()
     assert_equal(cube1.shape[0], 9)
 
+
 @attr(speed='fast')
 def test_multiprocess():
     """Cube class: tests multiprocess"""
@@ -120,20 +121,20 @@ def test_multiprocess():
     assert_equal(out[2, 3], cube1[:, 2, 3].mean())
 
 
-@attr(speed='slow')
+@attr(speed='fast')
 def test_multiprocess2():
     """Cube class: more tests for multiprocess"""
     cube1 = generate_cube()
     f = Image.ee
-    ee = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=True)
+    ee = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False)
     assert_equal(ee[1], cube1[1, :, :].ee())
 
     f = Image.rotate
-    cub2 = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=True, theta=20)
+    cub2 = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False, theta=20)
     assert_equal(cub2[4, 3, 2], cube1[4, :, :].rotate(20)[3, 2])
 
     f = Spectrum.resample
-    out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=True, step=1)
+    out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
     assert_equal(out[8, 3, 2], cube1[:, 3, 2].resample(step=1)[8])
 
 
@@ -144,13 +145,13 @@ def test_mask():
 
     cube.mask_region((2, 2), (1, 1), lmin=2, lmax=5, inside=True,
                      unit_center=None, unit_radius=None, unit_wave=None)
-    assert_equal(ma.count_masked(cube.data), 3*3*3)
+    assert_equal(ma.count_masked(cube.data), 3 * 3 * 3)
     cube.unmask()
 
     cube.mask_region((2, 2), (1, 1), lmin=2, lmax=5, inside=False,
                      unit_center=None, unit_radius=None, unit_wave=None)
     assert_equal(np.prod(cube.shape) - ma.count_masked(cube.data),
-                 3*3*3)
+                 3 * 3 * 3)
     cube.unmask()
 
     wcs = WCS(deg=True)
@@ -203,7 +204,7 @@ def test_sum():
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
     ind = np.arange(10)
     refsum = ind.sum()
-    cube1.data = (ind[:, np.newaxis,  np.newaxis] *
+    cube1.data = (ind[:, np.newaxis, np.newaxis] *
                   np.ones((6, 5))[np.newaxis, :, :])
     assert_equal(cube1.sum(), 6 * 5 * refsum)
     assert_array_equal(cube1.sum(axis=0).data, np.full((6, 5), refsum, float))
@@ -222,7 +223,7 @@ def test_median():
     cube1 = generate_cube(data=1., wave=WaveCoord(crval=1))
     ind = np.arange(10)
     median = np.median(ind)
-    cube1.data = (ind[:, np.newaxis,  np.newaxis] *
+    cube1.data = (ind[:, np.newaxis, np.newaxis] *
                   np.ones((6, 5))[np.newaxis, :, :])
 
     m = cube1.median()
@@ -361,15 +362,16 @@ def test_get_item():
     nose.tools.assert_true(r.wave.isEqual(c.wave))
     nose.tools.assert_is_none(r.wcs)
 
+
 def test_bandpass_image():
     """Cube class: testing bandpass_image"""
 
-    shape=(7, 2, 2)
+    shape = (7, 2, 2)
 
     # Create a rectangular shaped bandpass response whose ends are half
     # way into pixels.
 
-    wavelengths   = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    wavelengths = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     sensitivities = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
 
     # Specify a ramp for the values of the pixels in the cube versus
@@ -404,18 +406,22 @@ def test_bandpass_image():
     # Compute the expected weighted mean if pixel 1 is masked.
 
     masked_pixel = 1
-    masked_mean = ((weights * spectral_values).sum() - weights[masked_pixel] * spectral_values[masked_pixel]) / (weights.sum() - weights[masked_pixel])
+    masked_mean = (((weights * spectral_values).sum() -
+                   weights[masked_pixel] * spectral_values[masked_pixel]) /
+                   (weights.sum() - weights[masked_pixel]))
 
     # Compute the expected variances of the unmasked and masked means.
 
     unmasked_var = (weights**2 * spectral_vars).sum() / weights.sum()**2
-    masked_var = ((weights**2 * spectral_vars).sum() - weights[masked_pixel]**2 * spectral_vars[masked_pixel]) / (weights.sum() - weights[masked_pixel])**2
+    masked_var = (((weights**2 * spectral_vars).sum() -
+                  weights[masked_pixel]**2 * spectral_vars[masked_pixel]) /
+                  (weights.sum() - weights[masked_pixel])**2)
 
     # Create the data array of the cube, giving all map pixels the
     # same data and variance spectrums.
 
-    data = spectral_values[:,np.newaxis, np.newaxis] * np.ones(shape)
-    var = spectral_vars[:,np.newaxis, np.newaxis] * np.ones(shape)
+    data = spectral_values[:, np.newaxis, np.newaxis] * np.ones(shape)
+    var = spectral_vars[:, np.newaxis, np.newaxis] * np.ones(shape)
 
     # Create a mask with all pixels unmasked.
 
@@ -423,11 +429,11 @@ def test_bandpass_image():
 
     # Mask spectral pixel 'masked_pixel' of map index 1,1.
 
-    mask[masked_pixel,1,1] = True
+    mask[masked_pixel, 1, 1] = True
 
     # Also mask all pixels of map pixel 0,0.
 
-    mask[:,0,0] = True
+    mask[:, 0, 0] = True
 
     # Create a test cube with the above data and mask arrays.
 
@@ -442,20 +448,20 @@ def test_bandpass_image():
     # Only the map pixel in which all spectral pixels are masked should
     # be masked in the output, so just map pixel [0,0] should be masked.
 
-    expected_mask = np.array([[True,  False],
+    expected_mask = np.array([[True, False],
                               [False, False]], dtype=bool)
 
     # What do we expect?
 
     expected_data = np.ma.array(
-        data=[[unmasked_mean, unmasked_mean], [unmasked_mean,   masked_mean]],
+        data=[[unmasked_mean, unmasked_mean], [unmasked_mean, masked_mean]],
         mask=expected_mask)
 
     expected_var = np.ma.array(
-        data=[[unmasked_var, unmasked_var], [unmasked_var,   masked_var]],
+        data=[[unmasked_var, unmasked_var], [unmasked_var, masked_var]],
         mask=expected_mask)
 
     # Are the results consistent with the predicted values?
 
     assert_masked_allclose(im.data, expected_data)
-    assert_masked_allclose(im.var,  expected_var)
+    assert_masked_allclose(im.var, expected_var)

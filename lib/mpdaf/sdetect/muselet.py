@@ -218,10 +218,10 @@ def step2(cmd_sex):
     # default.param exist.  Otherwise copy them
     setup_config_files()
 
-    subprocess.Popen(cmd_sex + ' white.fits', shell=True).wait()
-    subprocess.Popen(cmd_sex + ' -CATALOG_NAME R.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiter.fits', shell=True).wait()
-    subprocess.Popen(cmd_sex + ' -CATALOG_NAME G.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteg.fits', shell=True).wait()
-    subprocess.Popen(cmd_sex + ' -CATALOG_NAME B.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteb.fits', shell=True).wait()
+    subprocess.call(cmd_sex + ' white.fits', shell=True)
+    subprocess.call(cmd_sex + ' -CATALOG_NAME R.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiter.fits', shell=True)
+    subprocess.call(cmd_sex + ' -CATALOG_NAME G.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteg.fits', shell=True)
+    subprocess.call(cmd_sex + ' -CATALOG_NAME B.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteb.fits', shell=True)
 
     tB = Table.read('B.cat', format='ascii.sextractor')
     tG = Table.read('G.cat', format='ascii.sextractor')
@@ -248,7 +248,10 @@ def step2(cmd_sex):
         shutil.copy('../inv_variance.fits', 'inv_variance.fits')
         st = os.stat('dosex')
         os.chmod('dosex', st.st_mode | stat.S_IEXEC)
-        subprocess.Popen('./dosex', shell=True).wait()
+        out = subprocess.check_output('./dosex', shell=True,
+                                      stderr=subprocess.STDOUT)
+        with open('dosex.log', 'w') as f:
+            f.write(out)
 
 
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
