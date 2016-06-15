@@ -1552,50 +1552,73 @@ class Cube(DataArray):
             raise ValueError('Invalid axis argument')
 
     def truncate(self, coord, mask=True, unit_wave=u.angstrom, unit_wcs=u.deg):
-        """ Truncates the cube and return a sub-cube.
+        """Return a sub-cube bounded by specified wavelength and spatial
+        world-coordinates.
+
+        Note that unless unit_wcs is None, the y-axis and x-axis
+        boundary coordinates are along sky axes such as declination
+        and right-ascension, which may not be parallel to the image
+        array-axes. When they are not parallel, the returned image
+        area will contain some pixels outside the requested
+        range. By default these are masked, but this can be disabled
+        by passing False to the mask argument.
 
         Parameters
         ----------
         coord : array
-            array containing the sub-cube boundaries
-            [lbda_min,y_min,x_min,lbda_max,y_max,x_max]
-            (output of mpdaf.obj.cube.get_range)
+           The coordinate boundaries, arranged into an array
+           as follows:
+
+             [lbda_min, y_min, x_min, lbda_max, y_max, x_max]
+
+           Note that this is the order of the values returned by
+           mpdaf.obj.cube.get_range(), so when these functions are
+           used together, then can be used to extract a subcube whose
+           bounds match those of an existing smaller cube.
         mask : bool
-            if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
+            If True, pixels outside [y_min,y_max] and [x_min,x_max]
+            are masked. This can be useful when the world-coordinate
+            X and Y axis are not parallel with the image array-axes.
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.  If None, inputs are in pixels
+            The wavelength units of lbda_min and lbda_max elements
+            of the coord array.  If None, lbda_min and lbda_max are
+            interpretted as pixel indexes along the wavelength axis.
         unit_wcs : `astropy.units.Unit`
-            world coordinates unit.  If None, inputs are in pixels
+            The wavelength units of x_min,x_max,y_min and y_max
+            elements of the coord array.  If None, these values are
+            interpretted as pixel indexes along the image axes.
 
         """
         lmin, ymin, xmin, lmax, ymax, xmax = coord
 
-        skycrd = [[ymin, xmin], [ymin, xmax],
-                  [ymax, xmin], [ymax, xmax]]
+        # Compute the center of the region and convert it to
+        # a floating-point pixel index.
+        center = np.array([(ymin + ymax) / 2.0, (xmin + xmax) / 2.0])
+        if unit_wcs is not None:
+            center = self.wcs.sky2pix(center, unit=unit_wcs)[0]
+
+        # Compute the half-width and half-height of the region.
+        radii = [abs(xmax - xmin)/2.0, abs(ymax - ymin)/2.0]
+
+        # Compute the rotation angle of the rectangular area relative to
+        # the axes of the image.
         if unit_wcs is None:
-            pixcrd = np.array(skycrd)
+            posangle = 0.0
+            step = [1.0, 1.0]
         else:
-            pixcrd = self.wcs.sky2pix(skycrd, unit=unit_wcs)
+            posangle = self.get_rot()
+            step = self.wcs.get_axis_increments()
 
-        imin = int(np.min(pixcrd[:, 0]) + 0.5)
-        if imin < 0:
-            imin = 0
-        imax = int(np.max(pixcrd[:, 0]) + 0.5) + 1
-        if imax > self.shape[1]:
-            imax = self.shape[1]
-
-        if imin >= self.shape[1] or imax <= 0 or imin == imax:
+        # Get the bounding box of the rotated rectangular region as
+        # Y-axis and X-axis slice objects.
+        sy, sx, center = bounding_box(form="rectangle", center=center,
+                                      radii=radii, posangle=posangle,
+                                      shape=self.shape[1:], step=step)
+        if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start==sx.stop or
+            sy.start >= self.shape[1] or sy.stop < 0 or sy.start==sy.stop):
             raise ValueError('sub-cube boundaries are outside the cube')
 
-        jmin = int(np.min(pixcrd[:, 1]) + 0.5)
-        if jmin < 0:
-            jmin = 0
-        jmax = int(np.max(pixcrd[:, 1]) + 0.5) + 1
-        if jmax > self.shape[2]:
-            jmax = self.shape[2]
-        if jmin >= self.shape[2] or jmax <= 0 or jmin == jmax:
-            raise ValueError('sub-cube boundaries are outside the cube')
-
+        # Convert the wavelenth range to a range of spectral pixel indexes.
         if unit_wave is None:
             kmin = int(lmin + 0.5)
             kmax = int(lmax + 0.5)
@@ -1606,31 +1629,24 @@ class Cube(DataArray):
 
         if kmin == kmax:
             raise ValueError('Minimum and maximum wavelengths are equal')
-
         if kmax == kmin + 1:
             raise ValueError('Minimum and maximum wavelengths are outside'
                              ' the spectrum range')
 
-        res = self[kmin:kmax, imin:imax, jmin:jmax]
+        # Extract the requested part of the cube.
+        res = self[kmin:kmax, sy, sx]
 
+        # Mask pixels outside the specified range?
         if mask:
-            # mask outside pixels
-            grid = np.meshgrid(np.arange(0, res.shape[1]),
-                               np.arange(0, res.shape[2]), indexing='ij')
-            shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]),
-                                                      np.ravel(grid[1]))])
-            if unit_wcs is None:
-                skycrd = pixcrd
-            else:
-                skycrd = np.array(res.wcs.pix2sky(pixcrd, unit=unit_wcs))
-            x = skycrd[:, 1].reshape(shape)
-            y = skycrd[:, 0].reshape(shape)
-            test_x = np.logical_or(x < xmin, x > xmax)
-            test_y = np.logical_or(y < ymin, y > ymax)
-            test = np.logical_or(test_x, test_y)
-            res.data[np.tile(test, [res.shape[0], 1, 1])] = ma.masked
-            res.crop()
+
+            # Get the center of the region in the sub-cube.
+            center -= np.array([sy.start, sx.start])
+
+            # Mask pixels outside the selected rectangular region of the sky.
+            res.mask_region(center=center, radius=radii,
+                            inside=False, unit_center=unit_wcs,
+                            unit_radius=unit_wcs, unit_wave=unit_wave,
+                            posangle=posangle)
 
         return res
 
