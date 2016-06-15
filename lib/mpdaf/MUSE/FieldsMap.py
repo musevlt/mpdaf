@@ -145,8 +145,8 @@ class FieldsMap(object):
     
         We use shift-variant blur techniques to model the variation of the PSF.
     
-        Reference: Denis, L. Thiébaut E., Soulez F., Becker J.-M. and Mourya R. 
-               “Fast approximations of shift-variant blur“,
+        Reference: Denis, L. Thiebaut E., Soulez F., Becker J.-M. and Mourya R. 
+               'Fast approximations of shift-variant blur',
                International Journal of Computer Vision,
                Springer Verlag, 115(3), 253-278 (2015)
 
