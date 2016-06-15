@@ -907,7 +907,6 @@ class Image(DataArray):
         sy, sx, center = bounding_box(form="rectangle", center=center,
                                       radii=radius, posangle=0.0,
                                       shape=self.shape, step=step)
-        print("\n", sy, sy, center)
         # Mask pixels inside the region.
         if inside:
             self.data[sy, sx] = np.ma.masked
