@@ -151,9 +151,6 @@ def test_mask():
     # to be pixels 2,3 along the Y axis, and pixels 1,2 along the X axis.
     cube.mask_region((2.1, 1.8), (1, 1), lmin=2, lmax=5, inside=True,
                      unit_center=None, unit_radius=None, unit_wave=None)
-<<<<<<< HEAD
-    assert_equal(ma.count_masked(cube.data), 3 * 3 * 3)
-=======
 
     # The expected mask for the images between lmin and lmax.
     expected_mask = np.array([[False, False, False, False, False],
