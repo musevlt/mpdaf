@@ -1591,63 +1591,51 @@ class Cube(DataArray):
         """
         lmin, ymin, xmin, lmax, ymax, xmax = coord
 
-        # Compute the center of the region and convert it to
-        # a floating-point pixel index.
-        center = np.array([(ymin + ymax) / 2.0, (xmin + xmax) / 2.0])
-        if unit_wcs is not None:
-            center = self.wcs.sky2pix(center, unit=unit_wcs)[0]
+        # Get the coordinates of the corners of the requested
+        # sub-image, ordered as though sequentially drawing the lines
+        # of a polygon.
+        skycrd = [[ymin, xmin], [ymax, xmin],
+                  [ymax, xmax], [ymin, xmax]]
 
-        # Compute the half-width and half-height of the region.
-        radii = [abs(xmax - xmin)/2.0, abs(ymax - ymin)/2.0]
-
-        # Compute the rotation angle of the rectangular area relative to
-        # the axes of the image.
+        # Convert corner coordinates to pixel indexes.
         if unit_wcs is None:
-            posangle = 0.0
-            step = [1.0, 1.0]
+            pixcrd = np.array(skycrd)
         else:
-            posangle = self.get_rot()
-            step = self.wcs.get_axis_increments()
+            pixcrd = self.wcs.sky2pix(skycrd, unit=unit_wcs)
 
-        # Get the bounding box of the rotated rectangular region as
-        # Y-axis and X-axis slice objects.
-        sy, sx, center = bounding_box(form="rectangle", center=center,
-                                      radii=radii, posangle=posangle,
-                                      shape=self.shape[1:], step=step)
-        if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start==sx.stop or
-            sy.start >= self.shape[1] or sy.stop < 0 or sy.start==sy.stop):
-            raise ValueError('sub-cube boundaries are outside the cube')
+        # Round the corners to the integer center of the containing pixel.
+        pixcrd = np.floor(pixcrd + 0.5).astype(int)
 
-        # Convert the wavelenth range to a range of spectral pixel indexes.
-        if unit_wave is None:
-            kmin = int(lmin + 0.5)
-            kmax = int(lmax + 0.5)
-        else:
-            kmin = max(0, self.wave.pixel(lmin, nearest=True, unit=unit_wave))
-            kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True,
-                                                      unit=unit_wave) + 1)
+        # Obtain the range of Y-axis pixel-indexes of the region.
+        imin = max(np.min(pixcrd[:, 0]), 0)
+        imax = min(np.max(pixcrd[:, 0]), self.shape[1] -1)
 
-        if kmin == kmax:
-            raise ValueError('Minimum and maximum wavelengths are equal')
-        if kmax == kmin + 1:
-            raise ValueError('Minimum and maximum wavelengths are outside'
-                             ' the spectrum range')
+        # Obtain the range of X-axis pixel-indexes of the region.
+        jmin = max(np.min(pixcrd[:, 1]), 0)
+        jmax = min(np.max(pixcrd[:, 1]), self.shape[2] - 1)
+
+        # Convert the wavelength range to floating-point pixel indexes.
+        if unit_wave is not None:
+            lmin = self.wave.pixel(lmin, unit=unit_wave)
+            lmax = self.wave.pixel(lmax, unit=unit_wave)
+
+        # Round the wavelength limits to the integer center of the
+        # containing wavelength pixel.
+        kmin = max(np.floor(lmin + 0.5).astype(int), 0)
+        kmax = min(np.floor(lmax + 0.5).astype(int), self.shape[0] - 1)
+
+        # Complain if the truncation would leave nothing.
+        if imin > imax or jmin > jmax or kmin > kmax:
+            raise ValueError('The requested area is not within the cube.')
 
         # Extract the requested part of the cube.
-        res = self[kmin:kmax, sy, sx]
+        res = self[kmin:kmax+1, imin:imax+1, jmin:jmax+1]
 
-        # Mask pixels outside the specified range?
-        if mask:
-
-            # Get the center of the region in the sub-cube.
-            center -= np.array([sy.start, sx.start])
-
-            # Mask pixels outside the selected rectangular region of the sky.
-            res.mask_region(center=center, radius=radii,
-                            inside=False, unit_center=unit_wcs,
-                            unit_radius=unit_wcs, unit_wave=unit_wave,
-                            posangle=posangle)
-
+        # Mask pixels outside the specified ranges? This is only pertinent
+        # to regions that are specified in world coordinates.
+        if mask and unit_wcs is not None:
+            res.mask_polygon(pixcrd - np.array([imin,jmin]), unit_poly=None,
+                             inside=False)
         return res
 
     def _rebin_mean_(self, factor):
