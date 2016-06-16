@@ -511,7 +511,7 @@ def Compute_Proj_Eigenvector(A, V, r):
     return cube_proj_low_v, cube_proj_high_v
 
 
-def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
+def Correlation_GLR_test(cube, sigma, PSF_Moffat, weights, Dico):
     """Function to compute the cube of GLR test values obtained with the given
     PSF and dictionary of spectral profile.
 
@@ -521,8 +521,10 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
                  data cube on test
     sigma      : array
                  MUSE covariance
-    PSF_Moffat : array
-                 FSF for this data cube
+    PSF_Moffat : list of arrays
+                 FSF for each field of this data cube
+    weights    : list of array
+                 Weight maps of each field
     Dico       : array
                  Dictionary of spectral profiles to test
 
@@ -549,30 +551,61 @@ def Correlation_GLR_test(cube, sigma, PSF_Moffat, Dico):
     Nz = cube_var.shape[0]
     Ny = cube_var.shape[1]
     Nx = cube_var.shape[2]
-
-    # Spatial convolution of the weighted data with the zero-mean FSF
-    logger.info('Step 1/5 Spatial convolution of the weighted data with the '
-                'zero-mean FSF')
-    PSF_Moffat_m = PSF_Moffat \
-        - np.mean(PSF_Moffat, axis=(1, 2))[:, np.newaxis, np.newaxis]
+    
     cube_fsf = np.empty(shape)
-
-    for i in ProgressBar(list(range(Nz))):
-        cube_fsf[i, :, :] = signal.fftconvolve(cube_var[i, :, :],
-                                               PSF_Moffat_m[i, :, :][::-1, ::-1],
-                                               mode='same')
-    del cube_var
-
-    fsf_square = PSF_Moffat_m**2
-    del PSF_Moffat_m
-    # Spatial part of the norm of the 3D atom
-    logger.info('Step 2/5 Computing Spatial part of the norm of the 3D atoms')
     norm_fsf = np.empty(shape)
-    for i in ProgressBar(list(range(Nz))):
-        norm_fsf[i, :, :] = signal.fftconvolve(inv_var[i, :, :],
-                                               fsf_square[i, :, :][::-1, ::-1],
-                                               mode='same')
-    del fsf_square, inv_var
+    if weights is None: # one FSF
+        # Spatial convolution of the weighted data with the zero-mean FSF
+        logger.info('Step 1/5 Spatial convolution of the weighted data with the '
+                'zero-mean FSF')
+        PSF_Moffat_m = PSF_Moffat \
+            - np.mean(PSF_Moffat, axis=(1, 2))[:, np.newaxis, np.newaxis]
+        for i in ProgressBar(list(range(Nz))):
+            cube_fsf[i, :, :] = signal.fftconvolve(cube_var[i, :, :],
+                                                   PSF_Moffat_m[i, :, :][::-1, ::-1],
+                                                   mode='same')
+        del cube_var
+        fsf_square = PSF_Moffat_m**2
+        del PSF_Moffat_m
+        # Spatial part of the norm of the 3D atom
+        logger.info('Step 2/5 Computing Spatial part of the norm of the 3D atoms')
+        for i in ProgressBar(list(range(Nz))):
+            norm_fsf[i, :, :] = signal.fftconvolve(inv_var[i, :, :],
+                                                   fsf_square[i, :, :][::-1, ::-1],
+                                                   mode='same')
+        del fsf_square, inv_var
+    else: # several FSF
+        # Spatial convolution of the weighted data with the zero-mean FSF
+        logger.info('Step 1/5 Spatial convolution of the weighted data with the '
+                'zero-mean FSF')
+        nfields = len(PSF_Moffat)
+        PSF_Moffat_m = []
+        for n in range(nfields):
+            PSF_Moffat_m.append(PSF_Moffat[n] \
+            - np.mean(PSF_Moffat[n], axis=(1, 2))[:, np.newaxis, np.newaxis])
+        # build a weighting map per PSF and convolve
+        cube_fsf = np.empty(shape)
+        for i in ProgressBar(list(range(Nz))):
+            cube_fsf[i, :, :] = 0
+            for n in range(nfields):
+                cube_fsf[i, :, :] = cube_fsf[i, :, :] \
+                        + signal.fftconvolve(weights[n]*cube_var[i, :, :],
+                                             PSF_Moffat_m[n][i, :, :][::-1, ::-1],
+                                            mode='same')
+        del cube_var
+        fsf_square = []
+        for n in range(nfields):
+            fsf_square.append(PSF_Moffat_m[n]**2)
+        del PSF_Moffat_m
+        # Spatial part of the norm of the 3D atom
+        logger.info('Step 2/5 Computing Spatial part of the norm of the 3D atoms')
+        for i in ProgressBar(list(range(Nz))):
+            norm_fsf[i, :, :] = 0
+            for n in range(nfields):
+                norm_fsf[i, :, :] = norm_fsf[i, :, :] \
+                + signal.fftconvolve(weights[n]*inv_var[i, :, :],
+                                    fsf_square[n][i, :, :][::-1, ::-1],
+                                    mode='same')
 
     # First cube of correlation values
     # initialization with the first profile
@@ -784,7 +817,7 @@ def Compute_pval_correl(correl_temp_edge):
 
 
 def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
-                              mean_est):
+                              mean_est, weights):
     """Function to compute the p-values associated to the number of
     thresholded p-values of the correlations per spectral channel for
     each zone by calling the function Compute_pval_channel
@@ -827,13 +860,20 @@ def Compute_pval_channel_Zone(cube_pval_correl, intx, inty, NbSubcube,
             x2 = intx[numx + 1]
             y2 = inty[numy]
             y1 = inty[numy + 1]
+            
+            if weights is None:
+                m = mean_est
+            else:
+                w = np.array([np.sum(weights[n][y1:y2, x1:x2]) for n in range(len(weights))])
+                w /= np.sum(w)
+                m = np.sum(w*np.array(mean_est))
 
             X = cube_pval_correl_threshold[:, y1:y2, x1:x2]
 
             # How many thresholded pvalues in each spectral channel
             n_lambda = np.sum(np.array(X != 1, dtype=np.int), axis=(1, 2))
             # pvalues computed for each spectral channel
-            pval_channel_temp = Compute_pval_channel(X, n_lambda, mean_est)
+            pval_channel_temp = Compute_pval_channel(X, n_lambda, m)
             # cube of p-values
             cube_pval_channel[:, y1:y2, x1:x2] = pval_channel_temp[:, np.newaxis,
                                                                    np.newaxis]
@@ -1032,8 +1072,8 @@ def Compute_Referent_Voxel(correl, profile, cube_pval_correl,
     return Cat_ref
 
 
-def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
-                     plot_narrow, wcs):
+def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, weights,
+                     nb_ranges, plot_narrow, wcs):
     """Function to compute the 2 narrow band tests for each detected
     emission line
 
@@ -1047,7 +1087,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
                   Raw data cube
     Dico        : array
                   Dictionary of spectral profiles to test
-    PSF_Moffat  : array
+    PSF_Moffat  : array or list of arrays
                   FSF for this data cube
     nb_ranges   : integer
                   Number of skipped intervals for computing control cube
@@ -1072,12 +1112,18 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
     # Initialization
     T1 = []
     T2 = []
-
+    
     for i in range(len(Cat0)):
         # Coordinates of the voxel
         x0 = Cat0[i]['x']
         y0 = Cat0[i]['y']
         z0 = Cat0[i]['z']
+        # FSF
+        if weights is None:
+            FSF = PSF_Moffat
+        else:
+            FSF = np.sum(np.array([weights[n][y0,x0]*PSF_Moffat[n] for n in range(len(weights))]), axis=0)
+        
         # spectral profile
         num_prof = Cat0[i]['profile']
         profil0 = Dico[:, num_prof]
@@ -1090,7 +1136,7 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         intz1 = max(0, z0 - longz)
         intz2 = min(cube_raw.shape[0], z0 + longz + 1)
         # Subcube on test
-        longxy = PSF_Moffat.shape[1] // 2
+        longxy = FSF.shape[1] // 2
         inty1 = max(0, y0 - longxy)
         inty2 = min(cube_raw.shape[1], y0 + longxy + 1)
         intx1 = max(0, x0 - longxy)
@@ -1128,14 +1174,14 @@ def Narrow_Band_Test(Cat0, cube_raw, Dico, PSF_Moffat, nb_ranges,
         T1.append(np.inner(diff_cube.flatten(), s1.flatten()))
 
         # Test 2
-        atom = np.zeros((long0, PSF_Moffat.shape[1], PSF_Moffat.shape[2]))
+        atom = np.zeros((long0, FSF.shape[1], FSF.shape[2]))
 
         # Construction of the 3D atom corresponding to the spectral profile
         z1 = max(0, z0 - longz)
         z2 = min(cube_raw.shape[0], long0 + z0 - longz)
         atom[z1 - z0 + longz:z2 - z0 + longz, :, :] = profil1[z1 - z0 + longz:z2 - z0 + longz,
                                                               np.newaxis, np.newaxis] \
-            * PSF_Moffat[z1:z2, :, :]
+            * FSF[z1:z2, :, :]
 
         # Normalization
         atom = atom / np.sqrt(np.sum(atom**2))
@@ -1231,7 +1277,7 @@ def Narrow_Band_Threshold(Cat1, thresh_T1, thresh_T2):
 
 
 def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
-                    grid_dxy, grid_dz, PSF_Moffat, Dico):
+                    grid_dxy, grid_dz, PSF_Moffat, weights, Dico):
     """Function to compute the estimated emission line and the optimal
     coordinates for each detected lines in a spatio-spectral grid.
 
@@ -1290,7 +1336,10 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
     Cat2_flux = []
     Cat_est_line_raw = []
     Cat_est_line_std = []
-    longxy = PSF_Moffat.shape[1] // 2
+    if weights is None:
+        longxy = PSF_Moffat.shape[1] // 2
+    else:
+        longxy = PSF_Moffat[0].shape[1] // 2
 
     # Spatio-spectral grid
     grid_x1 = np.maximum(0, Cat1_T['x'] - grid_dxy)
@@ -1351,12 +1400,19 @@ def Estimation_Line(Cat1_T, profile, Nx, Ny, Nz, sigma, cube_faint,
             spad = (slice(None, None, 1),
                     slice(y1[n], y2[n], 1),
                     slice(x1[n], x2[n], 1))
+            
+            #FSF
+            if weights is None:
+                FSF = PSF_Moffat
+            else:
+                FSF = np.sum(np.array([weights[k][y_f[n], x_f[n]]*PSF_Moffat[k] for k in range(len(weights))]), axis=0)
+            
             f, res, lraw, lstd = Compute_Estim_Grid(x_f[n], y_f[n], z_f[n],
                                                     grid_dxy, profile, Nx, Ny,
                                                     Nz, sigma[:, y_f[n], x_f[n]],
                                                     sigma[s], cube_faint[s],
                                                     cube_faint_pad[spad],
-                                                    PSF_Moffat, longxy, Dico,
+                                                    FSF, longxy, Dico,
                                                     xmin[n], ymin[n])
             
             flux[n] = f
@@ -1826,7 +1882,11 @@ def Construct_Object(k, ktot, uflux, unone, cols, units, desc, fmt, step_wave,
         if 'neighboors' in param.keys():
             src.OP_NG = (param['neighboors'], 'Orig Neighboors')
         if 'meanestPvalChan' in param.keys():
-            src.OP_MP = (param['meanestPvalChan'], 'Orig Meanest PvalChan')
+            try:
+                src.OP_MP = (param['meanestPvalChan'], 'Orig Meanest PvalChan')
+            except:
+                for i in range(len(param['meanestPvalChan'])):
+                    src.header['OP_MP%02d'%(i+1)] = param['meanestPvalChan'][i]
         if 'nbsubcube' in param.keys():
             src.OP_NS = (param['nbsubcube'], 'Orig nb of subcubes')
         if 'grid_dxy' in param.keys():

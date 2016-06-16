@@ -39,6 +39,7 @@ from scipy.io import loadmat
 import shutil
 
 from ...obj import Cube, Image, Spectrum
+from ...MUSE import FSF,FieldsMap 
 from .lib_origin import Compute_PSF, Spatial_Segmentation, \
     Compute_PCA_SubCube, Compute_Number_Eigenvectors_Zone, \
     Compute_Proj_Eigenvector_Zone, Correlation_GLR_test, \
@@ -173,8 +174,6 @@ class ORIGIN(object):
         # Dimensions
         self.Nz, self.Ny, self.Nx = cub.shape
 
-        del cub
-
         # Set to Inf the Nana
         self.var[np.isnan(self.var)] = np.inf
 
@@ -195,17 +194,61 @@ class ORIGIN(object):
             self.profiles = profiles
             self.FWHM_profiles = FWHM_profiles
 
-        # 1 pixel in arcsec
+        # FSF cube(s)
+        self._logger.info('ORIGIN - Compute PSF')
         step_arcsec = self.wcs.get_step(unit=u.arcsec)[0]
+        self.wfields = None
         if PSF is None or FWHM_PSF is None:
-            self._logger.info('ORIGIN - Compute PSF')
-            self.PSF, fwhm_pix, fwhm_arcsec = Compute_PSF(self.wave, self.Nz,
-                                                          Nfsf=13, beta=2.6,
-                                                          fwhm1=0.76, fwhm2=0.66,
-                                                          lambda1=4750, lambda2=7000,
-                                                          step_arcsec=step_arcsec)
-            # mean of the fwhm of the FSF in pixel
-            self.FWHM_PSF = np.mean(fwhm_arcsec) / step_arcsec
+            Nfsf=13
+            try:
+                FSF_mode = cub.primary_header['FSFMODE']
+                if FSF_mode != 'MOFFAT1':
+                    raise IOError('This method is coded only for FSFMODE=MOFFAT1')
+            except:
+                FSF_mode = None
+                
+            if FSF_mode is None:
+                self.PSF, fwhm_pix, fwhm_arcsec = \
+                Compute_PSF(self.wave, self.Nz, Nfsf=Nfsf, beta=2.6,
+                            fwhm1=0.76, fwhm2=0.66, lambda1=4750,
+                            lambda2=7000, step_arcsec=step_arcsec)
+                # mean of the fwhm of the FSF in pixel
+                self.FWHM_PSF = np.mean(fwhm_arcsec) / step_arcsec
+            else:
+                self.param['PSF'] = FSF_mode
+                nfields = cub.primary_header['NFIELDS']
+                FSF_model = FSF(FSF_mode)
+                if nfields == 1: # just one FSF
+                    nf = 0
+                    beta = cub.primary_header['FSF%02dBET'%nf]
+                    a = cub.primary_header['FSF%02dFWA'%nf]
+                    b = cub.primary_header['FSF%02dFWB'%nf]
+                    self.PSF, fwhm_pix, fwhm_arcsec = \
+                    FSF_model.get_FSF_cube(cub, Nfsf, beta=beta, a=a, b=b)
+                    # Normalization
+                    self.PSF = self.PSF / np.sum(self.PSF, axis=(1, 2))\
+                    [:, np.newaxis, np.newaxis]
+                    # mean of the fwhm of the FSF in pixel
+                    self.FWHM_PSF = np.mean(fwhm_arcsec) / step_arcsec
+                else:
+                    self.PSF = []
+                    self.FWHM_PSF = []
+                    for i in range(1, nfields+1):
+                        beta = cub.primary_header['FSF%02dBET'%i]
+                        a = cub.primary_header['FSF%02dFWA'%i]
+                        b = cub.primary_header['FSF%02dFWB'%i]
+                        PSF, fwhm_pix, fwhm_arcsec = \
+                        FSF_model.get_FSF_cube(cub, Nfsf, beta=beta,
+                                               a=a, b=b)
+                        # Normalization (???)
+                        PSF = PSF / np.sum(PSF, axis=(1, 2))[:, np.newaxis,
+                                                             np.newaxis]
+                        self.PSF.append(PSF)
+                        # mean of the fwhm of the FSF in pixel
+                        self.FWHM_PSF.append(np.mean(fwhm_arcsec) / step_arcsec)
+                    fmap = FieldsMap(self.filename, extname='FIELDMAP')
+                    self.wfields = fmap.compute_weights()
+
         else:
             cubePSF = Cube(PSF)
             if cubePSF.shape[1] != cubePSF.shape[2]:
@@ -220,6 +263,8 @@ class ORIGIN(object):
             self.PSF = cubePSF._data
             # mean of the fwhm of the FSF in pixel
             self.FWHM_PSF = np.mean(FWHM_PSF)
+            
+        del cub
 
         # Spatial segmentation
         self._logger.info('ORIGIN - Spatial segmentation')
@@ -307,7 +352,8 @@ class ORIGIN(object):
         # TGLR computing (normalized correlations)
         self._logger.info('ORIGIN - Compute the GLR test')
         correl, profile = Correlation_GLR_test(cube_faint._data, self.var,
-                                               self.PSF, self.profiles)
+                                               self.PSF, self.wfields,
+                                               self.profiles)
         correl = Cube(data=correl, wave=self.wave, wcs=self.wcs,
                       mask=np.ma.nomask)
         profile = Cube(data=profile, wave=self.wave, wcs=self.wcs,
@@ -356,11 +402,15 @@ class ORIGIN(object):
         # Estimated mean for p-values distribution related
         # to the Rayleigh criterium
         self._logger.info('ORIGIN - Compute p-values of spectral channel')
-        mean_est = self.FWHM_PSF**2
+        try:
+            mean_est = self.FWHM_PSF**2
+        except:
+            mean_est = [FWHM_PSF**2 for FWHM_PSF in self.FWHM_PSF]
         self.param['meanestPvalChan'] = mean_est
         cube_pval_channel = Compute_pval_channel_Zone(cube_pval_correl,
                                                       self.intx, self.inty,
-                                                      self.NbSubcube, mean_est)
+                                                      self.NbSubcube,
+                                                      mean_est, self.wfields)
 
         # Final p-values
         self._logger.info('ORIGIN - Compute final p-values')
@@ -446,7 +496,7 @@ class ORIGIN(object):
         self._logger.info('ORIGIN - Compute narrow band tests')
         self.param['NBranges'] = nb_ranges
         Cat1 = Narrow_Band_Test(Cat0, self.cube_raw, self.profiles,
-                                self.PSF, nb_ranges,
+                                self.PSF, self.wfields, nb_ranges,
                                 plot_narrow, self.wcs)
         return Cat1
 
@@ -521,7 +571,7 @@ class ORIGIN(object):
         self.param['grid_dz'] = grid_dz
         Cat2_T, Cat_est_line_raw_T, Cat_est_line_std_T = \
             Estimation_Line(Cat1_T, profile._data, self.Nx, self.Ny, self.Nz, self.var, cube_faint._data,
-                            grid_dxy, grid_dz, self.PSF, self.profiles)
+                            grid_dxy, grid_dz, self.PSF, self.wfields, self.profiles)
         Cat_est_line = []
         for data, std in zip(Cat_est_line_raw_T, Cat_est_line_std_T):
             spe = Spectrum(data=data, var=std**2, wave=self.wave, mask=np.ma.nomask)
@@ -549,7 +599,11 @@ class ORIGIN(object):
                x y z T_GLR profile pvalC pvalS pvalF T1 T2 residual flux num_line
         """
         self._logger.info('ORIGIN - Spatial merging')
-        Cat3 = Spatial_Merging_Circle(Cat2_T, self.FWHM_PSF)
+        if self.wfields is None:
+            fwhm = self.FWHM_PSF
+        else:
+            fwhm = np.max(np.array(self.FWHM_PSF)) # to be improved !!
+        Cat3 = Spatial_Merging_Circle(Cat2_T, fwhm)
         return Cat3
 
     def merge_spectraly(self, Cat3, Cat_est_line, deltaz=1):
@@ -665,6 +719,11 @@ class ORIGIN(object):
         ax : matplotlib.Axes
                 the Axes instance in which the image is drawn
         """
+        if self.wfields is None:
+            fwhm = self.FWHM_PSF
+        else:
+            fwhm = np.max(np.array(self.FWHM_PSF))
+            
         carte_2D_correl = np.amax(correl._data, axis=0)
         carte_2D_correl_ = Image(data=carte_2D_correl, wcs=self.wcs)
 
@@ -675,7 +734,7 @@ class ORIGIN(object):
         ax.plot(x, y, 'k+')
         if circle:
             for px, py in zip(x, y):
-                c = plt.Circle((px, py), np.round(self.FWHM_PSF / 2), color='k',
+                c = plt.Circle((px, py), np.round(fwhm / 2), color='k',
                                fill=False)
                 ax.add_artist(c)
         carte_2D_correl_.plot(vmin=vmin, vmax=vmax, title=title, ax=ax)
