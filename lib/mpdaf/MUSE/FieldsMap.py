@@ -29,7 +29,7 @@ class FieldsMap(object):
     """Class to work with the mosaic field map.
     """
 
-    def __init__(self, filename, nfields=None, **kwargs):
+    def __init__(self, filename=None, nfields=None, **kwargs):
         """Class to work with the mosaic field map.
         
         Parameters
@@ -41,11 +41,24 @@ class FieldsMap(object):
         nfields : integer
                   Number of fields.
         """
-        if nfields is None:
-            self.nfields = fits.getval(filename, 'NFIELDS')
+        if filename is None:
+            self.nfields = 0
+            self.data = None
         else:
-            self.nfields = nfields
-        self.data = fits.getdata(filename, **kwargs)
+            if nfields is None:
+                self.nfields = fits.getval(filename, 'NFIELDS')
+            else:
+                self.nfields = nfields
+            self.data = fits.getdata(filename, **kwargs)
+            indexes = (i for i in range(self.nfields))
+        
+    def __getitem__(self, item):
+        """Return a sliced object.
+        """
+        res = self.__class__()
+        res.data = self.data[item]
+        res.nfields = self.nfields
+        return res
 
     def get_field_mask(self, field_name):
         """Return an array with non-zeros values for pixels matching a field.
@@ -84,7 +97,7 @@ class FieldsMap(object):
         # compute the mask for each field
         fmaps = []
         for i in range(1, self.nfields+1):
-            fmaps.append(self.get_field_mask(i))
+            fmaps.append(self.get_field_mask(i).astype(np.int))
        
         several = (np.sum(fmaps, axis=0) > 1)
 
@@ -138,7 +151,6 @@ class FieldsMap(object):
             for i in fields[1:]:
                 FSF *= weights[i] * kernels[i]
             return FSF
-    
 
     def variable_PSF_convolution(self, img, kernels, weights=None):
         """ Function used for the convolution of an image by a set of PSF.
@@ -174,7 +186,9 @@ class FieldsMap(object):
         # build a weighting map per PSF and convolve
         for i in range(self.nfields):
             convolved_img = convolved_img \
-                        + fftconvolve(weights[i]*img, kernels[i], mode='same')
+                        + fftconvolve(weights[i]*img,
+                                      kernels[i]/np.sum(kernels[i]),
+                                      mode='same')
 
         return convolved_img
     

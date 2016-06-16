@@ -4,7 +4,7 @@ from __future__ import absolute_import, division
 
 import nose.tools
 from nose.plugins.attrib import attr
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_true, assert_almost_equal
 
 import numpy as np
 import os
@@ -148,7 +148,7 @@ class TestSource():
         # orientation as the white-light image, then check that they end
         # up with the same rotation angles.
         self.source2.add_image(hst, 'HST3', rotate=True)
-        nose.tools.assert_almost_equal(self.source2.images['HST3'].get_rot(),
+        assert_almost_equal(self.source2.images['HST3'].get_rot(),
                                        self.source2.images['MUSE_WHITE'].get_rot(), 3)
 
     @attr(speed='fast')
@@ -160,17 +160,17 @@ class TestSource():
         src.add_z('EMI', 0.086, 0.0001)
         src.add_white_image(cube)
         src.add_narrow_band_images(cube, 'EMI')
-        nose.tools.assert_true('NB_OIII5007' in src.images)
-        nose.tools.assert_true('NB_HALPHA' in src.images)
-        nose.tools.assert_true('NB_HBETA' in src.images)
+        assert_true('NB_OIII5007' in src.images)
+        assert_true('NB_HALPHA' in src.images)
+        assert_true('NB_HBETA' in src.images)
         src.add_narrow_band_image_lbdaobs(cube, 'OBS7128', 7128)
-        nose.tools.assert_true('OBS7128' in src.images)
+        assert_true('OBS7128' in src.images)
         src.add_seg_images()
-        nose.tools.assert_true('SEG_MUSE_WHITE' in src.images)
-        nose.tools.assert_true('SEG_NB_OIII5007' in src.images)
-        nose.tools.assert_true('SEG_NB_HALPHA' in src.images)
-        nose.tools.assert_true('SEG_NB_HBETA' in src.images)
-        nose.tools.assert_true('SEG_OBS7128' in src.images)
+        assert_true('SEG_MUSE_WHITE' in src.images)
+        assert_true('SEG_NB_OIII5007' in src.images)
+        assert_true('SEG_NB_HALPHA' in src.images)
+        assert_true('SEG_NB_HBETA' in src.images)
+        assert_true('SEG_OBS7128' in src.images)
 
         seg_tags = ['SEG_MUSE_WHITE', 'SEG_NB_OIII5007', 'SEG_OBS7128',
                     'SEG_NB_HBETA', 'SEG_NB_HALPHA']
@@ -181,19 +181,19 @@ class TestSource():
                            ~(np.array(src.images['MASK_SKY'].data.data, dtype=bool)))
         assert_array_equal(src.images['MASK_INTER'].data.data,
                            np.zeros(src.images['MASK_INTER'].shape))
-        nose.tools.assert_true('MASK_OBJ' in src.images)
-        nose.tools.assert_true('MASK_INTER' in src.images)
-        nose.tools.assert_true('MASK_SKY' in src.images)
+        assert_true('MASK_OBJ' in src.images)
+        assert_true('MASK_INTER' in src.images)
+        assert_true('MASK_SKY' in src.images)
         src.extract_spectra(cube, obj_mask='MASK_OBJ', skysub=True, psf=None)
-        nose.tools.assert_true('MUSE_SKY' in src.spectra)
-        nose.tools.assert_true('MUSE_TOT_SKYSUB' in src.spectra)
-        nose.tools.assert_true('MUSE_WHITE_SKYSUB' in src.spectra)
-        nose.tools.assert_true('NB_HALPHA_SKYSUB' in src.spectra)
+        assert_true('MUSE_SKY' in src.spectra)
+        assert_true('MUSE_TOT_SKYSUB' in src.spectra)
+        assert_true('MUSE_WHITE_SKYSUB' in src.spectra)
+        assert_true('NB_HALPHA_SKYSUB' in src.spectra)
         src.extract_spectra(cube, obj_mask='MASK_OBJ', skysub=False, psf=0.2 * np.ones(cube.shape[0]))
-        nose.tools.assert_true('MUSE_PSF' in src.spectra)
-        nose.tools.assert_true('MUSE_TOT' in src.spectra)
-        nose.tools.assert_true('MUSE_WHITE' in src.spectra)
-        nose.tools.assert_true('NB_HALPHA' in src.spectra)
+        assert_true('MUSE_PSF' in src.spectra)
+        assert_true('MUSE_TOT' in src.spectra)
+        assert_true('MUSE_WHITE' in src.spectra)
+        assert_true('NB_HALPHA' in src.spectra)
         
         Ny = np.array([ima.shape[0] for ima in src.images.values()])
         assert_equal(len(np.unique(Ny)), 1)
@@ -256,6 +256,16 @@ class TestSource():
             assert_equal(len(np.unique(Ny)), 1)
             Nx = np.array([source.images[tag].shape[1] for tag in tags ])
             assert_equal(len(np.unique(Nx)), 1)
+
+    @attr(speed='fast')
+    def test_add_FSF(self):
+        """Source class: testing add_FSF method"""
+        src = Source.from_file('data/sdetect/origin-00026.fits')
+        cube = Cube('data/sdetect/subcub_mosaic.fits')
+        src.add_FSF(cube)
+        assert_equal(src.FSF99BET, 2.8)
+        assert_equal(src.FSF99FWA, 0.9)
+        assert_equal(src.FSF99FWB, -3.309e-05)
 
 #
 #     @attr(speed='fast')

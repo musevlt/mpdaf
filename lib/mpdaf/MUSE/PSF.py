@@ -155,23 +155,24 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
 
     # alpha coefficient in pixel
     alpha = fwhm_pix / (2 * np.sqrt(2**(1 / beta) - 1))
+    amplitude = (beta-1) * (np.pi * alpha**2)
     
     if np.isscalar(alpha):
-        moffat = Moffat2D(1, 0, 0, alpha, beta)
+        moffat = Moffat2D(amplitude, 0, 0, alpha, beta)
         moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
         PSF_Moffat = moffat_kernel.array
         # Normalization
-        PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
+#         PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
     else:
         Nz = alpha.shape[0]
         PSF_Moffat = np.empty((Nz, Nfsf, Nfsf))
         for i in range(Nz):
-            moffat = Moffat2D(1, 0, 0, alpha[i], beta)
+            moffat = Moffat2D(amplitude, 0, 0, alpha[i], beta)
             moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
             PSF_Moffat [i,:,:]= moffat_kernel.array
         # Normalization
-        PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
-            [:, np.newaxis, np.newaxis]
+#         PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
+#                     [:, np.newaxis, np.newaxis]
                     
     return PSF_Moffat, fwhm_pix
     
