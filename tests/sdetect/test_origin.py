@@ -2,11 +2,12 @@
 
 from __future__ import absolute_import, division
 
-import nose.tools
+from nose.tools import assert_equal
 from nose.plugins.attrib import attr
+import numpy as np
 import shutil
 
-from mpdaf.sdetect import ORIGIN
+from mpdaf.sdetect import ORIGIN, Source
 
 
 class TestORIGIN():
@@ -68,6 +69,21 @@ class TestORIGIN():
 
         # list of source objects
         nsources = my_origin.write_sources(Cat4, Cat_est_line, correl, ncpu=2)
-
-        nose.tools.assert_equal(nsources, 2)
+        assert_equal(nsources, 2)
+        
+        # test returned sources are valid
+        src = Source.from_file('./origin/origin-00001.fits')
+        Nz = np.array([sp.shape[0] for sp in src.spectra.values()])
+        assert_equal(len(np.unique(Nz)), 1)
+        Ny = np.array([ima.shape[0] for ima in src.images.values()])
+        assert_equal(len(np.unique(Ny)), 1)
+        Nx = np.array([ima.shape[1] for ima in src.images.values()])
+        assert_equal(len(np.unique(Nx)), 1)
+        Nz = np.unique(Nz)[0]
+        Ny = np.unique(Ny)[0]
+        Nx = np.unique(Nx)[0]
+        cNz, cNy, cNx = src.cubes['MUSE_CUBE'].shape
+        assert_equal(cNz, Nz)
+        assert_equal(cNy, Ny)
+        assert_equal(cNx, Nx)
         shutil.rmtree('./origin')
