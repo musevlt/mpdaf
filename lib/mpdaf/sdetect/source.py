@@ -1103,9 +1103,14 @@ class Source(object):
             raise IOError('Cannot compute FSF int the FSF keywords are not'
                           'present in the primary header of the cube')
         if FSF_mode != 'MOFFAT1':
-            raise IOError('This method is codes only for FSFMODE=MOFFAT1')
+            raise IOError('This method is coded only for FSFMODE=MOFFAT1')
             
-        try:
+        if cube.primary_header['NFIELDS'] ==1: # just one FSF
+            nf = 0
+            beta = cube.primary_header['FSF%02dBET'%nf]
+            a = cube.primary_header['FSF%02dFWA'%nf]
+            b = cube.primary_header['FSF%02dFWB'%nf]       
+        else:
             # load field map
             fmap = FieldsMap(cube.filename, extname='FIELDMAP')
             # load info from the white image
@@ -1164,13 +1169,6 @@ class Source(object):
                 beta = v[0]
                 a = v[1]
                 b = v[2]
-            
-        except: # just one FSF
-            nf = 0
-            beta = cube.primary_header['FSF%02dBET'%nf]
-            a = cube.primary_header['FSF%02dFWA'%nf]
-            b = cube.primary_header['FSF%02dFWB'%nf]
-        
         
         self.header['FSFMODE'] = FSF_mode
         self.header['FSF%02dBET'%nf] = np.around(beta, decimals=2)
