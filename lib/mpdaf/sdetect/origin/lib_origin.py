@@ -1778,6 +1778,8 @@ def Construct_Object(k, ktot, uflux, unone, cols, units, desc, fmt, step_wave,
         while(not ((names[1:]-names[:-1]) == 0).all()):
             names[1:][(names[:-1]-names[1:]) == 0] += 1
         names = names.astype(np.str)
+        
+    correl_ = Cube(data=correl, wcs=cube.wcs, wave=cube.wave, mask=cube._mask, copy=False)
     
     for j in range(nb_lines):
         sp_est = Spectrum(data=Cat_est_line_data[j, :], 
@@ -1804,6 +1806,10 @@ def Construct_Object(k, ktot, uflux, unone, cols, units, desc, fmt, step_wave,
         src.spectra['CORR_{:s}'.format(names[j])] = sp
         src.add_narrow_band_image_lbdaobs(cube,
                                         'NB_LINE_{:s}'.format(names[j]),
+                                        w[j], width=2 * profil_FWHM,
+                                        is_sum=True, subtract_off=True)
+        src.add_narrow_band_image_lbdaobs(correl_,
+                                        'NB_CORR_{:s}'.format(names[j]),
                                         w[j], width=2 * profil_FWHM,
                                         is_sum=True, subtract_off=True)
 
