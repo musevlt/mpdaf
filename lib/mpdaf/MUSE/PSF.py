@@ -158,6 +158,7 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
     amplitude = (beta-1) * (np.pi * alpha**2)
     
     if np.isscalar(alpha):
+        amplitude = (beta-1) * (np.pi * alpha**2)
         moffat = Moffat2D(amplitude, 0, 0, alpha, beta)
         moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
         PSF_Moffat = moffat_kernel.array
@@ -167,7 +168,7 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
         Nz = alpha.shape[0]
         PSF_Moffat = np.empty((Nz, Nfsf, Nfsf))
         for i in range(Nz):
-            moffat = Moffat2D(amplitude, 0, 0, alpha[i], beta)
+            moffat = Moffat2D(amplitude[i], 0, 0, alpha[i], beta)
             moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
             PSF_Moffat [i,:,:]= moffat_kernel.array
         # Normalization
