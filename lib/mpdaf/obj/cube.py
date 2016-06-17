@@ -276,9 +276,9 @@ class Cube(DataArray):
             lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        sy, sx, center = bounding_box(form="rectangle", center=center,
-                                      radii=radius, posangle=0.0,
-                                      shape=self.shape[1:], step=step)
+        [sy, sx], unclipped, center = bounding_box(form="rectangle", center=center,
+                                                   radii=radius, posangle=0.0,
+                                                   shape=self.shape[1:], step=step)
 
         # Mask pixels inside the region.
         if inside:
@@ -366,9 +366,9 @@ class Cube(DataArray):
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        sy, sx, center = bounding_box(form="ellipse", center=center, radii=radii,
-                                      posangle=posangle, shape=self.shape[1:],
-                                      step=step)
+        [sy, sx], unclipped, center = bounding_box(form="ellipse", center=center,
+                                                   radii=radii, posangle=posangle,
+                                                   shape=self.shape[1:], step=step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
@@ -2786,7 +2786,7 @@ class Cube(DataArray):
         # Select the whole wavelength range?
         if lbda is None:
             lmin = 0
-            lmax = self.shape[0]
+            lmax = self.shape[0] - 1
         else:
             # Get the wavelength range.
             lmin, lmax = lbda
@@ -2797,20 +2797,22 @@ class Cube(DataArray):
 
             # Convert the maximum wavelength to a wavelength pixel-index.
             if unit_wave is not None:
-                lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1
+                lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
-            # Check that the wavelength bounds are usable.
+            # Check that the wavelength bounds are usable and in ascending
+            # order.
             if lmin >= self.shape[0] or lmax <= 0:
                 raise ValueError("Wavelength range not in cube")
-            if lmin == lmax:
-                lmax = lmin+1
-            if lmin < 0:
-                lmin = 0
-            if lmax > self.shape[0]:
-                lmax = self.shape[0]
+            elif lmin > lmax:
+                lmin, lmax = lmax, lmin
+
+        # Create a slice that selects the above wavelength range,
+        # clipped to the extent of the cube.
+        sl = slice(lmin if lmin >= 0 else 0,
+                   lmax + 1 if lmax < self.shape[0] else self.shape[0])
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        sy, sx, center = bounding_box(form="rectangle", center=center,
+        [sy, sx], [uy, ux], center = bounding_box(form="rectangle", center=center,
                                       radii=size / 2.0, posangle=posangle,
                                       shape=self.shape[1:], step=step)
         if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start==sx.stop or
@@ -2818,7 +2820,7 @@ class Cube(DataArray):
             raise ValueError('sub-cube boundaries are outside the cube')
 
         # Extract the requested part of the cube.
-        res = self[lmin:lmax, sy, sx]
+        res = self[sl, sy, sx]
 
         # If the area is rotated relative to the image axes, should
         # we mask pixels outside the requested region?
@@ -2832,7 +2834,61 @@ class Cube(DataArray):
                             inside=False, unit_center=None,
                             unit_radius=unit_size, unit_wave=unit_wave,
                             posangle=posangle)
-        return res
+
+        # If the image region was not clipped at the edges of the parent cube,
+        # then return the subcube.
+        if sy == uy and sx == ux:
+            return res
+
+        # Since the subcube is smaller than requested, due to clipping,
+        # create new data and variance arrays of the required size.
+        shape = (sl.stop - sl.start, uy.stop - uy.start, ux.stop - ux.start)
+        data = np.zeros(shape)
+        if self._var is None:
+            var = None
+        else:
+            var = np.zeros(shape)
+
+        # If no mask is currently in use, start with every pixel of
+        # the new array filled with nans. Otherwise create a mask that
+        # initially flags all pixels.
+        if self._mask is ma.nomask:
+            mask = ma.nomask
+            data[:] = np.nan
+            if var is not None:
+                var[:] = np.nan
+        else:
+            mask = np.ones(shape, dtype=bool)
+
+        # Calculate the slices where the clipped subcube should go in
+        # the new arrays.
+        slices = [slice(0, shape[0]),
+                  slice(sy.start - uy.start, sy.stop - uy.start),
+                  slice(sx.start - ux.start, sx.stop - ux.start)]
+
+        # Copy the clipped subcube into unclipped arrays.
+        data[slices] = res._data[:]
+        if var is not None:
+            var[slices] = res._var[:]
+        if mask is not None:
+            mask[slices] = res._mask[:]
+
+        # Create a new WCS object for the unclipped subcube.
+        wcs = res.wcs
+        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + slices[2].start)
+        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + slices[1].start)
+        wcs.set_naxis1(shape[2])
+        wcs.set_naxis2(shape[1])
+
+        # Create a new wavelength description object.
+        wave = self.wave[sl]
+
+        # Create the new unclipped sub-cube.
+        return Cube(wcs=wcs, wave=wave, unit=self.unit, copy=False,
+                    data=data, var=var, mask=mask,
+                    data_header=fits.Header(self.data_header),
+                    primary_header=fits.Header(self.primary_header),
+                    filename=self.filename)
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
                                 unit_radius=u.arcsec):

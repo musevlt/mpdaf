@@ -113,15 +113,23 @@ def bounding_box(form, center, radii, posangle, shape, step):
 
     Returns
     -------
-    out : slice, slice, center
-       The Y-axis and X-axis slices needed to select a rectangular region
-       of the image that just encloses the part of the ellipse or rectangle
-       that is within the image area, along with the effective
-       center of the region before any clipping was performed on the slices.
-       If the selected range an axis is entirely outside the
-       array a zero-pixel slice is returned for that axis, with a start
-       value that is 0 if the pixels were all below pixel 0, or shape-1
-       if they were all off the upper end of the range.
+    out : clipped, unclipped, center
+
+       The 'clipped' return value is a list of the Y-axis and
+       X-axis slices to use to select all pixels within the
+       rectangular region of the image that just encloses the part of
+       the ellipse or rectangle that is within the image area.
+
+       The 'unclipped' return-value is the version of 'clipped' before
+       it was clipped at the edges of the image.
+
+       The 'center' return value is the pixel index of the center of
+       the region, prior to clipping.
+
+       If the region is entirely outside the range of an axis, a
+       zero-pixel slice is returned for that axis in 'clipped', with a
+       start value that is 0 if the pixels were all below pixel 0, or
+       shape-1 if they were all off the upper end of the range.
 
     """
 
@@ -199,6 +207,9 @@ def bounding_box(form, center, radii, posangle, shape, step):
     # Calculate the effective center of the bounded region.
     center = (first + last) / 2.0
 
+    # Compute the ideal slices that would select the bounding box.
+    ideal_slices = [slice(first[0], last[0] + 1), slice(first[1], last[1] + 1)]
+
     # Are the selected pixels of the axes outside the bounds of the array?
     max_indexes = np.asarray(shape) - 1
     outside = np.logical_or(last < 0, first > max_indexes)
@@ -211,12 +222,12 @@ def bounding_box(form, center, radii, posangle, shape, step):
     # Compute the corresponding slices, replacing the clipped
     # values by a zero-pixel range where the pre-clipped indexes
     # were entirely outside the array.
-    yslice = slice(imin, (imax + 1) if not outside[0] else imax)
-    xslice = slice(jmin, (jmax + 1) if not outside[1] else jmax)
+    clipped_slices = [slice(imin, (imax + 1) if not outside[0] else imax),
+                      slice(jmin, (jmax + 1) if not outside[1] else jmax)]
 
     # Return the ranges as slice objects, along with the effective
     # center of the region.
-    return yslice, xslice, center
+    return clipped_slices, ideal_slices, center
 
 
 def UnitArray(array, old_unit, new_unit):
