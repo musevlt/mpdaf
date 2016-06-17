@@ -84,12 +84,12 @@ def test_arithmetic():
                 nose.tools.assert_almost_equal(cube2[k, j, i], image2[j, i] / cube1[k, j, i])
 
     # spectrum * image
-    # spectrum1 = generate_spectrum()
-    # cube2 = image1 * spectrum1
-    # for k in range(10):
-    #     for j in range(6):
-    #         for i in range(5):
-    #             nose.tools.assert_almost_equal(cube2[k, j, i], spectrum1[k] * image1[j, i])
+    spectrum1 = generate_spectrum()
+    cube2 = image1 * spectrum1
+    for k in range(10):
+        for j in range(6):
+            for i in range(5):
+                nose.tools.assert_almost_equal(cube2[k, j, i], spectrum1[k] * image1[j, i])
 
     image2 = (image1 * -2).abs() + (image1 + 4).sqrt() - 2
     nose.tools.assert_almost_equal(image2[3, 3],

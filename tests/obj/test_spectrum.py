@@ -90,11 +90,11 @@ def test_arithmetric():
     assert_array_almost_equal(cube2.data, sp1data / cube1.data)
 
     # spectrum * image
-    # data = np.ones(shape=(6, 5)) * 2
-    # image1 = Image(data=data, wcs=wcs)
-    # cube2 = spectrum1 * image1
-    # assert_array_almost_equal(cube2.data,
-    #                           sp1data * image1.data[np.newaxis, :, :])
+    data = np.ones(shape=(6, 5)) * 2
+    image1 = Image(data=data, wcs=wcs)
+    cube2 = spectrum1 * image1
+    assert_array_almost_equal(cube2.data,
+                              sp1data * image1.data[np.newaxis, :, :])
 
 
 @attr(speed='fast')

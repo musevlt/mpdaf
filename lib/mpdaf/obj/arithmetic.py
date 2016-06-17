@@ -104,6 +104,7 @@ def _arithmetic(operation, a, b):
 
     _check_compatible_coordinates(a, b)
 
+    newshape = None
     if a.ndim == 3 and b.ndim == 1:  # cube + spectrum
         _check_compatible_shapes(a, b, dims=0)
         newshape = (-1, 1, 1)
@@ -111,10 +112,13 @@ def _arithmetic(operation, a, b):
         _check_compatible_shapes(a, b, dims=slice(-1, -3, -1))
         newshape = (1, ) + b.shape
     elif a.ndim == 2 and b.ndim == 1:  # image + spectrum
-        raise NotImplementedError
+        from .cube import Cube
+        a = Cube.new_from_obj(a, data=np.expand_dims(a.data, axis=0),
+                              var=np.expand_dims(a.var, axis=0))
+        a.wave = b.wave.copy()
+
     else:
         _check_compatible_shapes(a, b)
-        newshape = None
 
     res = a.clone()
     res.data = _arithmetic_data(operation, a, b, newshape=newshape)
