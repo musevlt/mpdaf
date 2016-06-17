@@ -11,18 +11,21 @@ from .objs import UnitMaskedArray, UnitArray
 _arit_doc = """
     Performs {name} by evaluating ``self`` {op} ``operand``.
 
-    If ``self`` and ``operand`` have compatible shapes, they will be
-    broadcasted together. So it is possible to perfom an operation between
-    a `~mpdaf.obj.Cube` and an a `~mpdaf.obj.Image` or a `~mpdaf.obj.Spectrum`.
+    Operation can be performed with a scalar number, a Numpy ndarray or masked
+    array, or a Mpdaf object. The dimensions must be equal, or, if ``self`` and
+    ``operand`` have compatible shapes, they will be broadcasted together. So
+    it is possible to perfom an operation between a `~mpdaf.obj.Cube` and an
+    a `~mpdaf.obj.Image` or a `~mpdaf.obj.Spectrum`. For Mpdaf objects, they
+    must also have compatible coordinates (world and wavelength).
 
     Parameters
     ----------
-    operand : `DataArray`-like instance or convertible to one.
+    operand : int, float, ndarray or `DataArray`
         The second operand in the operation.
 
     Returns
     -------
-    result : `~DataArray`-like
+    result : `~DataArray`
         The resulting object.
 
     """
