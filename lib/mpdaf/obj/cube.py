@@ -2168,8 +2168,8 @@ class Cube(DataArray):
                                       var=np.zeros(cshape), unit=unit)
                     init = False
 
-                result.data_header = fits.Header(self.data_header)
-                result.primary_header = fits.Header(self.primary_header)
+                result.data_header = self.data_header.copy()
+                result.primary_header = self.primary_header.copy()
                 result[:, p, q] = spe
 
             else:
@@ -2270,8 +2270,8 @@ class Cube(DataArray):
                 result._mask[k, :, :] = mask
                 if self.var is not None:
                     result._var[k, :, :] = var
-                result.data_header = fits.Header(self.data_header)
-                result.primary_header = fits.Header(self.primary_header)
+                result.data_header = self.data_header.copy()
+                result.primary_header = self.primary_header.copy()
             elif dtype == 'spectrum':
                 # f return a Spectrum -> iterator return a list of spectra
                 header, data, mask, var, unit = out
@@ -2629,8 +2629,8 @@ class Cube(DataArray):
 
         return Cube(wcs=wcs, wave=wave, unit=self.unit, copy=False,
                     data=np.ma.masked_invalid(data), var=var,
-                    data_header=fits.Header(self.data_header),
-                    primary_header=fits.Header(self.primary_header),
+                    data_header=self.data_header.copy(),
+                    primary_header=self.primary_header.copy(),
                     filename=self.filename)
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,

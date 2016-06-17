@@ -1529,6 +1529,7 @@ class Source(object):
                     order=0, unit_start=u.deg, unit_step=u.arcsec).data.data
 
             # Get the sky spectrum to subtract
+            # FIXME: next line seems useless
             sky = subcub.sum(axis=(1, 2), weights=skymask)
             old_mask = subcub.data.mask.copy()
             subcub.data.mask[np.where(

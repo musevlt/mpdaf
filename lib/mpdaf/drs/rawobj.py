@@ -158,7 +158,7 @@ class Channel(object):
     def copy(self):
         """Return a copy of the Channel object."""
         result = Channel(self.extname)
-        result.header = fits.Header(self.header)
+        result.header = self.header.copy()
         try:
             result.data = self.data.__copy__()
         except:
