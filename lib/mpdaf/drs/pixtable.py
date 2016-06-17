@@ -485,7 +485,7 @@ class PixTable(object):
         result.nrows = self.nrows
         result.nifu = self.nifu
 
-        result.primary_header = fits.Header(self.primary_header)
+        result.primary_header = self.primary_header.copy()
 
         result.xc = self.xc
         result.yc = self.yc

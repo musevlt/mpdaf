@@ -586,8 +586,8 @@ class DataArray(object):
         return self.__class__(
             filename=self.filename, data=self._data, mask=self._mask,
             var=self._var, unit=self.unit, wcs=self.wcs, wave=self.wave,
-            copy=True, data_header=fits.Header(self.data_header),
-            primary_header=fits.Header(self.primary_header),
+            copy=True, data_header=self.data_header.copy(),
+            primary_header=self.primary_header.copy(),
             ext=(self._data_ext, self._var_ext), dtype=self.dtype)
 
     def clone(self, var=None, data_init=None, var_init=None):
@@ -801,8 +801,8 @@ class DataArray(object):
 
         return self.__class__(
             data=data, unit=self.unit, var=var, mask=mask, wcs=wcs, wave=wave,
-            filename=self.filename, data_header=fits.Header(self.data_header),
-            primary_header=fits.Header(self.primary_header), copy=False)
+            filename=self.filename, data_header=self.data_header.copy(),
+            primary_header=self.primary_header.copy(), copy=False)
 
     def __setitem__(self, item, other):
         """Set the corresponding part of data."""
