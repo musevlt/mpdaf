@@ -615,6 +615,12 @@ class DataArray(object):
             warnings.warn('The "var" parameter is no longer used. Use '
                           '"var_init"instead.', MpdafWarning)
 
+        # Update the NAXIS keywords because an object without data relies on
+        # this to get the shape
+        data_header = self.data_header.copy()
+        for i in range(1, self.ndim + 1):
+            data_header['NAXIS%d' % i] = self.shape[-i]
+
         return self.__class__(
             unit=self.unit, dtype=None, copy=False,
             data=None if data_init is None else data_init(self.shape,
@@ -623,8 +629,9 @@ class DataArray(object):
                                                        dtype=self.dtype),
             wcs=None if self.wcs is None else self.wcs.copy(),
             wave=None if self.wave is None else self.wave.copy(),
-            data_header=fits.Header(self.data_header),
-            primary_header=fits.Header(self.primary_header))
+            data_header=data_header,
+            primary_header=self.primary_header.copy()
+        )
 
     def info(self):
         """Print information."""
