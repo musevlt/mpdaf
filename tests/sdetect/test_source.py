@@ -7,13 +7,17 @@ from nose.plugins.attrib import attr
 from nose.tools import assert_equal
 
 import numpy as np
+import os
 import six
 
 from astropy.table import Table
+import astropy.units as u
 from mpdaf.obj import Image, Cube
 from mpdaf.sdetect import Source
 from numpy.testing import assert_array_equal
 
+DATADIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                       '..', '..', 'data', 'sdetect')
 
 class TestSource():
 
@@ -201,6 +205,57 @@ class TestSource():
         """Source class: testing sort_lines method"""
         self.source1.sort_lines()
         assert_equal(self.source1.lines['LINE'][0], six.b('[OIII]2'))
+        
+    @attr(speed='slow')
+    def test_SEA(self):
+        """test SEA"""
+        cube = Cube(os.path.join(DATADIR, 'minicube.fits'))
+        ima = Image(os.path.join(DATADIR, 'a478hst.fits'))
+        cat = Table.read(os.path.join(DATADIR, 'cat.txt'), format='ascii')
+        size=10
+        width=8
+        margin=10.
+        fband=3.
+        origin = ('sea', '0.0', os.path.basename(cube.filename))
+        
+        for obj in cat[0:6]:
+            source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
+            z = float(obj['Z'])
+            try:
+                errz = (float(obj['Z_MAX']) - float(obj['Z_MIN'])) / 2.0
+            except:
+                errz= np.nan
+            source.add_z('CAT', z, errz)
+            # create white image
+            source.add_white_image(cube, size, unit_size=u.arcsec)
+
+            # create narrow band images
+            source.add_narrow_band_images(cube=cube, z_desc='CAT',
+                                          size=None, unit_size=u.arcsec,
+                                          width=width, margin=margin,
+                                          fband=fband, is_sum=False)
+
+            # extract images stamps
+            source.add_image(ima, 'HST_')
+
+            # segmentation maps
+            source.add_seg_images(DIR=None)
+            tags = [tag for tag in source.images.keys() if tag[0:4] == 'SEG_']
+            source.find_sky_mask(tags)
+            source.find_union_mask(tags)
+            source.find_intersection_mask(tags)
+
+            # extract spectra
+            source.extract_spectra(cube, skysub=True, psf=None)
+            source.extract_spectra(cube, skysub=False, psf=None)
+            
+            Nz = np.array([sp.shape[0] for sp in source.spectra.values()])
+            assert_equal(len(np.unique(Nz)), 1)
+            tags = [tag for tag in source.images.keys() if tag[0:4] != 'HST_']
+            Ny = np.array([source.images[tag].shape[0] for tag in tags ])
+            assert_equal(len(np.unique(Ny)), 1)
+            Nx = np.array([source.images[tag].shape[1] for tag in tags ])
+            assert_equal(len(np.unique(Nx)), 1)
 
 #
 #     @attr(speed='fast')
