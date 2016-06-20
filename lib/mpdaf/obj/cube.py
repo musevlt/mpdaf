@@ -1180,30 +1180,53 @@ class Cube(DataArray):
         Parameters
         ----------
         lbda_min : float
-            Minimum wavelength.
+            The minimum wavelength to be selected.
         lbda_max : float
-            Maximum wavelength.
+            The maximum wavelength to be selected, or None
+            to just select one image close to lbda_min.
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.
-            If None, inputs are in pixels
+            The wavelength units of lbda_min and lbda_max.
+            The value, None, can be used to indicate that
+            lbda_min and lbda_max are in pixel-index units.
+            The default unit is angstrom.
 
+        Returns
+        -------
+        out : `mpdaf.obj.Cube` or `mpdaf.obj.Image`
+            If more than one spectral channel is selected, then
+            a Cube object is returned that contains just the images
+            of those channels. If a single channel is selected, then
+            an Image object is returned, containing just the image
+            of that channel.
         """
+
+        # Select just the image that is closest to lbda_min?
         if lbda_max is None:
             lbda_max = lbda_min
-        if self.wave is None:
-            raise ValueError('Operation forbidden without world coordinates '
+
+        # If the wavelength limits are in pixels, round them to
+        # the nearest integer values.
+        if unit_wave is None:
+            pix_min = max(0, int(lbda_min + 0.5))
+            pix_max = min(self.shape[0], int(lbda_max + 0.5))
+
+        # If wavelengths have been specified, then we need wavelength
+        # world-coordinates to convert them to pixel indexes.
+        elif self.wave is None:
+            raise ValueError('Operation impossible without world coordinates '
                              'along the spectral direction')
+
+        # Convert wavelength limits to the nearest pixels.
         else:
-            if unit_wave is None:
-                pix_min = max(0, int(lbda_min + 0.5))
-                pix_max = min(self.shape[0], int(lbda_max + 0.5))
-            else:
-                pix_min = max(0, int(self.wave.pixel(lbda_min, unit=unit_wave)))
-                pix_max = min(self.shape[0], int(self.wave.pixel(lbda_max, unit=unit_wave)) + 1)
-            if (pix_min + 1) == pix_max:
-                return self[pix_min, :, :]
-            else:
-                return self[pix_min:pix_max, :, :]
+            pix_min = max(0, int(self.wave.pixel(lbda_min, unit=unit_wave)))
+            pix_max = min(self.shape[0], int(self.wave.pixel(lbda_max, unit=unit_wave)) + 1)
+
+        # When just one channel is selected, return an Image. When
+        # multiple channels are selected, return a sub-cube.
+        if (pix_min + 1) == pix_max:
+            return self[pix_min, :, :]
+        else:
+            return self[pix_min:pix_max, :, :]
 
     def get_step(self, unit_wave=None, unit_wcs=None):
         """Return the cube steps [dlbda,dy,dx].
