@@ -2946,32 +2946,44 @@ class Cube(DataArray):
 
     def aperture(self, center, radius, unit_center=u.deg,
                  unit_radius=u.arcsec):
-        """Extracts a spectrum from an circle aperture of fixed radius.
+        """Extract the spectrum of a circular aperture of given radius.
+
+        A spectrum is formed by summing the pixels within a specified
+        circular region of each wavelength image. This yields a spectrum
+        that has the same length as the wavelength axis of the cube.
 
         Parameters
         ----------
         center : (float,float)
-            Center of the aperture (y,x).
+            The center of the aperture (y,x).
         radius : float
-            Radius of the aperture in arcsec.
-            If None, spectrum at nearest pixel is returned
+            The radius of the aperture.
+            If the radius is None, or <= 0, the spectrum of
+            the nearest image pixel to the specified center is
+            returned.
         unit_center : `astropy.units.Unit`
-            Type of the center coordinates (degrees by default)
-            If None, inputs are in pixels
+            The units of the center coordinates (degrees by default)
+            The special value, None, indicates that center is a 2D
+            pixel index.
         unit_radius : `astropy.units.Unit`
-            unit of the radius value (arcseconds by default)
-            If None, inputs are in pixels
+            The units of the radius argument (arcseconds by default)
+            The special value, None, indicates that the radius is
+            specified in pixels.
 
         Returns
         -------
         out : `~mpdaf.obj.Spectrum`
         """
-        if radius > 0:
+
+        # Sum over multiple image pixels?
+        if radius is not None and radius > 0:
             cub = self.subcube_circle_aperture(center, radius,
                                                unit_center=unit_center,
                                                unit_radius=unit_radius)
             spec = cub.sum(axis=(1, 2))
             self._logger.info('%d spaxels summed', cub.shape[1] * cub.shape[2])
+
+        # Sum over a single image pixel?
         else:
             if unit_center is not None:
                 center = self.wcs.sky2pix(center, unit=unit_center)[0]
