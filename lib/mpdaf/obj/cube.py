@@ -2908,27 +2908,30 @@ class Cube(DataArray):
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
                                 unit_radius=u.arcsec):
-        """Extracts a sub-cube from an circle aperture of fixed radius.
+        """Extract a sub-cube that encloses a circular aperture of
+        a specified radius.
 
         Pixels outside the circle are masked.
 
         Parameters
         ----------
         center : (float,float)
-            Center of the aperture (y,x)
+            The center of the aperture (y,x)
         radius : float
-            Radius of the aperture. It corresponds to the radius
-            along the delta axis and the image is square.
+            The radius of the aperture.
         unit_center : `astropy.units.Unit`
-            Type of the center coordinates (degrees by default)
-            If None, inputs are in pixels
+            The units of the center coordinates (degrees by default)
+            The special value, None, indicates that the center is a
+            2D array index.
         unit_radius : `astropy.units.Unit`
-            unit of the radius value (arcseconds by default)
-            If None, inputs are in pixels
+            The units of the radius argument (arcseconds by default)
+            The special value, None, indicates that the radius is
+            specified in pixels.
 
         Returns
         -------
         out : `~mpdaf.obj.Cube`
+
         """
 
         # Extract a subcube of a square image area of 2*radius x 2*radius.
