@@ -190,6 +190,11 @@ class TestSource():
         nose.tools.assert_true('MUSE_TOT' in src.spectra)
         nose.tools.assert_true('MUSE_WHITE' in src.spectra)
         nose.tools.assert_true('NB_HALPHA' in src.spectra)
+        
+        Ny = np.array([ima.shape[0] for ima in src.images.values()])
+        assert_equal(len(np.unique(Ny)), 1)
+        Nx = np.array([ima.shape[1] for ima in src.images.values()])
+        assert_equal(len(np.unique(Nx)), 1)
 
     @attr(speed='fast')
     def test_sort_lines(self):
