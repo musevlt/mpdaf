@@ -2761,10 +2761,6 @@ class Cube(DataArray):
         if size[0] <= 0.0 or size[1] <= 0.0:
             raise ValueError('Size must be positive')
 
-        # Require the center to be within the parent image.
-        if not self.inside(center, unit_center):
-            return ValueError('The center must be within the image')
-
         # Get the central position in pixels.
         center = np.asarray(center)
         if unit_center is not None:
