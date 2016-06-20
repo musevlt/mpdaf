@@ -1212,13 +1212,16 @@ class Image(DataArray):
         """
 
         # If just one size is given, use it for both axes.
-        size = np.array([size, size]) if is_number(size) else np.asarray(size)
+        if np.isscalar(size):
+            size = np.array([size, size])
+        else:
+            size = np.asarray(size)
         if size[0] <= 0 or size[1] <= 0:
-            raise ValueError('size must be positive')
+            raise ValueError('Size must be positive')
 
         # Require the center to be within the parent image.
         if not self.inside(center, unit_center):
-            return None
+            return ValueError('The center must be within the image')
 
         # Convert the center position from world-coordinates to pixel indexes.
         center = np.asarray(center)
@@ -1238,9 +1241,15 @@ class Image(DataArray):
         # Convert the width and height of the region to radii, and
         # get Y-axis and X-axis slice objects that select this region.
         radius = size / 2.
-        [sy, sx], [uy, ux], center = bounding_box(form="rectangle", center=center,
-                                                  radii=radius, posangle=0.0,
-                                                  shape=self.shape, step=step)
+        [sy, sx], [uy, ux], center = bounding_box(form = "rectangle",
+                                                  center = center,
+                                                  radii = radius,
+                                                  posangle = 0.0,
+                                                  shape = self.shape,
+                                                  step = step)
+        if (sx.start >= self.shape[1] or sx.stop < 0 or sx.start==sx.stop or
+            sy.start >= self.shape[0] or sy.stop < 0 or sy.start==sy.stop):
+            raise ValueError('Sub-image boundaries are outside the cube')
 
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \

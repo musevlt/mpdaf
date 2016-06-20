@@ -2728,8 +2728,7 @@ class Cube(DataArray):
         return Image.new_from_obj(subcube, data=data, var=var)
 
     def subcube(self, center, size, lbda=None, unit_center=u.deg,
-                unit_size=u.arcsec, unit_wave=u.angstrom, posangle=0.0,
-                mask=True):
+                unit_size=u.arcsec, unit_wave=u.angstrom):
         """Extracts a sub-cube around a position.
 
         Parameters
@@ -2748,16 +2747,6 @@ class Cube(DataArray):
         unit_wave : `astropy.units.Unit`
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
-        posangle : float
-            The counter-clockwise rotation angle of the selected
-            rectangular region in degrees. When posangle is
-            0.0 (the default), the X and Y axes of the rectangle are
-            along the X and Y axes of the image.
-        mask : bool
-            When the rotation angle is not zero, the images will
-            include some pixels that are not in the requested region.
-            This option controls whether they should be masked. The
-            default is True.
 
         Returns
         -------
@@ -2770,7 +2759,11 @@ class Cube(DataArray):
         else:
             size = np.asarray(size)
         if size[0] <= 0.0 or size[1] <= 0.0:
-            return None
+            raise ValueError('Size must be positive')
+
+        # Require the center to be within the parent image.
+        if not self.inside(center, unit_center):
+            return ValueError('The center must be within the image')
 
         # Get the central position in pixels.
         center = np.asarray(center)
@@ -2812,31 +2805,21 @@ class Cube(DataArray):
                    lmax + 1 if lmax < self.shape[0] else self.shape[0])
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        [sy, sx], [uy, ux], center = bounding_box(form="rectangle", center=center,
-                                      radii=size / 2.0, posangle=posangle,
-                                      shape=self.shape[1:], step=step)
+        [sy, sx], [uy, ux], center = bounding_box(form = "rectangle",
+                                                  center = center,
+                                                  radii = size / 2.0,
+                                                  posangle = 0.0,
+                                                  shape = self.shape[1:],
+                                                  step = step)
         if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start==sx.stop or
             sy.start >= self.shape[1] or sy.stop < 0 or sy.start==sy.stop):
-            raise ValueError('sub-cube boundaries are outside the cube')
+            raise ValueError('Sub-cube boundaries are outside the cube')
 
         # Extract the requested part of the cube.
         res = self[sl, sy, sx]
 
-        # If the area is rotated relative to the image axes, should
-        # we mask pixels outside the requested region?
-        if not np.isclose(posangle, 0.0) and mask:
-
-            # Get the center of the region in the sub-cube.
-            center -= np.array([sy.start, sx.start])
-
-            # Mask pixels outside the selected rectangular region of the sky.
-            res.mask_region(center=center, radius=size / 2.0,
-                            inside=False, unit_center=None,
-                            unit_radius=unit_size, unit_wave=unit_wave,
-                            posangle=posangle)
-
-        # If the image region was not clipped at the edges of the parent cube,
-        # then return the subcube.
+        # If the image region was not clipped by the edges of the
+        # parent cube, then return the subcube.
         if sy == uy and sx == ux:
             return res
 
