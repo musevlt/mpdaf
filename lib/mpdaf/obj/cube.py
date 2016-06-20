@@ -1234,9 +1234,19 @@ class Cube(DataArray):
         Parameters
         ----------
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.
+            The wavelength units of the returned wavelength
+            step.
         unit_wcs : `astropy.units.Unit`
-            world coordinates unit.
+            The angular units of the returned spatial
+            world-coordinate steps.
+
+        Returns
+        -------
+        out : [dlbda, dy, dx]
+            Where, dlbda is the size of pixels along the
+            wavelength axis, and dy and dx are the sizes
+            of pixels along the Y and X axes of
+            the image, respectively.
 
         """
         step = np.empty(3)
