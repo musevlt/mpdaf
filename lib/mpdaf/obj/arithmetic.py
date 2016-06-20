@@ -96,7 +96,7 @@ def _arithmetic_var(operation, a, b, newshape=None):
 def _arithmetic(operation, a, b):
     if a.ndim < b.ndim:
         if operation == ma.subtract:
-            return - _arithmetic(operation, b, a)
+            return -1 * _arithmetic(operation, b, a)
         elif operation == ma.divide:
             return 1 / _arithmetic(operation, b, a)
         else:
