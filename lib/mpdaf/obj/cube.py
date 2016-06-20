@@ -1592,9 +1592,9 @@ class Cube(DataArray):
         boundary coordinates are along sky axes such as declination
         and right-ascension, which may not be parallel to the image
         array-axes. When they are not parallel, the returned image
-        area will contain some pixels outside the requested
-        range. By default these are masked, but this can be disabled
-        by passing False to the mask argument.
+        area will contain some pixels that are outside the requested
+        range. These are masked by default. To prevent them from being
+        masked, pass False to the mask argument.
 
         Parameters
         ----------
@@ -1621,6 +1621,10 @@ class Cube(DataArray):
             elements of the coord array.  If None, these values are
             interpretted as pixel indexes along the image axes.
 
+        Returns
+        -------
+        out : `mpdaf.obj.Cube`
+            A Cube object that contains the requested sub-cube.
         """
         lmin, ymin, xmin, lmax, ymax, xmax = coord
 
