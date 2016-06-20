@@ -83,7 +83,6 @@ class TestORIGIN():
         Ny = np.unique(Ny)[0]
         Nx = np.unique(Nx)[0]
         cNz, cNy, cNx = src.cubes['MUSE_CUBE'].shape
-        assert_equal(cNz, Nz)
         assert_equal(cNy, Ny)
         assert_equal(cNx, Nx)
         shutil.rmtree('./origin')
