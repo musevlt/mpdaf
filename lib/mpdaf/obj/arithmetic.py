@@ -96,7 +96,7 @@ def _arithmetic_var(operation, a, b, newshape=None):
 def _arithmetic(operation, a, b):
     if a.ndim < b.ndim:
         if operation == ma.subtract:
-            return -1 * _arithmetic(operation, b, a)
+            return - _arithmetic(operation, b, a)
         elif operation == ma.divide:
             return 1 / _arithmetic(operation, b, a)
         else:
@@ -147,7 +147,7 @@ class ArithmeticMixin(object):
             return self.__class__.new_from_obj(
                 self, data=other - self._data, copy=True)
         # else:
-        #     return other.__sub__(self)
+        #     if other is a DataArray, it is already handled by __sub__
 
     def __mul__(self, other):
         if not isinstance(other, DataArray):
@@ -170,18 +170,14 @@ class ArithmeticMixin(object):
             return _arithmetic(ma.divide, self, other)
 
     def __rdiv__(self, other):
-        # FIXME: check var
         if not isinstance(other, DataArray):
             res = self.__class__.new_from_obj(
                 self, data=other / self._data, copy=True)
-            # if self._var is not None:
-            #     res._var = other ** 2 / res._var
             if self._var is not None:
-                res._var = (self._var * other**2 +
-                            other * self._data * self._data) / self._data**4
+                res._var = self._var * other**2 / (self._data**2)**2
             return res
         # else:
-        #     return other.__div__(self)
+        #     if other is a DataArray, it is already handled by __div__
 
     __radd__ = __add__
     __rmul__ = __mul__
