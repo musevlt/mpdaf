@@ -31,16 +31,20 @@ import shutil
 import warnings
 
 from astropy.io import fits as pyfits
+from astropy.nddata.utils import overlap_slices
 from astropy.table import Table, MaskedColumn, vstack
 from functools import partial
 from matplotlib import cm
 from matplotlib.patches import Ellipse
 from numpy import ma
 from six.moves import range, zip
+from scipy.optimize import leastsq
 
 from ..obj import Cube, Image, Spectrum, gauss_image
 from ..obj.objs import is_int, is_float
 from ..tools import deprecated
+from ..MUSE import FieldsMap, FSF
+from ..MUSE.PSF import MOFFAT1
 
 emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
@@ -1083,6 +1087,93 @@ class Source(object):
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
+        
+    def add_FSF(self, cube):
+        """Compute the mean FSF using the FSF keywords presents if the FITS
+        header of the mosaic cube.
+        
+        Parameters
+        ----------
+        cube : `~mpdaf.obj.Cube`
+                Input cube MPDAF object.
+        """
+        try:
+            FSF_mode = cube.primary_header['FSFMODE']
+        except:
+            raise IOError('Cannot compute FSF int the FSF keywords are not'
+                          'present in the primary header of the cube')
+        if FSF_mode != 'MOFFAT1':
+            raise IOError('This method is coded only for FSFMODE=MOFFAT1')
+            
+        if cube.primary_header['NFIELDS'] ==1: # just one FSF
+            nf = 0
+            beta = cube.primary_header['FSF%02dBET'%nf]
+            a = cube.primary_header['FSF%02dFWA'%nf]
+            b = cube.primary_header['FSF%02dFWB'%nf]       
+        else:
+            # load field map
+            fmap = FieldsMap(cube.filename, extname='FIELDMAP')
+            # load info from the white image
+            try:
+                white = self.images['MUSE_WHITE']
+            except:
+                raise IOError('Cannot compute FSF if the MUSE_WHITE image'
+                                         'doesn t exist.')
+            size = white.shape[0]
+            center = np.asarray((self.dec, self.ra))
+            center = cube.wcs.sky2pix(center, unit=u.deg)[0]
+            size = int(size + 0.5)
+            slin = overlap_slices(cube.shape[1:], (size, size), center)[0]
+            # compute corresponding sub field map
+            subfmap = fmap[slin]
+            # weights
+            w = np.array(subfmap.compute_weights())
+            w *= white._data[np.newaxis, :, :]
+            w = np.ma.sum(np.ma.masked_invalid(w), axis=(1,2))
+            w /= np.ma.sum(np.ma.masked_invalid(w))
+            w = w.data
+            # FSF
+            ksel = np.where(w!=0)
+            if len(ksel[0]) == 1: # only one field
+                nf = ksel[0][0] + 1
+                beta = cube.primary_header['FSF%02dBET'%nf]
+                a = cube.primary_header['FSF%02dFWA'%nf]
+                b = cube.primary_header['FSF%02dFWB'%nf]
+            else: # several fields
+                nf = 99
+                # FSF model
+                Nfsf=13
+                step_arcsec = cube.wcs.get_step(unit=u.arcsec)[0]
+                FSF_model = FSF(FSF_mode)
+                # compute FSF for minimum and maximum wavelength
+                lbda1, lbda2 = cube.wave.get_range()
+                FSF1 = np.zeros((Nfsf, Nfsf))
+                FSF2 = np.zeros((Nfsf, Nfsf))
+                for i in ksel[0]:
+                    _i = i
+                    beta = cube.primary_header['FSF%02dBET'%_i]
+                    a = cube.primary_header['FSF%02dFWA'%_i]
+                    b = cube.primary_header['FSF%02dFWB'%_i]
+                    kernel1 = FSF_model.get_FSF(lbda1, step_arcsec, Nfsf,
+                                                       beta=beta, a=a, b=b)[0]
+                    kernel2 = FSF_model.get_FSF(lbda2, step_arcsec, Nfsf,
+                                                       beta=beta, a=a, b=b)[0]
+                    FSF1 += w[i] * kernel1
+                    FSF2 += w[i] * kernel2
+                # fit beta, fwhm1 and fwhm2 on PSF1 and PSF2
+                moffatfit = lambda v: np.ravel(\
+                MOFFAT1(lbda1, step_arcsec, Nfsf, v[0], v[1], v[2])[0] - FSF1 +\
+                MOFFAT1(lbda2, step_arcsec, Nfsf, v[0], v[1], v[2])[0] - FSF2)
+                v0 = [beta, a, b]
+                v = leastsq(moffatfit, v0)[0]  
+                beta = v[0]
+                a = v[1]
+                b = v[2]
+        
+        self.header['FSFMODE'] = FSF_mode
+        self.header['FSF%02dBET'%nf] = np.around(beta, decimals=2)
+        self.header['FSF%02dFWA'%nf] = np.around(a, decimals=3)
+        self.header['FSF%02dFWB'%nf] = np.float('%.3e'%b)
 
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
                                unit_size=u.arcsec, width=8, is_sum=False,
