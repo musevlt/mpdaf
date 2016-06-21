@@ -264,8 +264,8 @@ class TestSource():
         cube = Cube('data/sdetect/subcub_mosaic.fits')
         src.add_FSF(cube)
         assert_equal(src.FSF99BET, 2.8)
-        assert_equal(src.FSF99FWA, 0.9)
-        assert_equal(src.FSF99FWB, -3.309e-05)
+        assert_equal(src.FSF99FWA, 0.855)
+        assert_equal(src.FSF99FWB, -3.551e-05)
 
 #
 #     @attr(speed='fast')
