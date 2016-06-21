@@ -11,9 +11,7 @@ import scipy.ndimage as ndi
 import six
 
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
-from numpy.testing import (assert_almost_equal, assert_array_equal,
-                           assert_allclose)
-from six.moves import range
+from numpy.testing import assert_array_equal, assert_allclose
 
 from ..utils import (assert_image_equal, generate_image, generate_cube,
                      generate_spectrum, assert_masked_allclose,
@@ -37,64 +35,57 @@ def test_copy():
 
 
 @attr(speed='fast')
-def test_arithmetic():
-    """Image class: testing arithmetic functions"""
+def test_arithmetic_images():
     image1 = generate_image()
+    image2 = generate_image(data=1, unit=u.Unit('2 ct'))
+
+    for op in (add, sub, mul, div):
+        image3 = op(image1, image2)
+        assert_allclose((image3.data.data * image3.unit).value,
+                        op(image1.data.data * image1.unit,
+                           (image2.data.data * image2.unit).to(u.ct)).value)
+
+
+@attr(speed='fast')
+def test_arithmetic_scalar():
+    image1 = generate_image()
+    image1 += 4.2
+    assert_allclose(image1.data, 2 + 4.2)
+    image1 -= 4.2
+    assert_allclose(image1.data, 2)
+    image1 *= 4.2
+    assert_allclose(image1.data, 2 * 4.2)
+    image1 /= 4.2
+    assert_allclose(image1.data, 2)
+
+    for op in (add, sub, mul, div):
+        assert_allclose(op(image1, 4.2).data, op(2, 4.2))
+    for op in (add, sub, mul, div):
+        assert_allclose(op(4.2, image1).data, op(4.2, 2))
+
+
+@attr(speed='fast')
+def test_arithmetic_cubes():
     image2 = generate_image(data=1, unit=u.Unit('2 ct'))
     cube1 = generate_cube(data=0.5, unit=u.Unit('2 ct'))
 
     for op in (add, sub, mul, div):
-        image3 = op(image1, image2)
-        assert_almost_equal((image3.data.data * image3.unit).value,
-                            op(image1.data.data * image1.unit,
-                               (image2.data.data * image2.unit).to(u.ct)).value)
-    # +
-    image1 += 4.2
-    nose.tools.assert_almost_equal(image1[3, 3], 2 + 4.2)
-    # -
-    image1 -= 4.2
-    nose.tools.assert_almost_equal(image1[3, 3], 2)
-    # *
-    image1 *= 4.2
-    nose.tools.assert_almost_equal(image1[3, 3], 2 * 4.2)
-    # /
-    image1 /= 4.2
-    nose.tools.assert_almost_equal(image1[3, 3], 2)
+        assert_allclose(op(image2, cube1).data, op(image2.data, cube1.data))
+        assert_allclose(op(cube1, image2).data, op(cube1.data, image2.data))
 
-    # with cube
-    cube2 = image2 + cube1
-    for k in range(10):
-        for j in range(6):
-            for i in range(5):
-                nose.tools.assert_almost_equal(cube2[k, j, i], image2[j, i] + cube1[k, j, i])
-    cube2 = image2 - cube1
-    for k in range(10):
-        for j in range(6):
-            for i in range(5):
-                nose.tools.assert_almost_equal(cube2[k, j, i], image2[j, i] - cube1[k, j, i])
-    cube2 = image2 * cube1
-    for k in range(10):
-        for j in range(6):
-            for i in range(5):
-                nose.tools.assert_almost_equal(cube2[k, j, i], image2[j, i] * cube1[k, j, i])
-    cube2 = image2 / cube1
-    for k in range(10):
-        for j in range(6):
-            for i in range(5):
-                nose.tools.assert_almost_equal(cube2[k, j, i], image2[j, i] / cube1[k, j, i])
 
-    # spectrum * image
+@attr(speed='fast')
+def test_arithmetic_spectra():
+    image1 = generate_image()
     spectrum1 = generate_spectrum()
-    cube2 = image1 * spectrum1
-    for k in range(10):
-        for j in range(6):
-            for i in range(5):
-                nose.tools.assert_almost_equal(cube2[k, j, i], spectrum1[k] * image1[j, i])
+
+    ref = spectrum1.data[:, np.newaxis, np.newaxis] * image1.data[..., :]
+    assert_allclose((image1 * spectrum1).data, ref)
+    assert_allclose((spectrum1 * image1).data, ref)
 
     image2 = (image1 * -2).abs() + (image1 + 4).sqrt() - 2
-    nose.tools.assert_almost_equal(image2[3, 3],
-                                   np.abs(image1[3, 3] * -2) +
-                                   np.sqrt(image1[3, 3] + 4) - 2)
+    assert_allclose(image2.data, np.abs(image1.data * -2) +
+                    np.sqrt(image1.data + 4) - 2)
 
 
 @attr(speed='fast')
@@ -110,18 +101,18 @@ def test_crop():
     """Image class: testing crop method"""
     # Create an image whose pixels are all masked.
 
-    image1 = generate_image(shape=(9,7), data=2.0, var=0.5, mask=True)
+    image1 = generate_image(shape=(9, 7), data=2.0, var=0.5, mask=True)
 
     # Create a masked array of unmasked values to be assigned to the
     # part of the image, with just a diamond shaped area of pixels
     # unmasked.
 
-    diamond = np.ma.array(data=[[6.0,   2.0,   9.0],
-                                [1.0,   4.0,   8.0],
-                                [0.0,   5.0,   3.0]],
-                          mask=[[True,  False, True],
+    diamond = np.ma.array(data=[[6.0, 2.0, 9.0],
+                                [1.0, 4.0, 8.0],
+                                [0.0, 5.0, 3.0]],
+                          mask=[[True, False, True],
                                 [False, False, False],
-                                [True,  False, True]])
+                                [True, False, True]])
 
     # Assign the above array to part of the image to clear the mask of
     # an irregular rectangular area of pixels there.
@@ -165,14 +156,17 @@ def test_truncate():
 def test_gauss():
     """Image class: testing Gaussian fit"""
     wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30))
-    ima = gauss_image(wcs=wcs, fwhm=(2, 1), factor=1, rot=60, cont=2.0, unit_center=u.pix, unit_fwhm=u.pix)
-    #ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
-    gauss = ima.gauss_fit(cont=2.0, fit_back=False, verbose=False, unit_center=None, unit_fwhm=None)
+    ima = gauss_image(wcs=wcs, fwhm=(2, 1), factor=1, rot=60, cont=2.0,
+                      unit_center=u.pix, unit_fwhm=u.pix)
+    # ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
+    gauss = ima.gauss_fit(cont=2.0, fit_back=False, verbose=False,
+                          unit_center=None, unit_fwhm=None)
     nose.tools.assert_almost_equal(gauss.center[0], 19.5)
     nose.tools.assert_almost_equal(gauss.center[1], 14.5)
     nose.tools.assert_almost_equal(gauss.flux, 1)
     ima += 10.3
-    gauss2 = ima.gauss_fit(cont=2.0 + 10.3, fit_back=True, verbose=False, unit_center=None, unit_fwhm=None)
+    gauss2 = ima.gauss_fit(cont=2.0 + 10.3, fit_back=True, verbose=False,
+                           unit_center=None, unit_fwhm=None)
     nose.tools.assert_almost_equal(gauss2.center[0], 19.5)
     nose.tools.assert_almost_equal(gauss2.center[1], 14.5)
     nose.tools.assert_almost_equal(gauss2.flux, 1)
@@ -182,8 +176,11 @@ def test_gauss():
 @attr(speed='fast')
 def test_moffat():
     """Image class: testing Moffat fit"""
-    ima = moffat_image(wcs=WCS(crval=(0, 0)), flux=12.3, fwhm=(1.8, 1.8), n=1.6, rot=0., cont=8.24, unit_center=u.pix, unit_fwhm=u.pix)
-    moffat = ima.moffat_fit(fit_back=True, verbose=False, unit_center=None, unit_fwhm=None)
+    ima = moffat_image(wcs=WCS(crval=(0, 0)), flux=12.3, fwhm=(1.8, 1.8),
+                       n=1.6, rot=0., cont=8.24, unit_center=u.pix,
+                       unit_fwhm=u.pix)
+    moffat = ima.moffat_fit(fit_back=True, verbose=False, unit_center=None,
+                            unit_fwhm=None)
     nose.tools.assert_almost_equal(moffat.center[0], 50.)
     nose.tools.assert_almost_equal(moffat.center[1], 50.)
     nose.tools.assert_almost_equal(moffat.flux, 12.3)
@@ -360,8 +357,7 @@ def test_rotate():
     # If both the WCS and the image were rotated wrongly in the same
     # way, then the above test will incrorrectly claim that the
     # rotation worked, so now check that the WCS was rotated correctly.
-
-    np.testing.assert_allclose(after.wcs.get_rot() - before.wcs.get_rot(), 30.0)
+    assert_allclose(after.wcs.get_rot() - before.wcs.get_rot(), 30.0)
 
 
 @attr(speed='fast')
@@ -426,8 +422,9 @@ def test_resample():
     for pixel in new_pixels:
         py = pixel[0]
         px = pixel[1]
-        offset = ndi.center_of_mass(after.data[py - pad:py + pad + 1, px - pad:px + pad + 1])
-        np.testing.assert_allclose(offset, np.array([pad, pad]), rtol=0, atol=0.1)
+        offset = ndi.center_of_mass(after.data[py - pad:py + pad + 1,
+                                               px - pad:px + pad + 1])
+        assert_allclose(offset, np.array([pad, pad]), rtol=0, atol=0.1)
 
 
 @attr(speed='fast')
@@ -508,8 +505,8 @@ def test_rebin_mean():
     # Given the number of pixels averaged in each of the above means,
     # we thus expect the variance array to look as follows.
 
-    expected = np.ma.array(data=[[0.5,   0.25], [0.25, 0.125], [0.0,  0.0]],
-                           mask=[[False,False], [False,False], [True,True]])
+    expected = np.ma.array(data=[[0.5, 0.25], [0.25, 0.125], [0.0, 0.0]],
+                           mask=[[False, False], [False, False], [True, True]])
     assert_masked_allclose(image2.var, expected)
 
     # Check the WCS information.
