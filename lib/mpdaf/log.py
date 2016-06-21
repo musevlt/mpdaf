@@ -27,13 +27,13 @@ def colored(text, color):
 
 
 def setup_logging(name='mpdaf', level=logging.DEBUG, color=False,
-                  fmt='[%(levelname)s] %(message)s'):
+                  fmt='[%(levelname)s] %(message)s', stream=None):
     """Setup logging to stdout."""
     logger = logging.getLogger(name)
     logger.handlers = []
     logger.setLevel(level)
 
-    steam_handler = logging.StreamHandler()
+    steam_handler = logging.StreamHandler(stream)
     steam_handler.setLevel(level)
     if (color and os.isatty(sys.stdout.fileno()) and
             not sys.platform.startswith('win')):
