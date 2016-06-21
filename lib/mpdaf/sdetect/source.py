@@ -1105,7 +1105,7 @@ class Source(object):
         if FSF_mode != 'MOFFAT1':
             raise IOError('This method is coded only for FSFMODE=MOFFAT1')
             
-        if cube.primary_header['NFIELDS'] ==1: # just one FSF
+        if cube.primary_header['NFIELDS'] == 1: # just one FSF
             nf = 0
             beta = cube.primary_header['FSF%02dBET'%nf]
             a = cube.primary_header['FSF%02dFWA'%nf]
@@ -1150,7 +1150,7 @@ class Source(object):
                 FSF1 = np.zeros((Nfsf, Nfsf))
                 FSF2 = np.zeros((Nfsf, Nfsf))
                 for i in ksel[0]:
-                    _i = i
+                    _i = i + 1
                     beta = cube.primary_header['FSF%02dBET'%_i]
                     a = cube.primary_header['FSF%02dFWA'%_i]
                     b = cube.primary_header['FSF%02dFWB'%_i]
