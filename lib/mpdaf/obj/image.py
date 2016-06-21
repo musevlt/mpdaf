@@ -25,8 +25,10 @@ import logging
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import ma
 
 import astropy.units as u
+from astropy.io import fits
 from matplotlib.path import Path
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
@@ -904,9 +906,9 @@ class Image(DataArray):
             return self.mask_polygon(poly, unit=None, inside=inside)
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        sy, sx = bounding_box(form="rectangle", center=center, radii=radius,
-                              posangle=0.0, shape=self.shape, step=step)
-
+        [sy, sx], unclipped, center = bounding_box(form="rectangle", center=center,
+                                                   radii=radius, posangle=0.0,
+                                                   shape=self.shape, step=step)
         # Mask pixels inside the region.
         if inside:
             self.data[sy, sx] = np.ma.masked
@@ -967,9 +969,9 @@ class Image(DataArray):
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        sy, sx = bounding_box(form="ellipse", center=center, radii=radii,
-                              posangle=posangle,
-                              shape=self.shape, step=step)
+        [sy, sx], unclipped, center = bounding_box(form="ellipse", center=center,
+                                                   radii=radii, posangle=posangle,
+                                                   shape=self.shape, step=step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
@@ -1210,13 +1212,16 @@ class Image(DataArray):
         """
 
         # If just one size is given, use it for both axes.
-        size = np.array([size, size]) if is_number(size) else np.asarray(size)
+        if np.isscalar(size):
+            size = np.array([size, size])
+        else:
+            size = np.asarray(size)
         if size[0] <= 0 or size[1] <= 0:
-            raise ValueError('size must be positive')
+            raise ValueError('Size must be positive')
 
         # Require the center to be within the parent image.
         if not self.inside(center, unit_center):
-            return None
+            return ValueError('The center must be within the image')
 
         # Convert the center position from world-coordinates to pixel indexes.
         center = np.asarray(center)
@@ -1236,16 +1241,74 @@ class Image(DataArray):
         # Convert the width and height of the region to radii, and
         # get Y-axis and X-axis slice objects that select this region.
         radius = size / 2.
-        sy, sx = bounding_box(form="rectangle", center=center, radii=radius,
-                              posangle=0.0, shape=self.shape, step=step)
+        [sy, sx], [uy, ux], center = bounding_box(form = "rectangle",
+                                                  center = center,
+                                                  radii = radius,
+                                                  posangle = 0.0,
+                                                  shape = self.shape,
+                                                  step = step)
+        if (sx.start >= self.shape[1] or sx.stop < 0 or sx.start==sx.stop or
+            sy.start >= self.shape[0] or sy.stop < 0 or sy.start==sy.stop):
+            raise ValueError('Sub-image boundaries are outside the cube')
 
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \
            (sx.stop - sx.start + 1) < minsize[1]:
             return None
 
-        # Return the selected region.
-        return self[sy, sx]
+        # Extract the requested part of the image.
+        res = self[sy, sx]
+
+        # If the image region was not clipped at the edges of the parent cube,
+        # then return the subcube.
+        if sy == uy and sx == ux:
+            return res
+
+        # Since the subimage is smaller than requested, due to clipping,
+        # create new data and variance arrays of the required size.
+        shape = (uy.stop - uy.start, ux.stop - ux.start)
+        data = np.zeros(shape)
+        if self._var is None:
+            var = None
+        else:
+            var = np.zeros(shape)
+
+        # If no mask is currently in use, start with every pixel of
+        # the new array filled with nans. Otherwise create a mask that
+        # initially flags all pixels.
+        if self._mask is ma.nomask:
+            mask = ma.nomask
+            data[:] = np.nan
+            if var is not None:
+                var[:] = np.nan
+        else:
+            mask = np.ones(shape, dtype=bool)
+
+        # Calculate the slices where the clipped subcube should go in
+        # the new arrays.
+        slices = [slice(sy.start - uy.start, sy.stop - uy.start),
+                  slice(sx.start - ux.start, sx.stop - ux.start)]
+
+        # Copy the clipped subcube into unclipped arrays.
+        data[slices] = res._data[:]
+        if var is not None:
+            var[slices] = res._var[:]
+        if mask is not None:
+            mask[slices] = res._mask[:]
+
+        # Create a new WCS object for the unclipped subcube.
+        wcs = res.wcs
+        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + slices[1].start)
+        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + slices[0].start)
+        wcs.set_naxis1(shape[1])
+        wcs.set_naxis2(shape[0])
+
+        # Create the new unclipped sub-cube.
+        return Image(wcs=wcs, unit=self.unit, copy=False,
+                    data=data, var=var, mask=mask,
+                    data_header=fits.Header(self.data_header),
+                    primary_header=fits.Header(self.primary_header),
+                    filename=self.filename)
 
     def _rotate(self, theta=0.0, interp='no', reshape=False, order=1,
                 pivot=None, unit=u.deg, regrid=None, flux=False, cutoff=0.25):

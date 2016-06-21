@@ -30,6 +30,7 @@ import time
 import types
 
 from astropy.io import fits
+from matplotlib.path import Path
 from astropy.nddata.utils import overlap_slices
 from numpy import ma
 from six.moves import range, zip
@@ -188,7 +189,7 @@ class Cube(DataArray):
 
     def mask_region(self, center, radius, lmin=None, lmax=None, inside=True,
                     unit_center=u.deg, unit_radius=u.arcsec,
-                    unit_wave=u.angstrom):
+                    unit_wave=u.angstrom, posangle=0.0):
         """Mask values inside or outside a circular or rectangular region.
 
         Parameters
@@ -219,10 +220,13 @@ class Cube(DataArray):
         unit_radius : `astropy.units.Unit`
             The units of the radius argument (arcseconds by default).
             If None, the units are assumed to be pixels.
+        posangle : float
+            When the region is rectangular, this is the counter-clockwise
+            rotation angle of the rectangle in degrees. When posangle is
+            0.0 (the default), the X and Y axes of the rectangle are along
+            the X and Y axes of the image.
 
         """
-
-        center = np.array(center)
 
         # If the radius argument is a scalar value, this requests
         # that a circular region be masked. Delegate this to mask_ellipse().
@@ -234,14 +238,30 @@ class Cube(DataArray):
                                      unit_wave=unit_wave)
 
 
+        # Convert the central position to a floating-point pixel index.
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
+        else:
+            center = np.asarray(center)
 
         # Get the image pixel sizes in the units of the radius argument.
         if unit_radius is None:
             step = np.array([1.0, 1.0])     # Pixel counts
         else:
             step = self.wcs.get_step(unit=unit_radius)
+
+        # Treat rotated rectangles as polygons.
+        if not np.isclose(posangle, 0.0):
+            c = np.cos(np.radians(posangle))
+            s = np.sin(np.radians(posangle))
+            hw = radius[0]
+            hh = radius[1]
+            poly = np.array([[-hw*s-hh*c, -hw*c+hh*s],
+                             [-hw*s+hh*c, -hw*c-hh*s],
+                             [+hw*s+hh*c, +hw*c-hh*s],
+                             [+hw*s-hh*c, +hw*c+hh*s]]) / step + center
+            return self.mask_polygon(poly, lmin, lmax, unit_poly=None,
+                                     unit_wave=unit_wave, inside=inside)
 
         # Get the minimum wavelength in the specified units.
         if lmin is None:
@@ -256,8 +276,9 @@ class Cube(DataArray):
             lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        sy, sx = bounding_box(form="rectangle", center=center, radii=radius,
-                              posangle=0.0, shape=self.shape[1:], step=step)
+        [sy, sx], unclipped, center = bounding_box(form="rectangle", center=center,
+                                                   radii=radius, posangle=0.0,
+                                                   shape=self.shape[1:], step=step)
 
         # Mask pixels inside the region.
         if inside:
@@ -313,6 +334,8 @@ class Cube(DataArray):
             If None, the units are assumed to be pixels.
 
         """
+
+        # Convert the central position to floating-point pixel indexes.
         center = np.array(center)
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
@@ -343,9 +366,9 @@ class Cube(DataArray):
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        sy, sx = bounding_box(form="ellipse", center=center, radii=radii,
-                              posangle=posangle, shape=self.shape[1:],
-                              step=step)
+        [sy, sx], unclipped, center = bounding_box(form="ellipse", center=center,
+                                                   radii=radii, posangle=posangle,
+                                                   shape=self.shape[1:], step=step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
@@ -388,6 +411,80 @@ class Cube(DataArray):
 
             grid3d = np.resize(ksel > 1, (lmax - lmin, ) + ksel.shape)
             self.data[lmin:lmax, sy, sx][grid3d] = ma.masked
+
+    def mask_polygon(self, poly, lmin=None, lmax=None,
+                     unit_poly=u.deg, unit_wave=u.angstrom, inside=True):
+        """Mask values inside or outside a polygonal region.
+
+        Parameters
+        ----------
+        poly : (float, float)
+            An array of (float,float) containing a set of (p,q) or (dec,ra)
+            values for the polygon vertices.
+        lmin : float
+            The minimum wavelength of the region.
+        lmax : float
+            The maximum wavelength of the region.
+        unit_poly : `astropy.units.Unit`
+            The units of the polygon coordinates (degrees by default).
+            Use unit_poly=None for polygon coordinates in pixels.
+        unit_wave : `astropy.units.Unit`
+            The units of the wavelengths lmin and lmax (angstrom by default).
+        inside : bool
+            If inside is True, pixels inside the polygonal region are masked.
+            If inside is False, pixels outside the polygonal region are masked.
+
+        """
+
+        # Convert DEC,RA (deg) values coming from poly into Y,X value (pixels)
+        if unit_poly is not None:
+            poly = np.array([
+                [self.wcs.sky2pix((val[0], val[1]), unit=unit_poly)[0][0],
+                 self.wcs.sky2pix((val[0], val[1]), unit=unit_poly)[0][1]]
+                for val in poly])
+
+        P, Q = np.meshgrid(list(range(self.shape[1])),
+                           list(range(self.shape[2])))
+        b = np.dstack([P.ravel(), Q.ravel()])
+
+        # Use a matplotlib method to create a path, which is the polygon we
+        # want to use.
+        polymask = Path(poly)
+
+        # Go through all pixels in the image to see if they are within the
+        # polygon. The ouput is a boolean table.
+        c = polymask.contains_points(b[0])
+
+        # Invert the boolean table to mask pixels outside the polygon?
+        if not inside:
+            c = ~np.array(c)
+
+        # Convert the boolean table into a matrix.
+        c = c.reshape(self.shape[2], self.shape[1])
+        c = c.T
+
+        # Convert the minimum wavelength to a spectral pixel index.
+        if lmin is None:
+            lmin = 0
+        elif unit_wave is not None:
+            lmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
+
+        # Convert the maximum wavelength to a spectral pixel index.
+        if lmax is None:
+            lmax = self.shape[0]
+        elif unit_wave is not None:
+            lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
+
+        # Combine the previous mask with the new one between lmin and lmax.
+        self._mask[lmin:lmax,:,:] = np.logical_or(self._mask[lmin:lmax,:,:], c)
+
+        # When masking pixels outside the region, mask all pixels
+        # outside the specified wavelength range.
+        if not inside:
+            self.data[:lmin, :, :] = ma.masked
+            self.data[lmax:, :, :] = ma.masked
+
+        return poly
 
     def __add__(self, other):
         """Add a specified other object to a Cube.
@@ -718,24 +815,52 @@ class Cube(DataArray):
             return other.__sub__(self)
 
     def __mul__(self, other):
-        """Multiply by other.
+        """Multiply a Cube by a specified other object.
 
-        cube1 * number = cube2 (cube2[k,p,q]=cube1[k,p,q]*number)
+        When multiplying the Cube by a non-MPDAF object, the
+        object can be a scalar number, or it can be a numpy ndarray or
+        masked array whose dimensions are either equal to those of the
+        Cube, or can be broadcast to those dimensions. The data is scaled
+        by the specified number(s). Any variances in the cube
+        are scaled by the square of the number(s).
 
-        cube1 * cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]*cube2[k,p,q])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
+          cube1 * number = cube2  (cube2[k,p,q] = cube1[k,p,q] * number)
 
-        cube1 * image = cube2 (cube2[k,p,q]=cube1[k,p,q]*image[p,q])
-        The first two dimensions of cube1 must be equal
-        to the image dimensions.
-        If not equal to None, world coordinates
-        in spatial directions must be the same.
+        When multiplying the Cube by another MPDAF Cube, the two cubes
+        must have the same dimensions, the same wavelength
+        world-coordinates and the same spatial world-coordinates. The
+        resulting Cube contains the product of the data in the two
+        cubes. The corresponding variances, if any, are propagated
+        under the assumption that the data in the two Cubes are
+        independent. The final pixel units are the product of the
+        units of the two input Cubes.
 
-        cube1 * spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]*spectrum[k])
-        The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates
-        in spectral direction must be the same.
+          cube1 * cube2 = cube3  (cube3[k,p,q] = cube1[k,p,q] * cube2[k,p,q])
+
+        When multiplying the Cube by an MPDAF Image, the dimensions
+        and spatial world-coordinates of this image must equal the
+        dimensions and spatial world-coordinates of the images in the
+        cube. Each image in the cube is then multiplied by the other
+        image. For each channel this is done by recording the products
+        of the two images, then combining any variances recorded with
+        the input Cube and Image, under the assumption that the data
+        in the two Cubes are independent. The final pixel units are
+        the product of the units of the Cube and the Image.
+
+          cube1 * image = cube2  (cube2[k,p,q] = cube1[k,p,q] * image[p,q])
+
+        When multiplying the Cube by an MPDAF Spectrum, the
+        array-dimension and wavelength world-coordinates of this
+        spectrum must match those of the wavelength axis of the cube.
+        The spectrum of each image pixel in the cube is separately
+        multiplied by the specified Spectrum. This involves
+        multiplying the pixel values of the two spectra, and
+        propagating their variances, if any, under the assumption that
+        they are independent measurements. The final pixel units are the
+        product of the units of the Cube and the Spectrum.
+
+          cube1 * spectrum = cube2  (cube2[k,p,q] = cube1[k,p,q] * spectrum[k])
+
         """
         if not isinstance(other, DataArray):
             try:
@@ -747,18 +872,25 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
+            # When multiplying by a Spectrum or a Cube, check that its
+            # wavelength dimension and world-coordinates match.
             if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
                         and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spectral direction')
+
+            # When multiplying by an Image or Cube, check that its spatial
+            # dimensions and spatial world-coordinates match.
             if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
                         and not self.wcs.isEqual(other.wcs):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spatial directions')
+
+            # Multiply the Cube by a Spectrum?
             if other.ndim == 1:
                 # cube1 * spectrum = cube2
                 if other.shape[0] != self.shape[0]:
@@ -785,6 +917,8 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit * other.unit
                 return res
+
+            # Multiply the Cube by an Image?
             elif other.ndim == 2:
                 # cube1 * image = cube2 (cube2[k,j,i]=cube1[k,j,i]*image[j,i])
                 if self.shape[2] != other.shape[1] \
@@ -811,6 +945,8 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit * other.unit
                 return res
+
+            # Multiply the Cube by another Cube?
             else:
                 # cube1 * cube2 = cube3
                 if self.shape[0] != other.shape[0] \
@@ -839,25 +975,52 @@ class Cube(DataArray):
         return self.__mul__(other)
 
     def __div__(self, other):
-        """Divide by other.
+        """Divide a Cube by a specified other object.
 
-        cube1 / number = cube2 (cube2[k,p,q]=cube1[k,p,q]/number)
+        When dividing the Cube by a non-MPDAF object, the object can
+        be a scalar number, or it can be a numpy ndarray or masked
+        array whose dimensions are either equal to those of the Cube,
+        or can be broadcast to those dimensions. The data is divided
+        by the specified number(s). Any variances in the cube are
+        divided by the square of the number(s).
 
-        cube1 / cube2 = cube3 (cube3[k,p,q]=cube1[k,p,q]/cube2[k,p,q])
-        Dimensions must be the same.
-        If not equal to None, world coordinates must be the same.
+          cube1 / number = cube2  (cube2[k,p,q] = cube1[k,p,q] / number)
 
-        cube1 / image = cube2
-        (cube2[k,p,q]=cube1[k,p,q]/image[p,q])
-        The first two dimensions of cube1 must be equal
-        to the image dimensions.
-        If not equal to None, world coordinates
-        in spatial directions must be the same.
+        When dividing the Cube by another MPDAF Cube, the two cubes
+        must have the same dimensions, the same wavelength
+        world-coordinates and the same spatial world-coordinates. The
+        resulting Cube contains the quotient of the data in the two
+        cubes. The corresponding variances, if any, are propagated
+        under the assumption that the data in the two Cubes are
+        independent. The final pixel units are the quotient of the
+        units of the parent Cube with the units of the other Cube.
 
-        cube1 / spectrum = cube2 (cube2[k,p,q]=cube1[k,p,q]/spectrum[k])
-        The last dimension of cube1 must be equal to the spectrum dimension.
-        If not equal to None, world coordinates
-        in spectral direction must be the same.
+          cube1 / cube2 = cube3  (cube3[k,p,q] = cube1[k,p,q] / cube2[k,p,q])
+
+        When dividing the Cube by an MPDAF Image, the dimensions
+        and spatial world-coordinates of this image must equal the
+        dimensions and spatial world-coordinates of the images in the
+        cube. Each image in the cube is then divided by the other
+        image. For each channel this is done by recording the quotient
+        of the two images, then combining any variances recorded with
+        the input Cube and Image, under the assumption that the data
+        in the two Cubes are independent. The final pixel units are
+        the quotient of the units of the Cube and the Image.
+
+          cube1 / image = cube2  (cube2[k,p,q] = cube1[k,p,q] / image[p,q])
+
+        When dividing the Cube by an MPDAF Spectrum, the
+        array-dimension and wavelength world-coordinates of this
+        spectrum must match those of the wavelength axis of the cube.
+        The spectrum of each image pixel in the cube is separately
+        divided by the specified Spectrum. This involves
+        dividing the pixel values of the two spectra, and
+        propagating their variances, if any, under the assumption that
+        they are independent measurements. The final pixel units are the
+        quotient of the units of the Cube and the Spectrum.
+
+          cube1 / spectrum = cube2  (cube2[k,p,q] = cube1[k,p,q] / spectrum[k])
+
         """
         if not isinstance(other, DataArray):
             try:
@@ -869,18 +1032,24 @@ class Cube(DataArray):
             except:
                 raise IOError('Operation forbidden')
         else:
+            # When dividing by a Spectrum or a Cube, check that its
+            # wavelength dimension and world-coordinates match.
             if other.ndim == 1 or other.ndim == 3:
                 if self.wave is not None and other.wave is not None \
                         and not self.wave.isEqual(other.wave):
                     raise IOError('Operation forbidden for cubes with '
                                   'different world coordinates '
                                   'in spectral direction')
+
+            # When dividing by an Image or Cube, check that its spatial
+            # dimensions and spatial world-coordinates match.
             if other.ndim == 2 or other.ndim == 3:
                 if self.wcs is not None and other.wcs is not None \
                         and not self.wcs.isEqual(other.wcs):
                     raise ValueError('Operation forbidden for cubes '
                                      'with different world coordinates'
                                      ' in spatial directions')
+            # Divide the Cube by a Spectrum?
             if other.ndim == 1:
                 # cube1 / spectrum = cube2
                 if other.shape[0] != self.shape[0]:
@@ -910,6 +1079,8 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit / other.unit
                 return res
+
+            # Divide the Cube by an Image?
             elif other.ndim == 2:
                 # cube1 / image = cube2 (cube2[k,j,i]=cube1[k,j,i]/image[j,i])
                 if self.shape[2] != other.shape[1] \
@@ -939,6 +1110,8 @@ class Cube(DataArray):
                 # unit
                 res.unit = self.unit / other.unit
                 return res
+
+            # Divide the Cube by another Cube?
             else:
                 # cube1 / cube2 = cube3
                 if self.shape[0] != other.shape[0] \
@@ -1007,30 +1180,53 @@ class Cube(DataArray):
         Parameters
         ----------
         lbda_min : float
-            Minimum wavelength.
+            The minimum wavelength to be selected.
         lbda_max : float
-            Maximum wavelength.
+            The maximum wavelength to be selected, or None
+            to just select one image close to lbda_min.
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.
-            If None, inputs are in pixels
+            The wavelength units of lbda_min and lbda_max.
+            The value, None, can be used to indicate that
+            lbda_min and lbda_max are in pixel-index units.
+            The default unit is angstrom.
 
+        Returns
+        -------
+        out : `mpdaf.obj.Cube` or `mpdaf.obj.Image`
+            If more than one spectral channel is selected, then
+            a Cube object is returned that contains just the images
+            of those channels. If a single channel is selected, then
+            an Image object is returned, containing just the image
+            of that channel.
         """
+
+        # Select just the image that is closest to lbda_min?
         if lbda_max is None:
             lbda_max = lbda_min
-        if self.wave is None:
-            raise ValueError('Operation forbidden without world coordinates '
+
+        # If the wavelength limits are in pixels, round them to
+        # the nearest integer values.
+        if unit_wave is None:
+            pix_min = max(0, int(lbda_min + 0.5))
+            pix_max = min(self.shape[0], int(lbda_max + 0.5))
+
+        # If wavelengths have been specified, then we need wavelength
+        # world-coordinates to convert them to pixel indexes.
+        elif self.wave is None:
+            raise ValueError('Operation impossible without world coordinates '
                              'along the spectral direction')
+
+        # Convert wavelength limits to the nearest pixels.
         else:
-            if unit_wave is None:
-                pix_min = max(0, int(lbda_min + 0.5))
-                pix_max = min(self.shape[0], int(lbda_max + 0.5))
-            else:
-                pix_min = max(0, int(self.wave.pixel(lbda_min, unit=unit_wave)))
-                pix_max = min(self.shape[0], int(self.wave.pixel(lbda_max, unit=unit_wave)) + 1)
-            if (pix_min + 1) == pix_max:
-                return self[pix_min, :, :]
-            else:
-                return self[pix_min:pix_max, :, :]
+            pix_min = max(0, int(self.wave.pixel(lbda_min, unit=unit_wave)))
+            pix_max = min(self.shape[0], int(self.wave.pixel(lbda_max, unit=unit_wave)) + 1)
+
+        # When just one channel is selected, return an Image. When
+        # multiple channels are selected, return a sub-cube.
+        if (pix_min + 1) == pix_max:
+            return self[pix_min, :, :]
+        else:
+            return self[pix_min:pix_max, :, :]
 
     def get_step(self, unit_wave=None, unit_wcs=None):
         """Return the cube steps [dlbda,dy,dx].
@@ -1038,9 +1234,19 @@ class Cube(DataArray):
         Parameters
         ----------
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.
+            The wavelength units of the returned wavelength
+            step.
         unit_wcs : `astropy.units.Unit`
-            world coordinates unit.
+            The angular units of the returned spatial
+            world-coordinate steps.
+
+        Returns
+        -------
+        out : [dlbda, dy, dx]
+            Where, dlbda is the size of pixels along the
+            wavelength axis, and dy and dx are the sizes
+            of pixels along the Y and X axes of
+            the image, respectively.
 
         """
         step = np.empty(3)
@@ -1379,86 +1585,94 @@ class Cube(DataArray):
             raise ValueError('Invalid axis argument')
 
     def truncate(self, coord, mask=True, unit_wave=u.angstrom, unit_wcs=u.deg):
-        """ Truncates the cube and return a sub-cube.
+        """Return a sub-cube bounded by specified wavelength and spatial
+        world-coordinates.
+
+        Note that unless unit_wcs is None, the y-axis and x-axis
+        boundary coordinates are along sky axes such as declination
+        and right-ascension, which may not be parallel to the image
+        array-axes. When they are not parallel, the returned image
+        area will contain some pixels that are outside the requested
+        range. These are masked by default. To prevent them from being
+        masked, pass False to the mask argument.
 
         Parameters
         ----------
         coord : array
-            array containing the sub-cube boundaries
-            [lbda_min,y_min,x_min,lbda_max,y_max,x_max]
-            (output of mpdaf.obj.cube.get_range)
-        mask : bool
-            if True, pixels outside [y_min,y_max] and [x_min,x_max] are masked.
-        unit_wave : `astropy.units.Unit`
-            wavelengths unit.  If None, inputs are in pixels
-        unit_wcs : `astropy.units.Unit`
-            world coordinates unit.  If None, inputs are in pixels
+           The coordinate boundaries, arranged into an array
+           as follows:
 
+             [lbda_min, y_min, x_min, lbda_max, y_max, x_max]
+
+           Note that this is the order of the values returned by
+           mpdaf.obj.cube.get_range(), so when these functions are
+           used together, then can be used to extract a subcube whose
+           bounds match those of an existing smaller cube.
+        mask : bool
+            If True, pixels outside [y_min,y_max] and [x_min,x_max]
+            are masked. This can be useful when the world-coordinate
+            X and Y axis are not parallel with the image array-axes.
+        unit_wave : `astropy.units.Unit`
+            The wavelength units of lbda_min and lbda_max elements
+            of the coord array.  If None, lbda_min and lbda_max are
+            interpretted as pixel indexes along the wavelength axis.
+        unit_wcs : `astropy.units.Unit`
+            The wavelength units of x_min,x_max,y_min and y_max
+            elements of the coord array.  If None, these values are
+            interpretted as pixel indexes along the image axes.
+
+        Returns
+        -------
+        out : `mpdaf.obj.Cube`
+            A Cube object that contains the requested sub-cube.
         """
         lmin, ymin, xmin, lmax, ymax, xmax = coord
 
-        skycrd = [[ymin, xmin], [ymin, xmax],
-                  [ymax, xmin], [ymax, xmax]]
+        # Get the coordinates of the corners of the requested
+        # sub-image, ordered as though sequentially drawing the lines
+        # of a polygon.
+        skycrd = [[ymin, xmin], [ymax, xmin],
+                  [ymax, xmax], [ymin, xmax]]
+
+        # Convert corner coordinates to pixel indexes.
         if unit_wcs is None:
             pixcrd = np.array(skycrd)
         else:
             pixcrd = self.wcs.sky2pix(skycrd, unit=unit_wcs)
 
-        imin = int(np.min(pixcrd[:, 0]) + 0.5)
-        if imin < 0:
-            imin = 0
-        imax = int(np.max(pixcrd[:, 0]) + 0.5) + 1
-        if imax > self.shape[1]:
-            imax = self.shape[1]
+        # Round the corners to the integer center of the containing pixel.
+        pixcrd = np.floor(pixcrd + 0.5).astype(int)
 
-        if imin >= self.shape[1] or imax <= 0 or imin == imax:
-            raise ValueError('sub-cube boundaries are outside the cube')
+        # Obtain the range of Y-axis pixel-indexes of the region.
+        imin = max(np.min(pixcrd[:, 0]), 0)
+        imax = min(np.max(pixcrd[:, 0]), self.shape[1] -1)
 
-        jmin = int(np.min(pixcrd[:, 1]) + 0.5)
-        if jmin < 0:
-            jmin = 0
-        jmax = int(np.max(pixcrd[:, 1]) + 0.5) + 1
-        if jmax > self.shape[2]:
-            jmax = self.shape[2]
-        if jmin >= self.shape[2] or jmax <= 0 or jmin == jmax:
-            raise ValueError('sub-cube boundaries are outside the cube')
+        # Obtain the range of X-axis pixel-indexes of the region.
+        jmin = max(np.min(pixcrd[:, 1]), 0)
+        jmax = min(np.max(pixcrd[:, 1]), self.shape[2] - 1)
 
-        if unit_wave is None:
-            kmin = int(lmin + 0.5)
-            kmax = int(lmax + 0.5)
-        else:
-            kmin = max(0, self.wave.pixel(lmin, nearest=True, unit=unit_wave))
-            kmax = min(self.shape[0], self.wave.pixel(lmax, nearest=True,
-                                                      unit=unit_wave) + 1)
+        # Convert the wavelength range to floating-point pixel indexes.
+        if unit_wave is not None:
+            lmin = self.wave.pixel(lmin, unit=unit_wave)
+            lmax = self.wave.pixel(lmax, unit=unit_wave)
 
-        if kmin == kmax:
-            raise ValueError('Minimum and maximum wavelengths are equal')
+        # Round the wavelength limits to the integer center of the
+        # containing wavelength pixel.
+        kmin = max(np.floor(lmin + 0.5).astype(int), 0)
+        kmax = min(np.floor(lmax + 0.5).astype(int), self.shape[0] - 1)
 
-        if kmax == kmin + 1:
-            raise ValueError('Minimum and maximum wavelengths are outside'
-                             ' the spectrum range')
+        # Complain if the truncation would leave nothing.
+        if imin > imax or jmin > jmax or kmin > kmax:
+            raise ValueError('The requested area is not within the cube.')
 
-        res = self[kmin:kmax, imin:imax, jmin:jmax]
+        # Extract the requested part of the cube.
+        res = self[kmin:kmax+1, imin:imax+1, jmin:jmax+1]
 
-        if mask:
-            # mask outside pixels
-            grid = np.meshgrid(np.arange(0, res.shape[1]),
-                               np.arange(0, res.shape[2]), indexing='ij')
-            shape = grid[1].shape
-            pixcrd = np.array([[p, q] for p, q in zip(np.ravel(grid[0]),
-                                                      np.ravel(grid[1]))])
-            if unit_wcs is None:
-                skycrd = pixcrd
-            else:
-                skycrd = np.array(res.wcs.pix2sky(pixcrd, unit=unit_wcs))
-            x = skycrd[:, 1].reshape(shape)
-            y = skycrd[:, 0].reshape(shape)
-            test_x = np.logical_or(x < xmin, x > xmax)
-            test_y = np.logical_or(y < ymin, y > ymax)
-            test = np.logical_or(test_x, test_y)
-            res.data[np.tile(test, [res.shape[0], 1, 1])] = ma.masked
-            res.crop()
-
+        # Mask pixels outside the specified ranges? This is only pertinent
+        # to regions that are specified in world coordinates.
+        if mask and unit_wcs is not None:
+            res.mask_polygon(pixcrd - np.array([imin,jmin]), unit_poly=None,
+                             inside=False)
         return res
 
     def _rebin_mean_(self, factor):
@@ -2576,124 +2790,200 @@ class Cube(DataArray):
         out : `~mpdaf.obj.Cube`
 
         """
-        if size <= 0:
-            return None
+        # If only the width is given, give the height the same size.
+        if np.isscalar(size):
+            size = np.array([size, size])
+        else:
+            size = np.asarray(size)
+        if size[0] <= 0.0 or size[1] <= 0.0:
+            raise ValueError('Size must be positive')
 
+        # Get the central position in pixels.
+        center = np.asarray(center)
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
+
+        # Get the image pixel steps in the units of the size argument.
+        if unit_size is None:
+            step = np.array([1.0, 1.0])     # Pixel counts
         else:
-            center = np.array(center)
-        if unit_size is not None:
-            size = size / self.wcs.get_step(unit=unit_size)[0]
-        radius = size / 2.
+            step = self.wcs.get_step(unit=unit_size)
 
-        if np.any((center - radius + 0.5).astype(int) > self.shape[1:]) or \
-                np.any((center + radius + 0.5).astype(int) < 0):
-            raise ValueError('Region is outside of the cube limits.')
-
-        size = int(size + 0.5)
-        slin, slout = overlap_slices(self.shape[1:], (size, size), center)
-        slout = (slice(None), ) + slout
-
-        if lbda is not None:
+        # Select the whole wavelength range?
+        if lbda is None:
+            lmin = 0
+            lmax = self.shape[0] - 1
+        else:
+            # Get the wavelength range.
             lmin, lmax = lbda
-            if unit_wave is None:
-                kmin = int(lmin + 0.5)
-                kmax = int(lmax + 0.5)
-            else:
-                kmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
-                kmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave) + 1
-            nk = kmax - kmin
-            wave = self.wave[kmin:kmax]
-            slin = (slice(kmin, kmax), ) + slin
+
+            # Convert the minimum wavelength to a wavelength pixel-index.
+            if unit_wave is not None:
+                lmin = self.wave.pixel(lmin, nearest=True, unit=unit_wave)
+
+            # Convert the maximum wavelength to a wavelength pixel-index.
+            if unit_wave is not None:
+                lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
+
+            # Check that the wavelength bounds are usable and in ascending
+            # order.
+            if lmin >= self.shape[0] or lmax <= 0:
+                raise ValueError("Wavelength range not in cube")
+            elif lmin > lmax:
+                lmin, lmax = lmax, lmin
+
+        # Create a slice that selects the above wavelength range,
+        # clipped to the extent of the cube.
+        sl = slice(lmin if lmin >= 0 else 0,
+                   lmax + 1 if lmax < self.shape[0] else self.shape[0])
+
+        # Get Y-axis and X-axis slice objects that bound the rectangular area.
+        [sy, sx], [uy, ux], center = bounding_box(form = "rectangle",
+                                                  center = center,
+                                                  radii = size / 2.0,
+                                                  posangle = 0.0,
+                                                  shape = self.shape[1:],
+                                                  step = step)
+        if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start==sx.stop or
+            sy.start >= self.shape[1] or sy.stop < 0 or sy.start==sy.stop):
+            raise ValueError('Sub-cube boundaries are outside the cube')
+
+        # Extract the requested part of the cube.
+        res = self[sl, sy, sx]
+
+        # If the image region was not clipped by the edges of the
+        # parent cube, then return the subcube.
+        if sy == uy and sx == ux:
+            return res
+
+        # Since the subcube is smaller than requested, due to clipping,
+        # create new data and variance arrays of the required size.
+        shape = (sl.stop - sl.start, uy.stop - uy.start, ux.stop - ux.start)
+        data = np.zeros(shape)
+        if self._var is None:
+            var = None
         else:
-            nk = self.shape[0]
-            wave = self.wave
-            slin = (slice(None), ) + slin
+            var = np.zeros(shape)
 
-        subcub = self[slin]
-        data = np.ma.empty((nk, size, size))
-        data[:] = np.nan
-        data[slout] = subcub.data
+        # If no mask is currently in use, start with every pixel of
+        # the new array filled with nans. Otherwise create a mask that
+        # initially flags all pixels.
+        if self._mask is ma.nomask:
+            mask = ma.nomask
+            data[:] = np.nan
+            if var is not None:
+                var[:] = np.nan
+        else:
+            mask = np.ones(shape, dtype=bool)
 
-        var = None
-        if subcub.var is not None:
-            var = np.full((nk, size, size), np.nan)
-            var[slout] = subcub._var
+        # Calculate the slices where the clipped subcube should go in
+        # the new arrays.
+        slices = [slice(0, shape[0]),
+                  slice(sy.start - uy.start, sy.stop - uy.start),
+                  slice(sx.start - ux.start, sx.stop - ux.start)]
 
-        wcs = subcub.wcs
-        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + slout[2].start)
-        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + slout[1].start)
-        wcs.set_naxis1(size)
-        wcs.set_naxis2(size)
+        # Copy the clipped subcube into unclipped arrays.
+        data[slices] = res._data[:]
+        if var is not None:
+            var[slices] = res._var[:]
+        if mask is not None:
+            mask[slices] = res._mask[:]
 
+        # Create a new WCS object for the unclipped subcube.
+        wcs = res.wcs
+        wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + slices[2].start)
+        wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + slices[1].start)
+        wcs.set_naxis1(shape[2])
+        wcs.set_naxis2(shape[1])
+
+        # Create a new wavelength description object.
+        wave = self.wave[sl]
+
+        # Create the new unclipped sub-cube.
         return Cube(wcs=wcs, wave=wave, unit=self.unit, copy=False,
-                    data=np.ma.masked_invalid(data), var=var,
-                    data_header=self.data_header.copy(),
-                    primary_header=self.primary_header.copy(),
+                    data=data, var=var, mask=mask,
+                    data_header=fits.Header(self.data_header),
+                    primary_header=fits.Header(self.primary_header),
                     filename=self.filename)
 
     def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
                                 unit_radius=u.arcsec):
-        """Extracts a sub-cube from an circle aperture of fixed radius.
+        """Extract a sub-cube that encloses a circular aperture of
+        a specified radius.
 
         Pixels outside the circle are masked.
 
         Parameters
         ----------
         center : (float,float)
-            Center of the aperture (y,x)
+            The center of the aperture (y,x)
         radius : float
-            Radius of the aperture. It corresponds to the radius
-            along the delta axis and the image is square.
+            The radius of the aperture.
         unit_center : `astropy.units.Unit`
-            Type of the center coordinates (degrees by default)
-            If None, inputs are in pixels
+            The units of the center coordinates (degrees by default)
+            The special value, None, indicates that the center is a
+            2D array index.
         unit_radius : `astropy.units.Unit`
-            unit of the radius value (arcseconds by default)
-            If None, inputs are in pixels
+            The units of the radius argument (arcseconds by default)
+            The special value, None, indicates that the radius is
+            specified in pixels.
 
         Returns
         -------
         out : `~mpdaf.obj.Cube`
+
         """
+
+        # Extract a subcube of a square image area of 2*radius x 2*radius.
         subcub = self.subcube(center, radius * 2, unit_center=unit_center,
                               unit_size=unit_radius)
-        if unit_center is None:
-            center = np.array(center)
-            center -= (subcub.get_start() - self.get_start())[1:]
+
+        # Mask the region outside the circle.
+        center = np.array(subcub.shape[1:]) / 2.0
         subcub.mask_region(center, radius, inside=False,
-                           unit_center=unit_center, unit_radius=unit_radius)
+                           unit_center=None, unit_radius=unit_radius)
         return subcub
 
     def aperture(self, center, radius, unit_center=u.deg,
                  unit_radius=u.arcsec):
-        """Extracts a spectrum from an circle aperture of fixed radius.
+        """Extract the spectrum of a circular aperture of given radius.
+
+        A spectrum is formed by summing the pixels within a specified
+        circular region of each wavelength image. This yields a spectrum
+        that has the same length as the wavelength axis of the cube.
 
         Parameters
         ----------
         center : (float,float)
-            Center of the aperture (y,x).
+            The center of the aperture (y,x).
         radius : float
-            Radius of the aperture in arcsec.
-            If None, spectrum at nearest pixel is returned
+            The radius of the aperture.
+            If the radius is None, or <= 0, the spectrum of
+            the nearest image pixel to the specified center is
+            returned.
         unit_center : `astropy.units.Unit`
-            Type of the center coordinates (degrees by default)
-            If None, inputs are in pixels
+            The units of the center coordinates (degrees by default)
+            The special value, None, indicates that center is a 2D
+            pixel index.
         unit_radius : `astropy.units.Unit`
-            unit of the radius value (arcseconds by default)
-            If None, inputs are in pixels
+            The units of the radius argument (arcseconds by default)
+            The special value, None, indicates that the radius is
+            specified in pixels.
 
         Returns
         -------
         out : `~mpdaf.obj.Spectrum`
         """
-        if radius > 0:
+
+        # Sum over multiple image pixels?
+        if radius is not None and radius > 0:
             cub = self.subcube_circle_aperture(center, radius,
                                                unit_center=unit_center,
                                                unit_radius=unit_radius)
             spec = cub.sum(axis=(1, 2))
             self._logger.info('%d spaxels summed', cub.shape[1] * cub.shape[2])
+
+        # Sum over a single image pixel?
         else:
             if unit_center is not None:
                 center = self.wcs.sky2pix(center, unit=unit_center)[0]

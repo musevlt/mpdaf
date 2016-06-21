@@ -11,7 +11,8 @@ import six
 from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
 from numpy import ma
-from numpy.testing import assert_almost_equal, assert_array_equal
+from numpy.testing import (assert_almost_equal, assert_array_equal,
+                           assert_allclose)
 from nose.tools import assert_equal
 from tempfile import NamedTemporaryFile
 
@@ -143,43 +144,120 @@ def test_mask():
     """Cube class: testing mask functionalities"""
     cube = generate_cube()
 
-    cube.mask_region((2, 2), (1, 1), lmin=2, lmax=5, inside=True,
+    # A region of half-width=1 and half-height=1 should have a size of
+    # 2x2 pixels. A 2x2 region of pixels has a center at the shared
+    # corner of the 4 pixels, and the closest corner to the requested
+    # center of 2.1,1.8 is 2.5,1.5, so we expect the square of unmasked pixels
+    # to be pixels 2,3 along the Y axis, and pixels 1,2 along the X axis.
+    cube.mask_region((2.1, 1.8), (1, 1), lmin=2, lmax=5, inside=True,
                      unit_center=None, unit_radius=None, unit_wave=None)
-    assert_equal(ma.count_masked(cube.data), 3 * 3 * 3)
+
+    # The expected mask for the images between lmin and lmax.
+    expected_mask = np.array([[False, False, False, False, False],
+                              [False, False, False, False, False],
+                              [False, True,  True,  False, False],
+                              [False, True,  True,  False, False],
+                              [False, False, False, False, False],
+                              [False, False, False, False, False]], dtype=bool)
+    assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
+                       np.zeros(cube.shape[1:]))
+    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), expected_mask)
+    assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
+                       np.zeros(cube.shape[1:]))
+
     cube.unmask()
 
-    cube.mask_region((2, 2), (1, 1), lmin=2, lmax=5, inside=False,
+    # Do the same experiment, but this time mask pixels outside the region
+    # instead of within the region.
+    cube.mask_region((2.1, 1.8), (1, 1), lmin=2, lmax=5, inside=False,
                      unit_center=None, unit_radius=None, unit_wave=None)
-    assert_equal(np.prod(cube.shape) - ma.count_masked(cube.data),
-                 3 * 3 * 3)
+    assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
+    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), ~expected_mask)
+    assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
     cube.unmask()
 
+    # Do the same experiment, but this time with the center and size
+    # of the region specified using the equivalent world coordinates.
     wcs = WCS(deg=True)
     wave = WaveCoord(cunit=u.angstrom)
     cube = Cube(data=cube.data, wave=wave, wcs=wcs, copy=False)
-    cube.mask_region(wcs.pix2sky([2, 2]), (3600, 3600), lmin=2, lmax=5,
+    cube.mask_region(wcs.pix2sky([2.1, 1.8]), (3600, 3600), lmin=2, lmax=5,
                      inside=False)
-    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 9 * 3)
+    assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
+    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), ~expected_mask)
+    assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
     cube.unmask()
 
-    cube.mask_region(wcs.pix2sky([2, 2]), 4000, lmin=2, lmax=5, inside=False)
-    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 5 * 3)
+    # Mask around a region of half-width and half-height 1.1 pixels,
+    # specified in arcseconds, centered close to pixel 2.4,3.8. This
+    # ideally corresponds to a region of 2.2x2.2 pixels. The closest
+    # possible size is 2x2 pixels. A region of 2x2 pixels has its
+    # center at the shared corner of these 4 pixels, and the nearest
+    # corner to the desired central index of (2.4,3.8) is (2.5,3.5).
+    # So all of the image should be masked, except for a 2x2 area of
+    # pixel indexes 2,3 along the Y axis and pixel indexes 3,4 along
+    # the X axis.
+    cube.mask_region(wcs.pix2sky([2.4, 3.8]), 1.1*3600.0, inside=False,
+                     lmin=2, lmax=5)
+
+    # The expected mask for the images between lmin and lmax.
+    expected_mask = np.array([[True,  True,  True,  True,  True],
+                              [True,  True,  True,  True,  True],
+                              [True,  True,  True,  False, False],
+                              [True,  True,  True,  False, False],
+                              [True,  True,  True,  True,  True],
+                              [True,  True,  True,  True,  True]], dtype=bool)
+    assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
+    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), expected_mask)
+    assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
     cube.unmask()
 
-    cube.mask_ellipse(wcs.pix2sky([2, 2]), (10000, 3000), 20, lmin=2, lmax=5,
-                      inside=False)
-    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 7 * 3)
+    # Mask outside an elliptical region centered at pixel 3.5,3.5.
+    # The boolean expected_mask array given below was a verified
+    # output of mask_ellipse() for the specified ellipse parameters.
+    cube = generate_cube(shape=(10,8,8), wcs=wcs, var=None)
+    cube.mask_ellipse([3.5,3.5], (2.5,3.5), 45.0, unit_radius=None,
+                      unit_center=None, inside=False, lmin=2, lmax=5)
+    expected_mask = np.array([[True, True, True, True, True, True, True, True],
+                              [True, True, True,False,False,False, True, True],
+                              [True, True,False,False,False,False,False, True],
+                              [True,False,False,False,False,False,False, True],
+                              [True,False,False,False,False,False,False, True],
+                              [True,False,False,False,False,False, True, True],
+                              [True, True,False,False,False, True, True, True],
+                              [True, True, True, True, True, True, True, True]],
+                             dtype=bool)
+    assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
+    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), expected_mask)
+    assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
+
+    # Check that we can select the same mask via the output of np.where()
+    # passed to mask_selection().
     ksel = np.where(cube.data.mask)
     cube.unmask()
-
     cube.mask_selection(ksel)
-    nose.tools.assert_almost_equal(cube.sum(), 2.3 * 7 * 3)
+    assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
+    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), expected_mask)
+    assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
+                       np.ones(cube.shape[1:]))
 
+    # The cube was generated without any variance information.
+    # Check that mask_variance() raises an error due to this.
     with nose.tools.assert_raises(ValueError):
         cube.mask_variance(0.1)
 
+    # Add an array of variances to the cube and check that mask_variance()
+    # masks all pixels that have variances greater than 0.1.
     cube.unmask()
-
     cube.var = np.random.randn(*cube.shape)
     mask = cube.var > 0.1
     cube.mask_variance(0.1)
@@ -277,16 +355,27 @@ def test_get_image():
 @attr(speed='fast')
 def test_subcube():
     """Cube class: testing sub-cube extraction methods"""
+    wcs = WCS(crval=(0,0), crpix=1.0, deg=True)
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
-    cube2 = cube1.subcube(center=(2, 2.8), size=2, lbda=(5, 8),
-                          unit_center=None, unit_size=None)
-    assert_array_equal(cube2.get_start(), (5, 1, 2))
-    assert_array_equal(cube2.shape, (4, 2, 2))
 
-    cube2 = cube1.subcube_circle_aperture(center=(2, 2.8), radius=1,
+    # Extract a sub-cube whose images are centered close to pixel
+    # (2.3, 2.8) of the cube and have a width and height of 2 pixels.
+    # The center of a 2x2 pixel region is at the shared corner between
+    # these pixels, and the closest corner to the requested center
+    # of 2.3,2.8 is 2.5,2.5. Thus the sub-images should be from pixels
+    # 2,3 along both the X and Y axes.
+
+    cube2 = cube1.subcube(center=(2.3, 2.8), size=2, lbda=(5, 8),
+                          unit_center=None, unit_size=None)
+    assert_allclose(cube1.data[5:9, 2:4, 2:4], cube2.data)
+
+    # The following should select the same image area as above,
+    # followed by masking pixels in this area outside a circle
+    # of radius 1.
+    cube2 = cube1.subcube_circle_aperture(center=(2.3, 2.8), radius=1,
                                           unit_center=None, unit_radius=None)
     assert_equal(cube2.data.mask[0, 0, 0], True)
-    assert_array_equal(cube2.get_start(), (1, 1, 2))
+    assert_array_equal(cube2.get_start(), (1, 2, 2))
     assert_array_equal(cube2.shape, (10, 2, 2))
 
 

@@ -372,8 +372,7 @@ class DataArray(object):
 
         # If a WCS object was specified as an optional parameter, install it.
         wcs = kwargs.pop('wcs', None)
-        if self._has_wcs and wcs is not None and wcs.naxis1 != 1 and \
-                wcs.naxis2 != 1:
+        if self._has_wcs and wcs is not None:
             try:
                 self.wcs = wcs.copy()
                 if self.shape is not None:

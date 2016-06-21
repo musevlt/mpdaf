@@ -73,11 +73,13 @@ def bounding_box(form, center, radii, posangle, shape, step):
 
     """Return Y-axis and X-axis slice objects that bound a rectangular
     image region that just encloses either an ellipse or a rectangle,
-    that has a specified center position, Y-axis and X-axis
-    radii, and a given rotation angle relative to the image axes.
+    where the rectangle has a specified center position, Y-axis and X-axis
+    radii, and a given rotation angle relative to the image axes. The
+    effective center of the region is also returned.
 
     If the ellipse or rectangle is partly outside of the image array,
-    the returned slices are clipped at the edges of the array.
+    the returned slices are clipped at the edges of the array. The
+    effective center that is returned, is the center before clipping.
 
     Parameters
     ----------
@@ -111,9 +113,23 @@ def bounding_box(form, center, radii, posangle, shape, step):
 
     Returns
     -------
-    out : slice, slice
-       The Y-axis and X-axis slices needed to select a rectangular region
-       of the image that just encloses the ellipse.
+    out : clipped, unclipped, center
+
+       The 'clipped' return value is a list of the Y-axis and
+       X-axis slices to use to select all pixels within the
+       rectangular region of the image that just encloses the part of
+       the ellipse or rectangle that is within the image area.
+
+       The 'unclipped' return-value is the version of 'clipped' before
+       it was clipped at the edges of the image.
+
+       The 'center' return value is the pixel index of the center of
+       the region, prior to clipping.
+
+       If the region is entirely outside the range of an axis, a
+       zero-pixel slice is returned for that axis in 'clipped', with a
+       start value that is 0 if the pixels were all below pixel 0, or
+       shape-1 if they were all off the upper end of the range.
 
     """
 
@@ -170,20 +186,48 @@ def bounding_box(form, center, radii, posangle, shape, step):
     else:
         raise ValueError("The form argument should be 'rectangle' or 'ellipse'")
 
-    # Arrange the half-height and half-width in an array, then divide
-    # them by the pixel sizes along the Y and X axes to convert them
-    # to pixel counts.
-    w = np.array([ymax, xmax]) / step
+    # Put the height and width in an array, divide them by
+    # the pixel sizes along the Y and X axes to convert them to pixel
+    # counts, then convert them to the nearest integers.
+    w = np.floor(np.abs(np.array([2*ymax, 2*xmax]) / step) + 0.5).astype(int)
 
-    # Determine the index ranges along the X and Y axes of the image
-    # array that enclose the rotated width and height of the rotated
-    # shape.
+    # Are the members of w even numbers of pixels?
+    iseven = np.mod(w, 2) == 0
+
+    # For each axis calculate the pixel index of the central pixel of
+    # the region where w is odd, or the index of the first of the two
+    # central pixels when w is even.
+    c = np.where(iseven, np.floor(center), np.floor(center+0.5)).astype(int)
+
+    # Determine the indexes of the first and last pixels of the region
+    # along each axis, using integer arithmetic to avoid surprises.
+    first = np.where(iseven, c - w//2 + 1,  c - (w - 1)//2)
+    last  = np.where(iseven, c + w//2,      c + (w - 1)//2)
+
+    # Calculate the effective center of the bounded region.
+    center = (first + last) / 2.0
+
+    # Compute the ideal slices that would select the bounding box.
+    ideal_slices = [slice(first[0], last[0] + 1), slice(first[1], last[1] + 1)]
+
+    # Are the selected pixels of the axes outside the bounds of the array?
     max_indexes = np.asarray(shape) - 1
-    imin, jmin = np.clip((center - w).astype(int), (0, 0), max_indexes)
-    imax, jmax = np.clip((center + w).astype(int), (0, 0), max_indexes)
+    outside = np.logical_or(last < 0, first > max_indexes)
 
-    # Return the ranges as slice objects.
-    return slice(imin, imax + 1), slice(jmin, jmax + 1)
+    # Clip the first and last pixels to ensure that they lie within
+    # the bounds of the image.
+    imin, jmin = np.clip(first, (0, 0), max_indexes)
+    imax, jmax = np.clip(last,  (0, 0), max_indexes)
+
+    # Compute the corresponding slices, replacing the clipped
+    # values by a zero-pixel range where the pre-clipped indexes
+    # were entirely outside the array.
+    clipped_slices = [slice(imin, (imax + 1) if not outside[0] else imax),
+                      slice(jmin, (jmax + 1) if not outside[1] else jmax)]
+
+    # Return the ranges as slice objects, along with the effective
+    # center of the region.
+    return clipped_slices, ideal_slices, center
 
 
 def UnitArray(array, old_unit, new_unit):
