@@ -31,7 +31,6 @@ import types
 
 from astropy.io import fits
 from matplotlib.path import Path
-from astropy.nddata.utils import overlap_slices
 from numpy import ma
 from six.moves import range, zip
 from scipy import integrate, interpolate
