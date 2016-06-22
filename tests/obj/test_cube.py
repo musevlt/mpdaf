@@ -278,7 +278,7 @@ def test_truncate():
 
 @attr(speed='fast')
 def test_sum():
-    """Cube class: testing sum and mean methods"""
+    """Cube class: testing sum method"""
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
     ind = np.arange(10)
     refsum = ind.sum()
@@ -294,6 +294,64 @@ def test_sum():
 
     assert_array_equal(cube1.sum(axis=(1, 2)).data, ind * 6 * 5)
 
+
+@attr(speed='fast')
+def test_mean():
+    """Cube class: testing mean method"""
+
+    # Specify the dimensions of the test cube.
+    shape = (2,3,4)
+
+    # Create 3D data, variance and mask arrays.
+    d = np.arange(np.asarray(shape).prod(), dtype=float).reshape(shape)
+    v = d / 10.0
+    m = d % 5 == 0
+
+    # Create a cube with the above values.
+    cube = generate_cube(data=d, var=v, mask=m)
+
+    # Create masked array versions of the data and variance arrays.
+    data = ma.array(d, mask=m)
+    var = ma.array(v, mask=m)
+
+    # Test the mean over each of the supported axes.
+    for axis in (None, 0, (1,2)):
+
+        # Get the unweighted mean.
+        mean = cube.mean(axis=axis, weighted=False)
+
+        # Test each of the weighting options.
+        # Each tuple gives the values of the weighting and weights
+        # arguments of cube.mean(), plus a masked array of the
+        # weights that are expected to be used.
+        for weighted,weights,w in [
+                # An unweighted mean:
+                (False, None, ma.array(np.ones(shape), mask=m)),
+                # A mean weighted implicitly by 1/var:
+                (True, None, ma.array(1.0/var, mask=m)),
+                # A mean weighted by user-specified weights:
+                (True, np.sqrt(d), ma.array(np.sqrt(d), mask=m))]:
+
+            # Compute the mean.
+            mean = cube.mean(axis=axis, weighted=weighted, weights=weights)
+
+            # Compute the expected values of the mean and its variance,
+            # using a different implementation to cube.mean().
+            expected_data = np.sum(data * w, axis=axis) / np.sum(w, axis=axis)
+            expected_var = np.sum(var * w**2, axis=axis) / np.sum(w, axis=axis)**2
+
+            # In the case any of the following tests fail, provide an
+            # error message that indicates which arguments were passed
+            # to cube.mean()
+            errmsg = "Failure of cube.mean(axis=%s, weighted=%s, weights=%s)" % (axis, weighted, weights)
+
+            # See if the mean pixels and variances of these pixels have the
+            # expected values.
+            if axis is None:
+                assert_allclose(mean, expected_data, err_msg=errmsg)
+            else:
+                assert_allclose(mean.data, expected_data, err_msg=errmsg)
+                assert_allclose(mean.var, expected_var, err_msg=errmsg)
 
 @attr(speed='fast')
 def test_median():
