@@ -16,9 +16,7 @@ You should have received a copy of the GNU General Public License
 along with MPDAF.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-# Import the recommended python 2 -> 3 compatibility modules.
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division
 
 import logging
 import numpy as np
@@ -45,7 +43,6 @@ class LazyData(object):
         self.label = label
 
     def read_data(self, obj):
-        # print 'read data'
         obj_dict = obj.__dict__
         data, mask = read_slice_from_fits(obj.filename, ext=obj._data_ext,
                                           mask_ext='DQ', dtype=obj.dtype)
@@ -58,7 +55,6 @@ class LazyData(object):
         return mask if self.label == '_mask' else data
 
     def __get__(self, obj, owner=None):
-        # print '__get__', owner, self.label
         try:
             return obj.__dict__[self.label]
         except KeyError:
@@ -76,14 +72,12 @@ class LazyData(object):
                 # Make sure that data is read because the mask may be needed
                 if not obj._loaded_data:
                     self.read_data(obj)
-                # print 'read var'
                 val, _ = read_slice_from_fits(obj.filename, ext=obj._var_ext,
                                               dtype=np.float64)
                 obj.__dict__[self.label] = val
             return val
 
     def __set__(self, obj, val):
-        # print '__set__', self.label  # , val
         label = self.label
         if label == '_data':
             obj._loaded_data = True
@@ -659,11 +653,9 @@ class DataArray(object):
             else:
                 self.wave.info()
 
-    @deprecated('Data should now be set with the .data attribute')
+    @deprecated('Data should now be get with the .data attribute')
     def get_np_data(self):
-        """Deprecated: Set the .data attribute instead of calling
-        this function."""
-
+        """Deprecated: use the .data attribute instead."""
         return self.data
 
     def __le__(self, item):
