@@ -22,7 +22,6 @@ image.py manages image objects.
 from __future__ import absolute_import, division, print_function
 
 import logging
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import ma

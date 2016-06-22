@@ -152,13 +152,6 @@ class Spectrum(ArithmeticMixin, DataArray):
     _ndim_required = 1
     _has_wave = True
 
-    def __init__(self, filename=None, ext=None, unit=u.dimensionless_unscaled,
-                 data=None, var=None, wave=None, copy=True, dtype=float,
-                 **kwargs):
-        super(Spectrum, self).__init__(
-            filename=filename, ext=ext, wave=wave, unit=unit, data=data,
-            var=var, copy=copy, dtype=dtype, **kwargs)
-
     def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
         """ Return the flux value corresponding to a wavelength,
         or return the sub-spectrum corresponding to a wavelength range.
@@ -210,8 +203,6 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         if self.wave is not None:
             return self.wave.get_step(unit)
-        else:
-            return None
 
     def get_start(self, unit=None):
         """Return the wavelength value of the first pixel.
@@ -227,8 +218,6 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         if self.wave is not None:
             return self.wave.get_start(unit)
-        else:
-            return None
 
     def get_end(self, unit=None):
         """Return the wavelength value of the last pixel.
@@ -244,8 +233,6 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         if self.wave is not None:
             return self.wave.get_end(unit)
-        else:
-            return None
 
     def get_range(self, unit=None):
         """Return the wavelength range (Lambda_min, Lambda_max).
@@ -261,8 +248,6 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         if self.wave is not None:
             return self.wave.get_range(unit)
-        else:
-            return None
 
     def set_wcs(self, wave):
         """Set the world coordinates.

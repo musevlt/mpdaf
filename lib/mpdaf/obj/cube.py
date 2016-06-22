@@ -41,8 +41,7 @@ from .data import DataArray
 from .image import Image
 from .objs import is_int, bounding_box
 from .spectrum import Spectrum
-from ..tools import deprecated
-from ..tools.fits import add_mpdaf_method_keywords
+from ..tools import deprecated, add_mpdaf_method_keywords
 
 __all__ = ('iter_spe', 'iter_ima', 'Cube')
 
